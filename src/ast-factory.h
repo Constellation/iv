@@ -3,7 +3,7 @@
 #include <vector>
 #include "functor.h"
 #include "ast.h"
-#include "alloc.h"
+#include "alloc-inl.h"
 
 namespace iv {
 namespace core {

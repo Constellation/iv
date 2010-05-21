@@ -14,8 +14,8 @@ def Build():
     LIBPATH=["/usr/lib"])
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
   Help(var.GenerateHelpText(env))
-  env.ParseConfig('icu-config --cppflags --cxxflags --ldflags --ldflags-icuio')
-  env.ParseConfig('llvm-config all --cppflags --cxxflags --ldflags --libs')
+  env.ParseConfig('icu-config --cppflags --ldflags --ldflags-icuio')
+  env.ParseConfig('llvm-config all --cppflags --ldflags --libs')
   env.Program('js', [ 'src/lexer.cc',
                       'src/main.cc',
                       'src/parser.cc',

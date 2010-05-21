@@ -57,6 +57,7 @@ namespace core {
 Parser::Parser(const char* source)
   : lexer_(source),
     stack_(),
+    error_(),
     in_source_element_(false),
     space_(),
     factory_(&space_),

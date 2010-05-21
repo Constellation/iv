@@ -1,8 +1,9 @@
 #ifndef _IV_PARSER_H_
 #define _IV_PARSER_H_
 #include <map>
+#include <string>
 #include "utils.h"
-#include "alloc.h"
+#include "alloc-inl.h"
 #include "ast.h"
 #include "ast-factory.h"
 #include "lexer.h"
@@ -106,6 +107,7 @@ class Parser {
   Lexer lexer_;
   Token::Type token_;
   std::vector<Node> stack_;
+  std::string error_;
   bool in_source_element_;
   AstFactory space_;
   AstFactory* factory_;

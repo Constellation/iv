@@ -26,9 +26,9 @@ class Conv {
 
 class Visitor;
 
-class Visited {
+class Visitee {
  public:
-  virtual ~Visited() { }
+  virtual ~Visitee() { }
   virtual void Accept(Visitor*) { }  // NOLINT
 };
 
@@ -36,7 +36,7 @@ class Visitor {
  public:
   Visitor() { }
   virtual ~Visitor() { }
-  virtual void Visit(Visited*) { }  // NOLINT
+  virtual void Visit(Visitee*) { }  // NOLINT
 };
 
 // A macro to disallow the copy constructor and operator= functions

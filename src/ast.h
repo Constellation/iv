@@ -14,7 +14,7 @@
 #include <unicode/unistr.h>
 #include <unicode/schriter.h>
 #include "utils.h"
-#include "alloc.h"
+#include "alloc-inl.h"
 #include "functor.h"
 #include "token.h"
 
@@ -66,7 +66,7 @@ class Declaration;
 
 class AstFactory;
 
-class AstNode : public SpaceObject, public Visited {
+class AstNode : public SpaceObject, public Visitee {
  public:
   explicit AstNode();
   virtual ~AstNode() { }

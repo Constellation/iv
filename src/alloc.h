@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
-#include <iostream>
 #include "utils.h"
 
 namespace iv {
@@ -14,10 +13,10 @@ namespace core {
 // memory allocated from std::malloc
 class Malloced {
  public:
-  void* operator new(std::size_t size) { return New(size); }
+  inline void* operator new(std::size_t size) { return New(size); }
   void  operator delete(void* p) { Delete(p); }
+  inline static void* New(std::size_t size);
   static void OutOfMemory();
-  static void* New(std::size_t size);
   static void Delete(void* p);
 };
 
@@ -25,12 +24,13 @@ class Pool {
  public:
   static const unsigned int kPoolSize = Size::KB * 4;
   Pool();
-  void Initialize(uintptr_t start, Pool* next);
+  inline void Initialize(uintptr_t start, Pool* next);
   Pool* Next() const { return next_; }
-  void* New(uintptr_t size);
+  inline void* New(uintptr_t size);
  private:
   uintptr_t start_;
   uintptr_t position_;
+  uintptr_t limit_;
   Pool* next_;
 };
 
@@ -44,9 +44,9 @@ class Arena {
                                   0 : (Pool::kPoolSize - kAlignment));
   Arena();
   ~Arena();
-  void* New(std::size_t raw_size);
-  void SetNext(Arena* next) { next_ = next; }
-  Arena* Next() const { return next_; }
+  inline void* New(std::size_t raw_size);
+  inline void SetNext(Arena* next) { next_ = next; }
+  inline Arena* Next() const { return next_; }
  private:
   Pool pools_[kPoolNum];
   void* result_;
@@ -65,7 +65,7 @@ class Space {
   static const std::size_t kThreshold = 256;
   static const unsigned int kInitArenas = 4;
   struct Freer {
-    void operator()(void* p) const {
+    inline void operator()(void* p) const {
       Malloced::Delete(p);
     }
   };
@@ -104,44 +104,48 @@ class SpaceAllocator {
   };
 
   explicit SpaceAllocator(Space* fac) throw() : space_(fac) { }
-  explicit SpaceAllocator(const SpaceAllocator& alloc) throw() : space_(alloc.space_) { }
+  explicit SpaceAllocator(const SpaceAllocator& alloc) throw()
+    : space_(alloc.space_) {
+  }
   template<class U>
-  explicit SpaceAllocator(const SpaceAllocator<U>& alloc) throw() : space_(alloc.space_) { }
+  explicit SpaceAllocator(const SpaceAllocator<U>& alloc) throw()
+    : space_(alloc.space_) {
+  }
 
   ~SpaceAllocator() throw() {}
 
-  pointer address(reference x) const {
+  inline pointer address(reference x) const {
     return &x;
   }
 
-  const_pointer address(const_reference x) const {
+  inline const_pointer address(const_reference x) const {
     return &x;
   }
 
-  pointer allocate(size_type n) {
+  inline pointer allocate(size_type n) {
     return reinterpret_cast<pointer>(space_->New(n * sizeof(T)));
   }
 
-  void deallocate(pointer, size_type) { }
+  inline void deallocate(pointer, size_type) { }
 
-  size_type max_size() const {
+  inline size_type max_size() const {
     return std::numeric_limits<size_type>::max() / sizeof(T);
   }
 
-  void construct(pointer p, const T& val) {
+  inline void construct(pointer p, const T& val) {
     new(reinterpret_cast<void*>(p)) T(val);
   }
 
-  void destroy(pointer p) {
+  inline void destroy(pointer p) {
     (p)->~T();
   }
 
-  char* _Charalloc(size_type n) {
+  inline char* _Charalloc(size_type n) {
     return allocate(n);
   }
 
-  bool operator==(SpaceAllocator const&) { return true; }
-  bool operator!=(SpaceAllocator const& a) { return !operator==(a); }
+  inline bool operator==(SpaceAllocator const&) { return true; }
+  inline bool operator!=(SpaceAllocator const& a) { return !operator==(a); }
  private:
   Space* space_;
 };
