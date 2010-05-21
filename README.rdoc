@@ -1,0 +1,6 @@
+= iv
+
+js lexer and parser in C++ / JS
+
+a lot of inspired from V8, SpiderMonkey, JavaScriptCore
+
