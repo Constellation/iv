@@ -118,7 +118,7 @@ var Lexer, Parser;
     this.hasLineTerminatorBeforeNext = false;
     // remove white space
     do {
-      this.current = this.current.replace(/^[\u0009\u000B\u000C\uFEFF\u0020\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]*/, "");
+      this.current = this.current.replace(/^[\u0009\u000B\u000C\u0020\u00A0\uFEFF\u0020\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]*/, "");
       if (this.current) {
         if (/^\/\/|^\/\*/.test(this.current)) {
           // skip comment
@@ -387,15 +387,17 @@ var Lexer, Parser;
       type: "ContinueStatement",
       label: null
     };
-    if (!this.lexer.hasLineTerminatorBeforeNext ||
-        this.token !== OP[";"] ||
-        this.token !== OP["}"] ||
+    if (!this.lexer.hasLineTerminatorBeforeNext &&
+        this.token !== OP[";"] &&
+        this.token !== OP["}"] &&
         this.token !== EOS) {
       if (this.token === OP["IDENTIFIER"]) {
         stmt.label = {
           type: "Identifier",
           value: this.lexer.value
         };
+      } else {
+        throw new Error("ILLEGAL");
       }
     }
     this.expectSemicolon();
@@ -526,15 +528,17 @@ var Lexer, Parser;
       type: "BreakStatement",
       label: null
     };
-    if (!this.lexer.hasLineTerminatorBeforeNext ||
-        this.token !== OP[";"] ||
-        this.token !== OP["}"] ||
+    if (!this.lexer.hasLineTerminatorBeforeNext &&
+        this.token !== OP[";"] &&
+        this.token !== OP["}"] &&
         this.token !== EOS) {
       if (this.token === OP["IDENTIFIER"]) {
         stmt.label = {
           type: "Identifier",
           value: this.lexer.value
         };
+      } else {
+        throw new Error("ILLEGAL");
       }
     }
     this.expectSemicolon();
@@ -616,6 +620,9 @@ var Lexer, Parser;
   };
   Parser.prototype.parseThrowStatement = function() {
     this.next();
+    if (this.lexer.hasLineTerminatorBeforeNext) {
+      throw new Error("ILLEGAL");
+    }
     var expr = this.parseExpression(true);
     this.expectSemicolon();
     return {type:"ThrowStatement", expr: expr};

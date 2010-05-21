@@ -233,28 +233,16 @@ Statement* Parser::ParseStatement(bool *res) {
 Statement* Parser::ParseFunctionDeclaration(bool *res) {
   FunctionLiteral *expr;
   Next();
-  if (token_ == Token::IDENTIFIER) {
-    // FunctionDeclaration
-    expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION, CHECK);
-  } else {
-    // FunctionExpression
-    // expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION, CHECK);
-    FAIL();
-  }
+  IS(Token::IDENTIFIER);
+  expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION, CHECK);
   return NEW(FunctionStatement(expr));
 }
 
 Statement* Parser::ParseFunctionStatement(bool *res) {
   FunctionLiteral *expr;
   Next();
-  if (token_ == Token::IDENTIFIER) {
-    // FunctionStatement
-    expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT, CHECK);
-  } else {
-    // FunctionExpression
-    // expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION, CHECK);
-    FAIL();
-  }
+  IS(Token::IDENTIFIER);
+  expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT, CHECK);
   return NEW(FunctionStatement(expr));
 }
 
@@ -515,12 +503,10 @@ Statement* Parser::ParseContinueStatement(bool *res) {
       token_ != Token::SEMICOLON &&
       token_ != Token::RBRACE &&
       token_ != Token::EOS) {
-    if (token_ == Token::IDENTIFIER) {
-      Identifier* label = space_.NewIdentifier(lexer_.Literal());
-      continue_stmt->SetLabel(label);
-      // ParseIdentifier();
-      Next();
-    }
+    IS(Token::IDENTIFIER);
+    Identifier* label = space_.NewIdentifier(lexer_.Literal());
+    continue_stmt->SetLabel(label);
+    Next();
   }
   ExpectSemicolon(CHECK);
   return continue_stmt;
@@ -535,12 +521,10 @@ Statement* Parser::ParseBreakStatement(bool *res) {
       token_ != Token::SEMICOLON &&
       token_ != Token::RBRACE &&
       token_ != Token::EOS) {
-    if (token_ == Token::IDENTIFIER) {
-      Identifier* label = space_.NewIdentifier(lexer_.Literal());
-      break_stmt->SetLabel(label);
-      // ParseIdentifier();
-      Next();
-    }
+    IS(Token::IDENTIFIER);
+    Identifier* label = space_.NewIdentifier(lexer_.Literal());
+    break_stmt->SetLabel(label);
+    Next();
   }
   ExpectSemicolon(CHECK);
   return break_stmt;
@@ -649,6 +633,10 @@ CaseClause* Parser::ParseCaseClause(bool *res) {
 Statement* Parser::ParseThrowStatement(bool *res) {
   Expression *expr;
   Next();
+  // Throw requires Expression
+  if (lexer_.has_line_terminator_before_next()) {
+    FAIL();
+  }
   expr = ParseExpression(true, CHECK);
   ExpectSemicolon(CHECK);
   return NEW(ThrowStatement(expr));
@@ -1442,7 +1430,6 @@ FunctionLiteral* Parser::ParseFunctionLiteral(FunctionLiteral::Type type,
   // IDENTIFIER_opt
   FunctionLiteral *literal = space_.NewFunctionLiteral(type);
   if (token_ == Token::IDENTIFIER) {
-    // ParseIdentifier();
     literal->SetName(lexer_.Literal());
     Next();
   }
