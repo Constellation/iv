@@ -316,7 +316,7 @@ var Lexer, Parser;
     if (this.token === OP["IDENTIFIER"]) {
       return {
         type: "FunctionDeclaration",
-        func: this.parseFunctionLiteral(DECL)
+        func: this.parseFunctionLiteral(DECL, true)
       };
     } else {
       throw new Error("ILLEGAL");
@@ -327,7 +327,7 @@ var Lexer, Parser;
     if (this.token === OP["IDENTIFIER"]) {
       return {
         type: "FunctionStatement",
-        func: this.parseFunctionLiteral(STMT)
+        func: this.parseFunctionLiteral(STMT, true)
       };
     } else {
       throw new Error("ILLEGAL");
@@ -895,7 +895,7 @@ var Lexer, Parser;
     if (this.token !== OP["new"]) {
       if (this.token === OP["function"]) {
         this.next();
-        expr = this.parseFunctionLiteral(EXP);
+        expr = this.parseFunctionLiteral(EXP, true);
       } else {
         expr = this.parsePrimaryExpression();
       }
@@ -1103,7 +1103,7 @@ var Lexer, Parser;
                 this.token === OP["NUMBER"]) {
               var name = this.lexer.value;
               this.next();
-              var expr = this.parseFunctionLiteral(EXP);
+              var expr = this.parseFunctionLiteral(EXP, false);
               literal.accessors.push({
                 type: "Accessor",
                 kind: ac,
@@ -1134,14 +1134,14 @@ var Lexer, Parser;
     this.next();
     return literal;
   };
-  Parser.prototype.parseFunctionLiteral = function(kind) {
+  Parser.prototype.parseFunctionLiteral = function(kind, allowIdentifier) {
     var literal = {
       type: "Function",
       kind: kind,
       params: [],
       body: []
     };
-    if (this.token === OP["IDENTIFIER"]) {
+    if (allowIdentifier && this.token === OP["IDENTIFIER"]) {
       literal.name = this.lexer.value;
       this.next();
     }

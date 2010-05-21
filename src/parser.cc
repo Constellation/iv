@@ -234,7 +234,7 @@ Statement* Parser::ParseFunctionDeclaration(bool *res) {
   FunctionLiteral *expr;
   Next();
   IS(Token::IDENTIFIER);
-  expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION, CHECK);
+  expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION, true, CHECK);
   return NEW(FunctionStatement(expr));
 }
 
@@ -242,7 +242,7 @@ Statement* Parser::ParseFunctionStatement(bool *res) {
   FunctionLiteral *expr;
   Next();
   IS(Token::IDENTIFIER);
-  expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT, CHECK);
+  expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT, true, CHECK);
   return NEW(FunctionStatement(expr));
 }
 
@@ -1123,7 +1123,7 @@ Expression* Parser::ParseMemberExpression(bool allow_call, bool *res) {
     if (token_ == Token::FUNCTION) {
       // FunctionExpression
       Next();
-      expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION, CHECK);
+      expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION, true, CHECK);
     } else {
       expr = ParsePrimaryExpression(CHECK);
     }
@@ -1388,7 +1388,7 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
             }
             Next();
             expr = ParseFunctionLiteral(
-                FunctionLiteral::EXPRESSION, CHECK);
+                FunctionLiteral::EXPRESSION, false, CHECK);
             object->AddProperty(ident, expr);
             if (token_ != Token::RBRACE) {
               EXPECT(Token::COMMA);
@@ -1425,11 +1425,12 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
 }
 
 FunctionLiteral* Parser::ParseFunctionLiteral(FunctionLiteral::Type type,
+                                              bool allow_identifier,
                                               bool *res) {
   // IDENTIFIER
   // IDENTIFIER_opt
   FunctionLiteral *literal = space_.NewFunctionLiteral(type);
-  if (token_ == Token::IDENTIFIER) {
+  if (allow_identifier && token_ == Token::IDENTIFIER) {
     literal->SetName(lexer_.Literal());
     Next();
   }

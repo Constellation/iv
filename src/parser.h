@@ -78,7 +78,9 @@ class Parser {
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res);
   Expression* ParseArrayLiteral(bool *res);
   Expression* ParseObjectLiteral(bool *res);
-  FunctionLiteral* ParseFunctionLiteral(FunctionLiteral::Type type, bool *res);
+  FunctionLiteral* ParseFunctionLiteral(FunctionLiteral::Type type,
+                                        bool allow_identifier,
+                                        bool *res);
 
   Undefined* NewUndefined();
   EmptyStatement* NewEmptyStatement();
