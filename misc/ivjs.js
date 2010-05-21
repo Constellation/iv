@@ -118,7 +118,7 @@ var Lexer, Parser;
     this.hasLineTerminatorBeforeNext = false;
     // remove white space
     do {
-      this.current = this.current.replace(/^\s*/, "");
+      this.current = this.current.replace(/^[\u0009\u000B\u000C\u0020\u00A0\uFEFF\u0020\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]*/, "");
       if (this.current) {
         if (/^\/\/|^\/\*/.test(this.current)) {
           // skip comment
