@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <vector>
+#include <cstdio>
 #include <clocale>
-#include <unistd.h>
+#include <vector>
 #include <iostream>
 #include <unicode/ustream.h>
+#include <unistd.h>
 #include "ast.h"
 #include "parser.h"
 
