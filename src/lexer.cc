@@ -397,6 +397,7 @@ Token::Type Lexer::ScanHtmlComment() {
 }
 
 Token::Type Lexer::ScanIdentifier() {
+  getter_or_setter_ = kNotGetterOrSetter;
   Token::Type token = Token::IDENTIFIER;
   bool keyword_possibility = true;
   UChar uc;
@@ -456,7 +457,6 @@ Token::Type Lexer::ScanIdentifier() {
 Token::Type Lexer::DetectKeyword() {
   const std::size_t len = buffer16_.size();
   Token::Type token = Token::IDENTIFIER;
-  getter_or_setter_ = kNotGetterOrSetter;
   switch (len) {
     case 2:
       // if in do
