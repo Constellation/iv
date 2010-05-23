@@ -150,9 +150,6 @@ class Token {
   };
   static const char* kContents[];
 
-  explicit Token(const UChar* ustr, Type t) : type_(t), value_(ustr) {}
-  inline Type type() const { return type_; }
-  inline const UnicodeString& value() const { return value_; }
   static inline bool IsAssignOp(Token::Type type) {
     return Token::ASSIGN_FIRST < type && type < Token::ASSIGN_LAST;
   }
@@ -160,10 +157,6 @@ class Token {
     assert(0 <= type && type < NUM_TOKENS);
     return kContents[type];
   }
-
- private:
-  Type type_;
-  UnicodeString value_;
 };
 
 } }  // namespace iv::core

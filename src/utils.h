@@ -16,6 +16,7 @@
 
 namespace iv {
 namespace core {
+
 class Conv {
  public:
   static int32_t DoubleToInt32(double d);
