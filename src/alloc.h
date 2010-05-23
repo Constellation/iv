@@ -17,7 +17,9 @@ class Malloced {
   void  operator delete(void* p) { Delete(p); }
   inline static void* New(std::size_t size);
   static void OutOfMemory();
-  static void Delete(void* p);
+  static inline void Delete(void* p) {
+    std::free(p);
+  }
 };
 
 class Pool {
@@ -59,7 +61,8 @@ class Space {
  public:
   Space();
   virtual ~Space();
-  void* New(std::size_t size);
+  inline void* New(std::size_t size);
+  virtual inline void Clear();
 
  private:
   static const std::size_t kThreshold = 256;
@@ -70,8 +73,7 @@ class Space {
     }
   };
 
-  Arena* NewArena();
-
+  inline Arena* NewArena();
   Arena init_arenas_[kInitArenas];
   Arena* arena_;
   Arena* start_malloced_;

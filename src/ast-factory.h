@@ -14,6 +14,11 @@ class AstFactory : public Space {
   ~AstFactory();
 
   void Register(AstNode* node); Identifier* NewIdentifier(const UChar* buffer);
+  inline void Clear() {
+    std::for_each(registered_.begin(), registered_.end(), Destructor<AstNode>());
+    registered_.clear();
+    Space::Clear();
+  }
   Identifier* NewIdentifier(const char* buffer);
   StringLiteral* NewStringLiteral(const UChar* buffer);
   RegExpLiteral* NewRegExpLiteral(const UChar* buffer);

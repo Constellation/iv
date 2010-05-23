@@ -43,7 +43,6 @@ inline void* Space::New(std::size_t size) {
 inline Arena* Space::NewArena() {
   Arena* arena = NULL;
   try {
-    // TODO(Constellation): use Malloced class instead of new
     arena = new Arena();
     if (arena == NULL) {
       Malloced::OutOfMemory();
@@ -56,6 +55,12 @@ inline Arena* Space::NewArena() {
   arena_->SetNext(arena);
   arena_ = arena;
   return arena;
+}
+
+inline void Space::Clear() {
+  arena_ = init_arenas_;
+  std::for_each(malloced_.begin(), malloced_.end(), Freer());
+  malloced_.clear();
 }
 
 inline void* Pool::New(uintptr_t size) {

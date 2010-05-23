@@ -3,10 +3,6 @@
 namespace iv {
 namespace core {
 
-void Malloced::Delete(void* p) {
-  std::free(p);
-}
-
 void Malloced::OutOfMemory() {
   std::puts("FAIL");
   std::exit(EXIT_FAILURE);
