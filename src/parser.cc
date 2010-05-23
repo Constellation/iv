@@ -23,6 +23,7 @@ namespace core {
   do {\
     if (token_ != token) {\
       *res = false;\
+      ReportUnexpectedToken();\
       REPORT\
       return NULL;\
     }\
@@ -32,6 +33,7 @@ namespace core {
   do {\
     if (token_ != token) {\
       *res = false;\
+      ReportUnexpectedToken();\
       REPORT\
       return NULL;\
     }\
@@ -60,11 +62,7 @@ Parser::Parser(const char* source)
     error_(),
     in_source_element_(false),
     space_(),
-    factory_(&space_),
-    empty_statement_instance_(),
-    undefined_instance_(),
-    this_instance_(),
-    null_instance_() {
+    factory_(&space_) {
 }
 
 // Program
@@ -313,7 +311,7 @@ Statement* Parser::ParseVariableDeclarations(VariableStatement* stmt,
       decl = NEW(Declaration(name, expr));
     } else {
       // Undefined Expression
-      decl = NEW(Declaration(name, NewUndefined()));
+      decl = NEW(Declaration(name, space_.NewUndefined()));
     }
     stmt->AddDeclaration(decl);
   } while (token_ == Token::COMMA);
@@ -338,7 +336,7 @@ bool Parser::ExpectSemicolon(bool *res) {
 //    : ';'
 Statement* Parser::ParseEmptyStatement() {
   Next();
-  return NewEmptyStatement();
+  return space_.NewEmptyStatement();
 }
 
 //  IfStatement
@@ -1191,7 +1189,7 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
   Expression *result = NULL;
   switch (token_) {
     case Token::THIS:
-      result = NewThisLiteral();
+      result = space_.NewThisLiteral();
       Next();
       break;
 
@@ -1201,7 +1199,7 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
       break;
 
     case Token::NULL_LITERAL:
-      result = NewNullLiteral();
+      result = space_.NewNullLiteral();
       Next();
       break;
 
@@ -1310,7 +1308,7 @@ Expression* Parser::ParseArrayLiteral(bool *res) {
   while (token_ != Token::RBRACK) {
     if (token_ == Token::COMMA) {
       // Undefined
-      array->AddItem(NewUndefined());
+      array->AddItem(space_.NewUndefined());
     } else {
       expr = ParseAssignmentExpression(true, CHECK);
       array->AddItem(expr);
@@ -1461,22 +1459,20 @@ FunctionLiteral* Parser::ParseFunctionLiteral(FunctionLiteral::Type type,
   return literal;
 }
 
-Undefined* Parser::NewUndefined() {
-  return space_.NewUndefined();
+void Parser::ReportUnexpectedToken() {
+  switch (token_) {
+    case Token::STRING:
+      break;
+    case Token::NUMBER:
+      break;
+    case Token::IDENTIFIER:
+      break;
+    case Token::EOS:
+      break;
+    default:
+      break;
+  }
 }
-
-EmptyStatement* Parser::NewEmptyStatement() {
-  return space_.NewEmptyStatement();
-}
-
-ThisLiteral* Parser::NewThisLiteral() {
-  return space_.NewThisLiteral();
-}
-
-NullLiteral* Parser::NewNullLiteral() {
-  return space_.NewNullLiteral();
-}
-
 
 #undef REPORT
 #undef TRACE

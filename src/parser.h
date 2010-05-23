@@ -83,15 +83,10 @@ class Parser {
                                         bool allow_identifier,
                                         bool *res);
 
-  Undefined* NewUndefined();
-  EmptyStatement* NewEmptyStatement();
-  ThisLiteral* NewThisLiteral();
-  NullLiteral* NewNullLiteral();
-
-  Literal* ParseStringLiteral();
+  void ReportUnexpectedToken();
 
   bool ExpectSemicolon(bool *res);
-  Lexer& lexer() {
+  inline Lexer& lexer() {
     return lexer_;
   }
   inline Token::Type Next() {
@@ -111,10 +106,6 @@ class Parser {
   bool in_source_element_;
   AstFactory space_;
   AstFactory* factory_;
-  EmptyStatement empty_statement_instance_;
-  Undefined undefined_instance_;
-  ThisLiteral this_instance_;
-  NullLiteral null_instance_;
 };
 
 
