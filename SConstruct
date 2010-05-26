@@ -7,9 +7,22 @@ def GetVariables():
 
 def Build():
   var = GetVariables()
+  var.AddVariables(
+    BoolVariable('debug', '', 0),
+    BoolVariable('gprof', '', 0)
+  )
   env = Environment(options=var)
+  if env['gprof']:
+    env.Append(
+      CCFLAGS=["-pg"],
+      LINKFLAGS=["-pg"]
+    )
+  if env['debug']:
+    env.Append(
+      CCFLAGS=["-g3"]
+    )
   env.Append(
-    CCFLAGS=["-g"],
+    CCFLAGS=["-Wall", "-W", "-Werror", "-Wno-unused-parameter"],
     CCDEFINES=[],
     LIBPATH=["/usr/lib"])
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
