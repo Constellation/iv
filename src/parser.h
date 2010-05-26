@@ -3,20 +3,12 @@
 #include <map>
 #include <string>
 #include "utils.h"
-#include "alloc-inl.h"
 #include "ast.h"
 #include "ast-factory.h"
 #include "lexer.h"
 
 namespace iv {
 namespace core {
-
-class Node {
- public:
-  enum Type {
-    STATEMENT
-  };
-};
 
 class Parser {
  public:
@@ -101,7 +93,6 @@ class Parser {
  protected:
   Lexer lexer_;
   Token::Type token_;
-  std::vector<Node> stack_;
   std::string error_;
   bool in_source_element_;
   AstFactory space_;

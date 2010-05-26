@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <cmath>
 
 namespace iv {
 namespace core {

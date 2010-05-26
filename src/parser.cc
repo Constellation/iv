@@ -4,6 +4,7 @@ namespace iv {
 namespace core {
 
 #ifdef DEBUG
+#include <cstdio>
 
 #define REPORT\
   std::printf("error line: %d\n", __LINE__);\
@@ -58,7 +59,6 @@ namespace core {
 
 Parser::Parser(const char* source)
   : lexer_(source),
-    stack_(),
     error_(),
     in_source_element_(false),
     space_(),

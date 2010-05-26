@@ -5,11 +5,8 @@
 #include <llvm/Module.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Support/IRBuilder.h>
-#include <cstdio>
 #include <vector>
-#include <sstream>
 #include <map>
-#include <algorithm>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
 #include <unicode/schriter.h>

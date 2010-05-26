@@ -1,12 +1,10 @@
 #ifndef _IV_LEXER_H_
 #define _IV_LEXER_H_
 
-#include <string>
-#include <cstdio>
 #include <cstdlib>
 #include <cctype>
-#include <cassert>
 #include <vector>
+#include <string>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
 #include "char.h"

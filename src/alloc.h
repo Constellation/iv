@@ -1,8 +1,8 @@
 #ifndef _IV_ALLOC_H_
 #define _IV_ALLOC_H_
+#include <cassert>
 #include <new>
 #include <vector>
-#include <algorithm>
 #include <limits>
 #include "utils.h"
 

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cstdio>
 #include "alloc-inl.h"
 #include "ast-visitor.h"
 #include "ast.h"
@@ -478,21 +479,21 @@ void AstSerializer::DecodeString(const UnicodeString& ustr) {
         if (0x00 <= val && val < 0x20) {
           if (0x00 <= val && val < 0x10) {
             out_.append("\\u000");
-            snprintf(buf, sizeof(buf), "%x", val);
+            std::snprintf(buf, sizeof(buf), "%x", val);
             out_.append(buf);
           } else if (0x10 <= val && val < 0x20) {
             out_.append("\\u00");
-            snprintf(buf, sizeof(buf), "%x", val);
+            std::snprintf(buf, sizeof(buf), "%x", val);
             out_.append(buf);
           }
         } else if (0x80 <= val) {
           if (0x80 <= val && val < 0x1000) {
             out_.append("\\u0");
-            snprintf(buf, sizeof(buf), "%x", val);
+            std::snprintf(buf, sizeof(buf), "%x", val);
             out_.append(buf);
           } else if (0x1000 <= val) {
             out_.append("\\u");
-            snprintf(buf, sizeof(buf), "%x", val);
+            std::snprintf(buf, sizeof(buf), "%x", val);
             out_.append(buf);
           }
         } else {

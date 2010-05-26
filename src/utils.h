@@ -1,12 +1,8 @@
 #ifndef _IV_UTILS_H_
 #define _IV_UTILS_H_
-#include <cstdio>
 #include <cstdlib>
 #include <cstddef>
 #include <inttypes.h>
-#include <limits>
-#include <cassert>
-#include <cmath>
 
 #ifdef NDEBUG
 #undef DEBUG
@@ -23,21 +19,6 @@ class Conv {
   inline static int32_t DoubleToUInt32(double d) {
     return static_cast<uint32_t>(d);
   }
-};
-
-class Visitor;
-
-class Visitee {
- public:
-  virtual ~Visitee() { }
-  virtual void Accept(Visitor*) { }  // NOLINT
-};
-
-class Visitor {
- public:
-  Visitor() { }
-  virtual ~Visitor() { }
-  virtual void Visit(Visitee*) { }  // NOLINT
 };
 
 // A macro to disallow the copy constructor and operator= functions

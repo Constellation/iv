@@ -1,3 +1,5 @@
+#include <cstdio>
+#include <cstdlib>
 #include "alloc-inl.h"
 
 namespace iv {
