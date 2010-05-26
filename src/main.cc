@@ -5,6 +5,7 @@
 #include <unicode/ustream.h>
 #include <unistd.h>
 #include "ast.h"
+#include "ast-visitor.h"
 #include "parser.h"
 
 using namespace iv::core;
@@ -26,9 +27,9 @@ int main(void) {
   iv::core::Parser p(v.data());
   FunctionLiteral* global = p.ParseProgram();
   if (global) {
-    UnicodeString ustr;
-    global->Serialize(&ustr);
-    std::cout << ustr << std::endl;
+    AstSerializer visitor;
+    global->Accept(&visitor);
+    std::cout << visitor.Out() << std::endl;
   }
   return 0;
 }

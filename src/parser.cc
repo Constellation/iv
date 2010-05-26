@@ -980,6 +980,7 @@ Expression* Parser::ReduceBinaryOperation(Token::Type op,
                       Conv::DoubleToInt32(l_val) ^ Conv::DoubleToInt32(r_val));
         break;
 
+      // section 11.7 Bitwise Shift Operators
       case Token::SHL: {
         int32_t value = Conv::DoubleToInt32(l_val) <<
                                     (Conv::DoubleToInt32(r_val) & 0x1f);
@@ -1142,7 +1143,7 @@ Expression* Parser::ParseMemberExpression(bool allow_call, bool *res) {
       case Token::LBRACK:
         Next();
         index = ParseExpression(true, CHECK);
-        expr = NEW(Property(expr, index));
+        expr = NEW(PropertyAccess(expr, index));
         EXPECT(Token::RBRACK);
         break;
 
@@ -1151,7 +1152,7 @@ Expression* Parser::ParseMemberExpression(bool allow_call, bool *res) {
         IS(Token::IDENTIFIER);
         index = space_.NewIdentifier(lexer_.Literal());
         Next();
-        expr = NEW(Property(expr, index));
+        expr = NEW(PropertyAccess(expr, index));
         break;
 
       case Token::LPAREN:

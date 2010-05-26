@@ -17,14 +17,15 @@
 #include "alloc-inl.h"
 #include "functor.h"
 #include "token.h"
+#include "ast-visitor.h"
 
 namespace iv {
 namespace core {
 #define VIRTUAL_VISITOR \
-  virtual void Accept(Visitor* visitor) = 0;
+  virtual void Accept(AstVisitor* visitor) = 0;
 
 #define ACCEPT_VISITOR \
-  void Accept(Visitor* visitor) {\
+  inline void Accept(AstVisitor* visitor) {\
     visitor->Visit(this);\
   }\
 
@@ -57,7 +58,7 @@ class Assignment;
 class UnaryOperation;
 class BinaryOperation;
 class ConditionalExpression;
-class Property;
+class PropertyAccess;
 class Call;
 class ConstructorCall;
 class FunctionCall;
@@ -66,7 +67,7 @@ class Declaration;
 
 class AstFactory;
 
-class AstNode : public SpaceObject, public Visitee {
+class AstNode : public SpaceObject {
  public:
   explicit AstNode();
   virtual ~AstNode() { }
@@ -98,14 +99,14 @@ class AstNode : public SpaceObject, public Visitee {
   virtual Assignment* AsAssignment() { return NULL; }
   virtual BinaryOperation* AsBinaryOperation() { return NULL; }
   virtual ConditionalExpression* AsConditionalExpression() { return NULL; }
-  virtual Property* AsProperty() { return NULL; }
+  virtual PropertyAccess* AsPropertyAccess() { return NULL; }
   virtual Call* AsCall() { return NULL; }
   virtual FunctionCall* AsFunctionCall() { return NULL; }
   virtual ConstructorCall* AsConstructorCall() { return NULL; }
 
-  virtual void Serialize(UnicodeString* out) const = 0;
-
   virtual llvm::Value* Codegen() { return NULL; }
+
+  VIRTUAL_VISITOR
 };
 
 //  Statement
@@ -136,8 +137,10 @@ class Block : public Statement {
   explicit Block(Space *factory);
   void AddStatement(Statement *stmt);
   inline Block* AsBlock() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
+  inline const SpaceVector<Statement*>::type& body() {
+    return body_;
+  }
  private:
   SpaceVector<Statement*>::type body_;
 };
@@ -146,7 +149,9 @@ class FunctionStatement : public Statement {
  public:
   explicit FunctionStatement(FunctionLiteral* func);
   inline FunctionStatement* AsFunctionStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline FunctionLiteral* function() {
+    return function_;
+  }
   ACCEPT_VISITOR
  private:
   FunctionLiteral* function_;
@@ -157,17 +162,27 @@ class VariableStatement : public Statement {
   explicit VariableStatement(Token::Type type, Space* factory);
   void AddDeclaration(Declaration* decl);
   inline VariableStatement* AsVariableStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline const SpaceVector<Declaration*>::type& decls() {
+    return decls_;
+  }
+  inline bool IsConst() const {
+    return is_const_;
+  }
   ACCEPT_VISITOR
  private:
-  bool is_const_;
+  const bool is_const_;
   SpaceVector<Declaration*>::type decls_;
 };
 
 class Declaration : public AstNode {
  public:
   Declaration(Identifier* name, Expression* expr);
-  void Serialize(UnicodeString* out) const;
+  inline Identifier* name() {
+    return name_;
+  }
+  inline Expression* expr() {
+    return expr_;
+  }
   ACCEPT_VISITOR
  private:
   Identifier* name_;
@@ -180,29 +195,31 @@ class EmptyStatement : public Statement {
   static inline EmptyStatement* New(Space* f) {
     return new (f) EmptyStatement();
   }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
 };
 
 class IfStatement : public Statement {
  public:
-  IfStatement(Expression* cond, Statement* body);
+  IfStatement(Expression* cond, Statement* then);
   void SetElse(Statement* stmt);
   inline IfStatement* AsIfStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* cond() { return cond_; }
+  inline Statement* then_statement() { return then_; }
+  inline Statement* else_statement() { return else_; }
   ACCEPT_VISITOR
   llvm::Value* Codegen();
  private:
   Expression* cond_;
-  Statement* body_;
+  Statement* then_;
   Statement* else_;
 };
 
 class IterationStatement : public Statement {
  public:
+  friend class AstVisitor;
   explicit IterationStatement(Statement* body);
-  virtual void Serialize(UnicodeString* out) const;
   inline IterationStatement* AsIterationStatement() { return this; }
+  inline Statement* body() { return body_; }
  private:
   Statement* body_;
 };
@@ -211,7 +228,7 @@ class DoWhileStatement : public IterationStatement {
  public:
   DoWhileStatement(Statement* body, Expression* cond);
   inline DoWhileStatement* AsDoWhileStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* cond() { return cond_; }
   ACCEPT_VISITOR
  private:
   Expression* cond_;
@@ -221,7 +238,7 @@ class WhileStatement : public IterationStatement {
  public:
   WhileStatement(Statement* body, Expression* cond);
   inline WhileStatement* AsWhileStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* cond() { return cond_; }
   ACCEPT_VISITOR
  private:
   Expression* cond_;
@@ -234,7 +251,9 @@ class ForStatement : public IterationStatement {
   inline void SetCondition(Expression* cond) { cond_ = cond; }
   inline void SetNext(Statement* next) { next_ = next; }
   inline ForStatement* AsForStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Statement* init() { return init_; }
+  inline Expression* cond() { return cond_; }
+  inline Statement* next() { return next_; }
   ACCEPT_VISITOR
  private:
   Statement* init_;
@@ -246,7 +265,8 @@ class ForInStatement : public IterationStatement {
  public:
   ForInStatement(Statement* each, Expression* enumerable, Statement* body);
   inline ForInStatement* AsForInStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Statement* each() { return each_; }
+  inline Expression* enumerable() { return enumerable_; }
   ACCEPT_VISITOR
  private:
   Statement* each_;
@@ -258,7 +278,7 @@ class ContinueStatement : public Statement {
   ContinueStatement();
   void SetLabel(Identifier* label);
   inline ContinueStatement* AsContinueStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Identifier* label() { return label_; }
   ACCEPT_VISITOR
  private:
   Identifier* label_;
@@ -269,7 +289,7 @@ class BreakStatement : public Statement {
   BreakStatement();
   void SetLabel(Identifier* label);
   inline BreakStatement* AsBreakStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Identifier* label() { return label_; }
   ACCEPT_VISITOR
  private:
   Identifier* label_;
@@ -279,7 +299,7 @@ class ReturnStatement : public Statement {
  public:
   explicit ReturnStatement(Expression* expr);
   inline ReturnStatement* AsReturnStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
@@ -289,7 +309,8 @@ class WithStatement : public Statement {
  public:
   WithStatement(Expression* context, Statement* body);
   inline WithStatement* AsWithStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* context() { return context_; }
+  inline Statement* body() { return body_; }
   ACCEPT_VISITOR
  private:
   Expression* context_;
@@ -300,7 +321,8 @@ class LabelledStatement : public Statement {
  public:
   explicit LabelledStatement(Expression* expr, Statement* body);
   inline LabelledStatement* AsLabelledStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Identifier* label() { return label_; }
+  inline Statement* body() { return body_; }
   ACCEPT_VISITOR
  private:
   Identifier* label_;
@@ -313,7 +335,15 @@ class CaseClause : public AstNode {
   void SetExpression(Expression* expr);
   void SetDefault();
   void SetStatement(Statement* stmt);
-  void Serialize(UnicodeString* out) const;
+  inline bool IsDefault() const {
+    return default_;
+  }
+  inline Expression* expr() {
+    return expr_;
+  }
+  inline Statement* body() {
+    return body_;
+  }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
@@ -326,7 +356,8 @@ class SwitchStatement : public Statement {
   explicit SwitchStatement(Expression* expr, Space* factory);
   void AddCaseClause(CaseClause* clause);
   inline SwitchStatement* AsSwitchStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* expr() { return expr_; }
+  inline const SpaceVector<CaseClause*>::type& clauses() { return clauses_; }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
@@ -337,7 +368,7 @@ class ThrowStatement : public Statement {
  public:
   explicit ThrowStatement(Expression* expr);
   inline ThrowStatement* AsThrowStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
@@ -349,7 +380,10 @@ class TryStatement : public Statement {
   void SetCatch(Identifier* name, Block* block);
   void SetFinally(Block* block);
   inline TryStatement* AsTryStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Block* body() { return body_; }
+  inline Identifier* catch_name() { return catch_name_; }
+  inline Block* catch_block() { return catch_block_; }
+  inline Block* finally_block() { return finally_block_; }
   ACCEPT_VISITOR
  private:
   Block* body_;
@@ -360,7 +394,6 @@ class TryStatement : public Statement {
 
 class DebuggerStatement : public Statement {
   inline DebuggerStatement* AsDebuggerStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
 };
 
@@ -368,7 +401,7 @@ class ExpressionStatement : public Statement {
  public:
   explicit ExpressionStatement(Expression* expr);
   inline ExpressionStatement* AsExpressionStatement() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
@@ -385,7 +418,9 @@ class Assignment : public Expression {
  public:
   Assignment(Token::Type op, Expression* left, Expression* right);
   inline Assignment* AsAssignment() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Token::Type op() { return op_; }
+  inline Expression* left() { return left_; }
+  inline Expression* right() { return right_; }
   ACCEPT_VISITOR
  private:
   Token::Type op_;
@@ -397,7 +432,9 @@ class BinaryOperation : public Expression {
  public:
   BinaryOperation(Token::Type op, Expression* left, Expression* right);
   inline BinaryOperation* AsBinaryOperation() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Token::Type op() { return op_; }
+  inline Expression* left() { return left_; }
+  inline Expression* right() { return right_; }
   ACCEPT_VISITOR
  private:
   Token::Type op_;
@@ -409,7 +446,9 @@ class ConditionalExpression : public Expression {
  public:
   ConditionalExpression(Expression* cond, Expression* left, Expression* right);
   inline ConditionalExpression* AsConditionalExpression() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* cond() { return cond_; }
+  inline Expression* left() { return left_; }
+  inline Expression* right() { return right_; }
   ACCEPT_VISITOR
  private:
   Expression* cond_;
@@ -421,7 +460,8 @@ class UnaryOperation : public Expression {
  public:
   UnaryOperation(Token::Type op, Expression* expr);
   inline UnaryOperation* AsUnaryOperation() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Token::Type op() { return op_; }
+  inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
  private:
   Token::Type op_;
@@ -432,7 +472,8 @@ class PostfixExpression : public Expression {
  public:
   PostfixExpression(Token::Type op, Expression* expr);
   inline PostfixExpression* AsPostfixExpression() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Token::Type op() { return op_; }
+  inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
  private:
   Token::Type op_;
@@ -454,7 +495,7 @@ class Undefined;
 class Literal : public Expression {
  public:
   Literal* AsLiteral() { return this; }
-  virtual ~Literal() { }
+  virtual ~Literal() = 0;
   virtual ThisLiteral* AsThisLiteral() { return NULL; }
   virtual NullLiteral* AsNullLiteral() { return NULL; }
   virtual FalseLiteral* AsFalseLiteral() { return NULL; }
@@ -473,11 +514,12 @@ class StringLiteral : public Literal {
  public:
   explicit StringLiteral(const UChar* buffer);
   inline StringLiteral* AsStringLiteral() { return this; }
-  static StringLiteral* New(Space* f, const UChar* buffer) {
-    StringLiteral* str = new(f) StringLiteral(buffer);
-    return str;
+  inline const UnicodeString& value() {
+    return value_;
   }
-  void Serialize(UnicodeString* out) const;
+  static StringLiteral* New(Space* f, const UChar* buffer) {
+    return new (f) StringLiteral(buffer);
+  }
   ACCEPT_VISITOR
  private:
   UnicodeString value_;
@@ -488,7 +530,6 @@ class NumberLiteral : public Literal {
   explicit NumberLiteral(const double & val);
   inline NumberLiteral* AsNumberLiteral() { return this; }
   inline double value() const { return value_; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   llvm::Value* Codegen();
   static NumberLiteral* New(Space* f, const double & val) {
@@ -503,8 +544,10 @@ class Identifier : public Literal {
   explicit Identifier(const UChar* buffer);
   explicit Identifier(const char* buffer);
   inline Identifier* AsIdentifier() { return this; }
+  inline const UnicodeString& value() const {
+    return value_;
+  }
   inline bool IsValidLeftHandSide() const { return true; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
  private:
   UnicodeString value_;
@@ -513,7 +556,6 @@ class Identifier : public Literal {
 class ThisLiteral : public Literal {
  public:
   inline ThisLiteral* AsThisLiteral() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   static ThisLiteral* New(Space* f) {
     return new (f) ThisLiteral();
@@ -523,7 +565,6 @@ class ThisLiteral : public Literal {
 class NullLiteral : public Literal {
  public:
   inline NullLiteral* AsNullLiteral() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   static NullLiteral* New(Space* f) {
     return new (f) NullLiteral();
@@ -533,7 +574,6 @@ class NullLiteral : public Literal {
 class TrueLiteral : public Literal {
  public:
   inline TrueLiteral* AsTrueLiteral() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   llvm::Value* Codegen() {
     return llvm::ConstantInt::get(
@@ -547,7 +587,6 @@ class TrueLiteral : public Literal {
 class FalseLiteral : public Literal {
  public:
   inline FalseLiteral* AsFalseLiteral() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   llvm::Value* Codegen() {
     return llvm::ConstantInt::get(
@@ -561,7 +600,6 @@ class FalseLiteral : public Literal {
 class Undefined : public Literal {
  public:
   inline Undefined* AsUndefined() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
   static inline Undefined* New(Space* f) {
     return new (f) Undefined();
@@ -573,13 +611,11 @@ class RegExpLiteral : public Literal {
   explicit RegExpLiteral(const UChar* buffer);
   inline RegExpLiteral* AsRegExpLiteral() { return this; }
   void SetFlags(const UChar* flags);
-  void Serialize(UnicodeString* out) const;
+  inline const UnicodeString& value() { return value_; }
+  inline const UnicodeString& flags() { return flags_; }
   ACCEPT_VISITOR
   static RegExpLiteral* New(Space* f, const UChar* buffer) {
-    RegExpLiteral* reg = new(f) RegExpLiteral(buffer);
-    // f->Register(reg);
-    return reg;
-    // return new (f) RegExpLiteral(buffer);
+    return new (f) RegExpLiteral(buffer);
   }
  private:
   UnicodeString value_;
@@ -593,7 +629,9 @@ class ArrayLiteral : public Literal {
   inline void AddItem(Expression* expr) {
     items_.push_back(expr);
   }
-  void Serialize(UnicodeString* out) const;
+  inline const SpaceVector<Expression*>::type& items() {
+    return items_;
+  }
   ACCEPT_VISITOR
  private:
   SpaceVector<Expression*>::type items_;
@@ -604,7 +642,9 @@ class ObjectLiteral : public Literal {
   ObjectLiteral();
   void AddProperty(Identifier* key, Expression* val);
   inline ObjectLiteral* AsObjectLiteral() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline const std::map<Identifier*, Expression*>& properties() {
+    return properties_;
+  }
   ACCEPT_VISITOR
  private:
   std::map<Identifier*, Expression*> properties_;
@@ -621,9 +661,18 @@ class FunctionLiteral : public Literal {
   explicit FunctionLiteral(Type type);
   inline FunctionLiteral* AsFunctionLiteral() { return this; }
   inline void SetName(const UChar* name) { name_ = name; }
+  inline const UnicodeString& name() {
+    return name_;
+  }
+  inline Type  type() { return type_; }
+  inline const std::vector<Identifier*>& params() {
+    return params_;
+  }
+  inline const std::vector<Statement*>& body() {
+    return body_;
+  }
   void AddParameter(Identifier* param);
   void AddStatement(Statement* stmt);
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
  private:
   UnicodeString name_;
@@ -632,15 +681,16 @@ class FunctionLiteral : public Literal {
   std::vector<Statement*> body_;
 };
 
-class Property : public Expression {
+class PropertyAccess : public Expression {
  public:
-  Property(Expression* obj, Expression* key);
+  PropertyAccess(Expression* obj, Expression* key);
   inline bool IsValidLeftHandSide() const { return true; }
-  inline Property* AsProperty() { return this; }
-  void Serialize(UnicodeString* out) const;
+  inline Expression* target() { return target_; }
+  inline Expression* key() { return key_; }
+  inline PropertyAccess* AsPropertyAccess() { return this; }
   ACCEPT_VISITOR
  private:
-  Expression* obj_;
+  Expression* target_;
   Expression* key_;
 };
 
@@ -649,6 +699,8 @@ class Call : public Expression {
   explicit Call(Expression* target, Space* factory);
   void AddArgument(Expression* expr) { args_.push_back(expr); }
   inline Call* AsCall() { return this; }
+  inline Expression* target() { return target_; }
+  inline const SpaceVector<Expression*>::type& args() { return args_; }
  protected:
   Expression* target_;
   SpaceVector<Expression*>::type args_;
@@ -658,7 +710,6 @@ class FunctionCall : public Call {
  public:
   explicit FunctionCall(Expression* target, Space* factory);
   inline FunctionCall* AsFunctionCall() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
 };
 
@@ -666,7 +717,6 @@ class ConstructorCall : public Call {
  public:
   explicit ConstructorCall(Expression* target, Space* factory);
   inline ConstructorCall* AsConstructorCall() { return this; }
-  void Serialize(UnicodeString* out) const;
   ACCEPT_VISITOR
 };
 

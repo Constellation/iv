@@ -19,6 +19,7 @@ def Build():
   env.Program('js', [ 'src/lexer.cc',
                       'src/main.cc',
                       'src/parser.cc',
+                      'src/ast-visitor.cc',
                       'src/ast-factory.cc',
                       'src/ast.cc',
                       'src/token.cc',
