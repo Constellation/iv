@@ -1,10 +1,5 @@
 #ifndef _IV_AST_H_
 #define _IV_AST_H_
-#include <llvm/DerivedTypes.h>
-#include <llvm/LLVMContext.h>
-#include <llvm/Module.h>
-#include <llvm/Analysis/Verifier.h>
-#include <llvm/Support/IRBuilder.h>
 #include <vector>
 #include <map>
 #include <unicode/uchar.h>
@@ -100,8 +95,6 @@ class AstNode : public SpaceObject {
   virtual Call* AsCall() { return NULL; }
   virtual FunctionCall* AsFunctionCall() { return NULL; }
   virtual ConstructorCall* AsConstructorCall() { return NULL; }
-
-  virtual llvm::Value* Codegen() { return NULL; }
 
   VIRTUAL_VISITOR
 };
@@ -204,7 +197,6 @@ class IfStatement : public Statement {
   inline Statement* then_statement() { return then_; }
   inline Statement* else_statement() { return else_; }
   ACCEPT_VISITOR
-  llvm::Value* Codegen();
  private:
   Expression* cond_;
   Statement* then_;
@@ -528,7 +520,6 @@ class NumberLiteral : public Literal {
   inline NumberLiteral* AsNumberLiteral() { return this; }
   inline double value() const { return value_; }
   ACCEPT_VISITOR
-  llvm::Value* Codegen();
   static NumberLiteral* New(Space* f, const double & val) {
     return new (f) NumberLiteral(val);
   }
@@ -572,10 +563,6 @@ class TrueLiteral : public Literal {
  public:
   inline TrueLiteral* AsTrueLiteral() { return this; }
   ACCEPT_VISITOR
-  llvm::Value* Codegen() {
-    return llvm::ConstantInt::get(
-        llvm::Type::getInt1Ty(llvm::getGlobalContext()), 1);
-  }
   static TrueLiteral* New(Space* f) {
     return new (f) TrueLiteral();
   }
@@ -585,10 +572,6 @@ class FalseLiteral : public Literal {
  public:
   inline FalseLiteral* AsFalseLiteral() { return this; }
   ACCEPT_VISITOR
-  llvm::Value* Codegen() {
-    return llvm::ConstantInt::get(
-        llvm::Type::getInt1Ty(llvm::getGlobalContext()), 0);
-  }
   static FalseLiteral* New(Space* f) {
     return new (f) FalseLiteral();
   }

@@ -3,12 +3,9 @@
 #include <vector>
 #include <iostream>
 #include <unicode/ustream.h>
-#include <unistd.h>
 #include "ast.h"
-#include "ast-visitor.h"
+#include "ast-serializer.h"
 #include "parser.h"
-
-using namespace iv::core;
 
 int main(void) {
 
@@ -23,13 +20,15 @@ int main(void) {
     v.push_back('\0');
     std::fclose(fp);
   }
-
-  iv::core::Parser p(v.data());
-  FunctionLiteral* global = p.ParseProgram();
-  if (global) {
-    AstSerializer visitor;
-    global->Accept(&visitor);
-    std::cout << visitor.Out() << std::endl;
+  {
+    using namespace iv::core;
+    Parser p(v.data());
+    FunctionLiteral* global = p.ParseProgram();
+    if (global) {
+      AstSerializer visitor;
+      global->Accept(&visitor);
+      std::cout << visitor.Out() << std::endl;
+    }
   }
   return 0;
 }

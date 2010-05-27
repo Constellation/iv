@@ -1,12 +1,6 @@
 #include <algorithm>
 #include "ast.h"
 
-namespace {
-
-llvm::IRBuilder<> builder(llvm::getGlobalContext());
-
-}
-
 namespace iv {
 namespace core {
 
@@ -43,10 +37,6 @@ IfStatement::IfStatement(Expression* cond, Statement* then)
 
 void IfStatement::SetElse(Statement* stmt) {
   else_ = stmt;
-}
-
-llvm::Value* IfStatement::Codegen() {
-  return NULL;
 }
 
 IterationStatement::IterationStatement(Statement* body)
@@ -194,11 +184,6 @@ StringLiteral::StringLiteral(const UChar* buffer)
 
 NumberLiteral::NumberLiteral(const double & val)
   : value_(val) {
-}
-
-llvm::Value* NumberLiteral::Codegen() {
-  return llvm::ConstantFP::get(
-      llvm::Type::getDoubleTy(llvm::getGlobalContext()), value_);
 }
 
 Identifier::Identifier(const UChar* buffer)
