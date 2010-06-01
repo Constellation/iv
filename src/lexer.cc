@@ -928,7 +928,7 @@ Token::Type Lexer::ScanNumber(const bool period) {
     if (c_ == '0') {
       // 0x (hex) or 0 (octal)
       Record8Advance();
-      if ((c_ | 0x20) == 'x') {
+      if (c_ == 'x' || c_ == 'X') {
         // 0x (hex)
         type = HEX;
         Record8Advance();
@@ -966,7 +966,7 @@ Token::Type Lexer::ScanNumber(const bool period) {
   }
 
   // exponent part
-  if ((c_ | 0x20) == 'e') {
+  if (c_ == 'e' || c_ == 'E') {
     if (type != DECIMAL) {
       return Token::ILLEGAL;
     }
