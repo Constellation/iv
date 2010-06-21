@@ -246,15 +246,15 @@ var Lexer, Parser;
           case '\'':
           case '"':
             if (ch === '"') {
-              var reg = /^(?:\\.|[^"])*"/;
+              var reg = /^((?:\\[\s\S]|[^"])*")/;
             } else {
-              var reg = /^(?:\\.|[^'])*'/;
+              var reg = /^((?:\\[\s\S]|[^'])*')/;
             }
             res.push(ch);
             this.current = this.current.slice(pos);
             pos = -1;
             if (reg.test(this.current)) {
-              res.push(RegExp.lastMatch);
+              res.push(RegExp.$1);
               this.current = RegExp.rightContext;
             } else {
               throw new Error();
@@ -301,8 +301,8 @@ var Lexer, Parser;
                       res.push(ch);
                       this.current = this.current.slice(pos+1);
                       pos = -1;
-                      if (/^.*-->/.test(this.current)) {
-                        res.push(RegExp.lastMatch);
+                      if (/^([\s\S]*-->)/.test(this.current)) {
+                        res.push(RegExp.$1);
                         this.current = RegExp.rightContext;
                       } else {
                         throw new Error();
@@ -320,8 +320,8 @@ var Lexer, Parser;
                     if (/^CDATA\[/.test(this.current)) {
                       res.push("CDATA[");
                       this.current = RegExp.rightContext;
-                      if (/.*\]\]>/.test(this.current)) {
-                        res.push(RegExp.lastMatch);
+                      if (/^([\s\S]*\]\]>)/.test(this.current)) {
+                        res.push(RegExp.$1);
                         this.current = RegExp.rightContext;
                       } else {
                         throw new Error();
@@ -359,8 +359,8 @@ var Lexer, Parser;
                 res.push(ch);
                 this.current = this.current.slice(pos+2);
                 pos = -1;
-                if (/^.*\?>/.test(this.current)) {
-                  res.push(RegExp.lastMatch);
+                if (/^([\s\S]*\?>)/.test(this.current)) {
+                  res.push(RegExp.$1);
                   this.current = RegExp.rightContext;
                 } else {
                   throw new Error();
