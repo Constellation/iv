@@ -1066,7 +1066,7 @@ var Lexer, Parser;
       case OP["<"]:
         var val = this.lexer.scanXML();
         this.next();
-        return val;
+        return this.parseMemberTail(val, true);
 
       default:
         return this.parsePostfixExpression();
@@ -1109,6 +1109,9 @@ var Lexer, Parser;
         this.parseArguments(expr);
       }
     }
+    return this.parseMemberTail(expr, allowCall);
+  };
+  Parser.prototype.parseMemberTail = function(expr, allowCall) {
     while (true) {
       switch (this.token) {
         case OP["["]:
