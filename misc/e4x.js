@@ -696,8 +696,9 @@ var Lexer, Parser;
   };
   Parser.prototype.parseExpressionOrLabelledStatement = function() {
     if (this.token === OP["IDENTIFIER"]) {
+      var val = this.parseExpression(true);
       if (this.token === OP[":"] &&
-          this.parseExpression(true) === IDENTIFIER) {
+          val === IDENTIFIER) {
         this.next();
         this.parseStatement();
         return;
