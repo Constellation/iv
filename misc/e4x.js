@@ -835,7 +835,7 @@ var Lexer, Parser;
       case OP["++"]:
       case OP["--"]:
         this.next();
-        this.parseMemberExpression();
+        var expr = this.parseMemberExpression();
         if (expr !== IDENTIFIER && expr !== PROPERTYACCESS) {
           throw new Error("ILLEGAL");
         }
@@ -870,12 +870,12 @@ var Lexer, Parser;
         this.next();
         this.parseFunctionLiteral(EXP, true);
       } else {
-        this.parsePrimaryExpression();
+        expr = this.parsePrimaryExpression();
       }
     } else {
       this.next();
       this.parseMemberExpression(false);
-      var expr = null;
+      expr = null;
       if (this.token === OP["("]) {
         this.parseArguments();
       }
