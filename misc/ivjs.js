@@ -1097,7 +1097,6 @@ var Lexer, Parser;
         this.next(IgnoreReservedWords);
         if (this.token === OP[":"]) {
           this.next();
-          this.expect(OP[":"]);
           literal.values.push({
             key: is_getter ? "get" : "set",
             val: this.parseAssignmentExpression(true)
