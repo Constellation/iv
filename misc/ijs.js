@@ -22,10 +22,9 @@
 
 var Lexer, Parser;
 (function() {
-  var IDENT = new Object(), EOS = 0, ILLEGAL = 1, NOTFOUND = 2,
-      EXP = "EXP", STMT = "STMT", DECL = "DECL",
-      IdentifyReservedWords = 1, IgnoreReservedWords = 2,
-      IgnoreReservedWordsAndIdentifyGetterOrSetter = 3;
+  var IDENT = new Object(), EOS = 0, ILLEGAL = 1, NOTFOUND = 2, XML = 3, XMLEND = 4,
+      IDENTIFIER = 5, PROPERTYACCESS = 6,
+      EXP = "EXP", STMT = "STMT", DECL = "DECL";
 
   var IdentifierStart = /^(?:[\u0041-\u005A\u0061-\u007A\u00AA\u00B5\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376|\u0377\u037A-\u037D\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u0525\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0621-\u064A\u066E|\u066F\u0671-\u06D3\u06D5\u06E5|\u06E6\u06EE|\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4|\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971|\u0972\u0979-\u097F\u0985-\u098C\u098F|\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC|\u09DD\u09DF-\u09E1\u09F0|\u09F1\u0A05-\u0A0A\u0A0F|\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32|\u0A33\u0A35|\u0A36\u0A38|\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2|\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0|\u0AE1\u0B05-\u0B0C\u0B0F|\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32|\u0B33\u0B35-\u0B39\u0B3D\u0B5C|\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99|\u0B9A\u0B9C\u0B9E|\u0B9F\u0BA3|\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C33\u0C35-\u0C39\u0C3D\u0C58|\u0C59\u0C60|\u0C61\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0|\u0CE1\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D28\u0D2A-\u0D39\u0D3D\u0D60|\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32|\u0E33\u0E40-\u0E46\u0E81|\u0E82\u0E84\u0E87|\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA|\u0EAB\u0EAD-\u0EB0\u0EB2|\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC|\u0EDD\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8B\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065|\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10D0-\u10FA\u10FC\u1100-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F4\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F0\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191C\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19C1-\u19C7\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE|\u1BAF\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1CE9-\u1CEC\u1CEE-\u1CF1\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u2094\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2D00-\u2D25\u2D30-\u2D65\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312D\u3131-\u318E\u31A0-\u31B7\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FCB\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A|\uA62B\uA640-\uA65F\uA662-\uA66E\uA67F-\uA697\uA6A0-\uA6EF\uA717-\uA71F\uA722-\uA788\uA78B|\uA78C\uA7FB-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA80-\uAAAF\uAAB1\uAAB5|\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uABC0-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA2D\uFA30-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40|\uFB41\uFB43|\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC_$]|\u[da-fA-F]{4})/;
 
@@ -93,8 +92,6 @@ var Lexer, Parser;
     "short", "static", "super", "synchronized", "throws",
     "transient", "volatile",
 
-    "get", "set",
-
     "null", "false", "true", "NUMBER", "STRING", "IDENTIFIER"
   ];
   var OP = {};
@@ -109,6 +106,7 @@ var Lexer, Parser;
   }
   Lexer = function Lexer(source) {
     this.current = source;
+    this.total = this.current.length;
     this.value = null;
     this.pos = 0;
     this.hasLineTerminatorBeforeNext = false;
@@ -118,7 +116,7 @@ var Lexer, Parser;
   Lexer.opToString = function(op) {
     return OPLIST[op];
   };
-  Lexer.prototype.next = function(type) {
+  Lexer.prototype.next = function() {
     var token = NOTFOUND;
     this.hasLineTerminatorBeforeNext = false;
     // remove white space
@@ -147,12 +145,10 @@ var Lexer, Parser;
         } else if (/^"((?:\\.|[^"])*)"|^'((?:\\.|[^'])*)'/.test(this.current)) {
           // scan string
           token = OP["STRING"];
-          this.value = RegExp.$1 || RegExp.$2;
           this.current = RegExp.rightContext;
         } else if (/^(?:0x[\dA-Fa-f]+|\d+(?:\.\d*)?(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?)/.test(this.current)) {
           // scan number
           token = OP["NUMBER"];
-          this.value = RegExp.lastMatch;
           this.current = RegExp.rightContext;
           if (this.current && (IdentifierStart.test(this.current) || /^\d/.test(this.current))) {
             token = ILLEGAL;
@@ -163,15 +159,7 @@ var Lexer, Parser;
         } else if (IdentifierStart.test(this.current)) {
           // scan identifier
           this.value = this.current.match(IdentifierPart)[1];
-          if (type === IdentifyReservedWords) {
-            token = KEYWORDS[this.value] === IDENT ? OP[this.value] : OP["IDENTIFIER"];
-          } else if (type === IgnoreReservedWordsAndIdentifyGetterOrSetter) {
-            token = this.value === 'get' ?
-                    OP["get"] : this.value === 'set' ?
-                    OP["set"] : OP["IDENTIFIER"];
-          } else {
-            token = OP["IDENTIFIER"];
-          }
+          token = KEYWORDS[this.value] === IDENT ? OP[this.value] : OP["IDENTIFIER"];
           this.current = RegExp.rightContext;
         } else if (LineTerminator.test(this.current)) {
           // scan line terminator
@@ -191,14 +179,12 @@ var Lexer, Parser;
     if (seenEqual) {
       var result = '=';
       if (/^((?:\\.|\[(?:\\.|[^\]])*\]|[^\/])+)\//.test(this.current)) {
-        this.value = '=' + RegExp.$1;
         this.current = RegExp.rightContext;
       } else {
         return false;
       }
     } else {
       if (/^((?:\\.|\[(?:\\.|[^\]])*\]|[^\/])+)\//.test(this.current)) {
-        this.value = RegExp.$1;
         this.current = RegExp.rightContext;
       } else {
         return false;
@@ -208,38 +194,202 @@ var Lexer, Parser;
   };
   Lexer.prototype.scanRegExpFlags = function() {
     if (/(?:[_$\da-zA-Z]|\\\u[\da-fA-F]{4})*/.test(this.current)) {
-      this.value = RegExp.lastMatch;
       this.current = RegExp.rightContext;
       return true;
     } else {
       return false;
     }
   };
+  Lexer.prototype.scanXML = function() {
+    this.inXMLTag = false;
+    this.inXMLAttr = false;
+    this.openTagsCount = 0;
+    this.current = '<' + this.current;
+    var start = this.total - this.current.length;
+    var token = this.nextXMLToken();
+    if (token !== XMLEND) {
+      throw new Error();
+    }
+    return {
+      type : "XML",
+      start: start,
+      len  : this.total - this.current.length - start,
+      value: this.value
+    };
+  };
+  Lexer.prototype.nextXMLToken = function() {
+    var res = [];
+    for(var pos = 0, ch = null; ch = this.current[pos]; ++pos) {
+      if (this.inXMLTag) {
+        switch (ch) {
+          case '>':
+            this.inXMLTag = false;
+            this.inXMLAttr = false;
+            break;
+
+          case '/':
+            if (this.current[pos+1] === '>') {
+              ++pos;
+              this.inXMLTag = false;
+              --this.openTagsCount;
+            }
+            break;
+
+          case '\'':
+          case '"':
+            if (ch === '"') {
+              var reg = /^((?:\\[\s\S]|[^"])*")/;
+            } else {
+              var reg = /^((?:\\[\s\S]|[^'])*')/;
+            }
+            this.current = this.current.slice(pos);
+            pos = -1;
+            if (reg.test(this.current)) {
+              this.current = RegExp.rightContext;
+            } else {
+              throw new Error();
+            }
+            break;
+
+          case '=':
+            this.inXMLAttr = true;
+            break;
+
+          case ' ':
+          case '\t':
+          case '\r':
+          case '\n':
+            break;
+          default:
+            this.inXMLAttr = false;
+            break;
+        }
+        if (!this.inXMLTag && this.openTagsCount == 0) {
+          this.value = JSON.stringify(res.join(''));
+          this.current = this.current.slice(pos+1);
+          return XMLEND;
+        }
+      } else {
+        switch (ch) {
+          case '<':
+            // xml tag start
+            ch = this.current[pos+1];
+            switch (ch) {
+              case '!':
+                ch = this.current[pos+=2];
+                switch (ch) {
+                  case '-':
+                    // XML Comment
+                    ch = this.current[pos+=1];
+                    if (ch === '-') {
+                      this.current = this.current.slice(pos+1);
+                      pos = -1;
+                      if (/^([\s\S]*-->)/.test(this.current)) {
+                        this.current = RegExp.rightContext;
+                      } else {
+                        throw new Error();
+                      }
+                    } else {
+                      throw new Error();
+                    }
+                    break;
+
+                  case '[':
+                    // CDATA Section
+                    this.current = this.current.slice(pos+1);
+                    pos = -1;
+                    if (/^CDATA\[/.test(this.current)) {
+                      this.current = RegExp.rightContext;
+                      if (/^([\s\S]*)\]\]>/.test(this.current)) {
+                        res.push(RegExp.$1.trim());
+                        this.current = RegExp.rightContext;
+                      } else {
+                        throw new Error();
+                      }
+                    } else {
+                      throw new Error();
+                    }
+                    break;
+
+                  default:
+                    exit: {
+                      var tags = 1;
+                      for (;ch = this.current[pos]; ++pos) {
+                        switch (ch) {
+                          case '<':
+                            ++tags;
+                            break;
+                          case '>':
+                            --tags;
+                          if (tags === 0) {
+                            break exit;
+                          }
+                          break;
+                        }
+                      }
+                      throw new Error();
+                    }
+                    break;
+                }
+                break;
+
+              case '?':
+                // XML PI
+                this.current = this.current.slice(pos+2);
+                pos = -1;
+                if (/^([\s\S]*\?>)/.test(this.current)) {
+                  this.current = RegExp.rightContext;
+                } else {
+                  throw new Error();
+                }
+                break;
+
+              case '/':
+                // End
+                ++pos;
+                if (this.openTagsCount == 0) {
+                  // closed tag is not found
+                  throw new Error();
+                }
+                this.inXMLTag = true;
+                --this.openTagsCount;
+                break;
+
+              default:
+                // Start
+                this.inXMLTag = true;
+                ++this.openTagsCount;
+                break;
+            }
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+    throw new Error();
+  };
 
   Parser = function Parser(source) {
     this.lexer = new Lexer(source);
     this.next();
+    this.e4x = [];
   };
   Parser.prototype.parse = function() {
-    var global = {
-      type : "global",
-      body : []
-    };
-    this.parseSourceElements(EOS, global);
-    return global;
+    this.parseSourceElements(EOS);
+    this.e4x.reverse();
   };
-  Parser.prototype.next = function(type) {
-    return this.token = this.lexer.next(type || IdentifyReservedWords);
+  Parser.prototype.next = function() {
+    return this.token = this.lexer.next();
   };
-  Parser.prototype.parseSourceElements = function(end, func) {
+  Parser.prototype.parseSourceElements = function(end) {
     while (this.token !== end) {
       if (this.token === OP["function"]) {
         // parse function declaration
-        var stmt = this.parseFunctionDeclaration();
-        func.body.push(stmt);
+        this.parseFunctionDeclaration();
       } else {
-        var stmt = this.parseStatement();
-        func.body.push(stmt);
+        this.parseStatement();
       }
     }
   }
@@ -258,7 +408,7 @@ var Lexer, Parser;
 
       case OP[";"]:
         this.next();
-        return {type:"EmptyStatement"};
+        return null;
 
       case OP["if"]:
         return this.parseIfStatement();
@@ -296,7 +446,7 @@ var Lexer, Parser;
       case OP["debugger"]:
         this.next();
         this.expectSemicolon();
-        return {type: "DebuggerStatement"};
+        return;
 
       case OP["function"]:
         return this.parseFunctionStatement();
@@ -327,10 +477,8 @@ var Lexer, Parser;
   Parser.prototype.parseFunctionDeclaration = function() {
     this.next();
     if (this.token === OP["IDENTIFIER"]) {
-      return {
-        type: "FunctionDeclaration",
-        func: this.parseFunctionLiteral(DECL, true)
-      };
+      this.parseFunctionLiteral(DECL, true);
+      return;
     } else {
       throw new Error("ILLEGAL");
     }
@@ -338,226 +486,131 @@ var Lexer, Parser;
   Parser.prototype.parseFunctionStatement = function() {
     this.next();
     if (this.token === OP["IDENTIFIER"]) {
-      return {
-        type: "FunctionStatement",
-        func: this.parseFunctionLiteral(STMT, true)
-      };
+      this.parseFunctionLiteral(STMT, true);
+      return;
     } else {
       throw new Error("ILLEGAL");
     }
   };
   Parser.prototype.parseBlock = function() {
     this.next();
-    var block = {
-      type: "Block",
-      body: []
-    };
     while (this.token !== OP["}"]) {
-      block.body.push(this.parseStatement());
+      this.parseStatement();
     }
     this.next();
-    return block;
   };
   Parser.prototype.parseVariableStatement = function() {
-    var res = {
-      type: "VariableStatement",
-      decl: Lexer.opToString(this.token),
-      body: []
-    };
-    this.parseVariableDeclarations(res);
+    this.parseVariableDeclarations();
     this.expectSemicolon();
-    return res;
   };
-  Parser.prototype.parseVariableDeclarations = function(res) {
+  Parser.prototype.parseVariableDeclarations = function() {
     do {
       this.next();
       if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
-      var name = {type: "Identifier", value: this.lexer.value};
       this.next();
       if (this.token === OP["="]) {
         this.next();
-        var expr = this.parseAssignmentExpression(true);
-        var decl = {
-          type: "Declaration",
-          key: name,
-          val: expr
-        };
-      } else {
-        var decl = {
-          type: "Declaration",
-          key: name,
-          val: { type: "Undefined" }
-        };
+        this.parseAssignmentExpression(true);
       }
-      res.body.push(decl);
     } while (this.token === OP[","]);
   };
   Parser.prototype.parseContinueStatement = function() {
     this.next();
-    var stmt = {
-      type: "ContinueStatement",
-      label: null
-    };
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         this.token !== OP[";"] &&
         this.token !== OP["}"] &&
         this.token !== EOS) {
-      if (this.token === OP["IDENTIFIER"]) {
-        stmt.label = {
-          type: "Identifier",
-          value: this.lexer.value
-        };
-        this.next();
-      } else {
+      if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
     }
     this.expectSemicolon();
-    return stmt;
   };
   Parser.prototype.parseIfStatement = function() {
     this.next();
     this.expect(OP["("]);
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expect(OP[")"]);
-    var stmt = this.parseStatement();
-    var res = {
-      type : "IfStatement",
-      cond : expr,
-      then : stmt
-    };
+    this.parseStatement();
     if (this.token === OP["else"]) {
       this.next();
-      res["else"] = this.parseStatement();
+      this.parseStatement();
     }
-    return res;
   };
   Parser.prototype.parseDoWhileStatement = function() {
     this.next();
-    var stmt = this.parseStatement();
+    this.parseStatement();
     this.expect(OP["while"]);
     this.expect(OP["("]);
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expect(OP[")"]);
     this.expectSemicolon();
-    return {
-      type: "DoWhileStatement",
-      body: stmt,
-      cond: expr
-    };
   };
   Parser.prototype.parseWhileStatement = function() {
     this.next();
     this.expect(OP["("]);
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expect(OP[")"]);
-    return {
-      type: "WhileStatement",
-      cond: expr,
-      body: this.parseStatement()
-    };
+    this.parseStatement();
   };
   Parser.prototype.parseForStatement = function() {
     this.next();
     this.expect(OP["("]);
     if (this.token !== OP[";"]) {
       if (this.token === OP["var"] || this.token === OP["const"]) {
-        var init = {
-          type: "VariableStatement",
-          decl: Lexer.opToString(this.token),
-          body: []
-        };
-        this.parseVariableDeclarations(init);
+        this.parseVariableDeclarations();
         if (this.token === OP["in"]) {
           this.next();
-          var enumerable = this.parseExpression(true);
+          this.parseExpression(true);
           this.expect(OP[")"]);
-          var body = this.parseStatement();
-          return {
-            type: "ForInStatement",
-            init: init,
-            enumerable: enumerable,
-            body: body
-          };
+          this.parseStatement();
+          return;
         }
       } else {
         var initExpr = this.parseExpression(false);
-        var init = {
-          type: "ExpressionStatement",
-          expr: initExpr
-        };
         if (this.token === OP["in"]) {
-          if (initExpr.type !== "Identifier" && initExpr.type !== "PropertyAccess") {
+          if (initExpr !== IDENTIFIER && initExpr !== PROPERTYACCESS) {
             throw new Error("ILLEGAL");
           }
           this.next();
-          var enumerable = this.parseExpression(true);
+          this.parseExpression(true);
           this.expect(OP[")"]);
-          var body = this.parseStatement();
-          return {
-            type: "ForInStatement",
-            init: init,
-            enumerable: enumerable,
-            body: body
-          };
+          this.parseStatement();
+          return;
         }
       }
     }
     this.expect(OP[";"]);
 
-    var cond = null;
     if (this.token === OP[";"]) {
       this.next();
     } else {
-      cond = this.parseExpression(true);
+      this.parseExpression(true);
       this.expect(OP[";"]);
     }
 
-    var next = null;
     if (this.token === OP[")"]) {
       this.next();
     } else {
-      var nextExpr = this.parseExpression(true);
-      next = {
-        type: "ExpressionStatement",
-        expr: nextExpr
-      };
+      this.parseExpression(true);
       this.expect(OP[")"]);
     }
 
-    var body = this.parseStatement();
-    return {
-      type: "ForStatement",
-      init: init,
-      cond: cond,
-      next: next,
-      body: body
-    };
+    this.parseStatement();
   };
   Parser.prototype.parseBreakStatement = function() {
     this.next();
-    var stmt = {
-      type: "BreakStatement",
-      label: null
-    };
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         this.token !== OP[";"] &&
         this.token !== OP["}"] &&
         this.token !== EOS) {
-      if (this.token === OP["IDENTIFIER"]) {
-        stmt.label = {
-          type: "Identifier",
-          value: this.lexer.value
-        };
-        this.next();
-      } else {
+      if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
     }
     this.expectSemicolon();
-    return stmt;
   };
   Parser.prototype.parseReturnStatement = function() {
     this.next();
@@ -566,61 +619,36 @@ var Lexer, Parser;
         this.token === OP["}"] ||
         this.token === EOS) {
       this.expectSemicolon();
-      return {
-        type: "ReturnStatement",
-        expr: { type: "Undefined" }
-      };
+      return;
     }
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expectSemicolon();
-    return {
-      type: "ReturnStatement",
-      expr: expr
-    };
   };
   Parser.prototype.parseWithStatement = function() {
     this.next();
     this.expect(OP["("]);
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expect(OP[")"]);
-    return {
-      type: "WithStatement",
-      body: this.parseStatement(),
-      expr: expr
-    };
+    this.parseStatement();
   };
   Parser.prototype.parseSwitchStatement = function() {
     this.next();
     this.expect(OP["("]);
-    var expr = this.parseExpression(true);
-    var res = {
-      type: "SwitchStatement",
-      expr: expr,
-      clauses: []
-    };
+    this.parseExpression(true);
     this.expect(OP[")"]);
     this.expect(OP["{"]);
 
     while (this.token !== OP["}"]) {
-      var clause = this.parseCaseClause();
-      res.clauses.push(clause);
+      this.parseCaseClause();
     }
     this.next();
-    return res;
   };
   Parser.prototype.parseCaseClause = function() {
-    var clause = {
-      type: "Caluse",
-      body: []
-    };
     if (this.token === OP["case"]) {
       this.next();
-      var expr = this.parseExpression(true);
-      clause.kind = "case";
-      clause.expr = expr;
+      this.parseExpression(true);
     } else {
       this.expect(OP["default"]);
-      clause.kind = "default";
     }
 
     this.expect(OP[":"]);
@@ -628,29 +656,22 @@ var Lexer, Parser;
     while (this.token !== OP["}"] &&
            this.token !== OP["case"] &&
            this.token !== OP["default"]) {
-      var stmt = this.parseStatement();
-      clause.body.push(stmt);
+      this.parseStatement();
     }
-    return clause;
   };
   Parser.prototype.parseThrowStatement = function() {
     this.next();
     if (this.lexer.hasLineTerminatorBeforeNext) {
       throw new Error("ILLEGAL");
     }
-    var expr = this.parseExpression(true);
+    this.parseExpression(true);
     this.expectSemicolon();
-    return {type:"ThrowStatement", expr: expr};
   };
   Parser.prototype.parseTryStatement = function() {
     var hasCatchOrFinally = false;
     this.next();
 
-    var res = {
-      type : "TryStatement",
-      block: this.parseBlock()
-    };
-
+    this.parseBlock();
     if (this.token === OP["catch"]) {
       hasCatchOrFinally = true;
       this.next();
@@ -658,63 +679,41 @@ var Lexer, Parser;
       if(this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
-      var ident = {type: "Identifier", value: this.lexer.value };
       this.next();
       this.expect(OP[")"]);
-      var block = this.parseBlock();
-      res.catchBlock = {
-        name: ident,
-        block: block
-      };
+      this.parseBlock();
     }
 
     if (this.token === OP["finally"]) {
       hasCatchOrFinally = true;
       this.next();
-      var block = this.parseBlock();
-      res.finallyBlock = {
-        block: block
-      };
+      this.parseBlock();
     }
 
     if (!hasCatchOrFinally) {
       throw new Error("ILLEGAL");
     }
-
-    return res;
   };
   Parser.prototype.parseExpressionOrLabelledStatement = function() {
     if (this.token === OP["IDENTIFIER"]) {
-      var expr = this.parseExpression(true);
+      var val = this.parseExpression(true);
       if (this.token === OP[":"] &&
-          expr.type === "Identifier") {
+          val === IDENTIFIER) {
         this.next();
-        return {
-          type: "LabelledStatement",
-          expr: expr,
-          body: this.parseStatement()
-        };
+        this.parseStatement();
+        return;
       }
     } else {
-      var expr = this.parseExpression(true);
+      this.parseExpression(true);
     }
     this.expectSemicolon();
-    return {
-      type: "ExpressionStatement",
-      expr: expr
-    };
   };
   Parser.prototype.parseExpression = function(containsIn) {
     var result = this.parseAssignmentExpression(containsIn);
     while (this.token === OP[","]) {
       this.next();
-      var right = this.parseAssignmentExpression(containsIn);
-      result = {
-        type: "BinaryExpression",
-        op  : ",",
-        left: result,
-        right: right
-      };
+      this.parseAssignmentExpression(containsIn);
+      result = null;
     }
     return result;
   };
@@ -723,32 +722,20 @@ var Lexer, Parser;
     if (!isAssignOp(this.token)) {
       return result;
     }
-    if (result.type !== "Identifier" && result.type !== "PropertyAccess") {
+    if (result !== IDENTIFIER && result !== PROPERTYACCESS) {
       throw new Error("ILLEGAL");
     }
-    var op = Lexer.opToString(this.token);
     this.next();
-    var right = this.parseAssignmentExpression(containsIn);
-    return {
-      type: "Assignment",
-      op: op,
-      left: result,
-      right: right
-    };
+    this.parseAssignmentExpression(containsIn);
   };
   Parser.prototype.parseConditionalExpression = function(containsIn) {
     var result = this.parseBinaryExpression(containsIn, 9);
     if (this.token === OP["?"]) {
       this.next();
-      var left = this.parseAssignmentExpression(true);
+      this.parseAssignmentExpression(true);
       this.expect(OP[":"]);
-      var right = this.parseAssignmentExpression(containsIn);
-      result = {
-        type: "ConditionalExpression",
-        cond: result,
-        left: left,
-        right: right
-      };
+      this.parseAssignmentExpression(containsIn);
+      result = null;
     }
     return result;
   };
@@ -757,45 +744,33 @@ var Lexer, Parser;
     while (this.token === OP["*"] ||
            this.token === OP["/"] ||
            this.token === OP["%"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseUnaryExpression();
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseUnaryExpression();
+      left = null;
     }
     if (prec < 1) return left;
 
     while (this.token === OP["+"] || this.token === OP["-"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 0);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 0);
+      left = null;
     }
     if (prec < 2) return left;
 
     while (this.token === OP["<<"] ||
            this.token === OP[">>>"] ||
            this.token === OP[">>"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 1);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 1);
+      left = null;
     }
     if (prec < 3) return left;
 
     while (isRelationalOp(this.token) ||
            (containsIn && this.token === OP["in"])) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 2);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 2);
+      left = null;
     }
     if (prec < 4) return left;
 
@@ -803,67 +778,48 @@ var Lexer, Parser;
            this.token === OP["!=="] ||
            this.token === OP["=="] ||
            this.token === OP["!="]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 3);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 3);
+      left = null;
     }
     if (prec < 5) return left;
 
     while (this.token === OP["&"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 4);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 4);
+      left = null;
     }
     if (prec < 6) return left;
 
     while (this.token === OP["^"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 5);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 5);
+      left = null;
     }
     if (prec < 7) return left;
 
     while (this.token === OP["|"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 6);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 6);
+      left = null;
     }
     if (prec < 8) return left;
 
     while (this.token === OP["&&"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 7);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 7);
+      left = null;
     }
     if (prec < 9) return left;
 
     while (this.token === OP["||"]) {
-      var op = Lexer.opToString(this.token);
       this.next();
-      var right = this.parseBinaryExpression(containsIn, 8);
-      left = { type: "BinaryExpression",
-        op: op, left: left, right: right
-      };
+      this.parseBinaryExpression(containsIn, 8);
+      left = null;
     }
     return left;
   };
   Parser.prototype.parseUnaryExpression = function() {
-    var op = Lexer.opToString(this.token);
     switch (this.token) {
       case OP["void"]:
       case OP["!"]:
@@ -873,17 +829,23 @@ var Lexer, Parser;
       case OP["-"]:
       case OP["delete"]:
         this.next();
-        var expr = this.parseUnaryExpression();
-        return {type: "UnaryExpression", op: op, expr: expr};
+        this.parseUnaryExpression();
+        return;
 
       case OP["++"]:
       case OP["--"]:
         this.next();
-        var expr = this.parseMemberExpression();
-        if (expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+        this.parseMemberExpression();
+        if (expr !== IDENTIFIER && expr !== PROPERTYACCESS) {
           throw new Error("ILLEGAL");
         }
-        return {type: "UnaryExpression", op: op, expr: expr};
+        return;
+
+      case OP["<"]:
+        var val = this.lexer.scanXML();
+        this.e4x.push(val);
+        this.next();
+        return this.parseMemberTail(val, true);
 
       default:
         return this.parsePostfixExpression();
@@ -893,14 +855,10 @@ var Lexer, Parser;
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         (this.token === OP["++"] || this.token === OP["--"])) {
-      if(expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+      if(expr !== IDENTIFIER && expr !== PROPERTYACCESS) {
         throw new Error("ILLEGAL");
       }
-      expr = {
-        type:"PostfixExpression",
-        op: Lexer.opToString(this.token),
-        expr: expr
-      };
+      expr = null;
       this.next();
     }
     return expr;
@@ -910,60 +868,43 @@ var Lexer, Parser;
     if (this.token !== OP["new"]) {
       if (this.token === OP["function"]) {
         this.next();
-        expr = this.parseFunctionLiteral(EXP, true);
+        this.parseFunctionLiteral(EXP, true);
       } else {
-        expr = this.parsePrimaryExpression();
+        this.parsePrimaryExpression();
       }
     } else {
       this.next();
-      var target = this.parseMemberExpression(false);
-      var expr = {
-        type: "NewCall",
-        target: target,
-        args: []
-      };
+      this.parseMemberExpression(false);
+      var expr = null;
       if (this.token === OP["("]) {
-        this.parseArguments(expr);
+        this.parseArguments();
       }
     }
+    return this.parseMemberTail(expr, allowCall);
+  };
+  Parser.prototype.parseMemberTail = function(expr, allowCall) {
     while (true) {
       switch (this.token) {
         case OP["["]:
           this.next();
-          var index = this.parseExpression(true);
-          expr = {
-            type: "PropertyAccess",
-            target: expr,
-            key: index
-          };
+          this.parseExpression(true);
+          expr = PROPERTYACCESS;
           this.expect(OP["]"]);
           break;
 
         case OP["."]:
-          this.next(IgnoreReservedWords);
+          this.next();
           if (this.token !== OP["IDENTIFIER"]) {
             throw new Error("ILLEGAL");
           }
-          var index = {
-            type: "Identifier",
-            value: this.lexer.value
-          };
           this.next();
-          expr = {
-            type: "PropertyAccess",
-            target: expr,
-            key: index
-          };
+          expr = PROPERTYACCESS;
           break;
 
         case OP["("]:
           if (allowCall) {
-            expr = {
-              type: "FuncCall",
-              target: expr,
-              args: []
-            };
-            this.parseArguments(expr);
+            expr = null;
+            this.parseArguments();
           } else {
             return expr;
           }
@@ -978,43 +919,31 @@ var Lexer, Parser;
     switch (this.token) {
       case OP["this"]:
         this.next();
-        return { type: "This" };
+        return;
 
       case OP["IDENTIFIER"]:
-        var value = this.lexer.value;
         this.next();
-        return {
-          type: "Identifier",
-          value: value
-        };
+        return IDENTIFIER;
 
       case OP["null"]:
         this.next();
-        return { type: "Null" };
+        return;
 
       case OP["true"]:
         this.next();
-        return { type: "True" };
+        return;
 
       case OP["false"]:
         this.next();
-        return { type: "False" };
+        return;
 
       case OP["NUMBER"]:
-        var value = this.lexer.value;
         this.next();
-        return {
-          type: "Number",
-          value: value
-        };
+        return;
 
       case OP["STRING"]:
-        var value = this.lexer.value;
         this.next();
-        return {
-          type: "String",
-          value: value
-        };
+        return;
 
       case OP["/"]:
         return this.parseRegExpLiteral(false);
@@ -1038,127 +967,88 @@ var Lexer, Parser;
         throw new Error("ILLEGAL");
     }
   };
-  Parser.prototype.parseArguments = function(func) {
+  Parser.prototype.parseArguments = function() {
     this.next();
     while (this.token !== OP[")"]) {
-      var expr = this.parseAssignmentExpression(true);
-      func.args.push(expr);
+      this.parseAssignmentExpression(true);
       if (this.token !== OP[")"]) {
         this.expect(OP[","]);
       }
     }
     this.next();
-    return func;
   };
   Parser.prototype.parseRegExpLiteral = function(containsEq) {
     if (this.lexer.scanRegExpLiteral(containsEq)) {
-      var expr = {
-        type: "RegExp",
-        value: this.lexer.value
-      };
       if (!this.lexer.scanRegExpFlags()) {
         throw new Error("ILLEGAL");
-      } else {
-        expr.flags = this.lexer.value;
       }
       this.next();
-      return expr;
+      return;
     } else {
       throw new Error("ILLEGAL");
     }
   };
   Parser.prototype.parseArrayLiteral = function() {
     this.next();
-    var literal = {
-      type: "Array",
-      items: []
-    };
     while (this.token !== OP["]"]) {
-      if (this.token === OP[","]) {
-        literal.items.push({ type: "Undefined" });
-      } else {
-        literal.items.push(this.parseAssignmentExpression(true));
+      if (this.token !== OP[","]) {
+        this.parseAssignmentExpression(true);
       }
       if (this.token !== OP["]"]) {
         this.expect(OP[","]);
       }
     }
     this.next();
-    return literal;
   };
   Parser.prototype.parseObjectLiteral = function() {
-    var literal = {
-      type: "Object",
-      values: [],
-      accessors : []
-    };
-    this.next(IgnoreReservedWordsAndIdentifyGetterOrSetter);
+    this.next();
     while (this.token !== OP["}"]) {
-      if (this.token === OP["get"] || this.token === OP["set"]) {
-        var is_getter = this.token === OP["get"];
-        this.next(IgnoreReservedWords);
-        if (this.token === OP[":"]) {
+      if (this.token == OP["IDENTIFIER"]) {
+        if (this.lexer.value !== "get" && this.lexer.value !== "set") {
           this.next();
-          literal.values.push({
-            key: is_getter ? "get" : "set",
-            val: this.parseAssignmentExpression(true)
-          });
+          this.expect(OP[":"]);
+          this.parseAssignmentExpression(true);
+          if (this.token !== OP["}"]) {
+            this.expect(OP[","]);
+          }
         } else {
-          if (this.token === OP["IDENTIFIER"] ||
-              this.token === OP["STRING"] ||
-              this.token === OP["NUMBER"]) {
-            var name = this.lexer.value;
+          this.next();
+          if (this.token === OP[":"]) {
             this.next();
-            var expr = this.parseFunctionLiteral(EXP, false);
-            literal.accessors.push({
-              type: "Accessor",
-              kind: is_getter ? "getter" : "setter",
-              name: name,
-              func: expr
-            });
+            this.parseAssignmentExpression(true);
+            if (this.token !== OP["}"]) {
+              this.expect(OP[","]);
+            }
           } else {
-            throw new Error("ILLEGAL");
+            if (this.token === OP["IDENTIFIER"] ||
+                this.token === OP["STRING"] ||
+                this.token === OP["NUMBER"]) {
+              this.next();
+              this.parseFunctionLiteral(EXP, false);
+              if (this.token !== OP["}"]) {
+                this.expect(OP[","]);
+              }
+            } else {
+              throw new Error("ILLEGAL");
+            }
           }
         }
-      } else if (this.token === OP["IDENTIFIER"]) {
-        var key = this.lexer.value;
-        this.next();
-        this.expect(OP[":"]);
-        literal.values.push({
-          key: key,
-          val: this.parseAssignmentExpression(true)
-        });
-      }  else if (this.token === OP["STRING"] ||
+      } else if (this.token === OP["STRING"] ||
                  this.token === OP["NUMBER"]) {
-        var key = this.lexer.value;
         this.next();
         this.expect(OP[":"]);
-        literal.values.push({
-          key: key,
-          val: this.parseAssignmentExpression(true)
-        });
+        this.parseAssignmentExpression(true);
+        if (this.token !== OP["}"]) {
+          this.expect(OP[","]);
+        }
       } else {
         throw new Error("ILLEGAL");
       }
-      if (this.token !== OP["}"]) {
-        if (this.token !== OP[","]) {
-          throw new Error("ILLEGAL");
-        }
-        this.next(IgnoreReservedWordsAndIdentifyGetterOrSetter);
-      }
     }
     this.next();
-    return literal;
   };
   Parser.prototype.parseFunctionLiteral = function(kind, allowIdentifier) {
-    var literal = {
-      type: "Function",
-      kind: kind,
-      params: [],
-      body: []
-    };
     if (allowIdentifier && this.token === OP["IDENTIFIER"]) {
-      literal.name = this.lexer.value;
       this.next();
     }
     this.expect(OP["("]);
@@ -1166,10 +1056,6 @@ var Lexer, Parser;
       if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
-      literal.params.push({
-        type: "Identifier",
-        value: this.lexer.value
-      });
       this.next();
       if (this.token !== OP[")"]) {
         this.expect(OP[","]);
@@ -1178,9 +1064,8 @@ var Lexer, Parser;
     this.next();
 
     this.expect(OP["{"]);
-    this.parseSourceElements(OP["}"], literal);
+    this.parseSourceElements(OP["}"]);
     this.next();
-    return literal;
   };
 })();
 

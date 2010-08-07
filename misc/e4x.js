@@ -525,6 +525,7 @@ var Lexer, Parser;
       if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
+      this.next();
     }
     this.expectSemicolon();
   };
@@ -609,6 +610,7 @@ var Lexer, Parser;
       if (this.token !== OP["IDENTIFIER"]) {
         throw new Error("ILLEGAL");
       }
+      this.next();
     }
     this.expectSemicolon();
   };
