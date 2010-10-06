@@ -1,5 +1,6 @@
 # iv / lv5
 ![lv5](http://github.com/Constellation/iv/raw/master/doc/lv5.png)
+
 lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Interpreter written in C++.
 
 ## MILESTONE
@@ -21,6 +22,7 @@ Aims at the most precise interpreter of The ECMA262 5th Specification.
 
 + libgc (Boehm GC)
 + libicu (ICU: International Component for Unicode)
++ libboost (boost.thread, boost.foreach)
 
 ## INSTALL
 
