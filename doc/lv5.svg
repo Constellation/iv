@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   width="192"
+   height="64"
+   id="svg2">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient3063">
+      <stop
+         id="stop3065"
+         style="stop-color:#1a1a1a;stop-opacity:1"
+         offset="0" />
+      <stop
+         id="stop3067"
+         style="stop-color:#1a1a1a;stop-opacity:0"
+         offset="1" />
+    </linearGradient>
+    <linearGradient
+       x1="208.09142"
+       y1="473.54477"
+       x2="387.89859"
+       y2="422.02698"
+       id="linearGradient3069"
+       xlink:href="#linearGradient3063"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-202.0305,574.77679)" />
+    <linearGradient
+       x1="206.58127"
+       y1="447.26089"
+       x2="389.99475"
+       y2="447.26089"
+       id="linearGradient3879"
+       xlink:href="#linearGradient3063"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-202.0305,574.77679)"
+       spreadMethod="pad" />
+  </defs>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/publicdomain/" />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/publicdomain/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="translate(0,-988.362)"
+     id="layer1">
+    <text
+       x="68.690422"
+       y="1040.2404"
+       id="text3019"
+       xml:space="preserve"
+       style="font-size:36px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Consolas;-inkscape-font-specification:Consolas"><tspan
+         x="68.690422"
+         y="1040.2404"
+         id="tspan3021"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Consolas;-inkscape-font-specification:Consolas">Lv.5</tspan></text>
+    <path
+       d="m 5.0507647,1049.3317 19.0889703,-11.021 0,7.9906 132.433915,0 29.7668,-51.55763 1.1238,4.19408 -8.49386,14.71185 -20.36008,35.2646 z"
+       id="path3053"
+       style="fill:url(#linearGradient3069);fill-opacity:1;stroke:url(#linearGradient3879);stroke-width:0.5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+  </g>
+</svg>

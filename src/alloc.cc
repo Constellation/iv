@@ -29,7 +29,7 @@ Space::~Space() {
       now = next;
     }
   }
-  std::for_each(malloced_.begin(), malloced_.end(), Freer());
+  std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
 }
 
 Pool::Pool()
@@ -69,4 +69,3 @@ Arena::~Arena() {
 }
 
 } }  // namespace iv::core
-

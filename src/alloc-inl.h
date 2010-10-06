@@ -1,7 +1,7 @@
 #ifndef IV_ALLOC_INL_H_
 #define IV_ALLOC_INL_H_
-#include "alloc.h"
 #include <algorithm>
+#include "alloc.h"
 namespace iv {
 namespace core {
 
@@ -49,7 +49,7 @@ inline Arena* Space::NewArena() {
       Malloced::OutOfMemory();
       return arena;
     }
-  } catch(const std::bad_alloc& e) {
+  } catch(const std::bad_alloc&) {
     Malloced::OutOfMemory();
     return arena;
   }
@@ -60,7 +60,7 @@ inline Arena* Space::NewArena() {
 
 inline void Space::Clear() {
   arena_ = init_arenas_;
-  std::for_each(malloced_.begin(), malloced_.end(), Freer());
+  std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
   malloced_.clear();
 }
 
@@ -94,4 +94,3 @@ inline void* Arena::New(std::size_t raw_size) {
 
 } }  // namespace iv::core
 #endif  // IV_ALLOC_INL_H_
-

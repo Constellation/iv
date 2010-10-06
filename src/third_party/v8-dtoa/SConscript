@@ -1,0 +1,8 @@
+Import('context')
+
+def Build():
+  env = context.Clone()
+  return env.StaticLibrary('v8-dtoa', [Glob('*.cc')])
+
+program = Build()
+Return('program')

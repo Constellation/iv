@@ -1,0 +1,9 @@
+Import('context object_files')
+
+def Build():
+  env = context.Clone()
+  env.Append(LIBS=['gtest', 'pthread'])
+  return env.Program('cctest', [Glob('*.cc'), object_files])
+
+program = Build()
+Return('program')

@@ -136,6 +136,9 @@ class Token {
     TRANSIENT,       // transient
     VOLATILE,        // volatile
 
+    GET,             // get
+    SET,             // set
+
     NULL_LITERAL,    // NULL   LITERAL
     FALSE_LITERAL,   // FALSE  LITERAL
     TRUE_LITERAL,    // TRUE   LITERAL
@@ -162,4 +165,3 @@ class Token {
 } }  // namespace iv::core
 
 #endif  // _IV_TOKEN_H_
-

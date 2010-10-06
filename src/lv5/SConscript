@@ -1,0 +1,11 @@
+from os.path import join, dirname, abspath
+Import('context object_files root_dir')
+
+def Build():
+  env = context.Clone()
+  env.Append(LIBS=['gc'])
+  return env.Program('lv5',
+      [Glob('*.cc'), Glob('*.c'), object_files])
+
+program = Build()
+Return('program')

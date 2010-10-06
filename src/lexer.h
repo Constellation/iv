@@ -2,66 +2,81 @@
 #define _IV_LEXER_H_
 
 #include <cstdlib>
-#include <cctype>
+#include <cassert>
 #include <vector>
 #include <string>
+#include <iostream>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
 #include "char.h"
 #include "token.h"
+#include "source.h"
 #include "noncopyable.h"
 
 namespace iv {
 namespace core {
 
-class Lexer: private Noncopyable {
+class Lexer: private Noncopyable<Lexer>::type {
  public:
-  enum GetterOrSetter {
-    kNotGetterOrSetter = 0,
-    kGetter,
-    kSetter
+  enum LexType {
+    kIdentifyReservedWords = 0,
+    kIgnoreReservedWords,
+    kIgnoreReservedWordsAndIdentifyGetterOrSetter
   };
-  explicit Lexer(const std::string&);
-  explicit Lexer(const char*);
-  Token::Type Next();
-  inline Token::Type Peek() { return current_token_; }
-  inline const UChar* Literal() const {
-    return buffer16_.data();
+  enum State {
+    NONE,
+    ESCAPE,
+    DECIMAL,
+    HEX,
+    OCTAL
+  };
+
+  explicit Lexer(Source* src);
+  Token::Type Next(LexType type);
+  inline const std::vector<UChar>& Buffer() const {
+    return buffer16_;
   }
-  inline const char* Literal8() const {
-    return buffer8_.data();
+  inline const std::vector<char>& Buffer8() const {
+    return buffer8_;
   }
   inline const double& Numeric() const {
     return numeric_;
   }
-  inline GetterOrSetter IsGetterOrSetter() const {
-    return getter_or_setter_;
+  inline State NumericType() const {
+    assert(type_ == DECIMAL ||
+           type_ == HEX ||
+           type_ == OCTAL);
+    return type_;
+  }
+  inline State StringEscapeType() const {
+    assert(type_ == NONE ||
+           type_ == ESCAPE ||
+           type_ == OCTAL);
+    return type_;
   }
   inline bool has_line_terminator_before_next() const {
     return has_line_terminator_before_next_;
   }
-  uint32_t line_number() const {
+  std::size_t line_number() const {
     return line_number_;
   }
-  uint32_t pos() const {
+  std::size_t pos() const {
     return pos_;
+  }
+  inline Source* source() const {
+    return source_;
   }
   bool ScanRegExpLiteral(bool contains_eq);
   bool ScanRegExpFlags();
 
  private:
   static const std::size_t kInitialReadBufferCapacity = 32;
-  enum NumberType {
-    DECIMAL,
-    HEX,
-    OCTAL
-  };
-
+  void Initialize();
   inline void Advance() {
     if (pos_ == end_) {
       c_ = -1;
     } else {
-      c_ = source_[pos_++];
+      c_ = source_->Get(pos_++);
     }
   }
   inline void Record8() {
@@ -87,8 +102,10 @@ class Lexer: private Noncopyable {
   Token::Type SkipSingleLineComment();
   Token::Type SkipMultiLineComment();
   Token::Type ScanHtmlComment();
-  Token::Type ScanIdentifier();
-  Token::Type DetectKeyword();
+  Token::Type ScanMagicComment();
+  Token::Type ScanIdentifier(LexType type);
+  Token::Type DetectKeyword() const;
+  Token::Type DetectGetOrSet() const;
   Token::Type ScanString();
   void ScanEscape();
   Token::Type ScanNumber(const bool period);
@@ -99,21 +116,20 @@ class Lexer: private Noncopyable {
   void ScanDecimalDigits();
   inline void SkipLineTerminator();
 
-  const UnicodeString source_;
+  Source* source_;
   std::vector<char> buffer8_;
   std::vector<UChar> buffer16_;
   double numeric_;
-  uint32_t pos_;
-  const uint32_t end_;
+  State type_;
+  std::size_t pos_;
+  const std::size_t end_;
   bool has_line_terminator_before_next_;
+  bool has_shebang_;
   int c_;
-  uint32_t line_number_;
-  GetterOrSetter getter_or_setter_;
-  Token::Type current_token_;
+  std::size_t line_number_;
 };
 
 
 } }  // namespace iv::core
 
 #endif  // _IV_LEXER_H_
-

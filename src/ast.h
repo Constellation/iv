@@ -1,25 +1,26 @@
 #ifndef _IV_AST_H_
 #define _IV_AST_H_
 #include <vector>
-#include <map>
+#include <tr1/unordered_map>
+#include <tr1/tuple>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
 #include <unicode/schriter.h>
+#include "noncopyable.h"
 #include "utils.h"
 #include "alloc-inl.h"
 #include "functor.h"
 #include "token.h"
+#include "scope.h"
+#include "source.h"
 #include "ast-visitor.h"
 
 namespace iv {
 namespace core {
-#define VIRTUAL_VISITOR \
-  virtual void Accept(AstVisitor* visitor) = 0;
-
 #define ACCEPT_VISITOR \
   inline void Accept(AstVisitor* visitor) {\
     visitor->Visit(this);\
-  }\
+  }
 
 // forward declarations
 class Statement;
@@ -42,6 +43,9 @@ class SwitchStatement;
 class LabelledStatement;
 class ThrowStatement;
 class TryStatement;
+class BreakableStatement;
+class NamedOnlyBreakableStatement;
+class AnonymousBreakableStatement;
 
 class Expression;
 class Literal;
@@ -51,6 +55,8 @@ class UnaryOperation;
 class BinaryOperation;
 class ConditionalExpression;
 class PropertyAccess;
+class IdentifierAccess;
+class IndexAccess;
 class Call;
 class ConstructorCall;
 class FunctionCall;
@@ -59,10 +65,14 @@ class Declaration;
 
 class AstFactory;
 
-class AstNode : public SpaceObject {
+class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
  public:
-  explicit AstNode();
-  virtual ~AstNode() { }
+  typedef SpaceVector<Expression*>::type Expressions;
+  typedef SpaceVector<Statement*>::type Statements;
+  typedef SpaceVector<Declaration*>::type Declarations;
+  typedef SpaceVector<Identifier*>::type Identifiers;
+
+  virtual ~AstNode() = 0;
 
   virtual Statement* AsStatement() { return NULL; }
   virtual ExpressionStatement* AsExpressionStatement() { return NULL; }
@@ -84,6 +94,13 @@ class AstNode : public SpaceObject {
   virtual SwitchStatement* AsSwitchStatement() { return NULL; }
   virtual ThrowStatement* AsThrowStatement() { return NULL; }
   virtual TryStatement* AsTryStatement() { return NULL; }
+  virtual BreakableStatement* AsBreakableStatement() { return NULL; }
+  virtual NamedOnlyBreakableStatement* AsNamedOnlyBreakableStatement() {
+    return NULL;
+  }
+  virtual AnonymousBreakableStatement* AsAnonymousBreakableStatement() {
+    return NULL;
+  }
 
   virtual Expression* AsExpression() { return NULL; }
   virtual Literal* AsLiteral() { return NULL; }
@@ -92,11 +109,13 @@ class AstNode : public SpaceObject {
   virtual BinaryOperation* AsBinaryOperation() { return NULL; }
   virtual ConditionalExpression* AsConditionalExpression() { return NULL; }
   virtual PropertyAccess* AsPropertyAccess() { return NULL; }
+  virtual IdentifierAccess* AsIdentifierAccess() { return NULL; }
+  virtual IndexAccess* AsIndexAccess() { return NULL; }
   virtual Call* AsCall() { return NULL; }
   virtual FunctionCall* AsFunctionCall() { return NULL; }
   virtual ConstructorCall* AsConstructorCall() { return NULL; }
 
-  VIRTUAL_VISITOR
+  virtual void Accept(AstVisitor* visitor) = 0;
 };
 
 //  Statement
@@ -122,17 +141,45 @@ class Statement : public AstNode {
   inline Statement* AsStatement() { return this; }
 };
 
-class Block : public Statement {
+class BreakableStatement : public Statement {
+ public:
+  BreakableStatement() : labels_(NULL) { }
+  void set_labels(Identifiers* labels) {
+    labels_ = labels;
+  }
+  Identifiers* labels() const {
+    return labels_;
+  }
+  BreakableStatement* AsBreakableStatement() { return this; }
+ protected:
+  Identifiers* labels_;
+};
+
+class NamedOnlyBreakableStatement : public BreakableStatement {
+ public:
+  inline NamedOnlyBreakableStatement* AsNamedOnlyBreakableStatement() {
+    return this;
+  }
+};
+
+class AnonymousBreakableStatement : public BreakableStatement {
+ public:
+  inline AnonymousBreakableStatement* AsAnonymousBreakableStatement() {
+    return this;
+  }
+};
+
+class Block : public NamedOnlyBreakableStatement {
  public:
   explicit Block(Space *factory);
   void AddStatement(Statement *stmt);
   inline Block* AsBlock() { return this; }
   ACCEPT_VISITOR
-  inline const SpaceVector<Statement*>::type& body() {
+  inline const Statements& body() {
     return body_;
   }
  private:
-  SpaceVector<Statement*>::type body_;
+  Statements body_;
 };
 
 class FunctionStatement : public Statement {
@@ -152,7 +199,7 @@ class VariableStatement : public Statement {
   explicit VariableStatement(Token::Type type, Space* factory);
   void AddDeclaration(Declaration* decl);
   inline VariableStatement* AsVariableStatement() { return this; }
-  inline const SpaceVector<Declaration*>::type& decls() {
+  inline const Declarations& decls() {
     return decls_;
   }
   inline bool IsConst() const {
@@ -161,16 +208,16 @@ class VariableStatement : public Statement {
   ACCEPT_VISITOR
  private:
   const bool is_const_;
-  SpaceVector<Declaration*>::type decls_;
+  Declarations decls_;
 };
 
 class Declaration : public AstNode {
  public:
   Declaration(Identifier* name, Expression* expr);
-  inline Identifier* name() {
+  inline Identifier* name() const {
     return name_;
   }
-  inline Expression* expr() {
+  inline Expression* expr() const {
     return expr_;
   }
   ACCEPT_VISITOR
@@ -203,21 +250,26 @@ class IfStatement : public Statement {
   Statement* else_;
 };
 
-class IterationStatement : public Statement {
+class IterationStatement : public AnonymousBreakableStatement {
  public:
-  friend class AstVisitor;
-  explicit IterationStatement(Statement* body);
+  IterationStatement();
   inline IterationStatement* AsIterationStatement() { return this; }
   inline Statement* body() { return body_; }
+  inline void set_body(Statement* stmt) {
+    body_ = stmt;
+  }
  private:
   Statement* body_;
 };
 
 class DoWhileStatement : public IterationStatement {
  public:
-  DoWhileStatement(Statement* body, Expression* cond);
+  DoWhileStatement();
   inline DoWhileStatement* AsDoWhileStatement() { return this; }
   inline Expression* cond() { return cond_; }
+  inline void set_cond(Expression* expr) {
+    cond_ = expr;
+  }
   ACCEPT_VISITOR
  private:
   Expression* cond_;
@@ -225,7 +277,7 @@ class DoWhileStatement : public IterationStatement {
 
 class WhileStatement : public IterationStatement {
  public:
-  WhileStatement(Statement* body, Expression* cond);
+  explicit WhileStatement(Expression* cond);
   inline WhileStatement* AsWhileStatement() { return this; }
   inline Expression* cond() { return cond_; }
   ACCEPT_VISITOR
@@ -235,7 +287,7 @@ class WhileStatement : public IterationStatement {
 
 class ForStatement : public IterationStatement {
  public:
-  explicit ForStatement(Statement* body);
+  ForStatement();
   inline void SetInit(Statement* init) { init_ = init; }
   inline void SetCondition(Expression* cond) { cond_ = cond; }
   inline void SetNext(Statement* next) { next_ = next; }
@@ -252,7 +304,7 @@ class ForStatement : public IterationStatement {
 
 class ForInStatement : public IterationStatement {
  public:
-  ForInStatement(Statement* each, Expression* enumerable, Statement* body);
+  ForInStatement(Statement* each, Expression* enumerable);
   inline ForInStatement* AsForInStatement() { return this; }
   inline Statement* each() { return each_; }
   inline Expression* enumerable() { return enumerable_; }
@@ -266,22 +318,28 @@ class ContinueStatement : public Statement {
  public:
   ContinueStatement();
   void SetLabel(Identifier* label);
+  void SetTarget(IterationStatement* target);
   inline ContinueStatement* AsContinueStatement() { return this; }
   inline Identifier* label() { return label_; }
+  inline IterationStatement* target() { return target_; }
   ACCEPT_VISITOR
  private:
   Identifier* label_;
+  IterationStatement* target_;
 };
 
 class BreakStatement : public Statement {
  public:
   BreakStatement();
   void SetLabel(Identifier* label);
+  void SetTarget(BreakableStatement* target);
   inline BreakStatement* AsBreakStatement() { return this; }
   inline Identifier* label() { return label_; }
+  inline BreakableStatement* target() { return target_; }
   ACCEPT_VISITOR
  private:
   Identifier* label_;
+  BreakableStatement* target_;
 };
 
 class ReturnStatement : public Statement {
@@ -320,37 +378,38 @@ class LabelledStatement : public Statement {
 
 class CaseClause : public AstNode {
  public:
-  CaseClause();
+  explicit CaseClause(Space* factory);
   void SetExpression(Expression* expr);
   void SetDefault();
-  void SetStatement(Statement* stmt);
+  void AddStatement(Statement* stmt);
   inline bool IsDefault() const {
     return default_;
   }
-  inline Expression* expr() {
+  inline Expression* expr() const {
     return expr_;
   }
-  inline Statement* body() {
+  inline const Statements& body() const {
     return body_;
   }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
-  Statement* body_;
+  Statements body_;
   bool default_;
 };
 
-class SwitchStatement : public Statement {
+class SwitchStatement : public AnonymousBreakableStatement {
  public:
+  typedef SpaceVector<CaseClause*>::type CaseClauses;
   explicit SwitchStatement(Expression* expr, Space* factory);
   void AddCaseClause(CaseClause* clause);
   inline SwitchStatement* AsSwitchStatement() { return this; }
   inline Expression* expr() { return expr_; }
-  inline const SpaceVector<CaseClause*>::type& clauses() { return clauses_; }
+  inline const CaseClauses& clauses() { return clauses_; }
   ACCEPT_VISITOR
  private:
   Expression* expr_;
-  SpaceVector<CaseClause*>::type clauses_;
+  CaseClauses clauses_;
 };
 
 class ThrowStatement : public Statement {
@@ -501,17 +560,14 @@ class Literal : public Expression {
 
 class StringLiteral : public Literal {
  public:
-  explicit StringLiteral(const UChar* buffer);
+  explicit StringLiteral(const std::vector<UChar>& buffer, Space* factory);
   inline StringLiteral* AsStringLiteral() { return this; }
-  inline const UnicodeString& value() {
+  inline const SpaceUString& value() {
     return value_;
-  }
-  static StringLiteral* New(Space* f, const UChar* buffer) {
-    return new (f) StringLiteral(buffer);
   }
   ACCEPT_VISITOR
  private:
-  UnicodeString value_;
+  const SpaceUString value_;
 };
 
 class NumberLiteral : public Literal {
@@ -529,16 +585,18 @@ class NumberLiteral : public Literal {
 
 class Identifier : public Literal {
  public:
-  explicit Identifier(const UChar* buffer);
-  explicit Identifier(const char* buffer);
+  explicit Identifier(const UChar* buffer, Space* factory);
+  explicit Identifier(const char* buffer, Space* factory);
+  explicit Identifier(const std::vector<UChar>& buffer, Space* factory);
+  explicit Identifier(const std::vector<char>& buffer, Space* factory);
   inline Identifier* AsIdentifier() { return this; }
-  inline const UnicodeString& value() const {
+  inline const SpaceUString& value() const {
     return value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
   ACCEPT_VISITOR
  private:
-  UnicodeString value_;
+  SpaceUString value_;
 };
 
 class ThisLiteral : public Literal {
@@ -588,18 +646,15 @@ class Undefined : public Literal {
 
 class RegExpLiteral : public Literal {
  public:
-  explicit RegExpLiteral(const UChar* buffer);
+  explicit RegExpLiteral(const std::vector<UChar>& buffer, Space* factory);
   inline RegExpLiteral* AsRegExpLiteral() { return this; }
-  void SetFlags(const UChar* flags);
-  inline const UnicodeString& value() { return value_; }
-  inline const UnicodeString& flags() { return flags_; }
+  void SetFlags(const std::vector<UChar>& buffer);
+  inline const SpaceUString& value() { return value_; }
+  inline const SpaceUString& flags() { return flags_; }
   ACCEPT_VISITOR
-  static RegExpLiteral* New(Space* f, const UChar* buffer) {
-    return new (f) RegExpLiteral(buffer);
-  }
  private:
-  UnicodeString value_;
-  UnicodeString flags_;
+  SpaceUString value_;
+  SpaceUString flags_;
 };
 
 class ArrayLiteral : public Literal {
@@ -609,81 +664,165 @@ class ArrayLiteral : public Literal {
   inline void AddItem(Expression* expr) {
     items_.push_back(expr);
   }
-  inline const SpaceVector<Expression*>::type& items() {
+  inline const Expressions& items() {
     return items_;
   }
   ACCEPT_VISITOR
  private:
-  SpaceVector<Expression*>::type items_;
+  Expressions items_;
 };
 
 class ObjectLiteral : public Literal {
  public:
-  ObjectLiteral();
-  void AddProperty(Identifier* key, Expression* val);
+  enum PropertyDescriptorType {
+    DATA = 1,
+    GET  = 2,
+    SET  = 4
+  };
+  typedef std::tr1::tuple<PropertyDescriptorType,
+                          Identifier*,
+                          Expression*> Property;
+  typedef SpaceVector<Property>::type Properties;
+  explicit ObjectLiteral(Space* factory);
+
+  inline void AddDataProperty(Identifier* key, Expression* val) {
+    AddPropertyDescriptor(DATA, key, val);
+  }
+  inline void AddAccessor(PropertyDescriptorType type,
+                          Identifier* key, Expression* val) {
+    AddPropertyDescriptor(type, key, val);
+  }
+
   inline ObjectLiteral* AsObjectLiteral() { return this; }
-  inline const std::map<Identifier*, Expression*>& properties() {
+  inline
+  const Properties& properties() {
     return properties_;
   }
   ACCEPT_VISITOR
  private:
-  std::map<Identifier*, Expression*> properties_;
+  inline void AddPropertyDescriptor(PropertyDescriptorType type,
+                                    Identifier* key,
+                                    Expression* val) {
+    properties_.push_back(Properties::value_type(type, key, val));
+  }
+  Properties properties_;
 };
 
 class FunctionLiteral : public Literal {
  public:
-  enum Type {
+  enum DeclType {
     DECLARATION,
     STATEMENT,
     EXPRESSION,
     GLOBAL
   };
-  explicit FunctionLiteral(Type type);
+  enum ArgType {
+    GENERAL,
+    SETTER,
+    GETTER
+  };
+  FunctionLiteral(DeclType type, Space* factory);
   inline FunctionLiteral* AsFunctionLiteral() { return this; }
-  inline void SetName(const UChar* name) { name_ = name; }
-  inline const UnicodeString& name() {
+  inline void SetName(Identifier* name) { name_ = name; }
+  inline Identifier* name() const {
     return name_;
   }
-  inline Type  type() { return type_; }
-  inline const std::vector<Identifier*>& params() {
+  inline DeclType type() const { return type_; }
+  inline const Identifiers& params() const {
     return params_;
   }
-  inline const std::vector<Statement*>& body() {
+  inline const Statements& body() const {
     return body_;
+  }
+  inline Scope* scope() {
+    return &scope_;
+  }
+  inline void set_start_position(std::size_t start) {
+    start_position_ = start;
+  }
+  inline void set_end_position(std::size_t end) {
+    end_position_ = end;
+  }
+  inline std::size_t start_position() const {
+    return start_position_;
+  }
+  inline std::size_t end_position() const {
+    return end_position_;
+  }
+  inline bool strict() const {
+    return strict_;
+  }
+  inline void set_strict(bool strict) {
+    strict_ = strict;
+  }
+  inline void set_source(Source* src) {
+    source_ = src;
+  }
+  inline UStringPiece GetSource() const {
+    return source_->SubString(start_position_, end_position_ - start_position_ + 1);
   }
   void AddParameter(Identifier* param);
   void AddStatement(Statement* stmt);
   ACCEPT_VISITOR
  private:
-  UnicodeString name_;
-  Type type_;
-  std::vector<Identifier*> params_;
-  std::vector<Statement*> body_;
+  Identifier* name_;
+  DeclType type_;
+  Identifiers params_;
+  Statements body_;
+  Scope scope_;
+  bool strict_;
+  std::size_t start_position_;
+  std::size_t end_position_;
+  Source* source_;
 };
 
 class PropertyAccess : public Expression {
  public:
-  PropertyAccess(Expression* obj, Expression* key);
   inline bool IsValidLeftHandSide() const { return true; }
   inline Expression* target() { return target_; }
-  inline Expression* key() { return key_; }
   inline PropertyAccess* AsPropertyAccess() { return this; }
+ protected:
+  explicit PropertyAccess(Expression* obj);
+  Expression* target_;
+};
+
+class IdentifierAccess : public PropertyAccess {
+ public:
+  IdentifierAccess(Expression* obj, Identifier* key)
+    : PropertyAccess(obj),
+      key_(key) {
+  }
+  inline Identifier* key() { return key_; }
+  inline IdentifierAccess* AsIdentifierAccess() { return this; }
   ACCEPT_VISITOR
  private:
-  Expression* target_;
+  Identifier* key_;
+};
+
+class IndexAccess : public PropertyAccess {
+ public:
+  IndexAccess(Expression* obj, Expression* key)
+    : PropertyAccess(obj),
+      key_(key) {
+  }
+  inline Expression* key() { return key_; }
+  inline IndexAccess* AsIndexAccess() { return this; }
+  ACCEPT_VISITOR
+ private:
   Expression* key_;
 };
 
 class Call : public Expression {
  public:
+  inline bool IsValidLeftHandSide() const { return true; }
   explicit Call(Expression* target, Space* factory);
   void AddArgument(Expression* expr) { args_.push_back(expr); }
   inline Call* AsCall() { return this; }
   inline Expression* target() { return target_; }
-  inline const SpaceVector<Expression*>::type& args() { return args_; }
+  inline const Expressions& args() { return args_; }
  protected:
   Expression* target_;
-  SpaceVector<Expression*>::type args_;
+  Expressions args_;
 };
 
 class FunctionCall : public Call {
@@ -700,16 +839,5 @@ class ConstructorCall : public Call {
   ACCEPT_VISITOR
 };
 
-class Scope : public AstNode {
- public:
-  Scope() : up_(NULL) { }
-  ~Scope() { }
-  void NewParameter() { }
-  void NewUnresolved() { }
- private:
-  const Scope* up_;
-};
-
 } }  // namespace iv::core
 #endif  // _IV_AST_H_
-

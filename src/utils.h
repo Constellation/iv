@@ -2,6 +2,7 @@
 #define _IV_UTILS_H_
 #include <cstdlib>
 #include <cstddef>
+#include <cassert>
 #include <inttypes.h>
 
 #ifdef NDEBUG
@@ -83,6 +84,7 @@ class Size {
   static const int kIntptrAlign  = AlignOf(intptr_t);  // NOLINT
 };
 
+#define UNREACHABLE() assert(!"UNREACHABLE")
+
 } }  // namespace iv::core
 #endif  // _IV_UTILS_H_
-

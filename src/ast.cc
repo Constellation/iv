@@ -4,9 +4,9 @@
 namespace iv {
 namespace core {
 
-AstNode::AstNode() { }
+AstNode::~AstNode() { }
 
-Block::Block(Space* factory) : body_(SpaceAllocator<Statement*>(factory)) { }
+Block::Block(Space* factory) : body_(Statements::allocator_type(factory)) { }
 
 void Block::AddStatement(Statement* stmt) {
   body_.push_back(stmt);
@@ -18,7 +18,7 @@ FunctionStatement::FunctionStatement(FunctionLiteral* func)
 
 VariableStatement::VariableStatement(Token::Type type, Space* factory)
   : is_const_(type == Token::CONST),
-    decls_(SpaceAllocator<Declaration*>(factory)) { }
+    decls_(Declarations::allocator_type(factory)) { }
 
 void VariableStatement::AddDeclaration(Declaration* decl) {
   decls_.push_back(decl);
@@ -39,30 +39,30 @@ void IfStatement::SetElse(Statement* stmt) {
   else_ = stmt;
 }
 
-IterationStatement::IterationStatement(Statement* body)
-  : body_(body) {
+IterationStatement::IterationStatement()
+  : body_(NULL) {
 }
 
-DoWhileStatement::DoWhileStatement(Statement* body, Expression* cond)
-  : IterationStatement(body),
+DoWhileStatement::DoWhileStatement()
+  : IterationStatement(),
+    cond_(NULL) {
+}
+
+WhileStatement::WhileStatement(Expression* cond)
+  : IterationStatement(),
     cond_(cond) {
 }
 
-WhileStatement::WhileStatement(Statement* body, Expression* cond)
-  : IterationStatement(body),
-    cond_(cond) {
-}
-
-ForStatement::ForStatement(Statement* body)
-  : IterationStatement(body),
+ForStatement::ForStatement()
+  : IterationStatement(),
     init_(NULL),
     cond_(NULL),
     next_(NULL) {
 }
 
 ForInStatement::ForInStatement(Statement* each,
-                               Expression* enumerable, Statement* body)
-  : IterationStatement(body),
+                               Expression* enumerable)
+  : IterationStatement(),
     each_(each),
     enumerable_(enumerable) {
 }
@@ -75,12 +75,21 @@ void ContinueStatement::SetLabel(Identifier* label) {
   label_ = label;
 }
 
+void ContinueStatement::SetTarget(IterationStatement* target) {
+  target_ = target;
+}
+
 BreakStatement::BreakStatement()
-  : label_(NULL) {
+  : label_(NULL),
+    target_(NULL) {
 }
 
 void BreakStatement::SetLabel(Identifier* label) {
   label_ = label;
+}
+
+void BreakStatement::SetTarget(BreakableStatement* target) {
+  target_ = target;
 }
 
 ReturnStatement::ReturnStatement(Expression* expr)
@@ -99,16 +108,16 @@ LabelledStatement::LabelledStatement(Expression* expr, Statement* body)
 
 SwitchStatement::SwitchStatement(Expression* expr, Space* factory)
   : expr_(expr),
-    clauses_(SpaceAllocator<CaseClause*>(factory)) {
+    clauses_(CaseClauses::allocator_type(factory)) {
 }
 
 void SwitchStatement::AddCaseClause(CaseClause* clause) {
   clauses_.push_back(clause);
 }
 
-CaseClause::CaseClause()
+CaseClause::CaseClause(Space* factory)
   : expr_(NULL),
-    body_(NULL),
+    body_(Statements::allocator_type(factory)),
     default_(false) {
 }
 
@@ -120,8 +129,8 @@ void CaseClause::SetDefault() {
   default_ = true;
 }
 
-void CaseClause::SetStatement(Statement* stmt) {
-  body_ = stmt;
+void CaseClause::AddStatement(Statement* stmt) {
+  body_.push_back(stmt);
 }
 
 ThrowStatement::ThrowStatement(Expression* expr)
@@ -178,47 +187,57 @@ PostfixExpression::PostfixExpression(Token::Type op, Expression* expr)
 
 Literal::~Literal() { }
 
-StringLiteral::StringLiteral(const UChar* buffer)
-  : value_(buffer) {
+StringLiteral::StringLiteral(const std::vector<UChar>& buffer, Space* factory)
+  : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
 }
 
 NumberLiteral::NumberLiteral(const double & val)
   : value_(val) {
 }
 
-Identifier::Identifier(const UChar* buffer)
-  : value_(buffer) {
+Identifier::Identifier(const UChar* buffer, Space* factory)
+  : value_(buffer, SpaceUString::allocator_type(factory)) {
 }
 
-Identifier::Identifier(const char* buffer)
-  : value_(buffer) {
+Identifier::Identifier(const char* buffer, Space* factory)
+  : value_(buffer,
+           buffer+std::char_traits<char>::length(buffer),
+           SpaceUString::allocator_type(factory)) {
 }
 
-RegExpLiteral::RegExpLiteral(const UChar* buffer)
-  : value_(buffer),
-    flags_() {
+Identifier::Identifier(const std::vector<UChar>& buffer, Space* factory)
+  : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
 }
 
-void RegExpLiteral::SetFlags(const UChar* flags) {
-  flags_ = flags;
+Identifier::Identifier(const std::vector<char>& buffer, Space* factory)
+  : value_(buffer.begin(),
+           buffer.end(), SpaceUString::allocator_type(factory)) {
+}
+
+RegExpLiteral::RegExpLiteral(const std::vector<UChar>& buffer, Space* factory)
+  : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)),
+    flags_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
+}
+
+void RegExpLiteral::SetFlags(const std::vector<UChar>& buffer) {
+  flags_.assign(buffer.data(), buffer.size());
 }
 
 ArrayLiteral::ArrayLiteral(Space* factory)
-  : items_(SpaceAllocator<Expression*>(factory)) {
+  : items_(Expressions::allocator_type(factory)) {
 }
 
-ObjectLiteral::ObjectLiteral() : properties_() {
+ObjectLiteral::ObjectLiteral(Space* factory)
+  : properties_(Properties::allocator_type(factory)) {
 }
 
-void ObjectLiteral::AddProperty(Identifier* key, Expression* val) {
-  properties_.insert(std::map<Identifier*, Expression*>::value_type(key, val));
-}
-
-FunctionLiteral::FunctionLiteral(Type type)
-  : name_(""),
+FunctionLiteral::FunctionLiteral(DeclType type, Space* factory)
+  : name_(NULL),
     type_(type),
-    params_(),
-    body_() {
+    params_(Identifiers::allocator_type(factory)),
+    body_(Statements::allocator_type(factory)),
+    scope_(factory),
+    strict_(false) {
 }
 
 void FunctionLiteral::AddParameter(Identifier* param) {
@@ -229,14 +248,13 @@ void FunctionLiteral::AddStatement(Statement* stmt) {
   body_.push_back(stmt);
 }
 
-PropertyAccess::PropertyAccess(Expression* obj, Expression* key)
-  : target_(obj),
-    key_(key) {
+PropertyAccess::PropertyAccess(Expression* obj)
+  : target_(obj) {
 }
 
 Call::Call(Expression* target, Space* factory)
   : target_(target),
-    args_(SpaceAllocator<Expression*>(factory)) {
+    args_(Expressions::allocator_type(factory)) {
 }
 
 ConstructorCall::ConstructorCall(Expression* target, Space* factory)
@@ -248,4 +266,3 @@ FunctionCall::FunctionCall(Expression* target, Space* factory)
 }
 
 } }  // namespace iv::core
-

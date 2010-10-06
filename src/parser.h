@@ -2,15 +2,45 @@
 #define _IV_PARSER_H_
 #include <map>
 #include <string>
-#include "utils.h"
 #include "ast.h"
 #include "ast-factory.h"
+#include "scope.h"
+#include "source.h"
 #include "lexer.h"
+#include "noncopyable.h"
 
 namespace iv {
 namespace core {
 
-class Parser {
+class Parser : private Noncopyable<Parser>::type {
+ protected:
+  class Target : private Noncopyable<Target>::type {
+   public:
+    Target(Parser* parser, BreakableStatement* target)
+      : parser_(parser),
+        prev_(parser->target()),
+        node_(target) {
+      parser_->set_target(this);
+      if (parser_->labels()) {
+        target->set_labels(parser_->labels());
+        parser_->set_labels(NULL);
+      }
+    }
+    ~Target() {
+      parser_->set_target(prev_);
+    }
+    inline Target* previous() const {
+      return prev_;
+    }
+    inline BreakableStatement* node() const {
+      return node_;
+    }
+   private:
+    Parser* parser_;
+    Target* prev_;
+    BreakableStatement* node_;
+  };
+
  public:
   enum BinaryExpressionStage {
     UNARY_STAGE,
@@ -25,7 +55,8 @@ class Parser {
     LOGICAL_AND_STAGE,
     LOGICAL_OR_STAGE
   };
-  explicit Parser(const char* source);
+
+  explicit Parser(Source* source, AstFactory* space);
   FunctionLiteral* ParseProgram();
   bool ParseSourceElements(Token::Type end,
                            FunctionLiteral* function, bool *res);
@@ -36,7 +67,8 @@ class Parser {
   Block* ParseBlock(bool *res);
 
   Statement* ParseVariableStatement(bool *res);
-  Statement* ParseVariableDeclarations(VariableStatement* stmt, bool *res);
+  Statement* ParseVariableDeclarations(VariableStatement* stmt,
+                                       bool contains_in, bool *res);
   Statement* ParseEmptyStatement();
   Statement* ParseExpressionStatement(bool *res);
   Statement* ParseIfStatement(bool *res);
@@ -60,20 +92,31 @@ class Parser {
   Expression* ParseAssignmentExpression(bool contains_in, bool *res);
   Expression* ParseConditionalExpression(bool contains_in, bool *res);
   Expression* ParseBinaryExpression(bool contains_in, int prec, bool *res);
-  Expression* ReduceBinaryOperation(Token::Type op, Expression* left, Expression* right);
+  Expression* ReduceBinaryOperation(Token::Type op,
+                                    Expression* left, Expression* right);
   Expression* ParseUnaryExpression(bool *res);
   Expression* ParsePostfixExpression(bool *res);
   Expression* ParseMemberExpression(bool allow_call, bool *res);
   Expression* ParsePrimaryExpression(bool *res);
 
-  bool ParseIdentifier();
   Call* ParseArguments(Call* func, bool *res);
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res);
   Expression* ParseArrayLiteral(bool *res);
   Expression* ParseObjectLiteral(bool *res);
-  FunctionLiteral* ParseFunctionLiteral(FunctionLiteral::Type type,
+  FunctionLiteral* ParseFunctionLiteral(FunctionLiteral::DeclType decl_type,
+                                        FunctionLiteral::ArgType arg_type,
                                         bool allow_identifier,
                                         bool *res);
+
+  bool ContainsLabel(const AstNode::Identifiers* const labels,
+                     const Identifier * const label) const;
+  bool TargetsContainsLabel(const Identifier* const label) const;
+  BreakableStatement* LookupBreakableTarget(
+      const Identifier* const label) const;
+  BreakableStatement* LookupBreakableTarget() const;
+  IterationStatement* LookupContinuableTarget(
+      const Identifier* const label) const;
+  IterationStatement* LookupContinuableTarget() const;
 
   void ReportUnexpectedToken();
 
@@ -81,26 +124,101 @@ class Parser {
   inline Lexer& lexer() {
     return lexer_;
   }
-  inline Token::Type Next() {
-    return token_ = lexer_.Next();
-  }
-  inline void Consume() {
-    token_ = lexer_.Next();
+  inline Token::Type Next(Lexer::LexType type = Lexer::kIdentifyReservedWords) {
+    return token_ = lexer_.Next(type);
   }
   inline Token::Type Peek() const {
     return token_;
   }
+  inline Scope* scope() const {
+    return scope_;
+  }
+  inline void set_scope(Scope* scope) {
+    scope_ = scope;
+  }
+  inline const std::string& error() const {
+    return error_;
+  }
+  inline Target* target() const {
+    return target_;
+  }
+  inline void set_target(Target* target) {
+    target_ = target;
+  }
+  inline AstNode::Identifiers* labels() const {
+    return labels_;
+  }
+  inline void set_labels(AstNode::Identifiers* labels) {
+    labels_ = labels;
+  }
+  inline bool strict() const {
+    return strict_;
+  }
+  inline void set_strict(bool strict) {
+    strict_ = strict;
+  }
  protected:
+  class ScopeSwitcher : private Noncopyable<ScopeSwitcher>::type {
+   public:
+    ScopeSwitcher(Parser* parser, Scope* scope)
+      : parser_(parser) {
+      scope->SetUpperScope(parser_->scope());
+      parser_->set_scope(scope);
+    }
+    ~ScopeSwitcher() {
+      assert(parser_->scope() != NULL);
+      parser_->set_scope(parser_->scope()->GetUpperScope());
+    }
+   private:
+    Parser* parser_;
+  };
+
+  class LabelScope : private Noncopyable<LabelScope>::type {
+   public:
+    LabelScope(Parser* parser, AstNode::Identifiers* labels, bool exist_labels)
+      : parser_(parser),
+        exist_labels_(exist_labels) {
+      parser_->set_labels(labels);
+    }
+    ~LabelScope() {
+      if (!exist_labels_) {
+        parser_->set_labels(NULL);
+      }
+    }
+   private:
+    Parser* parser_;
+    bool exist_labels_;
+  };
+
+  class StrictSwitcher : private Noncopyable<StrictSwitcher>::type {
+   public:
+    explicit StrictSwitcher(Parser* parser)
+      : parser_(parser),
+        prev_(parser->strict()) {
+    }
+    ~StrictSwitcher() {
+      parser_->set_strict(prev_);
+    }
+    inline void SwitchStrictMode() const {
+      parser_->set_strict(true);
+    }
+   private:
+    Parser* parser_;
+    bool prev_;
+  };
+
+  static bool IsEvalOrArguments(const Identifier* ident);
+
   Lexer lexer_;
   Token::Type token_;
   std::string error_;
-  bool in_source_element_;
-  AstFactory space_;
-  AstFactory* factory_;
+  bool strict_;
+  AstFactory* space_;
+  Scope* scope_;
+  Target* target_;
+  AstNode::Identifiers* labels_;
 };
-
 
 } }  // namespace iv::core
 
 #endif  // _IV_PARSER_H_
-

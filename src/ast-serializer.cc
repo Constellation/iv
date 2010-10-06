@@ -1,505 +1,477 @@
 #include <sstream>
 #include <cstdio>
+#include <tr1/tuple>
 #include "alloc-inl.h"
 #include "ast-serializer.h"
 #include "ast.h"
+#include "ustream.h"
 
 namespace iv {
 namespace core {
 
+void AstSerializer::Append(StringPiece str) {
+  out_.append(str.begin(), str.end());
+}
+
+void AstSerializer::Append(UStringPiece str) {
+  out_.append(str.begin(), str.end());
+}
+
+void AstSerializer::Append(UChar c) {
+  out_.push_back(c);
+}
+
+void AstSerializer::Append(char c) {
+  out_.push_back(c);
+}
+
 void AstSerializer::Visit(Block* block) {
-  out_.append("{\"type\":\"block\",\"body\":[");
-  SpaceVector<Statement*>::type::const_iterator it = block->body().begin();
-  const SpaceVector<Statement*>::type::const_iterator end = block->body().end();
+  Append("{\"type\":\"block\",\"body\":[");
+  AstNode::Statements::const_iterator it = block->body().begin();
+  const AstNode::Statements::const_iterator end = block->body().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it != end) {
-      out_.append(",");
+      Append(',');
     }
   }
-  out_.append("]}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(FunctionStatement* func) {
-  out_.append("{\"type\":\"function_statement\",\"def\":");
+  Append("{\"type\":\"function_statement\",\"def\":");
   func->function()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(VariableStatement* var) {
-  out_.append("{\"type\":");
+  Append("{\"type\":");
   if (var->IsConst()) {
-    out_.append("\"const\",\"decls\":[");
+    Append("\"const\",\"decls\":[");
   } else {
-    out_.append("\"var\",\"decls\":[");
+    Append("\"var\",\"decls\":[");
   }
-  SpaceVector<Declaration*>::type::const_iterator it = var->decls().begin();
-  const SpaceVector<Declaration*>::type::const_iterator
-      end = var->decls().end();
+  AstNode::Declarations::const_iterator it = var->decls().begin();
+  const AstNode::Declarations::const_iterator end = var->decls().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it != end) {
-      out_.append(",");
+      Append(',');
     }
   }
-  out_.append("]}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(Declaration* decl) {
-  out_.append("{\"type\":\"decl\",\"name\":");
+  Append("{\"type\":\"decl\",\"name\":");
   decl->name()->Accept(this);
-  out_.append(",\"exp\":");
+  Append(",\"exp\":");
   if (decl->expr()) {
     decl->expr()->Accept(this);
   }
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(EmptyStatement* empty) {
-  out_.append("{\"type\":\"empty\"}");
+  Append("{\"type\":\"empty\"}");
 }
 
 void AstSerializer::Visit(IfStatement* ifstmt) {
-  out_.append("{\"type\":\"if\",\"cond\":");
+  Append("{\"type\":\"if\",\"cond\":");
   ifstmt->cond()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   ifstmt->then_statement()->Accept(this);
   if (ifstmt->else_statement()) {
-    out_.append(",\"else\":");
+    Append(",\"else\":");
     ifstmt->else_statement()->Accept(this);
   }
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(DoWhileStatement* dowhile) {
-  out_.append("{\"type\":\"dowhile\",\"cond\":");
+  Append("{\"type\":\"dowhile\",\"cond\":");
   dowhile->cond()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   dowhile->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(WhileStatement* whilestmt) {
-  out_.append("{\"type\":\"while\",\"cond\":");
+  Append("{\"type\":\"while\",\"cond\":");
   whilestmt->cond()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   whilestmt->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(ForStatement* forstmt) {
-  out_.append("{\"type\":\"for\"");
+  Append("{\"type\":\"for\"");
   if (forstmt->init() != NULL) {
-    out_.append(",\"init\":");
+    Append(",\"init\":");
     forstmt->init()->Accept(this);
   }
   if (forstmt->cond() != NULL) {
-    out_.append(",\"cond\":");
+    Append(",\"cond\":");
     forstmt->cond()->Accept(this);
   }
   if (forstmt->next() != NULL) {
-    out_.append(",\"next\":");
+    Append(",\"next\":");
     forstmt->next()->Accept(this);
   }
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   forstmt->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(ForInStatement* forstmt) {
-  out_.append("{\"type\":\"forin\",\"each\":");
+  Append("{\"type\":\"forin\",\"each\":");
   forstmt->each()->Accept(this);
-  out_.append(",\"enumerable\":");
+  Append(",\"enumerable\":");
   forstmt->enumerable()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   forstmt->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(ContinueStatement* continuestmt) {
-  out_.append("{\"type\":\"continue\"");
+  Append("{\"type\":\"continue\"");
   if (continuestmt->label()) {
-    out_.append(",\"label\":");
+    Append(",\"label\":");
     continuestmt->label()->Accept(this);
   }
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(BreakStatement* breakstmt) {
-  out_.append("{\"type\":\"break\"");
+  Append("{\"type\":\"break\"");
   if (breakstmt->label()) {
-    out_.append(",\"label\":");
+    Append(",\"label\":");
     breakstmt->label()->Accept(this);
   }
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(ReturnStatement* returnstmt) {
-  out_.append("{\"type\":\"return\",\"exp\":");
+  Append("{\"type\":\"return\",\"exp\":");
   returnstmt->expr()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(WithStatement* withstmt) {
-  out_.append("{\"type\":\"with\",\"context\":");
+  Append("{\"type\":\"with\",\"context\":");
   withstmt->context()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   withstmt->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(LabelledStatement* labelledstmt) {
-  out_.append("{\"type\":\"labelled\",\"label\":");
+  Append("{\"type\":\"labelled\",\"label\":");
   labelledstmt->label()->Accept(this);
-  out_.append(",\"body\":");
+  Append(",\"body\":");
   labelledstmt->body()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(CaseClause* clause) {
   if (clause->IsDefault()) {
-    out_.append("{\"type\":\"default\"");
+    Append("{\"type\":\"default\"");
   } else {
-    out_.append("{\"type\":\"case\",\"exp\":");
+    Append("{\"type\":\"case\",\"exp\":");
     clause->expr()->Accept(this);
   }
-  if (clause->body()) {
-    out_.append(",\"body\":");
-    clause->body()->Accept(this);
+  Append(",\"body\"[");
+  AstNode::Statements::const_iterator it = clause->body().begin();
+  const AstNode::Statements::const_iterator end = clause->body().end();
+  while (it != end) {
+    (*it)->Accept(this);
+    ++it;
+    if (it != end) {
+      Append(',');
+    }
   }
-  out_.append("}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(SwitchStatement* switchstmt) {
-  out_.append("{\"type\":\"switch\",\"exp\":");
+  Append("{\"type\":\"switch\",\"exp\":");
   switchstmt->expr()->Accept(this);
-  out_.append(",\"clauses\":[");
-  SpaceVector<CaseClause*>::type::const_iterator
+  Append(",\"clauses\":[");
+  SwitchStatement::CaseClauses::const_iterator
       it = switchstmt->clauses().begin();
-  const SpaceVector<CaseClause*>::type::const_iterator
+  const SwitchStatement::CaseClauses::const_iterator
       end = switchstmt->clauses().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it != end) {
-      out_.append(",");
+      Append(',');
     }
   }
-  out_.append("]}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(ThrowStatement* throwstmt) {
-  out_.append("{\"type\":\"throw\",\"exp\":");
+  Append("{\"type\":\"throw\",\"exp\":");
   throwstmt->expr()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(TryStatement* trystmt) {
-  out_.append("{\"type\":\"try\",\"body\":");
+  Append("{\"type\":\"try\",\"body\":");
   trystmt->body()->Accept(this);
   if (trystmt->catch_name()) {
-    out_.append(",\"catch\":{\"type\":\"catch\",\"name\":");
+    Append(",\"catch\":{\"type\":\"catch\",\"name\":");
     trystmt->catch_name()->Accept(this);
-    out_.append(",\"body\":");
+    Append(",\"body\":");
     trystmt->catch_block()->Accept(this);
-    out_.append("}");
+    Append('}');
   }
   if (trystmt->finally_block()) {
-    out_.append(",\"finally\":{\"type\":\"finally\",\"body\":");
+    Append(",\"finally\":{\"type\":\"finally\",\"body\":");
     trystmt->finally_block()->Accept(this);
-    out_.append("}");
+    Append('}');
   }
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(DebuggerStatement* debuggerstmt) {
-  out_.append("{\"type\":\"debugger\"}");
+  Append("{\"type\":\"debugger\"}");
 }
 
 void AstSerializer::Visit(ExpressionStatement* exprstmt) {
-  out_.append("{\"type\":\"expstatement\",\"exp\":");
+  Append("{\"type\":\"expstatement\",\"exp\":");
   exprstmt->expr()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(Assignment* assign) {
-  out_.append("{\"type\":\"assign\",\"op\":\"");
-  out_.append(Token::Content(assign->op()));
-  out_.append("\",\"left\":");
+  Append("{\"type\":\"assign\",\"op\":\"");
+  Append(Token::Content(assign->op()));
+  Append("\",\"left\":");
   assign->left()->Accept(this);
-  out_.append(",\"right\":");
+  Append(",\"right\":");
   assign->right()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(BinaryOperation* binary) {
-  out_.append("{\"type\":\"binary\",\"op\":\"");
-  out_.append(Token::Content(binary->op()));
-  out_.append("\",\"left\":");
+  Append("{\"type\":\"binary\",\"op\":\"");
+  Append(Token::Content(binary->op()));
+  Append("\",\"left\":");
   binary->left()->Accept(this);
-  out_.append(",\"right\":");
+  Append(",\"right\":");
   binary->right()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(ConditionalExpression* cond) {
-  out_.append("{\"type\":\"conditional\",\"cond\":");
+  Append("{\"type\":\"conditional\",\"cond\":");
   cond->cond()->Accept(this);
-  out_.append(",\"left\":");
+  Append(",\"left\":");
   cond->left()->Accept(this);
-  out_.append(",\"right\":");
+  Append(",\"right\":");
   cond->right()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(UnaryOperation* unary) {
-  out_.append("{\"type\":\"unary\",\"op\":\"");
-  out_.append(Token::Content(unary->op()));
-  out_.append("\",\"exp\":");
+  Append("{\"type\":\"unary\",\"op\":\"");
+  Append(Token::Content(unary->op()));
+  Append("\",\"exp\":");
   unary->expr()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(PostfixExpression* postfix) {
-  out_.append("{\"type\":\"postfix\",\"op\":\"");
-  out_.append(Token::Content(postfix->op()));
-  out_.append("\",\"exp\":");
+  Append("{\"type\":\"postfix\",\"op\":\"");
+  Append(Token::Content(postfix->op()));
+  Append("\",\"exp\":");
   postfix->expr()->Accept(this);
-  out_.append("}");
+  Append('}');
 }
 
 void AstSerializer::Visit(StringLiteral* literal) {
-  out_.append("{\"type\":\"string\",\"value\":\"");
-  DecodeString(literal->value());
-  out_.append("\"}");
+  Append("{\"type\":\"string\",\"value\":\"");
+  DecodeString(literal->value().begin(), literal->value().end());
+  Append("\"}");
 }
 
 void AstSerializer::Visit(NumberLiteral* literal) {
   std::ostringstream sout;
   sout << literal->value();
-  out_.append("{\"type\":\"number\",\"value\":\"");
-  out_.append(sout.str().data());
-  out_.append("\"}");
+  Append("{\"type\":\"number\",\"value\":\"");
+  Append(sout.str());
+  Append("\"}");
 }
 
 void AstSerializer::Visit(Identifier* literal) {
-  out_.append("{\"type\":\"identifier\",\"value\":\"");
-  out_.append(literal->value());
-  out_.append("\"}");
+  Append("{\"type\":\"identifier\",\"value\":\"");
+  Append(literal->value());
+  Append("\"}");
 }
 
 void AstSerializer::Visit(ThisLiteral* literal) {
-  out_.append("{\"type\":\"this\"}");
+  Append("{\"type\":\"this\"}");
 }
 
 void AstSerializer::Visit(NullLiteral* literal) {
-  out_.append("{\"type\":\"null\"}");
+  Append("{\"type\":\"null\"}");
 }
 
 void AstSerializer::Visit(TrueLiteral* literal) {
-  out_.append("{\"type\":\"true\"}");
+  Append("{\"type\":\"true\"}");
 }
 
 void AstSerializer::Visit(FalseLiteral* literal) {
-  out_.append("{\"type\":\"false\"}");
+  Append("{\"type\":\"false\"}");
 }
 
 void AstSerializer::Visit(Undefined* literal) {
-  out_.append("{\"type\":\"undefined\"}");
+  Append("{\"type\":\"undefined\"}");
 }
 
 void AstSerializer::Visit(RegExpLiteral* literal) {
-  out_.append("{\"type\":\"regexp\",\"value\":\"");
-  DecodeString(literal->value());
-  out_.append("\",\"flags\":\"");
-  out_.append(literal->flags());
-  out_.append("\"}");
+  Append("{\"type\":\"regexp\",\"value\":\"");
+  DecodeString(literal->value().begin(), literal->value().end());
+  Append("\",\"flags\":\"");
+  Append(literal->flags());
+  Append("\"}");
 }
 
 void AstSerializer::Visit(ArrayLiteral* literal) {
-  out_.append("{\"type\":\"array\",\"value\":[");
-  SpaceVector<Expression*>::type::const_iterator it = literal->items().begin();
-  const SpaceVector<Expression*>::type::const_iterator
-      end = literal->items().end();
+  Append("{\"type\":\"array\",\"value\":[");
+  AstNode::Expressions::const_iterator it = literal->items().begin();
+  const AstNode::Expressions::const_iterator end = literal->items().end();
+  bool previous_is_elision = false;
   while (it != end) {
-    (*it)->Accept(this);
+    if ((*it)) {
+      (*it)->Accept(this);
+      previous_is_elision = false;
+    } else {
+      previous_is_elision = true;
+    }
     ++it;
     if (it != end) {
-      out_.append(",");
+      Append(',');
     }
   }
-  out_.append("]}");
+  if (previous_is_elision) {
+    Append(',');
+  }
+  Append("]}");
 }
 
 void AstSerializer::Visit(ObjectLiteral* literal) {
-  out_.append("{\"type\":\"object\",\"value\":[");
-  std::map<Identifier*, Expression*>::const_iterator
-      it = literal->properties().begin();
-  const std::map<Identifier*, Expression*>::const_iterator
-      end = literal->properties().end();
+  using std::tr1::get;
+  Append("{\"type\":\"object\",\"value\":[");
+  ObjectLiteral::Properties::const_iterator it = literal->properties().begin();
+  const ObjectLiteral::Properties::const_iterator
+    end = literal->properties().end();
   while (it != end) {
-    out_.append("{\"type\":\"key_val\",\"key\":");
-    it->first->Accept(this);
-    out_.append(",\"val\":");
-    it->second->Accept(this);
-    out_.append("}");
+    Append("{\"type\":");
+    const ObjectLiteral::PropertyDescriptorType type(get<0>(*it));
+    if (type == ObjectLiteral::DATA) {
+      Append("\"data\"");
+    } else if (type == ObjectLiteral::SET) {
+      Append("\"setter\"");
+    } else {
+      Append("\"getter\"");
+    }
+    Append(",\"key\":");
+    get<1>(*it)->Accept(this);
+    Append(",\"val\":");
+    get<2>(*it)->Accept(this);
+    Append('}');
     ++it;
     if (it == end) {
       break;
     }
-    out_.append(",");
+    Append(',');
   }
-  out_.append("]}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(FunctionLiteral* literal) {
-  out_.append("{\"type\":\"function\",\"name\":\"");
-  out_.append(literal->name());
-  out_.append("\",\"params\":[");
-  std::vector<Identifier*>::const_iterator
-      it = literal->params().begin();
-  const std::vector<Identifier*>::const_iterator
-      end = literal->params().end();
+  Append("{\"type\":\"function\",\"name\":");
+  if (literal->name()) {
+    literal->name()->Accept(this);
+  }
+  Append(",\"params\":[");
+  AstNode::Identifiers::const_iterator it = literal->params().begin();
+  const AstNode::Identifiers::const_iterator end = literal->params().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it == end) {
       break;
     }
-    out_.append(",");
+    Append(',');
   }
-  out_.append("],\"body\":[");
-  std::vector<Statement*>::const_iterator
-      it_body = literal->body().begin();
-  const std::vector<Statement*>::const_iterator
-      end_body = literal->body().end();
+  Append("],\"body\":[");
+  AstNode::Statements::const_iterator it_body = literal->body().begin();
+  const AstNode::Statements::const_iterator end_body = literal->body().end();
   while (it_body != end_body) {
     (*it_body)->Accept(this);
     ++it_body;
     if (it_body == end_body) {
       break;
     }
-    out_.append(",");
+    Append(',');
   }
-  out_.append("]}");
+  Append("]}");
 }
 
-void AstSerializer::Visit(PropertyAccess* prop) {
-  out_.append("{\"type\":\"property\",\"target\":");
+void AstSerializer::Visit(IndexAccess* prop) {
+  Append("{\"type\":\"property\",\"target\":");
   prop->target()->Accept(this);
-  out_.append(",\"key\":");
+  Append(",\"key\":");
   prop->key()->Accept(this);
-  out_.append("}");
+  Append('}');
+}
+
+void AstSerializer::Visit(IdentifierAccess* prop) {
+  Append("{\"type\":\"property\",\"target\":");
+  prop->target()->Accept(this);
+  Append(",\"key\":");
+  prop->key()->Accept(this);
+  Append('}');
 }
 
 void AstSerializer::Visit(FunctionCall* call) {
-  out_.append("{\"type\":\"funcall\",\"target\":");
+  Append("{\"type\":\"funcall\",\"target\":");
   call->target()->Accept(this);
-  out_.append(",\"args\":[");
-  SpaceVector<Expression*>::type::const_iterator it = call->args().begin(),
-                                           end = call->args().end();
+  Append(",\"args\":[");
+  AstNode::Expressions::const_iterator it = call->args().begin();
+  const AstNode::Expressions::const_iterator end = call->args().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it == end) {
       break;
     }
-    out_.append(",");
+    Append(',');
   }
-  out_.append("]}");
+  Append("]}");
 }
 
 void AstSerializer::Visit(ConstructorCall* call) {
-  out_.append("{\"type\":\"new\",\"target\":");
+  Append("{\"type\":\"new\",\"target\":");
   call->target()->Accept(this);
-  out_.append(",\"args\":[");
-  SpaceVector<Expression*>::type::const_iterator it = call->args().begin(),
-                                           end = call->args().end();
+  Append(",\"args\":[");
+  AstNode::Expressions::const_iterator it = call->args().begin();
+  const AstNode::Expressions::const_iterator end = call->args().end();
   while (it != end) {
     (*it)->Accept(this);
     ++it;
     if (it == end) {
       break;
     }
-    out_.append(",");
+    Append(',');
   }
-  out_.append("]}");
-}
-
-void AstSerializer::DecodeString(const UnicodeString& ustr) {
-  StringCharacterIterator it(ustr);
-  int32_t val;
-  char buf[5];
-  it.setToStart();
-  while (it.hasNext()) {
-    val = it.next32PostInc();
-    switch (val) {
-      case '"':
-        out_.append("\\\"");
-        break;
-
-      case '\\':
-        out_.append("\\\\");
-        break;
-
-      case '/':
-        out_.append("\\/");
-        break;
-
-      case '\b':
-        out_.append("\\b");
-        break;
-
-      case '\f':
-        out_.append("\\f");
-        break;
-
-      case '\n':
-        out_.append("\\n");
-        break;
-
-      case '\r':
-        out_.append("\\r");
-        break;
-
-      case '\t':
-        out_.append("\\t");
-        break;
-
-      case '\x0B':  // \v
-        out_.append("\\u000b");
-        break;
-
-      default:
-        if (0x00 <= val && val < 0x20) {
-          if (0x00 <= val && val < 0x10) {
-            out_.append("\\u000");
-            std::snprintf(buf, sizeof(buf), "%x", val);
-            out_.append(buf);
-          } else if (0x10 <= val && val < 0x20) {
-            out_.append("\\u00");
-            std::snprintf(buf, sizeof(buf), "%x", val);
-            out_.append(buf);
-          }
-        } else if (0x80 <= val) {
-          if (0x80 <= val && val < 0x1000) {
-            out_.append("\\u0");
-            std::snprintf(buf, sizeof(buf), "%x", val);
-            out_.append(buf);
-          } else if (0x1000 <= val) {
-            out_.append("\\u");
-            std::snprintf(buf, sizeof(buf), "%x", val);
-            out_.append(buf);
-          }
-        } else {
-          out_.append(val);
-        }
-        break;
-    }
-  }
+  Append("]}");
 }
 
 } }  // namespace iv::core
-

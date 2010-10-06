@@ -1,15 +1,29 @@
 #ifndef _IV_AST_SERIALIZER_H_
 #define _IV_AST_SERIALIZER_H_
+#include <ostream>  // NOLINT
+#include <unicode/uchar.h>
 #include "ast-visitor.h"
+#include "ustring.h"
+#include "stringpiece.h"
+#include "ustringpiece.h"
 namespace iv {
 namespace core {
 
 class AstSerializer: public AstVisitor {
  public:
+
+  friend std::ostream& operator<<(std::ostream& os, const AstSerializer& out);
+
+  typedef void ReturnType;
+
   AstSerializer() : out_() { }
-  inline const UnicodeString& Out() {
+  inline const UString& out() const {
     return out_;
   }
+  void Append(StringPiece str);
+  void Append(UStringPiece str);
+  void Append(UChar c);
+  void Append(char c);
   void Visit(Block* block);
   void Visit(FunctionStatement* func);
   void Visit(VariableStatement* var);
@@ -48,15 +62,84 @@ class AstSerializer: public AstVisitor {
   void Visit(ArrayLiteral* literal);
   void Visit(ObjectLiteral* literal);
   void Visit(FunctionLiteral* literal);
-  void Visit(PropertyAccess* prop);
+  void Visit(IdentifierAccess* prop);
+  void Visit(IndexAccess* prop);
   void Visit(FunctionCall* call);
   void Visit(ConstructorCall* call);
 
  private:
-  void DecodeString(const UnicodeString& ustr);
-  UnicodeString out_;
+  template <class Iter>
+  void DecodeString(Iter it, const Iter last) {
+    char buf[5];
+    for (;it != last; ++it) {
+      const UChar val = *it;
+      switch (val) {
+        case '"':
+          Append("\\\"");
+          break;
+
+        case '\\':
+          Append("\\\\");
+          break;
+
+        case '/':
+          Append("\\/");
+          break;
+
+        case '\b':
+          Append("\\b");
+          break;
+
+        case '\f':
+          Append("\\f");
+          break;
+
+        case '\n':
+          Append("\\n");
+          break;
+
+        case '\r':
+          Append("\\r");
+          break;
+
+        case '\t':
+          Append("\\t");
+          break;
+
+        case '\x0B':  // \v
+          Append("\\u000b");
+          break;
+
+        default:
+          if (val < 0x20) {
+            if (val < 0x10) {
+              Append("\\u000");
+              std::snprintf(buf, sizeof(buf), "%x", val);
+              Append(buf);
+            } else if (0x10 <= val && val < 0x20) {
+              Append("\\u00");
+              std::snprintf(buf, sizeof(buf), "%x", val);
+              Append(buf);
+            }
+          } else if (0x80 <= val) {
+            if (0x80 <= val && val < 0x1000) {
+              Append("\\u0");
+              std::snprintf(buf, sizeof(buf), "%x", val);
+              Append(buf);
+            } else if (0x1000 <= val) {
+              Append("\\u");
+              std::snprintf(buf, sizeof(buf), "%x", val);
+              Append(buf);
+            }
+          } else {
+            Append(val);
+          }
+          break;
+      }
+    }
+  }
+  UString out_;
 };
 
 } }  // namespace iv::core
 #endif  // _IV_AST_SERIALIZER_H_
-

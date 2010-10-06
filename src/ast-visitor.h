@@ -1,8 +1,5 @@
 #ifndef _IV_AST_VISITOR_H_
 #define _IV_AST_VISITOR_H_
-#include <unicode/uchar.h>
-#include <unicode/unistr.h>
-#include <unicode/schriter.h>
 
 namespace iv {
 namespace core {
@@ -51,6 +48,8 @@ class ObjectLiteral;
 class FunctionLiteral;
 
 class PropertyAccess;
+class IdentifierAccess;
+class IndexAccess;
 class FunctionCall;
 class ConstructorCall;
 
@@ -98,13 +97,37 @@ class AstVisitor {
   virtual void Visit(ObjectLiteral* literal) = 0;
   virtual void Visit(FunctionLiteral* literal) = 0;
 
-  virtual void Visit(PropertyAccess* prop) = 0;
+  virtual void Visit(IdentifierAccess* prop) = 0;
+  virtual void Visit(IndexAccess* prop) = 0;
   virtual void Visit(FunctionCall* call) = 0;
   virtual void Visit(ConstructorCall* call) = 0;
+ protected:
+  template<typename T>
+  class Acceptor {
+   public:
+    explicit Acceptor(T* visitor) :  visitor_(visitor) { }
+    template<typename U>
+    void operator()(U* p) const {
+      p->Accept(visitor_);
+    }
+   private:
+    T* const visitor_;
+  };
+
+  template<typename T>
+  class Visitor {
+   public:
+    explicit Visitor(T* visitor) :  visitor_(visitor) { }
+    template<typename U>
+    void operator()(U* p) const {
+      visitor_->Visit(p);
+    }
+   private:
+    T* const visitor_;
+  };
 };
 
 inline AstVisitor::~AstVisitor() { }
 
 } }  // namespace iv::core
 #endif  // _IV_AST_VISITOR_H_
-

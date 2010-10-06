@@ -1,0 +1,31 @@
+# iv / lv5
+![lv5](http://github.com/Constellation/iv/raw/master/doc/lv5.svg)
+lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Interpreter written in C++.
+
+## MILESTONE
++ parser - done
++ interpreter - done
++ statements - working
++ expressions - done
++ builtin objects - working
+
+## TODO
++ implement arguments
++ implement builtin objects
++ refine error system
+
+## TARGET
+Aims at the most precise interpreter of The ECMA262 5th Specification.
+
+## DEPS
+
++ libgc (Boehm GC)
++ libicu (ICU: International Component for Unicode)
+
+## INSTALL
+
+at top directory of iv
+
+    scons lv5
+    cp obj/lv5/lv5 lv5
+

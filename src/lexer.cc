@@ -1,33 +1,27 @@
 #include "lexer.h"
+#include <cstdio>
+#include <cassert>
 
 namespace iv {
 namespace core {
 
-Lexer::Lexer(const char *str)
-    : source_(str, "utf8"),
-      buffer8_(),
-      buffer16_(),
+Lexer::Lexer(Source* src)
+    : source_(src),
+      buffer8_(kInitialReadBufferCapacity),
+      buffer16_(kInitialReadBufferCapacity),
       pos_(0),
-      end_(source_.length()),
+      end_(source_->size()),
       has_line_terminator_before_next_(false),
-      line_number_(1),
-      getter_or_setter_(kNotGetterOrSetter) {
+      has_shebang_(false),
+      line_number_(1) {
+  Initialize();
+}
+
+void Lexer::Initialize() {
   Advance();
 }
 
-Lexer::Lexer(const std::string& str)
-    : source_(str.data(), "utf8"),
-      buffer8_(),
-      buffer16_(),
-      pos_(0),
-      end_(source_.length()),
-      has_line_terminator_before_next_(false),
-      line_number_(1),
-      getter_or_setter_(kNotGetterOrSetter) {
-  Advance();
-}
-
-Token::Type Lexer::Next() {
+Token::Type Lexer::Next(Lexer::LexType type) {
   Token::Type token;
   has_line_terminator_before_next_ = false;
   do {
@@ -182,7 +176,12 @@ Token::Type Lexer::Next() {
         Advance();
         if (c_ == '/') {
           // SINGLE LINE COMMENT
-          token = SkipSingleLineComment();
+          if (line_number_ == (has_shebang_ ? 1 : 2)) {
+            // magic comment
+            token = ScanMagicComment();
+          } else {
+            token = SkipSingleLineComment();
+          }
         } else if (c_ == '*') {
           // MULTI LINES COMMENT
           token = SkipMultiLineComment();
@@ -299,9 +298,12 @@ Token::Type Lexer::Next() {
       case '#':
         // #!
         // skip shebang as single line comment
-        if (line_number_ == 1 && pos_ == 1) {
+        if (pos_ == 1) {
+          assert(line_number_ == 1);
           Advance();
           if (c_ == '!') {
+            // shebang
+            has_shebang_ = true;
             token = SkipSingleLineComment();
             break;
           }
@@ -310,7 +312,7 @@ Token::Type Lexer::Next() {
 
       default:
         if (ICU::IsIdentifierStart(c_)) {
-          token = ScanIdentifier();
+          token = ScanIdentifier(type);
         } else if (ICU::IsDecimalDigit(c_)) {
           token = ScanNumber(false);
         } else if (ICU::IsLineTerminator(c_)) {
@@ -326,7 +328,6 @@ Token::Type Lexer::Next() {
         break;
     }
   } while (token == Token::NOT_FOUND);
-  current_token_ = token;
   return token;
 }
 
@@ -334,7 +335,7 @@ void Lexer::PushBack() {
   if (pos_ < 2) {
     c_ = -1;
   } else {
-    c_ = source_[pos_-2];
+    c_ = source_->Get(pos_-2);
     --pos_;
   }
 }
@@ -396,10 +397,17 @@ Token::Type Lexer::ScanHtmlComment() {
   return Token::LT;
 }
 
-Token::Type Lexer::ScanIdentifier() {
-  getter_or_setter_ = kNotGetterOrSetter;
+Token::Type Lexer::ScanMagicComment() {
+  Advance();
+  // see ECMA-262 section 7.4
+  while (c_ >= 0 && !ICU::IsLineTerminator(c_)) {
+    Advance();
+  }
+  return Token::NOT_FOUND;
+}
+
+Token::Type Lexer::ScanIdentifier(LexType type) {
   Token::Type token = Token::IDENTIFIER;
-  bool keyword_possibility = true;
   UChar uc;
 
   buffer16_.clear();
@@ -415,7 +423,6 @@ Token::Type Lexer::ScanIdentifier() {
       return Token::ILLEGAL;
     }
     Record16(uc);
-    keyword_possibility = false;
   } else {
     Record16Advance();
   }
@@ -432,17 +439,17 @@ Token::Type Lexer::ScanIdentifier() {
         return Token::ILLEGAL;
       }
       Record16(uc);
-      keyword_possibility = false;
     } else {
       Record16Advance();
     }
   }
-  if (keyword_possibility) {
+
+  if (type == kIdentifyReservedWords) {
     token = DetectKeyword();
+  } else if (type == kIgnoreReservedWordsAndIdentifyGetterOrSetter) {
+    token = DetectGetOrSet();
   }
-  if (token == Token::IDENTIFIER) {
-    Record16('\0');
-  }
+
   return token;
 }
 
@@ -454,7 +461,7 @@ Token::Type Lexer::ScanIdentifier() {
 // transient, final, throws, goto, native, synchronized
 // were defined as FutureReservedWord in ECMA-262 3rd, but not in 5th.
 // So, DetectKeyword interprets them as Identifier.
-Token::Type Lexer::DetectKeyword() {
+Token::Type Lexer::DetectKeyword() const {
   const std::size_t len = buffer16_.size();
   Token::Type token = Token::IDENTIFIER;
   switch (len) {
@@ -472,18 +479,10 @@ Token::Type Lexer::DetectKeyword() {
       }
       break;
     case 3:
-      // for var int new try get set
+      // for var int new try
       switch (buffer16_[2]) {
         case 't':
-          if (buffer16_[1] == 'e') {
-            if (buffer16_[0] == 'g') {
-              // get
-              getter_or_setter_ = kGetter;
-            } else if (buffer16_[0] == 's') {
-              // set
-              getter_or_setter_ = kSetter;
-            }
-          } else if (buffer16_[1] == 't' && buffer16_[0] == 'i') {
+          if (buffer16_[1] == 't' && buffer16_[0] == 'i') {
             // int
             // token = Token::INT;
             token = Token::IDENTIFIER;
@@ -833,7 +832,21 @@ Token::Type Lexer::DetectKeyword() {
   return token;
 }
 
+Token::Type Lexer::DetectGetOrSet() const {
+  if (buffer16_.size() == 3) {
+    if (buffer16_[1] == 'e' && buffer16_[2] == 't') {
+      if (buffer16_[0] == 'g') {
+        return Token::GET;
+      } else if (buffer16_[0] == 's') {
+        return Token::SET;
+      }
+    }
+  }
+  return Token::IDENTIFIER;
+}
+
 Token::Type Lexer::ScanString() {
+  type_ = NONE;
   const UChar quote = c_;
   buffer16_.clear();
   Advance();
@@ -842,6 +855,9 @@ Token::Type Lexer::ScanString() {
       Advance();
       // escape sequence
       if (c_ < 0) return Token::ILLEGAL;
+      if (type_ == NONE) {
+        type_ = ESCAPE;
+      }
       ScanEscape();
     } else {
       Record16Advance();
@@ -853,7 +869,6 @@ Token::Type Lexer::ScanString() {
   }
   Advance();
 
-  Record16('\0');
   return Token::STRING;
 }
 
@@ -908,6 +923,9 @@ void Lexer::ScanEscape() {
     case '5' :
     case '6' :
     case '7' :
+      if (type_ != OCTAL) {
+        type_ = OCTAL;
+      }
       Record16(ScanOctalEscape());
       break;
 
@@ -919,7 +937,7 @@ void Lexer::ScanEscape() {
 
 Token::Type Lexer::ScanNumber(const bool period) {
   buffer8_.clear();
-  NumberType type = DECIMAL;
+  State type = DECIMAL;
   if (period) {
     Record8('0');
     Record8('.');
@@ -990,26 +1008,27 @@ Token::Type Lexer::ScanNumber(const bool period) {
 
   if (type == OCTAL) {
     double val = 0;
-    std::vector<char>::const_iterator it = buffer8_.begin();
-    for (;it != buffer8_.end(); ++it) {
+    for (std::vector<char>::const_iterator it = buffer8_.begin(),
+         last = buffer8_.end(); it != last; ++it) {
       val = val * 8 + (*it - '0');
     }
     numeric_ = val;
   } else {
-    Record8('\0');
+    Record8('\0');  // Null Terminated String
     numeric_ = std::strtod(buffer8_.data(), NULL);
   }
+  type_ = type;
   return Token::NUMBER;
 }
 
 UChar Lexer::ScanOctalEscape() {
   UChar res = 0;
   for (int i = 0; i < 3; ++i) {
-    int d = OctalValue(c_);
+    const int d = OctalValue(c_);
     if (d < 0) {
       break;
     }
-    int t = res * 8 + d;
+    const int t = res * 8 + d;
     if (t > 255) {
       break;
     }
@@ -1022,7 +1041,7 @@ UChar Lexer::ScanOctalEscape() {
 UChar Lexer::ScanHexEscape(UChar c, int len) {
   UChar res = 0;
   for (int i = 0; i < len; ++i) {
-    int d = HexValue(c_);
+    const int d = HexValue(c_);
     if (d < 0) {
       for (int j = i - 1; j >= 0; --j) {
         PushBack();
@@ -1097,7 +1116,6 @@ bool Lexer::ScanRegExpLiteral(bool contains_eq) {
       Record16Advance();
     }
   }
-  Record16('\0');
   Advance();
   return true;
 }
@@ -1121,7 +1139,6 @@ bool Lexer::ScanRegExpFlags() {
       Record16Advance();
     }
   }
-  Record16('\0');
   return true;
 }
 

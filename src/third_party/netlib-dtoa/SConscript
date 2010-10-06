@@ -1,0 +1,10 @@
+Import('context')
+
+def Build():
+  env = Environment()
+  env.Append(
+      CPPDEFINES=["IEEE_8087"])
+  return env.StaticLibrary('netlib-dtoa', [Glob('*.c')])
+
+program = Build()
+Return('program')

@@ -1,0 +1,43 @@
+import sys
+import os
+from os.path import join, dirname, abspath
+
+Import('root_dir context')
+
+files = [
+  'lexer.cc',
+  'scope.cc',
+  'source.cc',
+  'parser.cc',
+  'ast-serializer.cc',
+  'ast-factory.cc',
+  'ast.cc',
+  'token.cc',
+  'utils.cc',
+  'alloc.cc',
+  'conversions.cc'
+]
+
+src_files = [join(root_dir, 'src', x) for x in files ]
+object_files = [join(root_dir, 'obj', 'src', os.path.splitext(x)[0]+'.o') for x in files ]
+
+def Build():
+  env = context.Clone()
+  v8_dtoa = context.SConscript(
+    'src/third_party/v8-dtoa/SConscript',
+    variant_dir=join(root_dir, 'obj', 'third_party', 'v8-dtoa'),
+    duplicate=False,
+    exports="context"
+  )
+  netlib_dtoa = context.SConscript(
+    'src/third_party/netlib-dtoa/SConscript',
+    variant_dir=join(root_dir, 'obj', 'third_party', 'netlib-dtoa'),
+    duplicate=False,
+    exports="context"
+  )
+  object_files.append(v8_dtoa)
+  object_files.append(netlib_dtoa)
+  return env.Program('iv', ['main.cc'] + files)
+
+program = Build()
+Return("object_files program")
