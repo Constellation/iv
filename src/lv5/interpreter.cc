@@ -1294,11 +1294,7 @@ void Interpreter::Visit(core::FunctionCall* call) {
   }
 
   const JSVal func = GetValue(target, CHECK);
-  if (!func.IsObject()) {
-    context_->set_error(JSErrorCode::TypeError);
-    return;
-  }
-  if (!func.object()->IsCallable()) {
+  if (!func.IsCallable()) {
     context_->set_error(JSErrorCode::TypeError);
     return;
   }
@@ -1330,11 +1326,7 @@ void Interpreter::Visit(core::ConstructorCall* call) {
   }
 
   const JSVal func = GetValue(target, CHECK);
-  if (!func.IsObject()) {
-    context_->set_error(JSErrorCode::TypeError);
-    return;
-  }
-  if (!func.object()->IsCallable()) {
+  if (!func.IsCallable()) {
     context_->set_error(JSErrorCode::TypeError);
     return;
   }

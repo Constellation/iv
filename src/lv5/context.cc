@@ -59,7 +59,7 @@ JSVal ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
 
 JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
   const JSVal& obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsCallable()) {
+  if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     if (func->AsNativeFunction()) {
       return JSVal(JSString::NewAsciiString(args.context(), "function () { [native code] }"));
