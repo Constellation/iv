@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstddef>
 #include <cassert>
-#include <inttypes.h>
+#include <tr1/cstdint>
 
 #ifdef NDEBUG
 #undef DEBUG
@@ -13,6 +13,9 @@
 
 namespace iv {
 namespace core {
+using std::tr1::uint32_t;
+using std::tr1::int32_t;
+
 
 class Conv {
  public:

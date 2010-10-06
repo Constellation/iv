@@ -3,8 +3,8 @@
 namespace iv {
 namespace lv5 {
 
-JSRegExp::JSRegExp(core::UStringPiece value,
-                   core::UStringPiece flags)
+JSRegExp::JSRegExp(const core::UStringPiece& value,
+                   const core::UStringPiece& flags)
   : status_(U_ZERO_ERROR),
     impl_(NULL) {
   uint32_t flagbits = 0;
@@ -54,8 +54,8 @@ JSRegExp::JSRegExpImpl::~JSRegExpImpl() {
   uregex_close(regexp_);
 }
 
-JSRegExp* JSRegExp::New(core::UStringPiece value,
-                        core::UStringPiece flags) {
+JSRegExp* JSRegExp::New(const core::UStringPiece& value,
+                        const core::UStringPiece& flags) {
   return new JSRegExp(value, flags);
 }
 

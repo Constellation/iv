@@ -73,7 +73,7 @@ class Space {
 
  private:
   static const std::size_t kThreshold = 256;
-  static const unsigned int kInitArenas = 2;
+  static const unsigned int kInitArenas = 4;
 
   inline Arena* NewArena();
   Arena init_arenas_[kInitArenas];

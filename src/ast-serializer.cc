@@ -9,11 +9,11 @@
 namespace iv {
 namespace core {
 
-void AstSerializer::Append(StringPiece str) {
+void AstSerializer::Append(const StringPiece& str) {
   out_.append(str.begin(), str.end());
 }
 
-void AstSerializer::Append(UStringPiece str) {
+void AstSerializer::Append(const UStringPiece& str) {
   out_.append(str.begin(), str.end());
 }
 

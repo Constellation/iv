@@ -11,8 +11,8 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
-  JSRegExp(core::UStringPiece value,
-           core::UStringPiece flags);
+  JSRegExp(const core::UStringPiece& value,
+           const core::UStringPiece& flags);
 
   inline bool IsValid() const {
     return status_ == U_ZERO_ERROR;
@@ -22,8 +22,8 @@ class JSRegExp : public JSObject {
     return true;
   }
 
-  static JSRegExp* New(core::UStringPiece value,
-                       core::UStringPiece flags);
+  static JSRegExp* New(const core::UStringPiece& value,
+                       const core::UStringPiece& flags);
 
  private:
   class JSRegExpImpl : public gc_cleanup {

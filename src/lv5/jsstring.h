@@ -88,9 +88,10 @@ class JSString : public GCUString, public gc {
     return hash_value_;
   }
 
-  static JSString* New(Context* context, core::StringPiece str);
-  static JSString* New(Context* context, core::UStringPiece str);
-  static JSString* NewAsciiString(Context* context, core::StringPiece str);
+  static JSString* New(Context* context, const core::StringPiece& str);
+  static JSString* New(Context* context, const core::UStringPiece& str);
+  static JSString* NewAsciiString(Context* context,
+                                  const core::StringPiece& str);
 
   template<typename Iter>
   static std::size_t CalcHash(Iter begin, Iter end) {

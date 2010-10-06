@@ -18,7 +18,8 @@ typedef std::basic_string<UChar,
                           std::char_traits<UChar> > UString;
 
 template<typename Out>
-inline void ConvertToUTF16(StringPiece str, Out* out,
+inline void ConvertToUTF16(const StringPiece& str,
+                           Out* out,
                            const char * code = "utf-8") {
   UErrorCode error = U_ZERO_ERROR;
   u_init(&error);

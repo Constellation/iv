@@ -20,8 +20,8 @@ class AstSerializer: public AstVisitor {
   inline const UString& out() const {
     return out_;
   }
-  void Append(StringPiece str);
-  void Append(UStringPiece str);
+  void Append(const StringPiece& str);
+  void Append(const UStringPiece& str);
   void Append(UChar c);
   void Append(char c);
   void Visit(Block* block);

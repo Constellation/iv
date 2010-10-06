@@ -101,11 +101,11 @@ Context::Context(Interpreter* interp)
   Prelude();
 }
 
-Symbol Context::Intern(core::StringPiece str) {
+Symbol Context::Intern(const core::StringPiece& str) {
   return table_.Lookup(str.data(), str.size());
 }
 
-Symbol Context::Intern(core::UStringPiece str) {
+Symbol Context::Intern(const core::UStringPiece& str) {
   return table_.Lookup(str.data(), str.size());
 }
 
@@ -215,7 +215,7 @@ const Class& Context::Cls(Symbol name) {
   return builtins_[name];
 }
 
-const Class& Context::Cls(core::StringPiece str) {
+const Class& Context::Cls(const core::StringPiece& str) {
   return builtins_[Intern(str)];
 }
 

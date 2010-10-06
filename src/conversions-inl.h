@@ -195,11 +195,11 @@ inline double StringToDouble(Iter it, Iter last) {
   }
 }
 
-inline double StringToDouble(StringPiece str) {
+inline double StringToDouble(const StringPiece& str) {
   return StringToDouble(str.begin(), str.end());
 }
 
-inline double StringToDouble(UStringPiece str) {
+inline double StringToDouble(const UStringPiece& str) {
   return StringToDouble(str.begin(), str.end());
 }
 

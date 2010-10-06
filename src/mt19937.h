@@ -11,7 +11,7 @@
 
 #ifndef _IV_MT19937_H_
 #define _IV_MT19937_H_
-#include <inttypes.h>
+#include <tr1/cstdint>
 #include <vector>
 
 namespace iv {

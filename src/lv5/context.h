@@ -108,7 +108,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   template<typename Func>
-  void DefineFunction(const Func& f, core::StringPiece func_name) {
+  void DefineFunction(const Func& f, const core::StringPiece& func_name) {
     JSFunction* const func = JSNativeFunction::New(this, f);
     const Symbol name = Intern(func_name);
     variable_env_->CreateMutableBinding(this, name, false);
@@ -120,10 +120,10 @@ class Context : private core::Noncopyable<Context>::type {
   void Prelude();
 
   const Class& Cls(Symbol name);
-  const Class& Cls(core::StringPiece str);
+  const Class& Cls(const core::StringPiece& str);
 
-  Symbol Intern(core::StringPiece str);
-  Symbol Intern(core::UStringPiece str);
+  Symbol Intern(const core::StringPiece& str);
+  Symbol Intern(const core::UStringPiece& str);
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const core::NamedOnlyBreakableStatement* stmt) const;

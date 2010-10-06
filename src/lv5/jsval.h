@@ -1,6 +1,5 @@
 #ifndef _IV_LV5_JSVAL_H_
 #define _IV_LV5_JSVAL_H_
-#include <inttypes.h>
 #include <cmath>
 #include <limits>
 #include <algorithm>
