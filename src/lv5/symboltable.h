@@ -7,15 +7,13 @@
 #include <boost/foreach.hpp>
 #include "jsstring.h"
 #include "symbol.h"
+#include "ustring.h"
 namespace iv {
 namespace lv5 {
 class Context;
 class SymbolTable {
  public:
-  typedef std::basic_string<UChar,
-                            std::char_traits<UChar>,
-                            std::allocator<UChar> > u16string;
-  typedef std::vector<u16string> Strings;
+  typedef std::vector<core::UString> Strings;
   typedef std::vector<std::size_t> Indexes;
   typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
   SymbolTable();
@@ -35,7 +33,7 @@ class SymbolTable {
   template<class CharT>
   Symbol Lookup(const CharT* str, std::size_t size) {
     std::size_t hash = JSString::CalcHash(str, str+size);
-    u16string target(str, str+size);
+    core::UString target(str, str+size);
     {
       boost::mutex::scoped_lock lock(sync_);
       Table::iterator it = table_.find(hash);

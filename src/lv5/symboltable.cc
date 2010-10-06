@@ -9,7 +9,7 @@ SymbolTable::SymbolTable()
 }
 
 JSString* SymbolTable::ToString(Context* ctx, Symbol sym) const {
-  const u16string& str = strings_[sym];
+  const core::UString& str = strings_[sym];
   return JSString::New(ctx, str);
 }
 
