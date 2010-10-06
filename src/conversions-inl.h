@@ -163,19 +163,19 @@ inline double StringToDouble(Iter it, Iter last) {
     }
     int exponent = 0;
     do {
-      if (exponent > 999) {
-        exponent = 999;
+      if (exponent > 9999) {
+        exponent = 9999;
       } else {
         exponent = exponent * 10 + (*it - '0');
       }
       ++it;
     } while (it != last && ICU::IsDecimalDigit(*it));
     exponent+=insignificant_digits;
-    if (exponent > 999) {
-      exponent = 999;
+    if (exponent > 9999) {
+      exponent = 9999;
     }
-    std::snprintf(buffer.data()+pos, 4, "%d", exponent);
-    pos+=3;
+    std::snprintf(buffer.data()+pos, 5, "%d", exponent);
+    pos+=4;
   }
 
   while (it != last && (ICU::IsWhiteSpace(*it) || ICU::IsLineTerminator(*it))) {
