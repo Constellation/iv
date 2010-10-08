@@ -1,6 +1,8 @@
 #ifndef _IV_LV5_CONTEXT_H_
 #define _IV_LV5_CONTEXT_H_
 #include <tr1/unordered_map>
+#include <tr1/random>
+#include "xorshift.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
@@ -18,7 +20,10 @@ namespace lv5 {
 class Interpreter;
 class Context : private core::Noncopyable<Context>::type {
  public:
-
+  typedef iv::core::Xor128 random_engine_type;
+  typedef std::tr1::uniform_real<double> random_distribution_type;
+  typedef std::tr1::variate_generator<
+      random_engine_type, random_distribution_type> random_generator;
   enum Mode {
     NORMAL,
     BREAK,
@@ -124,6 +129,7 @@ class Context : private core::Noncopyable<Context>::type {
 
   Symbol Intern(const core::StringPiece& str);
   Symbol Intern(const core::UStringPiece& str);
+  double Random();
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const core::NamedOnlyBreakableStatement* stmt) const;
@@ -140,6 +146,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSErrorCode::Type error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;
+  random_generator random_engine_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_

@@ -93,7 +93,9 @@ Context::Context(Interpreter* interp)
     target_(NULL),
     error_(JSErrorCode::Normal),
     builtins_(),
-    strict_(false) {
+    strict_(false),
+    random_engine_(random_engine_type(),
+                   random_distribution_type(0, 1)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
@@ -107,6 +109,10 @@ Symbol Context::Intern(const core::StringPiece& str) {
 
 Symbol Context::Intern(const core::UStringPiece& str) {
   return table_.Lookup(str.data(), str.size());
+}
+
+double Context::Random() {
+  return random_engine_();
 }
 
 JSString* Context::ToString(Symbol sym) {
