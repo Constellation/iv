@@ -21,7 +21,7 @@ class JSFunction : public JSObject {
   }
   virtual JSVal Call(const Arguments& args,
                      JSErrorCode::Type* error) = 0;
-  virtual bool HasInstance(Context* context,
+  virtual bool HasInstance(Context* ctx,
                            const JSVal& val, JSErrorCode::Type* error);
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;

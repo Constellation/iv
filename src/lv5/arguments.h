@@ -45,15 +45,15 @@ class Arguments {
   void swap(this_type& rhs) {
     using std::swap;
     args_.swap(rhs.args_);
-    swap(context_, rhs.context_);
+    swap(ctx_, rhs.ctx_);
     swap(this_binding_, rhs.this_binding_);
   }
   reference operator[](size_type n) { return args_[n]; }
   const_reference operator[](size_type n) const { return args_[n]; }
 
-  explicit Arguments(Context* context);
-  Arguments(Context* context, std::size_t n);
-  Arguments(Context* context, const JSVal& this_binding);
+  explicit Arguments(Context* ctx);
+  Arguments(Context* ctx, std::size_t n);
+  Arguments(Context* ctx, const JSVal& this_binding);
   inline const JSVals& args() const {
     return args_;
   }
@@ -61,7 +61,7 @@ class Arguments {
     args_.push_back(val);
   }
   Interpreter* interpreter() const;
-  Context* context() const;
+  Context* ctx() const;
   inline JSVal this_binding() const {
     return this_binding_;
   }
@@ -70,7 +70,7 @@ class Arguments {
   }
 
  private:
-  Context* context_;
+  Context* ctx_;
   JSVal this_binding_;
   std::vector<JSVal> args_;
 };

@@ -96,6 +96,15 @@ class Context : private core::Noncopyable<Context>::type {
   void set_ret(const JSVal& ret) {
     ret_ = ret;
   }
+
+  template<class T>
+  void Return(T val) {
+    ret_.set_value(val);
+  }
+  void Return(const JSVal& val) {
+    ret_ = val;
+  }
+
   void SetStatement(Mode mode, const JSVal& val,
                     core::BreakableStatement* target) {
     mode_ = mode;

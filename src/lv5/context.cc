@@ -15,23 +15,23 @@ JSVal ObjectConstructor(const Arguments& args, JSErrorCode::Type* error) {
   if (args.size() == 1) {
     const JSVal& val = args[0];
     if (val.IsNull() || val.IsUndefined()) {
-      return JSVal(JSObject::New(args.context()));
+      return JSVal(JSObject::New(args.ctx()));
     } else {
-      JSObject* const obj = val.ToObject(args.context(), error);
+      JSObject* const obj = val.ToObject(args.ctx(), error);
       if (*error) {
         return JSVal::Undefined();
       }
       return JSVal(obj);
     }
   } else {
-    return JSVal(JSObject::New(args.context()));
+    return JSVal(JSObject::New(args.ctx()));
   }
 }
 
 JSVal ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* error) {
   if (args.size() > 0) {
     const JSVal& val = args[0];
-    Context* ctx = args.context();
+    Context* ctx = args.ctx();
     JSString* const str = val.ToString(ctx, error);
     JSObject* const obj = args.this_binding().ToObject(ctx, error);
     if (*error) {
@@ -45,7 +45,7 @@ JSVal ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* error) {
 
 JSVal ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
   std::string ascii;
-  JSObject* const obj = args.this_binding().ToObject(args.context(), error);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), error);
   if (*error) {
     return JSVal(false);
   }
@@ -54,7 +54,7 @@ JSVal ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
   std::string str("[object ");
   str.append(cls->begin(), cls->end());
   str.append("]");
-  return JSVal(JSString::NewAsciiString(args.context(), str.c_str()));
+  return JSVal(JSString::NewAsciiString(args.ctx(), str.c_str()));
 }
 
 JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
@@ -62,7 +62,7 @@ JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     if (func->AsNativeFunction()) {
-      return JSVal(JSString::NewAsciiString(args.context(), "function () { [native code] }"));
+      return JSVal(JSString::NewAsciiString(args.ctx(), "function () { [native code] }"));
     } else {
       core::UString buffer(function_prefix,
                            function_prefix+std::strlen(function_prefix));
@@ -72,7 +72,7 @@ JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
       }
       const core::UStringPiece src = func->AsCodeFunction()->GetSource();
       buffer.append(src.data(), src.size());
-      return JSVal(JSString::New(args.context(), buffer));
+      return JSVal(JSString::New(args.ctx(), buffer));
     }
   }
   *error = JSErrorCode::TypeError;

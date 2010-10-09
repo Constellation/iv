@@ -40,7 +40,7 @@ static JSVal Print(const Arguments& args, JSErrorCode::Type* error) {
     std::size_t index = 0;
     BOOST_FOREACH(const JSVal& val, args) {
       ++index;
-      const JSString* const str = val.ToString(args.context(), error);
+      const JSString* const str = val.ToString(args.ctx(), error);
       if (*error) {
         return JSVal::Undefined();
       }

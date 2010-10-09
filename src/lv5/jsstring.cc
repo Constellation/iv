@@ -38,7 +38,7 @@ JSString::JSString(const JSString& str)
     hash_value_(str.hash_value_) {
 }
 
-JSString* JSString::New(Context* context, const core::StringPiece& str) {
+JSString* JSString::New(Context* ctx, const core::StringPiece& str) {
   JSString* res;
   UErrorCode error = U_ZERO_ERROR;
   UConverter* conv;
@@ -68,11 +68,11 @@ JSString* JSString::New(Context* context, const core::StringPiece& str) {
   return res;
 }
 
-JSString* JSString::New(Context* context, const core::UStringPiece& str) {
+JSString* JSString::New(Context* ctx, const core::UStringPiece& str) {
   return new JSString(str.data(), str.size());
 }
 
-JSString* JSString::NewAsciiString(Context* context,
+JSString* JSString::NewAsciiString(Context* ctx,
                                    const core::StringPiece& str) {
   return new JSString(str.begin(), str.end());
 }

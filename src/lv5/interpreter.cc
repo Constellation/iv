@@ -30,15 +30,15 @@ const std::string arguments_string("arguments");
 namespace iv {
 namespace lv5 {
 
-#define CHECK  context_->error());\
-  if (context_->IsError()) {\
+#define CHECK  ctx_->error());\
+  if (ctx_->IsError()) {\
     return;\
   }\
   ((void)0
 
 
-#define CHECK_WITH(val) context_->error());\
-  if (context_->IsError()) {\
+#define CHECK_WITH(val) ctx_->error());\
+  if (ctx_->IsError()) {\
     return val;\
   }\
   ((void)0
@@ -53,7 +53,7 @@ namespace lv5 {
 
 #define RETURN_STMT(type, val, target)\
   do {\
-    context_->SetStatement(type, val, target);\
+    ctx_->SetStatement(type, val, target);\
     return;\
   } while (0)
 
@@ -66,13 +66,13 @@ namespace lv5 {
 
 #define EVAL(node)\
   node->Accept(this);\
-  if (context_->IsError()) {\
+  if (ctx_->IsError()) {\
     return;\
   }
 
 
 Interpreter::Interpreter()
-  : context_(NULL) {
+  : ctx_(NULL) {
 }
 
 
@@ -88,20 +88,20 @@ void Interpreter::CallCode(
   // step 1
   JSVal this_value = args.this_binding();
   if (this_value.IsUndefined()) {
-    this_value.set_value(context_->global_obj());
+    this_value.set_value(ctx_->global_obj());
   } else if (!this_value.IsObject()) {
-    JSObject* obj = this_value.ToObject(context_, CHECK);
+    JSObject* obj = this_value.ToObject(ctx_, CHECK);
     this_value.set_value(obj);
   }
-  JSDeclEnv* local_env = NewDeclarativeEnvironment(context_, code.scope());
-  ContextSwitcher switcher(context_, local_env,
+  JSDeclEnv* local_env = NewDeclarativeEnvironment(ctx_, code.scope());
+  ContextSwitcher switcher(ctx_, local_env,
                            local_env, this_value.object(),
                            code.code()->strict());
 
   // section 10.5 Declaration Binding Instantiation
   const core::Scope* const scope = code.code()->scope();
   // step 1
-  JSEnv* const env = context_->variable_env();
+  JSEnv* const env = ctx_->variable_env();
   // step 2
   const bool configurable_bindings = false;
   // step 4
@@ -112,51 +112,51 @@ void Interpreter::CallCode(
     BOOST_FOREACH(core::Identifier* const ident,
                   code.code()->params()) {
       ++n;
-      Symbol arg_name = context_->Intern(ident->value());
+      Symbol arg_name = ctx_->Intern(ident->value());
       if (!env->HasBinding(arg_name)) {
-        env->CreateMutableBinding(context_, arg_name, configurable_bindings);
+        env->CreateMutableBinding(ctx_, arg_name, configurable_bindings);
       }
       if (n > arg_count) {
-        env->SetMutableBinding(context_, arg_name,
-                               JSVal::Undefined(), context_->IsStrict(), CHECK);
+        env->SetMutableBinding(ctx_, arg_name,
+                               JSVal::Undefined(), ctx_->IsStrict(), CHECK);
       } else {
-        env->SetMutableBinding(context_, arg_name,
-                               arguments[n], context_->IsStrict(), CHECK);
+        env->SetMutableBinding(ctx_, arg_name,
+                               arguments[n], ctx_->IsStrict(), CHECK);
       }
     }
   }
   BOOST_FOREACH(core::FunctionLiteral* const f,
                 scope->function_declarations()) {
-    const Symbol fn = context_->Intern(f->name()->value());
+    const Symbol fn = ctx_->Intern(f->name()->value());
     EVAL(f);
-    JSVal fo = context_->ret();
+    JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
-      env->CreateMutableBinding(context_, fn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, fn, configurable_bindings);
     }
-    env->SetMutableBinding(context_, fn, fo, context_->IsStrict(), CHECK);
+    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
   }
   BOOST_FOREACH(const core::Scope::Variable& var, scope->variables()) {
-    const Symbol dn = context_->Intern(var.first->value());
+    const Symbol dn = ctx_->Intern(var.first->value());
     if (!env->HasBinding(dn)) {
-      env->CreateMutableBinding(context_, dn, configurable_bindings);
-      env->SetMutableBinding(context_, dn,
-                             JSVal::Undefined(), context_->IsStrict(), CHECK);
+      env->CreateMutableBinding(ctx_, dn, configurable_bindings);
+      env->SetMutableBinding(ctx_, dn,
+                             JSVal::Undefined(), ctx_->IsStrict(), CHECK);
     }
   }
 
   JSVal value;
   BOOST_FOREACH(core::Statement* const stmt, code.code()->body()) {
     EVAL(stmt);
-    if (context_->IsMode<Context::THROW>()) {
+    if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
       return;
     }
-    if (!context_->ret().IsUndefined()) {
-      value = context_->ret();
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
     }
-    if (!context_->IsMode<Context::NORMAL>()) {
+    if (!ctx_->IsMode<Context::NORMAL>()) {
       ABRUPT();
     }
   }
@@ -167,25 +167,25 @@ void Interpreter::Run(core::FunctionLiteral* global) {
   // section 10.5 Declaration Binding Instantiation
   const bool configurable_bindings = false;
   const core::Scope* const scope = global->scope();
-  JSEnv* const env = context_->variable_env();
-  StrictSwitcher switcher(context_, global->strict());
+  JSEnv* const env = ctx_->variable_env();
+  StrictSwitcher switcher(ctx_, global->strict());
   BOOST_FOREACH(core::FunctionLiteral* const f,
                 scope->function_declarations()) {
-    const Symbol fn = context_->Intern(f->name()->value());
+    const Symbol fn = ctx_->Intern(f->name()->value());
     EVAL(f);
-    JSVal fo = context_->ret();
+    JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
-      env->CreateMutableBinding(context_, fn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, fn, configurable_bindings);
     }
-    env->SetMutableBinding(context_, fn, fo, context_->IsStrict(), CHECK);
+    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
   }
 
   BOOST_FOREACH(const core::Scope::Variable& var, scope->variables()) {
-    const Symbol dn = context_->Intern(var.first->value());
+    const Symbol dn = ctx_->Intern(var.first->value());
     if (!env->HasBinding(dn)) {
-      env->CreateMutableBinding(context_, dn, configurable_bindings);
-      env->SetMutableBinding(context_, dn,
-                             JSVal::Undefined(), context_->IsStrict(), CHECK);
+      env->CreateMutableBinding(ctx_, dn, configurable_bindings);
+      env->SetMutableBinding(ctx_, dn,
+                             JSVal::Undefined(), ctx_->IsStrict(), CHECK);
     }
   }
 
@@ -193,16 +193,16 @@ void Interpreter::Run(core::FunctionLiteral* global) {
   // section 14 Program
   BOOST_FOREACH(core::Statement* const stmt, global->body()) {
     EVAL(stmt);
-    if (context_->IsMode<Context::THROW>()) {
+    if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
       return;
     }
-    if (!context_->ret().IsUndefined()) {
-      value = context_->ret();
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
     }
-    if (!context_->IsMode<Context::NORMAL>()) {
+    if (!ctx_->IsMode<Context::NORMAL>()) {
       ABRUPT();
     }
   }
@@ -212,38 +212,38 @@ void Interpreter::Run(core::FunctionLiteral* global) {
 
 void Interpreter::Visit(core::Block* block) {
   // section 12.1 Block
-  context_->set_mode(Context::Context::NORMAL);
+  ctx_->set_mode(Context::Context::NORMAL);
   JSVal value;
   BOOST_FOREACH(core::Statement* const stmt, block->body()) {
     EVAL(stmt);
-    if (context_->IsMode<Context::THROW>()) {
+    if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
       return;
     }
-    if (!context_->ret().IsUndefined()) {
-      value = context_->ret();
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
     }
 
-    if (context_->IsMode<Context::BREAK>() &&
-        context_->InCurrentLabelSet(block)) {
+    if (ctx_->IsMode<Context::BREAK>() &&
+        ctx_->InCurrentLabelSet(block)) {
       RETURN_STMT(Context::NORMAL, value, NULL);
     }
-    if (!context_->IsMode<Context::NORMAL>()) {
+    if (!ctx_->IsMode<Context::NORMAL>()) {
       ABRUPT();
     }
   }
-  context_->set_ret(value);
+  ctx_->Return(value);
 }
 
 
 void Interpreter::Visit(core::FunctionStatement* stmt) {
   core::FunctionLiteral* const func = stmt->function();
   func->name()->Accept(this);
-  const JSVal lhs = context_->ret();
+  const JSVal lhs = ctx_->ret();
   EVAL(func);
-  const JSVal val = GetValue(context_->ret(), CHECK);
+  const JSVal val = GetValue(ctx_->ret(), CHECK);
   PutValue(lhs, val, CHECK);
 }
 
@@ -252,10 +252,10 @@ void Interpreter::Visit(core::VariableStatement* var) {
   // bool is_const = var->IsConst();
   BOOST_FOREACH(const core::Declaration* const decl, var->decls()) {
     EVAL(decl->name());
-    const JSVal lhs = context_->ret();
+    const JSVal lhs = ctx_->ret();
     if (decl->expr()) {
       EVAL(decl->expr());
-      const JSVal val = GetValue(context_->ret(), CHECK);
+      const JSVal val = GetValue(ctx_->ret(), CHECK);
       PutValue(lhs, val, CHECK);
       // TODO(Constellation) 12.2 step 5 Return a String value
     }
@@ -275,7 +275,7 @@ void Interpreter::Visit(core::EmptyStatement* empty) {
 
 void Interpreter::Visit(core::IfStatement* stmt) {
   EVAL(stmt->cond());
-  const JSVal expr = GetValue(context_->ret(), CHECK);
+  const JSVal expr = GetValue(ctx_->ret(), CHECK);
   const bool val = expr.ToBoolean(CHECK);
   if (val) {
     EVAL(stmt->then_statement());
@@ -297,21 +297,21 @@ void Interpreter::Visit(core::DoWhileStatement* stmt) {
   bool iterating = true;
   while (iterating) {
     EVAL(stmt->body());
-    if (!context_->ret().IsUndefined()) {
-      value = context_->ret();
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
     }
-    if (!context_->IsMode<Context::CONTINUE>() ||
-        !context_->InCurrentLabelSet(stmt)) {
-      if (context_->IsMode<Context::BREAK>() &&
-          context_->InCurrentLabelSet(stmt)) {
+    if (!ctx_->IsMode<Context::CONTINUE>() ||
+        !ctx_->InCurrentLabelSet(stmt)) {
+      if (ctx_->IsMode<Context::BREAK>() &&
+          ctx_->InCurrentLabelSet(stmt)) {
         RETURN_STMT(Context::NORMAL, value, NULL);
       }
-      if (!context_->IsMode<Context::NORMAL>()) {
+      if (!ctx_->IsMode<Context::NORMAL>()) {
         ABRUPT();
       }
     }
     EVAL(stmt->cond());
-    const JSVal expr = GetValue(context_->ret(), CHECK);
+    const JSVal expr = GetValue(ctx_->ret(), CHECK);
     const bool val = expr.ToBoolean(CHECK);
     iterating = val;
   }
@@ -323,20 +323,20 @@ void Interpreter::Visit(core::WhileStatement* stmt) {
   JSVal value;
   while (true) {
     EVAL(stmt->cond());
-    const JSVal expr = GetValue(context_->ret(), CHECK);
+    const JSVal expr = GetValue(ctx_->ret(), CHECK);
     const bool val = expr.ToBoolean(CHECK);
     if (val) {
       EVAL(stmt->body());
-      if (!context_->ret().IsUndefined()) {
-        value = context_->ret();
+      if (!ctx_->ret().IsUndefined()) {
+        value = ctx_->ret();
       }
-      if (!context_->IsMode<Context::CONTINUE>() ||
-          !context_->InCurrentLabelSet(stmt)) {
-        if (context_->IsMode<Context::BREAK>() &&
-            context_->InCurrentLabelSet(stmt)) {
+      if (!ctx_->IsMode<Context::CONTINUE>() ||
+          !ctx_->InCurrentLabelSet(stmt)) {
+        if (ctx_->IsMode<Context::BREAK>() &&
+            ctx_->InCurrentLabelSet(stmt)) {
           RETURN_STMT(Context::NORMAL, value, NULL);
         }
-        if (!context_->IsMode<Context::NORMAL>()) {
+        if (!ctx_->IsMode<Context::NORMAL>()) {
           ABRUPT();
         }
       }
@@ -350,35 +350,35 @@ void Interpreter::Visit(core::WhileStatement* stmt) {
 void Interpreter::Visit(core::ForStatement* stmt) {
   if (stmt->init()) {
     EVAL(stmt->init());
-    GetValue(context_->ret(), CHECK);
+    GetValue(ctx_->ret(), CHECK);
   }
   JSVal value;
   while (true) {
     if (stmt->cond()) {
       EVAL(stmt->cond());
-      const JSVal expr = GetValue(context_->ret(), CHECK);
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const bool val = expr.ToBoolean(CHECK);
       if (!val) {
         RETURN_STMT(Context::NORMAL, value, NULL);
       }
     }
     EVAL(stmt->body());
-    if (!context_->ret().IsUndefined()) {
-      value = context_->ret();
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
     }
-    if (!context_->IsMode<Context::CONTINUE>() ||
-        !context_->InCurrentLabelSet(stmt)) {
-      if (context_->IsMode<Context::BREAK>() &&
-          context_->InCurrentLabelSet(stmt)) {
+    if (!ctx_->IsMode<Context::CONTINUE>() ||
+        !ctx_->InCurrentLabelSet(stmt)) {
+      if (ctx_->IsMode<Context::BREAK>() &&
+          ctx_->InCurrentLabelSet(stmt)) {
         RETURN_STMT(Context::NORMAL, value, NULL);
       }
-      if (!context_->IsMode<Context::NORMAL>()) {
+      if (!ctx_->IsMode<Context::NORMAL>()) {
         ABRUPT();
       }
     }
     if (stmt->next()) {
       EVAL(stmt->next());
-      GetValue(context_->ret(), CHECK);
+      GetValue(ctx_->ret(), CHECK);
     }
   }
 }
@@ -386,11 +386,11 @@ void Interpreter::Visit(core::ForStatement* stmt) {
 
 void Interpreter::Visit(core::ForInStatement* stmt) {
   EVAL(stmt->enumerable());
-  JSVal expr = GetValue(context_->ret(), CHECK);
+  JSVal expr = GetValue(ctx_->ret(), CHECK);
   if (expr.IsNull() || expr.IsUndefined()) {
     RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
   }
-  JSObject* const obj = expr.ToObject(context_, CHECK);
+  JSObject* const obj = expr.ToObject(ctx_, CHECK);
   JSVal value;
   JSObject* current = obj;
   do {
@@ -399,26 +399,26 @@ void Interpreter::Visit(core::ForInStatement* stmt) {
       if (!set.second->IsEnumerable()) {
         continue;
       }
-      JSVal rhs(context_->ToString(set.first));
+      JSVal rhs(ctx_->ToString(set.first));
       EVAL(stmt->each());
       if (stmt->each()->AsVariableStatement()) {
         core::Identifier* ident =
             stmt->each()->AsVariableStatement()->decls()[0]->name();
         EVAL(ident);
       }
-      JSVal lhs = context_->ret();
+      JSVal lhs = ctx_->ret();
       PutValue(lhs, rhs, CHECK);
       EVAL(stmt->body());
-      if (!context_->ret().IsUndefined()) {
-        value = context_->ret();
+      if (!ctx_->ret().IsUndefined()) {
+        value = ctx_->ret();
       }
-      if (!context_->IsMode<Context::CONTINUE>() ||
-          !context_->InCurrentLabelSet(stmt)) {
-        if (context_->IsMode<Context::BREAK>() &&
-            context_->InCurrentLabelSet(stmt)) {
+      if (!ctx_->IsMode<Context::CONTINUE>() ||
+          !ctx_->InCurrentLabelSet(stmt)) {
+        if (ctx_->IsMode<Context::BREAK>() &&
+            ctx_->InCurrentLabelSet(stmt)) {
           RETURN_STMT(Context::NORMAL, value, NULL);
         }
-        if (!context_->IsMode<Context::NORMAL>()) {
+        if (!ctx_->IsMode<Context::NORMAL>()) {
           ABRUPT();
         }
       }
@@ -448,7 +448,7 @@ void Interpreter::Visit(core::BreakStatement* stmt) {
 void Interpreter::Visit(core::ReturnStatement* stmt) {
   if (stmt->expr()) {
     EVAL(stmt->expr());
-    const JSVal value = GetValue(context_->ret(), CHECK);
+    const JSVal value = GetValue(ctx_->ret(), CHECK);
     RETURN_STMT(Context::RETURN, value, NULL);
   } else {
     RETURN_STMT(Context::RETURN, JSVal::Undefined(), NULL);
@@ -459,13 +459,13 @@ void Interpreter::Visit(core::ReturnStatement* stmt) {
 // section 12.10 The with Statement
 void Interpreter::Visit(core::WithStatement* stmt) {
   EVAL(stmt->context());
-  const JSVal val = GetValue(context_->ret(), CHECK);
-  JSObject* const obj = val.ToObject(context_, CHECK);
-  JSEnv* const old_env = context_->lexical_env();
-  JSObjectEnv* const new_env = NewObjectEnvironment(context_, obj, old_env);
+  const JSVal val = GetValue(ctx_->ret(), CHECK);
+  JSObject* const obj = val.ToObject(ctx_, CHECK);
+  JSEnv* const old_env = ctx_->lexical_env();
+  JSObjectEnv* const new_env = NewObjectEnvironment(ctx_, obj, old_env);
   new_env->set_provide_this(true);
   {
-    LexicalEnvSwitcher switcher(context_, new_env);
+    LexicalEnvSwitcher switcher(ctx_, new_env);
     EVAL(stmt->body());
   }
 }
@@ -483,7 +483,7 @@ void Interpreter::Visit(core::CaseClause* clause) {
 
 void Interpreter::Visit(core::SwitchStatement* stmt) {
   EVAL(stmt->expr());
-  const JSVal cond = GetValue(context_->ret(), CHECK);
+  const JSVal cond = GetValue(ctx_->ret(), CHECK);
   // Case Block
   JSVal value;
   {
@@ -503,7 +503,7 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
       } else {
         if (!found) {
           EVAL(clause->expr());
-          const JSVal res = GetValue(context_->ret(), CHECK);
+          const JSVal res = GetValue(ctx_->ret(), CHECK);
           if (StrictEqual(cond, res)) {
             found = true;
           }
@@ -512,11 +512,11 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
         if (found) {
           BOOST_FOREACH(core::Statement* const st, clause->body()) {
             EVAL(st);
-            if (!context_->ret().IsUndefined()) {
-              value = context_->ret();
+            if (!ctx_->ret().IsUndefined()) {
+              value = ctx_->ret();
             }
-            if (!context_->IsMode<Context::NORMAL>()) {
-              context_->ret() = value;
+            if (!ctx_->IsMode<Context::NORMAL>()) {
+              ctx_->ret() = value;
               finalize = true;
               break;
             }
@@ -532,11 +532,11 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
         const CaseClause* const clause = clauses[i];
         BOOST_FOREACH(core::Statement* const st, clause->body()) {
           EVAL(st);
-          if (!context_->ret().IsUndefined()) {
-            value = context_->ret();
+          if (!ctx_->ret().IsUndefined()) {
+            value = ctx_->ret();
           }
-          if (!context_->IsMode<Context::NORMAL>()) {
-            context_->ret() = value;
+          if (!ctx_->IsMode<Context::NORMAL>()) {
+            ctx_->ret() = value;
             break;
           }
         }
@@ -547,7 +547,7 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
     }
   }
 
-  if (context_->IsMode<Context::BREAK>() && context_->InCurrentLabelSet(stmt)) {
+  if (ctx_->IsMode<Context::BREAK>() && ctx_->InCurrentLabelSet(stmt)) {
     RETURN_STMT(Context::NORMAL, value, NULL);
   }
 }
@@ -556,7 +556,7 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
 // section 12.13 The throw Statement
 void Interpreter::Visit(core::ThrowStatement* stmt) {
   EVAL(stmt->expr());
-  JSVal ref = GetValue(context_->ret(), CHECK);
+  JSVal ref = GetValue(ctx_->ret(), CHECK);
   RETURN_STMT(Context::THROW, ref, NULL);
 }
 
@@ -564,33 +564,33 @@ void Interpreter::Visit(core::ThrowStatement* stmt) {
 // section 12.14 The try Statement
 void Interpreter::Visit(core::TryStatement* stmt) {
   stmt->body()->Accept(this);
-  if (context_->IsMode<Context::THROW>() || context_->IsError()) {
+  if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
-      context_->set_mode(Context::NORMAL);
-      context_->set_error(JSErrorCode::Normal);
-      JSEnv* const old_env = context_->lexical_env();
-      JSEnv* const catch_env = NewDeclarativeEnvironment(context_, old_env);
-      const Symbol name = context_->Intern(stmt->catch_name()->value());
-      const JSVal ex = (context_->IsMode<Context::THROW>()) ?
-          context_->ret() : JSVal::Undefined();
-      catch_env->CreateMutableBinding(context_, name, false);
-      catch_env->SetMutableBinding(context_, name, ex, false, CHECK);
+      ctx_->set_mode(Context::NORMAL);
+      ctx_->set_error(JSErrorCode::Normal);
+      JSEnv* const old_env = ctx_->lexical_env();
+      JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
+      const Symbol name = ctx_->Intern(stmt->catch_name()->value());
+      const JSVal ex = (ctx_->IsMode<Context::THROW>()) ?
+          ctx_->ret() : JSVal::Undefined();
+      catch_env->CreateMutableBinding(ctx_, name, false);
+      catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK);
       {
-        LexicalEnvSwitcher switcher(context_, catch_env);
+        LexicalEnvSwitcher switcher(ctx_, catch_env);
         EVAL(stmt->catch_block());
       }
     }
   }
-  const Context::Mode mode = context_->mode();
-  const JSVal value = context_->ret();
-  core::BreakableStatement* const target = context_->target();
+  const Context::Mode mode = ctx_->mode();
+  const JSVal value = ctx_->ret();
+  core::BreakableStatement* const target = ctx_->target();
 
-  context_->set_error(JSErrorCode::Normal);
-  context_->SetStatement(Context::Context::NORMAL, JSVal::Undefined(), NULL);
+  ctx_->set_error(JSErrorCode::Normal);
+  ctx_->SetStatement(Context::Context::NORMAL, JSVal::Undefined(), NULL);
 
   if (stmt->finally_block()) {
     stmt->finally_block()->Accept(this);
-    if (context_->IsMode<Context::NORMAL>()) {
+    if (ctx_->IsMode<Context::NORMAL>()) {
       RETURN_STMT(mode, value, target);
     }
   }
@@ -606,7 +606,7 @@ void Interpreter::Visit(core::DebuggerStatement* stmt) {
 
 void Interpreter::Visit(core::ExpressionStatement* stmt) {
   EVAL(stmt->expr());
-  const JSVal value = GetValue(context_->ret(), CHECK);
+  const JSVal value = GetValue(ctx_->ret(), CHECK);
   RETURN_STMT(Context::NORMAL, value, NULL);
 }
 
@@ -614,10 +614,10 @@ void Interpreter::Visit(core::ExpressionStatement* stmt) {
 void Interpreter::Visit(core::Assignment* assign) {
   using core::Token;
   EVAL(assign->left());
-  const JSVal lref(context_->ret());
+  const JSVal lref(ctx_->ret());
   const JSVal lhs = GetValue(lref, CHECK);
   EVAL(assign->right());
-  const JSVal rhs = GetValue(context_->ret(), CHECK);
+  const JSVal rhs = GetValue(ctx_->ret(), CHECK);
   JSVal result;
   switch (assign->op()) {
     case Token::ASSIGN: {  // =
@@ -625,79 +625,79 @@ void Interpreter::Visit(core::Assignment* assign) {
       break;
     }
     case Token::ASSIGN_ADD: {  // +=
-      const JSVal lprim = lhs.ToPrimitive(context_, JSObject::NONE, CHECK);
-      const JSVal rprim = rhs.ToPrimitive(context_, JSObject::NONE, CHECK);
+      const JSVal lprim = lhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
+      const JSVal rprim = rhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
       if (lprim.IsString() || rprim.IsString()) {
-        const JSString* const lstr = lprim.ToString(context_, CHECK);
-        const JSString* const rstr = rprim.ToString(context_, CHECK);
-        context_->ret().set_value(JSString::New(context_, *lstr + *rstr));
+        const JSString* const lstr = lprim.ToString(ctx_, CHECK);
+        const JSString* const rstr = rprim.ToString(ctx_, CHECK);
+        ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
         return;
       }
       assert(lprim.IsNumber() && rprim.IsNumber());
-      const double left_num = lprim.ToNumber(context_, CHECK);
-      const double right_num = rprim.ToNumber(context_, CHECK);
+      const double left_num = lprim.ToNumber(ctx_, CHECK);
+      const double right_num = rprim.ToNumber(ctx_, CHECK);
       result.set_value(left_num + right_num);
       break;
     }
     case Token::ASSIGN_SUB: {  // -=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(left_num - right_num);
       break;
     }
     case Token::ASSIGN_MUL: {  // *=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(left_num * right_num);
       break;
     }
     case Token::ASSIGN_MOD: {  // %=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(std::fmod(left_num, right_num));
       break;
     }
     case Token::ASSIGN_DIV: {  // /=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(left_num / right_num);
       break;
     }
     case Token::ASSIGN_SAR: {  // >>=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
           static_cast<double>(core::Conv::DoubleToInt32(left_num)
                  >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_SHR: {  // >>>=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
           static_cast<double>(core::Conv::DoubleToUInt32(left_num)
                  >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_SHL: {  // <<=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
           static_cast<double>(core::Conv::DoubleToInt32(left_num)
                  << (core::Conv::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_BIT_AND: {  // &=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
           static_cast<double>(core::Conv::DoubleToInt32(left_num)
                  & (core::Conv::DoubleToInt32(right_num))));
       break;
     }
     case Token::ASSIGN_BIT_OR: {  // |=
-      const double left_num = lhs.ToNumber(context_, CHECK);
-      const double right_num = rhs.ToNumber(context_, CHECK);
+      const double left_num = lhs.ToNumber(ctx_, CHECK);
+      const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
           static_cast<double>(core::Conv::DoubleToInt32(left_num)
                  | (core::Conv::DoubleToInt32(right_num))));
@@ -713,15 +713,15 @@ void Interpreter::Visit(core::Assignment* assign) {
     if (ref->IsStrictReference() &&
         ref->base()->IsEnvironment()) {
       const Symbol sym = ref->GetReferencedName();
-      if (sym == context_->Intern(eval_string) ||
-          sym == context_->Intern(arguments_string)) {
-        context_->set_error(JSErrorCode::SyntaxError);
+      if (sym == ctx_->Intern(eval_string) ||
+          sym == ctx_->Intern(arguments_string)) {
+        ctx_->set_error(JSErrorCode::SyntaxError);
         return;
       }
     }
   }
   PutValue(lref, result, CHECK);
-  context_->set_ret(result);
+  ctx_->Return(result);
 }
 
 
@@ -729,17 +729,17 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
   using core::Token;
   const Token::Type token = binary->op();
   EVAL(binary->left());
-  const JSVal lhs = GetValue(context_->ret(), CHECK);
+  const JSVal lhs = GetValue(ctx_->ret(), CHECK);
   {
     switch (token) {
       case Token::LOGICAL_AND: {  // &&
         const bool cond = lhs.ToBoolean(CHECK);
         if (!cond) {
-          context_->set_ret(lhs);
+          ctx_->Return(lhs);
           return;
         } else {
           EVAL(binary->right());
-          context_->ret() = GetValue(context_->ret(), CHECK);
+          ctx_->ret() = GetValue(ctx_->ret(), CHECK);
           return;
         }
       }
@@ -747,11 +747,11 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
       case Token::LOGICAL_OR: {  // ||
         const bool cond = lhs.ToBoolean(CHECK);
         if (cond) {
-          context_->set_ret(lhs);
+          ctx_->Return(lhs);
           return;
         } else {
           EVAL(binary->right());
-          context_->ret() = GetValue(context_->ret(), CHECK);
+          ctx_->ret() = GetValue(ctx_->ret(), CHECK);
           return;
         }
       }
@@ -764,76 +764,76 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
 
   {
     EVAL(binary->right());
-    const JSVal rhs = GetValue(context_->ret(), CHECK);
+    const JSVal rhs = GetValue(ctx_->ret(), CHECK);
     switch (token) {
       case Token::MUL: {  // *
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(left_num * right_num);
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(left_num * right_num);
         return;
       }
 
       case Token::DIV: {  // /
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(left_num / right_num);
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(left_num / right_num);
         return;
       }
 
       case Token::MOD: {  // %
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(std::fmod(left_num, right_num));
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(std::fmod(left_num, right_num));
         return;
       }
 
       case Token::ADD: {  // +
         // section 11.6.1 NOTE
         // no hint is provided in the calls to ToPrimitive
-        const JSVal lprim = lhs.ToPrimitive(context_, JSObject::NONE, CHECK);
-        const JSVal rprim = rhs.ToPrimitive(context_, JSObject::NONE, CHECK);
+        const JSVal lprim = lhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
+        const JSVal rprim = rhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
-          const JSString* const lstr = lprim.ToString(context_, CHECK);
-          const JSString* const rstr = rprim.ToString(context_, CHECK);
-          context_->ret().set_value(JSString::New(context_, *lstr + *rstr));
+          const JSString* const lstr = lprim.ToString(ctx_, CHECK);
+          const JSString* const rstr = rprim.ToString(ctx_, CHECK);
+          ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
           return;
         }
         assert(lprim.IsNumber() && rprim.IsNumber());
-        const double left_num = lprim.ToNumber(context_, CHECK);
-        const double right_num = rprim.ToNumber(context_, CHECK);
-        context_->ret().set_value(left_num + right_num);
+        const double left_num = lprim.ToNumber(ctx_, CHECK);
+        const double right_num = rprim.ToNumber(ctx_, CHECK);
+        ctx_->Return(left_num + right_num);
         return;
       }
 
       case Token::SUB: {  // -
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(left_num - right_num);
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(left_num - right_num);
         return;
       }
 
       case Token::SHL: {  // <<
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToInt32(left_num)
                    << (core::Conv::DoubleToInt32(right_num) & 0x1f)));
         return;
       }
 
       case Token::SAR: {  // >>
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToInt32(left_num)
                    >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
         return;
       }
 
       case Token::SHR: {  // >>>
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToUInt32(left_num)
                    >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
         return;
@@ -841,106 +841,106 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
 
       case Token::LT: {  // <
         const CompareKind res = Compare(lhs, rhs, true, CHECK);
-        context_->ret().set_value(res == CMP_TRUE);
+        ctx_->Return(res == CMP_TRUE);
         return;
       }
 
       case Token::GT: {  // >
         const CompareKind res = Compare(rhs, lhs, false, CHECK);
-        context_->ret().set_value(res == CMP_TRUE);
+        ctx_->Return(res == CMP_TRUE);
         return;
       }
 
       case Token::LTE: {  // <=
         const CompareKind res = Compare(rhs, lhs, false, CHECK);
-        context_->ret().set_value(res == CMP_FALSE);
+        ctx_->Return(res == CMP_FALSE);
         return;
       }
 
       case Token::GTE: {  // >=
         const CompareKind res = Compare(lhs, rhs, true, CHECK);
-        context_->ret().set_value(res == CMP_FALSE);
+        ctx_->Return(res == CMP_FALSE);
         return;
       }
 
       case Token::INSTANCEOF: {  // instanceof
         if (!rhs.IsObject()) {
-          context_->set_error(JSErrorCode::TypeError);
+          ctx_->set_error(JSErrorCode::TypeError);
           return;
         }
         JSObject* const robj = rhs.object();
         if (!robj->IsCallable()) {
-          context_->set_error(JSErrorCode::TypeError);
+          ctx_->set_error(JSErrorCode::TypeError);
           return;
         }
-        bool res = robj->AsCallable()->HasInstance(context_, lhs, CHECK);
-        context_->ret().set_value(res);
+        bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
+        ctx_->Return(res);
         return;
       }
 
       case Token::IN: {  // in
         if (!rhs.IsObject()) {
-          context_->set_error(JSErrorCode::TypeError);
+          ctx_->set_error(JSErrorCode::TypeError);
           return;
         }
-        const JSString* const name = lhs.ToString(context_, CHECK);
-        context_->ret().set_value(
-            rhs.object()->HasProperty(context_->Intern(*name)));
+        const JSString* const name = lhs.ToString(ctx_, CHECK);
+        ctx_->Return(
+            rhs.object()->HasProperty(ctx_->Intern(*name)));
         return;
       }
 
       case Token::EQ: {  // ==
         const bool res = AbstractEqual(lhs, rhs, CHECK);
-        context_->ret().set_value(res);
+        ctx_->Return(res);
         return;
       }
 
       case Token::NE: {  // !=
         const bool res = AbstractEqual(lhs, rhs, CHECK);
-        context_->ret().set_value(!res);
+        ctx_->Return(!res);
         return;
       }
 
       case Token::EQ_STRICT: {  // ===
-        context_->ret().set_value(StrictEqual(lhs, rhs));
+        ctx_->Return(StrictEqual(lhs, rhs));
         return;
       }
 
       case Token::NE_STRICT: {  // !==
-        context_->ret().set_value(!StrictEqual(lhs, rhs));
+        ctx_->Return(!StrictEqual(lhs, rhs));
         return;
       }
 
       // bitwise op
       case Token::BIT_AND: {  // &
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToInt32(left_num)
                    & (core::Conv::DoubleToInt32(right_num))));
         return;
       }
 
       case Token::BIT_XOR: {  // ^
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToInt32(left_num)
                    ^ (core::Conv::DoubleToInt32(right_num))));
         return;
       }
 
       case Token::BIT_OR: {  // |
-        const double left_num = lhs.ToNumber(context_, CHECK);
-        const double right_num = rhs.ToNumber(context_, CHECK);
-        context_->ret().set_value(
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        ctx_->Return(
             static_cast<double>(core::Conv::DoubleToInt32(left_num)
                    | (core::Conv::DoubleToInt32(right_num))));
         return;
       }
 
       case Token::COMMA:  // ,
-        context_->set_ret(rhs);
+        ctx_->Return(rhs);
         return;
 
       default:
@@ -952,15 +952,15 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
 
 void Interpreter::Visit(core::ConditionalExpression* cond) {
   EVAL(cond->cond());
-  const JSVal expr = GetValue(context_->ret(), CHECK);
+  const JSVal expr = GetValue(ctx_->ret(), CHECK);
   const bool condition = expr.ToBoolean(CHECK);
   if (condition) {
     EVAL(cond->left());
-    context_->ret() = GetValue(context_->ret(), CHECK);
+    ctx_->ret() = GetValue(ctx_->ret(), CHECK);
     return;
   } else {
     EVAL(cond->right());
-    context_->ret() = GetValue(context_->ret(), CHECK);
+    ctx_->ret() = GetValue(ctx_->ret(), CHECK);
     return;
   }
 }
@@ -971,32 +971,32 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
   switch (unary->op()) {
     case Token::DELETE: {
       EVAL(unary->expr());
-      if (!context_->ret().IsReference()) {
-        context_->ret().set_value(true);
+      if (!ctx_->ret().IsReference()) {
+        ctx_->Return(true);
         return;
       }
-      const JSReference* const ref = context_->ret().reference();
+      const JSReference* const ref = ctx_->ret().reference();
       if (ref->IsUnresolvableReference()) {
         if (ref->IsStrictReference()) {
-          context_->set_error(JSErrorCode::SyntaxError);
+          ctx_->set_error(JSErrorCode::SyntaxError);
           return;
         } else {
-          context_->ret().set_value(true);
+          ctx_->Return(true);
           return;
         }
       }
       if (ref->IsPropertyReference()) {
-        JSObject* const obj = ref->base()->ToObject(context_, CHECK);
+        JSObject* const obj = ref->base()->ToObject(ctx_, CHECK);
         const bool result = obj->Delete(ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
-        context_->ret().set_value(result);
+        ctx_->Return(result);
       } else {
         assert(ref->base()->IsEnvironment());
         if (ref->IsStrictReference()) {
-          context_->set_error(JSErrorCode::SyntaxError);
+          ctx_->set_error(JSErrorCode::SyntaxError);
           return;
         }
-        context_->ret().set_value(
+        ctx_->Return(
             ref->base()->environment()->DeleteBinding(
                 ref->GetReferencedName()));
       }
@@ -1005,101 +1005,101 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
 
     case Token::VOID: {
       EVAL(unary->expr());
-      GetValue(context_->ret(), CHECK);
-      context_->ret().set_undefined();
+      GetValue(ctx_->ret(), CHECK);
+      ctx_->ret().set_undefined();
       return;
     }
 
     case Token::TYPEOF: {
       EVAL(unary->expr());
-      if (context_->ret().IsReference()) {
-        if (context_->ret().reference()->base()->IsUndefined()) {
-          context_->ret().set_value(
-              JSString::NewAsciiString(context_, "undefined"));
+      if (ctx_->ret().IsReference()) {
+        if (ctx_->ret().reference()->base()->IsUndefined()) {
+          ctx_->Return(
+              JSString::NewAsciiString(ctx_, "undefined"));
           return;
         }
       }
-      const JSVal expr = GetValue(context_->ret(), CHECK);
-      context_->ret().set_value(expr.TypeOf(context_));
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
+      ctx_->Return(expr.TypeOf(ctx_));
       return;
     }
 
     case Token::INC: {
       EVAL(unary->expr());
-      const JSVal expr = context_->ret();
+      const JSVal expr = ctx_->ret();
       if (expr.IsReference()) {
         JSReference* const ref = expr.reference();
         if (ref->IsStrictReference() &&
             ref->base()->IsEnvironment()) {
           const Symbol sym = ref->GetReferencedName();
-          if (sym == context_->Intern(eval_string) ||
-              sym == context_->Intern(arguments_string)) {
-            context_->set_error(JSErrorCode::SyntaxError);
+          if (sym == ctx_->Intern(eval_string) ||
+              sym == ctx_->Intern(arguments_string)) {
+            ctx_->set_error(JSErrorCode::SyntaxError);
             return;
           }
         }
       }
       const JSVal value = GetValue(expr, CHECK);
-      const double old_value = value.ToNumber(context_, CHECK);
+      const double old_value = value.ToNumber(ctx_, CHECK);
       const JSVal new_value(old_value + 1);
       PutValue(expr, new_value, CHECK);
-      context_->set_ret(new_value);
+      ctx_->Return(new_value);
       return;
     }
 
     case Token::DEC: {
       EVAL(unary->expr());
-      const JSVal expr = context_->ret();
+      const JSVal expr = ctx_->ret();
       if (expr.IsReference()) {
         JSReference* const ref = expr.reference();
         if (ref->IsStrictReference() &&
             ref->base()->IsEnvironment()) {
           const Symbol sym = ref->GetReferencedName();
-          if (sym == context_->Intern(eval_string) ||
-              sym == context_->Intern(arguments_string)) {
-            context_->set_error(JSErrorCode::SyntaxError);
+          if (sym == ctx_->Intern(eval_string) ||
+              sym == ctx_->Intern(arguments_string)) {
+            ctx_->set_error(JSErrorCode::SyntaxError);
             return;
           }
         }
       }
       const JSVal value = GetValue(expr, CHECK);
-      const double old_value = value.ToNumber(context_, CHECK);
+      const double old_value = value.ToNumber(ctx_, CHECK);
       const JSVal new_value(old_value - 1);
       PutValue(expr, new_value, CHECK);
-      context_->set_ret(new_value);
+      ctx_->Return(new_value);
       return;
     }
 
     case Token::ADD: {
       EVAL(unary->expr());
-      const JSVal expr = GetValue(context_->ret(), CHECK);
-      const double val = expr.ToNumber(context_, CHECK);
-      context_->ret().set_value(val);
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
+      const double val = expr.ToNumber(ctx_, CHECK);
+      ctx_->Return(val);
       return;
     }
 
     case Token::SUB: {
       EVAL(unary->expr());
-      const JSVal expr = GetValue(context_->ret(), CHECK);
-      const double old_value = expr.ToNumber(context_, CHECK);
-      context_->ret().set_value(-old_value);
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
+      const double old_value = expr.ToNumber(ctx_, CHECK);
+      ctx_->Return(-old_value);
       return;
     }
 
     case Token::BIT_NOT: {
       EVAL(unary->expr());
-      const JSVal expr = GetValue(context_->ret(), CHECK);
-      const double value = expr.ToNumber(context_, CHECK);
-      context_->ret().set_value(
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
+      const double value = expr.ToNumber(ctx_, CHECK);
+      ctx_->Return(
           static_cast<double>(~core::Conv::DoubleToInt32(value)));
       return;
     }
 
     case Token::NOT: {
       EVAL(unary->expr());
-      const JSVal expr = GetValue(context_->ret(), CHECK);
+      const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const bool value = expr.ToBoolean(CHECK);
-      context_->ret().set_value(!value);
+      ctx_->Return(!value);
       return;
     }
 
@@ -1111,92 +1111,92 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
 
 void Interpreter::Visit(core::PostfixExpression* postfix) {
   EVAL(postfix->expr());
-  JSVal lref = context_->ret();
+  JSVal lref = ctx_->ret();
   if (lref.IsReference()) {
     const JSReference* const ref = lref.reference();
     if (ref->IsStrictReference() &&
         ref->base()->IsEnvironment()) {
       const Symbol sym = ref->GetReferencedName();
-      if (sym == context_->Intern(eval_string) ||
-          sym == context_->Intern(arguments_string)) {
-        context_->set_error(JSErrorCode::SyntaxError);
+      if (sym == ctx_->Intern(eval_string) ||
+          sym == ctx_->Intern(arguments_string)) {
+        ctx_->set_error(JSErrorCode::SyntaxError);
         return;
       }
     }
   }
   JSVal old = GetValue(lref, CHECK);
-  const double& value = old.ToNumber(context_, CHECK);
+  const double& value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
       ((postfix->op() == core::Token::INC) ? 1 : -1);
   PutValue(lref, JSVal(new_value), CHECK);
-  context_->set_ret(old);
+  ctx_->Return(old);
 }
 
 
 void Interpreter::Visit(core::StringLiteral* str) {
-  context_->ret().set_value(JSString::New(context_, str->value()));
+  ctx_->Return(JSString::New(ctx_, str->value()));
 }
 
 
 void Interpreter::Visit(core::NumberLiteral* num) {
-  context_->ret().set_value(num->value());
+  ctx_->Return(num->value());
 }
 
 
 void Interpreter::Visit(core::Identifier* ident) {
   // section 10.3.1 Identifier Resolution
-  JSEnv* env = context_->lexical_env();
-  context_->ret().set_value(
+  JSEnv* env = ctx_->lexical_env();
+  ctx_->Return(
       GetIdentifierReference(env,
-                             context_->Intern(ident->value()),
-                             context_->IsStrict()));
+                             ctx_->Intern(ident->value()),
+                             ctx_->IsStrict()));
 }
 
 
 void Interpreter::Visit(core::ThisLiteral* literal) {
-  context_->ret().set_value(context_->this_binding());
+  ctx_->Return(ctx_->this_binding());
 }
 
 
 void Interpreter::Visit(core::NullLiteral* lit) {
-  context_->ret().set_null();
+  ctx_->ret().set_null();
 }
 
 
 void Interpreter::Visit(core::TrueLiteral* lit) {
-  context_->ret().set_value(true);
+  ctx_->Return(true);
 }
 
 
 void Interpreter::Visit(core::FalseLiteral* lit) {
-  context_->ret().set_value(false);
+  ctx_->Return(false);
 }
 
 
 void Interpreter::Visit(core::Undefined* lit) {
-  context_->ret().set_undefined();
+  ctx_->ret().set_undefined();
 }
 
 
 void Interpreter::Visit(core::RegExpLiteral* regexp) {
-  context_->ret().set_value(JSRegExp::New(regexp->value(), regexp->flags()));
+  ctx_->Return(JSRegExp::New(regexp->value(), regexp->flags()));
 }
 
 
 void Interpreter::Visit(core::ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
-  JSArray* const ary = JSArray::New(context_);
+  JSArray* const ary = JSArray::New(ctx_);
   std::size_t current = 0;
   std::tr1::array<char, 30> buffer;
   BOOST_FOREACH(core::Expression* const expr, literal->items()) {
     if (expr) {
       EVAL(expr);
-      const JSVal value = GetValue(context_->ret(), CHECK);
+      const JSVal value = GetValue(ctx_->ret(), CHECK);
       std::snprintf(buffer.data(), buffer.size(),
                     Format<std::size_t>::printf, current);
-      const Symbol index = context_->Intern(buffer.data());
+      const Symbol index = ctx_->Intern(buffer.data());
       ary->DefineOwnProperty(
-          context_, index,
+          ctx_, index,
           new DataDescriptor(value, PropertyDescriptor::WRITABLE |
                                     PropertyDescriptor::ENUMERABLE |
                                     PropertyDescriptor::CONFIGURABLE),
@@ -1204,26 +1204,26 @@ void Interpreter::Visit(core::ArrayLiteral* literal) {
     }
     ++current;
   }
-  ary->Put(context_, context_->Intern("length"),
+  ary->Put(ctx_, ctx_->Intern("length"),
            JSVal(static_cast<double>(current)), false, CHECK);
-  context_->ret().set_value(ary);
+  ctx_->Return(ary);
 }
 
 
 void Interpreter::Visit(core::ObjectLiteral* literal) {
   using std::tr1::get;
   using core::ObjectLiteral;
-  JSObject* const obj = JSObject::New(context_);
+  JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5
   BOOST_FOREACH(const ObjectLiteral::Property& prop, literal->properties()) {
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
     const core::Identifier* const ident = get<1>(prop);
-    const Symbol name = context_->Intern(ident->value());
+    const Symbol name = ctx_->Intern(ident->value());
     PropertyDescriptor* desc = NULL;
     if (type == ObjectLiteral::DATA) {
       EVAL(get<2>(prop));
-      const JSVal value = GetValue(context_->ret(), CHECK);
+      const JSVal value = GetValue(ctx_->ret(), CHECK);
       desc = new DataDescriptor(value,
                                 PropertyDescriptor::WRITABLE |
                                 PropertyDescriptor::ENUMERABLE |
@@ -1231,11 +1231,11 @@ void Interpreter::Visit(core::ObjectLiteral* literal) {
     } else {
       EVAL(get<2>(prop));
       if (type == ObjectLiteral::GET) {
-        desc = new AccessorDescriptor(context_->ret().object(), NULL,
+        desc = new AccessorDescriptor(ctx_->ret().object(), NULL,
                                       PropertyDescriptor::ENUMERABLE |
                                       PropertyDescriptor::CONFIGURABLE);
       } else {
-        desc = new AccessorDescriptor(NULL, context_->ret().object(),
+        desc = new AccessorDescriptor(NULL, ctx_->ret().object(),
                                       PropertyDescriptor::ENUMERABLE |
                                       PropertyDescriptor::CONFIGURABLE);
       }
@@ -1245,57 +1245,57 @@ void Interpreter::Visit(core::ObjectLiteral* literal) {
     // Because syntax error is early error (section 16 Errors)
     // syntax error is reported at parser phase.
     // So, in interpreter phase, there's nothing to do.
-    obj->DefineOwnProperty(context_, name, desc, false, CHECK);
+    obj->DefineOwnProperty(ctx_, name, desc, false, CHECK);
   }
-  context_->ret().set_value(obj);
+  ctx_->Return(obj);
 }
 
 
 void Interpreter::Visit(core::FunctionLiteral* func) {
-  context_->ret().set_value(
-      JSCodeFunction::New(context_, func, context_->lexical_env()));
+  ctx_->Return(
+      JSCodeFunction::New(ctx_, func, ctx_->lexical_env()));
 }
 
 
 void Interpreter::Visit(core::IdentifierAccess* prop) {
   EVAL(prop->target());
-  const JSVal base_value = GetValue(context_->ret(), CHECK);
+  const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   base_value.CheckObjectCoercible(CHECK);
-  const Symbol sym = context_->Intern(prop->key()->value());
-  context_->ret().set_value(
-      JSReference::New(context_, base_value, sym, context_->IsStrict()));
+  const Symbol sym = ctx_->Intern(prop->key()->value());
+  ctx_->Return(
+      JSReference::New(ctx_, base_value, sym, ctx_->IsStrict()));
 }
 
 
 void Interpreter::Visit(core::IndexAccess* prop) {
   EVAL(prop->target());
-  const JSVal base_value = GetValue(context_->ret(), CHECK);
+  const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   EVAL(prop->key());
-  const JSVal name_value = GetValue(context_->ret(), CHECK);
+  const JSVal name_value = GetValue(ctx_->ret(), CHECK);
   base_value.CheckObjectCoercible(CHECK);
-  const JSString* const name = name_value.ToString(context_, CHECK);
-  context_->ret().set_value(
-      JSReference::New(context_,
+  const JSString* const name = name_value.ToString(ctx_, CHECK);
+  ctx_->Return(
+      JSReference::New(ctx_,
                        base_value,
-                       context_->Intern(*name),
-                       context_->IsStrict()));
+                       ctx_->Intern(*name),
+                       ctx_->IsStrict()));
 }
 
 
 void Interpreter::Visit(core::FunctionCall* call) {
   EVAL(call->target());
-  const JSVal target = context_->ret();
+  const JSVal target = ctx_->ret();
 
-  Arguments args(context_, call->args().size());
+  Arguments args(ctx_, call->args().size());
   std::size_t n = 0;
   BOOST_FOREACH(core::Expression* const expr, call->args()) {
     EVAL(expr);
-    args[n++] = GetValue(context_->ret(), CHECK);
+    args[n++] = GetValue(ctx_->ret(), CHECK);
   }
 
   const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
-    context_->set_error(JSErrorCode::TypeError);
+    ctx_->set_error(JSErrorCode::TypeError);
     return;
   }
   if (target.IsReference()) {
@@ -1310,39 +1310,39 @@ void Interpreter::Visit(core::FunctionCall* call) {
     args.set_this_binding(JSVal::Undefined());
   }
 
-  context_->ret() = func.object()->AsCallable()->Call(args, CHECK);
+  ctx_->ret() = func.object()->AsCallable()->Call(args, CHECK);
 }
 
 
 void Interpreter::Visit(core::ConstructorCall* call) {
   EVAL(call->target());
-  const JSVal target = context_->ret();
+  const JSVal target = ctx_->ret();
 
-  Arguments args(context_, call->args().size());
+  Arguments args(ctx_, call->args().size());
   std::size_t n = 0;
   BOOST_FOREACH(core::Expression* const expr, call->args()) {
     EVAL(expr);
-    args[n++] = GetValue(context_->ret(), CHECK);
+    args[n++] = GetValue(ctx_->ret(), CHECK);
   }
 
   const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
-    context_->set_error(JSErrorCode::TypeError);
+    ctx_->set_error(JSErrorCode::TypeError);
     return;
   }
   JSFunction* const constructor = func.object()->AsCallable();
-  JSObject* const obj = JSObject::New(context_);
+  JSObject* const obj = JSObject::New(ctx_);
   const JSVal proto = constructor->Get(
-      context_, context_->Intern("prototype"), CHECK);
+      ctx_, ctx_->Intern("prototype"), CHECK);
   if (proto.IsObject()) {
     obj->set_prototype(proto.object());
   }
   args.set_this_binding(JSVal(obj));
   const JSVal result = constructor->Call(args, CHECK);
   if (result.IsObject()) {
-    context_->ret() = result;
+    ctx_->ret() = result;
   } else {
-    context_->ret().set_value(obj);
+    ctx_->Return(obj);
   }
 }
 
@@ -1361,7 +1361,7 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
   if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       // section 8.7.1 special [[Get]]
-      const JSObject* const o = base->ToObject(context_, error);
+      const JSObject* const o = base->ToObject(ctx_, error);
       if (*error) {
         return JSVal::Undefined();
       }
@@ -1375,7 +1375,7 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
         assert(desc->IsAccessorDescriptor());
         AccessorDescriptor* ac = desc->AsAccessorDescriptor();
         if (ac->get()) {
-          JSVal res = ac->get()->AsCallable()->Call(Arguments(context_, *base),
+          JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
                                                     error);
           if (*error) {
             return JSVal::Undefined();
@@ -1386,7 +1386,7 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
         }
       }
     } else {
-      JSVal res = base->object()->Get(context_,
+      JSVal res = base->object()->Get(ctx_,
                                       ref->GetReferencedName(), error);
       if (*error) {
         return JSVal::Undefined();
@@ -1396,7 +1396,7 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
     return JSVal::Undefined();
   } else {
     JSVal res = base->environment()->GetBindingValue(
-        context_, ref->GetReferencedName(), ref->IsStrictReference(), error);
+        ctx_, ref->GetReferencedName(), ref->IsStrictReference(), error);
     if (*error) {
       return JSVal::Undefined();
     }
@@ -1426,13 +1426,13 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       *error = JSErrorCode::ReferenceError;
       return;
     }
-    context_->global_obj()->Put(context_, ref->GetReferencedName(),
-                                w, false, ERRCHECK);
+    ctx_->global_obj()->Put(ctx_, ref->GetReferencedName(),
+                            w, false, ERRCHECK);
   } else if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       const Symbol sym = ref->GetReferencedName();
       const bool th = ref->IsStrictReference();
-      JSObject* const o = base->ToObject(context_, ERRCHECK);
+      JSObject* const o = base->ToObject(ctx_, ERRCHECK);
       if (!o->CanPut(sym)) {
         if (th) {
           *error = JSErrorCode::TypeError;
@@ -1450,7 +1450,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       if (desc && desc->IsAccessorDescriptor()) {
         AccessorDescriptor* ac = desc->AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(Arguments(context_, *base), ERRCHECK);
+        ac->set()->AsCallable()->Call(Arguments(ctx_, *base), ERRCHECK);
       } else {
         if (th) {
           *error = JSErrorCode::TypeError;
@@ -1458,12 +1458,12 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       return;
     } else {
-      base->object()->Put(context_, ref->GetReferencedName(), w,
+      base->object()->Put(ctx_, ref->GetReferencedName(), w,
                           ref->IsStrictReference(), ERRCHECK);
     }
   } else {
     assert(base->environment());
-    base->environment()->SetMutableBinding(context_,
+    base->environment()->SetMutableBinding(ctx_,
                                            ref->GetReferencedName(), w,
                                            ref->IsStrictReference(), ERRCHECK);
   }
@@ -1584,30 +1584,30 @@ bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
     return true;
   }
   if (lhs.IsNumber() && rhs.IsString()) {
-    const double num = rhs.ToNumber(context_, ABSTRACT_CHECK);
+    const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
     return AbstractEqual(lhs, JSVal(num), error);
   }
   if (lhs.IsString() && rhs.IsNumber()) {
-    const double num = lhs.ToNumber(context_, ABSTRACT_CHECK);
+    const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
     return AbstractEqual(JSVal(num), rhs, error);
   }
   if (lhs.IsBoolean()) {
-    const double num = lhs.ToNumber(context_, ABSTRACT_CHECK);
+    const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
     return AbstractEqual(JSVal(num), rhs, error);
   }
   if (rhs.IsBoolean()) {
-    const double num = rhs.ToNumber(context_, ABSTRACT_CHECK);
+    const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
     return AbstractEqual(lhs, JSVal(num), error);
   }
   if ((lhs.IsString() || lhs.IsNumber()) &&
       rhs.IsObject()) {
-    const JSVal prim = rhs.ToPrimitive(context_,
+    const JSVal prim = rhs.ToPrimitive(ctx_,
                                        JSObject::NONE, ABSTRACT_CHECK);
     return AbstractEqual(lhs, prim, error);
   }
   if (lhs.IsObject() &&
       (rhs.IsString() || rhs.IsNumber())) {
-    const JSVal prim = lhs.ToPrimitive(context_,
+    const JSVal prim = lhs.ToPrimitive(ctx_,
                                        JSObject::NONE, ABSTRACT_CHECK);
     return AbstractEqual(prim, rhs, error);
   }
@@ -1628,18 +1628,18 @@ Interpreter::CompareKind Interpreter::Compare(const JSVal& lhs,
   JSVal px;
   JSVal py;
   if (left_first) {
-    px = lhs.ToPrimitive(context_, JSObject::NUMBER, LT_CHECK);
-    py = rhs.ToPrimitive(context_, JSObject::NUMBER, LT_CHECK);
+    px = lhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
+    py = rhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
   } else {
-    py = rhs.ToPrimitive(context_, JSObject::NUMBER, LT_CHECK);
-    px = lhs.ToPrimitive(context_, JSObject::NUMBER, LT_CHECK);
+    py = rhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
+    px = lhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
   }
   if (px.IsString() && py.IsString()) {
     // step 4
     return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
   } else {
-    const double nx = px.ToNumber(context_, LT_CHECK);
-    const double ny = py.ToNumber(context_, LT_CHECK);
+    const double nx = px.ToNumber(ctx_, LT_CHECK);
+    const double ny = py.ToNumber(ctx_, LT_CHECK);
     if (std::isnan(nx) || std::isnan(ny)) {
       return CMP_UNDEFINED;
     }
@@ -1684,12 +1684,12 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
   JSEnv* env = lex;
   while (env) {
     if (env->HasBinding(name)) {
-      return JSReference::New(context_, JSVal(env), name, strict);
+      return JSReference::New(ctx_, JSVal(env), name, strict);
     } else {
       env = env->outer();
     }
   }
-  return JSReference::New(context_, JSVal::Undefined(), name, strict);
+  return JSReference::New(ctx_, JSVal::Undefined(), name, strict);
 }
 
 #undef CHECK

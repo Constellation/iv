@@ -13,7 +13,6 @@
 
 namespace iv {
 namespace lv5 {
-
 class JSEnv;
 class Context;
 #define SET_VTABLE(TYPE)\
@@ -54,6 +53,9 @@ vptr_ = VPTR(TYPE);
 
 class JSReference;
 class JSEnv;
+
+struct Null {
+};
 
 class JSVal {
  public:

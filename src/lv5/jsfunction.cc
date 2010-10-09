@@ -24,12 +24,12 @@ JSCodeFunction::JSCodeFunction(core::FunctionLiteral* func,
 JSVal JSCodeFunction::Call(const Arguments& args,
                            JSErrorCode::Type* error) {
   Interpreter* const interp = args.interpreter();
-  Context* const context = args.context();
+  Context* const ctx = args.ctx();
   interp->CallCode(*this, args, error);
-  if (context->mode() == Context::RETURN) {
-    context->set_mode(Context::NORMAL);
+  if (ctx->mode() == Context::RETURN) {
+    ctx->set_mode(Context::NORMAL);
   }
-  return context->ret();
+  return ctx->ret();
 }
 
 JSCodeFunction* JSCodeFunction::New(Context* ctx,
@@ -39,12 +39,12 @@ JSCodeFunction* JSCodeFunction::New(Context* ctx,
   return obj;
 }
 
-bool JSFunction::HasInstance(Context* context,
+bool JSFunction::HasInstance(Context* ctx,
                              const JSVal& val, JSErrorCode::Type* error) {
   if (!val.IsObject()) {
     return false;
   }
-  const JSVal got = Get(context, context->Intern("prototype"), error);
+  const JSVal got = Get(ctx, ctx->Intern("prototype"), error);
   if (*error) {
     return false;
   }

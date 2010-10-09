@@ -29,10 +29,10 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Run(core::FunctionLiteral* global);
 
   Context* context() const {
-    return context_;
+    return ctx_;
   }
   void set_context(Context* context) {
-    context_ = context;
+    ctx_ = context;
   }
   void CallCode(const JSCodeFunction& code, const Arguments& args,
                 JSErrorCode::Type* error);
@@ -78,15 +78,15 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
       : private core::Noncopyable<LexicalEnvSwitcher>::type {
    public:
     LexicalEnvSwitcher(Context* context, JSEnv* env)
-      : context_(context),
+      : ctx_(context),
         old_(context->lexical_env()) {
-      context_->set_lexical_env(env);
+      ctx_->set_lexical_env(env);
     }
     ~LexicalEnvSwitcher() {
-      context_->set_lexical_env(old_);
+      ctx_->set_lexical_env(old_);
     }
    private:
-    Context* context_;
+    Context* ctx_;
     JSEnv* old_;
   };
 
@@ -159,7 +159,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   JSReference* GetIdentifierReference(JSEnv* lex,
                                       Symbol name, bool strict);
 
-  Context* context_;
+  Context* ctx_;
 };
 
 } }  // namespace iv::lv5
