@@ -39,8 +39,8 @@ class Xor128 {
     z_ ^= RotateLeft<24>(x0);
     w_ ^= RotateLeft<16>(x0);
   }
-  void discard(unsigned long long count) {
-    for (unsigned long long i = 0; i < count; ++i) {
+  void discard(unsigned long long count) {  // NOLINT
+    for (unsigned long long i = 0; i < count; ++i) {  // NOLINT
       (*this)();
     }
   }
@@ -55,7 +55,8 @@ class Xor128 {
  private:
   typedef std::tr1::uint32_t int_t;
   typedef std::numeric_limits<result_type> limits;
-  static const std::size_t kIntBits = limits::digits + (limits::is_signed ? 1 : 0);
+  static const std::size_t kIntBits =
+      limits::digits + (limits::is_signed ? 1 : 0);
   static const result_type kMask= limits::digits + (limits::is_signed ? 1 : 0);
 
   template<std::size_t N>
@@ -64,7 +65,6 @@ class Xor128 {
   }
 
   int_t x_, y_, z_, w_;
-
 };
 
 } }  // namespace iv::core
