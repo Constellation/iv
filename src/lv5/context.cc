@@ -14,6 +14,8 @@ const std::string function_prefix("function");
 const std::string length_string("length");
 const std::string eval_string("eval");
 const std::string arguments_string("arguments");
+const std::string caller_string("caller");
+const std::string callee_string("callee");
 
 JSVal ObjectConstructor(const Arguments& args, JSErrorCode::Type* error) {
   if (args.size() == 1) {
@@ -102,7 +104,9 @@ Context::Context()
                    random_distribution_type(0, 1)),
     length_symbol_(Intern(length_string)),
     eval_symbol_(Intern(eval_string)),
-    arguments_symbol_(Intern(arguments_string)) {
+    arguments_symbol_(Intern(arguments_string)),
+    caller_symbol_(Intern(caller_string)),
+    callee_symbol_(Intern(callee_string)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;

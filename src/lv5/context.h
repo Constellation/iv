@@ -148,6 +148,12 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol arguments_symbol() const {
     return arguments_symbol_;
   }
+  inline Symbol caller_symbol() const {
+    return caller_symbol_;
+  }
+  inline Symbol callee_symbol() const {
+    return callee_symbol_;
+  }
   double Random();
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
@@ -169,6 +175,8 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol length_symbol_;
   Symbol eval_symbol_;
   Symbol arguments_symbol_;
+  Symbol caller_symbol_;
+  Symbol callee_symbol_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_
