@@ -21,13 +21,6 @@
 #include "ustream.h"
 #include "context.h"
 
-namespace {
-
-const std::string eval_string("eval");
-const std::string arguments_string("arguments");
-
-}  // namespace
-
 namespace iv {
 namespace lv5 {
 
@@ -757,8 +750,8 @@ void Interpreter::Visit(core::Assignment* assign) {
     if (ref->IsStrictReference() &&
         ref->base()->IsEnvironment()) {
       const Symbol sym = ref->GetReferencedName();
-      if (sym == ctx_->Intern(eval_string) ||
-          sym == ctx_->Intern(arguments_string)) {
+      if (sym == ctx_->eval_symbol() ||
+          sym == ctx_->arguments_symbol()) {
         ctx_->set_error(JSErrorCode::SyntaxError);
         return;
       }
@@ -1076,8 +1069,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
         if (ref->IsStrictReference() &&
             ref->base()->IsEnvironment()) {
           const Symbol sym = ref->GetReferencedName();
-          if (sym == ctx_->Intern(eval_string) ||
-              sym == ctx_->Intern(arguments_string)) {
+          if (sym == ctx_->eval_symbol() ||
+              sym == ctx_->arguments_symbol()) {
             ctx_->set_error(JSErrorCode::SyntaxError);
             return;
           }
@@ -1099,8 +1092,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
         if (ref->IsStrictReference() &&
             ref->base()->IsEnvironment()) {
           const Symbol sym = ref->GetReferencedName();
-          if (sym == ctx_->Intern(eval_string) ||
-              sym == ctx_->Intern(arguments_string)) {
+          if (sym == ctx_->eval_symbol() ||
+              sym == ctx_->arguments_symbol()) {
             ctx_->set_error(JSErrorCode::SyntaxError);
             return;
           }
@@ -1161,8 +1154,8 @@ void Interpreter::Visit(core::PostfixExpression* postfix) {
     if (ref->IsStrictReference() &&
         ref->base()->IsEnvironment()) {
       const Symbol sym = ref->GetReferencedName();
-      if (sym == ctx_->Intern(eval_string) ||
-          sym == ctx_->Intern(arguments_string)) {
+      if (sym == ctx_->eval_symbol() ||
+          sym == ctx_->arguments_symbol()) {
         ctx_->set_error(JSErrorCode::SyntaxError);
         return;
       }
@@ -1248,7 +1241,7 @@ void Interpreter::Visit(core::ArrayLiteral* literal) {
     }
     ++current;
   }
-  ary->Put(ctx_, ctx_->Intern("length"),
+  ary->Put(ctx_, ctx_->length_symbol(),
            JSVal(static_cast<double>(current)), false, CHECK);
   ctx_->Return(ary);
 }

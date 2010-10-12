@@ -9,7 +9,11 @@
 namespace iv {
 namespace lv5 {
 namespace {
-const char * const function_prefix = "function ";
+
+const std::string function_prefix("function");
+const std::string length_string("length");
+const std::string eval_string("eval");
+const std::string arguments_string("arguments");
 
 JSVal ObjectConstructor(const Arguments& args, JSErrorCode::Type* error) {
   if (args.size() == 1) {
@@ -64,8 +68,8 @@ JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
     if (func->AsNativeFunction()) {
       return JSVal(JSString::NewAsciiString(args.ctx(), "function () { [native code] }"));
     } else {
-      core::UString buffer(function_prefix,
-                           function_prefix+std::strlen(function_prefix));
+      core::UString buffer(function_prefix.begin(),
+                           function_prefix.end());
       if (func->AsCodeFunction()->name()) {
         const core::UStringPiece name = func->AsCodeFunction()->name()->value();
         buffer.append(name.data(), name.size());
@@ -95,7 +99,10 @@ Context::Context()
     builtins_(),
     strict_(false),
     random_engine_(random_engine_type(),
-                   random_distribution_type(0, 1)) {
+                   random_distribution_type(0, 1)),
+    length_symbol_(Intern(length_string)),
+    eval_symbol_(Intern(eval_string)),
+    arguments_symbol_(Intern(arguments_string)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;

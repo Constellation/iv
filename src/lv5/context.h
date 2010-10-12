@@ -139,6 +139,15 @@ class Context : private core::Noncopyable<Context>::type {
 
   Symbol Intern(const core::StringPiece& str);
   Symbol Intern(const core::UStringPiece& str);
+  inline Symbol length_symbol() const {
+    return length_symbol_;
+  }
+  inline Symbol eval_symbol() const {
+    return eval_symbol_;
+  }
+  inline Symbol arguments_symbol() const {
+    return arguments_symbol_;
+  }
   double Random();
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
@@ -157,6 +166,9 @@ class Context : private core::Noncopyable<Context>::type {
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;
   random_generator random_engine_;
+  Symbol length_symbol_;
+  Symbol eval_symbol_;
+  Symbol arguments_symbol_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_

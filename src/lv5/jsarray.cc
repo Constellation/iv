@@ -15,7 +15,7 @@ namespace lv5 {
 JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
     length_(len) {
-  JSObject::DefineOwnProperty(ctx, ctx->Intern("length"),
+  JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
                               new DataDescriptor(JSVal(static_cast<double>(0)),
                                                  PropertyDescriptor::WRITABLE),
                                                  false, NULL);
@@ -34,7 +34,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 const PropertyDescriptor* desc,
                                 bool th,
                                 JSErrorCode::Type* res) {
-  const Symbol length_symbol = ctx->Intern("length");
+  const Symbol length_symbol = ctx->length_symbol();
   PropertyDescriptor* const old_len_desc_upper = GetOwnProperty(length_symbol);
   assert(old_len_desc_upper && old_len_desc_upper->AsDataDescriptor());
   DataDescriptor* const old_len_desc = old_len_desc_upper->AsDataDescriptor();
