@@ -129,10 +129,9 @@ int main(int argc, char **argv) {
       global->Accept(&ser);
       std::cout << ser.out().data() << std::endl;
     } else {
-      iv::lv5::Interpreter interp;
-      iv::lv5::Context context(&interp);
+      iv::lv5::Context context;
       context.DefineFunction(&Print, "print");
-      interp.Run(global);
+      context.Run(global);
     }
   } else {
     std::cout << cmd.usage();

@@ -9,12 +9,12 @@
 #include "jsenv.h"
 #include "jsstring.h"
 #include "jsfunction.h"
-#include "context.h"
 #include "symbol.h"
 
 namespace iv {
 namespace lv5 {
 
+class Context;
 class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public core::AstVisitor {
  public:
@@ -49,23 +49,8 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
                     JSEnv* lex,
                     JSEnv* var,
                     JSObject* binding,
-                    bool strict)
-      : prev_lex_(ctx->lexical_env()),
-        prev_var_(ctx->variable_env()),
-        prev_binding_(ctx->this_binding()),
-        prev_strict_(strict),
-        ctx_(ctx) {
-      ctx_->set_lexical_env(lex);
-      ctx_->set_variable_env(var);
-      ctx_->set_this_binding(binding);
-      ctx_->set_strict(strict);
-    }
-    ~ContextSwitcher() {
-      ctx_->set_lexical_env(prev_lex_);
-      ctx_->set_variable_env(prev_var_);
-      ctx_->set_this_binding(prev_binding_);
-      ctx_->set_strict(prev_strict_);
-    }
+                    bool strict);
+    ~ContextSwitcher();
    private:
     JSEnv* prev_lex_;
     JSEnv* prev_var_;
@@ -77,14 +62,8 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   class LexicalEnvSwitcher
       : private core::Noncopyable<LexicalEnvSwitcher>::type {
    public:
-    LexicalEnvSwitcher(Context* context, JSEnv* env)
-      : ctx_(context),
-        old_(context->lexical_env()) {
-      ctx_->set_lexical_env(env);
-    }
-    ~LexicalEnvSwitcher() {
-      ctx_->set_lexical_env(old_);
-    }
+    LexicalEnvSwitcher(Context* context, JSEnv* env);
+    ~LexicalEnvSwitcher();
    private:
     Context* ctx_;
     JSEnv* old_;
@@ -92,14 +71,8 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
 
   class StrictSwitcher : private core::Noncopyable<StrictSwitcher>::type {
    public:
-    StrictSwitcher(Context* ctx, bool strict)
-      : ctx_(ctx),
-        prev_(ctx->IsStrict()) {
-      ctx_->set_strict(strict);
-    }
-    ~StrictSwitcher() {
-      ctx_->set_strict(prev_);
-    }
+    StrictSwitcher(Context* ctx, bool strict);
+    ~StrictSwitcher();
    private:
     Context* ctx_;
     bool prev_;

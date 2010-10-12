@@ -19,6 +19,7 @@
 #include "jsenv.h"
 #include "jsarray.h"
 #include "ustream.h"
+#include "context.h"
 
 namespace {
 
@@ -70,6 +71,49 @@ namespace lv5 {
     return;\
   }
 
+Interpreter::ContextSwitcher::ContextSwitcher(Context* ctx,
+                                              JSEnv* lex,
+                                              JSEnv* var,
+                                              JSObject* binding,
+                                              bool strict)
+  : prev_lex_(ctx->lexical_env()),
+    prev_var_(ctx->variable_env()),
+    prev_binding_(ctx->this_binding()),
+    prev_strict_(strict),
+    ctx_(ctx) {
+  ctx_->set_lexical_env(lex);
+  ctx_->set_variable_env(var);
+  ctx_->set_this_binding(binding);
+  ctx_->set_strict(strict);
+}
+
+Interpreter::ContextSwitcher::~ContextSwitcher() {
+  ctx_->set_lexical_env(prev_lex_);
+  ctx_->set_variable_env(prev_var_);
+  ctx_->set_this_binding(prev_binding_);
+  ctx_->set_strict(prev_strict_);
+}
+
+Interpreter::LexicalEnvSwitcher::LexicalEnvSwitcher(Context* context,
+                                                    JSEnv* env)
+  : ctx_(context),
+    old_(context->lexical_env()) {
+  ctx_->set_lexical_env(env);
+}
+
+Interpreter::LexicalEnvSwitcher::~LexicalEnvSwitcher() {
+  ctx_->set_lexical_env(old_);
+}
+
+Interpreter::StrictSwitcher::StrictSwitcher(Context* ctx, bool strict)
+  : ctx_(ctx),
+    prev_(ctx->IsStrict()) {
+  ctx_->set_strict(strict);
+}
+
+Interpreter::StrictSwitcher::~StrictSwitcher() {
+  ctx_->set_strict(prev_);
+}
 
 Interpreter::Interpreter()
   : ctx_(NULL) {

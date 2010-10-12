@@ -81,13 +81,13 @@ JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
 
 }  // namespace
 
-Context::Context(Interpreter* interp)
+Context::Context()
   : global_obj_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     binding_(&global_obj_),
     table_(),
-    interp_(interp),
+    interp_(),
     mode_(NORMAL),
     ret_(),
     target_(NULL),
@@ -99,7 +99,7 @@ Context::Context(Interpreter* interp)
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
-  interp_->set_context(this);
+  interp_.set_context(this);
   Prelude();
 }
 
@@ -128,6 +128,10 @@ bool Context::InCurrentLabelSet(
 bool Context::InCurrentLabelSet(
     const core::NamedOnlyBreakableStatement* stmt) const {
   return stmt == target_;
+}
+
+void Context::Run(core::FunctionLiteral* global) {
+  interp_.Run(global);
 }
 
 void Context::Prelude() {

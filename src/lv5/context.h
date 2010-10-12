@@ -14,10 +14,10 @@
 #include "jserrorcode.h"
 #include "symboltable.h"
 #include "class.h"
+#include "interpreter.h"
 
 namespace iv {
 namespace lv5 {
-class Interpreter;
 class Context : private core::Noncopyable<Context>::type {
  public:
   typedef iv::core::Xor128 random_engine_type;
@@ -31,7 +31,7 @@ class Context : private core::Noncopyable<Context>::type {
     RETURN,
     THROW
   };
-  explicit Context(Interpreter* interp);
+  Context();
   const JSObject* global_obj() const {
     return &global_obj_;
   }
@@ -59,8 +59,8 @@ class Context : private core::Noncopyable<Context>::type {
   void set_this_binding(JSObject* binding) {
     binding_ = binding;
   }
-  Interpreter* interp() const {
-    return interp_;
+  Interpreter* interp() {
+    return &interp_;
   }
   Mode mode() const {
     return mode_;
@@ -132,6 +132,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Prelude();
+  void Run(core::FunctionLiteral* global);
 
   const Class& Cls(Symbol name);
   const Class& Cls(const core::StringPiece& str);
@@ -148,7 +149,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSEnv* variable_env_;
   JSObject* binding_;
   SymbolTable table_;
-  Interpreter* interp_;
+  Interpreter interp_;
   Mode mode_;
   JSVal ret_;
   core::BreakableStatement* target_;
