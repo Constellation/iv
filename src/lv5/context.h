@@ -131,7 +131,7 @@ class Context : private core::Noncopyable<Context>::type {
                                      JSVal(func), strict_, &error_);
   }
 
-  void Prelude();
+  void Initialize();
   void Run(core::FunctionLiteral* global);
 
   const Class& Cls(Symbol name);

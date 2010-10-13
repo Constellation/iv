@@ -10,80 +10,11 @@ namespace iv {
 namespace lv5 {
 namespace {
 
-const std::string function_prefix("function");
 const std::string length_string("length");
 const std::string eval_string("eval");
 const std::string arguments_string("arguments");
 const std::string caller_string("caller");
 const std::string callee_string("callee");
-
-JSVal ObjectConstructor(const Arguments& args, JSErrorCode::Type* error) {
-  if (args.size() == 1) {
-    const JSVal& val = args[0];
-    if (val.IsNull() || val.IsUndefined()) {
-      return JSVal(JSObject::New(args.ctx()));
-    } else {
-      JSObject* const obj = val.ToObject(args.ctx(), error);
-      if (*error) {
-        return JSVal::Undefined();
-      }
-      return JSVal(obj);
-    }
-  } else {
-    return JSVal(JSObject::New(args.ctx()));
-  }
-}
-
-JSVal ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* error) {
-  if (args.size() > 0) {
-    const JSVal& val = args[0];
-    Context* ctx = args.ctx();
-    JSString* const str = val.ToString(ctx, error);
-    JSObject* const obj = args.this_binding().ToObject(ctx, error);
-    if (*error) {
-      return JSVal(false);
-    }
-    return JSVal(!!obj->GetOwnProperty(ctx->Intern(str->data())));
-  } else {
-    return JSVal(false);
-  }
-}
-
-JSVal ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
-  std::string ascii;
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), error);
-  if (*error) {
-    return JSVal(false);
-  }
-  JSString* const cls = obj->cls();
-  assert(cls);
-  std::string str("[object ");
-  str.append(cls->begin(), cls->end());
-  str.append("]");
-  return JSVal(JSString::NewAsciiString(args.ctx(), str.c_str()));
-}
-
-JSVal FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
-  const JSVal& obj = args.this_binding();
-  if (obj.IsCallable()) {
-    JSFunction* const func = obj.object()->AsCallable();
-    if (func->AsNativeFunction()) {
-      return JSVal(JSString::NewAsciiString(args.ctx(), "function () { [native code] }"));
-    } else {
-      core::UString buffer(function_prefix.begin(),
-                           function_prefix.end());
-      if (func->AsCodeFunction()->name()) {
-        const core::UStringPiece name = func->AsCodeFunction()->name()->value();
-        buffer.append(name.data(), name.size());
-      }
-      const core::UStringPiece src = func->AsCodeFunction()->GetSource();
-      buffer.append(src.data(), src.size());
-      return JSVal(JSString::New(args.ctx(), buffer));
-    }
-  }
-  *error = JSErrorCode::TypeError;
-  return JSVal::Undefined();
-}
 
 }  // namespace
 
@@ -111,7 +42,7 @@ Context::Context()
   lexical_env_ = env;
   variable_env_ = env;
   interp_.set_context(this);
-  Prelude();
+  Initialize();
 }
 
 Symbol Context::Intern(const core::StringPiece& str) {
@@ -145,10 +76,10 @@ void Context::Run(core::FunctionLiteral* global) {
   interp_.Run(global);
 }
 
-void Context::Prelude() {
+void Context::Initialize() {
   // Object
   JSNativeFunction* const obj_constructor =
-      JSNativeFunction::New(this, &ObjectConstructor);
+      JSNativeFunction::New(this, &Runtime_ObjectConstructor);
   JSObject* const obj_proto = JSObject::NewPlain(this);
   obj_proto->set_cls(JSString::NewAsciiString(this, "Object"));
 
@@ -172,7 +103,7 @@ void Context::Prelude() {
   builtins_[func_name] = func_cls;
   {
     JSNativeFunction* const func =
-        JSNativeFunction::New(this, &FunctionToString);
+        JSNativeFunction::New(this, &Runtime_FunctionToString);
     func_proto->DefineOwnProperty(
         this, Intern("toString"),
         new DataDescriptor(JSVal(func),
@@ -186,7 +117,7 @@ void Context::Prelude() {
     const Symbol name = Intern("Object");
     {
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &ObjectHasOwnProperty);
+          JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty);
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
           new DataDescriptor(JSVal(func),
@@ -196,7 +127,7 @@ void Context::Prelude() {
     }
     {
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &ObjectToString);
+          JSNativeFunction::New(this, &Runtime_ObjectToString);
       obj_proto->DefineOwnProperty(
           this, Intern("toString"),
           new DataDescriptor(JSVal(func),
