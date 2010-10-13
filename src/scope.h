@@ -35,6 +35,7 @@ class Scope : public SpaceObject, private Noncopyable<Scope>::type  {
     return vars_;
   }
   Scope* GetUpperScope();
+  bool Contains(const Identifier& ident) const;
  protected:
   Scope* up_;
   Variables vars_;

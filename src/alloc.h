@@ -4,6 +4,7 @@
 #include <new>
 #include <vector>
 #include <map>
+#include <list>
 #include <algorithm>
 #include <string>
 #include <limits>
@@ -202,6 +203,11 @@ struct SpaceHashMap {
                                   std::equal_to<T1>,
                                   SpaceAllocator<
                                     std::pair<const T1, T2> > > type;
+};
+
+template<typename T>
+struct SpaceList {
+  typedef std::list<T, SpaceAllocator<T> > type;
 };
 
 typedef std::basic_string<UChar,

@@ -1,5 +1,7 @@
-#include <utils.h>
+#include <algorithm>
 #include <tr1/unordered_map>
+#include <tr1/functional>
+#include "utils.h"
 #ifdef DEBUG
 #include <cstdio>
 #include <iostream>  // NOLINT
@@ -82,7 +84,8 @@ Parser::Parser(Source* source, AstFactory* space)
     space_(space),
     scope_(NULL),
     target_(NULL),
-    labels_(NULL) {
+    labels_(NULL),
+    resolved_check_stack_() {
 }
 
 // Program
@@ -90,11 +93,16 @@ Parser::Parser(Source* source, AstFactory* space)
 FunctionLiteral* Parser::ParseProgram() {
   FunctionLiteral* global = space_->NewFunctionLiteral(FunctionLiteral::GLOBAL);
   assert(target_ == NULL);
-  const ScopeSwitcher switcher(this, global->scope());
   bool error_flag = true;
   bool *res = &error_flag;
-  Next();
-  ParseSourceElements(Token::EOS, global, CHECK);
+  {
+    const ScopeSwitcher switcher(this, global->scope());
+    Next();
+    ParseSourceElements(Token::EOS, global, CHECK);
+  }
+  if (!resolved_check_stack_.empty()) {
+    return NULL;
+  }
   return (error_flag) ? global : NULL;
 }
 
@@ -1744,6 +1752,21 @@ void Parser::ReportUnexpectedToken() {
     default:
       break;
   }
+}
+
+void Parser::UnresolvedCheck() {
+  resolved_check_stack_.erase(
+      std::remove_if(resolved_check_stack_.begin(),
+                     resolved_check_stack_.end(),
+                     std::tr1::bind(RemoveResolved,
+                                    scope_,
+                                    std::tr1::placeholders::_1)),
+      resolved_check_stack_.end());
+}
+
+bool Parser::RemoveResolved(const Scope* scope,
+                            const Unresolveds::value_type& target) {
+  return scope->Contains(*(target.first));
 }
 
 bool Parser::IsEvalOrArguments(const Identifier* ident) {
