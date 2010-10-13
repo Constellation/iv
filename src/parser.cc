@@ -771,7 +771,6 @@ Statement* Parser::ParseTryStatement(bool *res) {
   Block *block;
   bool has_catch_or_finally = false;
 
-
   Next();
 
   block = ParseBlock(CHECK);
@@ -1485,7 +1484,7 @@ Expression* Parser::ParseArrayLiteral(bool *res) {
 //  PropertySetParameterList
 //    : IDENTIFIER
 Expression* Parser::ParseObjectLiteral(bool *res) {
-  typedef std::tr1::unordered_map<UString, int> ObjectMap;
+  typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
   ObjectLiteral *object = space_->NewObjectLiteral();
   ObjectMap map;
   Expression *expr;
@@ -1504,10 +1503,9 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
         Next();
         expr = ParseAssignmentExpression(true, CHECK);
         object->AddDataProperty(ident, expr);
-        UString key(ident->value().data(), ident->value().size());
-        ObjectMap::iterator it = map.find(key);
+        ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
-          map.insert(ObjectMap::value_type(key, ObjectLiteral::DATA));
+          map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
             FAIL();
@@ -1535,10 +1533,9 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
               (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
               false, CHECK);
           object->AddAccessor(type, ident, expr);
-          UString key(ident->value().data(), ident->value().size());
-          ObjectMap::iterator it = map.find(key);
+          ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
-            map.insert(ObjectMap::value_type(key, type));
+            map.insert(ObjectMap::value_type(ident, type));
           } else if (it->second & (ObjectLiteral::DATA | type)) {
             FAIL();
           } else {
@@ -1556,10 +1553,9 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
       EXPECT(Token::COLON);
       expr = ParseAssignmentExpression(true, CHECK);
       object->AddDataProperty(ident, expr);
-      UString key(ident->value().data(), ident->value().size());
-      ObjectMap::iterator it = map.find(key);
+      ObjectMap::iterator it = map.find(ident);
       if (it == map.end()) {
-        map.insert(ObjectMap::value_type(key, ObjectLiteral::DATA));
+        map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
       } else {
         if (it->second != ObjectLiteral::DATA) {
           FAIL();

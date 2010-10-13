@@ -585,6 +585,7 @@ class NumberLiteral : public Literal {
 
 class Identifier : public Literal {
  public:
+  typedef SpaceUString value_type;
   explicit Identifier(const UChar* buffer, Space* factory);
   explicit Identifier(const char* buffer, Space* factory);
   explicit Identifier(const std::vector<UChar>& buffer, Space* factory);

@@ -56,6 +56,28 @@ class Parser : private Noncopyable<Parser>::type {
     LOGICAL_OR_STAGE
   };
 
+  class IdentifierKey {
+   public:
+    typedef Identifier value_type;
+    typedef IdentifierKey this_type;
+    IdentifierKey(value_type* ident)  // NOLINT
+      : ident_(ident) { }
+    IdentifierKey(const this_type& rhs)
+      : ident_(rhs.ident_) { }
+    inline const value_type::value_type& value() const {
+      return ident_->value();
+    }
+    bool operator==(const this_type& rhs) const {
+      if (ident_ == rhs.ident_) {
+        return true;
+      } else {
+        return value() == rhs.value();
+      }
+    }
+   private:
+    value_type* ident_;
+  };
+
   explicit Parser(Source* source, AstFactory* space);
   FunctionLiteral* ParseProgram();
   bool ParseSourceElements(Token::Type end,
@@ -221,4 +243,18 @@ class Parser : private Noncopyable<Parser>::type {
 
 } }  // namespace iv::core
 
+namespace std {
+namespace tr1 {
+// template specialization
+// for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
+// allowed in section 17.4.3.1
+template<>
+struct hash<iv::core::Parser::IdentifierKey>
+  : public unary_function<iv::core::Parser::IdentifierKey, std::size_t> {
+  result_type operator()(const argument_type& x) const {
+    return hash<argument_type::value_type::value_type>()(x.value());
+  }
+};
+
+} }  // namespace std::tr1
 #endif  // _IV_PARSER_H_

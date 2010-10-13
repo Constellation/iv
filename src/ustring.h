@@ -55,15 +55,15 @@ namespace tr1 {
 template<>
 struct hash<iv::core::UString>
   : public unary_function<iv::core::UString, std::size_t> {
-  std::size_t operator()(const iv::core::UString& x) const {
+  result_type operator()(const argument_type& x) const {
     return std::accumulate(
         x.begin(),
         x.end(),
         0,
         std::tr1::bind(
-            std::plus<std::size_t>(),
+            std::plus<result_type>(),
             std::tr1::bind(
-                std::multiplies<std::size_t>(),
+                std::multiplies<result_type>(),
                 std::tr1::placeholders::_1,
                 131),
             std::tr1::placeholders::_2));
