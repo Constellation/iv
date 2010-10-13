@@ -2,7 +2,7 @@
 #include <tr1/unordered_map>
 #ifdef DEBUG
 #include <cstdio>
-#include <iostream>
+#include <iostream>  // NOLINT
 #endif  // DEBUG
 
 #include "parser.h"
