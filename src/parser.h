@@ -70,7 +70,6 @@ class Parser : private Noncopyable<Parser>::type {
   Statement* ParseVariableDeclarations(VariableStatement* stmt,
                                        bool contains_in, bool *res);
   Statement* ParseEmptyStatement();
-  Statement* ParseExpressionStatement(bool *res);
   Statement* ParseIfStatement(bool *res);
   Statement* ParseDoWhileStatement(bool *res);
   Statement* ParseWhileStatement(bool *res);
@@ -85,6 +84,7 @@ class Parser : private Noncopyable<Parser>::type {
   Statement* ParseThrowStatement(bool *res);
   Statement* ParseTryStatement(bool *res);
   Statement* ParseDebuggerStatement(bool *res);
+  Statement* ParseExpressionStatement(bool *res);
   Statement* ParseExpressionOrLabelledStatement(bool *res);
   Statement* ParseFunctionStatement(bool *res);  // not standard in ECMA-262 3rd
 

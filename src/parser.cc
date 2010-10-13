@@ -252,9 +252,14 @@ Statement* Parser::ParseStatement(bool *res) {
       FAIL();
       break;
 
-    default:
-      // LabelledStatement or ExpressionStatement or ILLEGAL
+    case Token::IDENTIFIER:
+      // LabelledStatement or ExpressionStatement
       result = ParseExpressionOrLabelledStatement(CHECK);
+      break;
+
+    default:
+      // ExpressionStatement or ILLEGAL
+      result = ParseExpressionStatement(CHECK);
       break;
   }
   return result;
@@ -820,35 +825,36 @@ Statement* Parser::ParseDebuggerStatement(bool *res) {
 //  ExpressionStatement
 //    : Expression ';'
 Statement* Parser::ParseExpressionOrLabelledStatement(bool *res) {
-  Expression* expr;
-  Statement* stmt;
-  if (token_ == Token::IDENTIFIER) {
-    expr = ParseExpression(true, CHECK);
-    if (token_ == Token::COLON &&
-        expr->AsLiteral() &&
-        expr->AsLiteral()->AsIdentifier()) {
-      // LabelledStatement
-      Next();
+  assert(token_ == Token::IDENTIFIER);
+  Expression* expr = ParseExpression(true, CHECK);
+  if (token_ == Token::COLON &&
+      expr->AsLiteral() &&
+      expr->AsLiteral()->AsIdentifier()) {
+    // LabelledStatement
+    Next();
 
-      AstNode::Identifiers* labels = labels_;
-      Identifier* const label = expr->AsLiteral()->AsIdentifier();
-      const bool exist_labels = labels;
-      if (!exist_labels) {
-        labels = space_->NewLabels();
-      }
-      if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
-        // duplicate label
-        FAIL();
-      }
-      labels->push_back(label);
-      LabelScope scope(this, labels, exist_labels);
-
-      stmt = ParseStatement(CHECK);
-      return NEW(LabelledStatement(expr, stmt));
+    AstNode::Identifiers* labels = labels_;
+    Identifier* const label = expr->AsLiteral()->AsIdentifier();
+    const bool exist_labels = labels;
+    if (!exist_labels) {
+      labels = space_->NewLabels();
     }
-  } else {
-    expr = ParseExpression(true, CHECK);
+    if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
+      // duplicate label
+      FAIL();
+    }
+    labels->push_back(label);
+    LabelScope scope(this, labels, exist_labels);
+
+    Statement* stmt = ParseStatement(CHECK);
+    return NEW(LabelledStatement(expr, stmt));
   }
+  ExpectSemicolon(CHECK);
+  return NEW(ExpressionStatement(expr));
+}
+
+Statement* Parser::ParseExpressionStatement(bool *res) {
+  Expression* expr = ParseExpression(true, CHECK);
   ExpectSemicolon(CHECK);
   return NEW(ExpressionStatement(expr));
 }
