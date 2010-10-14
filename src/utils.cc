@@ -24,4 +24,3 @@ int32_t Conv::DoubleToInt32(double d) {
 }
 
 } }  // namespace iv::core
-

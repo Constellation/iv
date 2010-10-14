@@ -4,6 +4,7 @@
 #include <iterator>
 #include <cassert>
 #include <gc/gc_cpp.h>
+#include "conversions-inl.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "gc-template.h"
@@ -70,7 +71,7 @@ class JSString : public GCUString, public gc {
   template<class String>
   explicit JSString(const String& rhs)
     : GCUString(rhs.begin(), rhs.end()),
-      hash_value_(CalcHash(begin(), end())) {
+      hash_value_(core::StringToHash(*this)) {
   }
 
   JSString(const JSString& str);
@@ -81,7 +82,7 @@ class JSString : public GCUString, public gc {
   template<typename Iter>
   JSString(Iter start, Iter last)
     : GCUString(start, last),
-      hash_value_(CalcHash(begin(), end())) {
+      hash_value_(core::StringToHash(*this)) {
   }
 
   inline std::size_t hash_value() const {
@@ -92,15 +93,6 @@ class JSString : public GCUString, public gc {
   static JSString* New(Context* context, const core::UStringPiece& str);
   static JSString* NewAsciiString(Context* context,
                                   const core::StringPiece& str);
-
-  template<typename Iter>
-  static std::size_t CalcHash(Iter begin, Iter end) {
-    std::size_t res = 0;
-    for (; begin != end; ++begin) {
-      res = (res * 131) + *begin;
-    }
-    return res;
-  }
  protected:
   std::size_t hash_value_;
 };

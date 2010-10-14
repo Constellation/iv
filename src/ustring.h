@@ -11,6 +11,7 @@
 #include <unicode/uclean.h>
 #include <unicode/ucnv.h>
 #include "stringpiece.h"
+#include "conversions-inl.h"
 namespace iv {
 namespace core {
 
@@ -56,17 +57,7 @@ template<>
 struct hash<iv::core::UString>
   : public unary_function<iv::core::UString, std::size_t> {
   result_type operator()(const argument_type& x) const {
-    return std::accumulate(
-        x.begin(),
-        x.end(),
-        0,
-        std::tr1::bind(
-            std::plus<result_type>(),
-            std::tr1::bind(
-                std::multiplies<result_type>(),
-                std::tr1::placeholders::_1,
-                131),
-            std::tr1::placeholders::_2));
+    return iv::core::StringToHash(x);
   }
 };
 

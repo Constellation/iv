@@ -10,27 +10,27 @@ namespace lv5 {
 
 JSString::JSString()
   : GCUString(),
-    hash_value_(CalcHash(begin(), end())) {
+    hash_value_(core::StringToHash(*this)) {
 }
 
 JSString::JSString(size_type len, UChar ch)
   : GCUString(len, ch),
-    hash_value_(CalcHash(begin(), end())) {
+    hash_value_(core::StringToHash(*this)) {
 }
 
 JSString::JSString(const UChar* s)
   : GCUString(s),
-    hash_value_(CalcHash(begin(), end())) {
+    hash_value_(core::StringToHash(*this)) {
 }
 
 JSString::JSString(const UChar* s, size_type len)
   : GCUString(s, len),
-    hash_value_(CalcHash(begin(), end())) {
+    hash_value_(core::StringToHash(*this)) {
 }
 
 JSString::JSString(const GCUString& s, size_type index, size_type len)
   : GCUString(s, index, len),
-    hash_value_(CalcHash(begin(), end())) {
+    hash_value_(core::StringToHash(*this)) {
 }
 
 JSString::JSString(const JSString& str)

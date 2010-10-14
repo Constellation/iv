@@ -14,6 +14,7 @@
 #include <tr1/functional>
 #include <unicode/uchar.h>
 #include "utils.h"
+#include "conversions-inl.h"
 
 namespace iv {
 namespace core {
@@ -225,17 +226,7 @@ template<>
 struct hash<iv::core::SpaceUString>
   : public unary_function<iv::core::SpaceUString, std::size_t> {
   std::size_t operator()(const iv::core::SpaceUString& x) const {
-    return std::accumulate(
-        x.begin(),
-        x.end(),
-        0,
-        std::tr1::bind(
-            std::plus<std::size_t>(),
-            std::tr1::bind(
-                std::multiplies<std::size_t>(),
-                std::tr1::placeholders::_1,
-                131),
-            std::tr1::placeholders::_2));
+    return iv::core::StringToHash(x);
   }
 };
 

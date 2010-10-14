@@ -5,6 +5,7 @@
 #include "conversions.h"
 #include "char.h"
 #include "dtoa.h"
+#include "ustringpiece.h"
 namespace iv {
 namespace core {
 
@@ -201,6 +202,26 @@ inline double StringToDouble(const StringPiece& str) {
 
 inline double StringToDouble(const UStringPiece& str) {
   return StringToDouble(str.begin(), str.end());
+}
+
+inline std::size_t StringToHash(const UStringPiece& x) {
+  std::size_t len = x.size();
+  std::size_t step = (len >> 5) + 1;
+  std::size_t h = 0;
+  for (std::size_t l1 = len; l1 >= step; l1 -= step) {
+    h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+  }
+  return h;
+}
+
+inline std::size_t StringToHash(const StringPiece& x) {
+  std::size_t len = x.size();
+  std::size_t step = (len >> 5) + 1;
+  std::size_t h = 0;
+  for (std::size_t l1 = len; l1 >= step; l1 -= step) {
+    h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+  }
+  return h;
 }
 
 } }  // namespace iv::core

@@ -46,11 +46,11 @@ Context::Context()
 }
 
 Symbol Context::Intern(const core::StringPiece& str) {
-  return table_.Lookup(str.data(), str.size());
+  return table_.Lookup(str);
 }
 
 Symbol Context::Intern(const core::UStringPiece& str) {
-  return table_.Lookup(str.data(), str.size());
+  return table_.Lookup(str);
 }
 
 double Context::Random() {

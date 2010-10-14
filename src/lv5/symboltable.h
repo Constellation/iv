@@ -8,6 +8,7 @@
 #include "jsstring.h"
 #include "symbol.h"
 #include "ustring.h"
+#include "conversions-inl.h"
 namespace iv {
 namespace lv5 {
 class Context;
@@ -22,18 +23,13 @@ class SymbolTable {
   template<class CharT>
   Symbol Lookup(const CharT* str) {
     using std::char_traits;
-    return Lookup(str, char_traits<CharT>::length(str));
+    return Lookup(core::BasicStringPiece<CharT>(str));
   }
 
   template<class String>
   Symbol Lookup(const String& str) {
-    return Lookup(str.data(), str.size());
-  }
-
-  template<class CharT>
-  Symbol Lookup(const CharT* str, std::size_t size) {
-    std::size_t hash = JSString::CalcHash(str, str+size);
-    core::UString target(str, str+size);
+    std::size_t hash = StringToHash(str);
+    core::UString target(str.begin(), str.end());
     {
       boost::mutex::scoped_lock lock(sync_);
       Table::iterator it = table_.find(hash);
