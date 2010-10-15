@@ -545,22 +545,22 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
             found = true;
           }
         }
-        // case's fall through
-        if (found) {
-          BOOST_FOREACH(core::Statement* const st, clause->body()) {
-            EVAL(st);
-            if (!ctx_->ret().IsUndefined()) {
-              value = ctx_->ret();
-            }
-            if (!ctx_->IsMode<Context::NORMAL>()) {
-              ctx_->ret() = value;
-              finalize = true;
-              break;
-            }
+      }
+      // case's fall through
+      if (found) {
+        BOOST_FOREACH(core::Statement* const st, clause->body()) {
+          EVAL(st);
+          if (!ctx_->ret().IsUndefined()) {
+            value = ctx_->ret();
           }
-          if (finalize) {
+          if (!ctx_->IsMode<Context::NORMAL>()) {
+            ctx_->ret() = value;
+            finalize = true;
             break;
           }
+        }
+        if (finalize) {
+          break;
         }
       }
     }
@@ -574,6 +574,7 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
           }
           if (!ctx_->IsMode<Context::NORMAL>()) {
             ctx_->ret() = value;
+            finalize = true;
             break;
           }
         }
