@@ -604,6 +604,40 @@ class Identifier : public Literal {
   SpaceUString value_;
 };
 
+class IdentifierKey {
+ public:
+  typedef Identifier value_type;
+  typedef IdentifierKey this_type;
+  IdentifierKey(value_type* ident)  // NOLINT
+    : ident_(ident) { }
+  IdentifierKey(const this_type& rhs)
+    : ident_(rhs.ident_) { }
+  inline const value_type::value_type& value() const {
+    return ident_->value();
+  }
+  inline bool operator==(const this_type& rhs) const {
+    if (ident_ == rhs.ident_) {
+      return true;
+    } else {
+      return value() == rhs.value();
+    }
+  }
+  inline bool operator>(const this_type& rhs) const {
+    return value() > rhs.value();
+  }
+  inline bool operator<(const this_type& rhs) const {
+    return value() < rhs.value();
+  }
+  inline bool operator>=(const this_type& rhs) const {
+    return value() >= rhs.value();
+  }
+  inline bool operator<=(const this_type& rhs) const {
+    return value() <= rhs.value();
+  }
+ private:
+  value_type* ident_;
+};
+
 class ThisLiteral : public Literal {
  public:
   inline ThisLiteral* AsThisLiteral() { return this; }
@@ -845,4 +879,19 @@ class ConstructorCall : public Call {
 };
 
 } }  // namespace iv::core
+
+namespace std {
+namespace tr1 {
+// template specialization
+// for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
+// allowed in section 17.4.3.1
+template<>
+struct hash<iv::core::IdentifierKey>
+  : public unary_function<iv::core::IdentifierKey, std::size_t> {
+  result_type operator()(const argument_type& x) const {
+    return hash<argument_type::value_type::value_type>()(x.value());
+  }
+};
+
+} }  // namespace std::tr1
 #endif  // _IV_AST_H_

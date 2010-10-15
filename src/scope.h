@@ -22,7 +22,6 @@ class Scope : public SpaceObject, private Noncopyable<Scope>::type  {
       vars_(Variables::allocator_type(factory)),
       funcs_(FunctionLiterals::allocator_type(factory)) {
   }
-  ~Scope() { }
   void AddUnresolved(Identifier* name, bool is_const) {
     vars_.push_back(Variables::value_type(name, is_const));
   }

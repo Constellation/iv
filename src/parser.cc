@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <tr1/unordered_map>
+#include <tr1/unordered_set>
 #include <tr1/functional>
 #include "utils.h"
 #ifdef DEBUG
@@ -1756,18 +1757,30 @@ void Parser::ReportUnexpectedToken() {
 }
 
 void Parser::UnresolvedCheck() {
+  std::tr1::unordered_set<IdentifierKey> idents;
+  for (Scope::Variables::const_iterator
+       it = scope_->variables().begin(),
+       last = scope_->variables().end(); it != last; ++it) {
+    idents.insert(it->first);
+  }
+  for (Scope::FunctionLiterals::const_iterator
+       it = scope_->function_declarations().begin(),
+       last = scope_->function_declarations().begin(); it != last; ++it) {
+    idents.insert((*it)->name());
+  }
   resolved_check_stack_.erase(
       std::remove_if(resolved_check_stack_.begin(),
                      resolved_check_stack_.end(),
                      std::tr1::bind(RemoveResolved,
-                                    scope_,
+                                    idents,
                                     std::tr1::placeholders::_1)),
       resolved_check_stack_.end());
 }
 
-bool Parser::RemoveResolved(const Scope* scope,
-                            const Unresolveds::value_type& target) {
-  return scope->Contains(*(target.first));
+bool Parser::RemoveResolved(
+    const std::tr1::unordered_set<IdentifierKey>& idents,
+    const Unresolveds::value_type& target) {
+  return idents.find(target.first) != idents.end();
 }
 
 bool Parser::IsEvalOrArguments(const Identifier* ident) {
