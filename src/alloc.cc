@@ -32,13 +32,6 @@ Space::~Space() {
   std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
 }
 
-Pool::Pool()
-  : start_(NULL),
-    position_(NULL),
-    limit_(NULL),
-    next_(NULL) {
-}
-
 void Pool::Initialize(uintptr_t start, Pool* next) {
   start_ = start;
   position_ = start;
@@ -48,11 +41,10 @@ void Pool::Initialize(uintptr_t start, Pool* next) {
 
 Arena::Arena()
   : pools_(),
-    result_(NULL),
+    result_(),
     now_(&pools_[0]),
     start_(now_),
     next_(NULL) {
-  result_ = Malloced::New(kArenaSize);
   uintptr_t address = reinterpret_cast<uintptr_t>(result_);
 
   uintptr_t pool_address = AlignOffset(address, Pool::kPoolSize);
@@ -62,10 +54,6 @@ Arena::Arena()
   }
   pools_[kPoolNum-1].Initialize(
       pool_address+(kPoolNum-1)*Pool::kPoolSize, NULL);
-}
-
-Arena::~Arena() {
-  Malloced::Delete(result_);
 }
 
 } }  // namespace iv::core

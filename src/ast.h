@@ -67,10 +67,14 @@ class AstFactory;
 
 class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
  public:
-  typedef SpaceVector<Expression*>::type Expressions;
-  typedef SpaceVector<Statement*>::type Statements;
-  typedef SpaceVector<Declaration*>::type Declarations;
-  typedef SpaceVector<Identifier*>::type Identifiers;
+  template<class T>
+  struct List {
+    typedef typename SpaceVector<T>::type type;
+  };
+  typedef List<Expression*>::type Expressions;
+  typedef List<Statement*>::type Statements;
+  typedef List<Declaration*>::type Declarations;
+  typedef List<Identifier*>::type Identifiers;
 
   virtual ~AstNode() = 0;
 
@@ -400,7 +404,7 @@ class CaseClause : public AstNode {
 
 class SwitchStatement : public AnonymousBreakableStatement {
  public:
-  typedef SpaceVector<CaseClause*>::type CaseClauses;
+  typedef List<CaseClause*>::type CaseClauses;
   explicit SwitchStatement(Expression* expr, Space* factory);
   void AddCaseClause(CaseClause* clause);
   inline SwitchStatement* AsSwitchStatement() { return this; }
@@ -683,7 +687,7 @@ class ObjectLiteral : public Literal {
   typedef std::tr1::tuple<PropertyDescriptorType,
                           Identifier*,
                           Expression*> Property;
-  typedef SpaceVector<Property>::type Properties;
+  typedef List<Property>::type Properties;
   explicit ObjectLiteral(Space* factory);
 
   inline void AddDataProperty(Identifier* key, Expression* val) {

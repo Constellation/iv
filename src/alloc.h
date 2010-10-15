@@ -35,7 +35,6 @@ class Malloced {
 class Pool {
  public:
   static const unsigned int kPoolSize = Size::KB * 4;
-  Pool();
   inline void Initialize(uintptr_t start, Pool* next);
   Pool* Next() const { return next_; }
   inline void* New(uintptr_t size);
@@ -54,13 +53,12 @@ class Arena {
                                 ((Pool::kPoolSize <= kAlignment) ?
                                   0 : (Pool::kPoolSize - kAlignment));
   Arena();
-  ~Arena();
   inline void* New(std::size_t raw_size);
   inline void SetNext(Arena* next) { next_ = next; }
   inline Arena* Next() const { return next_; }
  private:
   Pool pools_[kPoolNum];
-  void* result_;
+  char result_[kArenaSize];
   Pool* now_;
   const Pool* start_;
   Arena* next_;
@@ -78,6 +76,9 @@ class Space {
   static const unsigned int kInitArenas = 4;
 
   inline Arena* NewArena();
+  inline const std::vector<void*>& malloced() const {
+    return malloced_;
+  }
   Arena init_arenas_[kInitArenas];
   Arena* arena_;
   Arena* start_malloced_;

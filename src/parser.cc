@@ -1648,8 +1648,9 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       if (IsEvalOrArguments(*it)) {
         FAIL();
       }
-      for (AstNode::Identifiers::const_iterator searcher = it + 1;
-           searcher != last; ++searcher) {
+      AstNode::Identifiers::const_iterator searcher = it;
+      ++searcher;
+      for (;searcher != last; ++searcher) {
         if ((*it)->value() == (*searcher)->value()) {
           FAIL();
         }

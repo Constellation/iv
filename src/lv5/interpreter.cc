@@ -440,7 +440,7 @@ void Interpreter::Visit(core::ForInStatement* stmt) {
       EVAL(stmt->each());
       if (stmt->each()->AsVariableStatement()) {
         core::Identifier* ident =
-            stmt->each()->AsVariableStatement()->decls()[0]->name();
+            stmt->each()->AsVariableStatement()->decls().front()->name();
         EVAL(ident);
       }
       JSVal lhs = ctx_->ret();
@@ -529,13 +529,13 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
     bool found = false;
     bool default_found = false;
     bool finalize = false;
-    std::size_t default_index = 0;
     const CaseClauses& clauses = stmt->clauses();
-    const std::size_t len = clauses.size();
-    for (std::size_t i = 0; i < len; ++i) {
-      const CaseClause* const clause = clauses[i];
+    CaseClauses::const_iterator default_it = clauses.end();
+    for (CaseClauses::const_iterator it = clauses.begin(),
+         last = clauses.end(); it != last; ++it) {
+      const CaseClause* const clause = *it;
       if (clause->IsDefault()) {
-        default_index = i;
+        default_it = it;
         default_found = true;
       } else {
         if (!found) {
@@ -565,9 +565,9 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
       }
     }
     if (!finalize && !found && default_found) {
-      for (std::size_t i = default_index; i < len; ++i) {
-        const CaseClause* const clause = clauses[i];
-        BOOST_FOREACH(core::Statement* const st, clause->body()) {
+      for (CaseClauses::const_iterator it = default_it,
+           last = clauses.end(); it != last; ++it) {
+        BOOST_FOREACH(core::Statement* const st, (*it)->body()) {
           EVAL(st);
           if (!ctx_->ret().IsUndefined()) {
             value = ctx_->ret();
