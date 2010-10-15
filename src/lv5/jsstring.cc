@@ -4,6 +4,7 @@
 #include <unicode/ucnv.h>
 #include <algorithm>
 #include "jsstring.h"
+#include "ustring.h"
 
 namespace iv {
 namespace lv5 {
@@ -39,32 +40,8 @@ JSString::JSString(const JSString& str)
 }
 
 JSString* JSString::New(Context* ctx, const core::StringPiece& str) {
-  JSString* res;
-  UErrorCode error = U_ZERO_ERROR;
-  UConverter* conv;
-  UChar* utarget;
-  u_init(&error);
-  conv = ucnv_open("utf-8", &error);
-  if (U_FAILURE(error)) {
-    // Null String
-    res = new JSString();
-  } else {
-    const std::size_t source_length = str.size() + 1;
-    const std::size_t target_length = source_length / ucnv_getMinCharSize(conv);
-    const char* pointer = str.data();
-    std::vector<UChar> vec(target_length + 1);
-    utarget = vec.data();
-    ucnv_toUnicode(conv, &utarget, utarget+target_length,
-                   &pointer, str.data()+source_length, NULL, true, &error);
-    if (U_FAILURE(error)) {
-      res = new JSString();
-    } else {
-      *utarget = '\0';
-      res = new JSString(vec.data(), std::distance(vec.data(), utarget));
-    }
-  }
-  ucnv_close(conv);
-  u_cleanup();
+  JSString* res = new JSString();
+  core::ConvertToUTF16(str, res);
   return res;
 }
 
