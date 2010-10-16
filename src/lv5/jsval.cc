@@ -1,51 +1,79 @@
 #include "jsval.h"
 namespace iv {
 namespace lv5 {
+#define VTABLE(TYPE)\
+{\
+    JSVal:: TYPE, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::IsPrimitive, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::TypeOf, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToObject, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToBoolean, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToString, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToNumber , \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToPrimitive , \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::CheckObjectCoercible, \
+    &JSVal::vtable_initializer< \
+      JSVal:: TYPE, boost::enable_if_c<true>::type>::IsCallable\
+}
+
+JSVal::vtable JSVal::vtables[JSVal::kVtables] = {
+  VTABLE(NUMBER),
+  VTABLE(OBJECT),
+  VTABLE(STRING),
+  VTABLE(BOOLEAN),
+  VTABLE(NULLVALUE),
+  VTABLE(UNDEFINED),
+  VTABLE(REFERENCE),
+  VTABLE(ENVIRONMENT),
+};
+
+#undef VTABLE
+
 JSVal::JSVal()
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_undefined();
 }
 
 JSVal::JSVal(const double& val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(JSObject* val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(JSString* val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(JSReference* val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(JSEnv* val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(bool val)
-  : vptr_(NULL),
-    value_() {
+  : value_() {
   set_value(val);
 }
 
 JSVal::JSVal(const this_type& rhs)
-  : vptr_(rhs.vptr_),
-    value_(rhs.value_) {
+  : value_(rhs.value_) {
 }
 
 JSVal& JSVal::operator=(const this_type& rhs) {
