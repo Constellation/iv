@@ -1,41 +1,6 @@
 #include "jsval.h"
 namespace iv {
 namespace lv5 {
-#define VTABLE(TYPE)\
-{\
-    JSVal:: TYPE, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::IsPrimitive, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::TypeOf, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToObject, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToBoolean, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToString, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToNumber , \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::ToPrimitive , \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::CheckObjectCoercible, \
-    &JSVal::vtable_initializer< \
-      JSVal:: TYPE, boost::enable_if_c<true>::type>::IsCallable\
-}
-
-JSVal::vtable JSVal::vtables[JSVal::kVtables] = {
-  VTABLE(NUMBER),
-  VTABLE(OBJECT),
-  VTABLE(STRING),
-  VTABLE(BOOLEAN),
-  VTABLE(NULLVALUE),
-  VTABLE(UNDEFINED),
-  VTABLE(REFERENCE),
-  VTABLE(ENVIRONMENT),
-};
-
-#undef VTABLE
 
 JSVal::JSVal()
   : value_() {
