@@ -41,9 +41,43 @@ struct Layout<4> {
     } struct_;
   } type;
 };
+
+template<>
+struct Layout<8> {
+  typedef union {
+    double number_;
+    struct {
+      union {
+        bool boolean_;
+        JSObject* object_;
+        JSString* string_;
+        JSReference* reference_;
+        JSEnv* environment_;
+      } payload_;
+      uint32_t tag_;
+    } struct_;
+  } type;
+};
 #else
 template<>
 struct Layout<4> {
+  union {
+    double number_;
+    struct {
+      uint32_t tag_;
+      union {
+        bool boolean_;
+        JSObject* object_;
+        JSString* string_;
+        JSReference* reference_;
+        JSEnv* environment_;
+      } payload_;
+    } struct_;
+  } type;
+};
+
+template<>
+struct Layout<8> {
   union {
     double number_;
     struct {
