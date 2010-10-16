@@ -161,83 +161,59 @@ class JSVal {
     return value_.struct_.tag_ == kEnvironmentTag;
   }
   inline bool IsPrimitive() const {
-    if (IsNumber()) {
-      return true;
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->IsPrimitive(this);
-    }
+    return IsNumber() ?
+        true : VPTR(value_.struct_.tag_ - kLowestTag)->IsPrimitive(this);
   }
   inline JSString* TypeOf(Context* ctx) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->TypeOf(this, ctx);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->TypeOf(this, ctx);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->TypeOf(this, ctx) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->TypeOf(this, ctx);
   }
   inline uint32_t type() const {
-    if (IsNumber()) {
-      return kNumberTag;
-    } else {
-      return value_.struct_.tag_;
-    }
+    return IsNumber() ? kNumberTag : value_.struct_.tag_;
   }
 
   inline JSObject* ToObject(Context* ctx, JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->ToObject(this, ctx, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->ToObject(this, ctx, res);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->ToObject(this, ctx, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->ToObject(this, ctx, res);
   }
 
   inline JSString* ToString(Context* ctx,
                             JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->ToString(this, ctx, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->ToString(this, ctx, res);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->ToString(this, ctx, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->ToString(this, ctx, res);
   }
 
   inline double ToNumber(Context* ctx, JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->ToNumber(this, ctx, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->ToNumber(this, ctx, res);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->ToNumber(this, ctx, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->ToNumber(this, ctx, res);
   }
 
   inline JSVal ToPrimitive(Context* ctx,
                            JSObject::Hint hint, JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->ToPrimitive(this, ctx, hint, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->ToPrimitive(this, ctx, hint, res);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->ToPrimitive(this, ctx, hint, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->ToPrimitive(this, ctx, hint, res);
   }
 
   inline void CheckObjectCoercible(JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->CheckObjectCoercible(this, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->CheckObjectCoercible(this, res);
-    }
+    IsNumber() ?
+        VPTR(NUMBER)->CheckObjectCoercible(this, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->CheckObjectCoercible(this, res);
   }
 
   inline bool IsCallable() const {
-    if (IsNumber()) {
-      return false;
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->IsCallable(this);
-    }
+    return IsNumber() ? false :
+        VPTR(value_.struct_.tag_ - kLowestTag)->IsCallable(this);
   }
 
   inline bool ToBoolean(JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return VPTR(NUMBER)->ToBoolean(this, res);
-    } else {
-      return VPTR(value_.struct_.tag_ - kLowestTag)->ToBoolean(this, res);
-    }
+    return IsNumber() ?
+        VPTR(NUMBER)->ToBoolean(this, res) :
+        VPTR(value_.struct_.tag_ - kLowestTag)->ToBoolean(this, res);
   }
 
   inline void swap(this_type& rhs) {
