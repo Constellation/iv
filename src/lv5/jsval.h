@@ -273,24 +273,24 @@ class JSVal {
 
   SPECIALIZE(OBJECT) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return false;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       if (self->object()->IsCallable()) {
         return JSString::NewAsciiString(context, "function");
       } else {
         return JSString::NewAsciiString(context, "object");
       }
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type*) {
       return self->object();
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       return true;
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       JSVal prim = ToPrimitive(self, context, JSObject::STRING, res);
       if (*res) {
@@ -298,7 +298,7 @@ class JSVal {
       }
       return prim.ToString(context, res);
     }
-    static double ToNumber(const JSVal* self,
+    inline static double ToNumber(const JSVal* self,
                            Context* context, JSErrorCode::Type* res) {
       JSVal prim = ToPrimitive(self, context, JSObject::NUMBER, res);
       if (*res) {
@@ -306,34 +306,34 @@ class JSVal {
       }
       return prim.ToNumber(context, res);
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return self->object()->DefaultValue(context, hint, res);
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return self->object()->IsCallable();
     }
   };
   SPECIALIZE(BOOLEAN) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return true;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "boolean");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type*) {
       return JSBooleanObject::New(ctx, self->boolean());
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       return self->boolean();
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       if (self->boolean()) {
         return JSString::NewAsciiString(context, "true");
@@ -341,74 +341,74 @@ class JSVal {
         return JSString::NewAsciiString(context, "false");
       }
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       return self->boolean() ? 1 : +0;
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return *self;
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(STRING) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return true;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "string");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type*) {
       return JSStringObject::New(ctx, self->string());
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       return !self->string()->empty();
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       return self->string();
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       return core::StringToDouble(*self->string());
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return *self;
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(NUMBER) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return true;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "number");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type*) {
       return JSNumberObject::New(ctx, self->number());
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       const double& num = self->number();
       return num != 0 && !std::isnan(num);
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       std::tr1::array<char, 80> buffer;
       const char* const str = core::DoubleToCString(self->number(),
@@ -416,175 +416,175 @@ class JSVal {
                                                     buffer.size());
       return JSString::NewAsciiString(context, str);
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       return self->number();
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return *self;
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(NULLVALUE) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return false;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "null");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       return false;
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       return JSString::NewAsciiString(context, "null");
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       return +0;
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return *self;
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(UNDEFINED) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return false;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "undefined");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type*) {
       return false;
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       return JSString::NewAsciiString(context, "undefined");
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       return std::numeric_limits<double>::quiet_NaN();
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       return *self;
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(REFERENCE) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return false;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "reference");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type* res) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return false;
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return 0;
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* context,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* context,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return JSVal::Undefined();
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
   SPECIALIZE(ENVIRONMENT) {
     static vtable vtable_;
-    static bool IsPrimitive(const JSVal* self) {
+    inline static bool IsPrimitive(const JSVal* self) {
       return false;
     }
-    static JSString* TypeOf(const JSVal* self, Context* context) {
+    inline static JSString* TypeOf(const JSVal* self, Context* context) {
       return JSString::NewAsciiString(context, "environment");
     }
-    static JSObject* ToObject(const JSVal* self, Context* ctx,
+    inline static JSObject* ToObject(const JSVal* self, Context* ctx,
                               JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static bool ToBoolean(const JSVal* self, JSErrorCode::Type* res) {
+    inline static bool ToBoolean(const JSVal* self, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return false;
     }
-    static JSString* ToString(const JSVal* self,
+    inline static JSString* ToString(const JSVal* self,
                               Context* context, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return NULL;
     }
-    static double ToNumber(const JSVal* self, Context* context,
+    inline static double ToNumber(const JSVal* self, Context* context,
                            JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return 0;
     }
-    static JSVal ToPrimitive(const JSVal* self, Context* contex,
+    inline static JSVal ToPrimitive(const JSVal* self, Context* contex,
                              JSObject::Hint hint, JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return JSVal::Undefined();
     }
-    static void CheckObjectCoercible(const JSVal* self,
+    inline static void CheckObjectCoercible(const JSVal* self,
                                      JSErrorCode::Type* res) {
       *res = JSErrorCode::TypeError;
       return;
     }
-    static bool IsCallable(const JSVal* self) {
+    inline static bool IsCallable(const JSVal* self) {
       return false;
     }
   };
