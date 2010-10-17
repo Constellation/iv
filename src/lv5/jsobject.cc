@@ -47,7 +47,7 @@ JSObject::JSObject(JSObject* proto,
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint hint, JSErrorCode::Type* res) {
-  const Arguments args(ctx, JSVal(this));
+  const Arguments args(ctx, this);
   if (hint != NUMBER) {
     // hint is STRING or NONE
     TRY(ctx, "toString", args, res);
@@ -74,7 +74,7 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc->IsAccessorDescriptor());
     JSObject* getter = desc->AsAccessorDescriptor()->get();
     if (getter) {
-      return getter->AsCallable()->Call(Arguments(ctx, JSVal(this)), res);
+      return getter->AsCallable()->Call(Arguments(ctx, this), res);
     } else {
       return JSVal::Undefined();
     }
@@ -239,7 +239,7 @@ void JSObject::Put(Context* ctx,
   if (desc && desc->IsAccessorDescriptor()) {
     AccessorDescriptor* accs = desc->AsAccessorDescriptor();
     assert(accs->set());
-    accs->set()->AsCallable()->Call(Arguments(ctx, JSVal(this)), res);
+    accs->set()->AsCallable()->Call(Arguments(ctx, this), res);
   } else {
     DataDescriptor* new_desc = new DataDescriptor(
         val,

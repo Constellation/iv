@@ -106,7 +106,7 @@ void Context::Initialize() {
         JSNativeFunction::New(this, &Runtime_FunctionToString);
     func_proto->DefineOwnProperty(
         this, Intern("toString"),
-        new DataDescriptor(JSVal(func),
+        new DataDescriptor(func,
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE),
         false, NULL);
@@ -120,7 +120,7 @@ void Context::Initialize() {
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty);
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
-          new DataDescriptor(JSVal(func),
+          new DataDescriptor(func,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE),
           false, NULL);
@@ -130,7 +130,7 @@ void Context::Initialize() {
           JSNativeFunction::New(this, &Runtime_ObjectToString);
       obj_proto->DefineOwnProperty(
           this, Intern("toString"),
-          new DataDescriptor(JSVal(func),
+          new DataDescriptor(func,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE),
           false, NULL);
@@ -139,12 +139,12 @@ void Context::Initialize() {
 
     obj_constructor->DefineOwnProperty(
         this, Intern("prototype"),
-        new DataDescriptor(JSVal(obj_proto), PropertyDescriptor::NONE),
+        new DataDescriptor(obj_proto, PropertyDescriptor::NONE),
         false, NULL);
 
     variable_env_->CreateMutableBinding(this, name, false);
     variable_env_->SetMutableBinding(this, name,
-                                     JSVal(obj_constructor), strict_, NULL);
+                                     obj_constructor, strict_, NULL);
   }
   {
     // Array

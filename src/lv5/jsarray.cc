@@ -16,7 +16,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
     length_(len) {
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
-                              new DataDescriptor(JSVal(static_cast<double>(0)),
+                              new DataDescriptor(static_cast<double>(0),
                                                  PropertyDescriptor::WRITABLE),
                                                  false, NULL);
 }
@@ -59,7 +59,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         return false;
       }
       DataDescriptor* const new_len_desc = new DataDescriptor(
-          JSVal(static_cast<double>(new_len)), desc->attrs());
+          static_cast<double>(new_len), desc->attrs());
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);

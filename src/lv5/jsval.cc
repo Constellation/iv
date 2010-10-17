@@ -59,19 +59,19 @@ JSVal JSVal::Null() {
 }
 
 JSVal JSVal::Boolean(bool val) {
-  return JSVal(val);
+  return val;
 }
 
 JSVal JSVal::Number(double val) {
-  return JSVal(val);
+  return val;
 }
 
 JSVal JSVal::String(JSString* str) {
-  return JSVal(str);
+  return str;
 }
 
 JSVal JSVal::Object(JSObject* obj) {
-  return JSVal(obj);
+  return obj;
 }
 
 } }  // namespace iv::lv5

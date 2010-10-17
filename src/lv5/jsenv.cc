@@ -128,7 +128,7 @@ JSVal JSObjectEnv::GetBindingValue(Context* ctx,
 
 JSVal JSObjectEnv::ImplicitThisValue() const {
   if (provide_this_) {
-    return JSVal(record_);
+    return record_;
   } else {
     return JSVal::Undefined();
   }

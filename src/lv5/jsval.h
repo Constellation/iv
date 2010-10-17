@@ -128,12 +128,12 @@ class JSVal {
 
   JSVal();
   JSVal(const JSVal& rhs);
-  explicit JSVal(const double& val);
-  explicit JSVal(JSObject* val);
-  explicit JSVal(JSString* val);
-  explicit JSVal(JSReference* val);
-  explicit JSVal(JSEnv* val);
-  explicit JSVal(bool val);
+  JSVal(const double& val);  // NOLINT
+  JSVal(JSObject* val);  // NOLINT
+  JSVal(JSString* val);  // NOLINT
+  JSVal(JSReference* val);  // NOLINT
+  JSVal(JSEnv* val);  // NOLINT
+  JSVal(bool val);  // NOLINT
 
   this_type& operator=(const this_type&);
 

@@ -1166,7 +1166,7 @@ void Interpreter::Visit(core::PostfixExpression* postfix) {
   const double& value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
       ((postfix->op() == core::Token::INC) ? 1 : -1);
-  PutValue(lref, JSVal(new_value), CHECK);
+  PutValue(lref, new_value, CHECK);
   ctx_->Return(old);
 }
 
@@ -1243,7 +1243,7 @@ void Interpreter::Visit(core::ArrayLiteral* literal) {
     ++current;
   }
   ary->Put(ctx_, ctx_->length_symbol(),
-           JSVal(static_cast<double>(current)), false, CHECK);
+           static_cast<double>(current), false, CHECK);
   ctx_->Return(ary);
 }
 
@@ -1375,7 +1375,7 @@ void Interpreter::Visit(core::ConstructorCall* call) {
   if (proto.IsObject()) {
     obj->set_prototype(proto.object());
   }
-  args.set_this_binding(JSVal(obj));
+  args.set_this_binding(obj);
   const JSVal result = constructor->Call(args, CHECK);
   if (result.IsObject()) {
     ctx_->ret() = result;
@@ -1623,19 +1623,19 @@ bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
   }
   if (lhs.IsNumber() && rhs.IsString()) {
     const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(lhs, JSVal(num), error);
+    return AbstractEqual(lhs, num, error);
   }
   if (lhs.IsString() && rhs.IsNumber()) {
     const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(JSVal(num), rhs, error);
+    return AbstractEqual(num, rhs, error);
   }
   if (lhs.IsBoolean()) {
     const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(JSVal(num), rhs, error);
+    return AbstractEqual(num, rhs, error);
   }
   if (rhs.IsBoolean()) {
     const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(lhs, JSVal(num), error);
+    return AbstractEqual(lhs, num, error);
   }
   if ((lhs.IsString() || lhs.IsNumber()) &&
       rhs.IsObject()) {
@@ -1722,7 +1722,7 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
   JSEnv* env = lex;
   while (env) {
     if (env->HasBinding(name)) {
-      return JSReference::New(ctx_, JSVal(env), name, strict);
+      return JSReference::New(ctx_, env, name, strict);
     } else {
       env = env->outer();
     }

@@ -9,7 +9,7 @@ JSError::JSError(JSErrorCode::Type code)
 }
 
 JSVal JSError::CreateFromCode(JSErrorCode::Type code) {
-  return JSVal(new JSError(code));
+  return new JSError(code);
 }
 
 } }  // namespace iv::lv5

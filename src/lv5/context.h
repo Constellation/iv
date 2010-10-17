@@ -128,7 +128,7 @@ class Context : private core::Noncopyable<Context>::type {
     variable_env_->CreateMutableBinding(this, name, false);
     variable_env_->SetMutableBinding(this,
                                      name,
-                                     JSVal(func), strict_, &error_);
+                                     func, strict_, &error_);
   }
 
   void Initialize();
