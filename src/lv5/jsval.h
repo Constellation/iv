@@ -27,7 +27,7 @@ struct Layout {
 #if defined(IS_LITTLE_ENDIAN)
 template<>
 struct Layout<4> {
-  typedef union {
+  union {
     double number_;
     struct {
       union {
@@ -39,12 +39,12 @@ struct Layout<4> {
       } payload_;
       uint32_t tag_;
     } struct_;
-  } type;
+  };
 };
 
 template<>
 struct Layout<8> {
-  typedef union {
+  union {
     double number_;
     struct {
       union {
@@ -56,7 +56,7 @@ struct Layout<8> {
       } payload_;
       uint32_t tag_;
     } struct_;
-  } type;
+  };
 };
 #else
 template<>
@@ -73,7 +73,7 @@ struct Layout<4> {
         JSEnv* environment_;
       } payload_;
     } struct_;
-  } type;
+  };
 };
 
 template<>
@@ -90,7 +90,7 @@ struct Layout<8> {
         JSEnv* environment_;
       } payload_;
     } struct_;
-  } type;
+  };
 };
 #endif  // define(IS_LITTLE_ENDIAN)
 }
@@ -368,7 +368,7 @@ class JSVal {
   static JSVal Object(JSObject* obj);
 
  private:
-  details::Layout<core::Size::kPointerSize>::type value_;
+  details::Layout<core::Size::kPointerSize> value_;
 };
 
 } }  // namespace iv::lv5
