@@ -1,6 +1,7 @@
 #ifndef IV_ALLOC_INL_H_
 #define IV_ALLOC_INL_H_
 #include <algorithm>
+#include <cstdlib>
 #include "alloc.h"
 namespace iv {
 namespace core {

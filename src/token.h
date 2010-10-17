@@ -1,8 +1,7 @@
 #ifndef _IV_TOKEN_H_
 #define _IV_TOKEN_H_
+#include <cstddef>
 #include <cassert>
-#include <unicode/uchar.h>
-#include <unicode/unistr.h>
 
 namespace iv {
 namespace core {

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iosfwd>
 #include <string>
-#include <cstring>
 #include <iterator>
 #include <limits>
 

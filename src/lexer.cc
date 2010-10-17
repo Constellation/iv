@@ -1,6 +1,5 @@
+#include <cstdlib>
 #include "lexer.h"
-#include <cstdio>
-#include <cassert>
 
 namespace iv {
 namespace core {

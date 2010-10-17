@@ -1,6 +1,5 @@
 #ifndef _IV_UTILS_H_
 #define _IV_UTILS_H_
-#include <cstdlib>
 #include <cstddef>
 #include <cassert>
 #include <tr1/cstdint>
