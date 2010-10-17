@@ -124,7 +124,7 @@ const char* Token::kContents[Token::NUM_TOKENS] = {
   NULL,            // NUMBER LITERAL
   NULL,            // STRING LITERAL
   NULL,            // IDENTIFIER
-  NULL,             // NOT FOUND
+  NULL             // NOT FOUND
 };
 
 } }  // namespace iv::core
