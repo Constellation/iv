@@ -47,6 +47,8 @@ struct Layout<8> {
   union {
     double number_;
     struct {
+      uint32_t overhead_;
+      uint32_t tag_;
       union {
         bool boolean_;
         JSObject* object_;
@@ -54,7 +56,6 @@ struct Layout<8> {
         JSReference* reference_;
         JSEnv* environment_;
       } payload_;
-      uint32_t tag_;
     } struct_;
   };
 };
