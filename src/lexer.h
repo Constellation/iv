@@ -5,7 +5,6 @@
 #include <cassert>
 #include <vector>
 #include <string>
-#include <iostream>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
 #include "char.h"
@@ -19,9 +18,11 @@ namespace core {
 class Lexer: private Noncopyable<Lexer>::type {
  public:
   enum LexType {
-    kIdentifyReservedWords = 0,
-    kIgnoreReservedWords,
-    kIgnoreReservedWordsAndIdentifyGetterOrSetter
+    kClear = 0,
+    kIdentifyReservedWords = 1,
+    kIgnoreReservedWords = 2,
+    kIgnoreReservedWordsAndIdentifyGetterOrSetter = 4,
+    kStrict = 8
   };
   enum State {
     NONE,
@@ -32,7 +33,7 @@ class Lexer: private Noncopyable<Lexer>::type {
   };
 
   explicit Lexer(Source* src);
-  Token::Type Next(LexType type);
+  Token::Type Next(int type);
   inline const std::vector<UChar>& Buffer() const {
     return buffer16_;
   }
@@ -97,14 +98,17 @@ class Lexer: private Noncopyable<Lexer>::type {
   }
   void PushBack();
   inline Token::Type IsMatch(char const * keyword,
-                    std::size_t len,
-                    Token::Type guess) const;
+                             std::size_t len,
+                             Token::Type guess) const;
+  inline Token::Type IsMatch(char const * keyword,
+                             std::size_t len,
+                             Token::Type guess, bool strict) const;
   Token::Type SkipSingleLineComment();
   Token::Type SkipMultiLineComment();
   Token::Type ScanHtmlComment();
   Token::Type ScanMagicComment();
-  Token::Type ScanIdentifier(LexType type);
-  Token::Type DetectKeyword() const;
+  Token::Type ScanIdentifier(int type);
+  Token::Type DetectKeyword(bool strict) const;
   Token::Type DetectGetOrSet() const;
   Token::Type ScanString();
   void ScanEscape();

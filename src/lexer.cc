@@ -21,7 +21,7 @@ void Lexer::Initialize() {
   Advance();
 }
 
-Token::Type Lexer::Next(Lexer::LexType type) {
+Token::Type Lexer::Next(int type) {
   Token::Type token;
   has_line_terminator_before_next_ = false;
   do {
@@ -341,8 +341,23 @@ void Lexer::PushBack() {
 }
 
 inline Token::Type Lexer::IsMatch(char const * keyword,
-                                    std::size_t len,
-                                    Token::Type guess) const {
+                                  std::size_t len,
+                                  Token::Type guess, bool strict) const {
+  if (!strict) {
+    return Token::IDENTIFIER;
+  }
+  std::vector<UChar>::const_iterator it = buffer16_.begin();
+  do {
+    if (*it++ != *keyword++) {
+      return Token::IDENTIFIER;
+    }
+  } while (--len);
+  return guess;
+}
+
+inline Token::Type Lexer::IsMatch(char const * keyword,
+                                  std::size_t len,
+                                  Token::Type guess) const {
   std::vector<UChar>::const_iterator it = buffer16_.begin();
   do {
     if (*it++ != *keyword++) {
@@ -406,7 +421,7 @@ Token::Type Lexer::ScanMagicComment() {
   return Token::NOT_FOUND;
 }
 
-Token::Type Lexer::ScanIdentifier(LexType type) {
+Token::Type Lexer::ScanIdentifier(int type) {
   Token::Type token = Token::IDENTIFIER;
   UChar uc;
 
@@ -444,9 +459,9 @@ Token::Type Lexer::ScanIdentifier(LexType type) {
     }
   }
 
-  if (type == kIdentifyReservedWords) {
-    token = DetectKeyword();
-  } else if (type == kIgnoreReservedWordsAndIdentifyGetterOrSetter) {
+  if (type & kIdentifyReservedWords) {
+    token = DetectKeyword(type & kStrict);
+  } else if (type & kIgnoreReservedWordsAndIdentifyGetterOrSetter) {
     token = DetectGetOrSet();
   }
 
@@ -461,7 +476,7 @@ Token::Type Lexer::ScanIdentifier(LexType type) {
 // transient, final, throws, goto, native, synchronized
 // were defined as FutureReservedWord in ECMA-262 3rd, but not in 5th.
 // So, DetectKeyword interprets them as Identifier.
-Token::Type Lexer::DetectKeyword() const {
+Token::Type Lexer::DetectKeyword(bool strict) const {
   const std::size_t len = buffer16_.size();
   Token::Type token = Token::IDENTIFIER;
   switch (len) {
@@ -479,13 +494,15 @@ Token::Type Lexer::DetectKeyword() const {
       }
       break;
     case 3:
-      // for var int new try
+      // for var int new try let
       switch (buffer16_[2]) {
         case 't':
-          if (buffer16_[1] == 't' && buffer16_[0] == 'i') {
-            // int
+          if (buffer16_[0] == 'l' && buffer16_[1] == 'e' && strict) {
+            // let
+            token = Token::LET;
+          } else if (buffer16_[0] == 'i' && buffer16_[1] == 'n') {
+            // int (removed)
             // token = Token::INT;
-            token = Token::IDENTIFIER;
           }
           break;
         case 'r':
@@ -533,9 +550,8 @@ Token::Type Lexer::DetectKeyword() const {
             token = Token::TRUE_LITERAL;
           } else if (buffer16_[0] == 'b' &&
                      buffer16_[1] == 'y' && buffer16_[2] == 't') {
-            // byte
+            // byte (removed)
             // token = Token::BYTE;
-            token = Token::IDENTIFIER;
           }
           break;
         case 'l':
@@ -567,11 +583,10 @@ Token::Type Lexer::DetectKeyword() const {
           }
           break;
         case 'g':
-          // long
+          // long (removed)
           if (buffer16_[0] == 'l' &&
               buffer16_[1] == 'o' && buffer16_[2] == 'n') {
             // token = Token::LONG;
-            token = Token::IDENTIFIER;
           }
           break;
         case 'm':
@@ -582,26 +597,24 @@ Token::Type Lexer::DetectKeyword() const {
           }
           break;
         case 'r':
-          // char
+          // char (removed)
           if (buffer16_[0] == 'c' &&
               buffer16_[1] == 'h' && buffer16_[2] == 'a') {
             // token = Token::CHAR;
-            token = Token::IDENTIFIER;
           }
           break;
         case 'o':
-          // goto
+          // goto (removed)
           if (buffer16_[0] == 'g' &&
               buffer16_[1] == 'o' && buffer16_[2] == 't') {
             // token = Token::GOTO;
-            token = Token::IDENTIFIER;
           }
           break;
       }
       break;
     case 5:
       // break final float catch super while
-      // throw short class const false
+      // throw short class const false yield
       // number 3 character is most duplicated
       switch (buffer16_[3]) {
         case 'a':
@@ -613,14 +626,12 @@ Token::Type Lexer::DetectKeyword() const {
           } else if (buffer16_[0] == 'f') {
             if (buffer16_[1] == 'i' &&
                 buffer16_[2] == 'n' && buffer16_[4] == 'l') {
-              // final
+              // final (removed)
               // token = Token::FINAL;
-              token = Token::IDENTIFIER;
             } else if (buffer16_[1] == 'l' &&
                        buffer16_[2] == 'o' && buffer16_[4] == 't') {
-              // float
+              // float (removed)
               // token = Token::FLOAT;
-              token = Token::IDENTIFIER;
             }
           }
           break;
@@ -643,6 +654,11 @@ Token::Type Lexer::DetectKeyword() const {
               buffer16_[2] == 'i' && buffer16_[4] == 'e') {
             // while
             token = Token::WHILE;
+          } else if (strict &&
+                     buffer16_[0] == 'y' && buffer16_[1] == 'i' &&
+                     buffer16_[2] == 'e' && buffer16_[4] == 'd') {
+            // yield
+            token = Token::YIELD;
           }
           break;
         case 'o':
@@ -655,9 +671,8 @@ Token::Type Lexer::DetectKeyword() const {
         case 'r':
           if (buffer16_[0] == 's' && buffer16_[1] == 'h' &&
               buffer16_[2] == 'o' && buffer16_[4] == 't') {
-            // short
+            // short (removed)
             // token = Token::SHORT;
-            token = Token::IDENTIFIER;
           }
           break;
         case 's':
@@ -692,7 +707,6 @@ Token::Type Lexer::DetectKeyword() const {
               buffer16_[2] == 'u' && buffer16_[1] == 'o') {
             // double
             // token = Token::DOUBLE;
-            token = Token::IDENTIFIER;
           } else if (buffer16_[5] == 'e' &&
                      buffer16_[4] == 't' && buffer16_[3] == 'e' &&
                      buffer16_[2] == 'l' && buffer16_[1] == 'e') {
@@ -709,13 +723,12 @@ Token::Type Lexer::DetectKeyword() const {
           token = IsMatch("import", len, Token::IMPORT);
           break;
         case 'n':
-          // native
+          // native (removed)
           // token = IsMatch("native", len, Token::NATIVE);
-          token = Token::IDENTIFIER;
           break;
         case 'p':
           // public
-          token = IsMatch("public", len, Token::PUBLIC);
+          token = IsMatch("public", len, Token::PUBLIC, strict);
           break;
         case 'r':
           // return
@@ -728,7 +741,8 @@ Token::Type Lexer::DetectKeyword() const {
               buffer16_[4] == 'c' && buffer16_[5] == 'h') {
             // switch
             token = Token::SWITCH;
-          } else if (buffer16_[1] == 't' &&
+          } else if (strict &&
+                     buffer16_[1] == 't' &&
                      buffer16_[2] == 'a' && buffer16_[3] == 't' &&
                      buffer16_[4] == 'i' && buffer16_[5] == 'c') {
             // static
@@ -745,9 +759,8 @@ Token::Type Lexer::DetectKeyword() const {
           } else if (buffer16_[5] == 's' &&
                      buffer16_[4] == 'w' && buffer16_[3] == 'o' &&
                      buffer16_[2] == 'r' && buffer16_[1] == 'h') {
-            // throws
+            // throws (removed)
             // token = Token::THROWS;
-            token = Token::IDENTIFIER;
           }
           break;
       }
@@ -757,8 +770,8 @@ Token::Type Lexer::DetectKeyword() const {
       // number 0 character is most duplicated
       switch (buffer16_[0]) {
         case 'b':
+          // boolean (removed)
           // token = IsMatch("boolean", len, Token::BOOLEAN);
-          token = Token::IDENTIFIER;
           break;
         case 'd':
           token = IsMatch("default", len, Token::DEFAULT);
@@ -771,9 +784,9 @@ Token::Type Lexer::DetectKeyword() const {
           break;
         case 'p':
           if (buffer16_[1] == 'a') {
-            token = IsMatch("package", len, Token::PACKAGE);
+            token = IsMatch("package", len, Token::PACKAGE, strict);
           } else if (buffer16_[1] == 'r') {
-            token = IsMatch("private", len, Token::PRIVATE);
+            token = IsMatch("private", len, Token::PRIVATE, strict);
           }
           break;
       }
@@ -789,13 +802,12 @@ Token::Type Lexer::DetectKeyword() const {
           token = IsMatch("continue", len, Token::CONTINUE);
           break;
         case 'r':
+          // abstract (removed)
           // token = IsMatch("abstract", len, Token::ABSTRACT);
-          token = Token::IDENTIFIER;
           break;
         case 't':
           if (buffer16_[1] == 'o') {
             // token = IsMatch("volatile", len, Token::VOLATILE);
-            token = Token::IDENTIFIER;
           } else if (buffer16_[1] == 'u') {
             token = IsMatch("function", len, Token::FUNCTION);
           }
@@ -805,13 +817,13 @@ Token::Type Lexer::DetectKeyword() const {
     case 9:
       // interface protected transient
       if (buffer16_[1] == 'n') {
-        token = IsMatch("interface", len, Token::INTERFACE);
+        token = IsMatch("interface", len, Token::INTERFACE, strict);
       } else if (buffer16_[1] == 'r') {
         if (buffer16_[0] == 'p') {
-          token = IsMatch("protected", len, Token::PROTECTED);
+          token = IsMatch("protected", len, Token::PROTECTED, strict);
         } else if (buffer16_[0] == 't') {
+          // transient (removed)
           // token = IsMatch("transient", len, Token::TRANSIENT);
-          token = Token::IDENTIFIER;
         }
       }
       break;
@@ -820,11 +832,11 @@ Token::Type Lexer::DetectKeyword() const {
       if (buffer16_[1] == 'n') {
         token = IsMatch("instanceof", len, Token::INSTANCEOF);
       } else if (buffer16_[1] == 'm') {
-        token = IsMatch("implements", len, Token::IMPLEMENTS);
+        token = IsMatch("implements", len, Token::IMPLEMENTS, strict);
       }
       break;
     case 12:
-      // synchronized
+      // synchronized (removed)
       // token = IsMatch("synchronized", len, Token::SYNCHRONIZED);
       token = Token::IDENTIFIER;
       break;

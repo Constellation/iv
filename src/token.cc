@@ -114,13 +114,17 @@ const char* Token::kContents[Token::NUM_TOKENS] = {
   "throws",
   "transient",
   "volatile",
+  "let",
+  "yield",
+  "get",
+  "set",
   "null",
   "false",
   "true",
   NULL,            // NUMBER LITERAL
   NULL,            // STRING LITERAL
   NULL,            // IDENTIFIER
-  NULL             // NOT FOUND
+  NULL,             // NOT FOUND
 };
 
 } }  // namespace iv::core

@@ -127,7 +127,7 @@ class Parser : private Noncopyable<Parser>::type {
     return lexer_;
   }
   inline Token::Type Next(Lexer::LexType type = Lexer::kIdentifyReservedWords) {
-    return token_ = lexer_.Next(type);
+    return token_ = lexer_.Next(type | (strict_ ? Lexer::kStrict : Lexer::kClear));
   }
   inline Token::Type Peek() const {
     return token_;

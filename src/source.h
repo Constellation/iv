@@ -1,11 +1,9 @@
 #ifndef _IV_SOURCE_H_
 #define _IV_SOURCE_H_
 
-#include <cstdlib>
+#include <cstddef>
+#include <cassert>
 #include <string>
-#include <unicode/uchar.h>
-#include <unicode/unistr.h>
-#include <unicode/utext.h>
 #include "ustring.h"
 #include "ustringpiece.h"
 
@@ -17,6 +15,7 @@ class Source {
   static const int kEOS = -1;
   explicit Source(const std::string&);
   inline UChar Get(std::size_t pos) const {
+    assert(pos < size());
     return source_[pos];
   }
   inline std::size_t size() const {

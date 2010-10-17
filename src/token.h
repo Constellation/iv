@@ -135,6 +135,8 @@ class Token {
     THROWS,          // throws
     TRANSIENT,       // transient
     VOLATILE,        // volatile
+    LET,             // let
+    YIELD,           // yield
 
     GET,             // get
     SET,             // set
