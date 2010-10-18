@@ -367,6 +367,12 @@ class JSVal {
   static JSVal Number(double val);
   static JSVal String(JSString* str);
   static JSVal Object(JSObject* obj);
+  static inline JSVal True() {
+    return true;
+  }
+  static inline JSVal False() {
+    return false;
+  }
 
  private:
   details::Layout<core::Size::kPointerSize> value_;
