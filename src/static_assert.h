@@ -21,6 +21,6 @@ struct StaticAssertTest {
 #define IV_STATIC_ASSERT(b)\
   typedef ::iv::detail::StaticAssertTest \
     <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>(b)>)> \
-        StaticAssertTypedef;
+        StaticAssertTypedef##__LINE__;
 
 #endif  // _IV_STAITCASSERT_H_
