@@ -1,3 +1,5 @@
+#include <iostream>
+#include "lv5.h"
 #include "runtime.h"
 #include "context.h"
 namespace iv {
@@ -14,10 +16,7 @@ JSVal Runtime_ObjectConstructor(const Arguments& args, JSErrorCode::Type* error)
     if (val.IsNull() || val.IsUndefined()) {
       return JSObject::New(args.ctx());
     } else {
-      JSObject* const obj = val.ToObject(args.ctx(), error);
-      if (*error) {
-        return JSVal::Undefined();
-      }
+      JSObject* const obj = val.ToObject(args.ctx(), ERROR(error));
       return obj;
     }
   } else {
@@ -29,23 +28,17 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* err
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* ctx = args.ctx();
-    JSString* const str = val.ToString(ctx, error);
-    JSObject* const obj = args.this_binding().ToObject(ctx, error);
-    if (*error) {
-      return false;
-    }
+    JSString* const str = val.ToString(ctx, ERROR(error));
+    JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
     return !!obj->GetOwnProperty(ctx->Intern(str->data()));
   } else {
-    return false;
+    return JSFalse;
   }
 }
 
 JSVal Runtime_ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
   std::string ascii;
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), error);
-  if (*error) {
-    return false;
-  }
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
   JSString* const cls = obj->cls();
   assert(cls);
   std::string str("[object ");
@@ -73,7 +66,7 @@ JSVal Runtime_FunctionToString(const Arguments& args, JSErrorCode::Type* error) 
     }
   }
   *error = JSErrorCode::TypeError;
-  return JSVal::Undefined();
+  return JSUndefined;
 }
 
 } }  // namespace iv::lv5

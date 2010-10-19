@@ -21,10 +21,13 @@ class JSFunction : public JSObject {
   }
   virtual JSVal Call(const Arguments& args,
                      JSErrorCode::Type* error) = 0;
-  virtual bool HasInstance(Context* ctx,
-                           const JSVal& val, JSErrorCode::Type* error);
+  bool HasInstance(Context* ctx,
+                   const JSVal& val, JSErrorCode::Type* error);
+  JSVal Get(Context* ctx,
+            Symbol name, JSErrorCode::Type* error);
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;
+  virtual bool IsStrict() const = 0;
  protected:
   static void SetClass(Context* ctx, JSObject* obj);
 };
@@ -54,6 +57,9 @@ class JSCodeFunction : public JSFunction {
   core::Identifier* name() const {
     return function_->name();
   }
+  bool IsStrict() const {
+    return function_->strict();
+  }
  private:
   core::FunctionLiteral* function_;
   JSEnv* env_;
@@ -72,6 +78,9 @@ class JSNativeFunction : public JSFunction {
   }
   JSNativeFunction* AsNativeFunction() {
     return this;
+  }
+  bool IsStrict() const {
+    return false;
   }
 
   template<typename Func>

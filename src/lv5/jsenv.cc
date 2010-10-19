@@ -30,7 +30,7 @@ void JSDeclEnv::CreateMutableBinding(Context* ctx, Symbol name, bool del) {
   if (del) {
     flag |= DELETABLE;
   }
-  record_[name] = std::make_pair(flag, JSVal::Undefined());
+  record_[name] = std::make_pair(flag, JSUndefined);
 }
 
 void JSDeclEnv::SetMutableBinding(Context* ctx,
@@ -57,19 +57,19 @@ JSVal JSDeclEnv::GetBindingValue(Context* ctx,
     if (strict) {
       *res = JSErrorCode::ReferenceError;
     }
-    return JSVal::Undefined();
+    return JSUndefined;
   } else {
     return it->second.second;
   }
 }
 
 JSVal JSDeclEnv::ImplicitThisValue() const {
-  return JSVal::Undefined();
+  return JSUndefined;
 }
 
 void JSDeclEnv::CreateImmutableBinding(Symbol name) {
   assert(record_.find(name) == record_.end());
-  record_[name] = std::make_pair(IM_UNINITIALIZED, JSVal::Undefined());
+  record_[name] = std::make_pair(IM_UNINITIALIZED, JSUndefined);
 }
 
 void JSDeclEnv::InitializeImmutableBinding(Symbol name, const JSVal& val) {
@@ -101,7 +101,7 @@ void JSObjectEnv::CreateMutableBinding(Context* ctx, Symbol name, bool del) {
   record_->DefineOwnProperty(
       ctx,
       name,
-      new DataDescriptor(JSVal::Undefined(), attr),
+      new DataDescriptor(JSUndefined, attr),
       true,
       NULL);
 }
@@ -121,7 +121,7 @@ JSVal JSObjectEnv::GetBindingValue(Context* ctx,
     if (strict) {
       *res = JSErrorCode::ReferenceError;
     }
-    return JSVal::Undefined();
+    return JSUndefined;
   }
   return record_->Get(ctx, name, res);
 }
@@ -130,7 +130,7 @@ JSVal JSObjectEnv::ImplicitThisValue() const {
   if (provide_this_) {
     return record_;
   } else {
-    return JSVal::Undefined();
+    return JSUndefined;
   }
 }
 

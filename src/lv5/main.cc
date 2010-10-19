@@ -31,6 +31,7 @@
 namespace {
 using iv::lv5::Arguments;
 using iv::lv5::JSVal;
+using iv::lv5::JSUndefined;
 using iv::lv5::JSErrorCode;
 using iv::lv5::JSString;
 
@@ -42,13 +43,13 @@ static JSVal Print(const Arguments& args, JSErrorCode::Type* error) {
       ++index;
       const JSString* const str = val.ToString(args.ctx(), error);
       if (*error) {
-        return JSVal::Undefined();
+        return JSUndefined;
       }
       std::cout << str->data() << ((index == last) ? "\n" : " ");
     }
     std::cout << std::flush;
   }
-  return JSVal::Undefined();
+  return JSUndefined;
 }
 
 }  // namespace

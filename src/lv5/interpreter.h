@@ -48,13 +48,13 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     ContextSwitcher(Context* ctx,
                     JSEnv* lex,
                     JSEnv* var,
-                    JSObject* binding,
+                    const JSVal& binding,
                     bool strict);
     ~ContextSwitcher();
    private:
     JSEnv* prev_lex_;
     JSEnv* prev_var_;
-    JSObject* prev_binding_;
+    JSVal prev_binding_;
     bool prev_strict_;
     Context* ctx_;
   };

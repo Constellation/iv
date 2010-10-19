@@ -61,6 +61,8 @@
     return NULL;\
   }\
   ((void)0
+#define DUMMY )  // to make indentation work
+#undef DUMMY
 
 #define NEW(a) (new (space_) a)
 

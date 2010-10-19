@@ -50,13 +50,13 @@ class Context : private core::Noncopyable<Context>::type {
   void set_variable_env(JSEnv* env) {
     variable_env_ = env;
   }
-  JSObject* this_binding() const {
+  JSVal this_binding() const {
     return binding_;
   }
-  JSObject* This() const {
+  JSVal This() const {
     return binding_;
   }
-  void set_this_binding(JSObject* binding) {
+  void set_this_binding(const JSVal& binding) {
     binding_ = binding;
   }
   Interpreter* interp() {
@@ -162,7 +162,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSObject global_obj_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
-  JSObject* binding_;
+  JSVal binding_;
   SymbolTable table_;
   Interpreter interp_;
   Mode mode_;

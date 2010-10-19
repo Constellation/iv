@@ -18,9 +18,9 @@ class JSEnv;
 class Context;
 class JSReference;
 class JSEnv;
-struct Null { };
+class JSVal;
 
-namespace details {
+namespace detail {
 template<std::size_t PointerSize>
 struct Layout {
 };
@@ -94,7 +94,22 @@ struct Layout<8> {
   };
 };
 #endif  // define(IS_LITTLE_ENDIAN)
-}
+
+struct JSTrueType { };
+struct JSFalseType { };
+struct JSNullType { };
+struct JSUndefinedType { };
+
+}  // namespace iv::lv5::detail
+
+typedef bool (*JSTrueKeywordType)(JSVal, detail::JSTrueType);
+typedef bool (*JSFalseKeywordType)(JSVal, detail::JSFalseType);
+typedef bool (*JSNullKeywordType)(JSVal, detail::JSNullType);
+typedef bool (*JSUndefinedKeywordType)(JSVal, detail::JSUndefinedType);
+inline bool JSTrue(JSVal x, detail::JSTrueType dummy);
+inline bool JSFalse(JSVal x, detail::JSFalseType dummy);
+inline bool JSNull(JSVal x, detail::JSNullType dummy);
+inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
 
 class JSVal {
  public:
@@ -133,7 +148,10 @@ class JSVal {
   JSVal(JSString* val);  // NOLINT
   JSVal(JSReference* val);  // NOLINT
   JSVal(JSEnv* val);  // NOLINT
-  JSVal(bool val);  // NOLINT
+  JSVal(JSTrueKeywordType val);  // NOLINT
+  JSVal(JSFalseKeywordType val);  // NOLINT
+  JSVal(JSNullKeywordType val);  // NOLINT
+  JSVal(JSUndefinedKeywordType val);  // NOLINT
 
   this_type& operator=(const this_type&);
 
@@ -156,9 +174,21 @@ class JSVal {
     value_.struct_.payload_.environment_ = ref;
     value_.struct_.tag_ = kEnvironmentTag;
   }
-  inline void set_value(bool val) {
-    value_.struct_.payload_.boolean_ = val;
+  inline void set_value(JSTrueKeywordType val) {
+    value_.struct_.payload_.boolean_ = true;
     value_.struct_.tag_ = kBoolTag;
+  }
+  inline void set_value(JSFalseKeywordType val) {
+    value_.struct_.payload_.boolean_ = false;
+    value_.struct_.tag_ = kBoolTag;
+  }
+  inline void set_value(JSNullKeywordType val) {
+    value_.struct_.payload_.boolean_ = NULL;
+    value_.struct_.tag_ = kNullTag;
+  }
+  inline void set_value(JSUndefinedKeywordType val) {
+    value_.struct_.payload_.boolean_ = NULL;
+    value_.struct_.tag_ = kUndefinedTag;
   }
   inline void set_null() {
     value_.struct_.payload_.boolean_ = NULL;
@@ -361,22 +391,36 @@ class JSVal {
     return lhs.swap(rhs);
   }
 
-  static JSVal Undefined();
-  static JSVal Null();
   static JSVal Boolean(bool val);
   static JSVal Number(double val);
   static JSVal String(JSString* str);
   static JSVal Object(JSObject* obj);
   static inline JSVal True() {
-    return true;
+    return JSTrue;
   }
   static inline JSVal False() {
-    return false;
+    return JSFalse;
   }
 
  private:
-  details::Layout<core::Size::kPointerSize> value_;
+  detail::Layout<core::Size::kPointerSize> value_;
 };
+
+inline bool JSTrue(JSVal x, detail::JSTrueType dummy = detail::JSTrueType()) {
+  return true;
+}
+
+inline bool JSFalse(JSVal x, detail::JSFalseType dummy = detail::JSFalseType()) {
+  return false;
+}
+
+inline bool JSNull(JSVal x, detail::JSNullType dummy = detail::JSNullType()) {
+  return false;
+}
+
+inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
+  return false;
+}
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSVAL_H_

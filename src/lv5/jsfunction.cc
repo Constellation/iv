@@ -64,6 +64,21 @@ bool JSFunction::HasInstance(Context* ctx,
   return false;
 }
 
+JSVal JSFunction::Get(Context* ctx,
+                      Symbol name, JSErrorCode::Type* error) {
+  const JSVal val = JSObject::Get(ctx, name, error);
+  if (*error) {
+    return val;
+  }
+  if (name == ctx->caller_symbol() &&
+      val.IsCallable() &&
+      val.object()->AsCallable()->IsStrict()) {
+    *error = JSErrorCode::TypeError;
+    return JSFalse;
+  }
+  return val;
+}
+
 JSVal JSNativeFunction::Call(const Arguments& args,
                              JSErrorCode::Type* error) {
   return func_(args, error);

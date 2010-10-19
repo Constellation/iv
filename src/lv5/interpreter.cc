@@ -67,7 +67,7 @@ namespace lv5 {
 Interpreter::ContextSwitcher::ContextSwitcher(Context* ctx,
                                               JSEnv* lex,
                                               JSEnv* var,
-                                              JSObject* binding,
+                                              const JSVal& binding,
                                               bool strict)
   : prev_lex_(ctx->lexical_env()),
     prev_var_(ctx->variable_env()),
@@ -124,16 +124,18 @@ void Interpreter::CallCode(
     JSErrorCode::Type* error) {
   // step 1
   JSVal this_value = args.this_binding();
-  if (this_value.IsUndefined()) {
-    this_value.set_value(ctx_->global_obj());
-  } else if (!this_value.IsObject()) {
-    JSObject* obj = this_value.ToObject(ctx_, CHECK);
-    this_value.set_value(obj);
+  if (!code.IsStrict()) {
+    if (this_value.IsUndefined()) {
+      this_value.set_value(ctx_->global_obj());
+    } else if (!this_value.IsObject()) {
+      JSObject* obj = this_value.ToObject(ctx_, CHECK);
+      this_value.set_value(obj);
+    }
   }
   JSDeclEnv* local_env = NewDeclarativeEnvironment(ctx_, code.scope());
   ContextSwitcher switcher(ctx_, local_env,
-                           local_env, this_value.object(),
-                           code.code()->strict());
+                           local_env, this_value,
+                           code.IsStrict());
 
   // section 10.5 Declaration Binding Instantiation
   const core::Scope* const scope = code.code()->scope();
@@ -155,7 +157,7 @@ void Interpreter::CallCode(
       }
       if (n > arg_count) {
         env->SetMutableBinding(ctx_, arg_name,
-                               JSVal::Undefined(), ctx_->IsStrict(), CHECK);
+                               JSUndefined, ctx_->IsStrict(), CHECK);
       } else {
         env->SetMutableBinding(ctx_, arg_name,
                                arguments[n], ctx_->IsStrict(), CHECK);
@@ -177,7 +179,7 @@ void Interpreter::CallCode(
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
       env->SetMutableBinding(ctx_, dn,
-                             JSVal::Undefined(), ctx_->IsStrict(), CHECK);
+                             JSUndefined, ctx_->IsStrict(), CHECK);
     }
   }
 
@@ -222,7 +224,7 @@ void Interpreter::Run(core::FunctionLiteral* global) {
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
       env->SetMutableBinding(ctx_, dn,
-                             JSVal::Undefined(), ctx_->IsStrict(), CHECK);
+                             JSUndefined, ctx_->IsStrict(), CHECK);
     }
   }
 
@@ -306,7 +308,7 @@ void Interpreter::Visit(core::Declaration* decl) {
 
 
 void Interpreter::Visit(core::EmptyStatement* empty) {
-  RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
@@ -323,7 +325,7 @@ void Interpreter::Visit(core::IfStatement* stmt) {
       EVAL(else_stmt);
       return;
     } else {
-      RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
+      RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
     }
   }
 }
@@ -425,7 +427,7 @@ void Interpreter::Visit(core::ForInStatement* stmt) {
   EVAL(stmt->enumerable());
   JSVal expr = GetValue(ctx_->ret(), CHECK);
   if (expr.IsNull() || expr.IsUndefined()) {
-    RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
+    RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK);
   JSVal value;
@@ -467,7 +469,7 @@ void Interpreter::Visit(core::ForInStatement* stmt) {
 
 
 void Interpreter::Visit(core::ContinueStatement* stmt) {
-  RETURN_STMT(Context::CONTINUE, JSVal::Undefined(), stmt->target());
+  RETURN_STMT(Context::CONTINUE, JSUndefined, stmt->target());
 }
 
 
@@ -475,10 +477,10 @@ void Interpreter::Visit(core::BreakStatement* stmt) {
   if (stmt->target()) {
   } else {
     if (stmt->label()) {
-      RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
+      RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
     }
   }
-  RETURN_STMT(Context::BREAK, JSVal::Undefined(), stmt->target());
+  RETURN_STMT(Context::BREAK, JSUndefined, stmt->target());
 }
 
 
@@ -488,7 +490,7 @@ void Interpreter::Visit(core::ReturnStatement* stmt) {
     const JSVal value = GetValue(ctx_->ret(), CHECK);
     RETURN_STMT(Context::RETURN, value, NULL);
   } else {
-    RETURN_STMT(Context::RETURN, JSVal::Undefined(), NULL);
+    RETURN_STMT(Context::RETURN, JSUndefined, NULL);
   }
 }
 
@@ -610,7 +612,7 @@ void Interpreter::Visit(core::TryStatement* stmt) {
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = ctx_->Intern(stmt->catch_name()->value());
       const JSVal ex = (ctx_->IsMode<Context::THROW>()) ?
-          ctx_->ret() : JSVal::Undefined();
+          ctx_->ret() : JSUndefined;
       catch_env->CreateMutableBinding(ctx_, name, false);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK);
       {
@@ -624,7 +626,7 @@ void Interpreter::Visit(core::TryStatement* stmt) {
   core::BreakableStatement* const target = ctx_->target();
 
   ctx_->set_error(JSErrorCode::Normal);
-  ctx_->SetStatement(Context::Context::NORMAL, JSVal::Undefined(), NULL);
+  ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
 
   if (stmt->finally_block()) {
     stmt->finally_block()->Accept(this);
@@ -638,7 +640,7 @@ void Interpreter::Visit(core::TryStatement* stmt) {
 void Interpreter::Visit(core::DebuggerStatement* stmt) {
   // section 12.15 debugger statement
   // implementation define debugging facility is not available
-  RETURN_STMT(Context::NORMAL, JSVal::Undefined(), NULL);
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
@@ -1202,12 +1204,12 @@ void Interpreter::Visit(core::NullLiteral* lit) {
 
 
 void Interpreter::Visit(core::TrueLiteral* lit) {
-  ctx_->Return(true);
+  ctx_->Return(JSTrue);
 }
 
 
 void Interpreter::Visit(core::FalseLiteral* lit) {
-  ctx_->Return(false);
+  ctx_->Return(JSFalse);
 }
 
 
@@ -1345,7 +1347,7 @@ void Interpreter::Visit(core::FunctionCall* call) {
       args.set_this_binding(ref->base()->environment()->ImplicitThisValue());
     }
   } else {
-    args.set_this_binding(JSVal::Undefined());
+    args.set_this_binding(JSUndefined);
   }
 
   ctx_->ret() = func.object()->AsCallable()->Call(args, CHECK);
@@ -1394,18 +1396,18 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
   const JSVal* const base = ref->base();
   if (ref->IsUnresolvableReference()) {
     *error = JSErrorCode::TypeError;
-    return JSVal::Undefined();
+    return JSUndefined;
   }
   if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       // section 8.7.1 special [[Get]]
       const JSObject* const o = base->ToObject(ctx_, error);
       if (*error) {
-        return JSVal::Undefined();
+        return JSUndefined;
       }
       PropertyDescriptor* desc = o->GetProperty(ref->GetReferencedName());
       if (!desc) {
-        return JSVal::Undefined();
+        return JSUndefined;
       }
       if (desc->IsDataDescriptor()) {
         return desc->AsDataDescriptor()->value();
@@ -1416,27 +1418,27 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
           JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
                                                     error);
           if (*error) {
-            return JSVal::Undefined();
+            return JSUndefined;
           }
           return res;
         } else {
-          return JSVal::Undefined();
+          return JSUndefined;
         }
       }
     } else {
       JSVal res = base->object()->Get(ctx_,
                                       ref->GetReferencedName(), error);
       if (*error) {
-        return JSVal::Undefined();
+        return JSUndefined;
       }
       return res;
     }
-    return JSVal::Undefined();
+    return JSUndefined;
   } else {
     JSVal res = base->environment()->GetBindingValue(
         ctx_, ref->GetReferencedName(), ref->IsStrictReference(), error);
     if (*error) {
-      return JSVal::Undefined();
+      return JSUndefined;
     }
     return res;
   }
@@ -1727,7 +1729,7 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
       env = env->outer();
     }
   }
-  return JSReference::New(ctx_, JSVal::Undefined(), name, strict);
+  return JSReference::New(ctx_, JSUndefined, name, strict);
 }
 
 #undef CHECK

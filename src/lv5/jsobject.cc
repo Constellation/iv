@@ -33,12 +33,12 @@ JSObject::JSObject(JSObject* proto,
   do {\
     JSVal method = Get(context, context->Intern(sym), error);\
     if (*error) {\
-      return JSVal::Undefined();\
+      return JSUndefined;\
     }\
     if (method.IsCallable()) {\
       JSVal val = method.object()->AsCallable()->Call(arg, error);\
       if (*error) {\
-        return JSVal::Undefined();\
+        return JSUndefined;\
       }\
       if (val.IsPrimitive()) {\
         return val;\
@@ -57,7 +57,7 @@ JSVal JSObject::DefaultValue(Context* ctx,
     TRY(ctx, "toString", args, res);
   }
   *res = JSErrorCode::TypeError;
-  return JSVal::Undefined();
+  return JSUndefined;
 }
 #undef TRY
 
@@ -65,7 +65,7 @@ JSVal JSObject::Get(Context* ctx,
                     Symbol name, JSErrorCode::Type* res) {
   PropertyDescriptor* desc = GetProperty(name);
   if (!desc) {
-    return JSVal::Undefined();
+    return JSUndefined;
   }
   DataDescriptor* data = desc->AsDataDescriptor();
   if (data) {
@@ -76,7 +76,7 @@ JSVal JSObject::Get(Context* ctx,
     if (getter) {
       return getter->AsCallable()->Call(Arguments(ctx, this), res);
     } else {
-      return JSVal::Undefined();
+      return JSUndefined;
     }
   }
 }

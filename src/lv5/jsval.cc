@@ -32,7 +32,22 @@ JSVal::JSVal(JSEnv* val)
   set_value(val);
 }
 
-JSVal::JSVal(bool val)
+JSVal::JSVal(JSTrueKeywordType val)
+  : value_() {
+  set_value(val);
+}
+
+JSVal::JSVal(JSFalseKeywordType val)
+  : value_() {
+  set_value(val);
+}
+
+JSVal::JSVal(JSNullKeywordType val)
+  : value_() {
+  set_value(val);
+}
+
+JSVal::JSVal(JSUndefinedKeywordType val)
   : value_() {
   set_value(val);
 }
@@ -46,16 +61,6 @@ JSVal& JSVal::operator=(const this_type& rhs) {
     this_type(rhs).swap(*this);
   }
   return *this;
-}
-
-JSVal JSVal::Undefined() {
-  return JSVal();
-}
-
-JSVal JSVal::Null() {
-  JSVal v;
-  v.set_null();
-  return v;
 }
 
 JSVal JSVal::Boolean(bool val) {
