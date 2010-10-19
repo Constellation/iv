@@ -6,7 +6,7 @@ namespace iv {
 namespace lv5 {
 namespace {
 
-const std::string function_prefix("function");
+const std::string function_prefix("function ");
 
 }  // namespace
 
