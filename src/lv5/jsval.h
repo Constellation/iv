@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <tr1/array>
 #include <tr1/cstdint>
+#include <tr1/type_traits>
+#include "enable_if.h"
+#include "static_assert.h"
 #include "utils.h"
 #include "jsstring.h"
 #include "jsobject.h"
@@ -153,6 +156,11 @@ class JSVal {
   JSVal(JSFalseKeywordType val);  // NOLINT
   JSVal(JSNullKeywordType val);  // NOLINT
   JSVal(JSUndefinedKeywordType val);  // NOLINT
+  template<typename T>
+  JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
+    typedef std::tr1::is_same<bool, T> cond;
+    IV_STATIC_ASSERT(!(cond::value));
+  }
 
   this_type& operator=(const this_type&);
 
