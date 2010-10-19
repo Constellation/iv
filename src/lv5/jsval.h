@@ -114,6 +114,7 @@ inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
 class JSVal {
  public:
   typedef JSVal this_type;
+  typedef detail::Layout<core::Size::kPointerSize> value_type;
 
   enum Tag {
     NUMBER = 0,
@@ -391,19 +392,8 @@ class JSVal {
     return lhs.swap(rhs);
   }
 
-  static JSVal Boolean(bool val);
-  static JSVal Number(double val);
-  static JSVal String(JSString* str);
-  static JSVal Object(JSObject* obj);
-  static inline JSVal True() {
-    return JSTrue;
-  }
-  static inline JSVal False() {
-    return JSFalse;
-  }
-
  private:
-  detail::Layout<core::Size::kPointerSize> value_;
+   value_type value_;
 };
 
 inline bool JSTrue(JSVal x, detail::JSTrueType dummy = detail::JSTrueType()) {

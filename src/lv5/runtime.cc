@@ -30,7 +30,11 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* err
     Context* ctx = args.ctx();
     JSString* const str = val.ToString(ctx, ERROR(error));
     JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-    return !!obj->GetOwnProperty(ctx->Intern(str->data()));
+    if (!!obj->GetOwnProperty(ctx->Intern(str->data()))) {
+      return JSTrue;
+    } else {
+      return JSFalse;
+    }
   } else {
     return JSFalse;
   }

@@ -63,20 +63,4 @@ JSVal& JSVal::operator=(const this_type& rhs) {
   return *this;
 }
 
-JSVal JSVal::Boolean(bool val) {
-  return val;
-}
-
-JSVal JSVal::Number(double val) {
-  return val;
-}
-
-JSVal JSVal::String(JSString* str) {
-  return str;
-}
-
-JSVal JSVal::Object(JSObject* obj) {
-  return obj;
-}
-
 } }  // namespace iv::lv5

@@ -16,11 +16,11 @@ template<int x>
 struct StaticAssertTest {
 };
 
-}  // namespace iv::detail
+} }  // namespace iv::detail
 
-#define STATIC_ASSERT(b)\
-    typedef ::iv::detail::StaticAssertText \
-        <sizeof(::iv::detail::StaticAssertFailure<(bool)(b)>)> \
+#define IV_STATIC_ASSERT(b)\
+  typedef ::iv::detail::StaticAssertTest \
+    <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>(b)>)> \
         StaticAssertTypedef;
 
 #endif  // _IV_STAITCASSERT_H_
