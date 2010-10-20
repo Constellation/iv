@@ -18,9 +18,13 @@ struct StaticAssertTest {
 
 } }  // namespace iv::detail
 
-#define IV_STATIC_ASSERT(b)\
-  typedef ::iv::detail::StaticAssertTest \
-    <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>(b)>)> \
-        StaticAssertTypedef##__LINE__;
+#ifndef IV_CONCAT
+#define IV_CONCAT1(x, y) x##y
+#define IV_CONCAT(x, y) IV_CONCAT1(x, y)
+#endif  // IV_CONCAT
+#define IV_STATIC_ASSERT(cond)\
+  typedef ::iv::detail::StaticAssertTest\
+    <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>(cond)>)>\
+    IV_CONCAT(StaticAssertTypedef, __LINE__)
 
 #endif  // _IV_STAITCASSERT_H_

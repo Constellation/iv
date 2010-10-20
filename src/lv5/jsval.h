@@ -31,7 +31,9 @@ struct Layout {
 template<>
 struct Layout<4> {
   union {
-    double number_;
+    struct {
+      double as_;
+    } number_;
     struct {
       union {
         bool boolean_;
@@ -43,15 +45,18 @@ struct Layout<4> {
       uint32_t tag_;
     } struct_;
   };
+
+  static const std::size_t kExpectedSize = sizeof(double);
 };
 
 template<>
 struct Layout<8> {
   union {
-    double number_;
     struct {
       uint32_t overhead_;
-      uint32_t tag_;
+      double as_;
+    } number_;
+    struct {
       union {
         bool boolean_;
         JSObject* object_;
@@ -59,14 +64,19 @@ struct Layout<8> {
         JSReference* reference_;
         JSEnv* environment_;
       } payload_;
+      uint32_t tag_;
     } struct_;
   };
+
+  static const std::size_t kExpectedSize = 12;
 };
 #else
 template<>
 struct Layout<4> {
   union {
-    double number_;
+    struct {
+      double as_;
+    } number_;
     struct {
       uint32_t tag_;
       union {
@@ -78,12 +88,16 @@ struct Layout<4> {
       } payload_;
     } struct_;
   };
+
+  static const std::size_t kExpectedSize = sizeof(double);
 };
 
 template<>
 struct Layout<8> {
   union {
-    double number_;
+    struct {
+      double as_;
+    } number_;
     struct {
       uint32_t tag_;
       union {
@@ -95,6 +109,8 @@ struct Layout<8> {
       } payload_;
     } struct_;
   };
+
+  static const std::size_t kExpectedSize = 12;
 };
 #endif  // define(IS_LITTLE_ENDIAN)
 
@@ -118,6 +134,9 @@ class JSVal {
  public:
   typedef JSVal this_type;
   typedef detail::Layout<core::Size::kPointerSize> value_type;
+
+  IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
+  IV_STATIC_ASSERT(std::tr1::is_pod<value_type>::value);
 
   enum Tag {
     NUMBER = 0,
@@ -165,7 +184,7 @@ class JSVal {
   this_type& operator=(const this_type&);
 
   inline void set_value(double val) {
-    value_.number_ = val;
+    value_.number_.as_ = val;
   }
   inline void set_value(JSObject* val) {
     value_.struct_.payload_.object_ = val;
@@ -230,7 +249,7 @@ class JSVal {
 
   inline const double& number() const {
     assert(IsNumber());
-    return value_.number_;
+    return value_.number_.as_;
   }
 
   inline bool boolean() const {
