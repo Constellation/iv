@@ -1,4 +1,4 @@
-#include <iostream>
+#include <iostream>  // NOLINT
 #include "lv5.h"
 #include "runtime.h"
 #include "context.h"
@@ -10,7 +10,8 @@ const std::string function_prefix("function ");
 
 }  // namespace
 
-JSVal Runtime_ObjectConstructor(const Arguments& args, JSErrorCode::Type* error) {
+JSVal Runtime_ObjectConstructor(const Arguments& args,
+                                JSErrorCode::Type* error) {
   if (args.size() == 1) {
     const JSVal& val = args[0];
     if (val.IsNull() || val.IsUndefined()) {
@@ -24,7 +25,8 @@ JSVal Runtime_ObjectConstructor(const Arguments& args, JSErrorCode::Type* error)
   }
 }
 
-JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* error) {
+JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
+                                   JSErrorCode::Type* error) {
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* ctx = args.ctx();
@@ -51,12 +53,14 @@ JSVal Runtime_ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
   return JSString::NewAsciiString(args.ctx(), str.c_str());
 }
 
-JSVal Runtime_FunctionToString(const Arguments& args, JSErrorCode::Type* error) {
+JSVal Runtime_FunctionToString(const Arguments& args,
+                               JSErrorCode::Type* error) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     if (func->AsNativeFunction()) {
-      return JSString::NewAsciiString(args.ctx(), "function () { [native code] }");
+      return JSString::NewAsciiString(args.ctx(),
+                                      "function () { [native code] }");
     } else {
       core::UString buffer(function_prefix.begin(),
                            function_prefix.end());

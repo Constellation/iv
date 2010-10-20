@@ -1,9 +1,7 @@
 #ifndef _IV_LV5_JSVAL_H_
 #define _IV_LV5_JSVAL_H_
 #include <cmath>
-#include <limits>
 #include <algorithm>
-#include <tr1/array>
 #include <tr1/cstdint>
 #include <tr1/type_traits>
 #include "enable_if.h"
@@ -12,7 +10,6 @@
 #include "hint.h"
 #include "jsstring.h"
 #include "jserrorcode.h"
-#include "conversions-inl.h"
 
 namespace iv {
 namespace lv5 {
@@ -23,6 +20,7 @@ class JSReference;
 class JSEnv;
 class JSVal;
 class JSObject;
+class JSString;
 
 namespace detail {
 template<std::size_t PointerSize>
@@ -47,7 +45,7 @@ struct Layout<4> {
     } struct_;
   };
 
-  static const std::size_t kExpectedSize = sizeof(double);
+  static const std::size_t kExpectedSize = 8;
 };
 
 template<>
@@ -90,7 +88,7 @@ struct Layout<4> {
     } struct_;
   };
 
-  static const std::size_t kExpectedSize = sizeof(double);
+  static const std::size_t kExpectedSize = 8;
 };
 
 template<>
@@ -332,22 +330,26 @@ class JSVal {
 
 
  private:
-   value_type value_;
+  value_type value_;
 };
 
-inline bool JSTrue(JSVal x, detail::JSTrueType dummy = detail::JSTrueType()) {
+inline bool JSTrue(JSVal x,
+                   detail::JSTrueType dummy = detail::JSTrueType()) {
   return true;
 }
 
-inline bool JSFalse(JSVal x, detail::JSFalseType dummy = detail::JSFalseType()) {
+inline bool JSFalse(JSVal x,
+                    detail::JSFalseType dummy = detail::JSFalseType()) {
   return false;
 }
 
-inline bool JSNull(JSVal x, detail::JSNullType dummy = detail::JSNullType()) {
+inline bool JSNull(JSVal x,
+                   detail::JSNullType dummy = detail::JSNullType()) {
   return false;
 }
 
-inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
+inline bool JSUndefined(
+    JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
   return false;
 }
 

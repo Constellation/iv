@@ -1,6 +1,8 @@
+#include <limits>
+#include <tr1/array>
 #include "jsval.h"
 #include "jsobject.h"
-#include "jsstring.h"
+#include "conversions-inl.h"
 namespace iv {
 namespace lv5 {
 

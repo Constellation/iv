@@ -36,7 +36,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 JSErrorCode::Type* res) {
   const Symbol length_symbol = ctx->length_symbol();
   PropertyDescriptor old_len_desc_upper = GetOwnProperty(length_symbol);
-  assert(!old_len_desc_upper.IsEmpty() && old_len_desc_upper.IsDataDescriptor());
+  assert(!old_len_desc_upper.IsEmpty() &&
+         old_len_desc_upper.IsDataDescriptor());
   DataDescriptor* const old_len_desc = old_len_desc_upper.AsDataDescriptor();
 
   const JSVal& len_value = old_len_desc->data();
