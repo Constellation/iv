@@ -13,7 +13,6 @@ files = [
   'ast-factory.cc',
   'ast.cc',
   'token.cc',
-  'utils.cc',
   'alloc.cc',
   'conversions.cc'
 ]

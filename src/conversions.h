@@ -9,6 +9,8 @@ class Conversions {
   static const double kNaN;
   static const int kMaxSignificantDigits = 772;
   static const std::string kInfinity;
+  static const double DoubleToInt32_Two32;
+  static const double DoubleToInt32_Two31;
 };
 
 } }  // namespace iv::core

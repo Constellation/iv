@@ -708,40 +708,40 @@ void Interpreter::Visit(core::Assignment* assign) {
       const double left_num = lhs.ToNumber(ctx_, CHECK);
       const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
-          static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                 >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+          static_cast<double>(core::DoubleToInt32(left_num)
+                 >> (core::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_SHR: {  // >>>=
       const double left_num = lhs.ToNumber(ctx_, CHECK);
       const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
-          static_cast<double>(core::Conv::DoubleToUInt32(left_num)
-                 >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+          static_cast<double>(core::DoubleToUInt32(left_num)
+                 >> (core::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_SHL: {  // <<=
       const double left_num = lhs.ToNumber(ctx_, CHECK);
       const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
-          static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                 << (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+          static_cast<double>(core::DoubleToInt32(left_num)
+                 << (core::DoubleToInt32(right_num) & 0x1f)));
       break;
     }
     case Token::ASSIGN_BIT_AND: {  // &=
       const double left_num = lhs.ToNumber(ctx_, CHECK);
       const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
-          static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                 & (core::Conv::DoubleToInt32(right_num))));
+          static_cast<double>(core::DoubleToInt32(left_num)
+                 & (core::DoubleToInt32(right_num))));
       break;
     }
     case Token::ASSIGN_BIT_OR: {  // |=
       const double left_num = lhs.ToNumber(ctx_, CHECK);
       const double right_num = rhs.ToNumber(ctx_, CHECK);
       result.set_value(
-          static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                 | (core::Conv::DoubleToInt32(right_num))));
+          static_cast<double>(core::DoubleToInt32(left_num)
+                 | (core::DoubleToInt32(right_num))));
       break;
     }
     default: {
@@ -857,8 +857,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                   << (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   << (core::DoubleToInt32(right_num) & 0x1f)));
         return;
       }
 
@@ -866,8 +866,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                   >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   >> (core::DoubleToInt32(right_num) & 0x1f)));
         return;
       }
 
@@ -875,8 +875,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToUInt32(left_num)
-                   >> (core::Conv::DoubleToInt32(right_num) & 0x1f)));
+            static_cast<double>(core::DoubleToUInt32(left_num)
+                   >> (core::DoubleToInt32(right_num) & 0x1f)));
         return;
       }
 
@@ -957,8 +957,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                   & (core::Conv::DoubleToInt32(right_num))));
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   & (core::DoubleToInt32(right_num))));
         return;
       }
 
@@ -966,8 +966,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                   ^ (core::Conv::DoubleToInt32(right_num))));
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   ^ (core::DoubleToInt32(right_num))));
         return;
       }
 
@@ -975,8 +975,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(
-            static_cast<double>(core::Conv::DoubleToInt32(left_num)
-                   | (core::Conv::DoubleToInt32(right_num))));
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   | (core::DoubleToInt32(right_num))));
         return;
       }
 
@@ -1132,7 +1132,7 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const double value = expr.ToNumber(ctx_, CHECK);
       ctx_->Return(
-          static_cast<double>(~core::Conv::DoubleToInt32(value)));
+          static_cast<double>(~core::DoubleToInt32(value)));
       return;
     }
 

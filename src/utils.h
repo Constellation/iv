@@ -12,17 +12,6 @@
 
 namespace iv {
 namespace core {
-using std::tr1::uint32_t;
-using std::tr1::int32_t;
-
-
-class Conv {
- public:
-  static int32_t DoubleToInt32(double d);
-  inline static int32_t DoubleToUInt32(double d) {
-    return static_cast<uint32_t>(d);
-  }
-};
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class

@@ -48,7 +48,7 @@ class Pool {
 class Arena {
  public:
   static const unsigned int kPoolNum = 64;
-  static const uintptr_t kAlignment = Size::kPointerSize;
+  static const uintptr_t kAlignment = 8;
   static const unsigned int kArenaSize = (Pool::kPoolSize * kPoolNum) +
                                 ((Pool::kPoolSize <= kAlignment) ?
                                   0 : (Pool::kPoolSize - kAlignment));

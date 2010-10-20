@@ -1,7 +1,9 @@
 #ifndef IV_CONVERSIONS_INL_H_
 #define IV_CONVERSIONS_INL_H_
-#include <tr1/array>
 #include <cstdio>
+#include <cmath>
+#include <tr1/array>
+#include <tr1/cstdint>
 #include "conversions.h"
 #include "char.h"
 #include "dtoa.h"
@@ -175,7 +177,7 @@ inline double StringToDouble(Iter it, Iter last) {
     if (exponent > 9999) {
       exponent = 9999;
     }
-    std::snprintf(buffer.data()+pos, 5, "%d", exponent);
+    std::snprintf(buffer.data()+pos, 5, "%d", exponent);  // NOLINT
     pos+=4;
   }
 
@@ -222,6 +224,28 @@ inline std::size_t StringToHash(const StringPiece& x) {
     h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
   }
   return h;
+}
+
+
+inline int32_t DoubleToInt32(double d) {
+  int32_t i = static_cast<int32_t>(d);
+  if (static_cast<double>(i) == d) {
+    return i;
+  }
+  if (!std::isfinite(d) || d == 0) {
+    return 0;
+  }
+  if (d < 0 || d >= Conversions::DoubleToInt32_Two32) {
+    d = std::fmod(d, Conversions::DoubleToInt32_Two32);
+  }
+  d = (d >= 0) ?
+      std::floor(d) : std::ceil(d) + Conversions::DoubleToInt32_Two32;
+  return static_cast<int32_t>(d >= Conversions::DoubleToInt32_Two31 ?
+                              d - Conversions::DoubleToInt32_Two32 : d);
+}
+
+inline int32_t DoubleToUInt32(double d) {
+  return static_cast<uint32_t>(d);
 }
 
 } }  // namespace iv::core

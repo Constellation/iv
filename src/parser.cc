@@ -1107,37 +1107,37 @@ Expression* Parser::ReduceBinaryOperation(Token::Type op,
 
       case Token::BIT_OR:
         res = NumberLiteral::New(space_,
-                      Conv::DoubleToInt32(l_val) | Conv::DoubleToInt32(r_val));
+                      DoubleToInt32(l_val) | DoubleToInt32(r_val));
         break;
 
       case Token::BIT_AND:
         res = NumberLiteral::New(space_,
-                      Conv::DoubleToInt32(l_val) & Conv::DoubleToInt32(r_val));
+                      DoubleToInt32(l_val) & DoubleToInt32(r_val));
         break;
 
       case Token::BIT_XOR:
         res = NumberLiteral::New(space_,
-                      Conv::DoubleToInt32(l_val) ^ Conv::DoubleToInt32(r_val));
+                      DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
         break;
 
       // section 11.7 Bitwise Shift Operators
       case Token::SHL: {
-        const int32_t value = Conv::DoubleToInt32(l_val)
-            << (Conv::DoubleToInt32(r_val) & 0x1f);
+        const int32_t value = DoubleToInt32(l_val)
+            << (DoubleToInt32(r_val) & 0x1f);
         res = NumberLiteral::New(space_, value);
         break;
       }
 
       case Token::SHR: {
-        const uint32_t shift = Conv::DoubleToInt32(r_val) & 0x1f;
-        const uint32_t value = Conv::DoubleToUInt32(l_val) >> shift;
+        const uint32_t shift = DoubleToInt32(r_val) & 0x1f;
+        const uint32_t value = DoubleToUInt32(l_val) >> shift;
         res = NumberLiteral::New(space_, value);
         break;
       }
 
       case Token::SAR: {
-        uint32_t shift = Conv::DoubleToInt32(r_val) & 0x1f;
-        int32_t value = Conv::DoubleToInt32(l_val) >> shift;
+        uint32_t shift = DoubleToInt32(r_val) & 0x1f;
+        int32_t value = DoubleToInt32(l_val) >> shift;
         res = NumberLiteral::New(space_, value);
         break;
       }
@@ -1182,7 +1182,7 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
       if (expr->AsLiteral() && expr->AsLiteral()->AsNumberLiteral()) {
         result = NumberLiteral::New(
            space_,
-           ~Conv::DoubleToInt32(expr->AsLiteral()->AsNumberLiteral()->value()));
+           ~DoubleToInt32(expr->AsLiteral()->AsNumberLiteral()->value()));
       } else {
         result = NEW(UnaryOperation(op, expr));
       }

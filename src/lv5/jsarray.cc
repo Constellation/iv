@@ -50,7 +50,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (*res) {
         return false;
       }
-      uint32_t new_len = core::Conv::DoubleToUInt32(new_len_double);
+      uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
         *res = JSErrorCode::RangeError;
         return false;
