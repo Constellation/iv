@@ -13,7 +13,7 @@ class JSArray : public JSObject {
 
   bool DefineOwnProperty(Context* ctx,
                          Symbol name,
-                         const PropertyDescriptor* desc,
+                         const PropertyDescriptor& desc,
                          bool th,
                          JSErrorCode::Type* res);
 

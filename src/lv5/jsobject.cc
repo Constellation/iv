@@ -1,11 +1,10 @@
 #include <cassert>
 #include <vector>
 #include "jsobject.h"
-#include "jsproperty.h"
+#include "property.h"
 #include "jsfunction.h"
 #include "jsval.h"
 #include "jsenv.h"
-#include "interpreter.h"
 #include "context.h"
 #include "ustream.h"
 #include "class.h"
@@ -46,9 +45,9 @@ JSObject::JSObject(JSObject* proto,
     }\
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
-                             Hint hint, JSErrorCode::Type* res) {
+                             Hint::Object hint, JSErrorCode::Type* res) {
   const Arguments args(ctx, this);
-  if (hint != NUMBER) {
+  if (hint != Hint::NUMBER) {
     // hint is STRING or NONE
     TRY(ctx, "toString", args, res);
     TRY(ctx, "valueOf", args, res);
@@ -63,16 +62,15 @@ JSVal JSObject::DefaultValue(Context* ctx,
 
 JSVal JSObject::Get(Context* ctx,
                     Symbol name, JSErrorCode::Type* res) {
-  PropertyDescriptor* desc = GetProperty(name);
-  if (!desc) {
+  const PropertyDescriptor desc = GetProperty(name);
+  if (desc.IsEmpty()) {
     return JSUndefined;
   }
-  DataDescriptor* data = desc->AsDataDescriptor();
-  if (data) {
-    return data->value();
+  if (desc.IsDataDescriptor()) {
+    return desc.AsDataDescriptor()->data();
   } else {
-    assert(desc->IsAccessorDescriptor());
-    JSObject* getter = desc->AsAccessorDescriptor()->get();
+    assert(desc.IsAccessorDescriptor());
+    JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
       return getter->AsCallable()->Call(Arguments(ctx, this), res);
     } else {
@@ -82,51 +80,49 @@ JSVal JSObject::Get(Context* ctx,
 }
 
 // not recursion
-PropertyDescriptor* JSObject::GetProperty(Symbol name) const {
+PropertyDescriptor JSObject::GetProperty(Symbol name) const {
   const JSObject* obj = this;
   do {
-    PropertyDescriptor* prop = obj->GetOwnProperty(name);
-    if (prop) {
+    const PropertyDescriptor prop = obj->GetOwnProperty(name);
+    if (!prop.IsEmpty()) {
       return prop;
     }
     obj = obj->prototype();
   } while (obj);
-  return NULL;
+  return JSUndefined;
 }
 
-PropertyDescriptor* JSObject::GetOwnProperty(Symbol name) const {
+PropertyDescriptor JSObject::GetOwnProperty(Symbol name) const {
   const Properties::const_iterator it = table_.find(name);
   if (it == table_.end()) {
-    return NULL;
+    return JSUndefined;
   } else {
-    return it->second->clone();
+    return it->second;
   }
 }
 
 bool JSObject::CanPut(Symbol name) const {
-  PropertyDescriptor* desc = GetOwnProperty(name);
-  if (desc) {
-    AccessorDescriptor* accs = desc->AsAccessorDescriptor();
-    if (accs) {
-      return accs->set();
+  const PropertyDescriptor desc = GetOwnProperty(name);
+  if (!desc.IsEmpty()) {
+    if (desc.IsAccessorDescriptor()) {
+      return desc.AsAccessorDescriptor()->set();
     } else {
-      assert(desc->IsDataDescriptor());
-      return desc->IsWritable();
+      assert(desc.IsDataDescriptor());
+      return desc.IsWritable();
     }
   }
   if (!prototype_) {
     return extensible_;
   }
-  PropertyDescriptor* inherited = prototype_->GetProperty(name);
-  if (!inherited) {
+  const PropertyDescriptor inherited = prototype_->GetProperty(name);
+  if (inherited.IsEmpty()) {
     return extensible_;
   } else {
-    AccessorDescriptor* accs = inherited->AsAccessorDescriptor();
-    if (accs) {
-      return accs->set();
+    if (inherited.IsAccessorDescriptor()) {
+      return inherited.AsAccessorDescriptor()->set();
     } else {
-      assert(inherited->IsDataDescriptor());
-      return inherited->IsWritable();
+      assert(inherited.IsDataDescriptor());
+      return inherited.IsWritable();
     }
   }
 }
@@ -141,80 +137,76 @@ bool JSObject::CanPut(Symbol name) const {
 
 bool JSObject::DefineOwnProperty(Context* ctx,
                                  Symbol name,
-                                 const PropertyDescriptor* desc,
+                                 const PropertyDescriptor& desc,
                                  bool th,
                                  JSErrorCode::Type* res) {
   // section 8.12.9 [[DefineOwnProperty]]
-  PropertyDescriptor* current = GetOwnProperty(name);
-  if (!current) {
+  const PropertyDescriptor current = GetOwnProperty(name);
+  if (current.IsEmpty()) {
     if (!extensible_) {
       REJECT();
     } else {
-      if (desc->IsDataDescriptor()) {
-        table_[name] = desc->clone()->SetDefaultToAbsent();
-      } else {
-        assert(desc->IsAccessorDescriptor());
-        table_[name] = desc->clone()->SetDefaultToAbsent();
-      }
+      assert(desc.IsDataDescriptor() || desc.IsAccessorDescriptor());
+      table_[name] = desc.SetDefaultToAbsent();
       return true;
     }
   }
 
   // step 5 : this interpreter not allows absent descriptor
   // step 6
-  if (desc->Equals(*current)) {
+  if (desc.Equals(current)) {
     return true;
   }
 
   // step 7
-  if (current->IsConfigurable()) {
-    if (desc->Configurable() == PropertyDescriptor::kTRUE) {
+  if (current.IsConfigurable()) {
+    if (desc.Configurable() == PropertyDescriptor::kTRUE) {
       REJECT();
     }
-    if (!desc->IsEnumerableAbsent() &&
-        current->Enumerable() != desc->Enumerable()) {
+    if (!desc.IsEnumerableAbsent() &&
+        current.Enumerable() != desc.Enumerable()) {
       REJECT();
     }
   }
 
   // step 9
-  if (current->type() != desc->type()) {
-    if (!current->Configurable()) {
+  if (current.type() != desc.type()) {
+    if (current.Configurable()) {
       REJECT();
     }
-    if (current->IsDataDescriptor()) {
-      assert(desc->IsAccessorDescriptor());
+    if (current.IsDataDescriptor()) {
+      assert(desc.IsAccessorDescriptor());
     } else {
-      assert(desc->IsDataDescriptor());
+      assert(desc.IsDataDescriptor());
     }
   } else {
     // step 10
-    if (current->IsDataDescriptor()) {
-      assert(desc->IsDataDescriptor());
-      if (current->IsConfigurable()) {
-        if (!current->IsWritable()) {
-          if (desc->Writable() == PropertyDescriptor::kTRUE) {
+    if (current.IsDataDescriptor()) {
+      assert(desc.IsDataDescriptor());
+      if (current.IsConfigurable()) {
+        if (!current.IsWritable()) {
+          if (desc.Writable() == PropertyDescriptor::kTRUE) {
             REJECT();
           }
-          if (Interpreter::SameValue(current->AsDataDescriptor()->value(),
-                                     desc->AsDataDescriptor()->value())) {
+          if (SameValue(current.AsDataDescriptor()->data(),
+                        desc.AsDataDescriptor()->data())) {
             REJECT();
           }
         }
       }
     } else {
       // step 11
-      assert(desc->IsAccessorDescriptor());
-      if (!current->Configurable()) {
-        const AccessorDescriptor* const lhs = current->AsAccessorDescriptor();
-        const AccessorDescriptor* const rhs = desc->AsAccessorDescriptor();
+      assert(desc.IsAccessorDescriptor());
+      if (!current.Configurable()) {
+        const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
+        const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
         if (lhs->set() != rhs->set() || lhs->get() != rhs->get()) {
           REJECT();
         }
       }
     }
   }
-  table_[name] = desc->clone()->MergeAttrs(current->attrs());
+  table_[name] = desc.MergeAttrs(current.attrs());
   return true;
 }
 
@@ -229,37 +221,36 @@ void JSObject::Put(Context* ctx,
     }
     return;
   }
-  PropertyDescriptor* own_desc = GetOwnProperty(name);
-  if (own_desc && own_desc->IsDataDescriptor()) {
-    DataDescriptor* desc = new DataDescriptor(val);
-    DefineOwnProperty(ctx, name, desc, th, res);
+  const PropertyDescriptor own_desc = GetOwnProperty(name);
+  if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+    DefineOwnProperty(ctx, name, DataDescriptor(val), th, res);
     return;
   }
-  PropertyDescriptor* desc = GetProperty(name);
-  if (desc && desc->IsAccessorDescriptor()) {
-    AccessorDescriptor* accs = desc->AsAccessorDescriptor();
+  const PropertyDescriptor desc = GetProperty(name);
+  if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+    const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
     accs->set()->AsCallable()->Call(Arguments(ctx, this), res);
   } else {
-    DataDescriptor* new_desc = new DataDescriptor(
-        val,
-        PropertyDescriptor::WRITABLE |
-        PropertyDescriptor::ENUMERABLE |
-        PropertyDescriptor::CONFIGURABLE);
-    DefineOwnProperty(ctx, name, new_desc, th, res);
+    DefineOwnProperty(ctx, name,
+                      DataDescriptor(val,
+                                     PropertyDescriptor::WRITABLE |
+                                     PropertyDescriptor::ENUMERABLE |
+                                     PropertyDescriptor::CONFIGURABLE),
+                      th, res);
   }
 }
 
 bool JSObject::HasProperty(Symbol name) const {
-  return GetProperty(name);
+  return !GetProperty(name).IsEmpty();
 }
 
 bool JSObject::Delete(Symbol name, bool th, JSErrorCode::Type* res) {
-  PropertyDescriptor* desc = GetOwnProperty(name);
-  if (!desc) {
+  const PropertyDescriptor desc = GetOwnProperty(name);
+  if (desc.IsEmpty()) {
     return true;
   }
-  if (desc->IsConfigurable()) {
+  if (desc.IsConfigurable()) {
     table_.erase(name);
     return true;
   } else {

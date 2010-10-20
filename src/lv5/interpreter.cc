@@ -7,6 +7,7 @@
 #include <boost/foreach.hpp>
 #include "token.h"
 #include "size_t.h"
+#include "hint.h"
 #include "interpreter.h"
 #include "scope.h"
 #include "jsreference.h"
@@ -15,7 +16,7 @@
 #include "jsfunction.h"
 #include "jsregexp.h"
 #include "jsexception.h"
-#include "jsproperty.h"
+#include "property.h"
 #include "jsenv.h"
 #include "jsarray.h"
 #include "ustream.h"
@@ -435,7 +436,7 @@ void Interpreter::Visit(core::ForInStatement* stmt) {
   do {
     BOOST_FOREACH(const JSObject::Properties::value_type& set,
                   current->table()) {
-      if (!set.second->IsEnumerable()) {
+      if (!set.second.IsEnumerable()) {
         continue;
       }
       JSVal rhs(ctx_->ToString(set.first));
@@ -665,8 +666,8 @@ void Interpreter::Visit(core::Assignment* assign) {
       break;
     }
     case Token::ASSIGN_ADD: {  // +=
-      const JSVal lprim = lhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
-      const JSVal rprim = rhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
+      const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
+      const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
       if (lprim.IsString() || rprim.IsString()) {
         const JSString* const lstr = lprim.ToString(ctx_, CHECK);
         const JSString* const rstr = rprim.ToString(ctx_, CHECK);
@@ -830,8 +831,8 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
       case Token::ADD: {  // +
         // section 11.6.1 NOTE
         // no hint is provided in the calls to ToPrimitive
-        const JSVal lprim = lhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
-        const JSVal rprim = rhs.ToPrimitive(ctx_, JSObject::NONE, CHECK);
+        const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
+        const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
@@ -1237,9 +1238,9 @@ void Interpreter::Visit(core::ArrayLiteral* literal) {
       const Symbol index = ctx_->Intern(buffer.data());
       ary->DefineOwnProperty(
           ctx_, index,
-          new DataDescriptor(value, PropertyDescriptor::WRITABLE |
-                                    PropertyDescriptor::ENUMERABLE |
-                                    PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(value, PropertyDescriptor::WRITABLE |
+                                PropertyDescriptor::ENUMERABLE |
+                                PropertyDescriptor::CONFIGURABLE),
           false, CHECK);
     }
     ++current;
@@ -1260,24 +1261,24 @@ void Interpreter::Visit(core::ObjectLiteral* literal) {
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
     const core::Identifier* const ident = get<1>(prop);
     const Symbol name = ctx_->Intern(ident->value());
-    PropertyDescriptor* desc = NULL;
+    PropertyDescriptor desc;
     if (type == ObjectLiteral::DATA) {
       EVAL(get<2>(prop));
       const JSVal value = GetValue(ctx_->ret(), CHECK);
-      desc = new DataDescriptor(value,
-                                PropertyDescriptor::WRITABLE |
-                                PropertyDescriptor::ENUMERABLE |
-                                PropertyDescriptor::CONFIGURABLE);
+      desc = DataDescriptor(value,
+                            PropertyDescriptor::WRITABLE |
+                            PropertyDescriptor::ENUMERABLE |
+                            PropertyDescriptor::CONFIGURABLE);
     } else {
       EVAL(get<2>(prop));
       if (type == ObjectLiteral::GET) {
-        desc = new AccessorDescriptor(ctx_->ret().object(), NULL,
-                                      PropertyDescriptor::ENUMERABLE |
-                                      PropertyDescriptor::CONFIGURABLE);
+        desc = AccessorDescriptor(ctx_->ret().object(), NULL,
+                                  PropertyDescriptor::ENUMERABLE |
+                                  PropertyDescriptor::CONFIGURABLE);
       } else {
-        desc = new AccessorDescriptor(NULL, ctx_->ret().object(),
-                                      PropertyDescriptor::ENUMERABLE |
-                                      PropertyDescriptor::CONFIGURABLE);
+        desc = AccessorDescriptor(NULL, ctx_->ret().object(),
+                                  PropertyDescriptor::ENUMERABLE |
+                                  PropertyDescriptor::CONFIGURABLE);
       }
     }
     // section 11.1.5 step 4
@@ -1405,15 +1406,15 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
       if (*error) {
         return JSUndefined;
       }
-      PropertyDescriptor* desc = o->GetProperty(ref->GetReferencedName());
-      if (!desc) {
+      const PropertyDescriptor desc = o->GetProperty(ref->GetReferencedName());
+      if (desc.IsEmpty()) {
         return JSUndefined;
       }
-      if (desc->IsDataDescriptor()) {
-        return desc->AsDataDescriptor()->value();
+      if (desc.IsDataDescriptor()) {
+        return desc.AsDataDescriptor()->data();
       } else {
-        assert(desc->IsAccessorDescriptor());
-        AccessorDescriptor* ac = desc->AsAccessorDescriptor();
+        assert(desc.IsAccessorDescriptor());
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
           JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
                                                     error);
@@ -1479,16 +1480,16 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
         }
         return;
       }
-      PropertyDescriptor* const own_desc = o->GetOwnProperty(sym);
-      if (own_desc && own_desc->IsDataDescriptor()) {
+      const PropertyDescriptor own_desc = o->GetOwnProperty(sym);
+      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
         if (th) {
           *error = JSErrorCode::TypeError;
         }
         return;
       }
-      PropertyDescriptor* const desc = o->GetProperty(sym);
-      if (desc && desc->IsAccessorDescriptor()) {
-        AccessorDescriptor* ac = desc->AsAccessorDescriptor();
+      const PropertyDescriptor desc = o->GetProperty(sym);
+      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
         ac->set()->AsCallable()->Call(Arguments(ctx_, *base), ERRCHECK);
       } else {
@@ -1511,47 +1512,6 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
 
 
 #undef ERRCHECK
-
-
-bool Interpreter::SameValue(const JSVal& lhs, const JSVal& rhs) {
-  if (lhs.type() != rhs.type()) {
-    return false;
-  }
-  if (lhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber()) {
-    // TODO(Constellation)
-    // more exactly number comparison
-    const double& lhsv = lhs.number();
-    const double& rhsv = rhs.number();
-    if (std::isnan(lhsv) && std::isnan(rhsv)) {
-      return true;
-    }
-    if (lhsv == rhsv) {
-      if (std::signbit(lhsv) && std::signbit(rhsv)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-  if (lhs.IsString()) {
-    return *(lhs.string()) == *(rhs.string());
-  }
-  if (lhs.IsBoolean()) {
-    return lhs.boolean() == rhs.boolean();
-  }
-  if (lhs.IsObject()) {
-    return lhs.object() == rhs.object();
-  }
-  return false;
-}
 
 
 bool Interpreter::StrictEqual(const JSVal& lhs, const JSVal& rhs) {
@@ -1642,13 +1602,13 @@ bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
   if ((lhs.IsString() || lhs.IsNumber()) &&
       rhs.IsObject()) {
     const JSVal prim = rhs.ToPrimitive(ctx_,
-                                       JSObject::NONE, ABSTRACT_CHECK);
+                                       Hint::NONE, ABSTRACT_CHECK);
     return AbstractEqual(lhs, prim, error);
   }
   if (lhs.IsObject() &&
       (rhs.IsString() || rhs.IsNumber())) {
     const JSVal prim = lhs.ToPrimitive(ctx_,
-                                       JSObject::NONE, ABSTRACT_CHECK);
+                                       Hint::NONE, ABSTRACT_CHECK);
     return AbstractEqual(prim, rhs, error);
   }
   return false;
@@ -1668,11 +1628,11 @@ Interpreter::CompareKind Interpreter::Compare(const JSVal& lhs,
   JSVal px;
   JSVal py;
   if (left_first) {
-    px = lhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
-    py = rhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
+    px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
+    py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
   } else {
-    py = rhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
-    px = lhs.ToPrimitive(ctx_, JSObject::NUMBER, LT_CHECK);
+    py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
+    px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
   }
   if (px.IsString() && py.IsString()) {
     // step 4

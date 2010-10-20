@@ -2,6 +2,8 @@
 #define _IV_LV5_JSOBJECT_H_
 #include <gc/gc_cpp.h>
 #include "ast.h"
+#include "property.h"
+#include "hint.h"
 #include "jsstring.h"
 #include "jserrorcode.h"
 #include "gc-template.h"
@@ -18,22 +20,17 @@ class Context;
 
 class JSObject : public gc {
  public:
-  enum Hint {
-    NONE = 0,
-    STRING = 1,
-    NUMBER = 2
-  };
-  typedef GCHashMap<Symbol, PropertyDescriptor*>::type Properties;
+  typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   JSObject();
   JSObject(JSObject* proto, JSString* cls, bool extensible);
 
   virtual JSVal DefaultValue(Context* context,
-                             Hint hint, JSErrorCode::Type* res);
+                             Hint::Object hint, JSErrorCode::Type* res);
   virtual JSVal Get(Context* context,
                     Symbol name, JSErrorCode::Type* res);
-  virtual PropertyDescriptor* GetOwnProperty(Symbol name) const;
-  virtual PropertyDescriptor* GetProperty(Symbol name) const;
+  virtual PropertyDescriptor GetOwnProperty(Symbol name) const;
+  virtual PropertyDescriptor GetProperty(Symbol name) const;
   virtual bool CanPut(Symbol name) const;
   virtual void Put(Context* context, Symbol name,
                    const JSVal& val, bool th, JSErrorCode::Type* res);
@@ -41,7 +38,7 @@ class JSObject : public gc {
   virtual bool Delete(Symbol name, bool th, JSErrorCode::Type* res);
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
-                                 const PropertyDescriptor* desc,
+                                 const PropertyDescriptor& desc,
                                  bool th,
                                  JSErrorCode::Type* res);
   virtual bool IsCallable() const {

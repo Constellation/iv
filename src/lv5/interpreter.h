@@ -37,7 +37,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void CallCode(const JSCodeFunction& code, const Arguments& args,
                 JSErrorCode::Type* error);
 
-  static bool SameValue(const JSVal& lhs, const JSVal& rhs);
   static JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env);
   static JSObjectEnv* NewObjectEnvironment(Context* ctx,
                                            JSObject* val, JSEnv* env);

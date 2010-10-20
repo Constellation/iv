@@ -9,8 +9,8 @@
 #include "enable_if.h"
 #include "static_assert.h"
 #include "utils.h"
+#include "hint.h"
 #include "jsstring.h"
-#include "jsobject.h"
 #include "jserrorcode.h"
 #include "conversions-inl.h"
 
@@ -22,6 +22,7 @@ class Context;
 class JSReference;
 class JSEnv;
 class JSVal;
+class JSObject;
 
 namespace detail {
 template<std::size_t PointerSize>
@@ -138,17 +139,6 @@ class JSVal {
   IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
   IV_STATIC_ASSERT(std::tr1::is_pod<value_type>::value);
 
-  enum Tag {
-    NUMBER = 0,
-    OBJECT,
-    STRING,
-    BOOLEAN,
-    NULLVALUE,
-    UNDEFINED,
-    REFERENCE,
-    ENVIRONMENT
-  };
-
   static const uint32_t kTrueTag        = 0xffffffff;
   static const uint32_t kFalseTag       = 0xfffffffe;
   static const uint32_t kEmptyTag       = 0xfffffffd;
@@ -175,6 +165,7 @@ class JSVal {
   JSVal(JSFalseKeywordType val);  // NOLINT
   JSVal(JSNullKeywordType val);  // NOLINT
   JSVal(JSUndefinedKeywordType val);  // NOLINT
+  JSVal(const value_type& val);  // NOLINT
   template<typename T>
   JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
     typedef std::tr1::is_same<bool, T> cond;
@@ -284,113 +275,29 @@ class JSVal {
   inline bool IsPrimitive() const {
     return IsNumber() || IsString() || IsBoolean();
   }
-  inline JSString* TypeOf(Context* ctx) const {
-    if (IsObject()) {
-      if (object()->IsCallable()) {
-        return JSString::NewAsciiString(ctx, "function");
-      } else {
-        return JSString::NewAsciiString(ctx, "object");
-      }
-    } else if (IsNumber()) {
-      return JSString::NewAsciiString(ctx, "number");
-    } else if (IsString()) {
-      return JSString::NewAsciiString(ctx, "string");
-    } else if (IsBoolean()) {
-      return JSString::NewAsciiString(ctx, "boolean");
-    } else if (IsNull()) {
-      return JSString::NewAsciiString(ctx, "null");
-    } else {
-      assert(IsUndefined());
-      return JSString::NewAsciiString(ctx, "undefined");
-    }
-  }
+  JSString* TypeOf(Context* ctx) const;
+
   inline uint32_t type() const {
     return IsNumber() ? kNumberTag : value_.struct_.tag_;
   }
 
-  inline JSObject* ToObject(Context* ctx, JSErrorCode::Type* res) const {
-    if (IsObject()) {
-      return object();
-    } else if (IsNumber()) {
-      return JSNumberObject::New(ctx, number());
-    } else if (IsString()) {
-      return JSStringObject::New(ctx, string());
-    } else if (IsBoolean()) {
-      return JSBooleanObject::New(ctx, boolean());
-    } else if (IsNull() || IsUndefined()) {
-      *res = JSErrorCode::TypeError;
-      return NULL;
-    } else {
-      UNREACHABLE();
-    }
-  }
+  JSObject* ToObject(Context* ctx, JSErrorCode::Type* res) const;
 
-  inline JSString* ToString(Context* ctx,
-                            JSErrorCode::Type* res) const {
-    if (IsString()) {
-      return string();
-    } else if (IsNumber()) {
-      std::tr1::array<char, 80> buffer;
-      const char* const str = core::DoubleToCString(number(),
-                                                    buffer.data(),
-                                                    buffer.size());
-      return JSString::NewAsciiString(ctx, str);
-    } else if (IsBoolean()) {
-      return JSString::NewAsciiString(ctx, (boolean() ? "true" : "false"));
-    } else if (IsNull()) {
-      return JSString::NewAsciiString(ctx, "null");
-    } else if (IsUndefined()) {
-      return JSString::NewAsciiString(ctx, "undefined");
-    } else {
-      assert(IsObject());
-      JSVal prim = object()->DefaultValue(ctx, JSObject::STRING, res);
-      if (*res) {
-        return NULL;
-      }
-      return prim.ToString(ctx, res);
-    }
-  }
+  JSString* ToString(Context* ctx,
+                     JSErrorCode::Type* res) const;
 
-  inline double ToNumber(Context* ctx, JSErrorCode::Type* res) const {
-    if (IsNumber()) {
-      return number();
-    } else if (IsString()) {
-      return core::StringToDouble(*string());
-    } else if (IsBoolean()) {
-      return boolean() ? 1 : +0;
-    } else if (IsNull()) {
-      return +0;
-    } else if (IsUndefined()) {
-      return std::numeric_limits<double>::quiet_NaN();
-    } else {
-      assert(IsObject());
-      JSVal prim = object()->DefaultValue(ctx, JSObject::NUMBER, res);
-      if (*res) {
-        return NULL;
-      }
-      return prim.ToNumber(ctx, res);
-    }
-  }
+  double ToNumber(Context* ctx, JSErrorCode::Type* res) const;
 
-  inline JSVal ToPrimitive(Context* ctx,
-                           JSObject::Hint hint, JSErrorCode::Type* res) const {
-    if (IsObject()) {
-      return object()->DefaultValue(ctx, hint, res);
-    } else {
-      assert(!IsEnvironment() && !IsReference());
-      return *this;
-    }
-  }
+  JSVal ToPrimitive(Context* ctx,
+                    Hint::Object hint, JSErrorCode::Type* res) const;
+
+  bool IsCallable() const;
 
   inline void CheckObjectCoercible(JSErrorCode::Type* res) const {
     assert(!IsEnvironment() && !IsReference());
     if (IsNull() || IsUndefined()) {
       *res = JSErrorCode::TypeError;
     }
-  }
-
-  inline bool IsCallable() const {
-    return IsObject() && object()->IsCallable();
   }
 
   inline bool ToBoolean(JSErrorCode::Type* res) const {
@@ -410,6 +317,10 @@ class JSVal {
     }
   }
 
+  inline const value_type& Layout() const {
+    return value_;
+  }
+
   inline void swap(this_type& rhs) {
     using std::swap;
     swap(value_, rhs.value_);
@@ -418,6 +329,7 @@ class JSVal {
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
   }
+
 
  private:
    value_type value_;
@@ -436,6 +348,44 @@ inline bool JSNull(JSVal x, detail::JSNullType dummy = detail::JSNullType()) {
 }
 
 inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
+  return false;
+}
+
+inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
+  if (lhs.type() != rhs.type()) {
+    return false;
+  }
+  if (lhs.IsUndefined()) {
+    return true;
+  }
+  if (lhs.IsNull()) {
+    return true;
+  }
+  if (lhs.IsNumber()) {
+    const double& lhsv = lhs.number();
+    const double& rhsv = rhs.number();
+    if (std::isnan(lhsv) && std::isnan(rhsv)) {
+      return true;
+    }
+    if (lhsv == rhsv) {
+      if (std::signbit(lhsv) && std::signbit(rhsv)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  if (lhs.IsString()) {
+    return *(lhs.string()) == *(rhs.string());
+  }
+  if (lhs.IsBoolean()) {
+    return lhs.boolean() == rhs.boolean();
+  }
+  if (lhs.IsObject()) {
+    return lhs.object() == rhs.object();
+  }
   return false;
 }
 

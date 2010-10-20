@@ -1,6 +1,6 @@
 #include <cassert>
 #include "jsenv.h"
-#include "jsproperty.h"
+#include "property.h"
 #include "jsval.h"
 #include "context.h"
 
@@ -101,7 +101,7 @@ void JSObjectEnv::CreateMutableBinding(Context* ctx, Symbol name, bool del) {
   record_->DefineOwnProperty(
       ctx,
       name,
-      new DataDescriptor(JSUndefined, attr),
+      DataDescriptor(JSUndefined, attr),
       true,
       NULL);
 }

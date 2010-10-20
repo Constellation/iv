@@ -3,7 +3,7 @@
 #include "arguments.h"
 #include "context.h"
 #include "interpreter.h"
-#include "jsproperty.h"
+#include "property.h"
 #include "class.h"
 #include "runtime.h"
 namespace iv {
@@ -106,9 +106,9 @@ void Context::Initialize() {
         JSNativeFunction::New(this, &Runtime_FunctionToString);
     func_proto->DefineOwnProperty(
         this, Intern("toString"),
-        new DataDescriptor(func,
-                           PropertyDescriptor::WRITABLE |
-                           PropertyDescriptor::ENUMERABLE),
+        DataDescriptor(func,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::ENUMERABLE),
         false, NULL);
   }
 
@@ -120,9 +120,9 @@ void Context::Initialize() {
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty);
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
-          new DataDescriptor(func,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE),
           false, NULL);
     }
     {
@@ -130,16 +130,16 @@ void Context::Initialize() {
           JSNativeFunction::New(this, &Runtime_ObjectToString);
       obj_proto->DefineOwnProperty(
           this, Intern("toString"),
-          new DataDescriptor(func,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE),
           false, NULL);
     }
     builtins_[name] = obj_cls;
 
     obj_constructor->DefineOwnProperty(
         this, Intern("prototype"),
-        new DataDescriptor(obj_proto, PropertyDescriptor::NONE),
+        DataDescriptor(obj_proto, PropertyDescriptor::NONE),
         false, NULL);
 
     variable_env_->CreateMutableBinding(this, name, false);

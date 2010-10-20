@@ -2,6 +2,7 @@
 #define _IV_LV5_JSFUNCTION_H_
 #include <tr1/functional>
 #include "jserrorcode.h"
+#include "jsobject.h"
 #include "jsenv.h"
 #include "arguments.h"
 #include "ustringpiece.h"

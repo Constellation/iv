@@ -4,7 +4,7 @@
 #include "conversions-inl.h"
 #include "jsarray.h"
 #include "jsobject.h"
-#include "jsproperty.h"
+#include "property.h"
 #include "jsstring.h"
 #include "context.h"
 #include "class.h"
@@ -16,9 +16,9 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
     length_(len) {
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
-                              new DataDescriptor(static_cast<double>(0),
-                                                 PropertyDescriptor::WRITABLE),
-                                                 false, NULL);
+                              DataDescriptor(static_cast<double>(0),
+                                             PropertyDescriptor::WRITABLE),
+                                             false, NULL);
 }
 
 #define REJECT()\
@@ -31,20 +31,20 @@ JSArray::JSArray(Context* ctx, std::size_t len)
 
 bool JSArray::DefineOwnProperty(Context* ctx,
                                 Symbol name,
-                                const PropertyDescriptor* desc,
+                                const PropertyDescriptor& desc,
                                 bool th,
                                 JSErrorCode::Type* res) {
   const Symbol length_symbol = ctx->length_symbol();
-  PropertyDescriptor* const old_len_desc_upper = GetOwnProperty(length_symbol);
-  assert(old_len_desc_upper && old_len_desc_upper->AsDataDescriptor());
-  DataDescriptor* const old_len_desc = old_len_desc_upper->AsDataDescriptor();
+  PropertyDescriptor old_len_desc_upper = GetOwnProperty(length_symbol);
+  assert(!old_len_desc_upper.IsEmpty() && old_len_desc_upper.IsDataDescriptor());
+  DataDescriptor* const old_len_desc = old_len_desc_upper.AsDataDescriptor();
 
-  const JSVal& len_value = old_len_desc->value();
+  const JSVal& len_value = old_len_desc->data();
   JSString* const name_string = ctx->ToString(name);
 
   if (name == length_symbol) {
-    if (desc->AsDataDescriptor()) {
-      const JSVal& new_len_value = desc->AsDataDescriptor()->value();
+    if (desc.IsDataDescriptor()) {
+      const JSVal& new_len_value = desc.AsDataDescriptor()->data();
       const double new_len_double = new_len_value.ToNumber(ctx, res);
       if (*res) {
         return false;
@@ -58,8 +58,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (*res) {
         return false;
       }
-      DataDescriptor* const new_len_desc = new DataDescriptor(
-          static_cast<double>(new_len), desc->attrs());
+      DataDescriptor new_len_desc(static_cast<double>(new_len), desc.attrs());
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);
@@ -68,9 +67,9 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         REJECT();
       }
       const bool new_writable =
-          new_len_desc->IsWritableAbsent() || new_len_desc->IsWritable();
+          new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
       if (!new_writable) {
-        new_len_desc->SetWritable(true);
+        new_len_desc.SetWritable(true);
       }
       const bool succeeded = JSObject::DefineOwnProperty(ctx, length_symbol,
                                                          new_len_desc, th, res);
@@ -90,9 +89,9 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           return false;
         }
         if (!delete_succeeded) {
-          new_len_desc->set_value(static_cast<double>(old_len + 1));
+          new_len_desc.set_value(static_cast<double>(old_len + 1));
           if (!new_writable) {
-            new_len_desc->SetWritable(false);
+            new_len_desc.SetWritable(false);
           }
           JSObject::DefineOwnProperty(ctx, length_symbol,
                                       new_len_desc, false, res);
@@ -100,7 +99,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         }
       }
       if (!new_writable) {
-        new_len_desc->SetWritable(false);
+        new_len_desc.SetWritable(false);
         JSObject::DefineOwnProperty(ctx, length_symbol,
                                     new_len_desc, false, res);
       }
@@ -136,6 +135,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         }
         if (index >= old_len) {
           old_len_desc->set_value(static_cast<double>(index+1));
+          JSObject::DefineOwnProperty(ctx, length_symbol,
+                                      *old_len_desc, false, res);
         }
         return true;
       }
