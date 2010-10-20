@@ -13,6 +13,11 @@
 
 namespace iv {
 namespace lv5 {
+#ifdef IS_LITTLE_ENDIAN
+static const bool kLittleEndian = true;
+#else
+static const bool kLittleEndian = false;
+#endif  // IS_LITTLE_ENDIAN
 
 class JSEnv;
 class Context;
@@ -23,12 +28,11 @@ class JSObject;
 class JSString;
 
 namespace detail {
-template<std::size_t PointerSize>
+template<std::size_t PointerSize, bool IsLittle>
 struct Layout {
 };
-#if defined(IS_LITTLE_ENDIAN)
 template<>
-struct Layout<4> {
+struct Layout<4, true> {
   union {
     struct {
       double as_;
@@ -49,7 +53,7 @@ struct Layout<4> {
 };
 
 template<>
-struct Layout<8> {
+struct Layout<8, true> {
   union {
     struct {
       uint32_t overhead_;
@@ -69,9 +73,9 @@ struct Layout<8> {
 
   static const std::size_t kExpectedSize = 12;
 };
-#else
+
 template<>
-struct Layout<4> {
+struct Layout<4, false> {
   union {
     struct {
       double as_;
@@ -92,7 +96,7 @@ struct Layout<4> {
 };
 
 template<>
-struct Layout<8> {
+struct Layout<8, false> {
   union {
     struct {
       double as_;
@@ -111,7 +115,6 @@ struct Layout<8> {
 
   static const std::size_t kExpectedSize = 12;
 };
-#endif  // define(IS_LITTLE_ENDIAN)
 
 struct JSTrueType { };
 struct JSFalseType { };
@@ -132,7 +135,9 @@ inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
 class JSVal {
  public:
   typedef JSVal this_type;
-  typedef detail::Layout<core::Size::kPointerSize> value_type;
+  typedef detail::Layout<
+            core::Size::kPointerSize,
+            kLittleEndian> value_type;
 
   IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
   IV_STATIC_ASSERT(std::tr1::is_pod<value_type>::value);
