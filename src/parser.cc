@@ -102,9 +102,6 @@ FunctionLiteral* Parser::ParseProgram() {
     Next();
     ParseSourceElements(Token::EOS, global, CHECK);
   }
-  if (!resolved_check_stack_.empty()) {
-    return NULL;
-  }
   return (error_flag) ? global : NULL;
 }
 
