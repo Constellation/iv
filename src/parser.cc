@@ -129,17 +129,14 @@ bool Parser::ParseSourceElements(Token::Type end,
           !strict_ &&
           stmt->AsExpressionStatement()) {
         Expression* const expr = stmt->AsExpressionStatement()->expr();
-        if (expr->AsLiteral()) {
-          Literal* const literal = expr->AsLiteral();
-          if (literal->AsStringLiteral()) {
-            if (lexer_.StringEscapeType() == Lexer::NONE &&
-                literal->AsStringLiteral()->value().compare(
-                    use_strict_string.data()) == 0) {
-              switcher.SwitchStrictMode();
-              function->AddStatement(stmt);
-              function->set_strict(true);
-              continue;
-            }
+        if (expr->AsStringLiteral()) {
+          if (lexer_.StringEscapeType() == Lexer::NONE &&
+              expr->AsStringLiteral()->value().compare(
+                  use_strict_string.data()) == 0) {
+            switcher.SwitchStrictMode();
+            function->AddStatement(stmt);
+            function->set_strict(true);
+            continue;
           }
         }
       }
@@ -834,13 +831,12 @@ Statement* Parser::ParseExpressionOrLabelledStatement(bool *res) {
   assert(token_ == Token::IDENTIFIER);
   Expression* expr = ParseExpression(true, CHECK);
   if (token_ == Token::COLON &&
-      expr->AsLiteral() &&
-      expr->AsLiteral()->AsIdentifier()) {
+      expr->AsIdentifier()) {
     // LabelledStatement
     Next();
 
     AstNode::Identifiers* labels = labels_;
-    Identifier* const label = expr->AsLiteral()->AsIdentifier();
+    Identifier* const label = expr->AsIdentifier();
     const bool exist_labels = labels;
     if (!exist_labels) {
       labels = space_->NewLabels();
@@ -892,8 +888,8 @@ Expression* Parser::ParseAssignmentExpression(bool contains_in, bool *res) {
   }
   // section 11.13.1 throwing SyntaxError
   if (strict_ &&
-      result->AsLiteral() && result->AsLiteral()->AsIdentifier() &&
-      IsEvalOrArguments(result->AsLiteral()->AsIdentifier())) {
+      result->AsIdentifier() &&
+      IsEvalOrArguments(result->AsIdentifier())) {
     FAIL();
   }
   const Token::Type op = token_;
@@ -1083,12 +1079,10 @@ Expression* Parser::ParseBinaryExpression(bool contains_in,
 Expression* Parser::ReduceBinaryOperation(Token::Type op,
                                            Expression* left,
                                            Expression* right) {
-  if (left->AsLiteral() &&
-      right->AsLiteral() &&
-      left->AsLiteral()->AsNumberLiteral() &&
-      right->AsLiteral()->AsNumberLiteral()) {
-    const double l_val = left->AsLiteral()->AsNumberLiteral()->value();
-    const double r_val = right->AsLiteral()->AsNumberLiteral()->value();
+  if (left->AsNumberLiteral() &&
+      right->AsNumberLiteral()) {
+    const double l_val = left->AsNumberLiteral()->value();
+    const double r_val = right->AsNumberLiteral()->value();
     Expression* res;
     switch (op) {
       case Token::ADD:
@@ -1184,8 +1178,7 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
       Next();
       expr = ParseUnaryExpression(CHECK);
       if (strict_ &&
-          expr->AsLiteral() &&
-          expr->AsLiteral()->AsIdentifier()) {
+          expr->AsIdentifier()) {
         FAIL();
       }
       result = NEW(UnaryOperation(op, expr));
@@ -1194,10 +1187,10 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
     case Token::BIT_NOT:
       Next();
       expr = ParseUnaryExpression(CHECK);
-      if (expr->AsLiteral() && expr->AsLiteral()->AsNumberLiteral()) {
+      if (expr->AsNumberLiteral()) {
         result = NumberLiteral::New(
            space_,
-           ~DoubleToInt32(expr->AsLiteral()->AsNumberLiteral()->value()));
+           ~DoubleToInt32(expr->AsNumberLiteral()->value()));
       } else {
         result = NEW(UnaryOperation(op, expr));
       }
@@ -1206,7 +1199,7 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
     case Token::ADD:
       Next();
       expr = ParseUnaryExpression(CHECK);
-      if (expr->AsLiteral() && expr->AsLiteral()->AsNumberLiteral()) {
+      if (expr->AsNumberLiteral()) {
         result = expr;
       } else {
         result = NEW(UnaryOperation(op, expr));
@@ -1216,9 +1209,9 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
     case Token::SUB:
       Next();
       expr = ParseUnaryExpression(CHECK);
-      if (expr->AsLiteral() && expr->AsLiteral()->AsNumberLiteral()) {
+      if (expr->AsNumberLiteral()) {
         result = NumberLiteral::New(space_,
-                              -(expr->AsLiteral()->AsNumberLiteral()->value()));
+                              -(expr->AsNumberLiteral()->value()));
       } else {
         result = NEW(UnaryOperation(op, expr));
       }
@@ -1233,8 +1226,8 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
       }
       // section 11.4.4, 11.4.5 throwing SyntaxError
       if (strict_ &&
-          expr->AsLiteral() && expr->AsLiteral()->AsIdentifier() &&
-          IsEvalOrArguments(expr->AsLiteral()->AsIdentifier())) {
+          expr->AsIdentifier() &&
+          IsEvalOrArguments(expr->AsIdentifier())) {
         FAIL();
       }
       result = NEW(UnaryOperation(op, expr));
@@ -1261,8 +1254,8 @@ Expression* Parser::ParsePostfixExpression(bool *res) {
     }
     // section 11.3.1, 11.3.2 throwing SyntaxError
     if (strict_ &&
-        expr->AsLiteral() && expr->AsLiteral()->AsIdentifier() &&
-        IsEvalOrArguments(expr->AsLiteral()->AsIdentifier())) {
+        expr->AsIdentifier() &&
+        IsEvalOrArguments(expr->AsIdentifier())) {
       FAIL();
     }
     expr = NEW(PostfixExpression(token_, expr));
