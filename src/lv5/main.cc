@@ -102,9 +102,10 @@ int main(int argc, char **argv) {
     std::string str;
     const char* filename = rest[0].c_str();
     if (std::FILE* fp = std::fopen(filename, "r")) {
-      char buf[1024];
-      while (std::size_t len = std::fread(buf, 1, sizeof(buf), fp)) {
-        str.append(buf, len);
+      std::tr1::array<char, 1024> buf;
+      while (std::size_t len = std::fread(buf.data(),
+                                          1, sizeof(buf.size()), fp)) {
+        str.append(buf.data(), len);
       }
       std::fclose(fp);
     } else {
