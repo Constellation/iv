@@ -6,17 +6,17 @@
 #include <unicode/ucnv.h>
 #include <unicode/uchar.h>
 
-inline std::ostream& operator<<(std::ostream& os, const UChar* out) {
-  if (out) {
+inline std::ostream& operator<<(std::ostream& os, const UChar* str) {
+  if (str) {
     std::tr1::array<char, 200> buffer;
     UErrorCode error = U_ZERO_ERROR;
     UConverter* conv = ucnv_open(NULL, &error);
     if (U_FAILURE(error)) {
       ucnv_close(conv);
     } else {
-      const UChar* str = out;
-      const UChar* limit = str + std::char_traits<UChar>::length(out);
-      char* s, *slimit = buffer.data() + buffer.size();
+      const UChar* limit = str + std::char_traits<UChar>::length(str);
+      char* s;
+      const char* slimit = buffer.data() + buffer.size();
       do {
         error = U_ZERO_ERROR;
         s = buffer.data();
