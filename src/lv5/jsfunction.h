@@ -68,8 +68,8 @@ class JSCodeFunction : public JSFunction {
 
 class JSNativeFunction : public JSFunction {
  public:
-  template<typename Func>
-  explicit JSNativeFunction(const Func& func)
+  typedef JSVal(*value_type)(const Arguments&, JSErrorCode::Type*);
+  explicit JSNativeFunction(value_type func)
     : func_(func) {
   }
   JSVal Call(const Arguments& args,
@@ -92,7 +92,7 @@ class JSNativeFunction : public JSFunction {
   }
 
  private:
-  std::tr1::function<JSVal(const Arguments&, JSErrorCode::Type*)> func_;
+  value_type func_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSFUNCTION_H_
