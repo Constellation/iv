@@ -22,6 +22,14 @@ namespace core {
     visitor->Visit(this);\
   }
 
+#define DECLARE_NODE_TYPE(type) \
+  inline const type* As##type() const { return this; }\
+  inline type* As##type() { return this; }
+
+#define DECLARE_NODE_TYPE_BASE(type) \
+  inline virtual const type* As##type() const { return NULL; }\
+  inline virtual type* As##type() { return NULL; }
+
 // forward declarations
 class Statement;
 class ExpressionStatement;
@@ -78,50 +86,63 @@ class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
 
   virtual ~AstNode() = 0;
 
-  virtual Statement* AsStatement() { return NULL; }
-  virtual ExpressionStatement* AsExpressionStatement() { return NULL; }
-  virtual EmptyStatement* AsEmptyStatement() { return NULL; }
-  virtual VariableStatement* AsVariableStatement() { return NULL; }
-  virtual DebuggerStatement* AsDebuggerStatement() { return NULL; }
-  virtual FunctionStatement* AsFunctionStatement() { return NULL; }
-  virtual IfStatement* AsIfStatement() { return NULL; }
-  virtual IterationStatement* AsIterationStatement() { return NULL; }
-  virtual DoWhileStatement* AsDoWhileStatement() { return NULL; }
-  virtual WhileStatement* AsWhileStatement() { return NULL; }
-  virtual ForStatement* AsForStatement() { return NULL; }
-  virtual ForInStatement* AsForInStatement() { return NULL; }
-  virtual ContinueStatement* AsContinueStatement() { return NULL; }
-  virtual BreakStatement* AsBreakStatement() { return NULL; }
-  virtual ReturnStatement* AsReturnStatement() { return NULL; }
-  virtual WithStatement* AsWithStatement() { return NULL; }
-  virtual LabelledStatement* AsLabelledStatement() { return NULL; }
-  virtual SwitchStatement* AsSwitchStatement() { return NULL; }
-  virtual ThrowStatement* AsThrowStatement() { return NULL; }
-  virtual TryStatement* AsTryStatement() { return NULL; }
-  virtual BreakableStatement* AsBreakableStatement() { return NULL; }
-  virtual NamedOnlyBreakableStatement* AsNamedOnlyBreakableStatement() {
-    return NULL;
-  }
-  virtual AnonymousBreakableStatement* AsAnonymousBreakableStatement() {
-    return NULL;
-  }
+  DECLARE_NODE_TYPE_BASE(Statement)
+  DECLARE_NODE_TYPE_BASE(Block)
+  DECLARE_NODE_TYPE_BASE(ExpressionStatement)
+  DECLARE_NODE_TYPE_BASE(EmptyStatement)
+  DECLARE_NODE_TYPE_BASE(VariableStatement)
+  DECLARE_NODE_TYPE_BASE(DebuggerStatement)
+  DECLARE_NODE_TYPE_BASE(FunctionStatement)
+  DECLARE_NODE_TYPE_BASE(IfStatement)
+  DECLARE_NODE_TYPE_BASE(IterationStatement)
+  DECLARE_NODE_TYPE_BASE(DoWhileStatement)
+  DECLARE_NODE_TYPE_BASE(WhileStatement)
+  DECLARE_NODE_TYPE_BASE(ForStatement)
+  DECLARE_NODE_TYPE_BASE(ForInStatement)
+  DECLARE_NODE_TYPE_BASE(ContinueStatement)
+  DECLARE_NODE_TYPE_BASE(BreakStatement)
+  DECLARE_NODE_TYPE_BASE(ReturnStatement)
+  DECLARE_NODE_TYPE_BASE(WithStatement)
+  DECLARE_NODE_TYPE_BASE(LabelledStatement)
+  DECLARE_NODE_TYPE_BASE(SwitchStatement)
+  DECLARE_NODE_TYPE_BASE(ThrowStatement)
+  DECLARE_NODE_TYPE_BASE(TryStatement)
+  DECLARE_NODE_TYPE_BASE(BreakableStatement)
+  DECLARE_NODE_TYPE_BASE(NamedOnlyBreakableStatement)
+  DECLARE_NODE_TYPE_BASE(AnonymousBreakableStatement)
 
-  virtual Expression* AsExpression() { return NULL; }
-  virtual Literal* AsLiteral() { return NULL; }
-  virtual UnaryOperation* AsUnaryOperation() { return NULL; }
-  virtual Assignment* AsAssignment() { return NULL; }
-  virtual BinaryOperation* AsBinaryOperation() { return NULL; }
-  virtual ConditionalExpression* AsConditionalExpression() { return NULL; }
-  virtual PropertyAccess* AsPropertyAccess() { return NULL; }
-  virtual IdentifierAccess* AsIdentifierAccess() { return NULL; }
-  virtual IndexAccess* AsIndexAccess() { return NULL; }
-  virtual Call* AsCall() { return NULL; }
-  virtual FunctionCall* AsFunctionCall() { return NULL; }
-  virtual ConstructorCall* AsConstructorCall() { return NULL; }
+  DECLARE_NODE_TYPE_BASE(Expression)
+
+  DECLARE_NODE_TYPE_BASE(Literal)
+  DECLARE_NODE_TYPE_BASE(ThisLiteral)
+  DECLARE_NODE_TYPE_BASE(NullLiteral)
+  DECLARE_NODE_TYPE_BASE(FalseLiteral)
+  DECLARE_NODE_TYPE_BASE(TrueLiteral)
+  DECLARE_NODE_TYPE_BASE(Undefined)
+  DECLARE_NODE_TYPE_BASE(NumberLiteral)
+  DECLARE_NODE_TYPE_BASE(StringLiteral)
+  DECLARE_NODE_TYPE_BASE(Identifier)
+  DECLARE_NODE_TYPE_BASE(RegExpLiteral)
+  DECLARE_NODE_TYPE_BASE(ArrayLiteral)
+  DECLARE_NODE_TYPE_BASE(ObjectLiteral)
+  DECLARE_NODE_TYPE_BASE(FunctionLiteral)
+
+  DECLARE_NODE_TYPE_BASE(UnaryOperation)
+  DECLARE_NODE_TYPE_BASE(PostfixExpression)
+  DECLARE_NODE_TYPE_BASE(Assignment)
+  DECLARE_NODE_TYPE_BASE(BinaryOperation)
+  DECLARE_NODE_TYPE_BASE(ConditionalExpression)
+  DECLARE_NODE_TYPE_BASE(PropertyAccess)
+  DECLARE_NODE_TYPE_BASE(IdentifierAccess)
+  DECLARE_NODE_TYPE_BASE(IndexAccess)
+  DECLARE_NODE_TYPE_BASE(Call)
+  DECLARE_NODE_TYPE_BASE(FunctionCall)
+  DECLARE_NODE_TYPE_BASE(ConstructorCall)
 
   virtual void Accept(AstVisitor* visitor) = 0;
 };
 
+#undef DECLARE_NODE_TYPE_BASE
 //  Statement
 //    : Block
 //    | FunctionStatement
@@ -142,7 +163,7 @@ class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
 
 class Statement : public AstNode {
  public:
-  inline Statement* AsStatement() { return this; }
+  DECLARE_NODE_TYPE(Statement)
 };
 
 class BreakableStatement : public Statement {
@@ -154,34 +175,30 @@ class BreakableStatement : public Statement {
   Identifiers* labels() const {
     return labels_;
   }
-  BreakableStatement* AsBreakableStatement() { return this; }
+  DECLARE_NODE_TYPE(BreakableStatement)
  protected:
   Identifiers* labels_;
 };
 
 class NamedOnlyBreakableStatement : public BreakableStatement {
  public:
-  inline NamedOnlyBreakableStatement* AsNamedOnlyBreakableStatement() {
-    return this;
-  }
+  DECLARE_NODE_TYPE(NamedOnlyBreakableStatement)
 };
 
 class AnonymousBreakableStatement : public BreakableStatement {
  public:
-  inline AnonymousBreakableStatement* AsAnonymousBreakableStatement() {
-    return this;
-  }
+  DECLARE_NODE_TYPE(AnonymousBreakableStatement)
 };
 
 class Block : public NamedOnlyBreakableStatement {
  public:
   explicit Block(Space *factory);
   void AddStatement(Statement *stmt);
-  inline Block* AsBlock() { return this; }
-  ACCEPT_VISITOR
   inline const Statements& body() {
     return body_;
   }
+  ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(Block)
  private:
   Statements body_;
 };
@@ -189,11 +206,11 @@ class Block : public NamedOnlyBreakableStatement {
 class FunctionStatement : public Statement {
  public:
   explicit FunctionStatement(FunctionLiteral* func);
-  inline FunctionStatement* AsFunctionStatement() { return this; }
   inline FunctionLiteral* function() {
     return function_;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(FunctionStatement)
  private:
   FunctionLiteral* function_;
 };
@@ -202,7 +219,6 @@ class VariableStatement : public Statement {
  public:
   explicit VariableStatement(Token::Type type, Space* factory);
   void AddDeclaration(Declaration* decl);
-  inline VariableStatement* AsVariableStatement() { return this; }
   inline const Declarations& decls() {
     return decls_;
   }
@@ -210,6 +226,7 @@ class VariableStatement : public Statement {
     return is_const_;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(VariableStatement)
  private:
   const bool is_const_;
   Declarations decls_;
@@ -232,10 +249,11 @@ class Declaration : public AstNode {
 
 class EmptyStatement : public Statement {
  public:
-  inline EmptyStatement* AsEmptyStatement() { return this; }
   static inline EmptyStatement* New(Space* f) {
     return new (f) EmptyStatement();
   }
+
+  DECLARE_NODE_TYPE(EmptyStatement)
   ACCEPT_VISITOR
 };
 
@@ -243,11 +261,11 @@ class IfStatement : public Statement {
  public:
   IfStatement(Expression* cond, Statement* then);
   void SetElse(Statement* stmt);
-  inline IfStatement* AsIfStatement() { return this; }
   inline Expression* cond() { return cond_; }
   inline Statement* then_statement() { return then_; }
   inline Statement* else_statement() { return else_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(IfStatement)
  private:
   Expression* cond_;
   Statement* then_;
@@ -257,11 +275,11 @@ class IfStatement : public Statement {
 class IterationStatement : public AnonymousBreakableStatement {
  public:
   IterationStatement();
-  inline IterationStatement* AsIterationStatement() { return this; }
   inline Statement* body() { return body_; }
   inline void set_body(Statement* stmt) {
     body_ = stmt;
   }
+  DECLARE_NODE_TYPE(IterationStatement)
  private:
   Statement* body_;
 };
@@ -269,12 +287,12 @@ class IterationStatement : public AnonymousBreakableStatement {
 class DoWhileStatement : public IterationStatement {
  public:
   DoWhileStatement();
-  inline DoWhileStatement* AsDoWhileStatement() { return this; }
   inline Expression* cond() { return cond_; }
   inline void set_cond(Expression* expr) {
     cond_ = expr;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(DoWhileStatement)
  private:
   Expression* cond_;
 };
@@ -282,9 +300,9 @@ class DoWhileStatement : public IterationStatement {
 class WhileStatement : public IterationStatement {
  public:
   explicit WhileStatement(Expression* cond);
-  inline WhileStatement* AsWhileStatement() { return this; }
   inline Expression* cond() { return cond_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(WhileStatement)
  private:
   Expression* cond_;
 };
@@ -295,11 +313,11 @@ class ForStatement : public IterationStatement {
   inline void SetInit(Statement* init) { init_ = init; }
   inline void SetCondition(Expression* cond) { cond_ = cond; }
   inline void SetNext(Statement* next) { next_ = next; }
-  inline ForStatement* AsForStatement() { return this; }
   inline Statement* init() { return init_; }
   inline Expression* cond() { return cond_; }
   inline Statement* next() { return next_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ForStatement)
  private:
   Statement* init_;
   Expression* cond_;
@@ -309,10 +327,10 @@ class ForStatement : public IterationStatement {
 class ForInStatement : public IterationStatement {
  public:
   ForInStatement(Statement* each, Expression* enumerable);
-  inline ForInStatement* AsForInStatement() { return this; }
   inline Statement* each() { return each_; }
   inline Expression* enumerable() { return enumerable_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ForInStatement)
  private:
   Statement* each_;
   Expression* enumerable_;
@@ -323,10 +341,10 @@ class ContinueStatement : public Statement {
   ContinueStatement();
   void SetLabel(Identifier* label);
   void SetTarget(IterationStatement* target);
-  inline ContinueStatement* AsContinueStatement() { return this; }
   inline Identifier* label() { return label_; }
   inline IterationStatement* target() { return target_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ContinueStatement)
  private:
   Identifier* label_;
   IterationStatement* target_;
@@ -337,10 +355,10 @@ class BreakStatement : public Statement {
   BreakStatement();
   void SetLabel(Identifier* label);
   void SetTarget(BreakableStatement* target);
-  inline BreakStatement* AsBreakStatement() { return this; }
   inline Identifier* label() { return label_; }
   inline BreakableStatement* target() { return target_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(BreakStatement)
  private:
   Identifier* label_;
   BreakableStatement* target_;
@@ -349,9 +367,9 @@ class BreakStatement : public Statement {
 class ReturnStatement : public Statement {
  public:
   explicit ReturnStatement(Expression* expr);
-  inline ReturnStatement* AsReturnStatement() { return this; }
   inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ReturnStatement)
  private:
   Expression* expr_;
 };
@@ -359,10 +377,10 @@ class ReturnStatement : public Statement {
 class WithStatement : public Statement {
  public:
   WithStatement(Expression* context, Statement* body);
-  inline WithStatement* AsWithStatement() { return this; }
   inline Expression* context() { return context_; }
   inline Statement* body() { return body_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(WithStatement)
  private:
   Expression* context_;
   Statement* body_;
@@ -371,10 +389,10 @@ class WithStatement : public Statement {
 class LabelledStatement : public Statement {
  public:
   explicit LabelledStatement(Expression* expr, Statement* body);
-  inline LabelledStatement* AsLabelledStatement() { return this; }
   inline Identifier* label() { return label_; }
   inline Statement* body() { return body_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(LabelledStatement)
  private:
   Identifier* label_;
   Statement* body_;
@@ -407,10 +425,10 @@ class SwitchStatement : public AnonymousBreakableStatement {
   typedef List<CaseClause*>::type CaseClauses;
   explicit SwitchStatement(Expression* expr, Space* factory);
   void AddCaseClause(CaseClause* clause);
-  inline SwitchStatement* AsSwitchStatement() { return this; }
   inline Expression* expr() { return expr_; }
   inline const CaseClauses& clauses() { return clauses_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(SwitchStatement)
  private:
   Expression* expr_;
   CaseClauses clauses_;
@@ -419,9 +437,9 @@ class SwitchStatement : public AnonymousBreakableStatement {
 class ThrowStatement : public Statement {
  public:
   explicit ThrowStatement(Expression* expr);
-  inline ThrowStatement* AsThrowStatement() { return this; }
   inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ThrowStatement)
  private:
   Expression* expr_;
 };
@@ -431,12 +449,12 @@ class TryStatement : public Statement {
   explicit TryStatement(Block* block);
   void SetCatch(Identifier* name, Block* block);
   void SetFinally(Block* block);
-  inline TryStatement* AsTryStatement() { return this; }
   inline Block* body() { return body_; }
   inline Identifier* catch_name() { return catch_name_; }
   inline Block* catch_block() { return catch_block_; }
   inline Block* finally_block() { return finally_block_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(TryStatement)
  private:
   Block* body_;
   Identifier* catch_name_;
@@ -445,16 +463,16 @@ class TryStatement : public Statement {
 };
 
 class DebuggerStatement : public Statement {
-  inline DebuggerStatement* AsDebuggerStatement() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(DebuggerStatement)
 };
 
 class ExpressionStatement : public Statement {
  public:
   explicit ExpressionStatement(Expression* expr);
-  inline ExpressionStatement* AsExpressionStatement() { return this; }
   inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ExpressionStatement)
  private:
   Expression* expr_;
 };
@@ -463,17 +481,17 @@ class ExpressionStatement : public Statement {
 class Expression : public AstNode {
  public:
   inline virtual bool IsValidLeftHandSide() const { return false; }
-  inline Expression* AsExpression() { return this; }
+  DECLARE_NODE_TYPE(Expression)
 };
 
 class Assignment : public Expression {
  public:
   Assignment(Token::Type op, Expression* left, Expression* right);
-  inline Assignment* AsAssignment() { return this; }
   inline Token::Type op() { return op_; }
   inline Expression* left() { return left_; }
   inline Expression* right() { return right_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(Assignment)
  private:
   Token::Type op_;
   Expression* left_;
@@ -483,11 +501,11 @@ class Assignment : public Expression {
 class BinaryOperation : public Expression {
  public:
   BinaryOperation(Token::Type op, Expression* left, Expression* right);
-  inline BinaryOperation* AsBinaryOperation() { return this; }
   inline Token::Type op() { return op_; }
   inline Expression* left() { return left_; }
   inline Expression* right() { return right_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(BinaryOperation)
  private:
   Token::Type op_;
   Expression* left_;
@@ -497,11 +515,11 @@ class BinaryOperation : public Expression {
 class ConditionalExpression : public Expression {
  public:
   ConditionalExpression(Expression* cond, Expression* left, Expression* right);
-  inline ConditionalExpression* AsConditionalExpression() { return this; }
   inline Expression* cond() { return cond_; }
   inline Expression* left() { return left_; }
   inline Expression* right() { return right_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ConditionalExpression)
  private:
   Expression* cond_;
   Expression* left_;
@@ -511,10 +529,10 @@ class ConditionalExpression : public Expression {
 class UnaryOperation : public Expression {
  public:
   UnaryOperation(Token::Type op, Expression* expr);
-  inline UnaryOperation* AsUnaryOperation() { return this; }
   inline Token::Type op() { return op_; }
   inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(UnaryOperation)
  private:
   Token::Type op_;
   Expression* expr_;
@@ -523,10 +541,10 @@ class UnaryOperation : public Expression {
 class PostfixExpression : public Expression {
  public:
   PostfixExpression(Token::Type op, Expression* expr);
-  inline PostfixExpression* AsPostfixExpression() { return this; }
   inline Token::Type op() { return op_; }
   inline Expression* expr() { return expr_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(PostfixExpression)
  private:
   Token::Type op_;
   Expression* expr_;
@@ -546,30 +564,18 @@ class Undefined;
 
 class Literal : public Expression {
  public:
-  Literal* AsLiteral() { return this; }
   virtual ~Literal() = 0;
-  virtual ThisLiteral* AsThisLiteral() { return NULL; }
-  virtual NullLiteral* AsNullLiteral() { return NULL; }
-  virtual FalseLiteral* AsFalseLiteral() { return NULL; }
-  virtual TrueLiteral* AsTrueLiteral() { return NULL; }
-  virtual Undefined* AsUndefined() { return NULL; }
-  virtual NumberLiteral* AsNumberLiteral() { return NULL; }
-  virtual StringLiteral* AsStringLiteral() { return NULL; }
-  virtual Identifier* AsIdentifier() { return NULL; }
-  virtual RegExpLiteral* AsRegExpLiteral() { return NULL; }
-  virtual ArrayLiteral* AsArrayLiteral() { return NULL; }
-  virtual ObjectLiteral* AsObjectLiteral() { return NULL; }
-  virtual FunctionLiteral* AsFunctionLiteral() { return NULL; }
+  DECLARE_NODE_TYPE(Literal)
 };
 
 class StringLiteral : public Literal {
  public:
   explicit StringLiteral(const std::vector<UChar>& buffer, Space* factory);
-  inline StringLiteral* AsStringLiteral() { return this; }
   inline const SpaceUString& value() {
     return value_;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(StringLiteral)
  private:
   const SpaceUString value_;
 };
@@ -577,9 +583,9 @@ class StringLiteral : public Literal {
 class NumberLiteral : public Literal {
  public:
   explicit NumberLiteral(const double & val);
-  inline NumberLiteral* AsNumberLiteral() { return this; }
   inline double value() const { return value_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(NumberLiteral)
   static NumberLiteral* New(Space* f, const double & val) {
     return new (f) NumberLiteral(val);
   }
@@ -594,12 +600,12 @@ class Identifier : public Literal {
   explicit Identifier(const char* buffer, Space* factory);
   explicit Identifier(const std::vector<UChar>& buffer, Space* factory);
   explicit Identifier(const std::vector<char>& buffer, Space* factory);
-  inline Identifier* AsIdentifier() { return this; }
   inline const SpaceUString& value() const {
     return value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(Identifier)
  private:
   SpaceUString value_;
 };
@@ -610,7 +616,7 @@ class IdentifierKey {
   typedef IdentifierKey this_type;
   IdentifierKey(value_type* ident)  // NOLINT
     : ident_(ident) { }
-  IdentifierKey(const this_type& rhs)
+  IdentifierKey(const IdentifierKey& rhs)
     : ident_(rhs.ident_) { }
   inline const value_type::value_type& value() const {
     return ident_->value();
@@ -640,8 +646,8 @@ class IdentifierKey {
 
 class ThisLiteral : public Literal {
  public:
-  inline ThisLiteral* AsThisLiteral() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ThisLiteral)
   static ThisLiteral* New(Space* f) {
     return new (f) ThisLiteral();
   }
@@ -649,8 +655,8 @@ class ThisLiteral : public Literal {
 
 class NullLiteral : public Literal {
  public:
-  inline NullLiteral* AsNullLiteral() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(NullLiteral)
   static NullLiteral* New(Space* f) {
     return new (f) NullLiteral();
   }
@@ -658,8 +664,8 @@ class NullLiteral : public Literal {
 
 class TrueLiteral : public Literal {
  public:
-  inline TrueLiteral* AsTrueLiteral() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(TrueLiteral)
   static TrueLiteral* New(Space* f) {
     return new (f) TrueLiteral();
   }
@@ -667,8 +673,8 @@ class TrueLiteral : public Literal {
 
 class FalseLiteral : public Literal {
  public:
-  inline FalseLiteral* AsFalseLiteral() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(FalseLiteral)
   static FalseLiteral* New(Space* f) {
     return new (f) FalseLiteral();
   }
@@ -676,8 +682,8 @@ class FalseLiteral : public Literal {
 
 class Undefined : public Literal {
  public:
-  inline Undefined* AsUndefined() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(Undefined)
   static inline Undefined* New(Space* f) {
     return new (f) Undefined();
   }
@@ -686,11 +692,11 @@ class Undefined : public Literal {
 class RegExpLiteral : public Literal {
  public:
   explicit RegExpLiteral(const std::vector<UChar>& buffer, Space* factory);
-  inline RegExpLiteral* AsRegExpLiteral() { return this; }
   void SetFlags(const std::vector<UChar>& buffer);
   inline const SpaceUString& value() { return value_; }
   inline const SpaceUString& flags() { return flags_; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(RegExpLiteral)
  private:
   SpaceUString value_;
   SpaceUString flags_;
@@ -699,7 +705,6 @@ class RegExpLiteral : public Literal {
 class ArrayLiteral : public Literal {
  public:
   explicit ArrayLiteral(Space* factory);
-  inline ArrayLiteral* AsArrayLiteral() { return this; }
   inline void AddItem(Expression* expr) {
     items_.push_back(expr);
   }
@@ -707,6 +712,7 @@ class ArrayLiteral : public Literal {
     return items_;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ArrayLiteral)
  private:
   Expressions items_;
 };
@@ -731,13 +737,11 @@ class ObjectLiteral : public Literal {
                           Identifier* key, Expression* val) {
     AddPropertyDescriptor(type, key, val);
   }
-
-  inline ObjectLiteral* AsObjectLiteral() { return this; }
-  inline
-  const Properties& properties() {
+  inline const Properties& properties() {
     return properties_;
   }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ObjectLiteral)
  private:
   inline void AddPropertyDescriptor(PropertyDescriptorType type,
                                     Identifier* key,
@@ -761,7 +765,6 @@ class FunctionLiteral : public Literal {
     GETTER
   };
   FunctionLiteral(DeclType type, Space* factory);
-  inline FunctionLiteral* AsFunctionLiteral() { return this; }
   inline void SetName(Identifier* name) { name_ = name; }
   inline Identifier* name() const {
     return name_;
@@ -798,11 +801,13 @@ class FunctionLiteral : public Literal {
     source_ = src;
   }
   inline UStringPiece GetSource() const {
-    return source_->SubString(start_position_, end_position_ - start_position_ + 1);
+    return source_->SubString(start_position_,
+                              end_position_ - start_position_ + 1);
   }
   void AddParameter(Identifier* param);
   void AddStatement(Statement* stmt);
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(FunctionLiteral)
  private:
   Identifier* name_;
   DeclType type_;
@@ -819,7 +824,7 @@ class PropertyAccess : public Expression {
  public:
   inline bool IsValidLeftHandSide() const { return true; }
   inline Expression* target() { return target_; }
-  inline PropertyAccess* AsPropertyAccess() { return this; }
+  DECLARE_NODE_TYPE(PropertyAccess)
  protected:
   explicit PropertyAccess(Expression* obj);
   Expression* target_;
@@ -832,8 +837,8 @@ class IdentifierAccess : public PropertyAccess {
       key_(key) {
   }
   inline Identifier* key() { return key_; }
-  inline IdentifierAccess* AsIdentifierAccess() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(IdentifierAccess)
  private:
   Identifier* key_;
 };
@@ -845,7 +850,7 @@ class IndexAccess : public PropertyAccess {
       key_(key) {
   }
   inline Expression* key() { return key_; }
-  inline IndexAccess* AsIndexAccess() { return this; }
+  DECLARE_NODE_TYPE(IndexAccess)
   ACCEPT_VISITOR
  private:
   Expression* key_;
@@ -856,9 +861,9 @@ class Call : public Expression {
   inline bool IsValidLeftHandSide() const { return true; }
   explicit Call(Expression* target, Space* factory);
   void AddArgument(Expression* expr) { args_.push_back(expr); }
-  inline Call* AsCall() { return this; }
   inline Expression* target() { return target_; }
   inline const Expressions& args() { return args_; }
+  DECLARE_NODE_TYPE(Call)
  protected:
   Expression* target_;
   Expressions args_;
@@ -867,15 +872,15 @@ class Call : public Expression {
 class FunctionCall : public Call {
  public:
   explicit FunctionCall(Expression* target, Space* factory);
-  inline FunctionCall* AsFunctionCall() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(FunctionCall)
 };
 
 class ConstructorCall : public Call {
  public:
   explicit ConstructorCall(Expression* target, Space* factory);
-  inline ConstructorCall* AsConstructorCall() { return this; }
   ACCEPT_VISITOR
+  DECLARE_NODE_TYPE(ConstructorCall)
 };
 
 } }  // namespace iv::core
@@ -892,6 +897,10 @@ struct hash<iv::core::IdentifierKey>
     return hash<argument_type::value_type::value_type>()(x.value());
   }
 };
+
+#undef ACCEPT_VISITOR
+#undef DECLARE_NODE_TYPE
+#undef DECLARE_NODE_TYPE_BASE
 
 } }  // namespace std::tr1
 #endif  // _IV_AST_H_
