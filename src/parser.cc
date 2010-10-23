@@ -87,8 +87,7 @@ Parser::Parser(Source* source, AstFactory* space)
     space_(space),
     scope_(NULL),
     target_(NULL),
-    labels_(NULL),
-    resolved_check_stack_() {
+    labels_(NULL) {
 }
 
 // Program
@@ -894,6 +893,12 @@ Expression* Parser::ParseAssignmentExpression(bool contains_in, bool *res) {
   if (result == NULL || !result->IsValidLeftHandSide()) {
     FAIL();
   }
+  // section 11.13.1 throwing SyntaxError
+  if (strict_ &&
+      result->AsLiteral() && result->AsLiteral()->AsIdentifier() &&
+      IsEvalOrArguments(result->AsLiteral()->AsIdentifier())) {
+    FAIL();
+  }
   const Token::Type op = token_;
   Next();
   Expression *right = ParseAssignmentExpression(contains_in, CHECK);
@@ -1170,9 +1175,22 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
     case Token::VOID:
     case Token::NOT:
     case Token::TYPEOF:
-    case Token::DELETE:
       Next();
       expr = ParseUnaryExpression(CHECK);
+      result = NEW(UnaryOperation(op, expr));
+      break;
+
+    case Token::DELETE:
+      // a strict mode restriction in sec 11.4.1
+      // raise SyntaxError when target is direct reference to a variable,
+      // function argument, or function name
+      Next();
+      expr = ParseUnaryExpression(CHECK);
+      if (strict_ &&
+          expr->AsLiteral() &&
+          expr->AsLiteral()->AsIdentifier()) {
+        FAIL();
+      }
       result = NEW(UnaryOperation(op, expr));
       break;
 
@@ -1216,6 +1234,12 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
       if (expr == NULL || !expr->IsValidLeftHandSide()) {
         FAIL();
       }
+      // section 11.4.4, 11.4.5 throwing SyntaxError
+      if (strict_ &&
+          expr->AsLiteral() && expr->AsLiteral()->AsIdentifier() &&
+          IsEvalOrArguments(expr->AsLiteral()->AsIdentifier())) {
+        FAIL();
+      }
       result = NEW(UnaryOperation(op, expr));
       break;
 
@@ -1236,6 +1260,12 @@ Expression* Parser::ParsePostfixExpression(bool *res) {
   if (!lexer_.has_line_terminator_before_next() &&
       (token_ == Token::INC || token_ == Token::DEC)) {
     if (expr == NULL || !expr->IsValidLeftHandSide()) {
+      FAIL();
+    }
+    // section 11.3.1, 11.3.2 throwing SyntaxError
+    if (strict_ &&
+        expr->AsLiteral() && expr->AsLiteral()->AsIdentifier() &&
+        IsEvalOrArguments(expr->AsLiteral()->AsIdentifier())) {
       FAIL();
     }
     expr = NEW(PostfixExpression(token_, expr));
@@ -1756,33 +1786,6 @@ void Parser::ReportUnexpectedToken() {
     default:
       break;
   }
-}
-
-void Parser::UnresolvedCheck() {
-  std::tr1::unordered_set<IdentifierKey> idents;
-  for (Scope::Variables::const_iterator
-       it = scope_->variables().begin(),
-       last = scope_->variables().end(); it != last; ++it) {
-    idents.insert(it->first);
-  }
-  for (Scope::FunctionLiterals::const_iterator
-       it = scope_->function_declarations().begin(),
-       last = scope_->function_declarations().begin(); it != last; ++it) {
-    idents.insert((*it)->name());
-  }
-  resolved_check_stack_.erase(
-      std::remove_if(resolved_check_stack_.begin(),
-                     resolved_check_stack_.end(),
-                     std::tr1::bind(RemoveResolved,
-                                    idents,
-                                    std::tr1::placeholders::_1)),
-      resolved_check_stack_.end());
-}
-
-bool Parser::RemoveResolved(
-    const std::tr1::unordered_set<IdentifierKey>& idents,
-    const Unresolveds::value_type& target) {
-  return idents.find(target.first) != idents.end();
 }
 
 bool Parser::IsEvalOrArguments(const Identifier* ident) {

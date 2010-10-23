@@ -14,7 +14,6 @@ namespace core {
 
 class Parser : private Noncopyable<Parser>::type {
  protected:
-  typedef std::vector<std::pair<Identifier*, std::size_t> > Unresolveds;
   class Target : private Noncopyable<Target>::type {
    public:
     Target(Parser* parser, BreakableStatement* target)
@@ -158,7 +157,6 @@ class Parser : private Noncopyable<Parser>::type {
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
-  void UnresolvedCheck();
 
  protected:
   class ScopeSwitcher : private Noncopyable<ScopeSwitcher>::type {
@@ -170,7 +168,6 @@ class Parser : private Noncopyable<Parser>::type {
     }
     ~ScopeSwitcher() {
       assert(parser_->scope() != NULL);
-      parser_->UnresolvedCheck();
       parser_->set_scope(parser_->scope()->GetUpperScope());
     }
    private:
@@ -212,9 +209,6 @@ class Parser : private Noncopyable<Parser>::type {
   };
 
   static bool IsEvalOrArguments(const Identifier* ident);
-  static bool RemoveResolved(
-      const std::tr1::unordered_set<IdentifierKey>& idents,
-      const Unresolveds::value_type& target);
 
   Lexer lexer_;
   Token::Type token_;
@@ -224,7 +218,6 @@ class Parser : private Noncopyable<Parser>::type {
   Scope* scope_;
   Target* target_;
   AstNode::Identifiers* labels_;
-  Unresolveds resolved_check_stack_;
 };
 
 } }  // namespace iv::core
