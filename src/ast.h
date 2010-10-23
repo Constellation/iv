@@ -20,6 +20,9 @@ namespace core {
 #define ACCEPT_VISITOR \
   inline void Accept(AstVisitor* visitor) {\
     visitor->Visit(this);\
+  }\
+  inline void Accept(ConstAstVisitor* visitor) const {\
+    visitor->Visit(this);\
   }
 
 #define DECLARE_NODE_TYPE(type) \
@@ -72,6 +75,18 @@ class Identifier;
 class Declaration;
 
 class AstFactory;
+
+class ThisLiteral;
+class NullLiteral;
+class TrueLiteral;
+class FalseLiteral;
+class NumberLiteral;
+class StringLiteral;
+class RegExpLiteral;
+class ArrayLiteral;
+class ObjectLiteral;
+class FunctionLiteral;
+class Undefined;
 
 class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
  public:
@@ -140,6 +155,7 @@ class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
   DECLARE_NODE_TYPE_BASE(ConstructorCall)
 
   virtual void Accept(AstVisitor* visitor) = 0;
+  virtual void Accept(ConstAstVisitor* visitor) const = 0;
 };
 
 #undef DECLARE_NODE_TYPE_BASE
@@ -194,7 +210,7 @@ class Block : public NamedOnlyBreakableStatement {
  public:
   explicit Block(Space *factory);
   void AddStatement(Statement *stmt);
-  inline const Statements& body() {
+  inline const Statements& body() const {
     return body_;
   }
   ACCEPT_VISITOR
@@ -206,7 +222,7 @@ class Block : public NamedOnlyBreakableStatement {
 class FunctionStatement : public Statement {
  public:
   explicit FunctionStatement(FunctionLiteral* func);
-  inline FunctionLiteral* function() {
+  inline FunctionLiteral* function() const {
     return function_;
   }
   ACCEPT_VISITOR
@@ -219,7 +235,7 @@ class VariableStatement : public Statement {
  public:
   explicit VariableStatement(Token::Type type, Space* factory);
   void AddDeclaration(Declaration* decl);
-  inline const Declarations& decls() {
+  inline const Declarations& decls() const {
     return decls_;
   }
   inline bool IsConst() const {
@@ -261,9 +277,9 @@ class IfStatement : public Statement {
  public:
   IfStatement(Expression* cond, Statement* then);
   void SetElse(Statement* stmt);
-  inline Expression* cond() { return cond_; }
-  inline Statement* then_statement() { return then_; }
-  inline Statement* else_statement() { return else_; }
+  inline Expression* cond() const { return cond_; }
+  inline Statement* then_statement() const { return then_; }
+  inline Statement* else_statement() const { return else_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(IfStatement)
  private:
@@ -275,7 +291,7 @@ class IfStatement : public Statement {
 class IterationStatement : public AnonymousBreakableStatement {
  public:
   IterationStatement();
-  inline Statement* body() { return body_; }
+  inline Statement* body() const { return body_; }
   inline void set_body(Statement* stmt) {
     body_ = stmt;
   }
@@ -287,7 +303,7 @@ class IterationStatement : public AnonymousBreakableStatement {
 class DoWhileStatement : public IterationStatement {
  public:
   DoWhileStatement();
-  inline Expression* cond() { return cond_; }
+  inline Expression* cond() const { return cond_; }
   inline void set_cond(Expression* expr) {
     cond_ = expr;
   }
@@ -300,7 +316,7 @@ class DoWhileStatement : public IterationStatement {
 class WhileStatement : public IterationStatement {
  public:
   explicit WhileStatement(Expression* cond);
-  inline Expression* cond() { return cond_; }
+  inline Expression* cond() const { return cond_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(WhileStatement)
  private:
@@ -313,9 +329,9 @@ class ForStatement : public IterationStatement {
   inline void SetInit(Statement* init) { init_ = init; }
   inline void SetCondition(Expression* cond) { cond_ = cond; }
   inline void SetNext(Statement* next) { next_ = next; }
-  inline Statement* init() { return init_; }
-  inline Expression* cond() { return cond_; }
-  inline Statement* next() { return next_; }
+  inline Statement* init() const { return init_; }
+  inline Expression* cond() const { return cond_; }
+  inline Statement* next() const { return next_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ForStatement)
  private:
@@ -327,8 +343,8 @@ class ForStatement : public IterationStatement {
 class ForInStatement : public IterationStatement {
  public:
   ForInStatement(Statement* each, Expression* enumerable);
-  inline Statement* each() { return each_; }
-  inline Expression* enumerable() { return enumerable_; }
+  inline Statement* each() const { return each_; }
+  inline Expression* enumerable() const { return enumerable_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ForInStatement)
  private:
@@ -341,8 +357,8 @@ class ContinueStatement : public Statement {
   ContinueStatement();
   void SetLabel(Identifier* label);
   void SetTarget(IterationStatement* target);
-  inline Identifier* label() { return label_; }
-  inline IterationStatement* target() { return target_; }
+  inline Identifier* label() const { return label_; }
+  inline IterationStatement* target() const { return target_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ContinueStatement)
  private:
@@ -355,8 +371,8 @@ class BreakStatement : public Statement {
   BreakStatement();
   void SetLabel(Identifier* label);
   void SetTarget(BreakableStatement* target);
-  inline Identifier* label() { return label_; }
-  inline BreakableStatement* target() { return target_; }
+  inline Identifier* label() const { return label_; }
+  inline BreakableStatement* target() const { return target_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(BreakStatement)
  private:
@@ -367,7 +383,7 @@ class BreakStatement : public Statement {
 class ReturnStatement : public Statement {
  public:
   explicit ReturnStatement(Expression* expr);
-  inline Expression* expr() { return expr_; }
+  inline Expression* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ReturnStatement)
  private:
@@ -377,8 +393,8 @@ class ReturnStatement : public Statement {
 class WithStatement : public Statement {
  public:
   WithStatement(Expression* context, Statement* body);
-  inline Expression* context() { return context_; }
-  inline Statement* body() { return body_; }
+  inline Expression* context() const { return context_; }
+  inline Statement* body() const { return body_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(WithStatement)
  private:
@@ -389,8 +405,8 @@ class WithStatement : public Statement {
 class LabelledStatement : public Statement {
  public:
   explicit LabelledStatement(Expression* expr, Statement* body);
-  inline Identifier* label() { return label_; }
-  inline Statement* body() { return body_; }
+  inline Identifier* label() const { return label_; }
+  inline Statement* body() const { return body_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(LabelledStatement)
  private:
@@ -425,8 +441,8 @@ class SwitchStatement : public AnonymousBreakableStatement {
   typedef List<CaseClause*>::type CaseClauses;
   explicit SwitchStatement(Expression* expr, Space* factory);
   void AddCaseClause(CaseClause* clause);
-  inline Expression* expr() { return expr_; }
-  inline const CaseClauses& clauses() { return clauses_; }
+  inline Expression* expr() const { return expr_; }
+  inline const CaseClauses& clauses() const { return clauses_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(SwitchStatement)
  private:
@@ -437,7 +453,7 @@ class SwitchStatement : public AnonymousBreakableStatement {
 class ThrowStatement : public Statement {
  public:
   explicit ThrowStatement(Expression* expr);
-  inline Expression* expr() { return expr_; }
+  inline Expression* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ThrowStatement)
  private:
@@ -449,10 +465,10 @@ class TryStatement : public Statement {
   explicit TryStatement(Block* block);
   void SetCatch(Identifier* name, Block* block);
   void SetFinally(Block* block);
-  inline Block* body() { return body_; }
-  inline Identifier* catch_name() { return catch_name_; }
-  inline Block* catch_block() { return catch_block_; }
-  inline Block* finally_block() { return finally_block_; }
+  inline Block* body() const { return body_; }
+  inline Identifier* catch_name() const { return catch_name_; }
+  inline Block* catch_block() const { return catch_block_; }
+  inline Block* finally_block() const { return finally_block_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(TryStatement)
  private:
@@ -470,7 +486,7 @@ class DebuggerStatement : public Statement {
 class ExpressionStatement : public Statement {
  public:
   explicit ExpressionStatement(Expression* expr);
-  inline Expression* expr() { return expr_; }
+  inline Expression* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ExpressionStatement)
  private:
@@ -487,9 +503,9 @@ class Expression : public AstNode {
 class Assignment : public Expression {
  public:
   Assignment(Token::Type op, Expression* left, Expression* right);
-  inline Token::Type op() { return op_; }
-  inline Expression* left() { return left_; }
-  inline Expression* right() { return right_; }
+  inline Token::Type op() const { return op_; }
+  inline Expression* left() const { return left_; }
+  inline Expression* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Assignment)
  private:
@@ -501,9 +517,9 @@ class Assignment : public Expression {
 class BinaryOperation : public Expression {
  public:
   BinaryOperation(Token::Type op, Expression* left, Expression* right);
-  inline Token::Type op() { return op_; }
-  inline Expression* left() { return left_; }
-  inline Expression* right() { return right_; }
+  inline Token::Type op() const { return op_; }
+  inline Expression* left() const { return left_; }
+  inline Expression* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(BinaryOperation)
  private:
@@ -515,9 +531,9 @@ class BinaryOperation : public Expression {
 class ConditionalExpression : public Expression {
  public:
   ConditionalExpression(Expression* cond, Expression* left, Expression* right);
-  inline Expression* cond() { return cond_; }
-  inline Expression* left() { return left_; }
-  inline Expression* right() { return right_; }
+  inline Expression* cond() const { return cond_; }
+  inline Expression* left() const { return left_; }
+  inline Expression* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ConditionalExpression)
  private:
@@ -529,8 +545,8 @@ class ConditionalExpression : public Expression {
 class UnaryOperation : public Expression {
  public:
   UnaryOperation(Token::Type op, Expression* expr);
-  inline Token::Type op() { return op_; }
-  inline Expression* expr() { return expr_; }
+  inline Token::Type op() const { return op_; }
+  inline Expression* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(UnaryOperation)
  private:
@@ -541,26 +557,14 @@ class UnaryOperation : public Expression {
 class PostfixExpression : public Expression {
  public:
   PostfixExpression(Token::Type op, Expression* expr);
-  inline Token::Type op() { return op_; }
-  inline Expression* expr() { return expr_; }
+  inline Token::Type op() const { return op_; }
+  inline Expression* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(PostfixExpression)
  private:
   Token::Type op_;
   Expression* expr_;
 };
-
-class ThisLiteral;
-class NullLiteral;
-class TrueLiteral;
-class FalseLiteral;
-class NumberLiteral;
-class StringLiteral;
-class RegExpLiteral;
-class ArrayLiteral;
-class ObjectLiteral;
-class FunctionLiteral;
-class Undefined;
 
 class Literal : public Expression {
  public:
@@ -571,7 +575,7 @@ class Literal : public Expression {
 class StringLiteral : public Literal {
  public:
   explicit StringLiteral(const std::vector<UChar>& buffer, Space* factory);
-  inline const SpaceUString& value() {
+  inline const SpaceUString& value() const {
     return value_;
   }
   ACCEPT_VISITOR
@@ -693,8 +697,8 @@ class RegExpLiteral : public Literal {
  public:
   explicit RegExpLiteral(const std::vector<UChar>& buffer, Space* factory);
   void SetFlags(const std::vector<UChar>& buffer);
-  inline const SpaceUString& value() { return value_; }
-  inline const SpaceUString& flags() { return flags_; }
+  inline const SpaceUString& value() const { return value_; }
+  inline const SpaceUString& flags() const { return flags_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(RegExpLiteral)
  private:
@@ -708,7 +712,7 @@ class ArrayLiteral : public Literal {
   inline void AddItem(Expression* expr) {
     items_.push_back(expr);
   }
-  inline const Expressions& items() {
+  inline const Expressions& items() const {
     return items_;
   }
   ACCEPT_VISITOR
@@ -737,7 +741,7 @@ class ObjectLiteral : public Literal {
                           Identifier* key, Expression* val) {
     AddPropertyDescriptor(type, key, val);
   }
-  inline const Properties& properties() {
+  inline const Properties& properties() const {
     return properties_;
   }
   ACCEPT_VISITOR
@@ -778,6 +782,9 @@ class FunctionLiteral : public Literal {
   }
   inline Scope* scope() {
     return &scope_;
+  }
+  inline const Scope& scope() const {
+    return scope_;
   }
   inline void set_start_position(std::size_t start) {
     start_position_ = start;
@@ -823,7 +830,7 @@ class FunctionLiteral : public Literal {
 class PropertyAccess : public Expression {
  public:
   inline bool IsValidLeftHandSide() const { return true; }
-  inline Expression* target() { return target_; }
+  inline Expression* target() const { return target_; }
   DECLARE_NODE_TYPE(PropertyAccess)
  protected:
   explicit PropertyAccess(Expression* obj);
@@ -836,7 +843,7 @@ class IdentifierAccess : public PropertyAccess {
     : PropertyAccess(obj),
       key_(key) {
   }
-  inline Identifier* key() { return key_; }
+  inline Identifier* key() const { return key_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(IdentifierAccess)
  private:
@@ -849,7 +856,7 @@ class IndexAccess : public PropertyAccess {
     : PropertyAccess(obj),
       key_(key) {
   }
-  inline Expression* key() { return key_; }
+  inline Expression* key() const { return key_; }
   DECLARE_NODE_TYPE(IndexAccess)
   ACCEPT_VISITOR
  private:
@@ -861,8 +868,8 @@ class Call : public Expression {
   inline bool IsValidLeftHandSide() const { return true; }
   explicit Call(Expression* target, Space* factory);
   void AddArgument(Expression* expr) { args_.push_back(expr); }
-  inline Expression* target() { return target_; }
-  inline const Expressions& args() { return args_; }
+  inline Expression* target() const { return target_; }
+  inline const Expressions& args() const { return args_; }
   DECLARE_NODE_TYPE(Call)
  protected:
   Expression* target_;

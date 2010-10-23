@@ -9,7 +9,7 @@
 namespace iv {
 namespace core {
 
-class AstSerializer: public AstVisitor {
+class AstSerializer: public ConstAstVisitor {
  public:
 
   friend std::ostream& operator<<(std::ostream& os, const AstSerializer& out);
@@ -24,48 +24,48 @@ class AstSerializer: public AstVisitor {
   void Append(const UStringPiece& str);
   void Append(UChar c);
   void Append(char c);
-  void Visit(Block* block);
-  void Visit(FunctionStatement* func);
-  void Visit(VariableStatement* var);
-  void Visit(Declaration* decl);
-  void Visit(EmptyStatement* empty);
-  void Visit(IfStatement* ifstmt);
-  void Visit(DoWhileStatement* dowhile);
-  void Visit(WhileStatement* whilestmt);
-  void Visit(ForStatement* forstmt);
-  void Visit(ForInStatement* forstmt);
-  void Visit(ContinueStatement* continuestmt);
-  void Visit(BreakStatement* breakstmt);
-  void Visit(ReturnStatement* returnstmt);
-  void Visit(WithStatement* withstmt);
-  void Visit(LabelledStatement* labelledstmt);
-  void Visit(CaseClause* clause);
-  void Visit(SwitchStatement* switchstmt);
-  void Visit(ThrowStatement* throwstmt);
-  void Visit(TryStatement* trystmt);
-  void Visit(DebuggerStatement* debuggerstmt);
-  void Visit(ExpressionStatement* exprstmt);
-  void Visit(Assignment* assign);
-  void Visit(BinaryOperation* binary);
-  void Visit(ConditionalExpression* cond);
-  void Visit(UnaryOperation* unary);
-  void Visit(PostfixExpression* postfix);
-  void Visit(StringLiteral* literal);
-  void Visit(NumberLiteral* literal);
-  void Visit(Identifier* literal);
-  void Visit(ThisLiteral* literal);
-  void Visit(NullLiteral* literal);
-  void Visit(TrueLiteral* literal);
-  void Visit(FalseLiteral* literal);
-  void Visit(Undefined* literal);
-  void Visit(RegExpLiteral* literal);
-  void Visit(ArrayLiteral* literal);
-  void Visit(ObjectLiteral* literal);
-  void Visit(FunctionLiteral* literal);
-  void Visit(IdentifierAccess* prop);
-  void Visit(IndexAccess* prop);
-  void Visit(FunctionCall* call);
-  void Visit(ConstructorCall* call);
+  void Visit(const Block* block);
+  void Visit(const FunctionStatement* func);
+  void Visit(const VariableStatement* var);
+  void Visit(const Declaration* decl);
+  void Visit(const EmptyStatement* empty);
+  void Visit(const IfStatement* ifstmt);
+  void Visit(const DoWhileStatement* dowhile);
+  void Visit(const WhileStatement* whilestmt);
+  void Visit(const ForStatement* forstmt);
+  void Visit(const ForInStatement* forstmt);
+  void Visit(const ContinueStatement* continuestmt);
+  void Visit(const BreakStatement* breakstmt);
+  void Visit(const ReturnStatement* returnstmt);
+  void Visit(const WithStatement* withstmt);
+  void Visit(const LabelledStatement* labelledstmt);
+  void Visit(const CaseClause* clause);
+  void Visit(const SwitchStatement* switchstmt);
+  void Visit(const ThrowStatement* throwstmt);
+  void Visit(const TryStatement* trystmt);
+  void Visit(const DebuggerStatement* debuggerstmt);
+  void Visit(const ExpressionStatement* exprstmt);
+  void Visit(const Assignment* assign);
+  void Visit(const BinaryOperation* binary);
+  void Visit(const ConditionalExpression* cond);
+  void Visit(const UnaryOperation* unary);
+  void Visit(const PostfixExpression* postfix);
+  void Visit(const StringLiteral* literal);
+  void Visit(const NumberLiteral* literal);
+  void Visit(const Identifier* literal);
+  void Visit(const ThisLiteral* literal);
+  void Visit(const NullLiteral* literal);
+  void Visit(const TrueLiteral* literal);
+  void Visit(const FalseLiteral* literal);
+  void Visit(const Undefined* literal);
+  void Visit(const RegExpLiteral* literal);
+  void Visit(const ArrayLiteral* literal);
+  void Visit(const ObjectLiteral* literal);
+  void Visit(const FunctionLiteral* literal);
+  void Visit(const IdentifierAccess* prop);
+  void Visit(const IndexAccess* prop);
+  void Visit(const FunctionCall* call);
+  void Visit(const ConstructorCall* call);
 
  private:
   template <class Iter>

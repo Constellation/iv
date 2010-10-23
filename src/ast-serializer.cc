@@ -25,7 +25,7 @@ void AstSerializer::Append(char c) {
   out_.push_back(c);
 }
 
-void AstSerializer::Visit(Block* block) {
+void AstSerializer::Visit(const Block* block) {
   Append("{\"type\":\"block\",\"body\":[");
   AstNode::Statements::const_iterator it = block->body().begin();
   const AstNode::Statements::const_iterator end = block->body().end();
@@ -39,13 +39,13 @@ void AstSerializer::Visit(Block* block) {
   Append("]}");
 }
 
-void AstSerializer::Visit(FunctionStatement* func) {
+void AstSerializer::Visit(const FunctionStatement* func) {
   Append("{\"type\":\"function_statement\",\"def\":");
   func->function()->Accept(this);
   Append('}');
 }
 
-void AstSerializer::Visit(VariableStatement* var) {
+void AstSerializer::Visit(const VariableStatement* var) {
   Append("{\"type\":");
   if (var->IsConst()) {
     Append("\"const\",\"decls\":[");
@@ -64,7 +64,7 @@ void AstSerializer::Visit(VariableStatement* var) {
   Append("]}");
 }
 
-void AstSerializer::Visit(Declaration* decl) {
+void AstSerializer::Visit(const Declaration* decl) {
   Append("{\"type\":\"decl\",\"name\":");
   decl->name()->Accept(this);
   Append(",\"exp\":");
@@ -74,11 +74,11 @@ void AstSerializer::Visit(Declaration* decl) {
   Append('}');
 }
 
-void AstSerializer::Visit(EmptyStatement* empty) {
+void AstSerializer::Visit(const EmptyStatement* empty) {
   Append("{\"type\":\"empty\"}");
 }
 
-void AstSerializer::Visit(IfStatement* ifstmt) {
+void AstSerializer::Visit(const IfStatement* ifstmt) {
   Append("{\"type\":\"if\",\"cond\":");
   ifstmt->cond()->Accept(this);
   Append(",\"body\":");
@@ -90,7 +90,7 @@ void AstSerializer::Visit(IfStatement* ifstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(DoWhileStatement* dowhile) {
+void AstSerializer::Visit(const DoWhileStatement* dowhile) {
   Append("{\"type\":\"dowhile\",\"cond\":");
   dowhile->cond()->Accept(this);
   Append(",\"body\":");
@@ -98,7 +98,7 @@ void AstSerializer::Visit(DoWhileStatement* dowhile) {
   Append('}');
 }
 
-void AstSerializer::Visit(WhileStatement* whilestmt) {
+void AstSerializer::Visit(const WhileStatement* whilestmt) {
   Append("{\"type\":\"while\",\"cond\":");
   whilestmt->cond()->Accept(this);
   Append(",\"body\":");
@@ -106,7 +106,7 @@ void AstSerializer::Visit(WhileStatement* whilestmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(ForStatement* forstmt) {
+void AstSerializer::Visit(const ForStatement* forstmt) {
   Append("{\"type\":\"for\"");
   if (forstmt->init() != NULL) {
     Append(",\"init\":");
@@ -125,7 +125,7 @@ void AstSerializer::Visit(ForStatement* forstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(ForInStatement* forstmt) {
+void AstSerializer::Visit(const ForInStatement* forstmt) {
   Append("{\"type\":\"forin\",\"each\":");
   forstmt->each()->Accept(this);
   Append(",\"enumerable\":");
@@ -135,7 +135,7 @@ void AstSerializer::Visit(ForInStatement* forstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(ContinueStatement* continuestmt) {
+void AstSerializer::Visit(const ContinueStatement* continuestmt) {
   Append("{\"type\":\"continue\"");
   if (continuestmt->label()) {
     Append(",\"label\":");
@@ -144,7 +144,7 @@ void AstSerializer::Visit(ContinueStatement* continuestmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(BreakStatement* breakstmt) {
+void AstSerializer::Visit(const BreakStatement* breakstmt) {
   Append("{\"type\":\"break\"");
   if (breakstmt->label()) {
     Append(",\"label\":");
@@ -153,13 +153,13 @@ void AstSerializer::Visit(BreakStatement* breakstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(ReturnStatement* returnstmt) {
+void AstSerializer::Visit(const ReturnStatement* returnstmt) {
   Append("{\"type\":\"return\",\"exp\":");
   returnstmt->expr()->Accept(this);
   Append('}');
 }
 
-void AstSerializer::Visit(WithStatement* withstmt) {
+void AstSerializer::Visit(const WithStatement* withstmt) {
   Append("{\"type\":\"with\",\"context\":");
   withstmt->context()->Accept(this);
   Append(",\"body\":");
@@ -167,7 +167,7 @@ void AstSerializer::Visit(WithStatement* withstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(LabelledStatement* labelledstmt) {
+void AstSerializer::Visit(const LabelledStatement* labelledstmt) {
   Append("{\"type\":\"labelled\",\"label\":");
   labelledstmt->label()->Accept(this);
   Append(",\"body\":");
@@ -175,7 +175,7 @@ void AstSerializer::Visit(LabelledStatement* labelledstmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(CaseClause* clause) {
+void AstSerializer::Visit(const CaseClause* clause) {
   if (clause->IsDefault()) {
     Append("{\"type\":\"default\"");
   } else {
@@ -195,7 +195,7 @@ void AstSerializer::Visit(CaseClause* clause) {
   Append("]}");
 }
 
-void AstSerializer::Visit(SwitchStatement* switchstmt) {
+void AstSerializer::Visit(const SwitchStatement* switchstmt) {
   Append("{\"type\":\"switch\",\"exp\":");
   switchstmt->expr()->Accept(this);
   Append(",\"clauses\":[");
@@ -213,13 +213,13 @@ void AstSerializer::Visit(SwitchStatement* switchstmt) {
   Append("]}");
 }
 
-void AstSerializer::Visit(ThrowStatement* throwstmt) {
+void AstSerializer::Visit(const ThrowStatement* throwstmt) {
   Append("{\"type\":\"throw\",\"exp\":");
   throwstmt->expr()->Accept(this);
   Append('}');
 }
 
-void AstSerializer::Visit(TryStatement* trystmt) {
+void AstSerializer::Visit(const TryStatement* trystmt) {
   Append("{\"type\":\"try\",\"body\":");
   trystmt->body()->Accept(this);
   if (trystmt->catch_name()) {
@@ -237,17 +237,17 @@ void AstSerializer::Visit(TryStatement* trystmt) {
   Append('}');
 }
 
-void AstSerializer::Visit(DebuggerStatement* debuggerstmt) {
+void AstSerializer::Visit(const DebuggerStatement* debuggerstmt) {
   Append("{\"type\":\"debugger\"}");
 }
 
-void AstSerializer::Visit(ExpressionStatement* exprstmt) {
+void AstSerializer::Visit(const ExpressionStatement* exprstmt) {
   Append("{\"type\":\"expstatement\",\"exp\":");
   exprstmt->expr()->Accept(this);
   Append('}');
 }
 
-void AstSerializer::Visit(Assignment* assign) {
+void AstSerializer::Visit(const Assignment* assign) {
   Append("{\"type\":\"assign\",\"op\":\"");
   Append(Token::Content(assign->op()));
   Append("\",\"left\":");
@@ -257,7 +257,7 @@ void AstSerializer::Visit(Assignment* assign) {
   Append('}');
 }
 
-void AstSerializer::Visit(BinaryOperation* binary) {
+void AstSerializer::Visit(const BinaryOperation* binary) {
   Append("{\"type\":\"binary\",\"op\":\"");
   Append(Token::Content(binary->op()));
   Append("\",\"left\":");
@@ -267,7 +267,7 @@ void AstSerializer::Visit(BinaryOperation* binary) {
   Append('}');
 }
 
-void AstSerializer::Visit(ConditionalExpression* cond) {
+void AstSerializer::Visit(const ConditionalExpression* cond) {
   Append("{\"type\":\"conditional\",\"cond\":");
   cond->cond()->Accept(this);
   Append(",\"left\":");
@@ -277,7 +277,7 @@ void AstSerializer::Visit(ConditionalExpression* cond) {
   Append('}');
 }
 
-void AstSerializer::Visit(UnaryOperation* unary) {
+void AstSerializer::Visit(const UnaryOperation* unary) {
   Append("{\"type\":\"unary\",\"op\":\"");
   Append(Token::Content(unary->op()));
   Append("\",\"exp\":");
@@ -285,7 +285,7 @@ void AstSerializer::Visit(UnaryOperation* unary) {
   Append('}');
 }
 
-void AstSerializer::Visit(PostfixExpression* postfix) {
+void AstSerializer::Visit(const PostfixExpression* postfix) {
   Append("{\"type\":\"postfix\",\"op\":\"");
   Append(Token::Content(postfix->op()));
   Append("\",\"exp\":");
@@ -293,13 +293,13 @@ void AstSerializer::Visit(PostfixExpression* postfix) {
   Append('}');
 }
 
-void AstSerializer::Visit(StringLiteral* literal) {
+void AstSerializer::Visit(const StringLiteral* literal) {
   Append("{\"type\":\"string\",\"value\":\"");
   DecodeString(literal->value().begin(), literal->value().end());
   Append("\"}");
 }
 
-void AstSerializer::Visit(NumberLiteral* literal) {
+void AstSerializer::Visit(const NumberLiteral* literal) {
   std::ostringstream sout;
   sout << literal->value();
   Append("{\"type\":\"number\",\"value\":\"");
@@ -307,33 +307,33 @@ void AstSerializer::Visit(NumberLiteral* literal) {
   Append("\"}");
 }
 
-void AstSerializer::Visit(Identifier* literal) {
+void AstSerializer::Visit(const Identifier* literal) {
   Append("{\"type\":\"identifier\",\"value\":\"");
   Append(literal->value());
   Append("\"}");
 }
 
-void AstSerializer::Visit(ThisLiteral* literal) {
+void AstSerializer::Visit(const ThisLiteral* literal) {
   Append("{\"type\":\"this\"}");
 }
 
-void AstSerializer::Visit(NullLiteral* literal) {
+void AstSerializer::Visit(const NullLiteral* literal) {
   Append("{\"type\":\"null\"}");
 }
 
-void AstSerializer::Visit(TrueLiteral* literal) {
+void AstSerializer::Visit(const TrueLiteral* literal) {
   Append("{\"type\":\"true\"}");
 }
 
-void AstSerializer::Visit(FalseLiteral* literal) {
+void AstSerializer::Visit(const FalseLiteral* literal) {
   Append("{\"type\":\"false\"}");
 }
 
-void AstSerializer::Visit(Undefined* literal) {
+void AstSerializer::Visit(const Undefined* literal) {
   Append("{\"type\":\"undefined\"}");
 }
 
-void AstSerializer::Visit(RegExpLiteral* literal) {
+void AstSerializer::Visit(const RegExpLiteral* literal) {
   Append("{\"type\":\"regexp\",\"value\":\"");
   DecodeString(literal->value().begin(), literal->value().end());
   Append("\",\"flags\":\"");
@@ -341,7 +341,7 @@ void AstSerializer::Visit(RegExpLiteral* literal) {
   Append("\"}");
 }
 
-void AstSerializer::Visit(ArrayLiteral* literal) {
+void AstSerializer::Visit(const ArrayLiteral* literal) {
   Append("{\"type\":\"array\",\"value\":[");
   AstNode::Expressions::const_iterator it = literal->items().begin();
   const AstNode::Expressions::const_iterator end = literal->items().end();
@@ -364,7 +364,7 @@ void AstSerializer::Visit(ArrayLiteral* literal) {
   Append("]}");
 }
 
-void AstSerializer::Visit(ObjectLiteral* literal) {
+void AstSerializer::Visit(const ObjectLiteral* literal) {
   using std::tr1::get;
   Append("{\"type\":\"object\",\"value\":[");
   ObjectLiteral::Properties::const_iterator it = literal->properties().begin();
@@ -394,7 +394,7 @@ void AstSerializer::Visit(ObjectLiteral* literal) {
   Append("]}");
 }
 
-void AstSerializer::Visit(FunctionLiteral* literal) {
+void AstSerializer::Visit(const FunctionLiteral* literal) {
   Append("{\"type\":\"function\",\"name\":");
   if (literal->name()) {
     literal->name()->Accept(this);
@@ -424,7 +424,7 @@ void AstSerializer::Visit(FunctionLiteral* literal) {
   Append("]}");
 }
 
-void AstSerializer::Visit(IndexAccess* prop) {
+void AstSerializer::Visit(const IndexAccess* prop) {
   Append("{\"type\":\"property\",\"target\":");
   prop->target()->Accept(this);
   Append(",\"key\":");
@@ -432,7 +432,7 @@ void AstSerializer::Visit(IndexAccess* prop) {
   Append('}');
 }
 
-void AstSerializer::Visit(IdentifierAccess* prop) {
+void AstSerializer::Visit(const IdentifierAccess* prop) {
   Append("{\"type\":\"property\",\"target\":");
   prop->target()->Accept(this);
   Append(",\"key\":");
@@ -440,7 +440,7 @@ void AstSerializer::Visit(IdentifierAccess* prop) {
   Append('}');
 }
 
-void AstSerializer::Visit(FunctionCall* call) {
+void AstSerializer::Visit(const FunctionCall* call) {
   Append("{\"type\":\"funcall\",\"target\":");
   call->target()->Accept(this);
   Append(",\"args\":[");
@@ -457,7 +457,7 @@ void AstSerializer::Visit(FunctionCall* call) {
   Append("]}");
 }
 
-void AstSerializer::Visit(ConstructorCall* call) {
+void AstSerializer::Visit(const ConstructorCall* call) {
   Append("{\"type\":\"new\",\"target\":");
   call->target()->Accept(this);
   Append(",\"args\":[");
