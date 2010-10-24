@@ -10,7 +10,6 @@
 #include <unicode/ustdio.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
-#include <unicode/uchar.h>
 
 #include "stringpiece.h"
 #include "ustringpiece.h"

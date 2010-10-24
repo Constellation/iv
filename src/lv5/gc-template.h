@@ -4,9 +4,8 @@
 #include <vector>
 #include <map>
 #include <tr1/unordered_map>
-#include <unicode/utypes.h>
-#include <unicode/uchar.h>
 #include <gc/gc_allocator.h>
+#include "uchar.h"
 
 namespace iv {
 namespace lv5 {

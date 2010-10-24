@@ -12,7 +12,7 @@
 #include <numeric>
 #include <tr1/unordered_map>
 #include <tr1/functional>
-#include <unicode/uchar.h>
+#include "uchar.h"
 #include "utils.h"
 #include "conversions-inl.h"
 

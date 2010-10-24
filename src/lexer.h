@@ -5,7 +5,7 @@
 #include <cassert>
 #include <vector>
 #include <string>
-#include <unicode/uchar.h>
+#include "uchar.h"
 #include "char.h"
 #include "token.h"
 #include "source.h"

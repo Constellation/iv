@@ -7,7 +7,7 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include <tr1/functional>
-#include <unicode/uchar.h>
+#include "uchar.h"
 #include <unicode/uclean.h>
 #include <unicode/ucnv.h>
 #include "stringpiece.h"

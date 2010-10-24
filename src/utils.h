@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cassert>
 #include <tr1/cstdint>
+#include "config.h"
 
 #ifdef NDEBUG
 #undef DEBUG

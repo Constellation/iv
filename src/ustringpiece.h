@@ -1,6 +1,6 @@
 #ifndef IV_USTRINGPIECE_H_
 #define IV_USTRINGPIECE_H_
-#include <unicode/uchar.h>
+#include "uchar.h"
 #include "stringpiece.h"
 namespace iv {
 namespace core {

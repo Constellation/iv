@@ -1,7 +1,7 @@
 #ifndef _IV_AST_SERIALIZER_H_
 #define _IV_AST_SERIALIZER_H_
 #include <ostream>  // NOLINT
-#include <unicode/uchar.h>
+#include "uchar.h"
 #include "ast-visitor.h"
 #include "ustring.h"
 #include "stringpiece.h"

@@ -1,6 +1,6 @@
 #ifndef _IV_CHAR_H_
 #define _IV_CHAR_H_
-#include <unicode/uchar.h>
+#include "uchar.h"
 
 namespace iv {
 namespace core {

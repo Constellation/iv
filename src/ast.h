@@ -3,9 +3,7 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include <tr1/tuple>
-#include <unicode/uchar.h>
-#include <unicode/unistr.h>
-#include <unicode/schriter.h>
+#include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
 #include "alloc-inl.h"

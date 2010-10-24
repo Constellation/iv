@@ -2,6 +2,9 @@
 #define _IV_USTREAM_H_
 #include <iostream>  // NOLINT
 #include <tr1/array>
+#include "config.h"
+
+#if USE_ICU == 1
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
 #include <unicode/uchar.h>
@@ -30,5 +33,7 @@ inline std::ostream& operator<<(std::ostream& os, const UChar* str) {
   }
   return os;
 }
+
+#endif  // USE_ICU == 1
 
 #endif  // _IV_USTREAM_H_

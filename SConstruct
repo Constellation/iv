@@ -61,16 +61,6 @@ def Build():
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
 
-  if not env.GetOption('clean'):
-    conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
-    if not conf.CheckFunc('strtod'):
-      print 'strtod must be provided'
-      Exit(1)
-    if not conf.CheckFunc('snprintf'):
-      print 'strtod must be provided'
-      Exit(1)
-    env = conf.Finish()
-
   if os.path.exists(join(root_dir, '.config')):
     env.SConscript(
       join(root_dir, '.config'),
@@ -82,6 +72,26 @@ def Build():
     '%DEVELOPER%': 'Yusuke Suzuki',
     '%EMAIL%': 'utatane.tea@gmail.com'
   }
+
+  if not env.GetOption('clean'):
+    conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
+    if not conf.CheckFunc('strtod'):
+      print 'strtod must be provided'
+      Exit(1)
+    if not conf.CheckFunc('snprintf'):
+      print 'strtod must be provided'
+      Exit(1)
+    if options.get('noicu'):
+      # use iconv
+      conf.CheckLibWithHeader('iconv', 'iconv.h', 'c++')
+      option_dict['%USE_ICU%'] = '0'
+    else:
+      conf.env.ParseConfig('icu-config --cxxflags --cppflags --ldflags')
+      option_dict['%USE_ICU%'] = '1'
+    env = conf.Finish()
+
+  if options.get('cache'):
+    env.CacheDir('cache')
 
   if sys.byteorder == 'little':
     option_dict['%IS_LITTLE_ENDIAN%'] = '1'
@@ -119,11 +129,8 @@ def Build():
     LIBPATH=["/usr/lib"])
   env['ENV']['GTEST_COLOR'] = os.environ.get('GTEST_COLOR')
   env['ENV']['HOME'] = os.environ.get('HOME')
-  if options.get('cache'):
-    env.CacheDir('cache')
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
   Help(var.GenerateHelpText(env))
-  env.ParseConfig('icu-config --cxxflags --cppflags --ldflags')
   # env.ParseConfig('llvm-config all --ldflags --libs')
 
   (object_files, main_prog) = Main(env, [header])
