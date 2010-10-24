@@ -1,7 +1,10 @@
-#include <cstdlib>
+#include <limits>
+#include <algorithm>
 #include <tr1/array>
-#include <unicode/ustdio.h>
+#include <cstdlib>
 #include "conversions-inl.h"
+#include "char.h"
+#include "ustringpiece.h"
 #include "jsarray.h"
 #include "jsobject.h"
 #include "property.h"
@@ -11,6 +14,35 @@
 
 namespace iv {
 namespace lv5 {
+namespace {
+
+bool ConvertToUInt32(const core::UStringPiece& str, uint32_t* value) {
+  *value = 0;
+  uint32_t prev;
+  uint16_t ch;
+  core::UStringPiece::const_iterator it = str.begin();
+  const core::UStringPiece::const_iterator last = str.end();
+  if (it != last && *it != '0' && core::ICU::IsDecimalDigit(*it)) {
+      *value = (*it - '0');
+  } else {
+    return false;
+  }
+  ++it;
+  for (;it != last; ++it) {
+    prev = *value;
+    ch = *it;
+    if (core::ICU::IsDecimalDigit(ch)) {
+      *value = (ch - '0') + (prev * 10);
+    } else {
+      return false;
+    }
+  }
+  return (prev < (std::numeric_limits<uint32_t>::max() / 10) ||
+          ((prev == (std::numeric_limits<uint32_t>::max() / 10)) &&
+           (ch < (std::numeric_limits<uint32_t>::max() % 10))));
+}
+
+}  // namespace
 
 JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
@@ -111,7 +143,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
     }
   } else {
     uint32_t index;
-    if (u_sscanf(name_string->data(), "%u", &index) == 1) {
+    if (ConvertToUInt32(*name_string, &index)) {
       std::tr1::array<char, 80> buffer;
       const char* const str = core::DoubleToCString(static_cast<double>(index),
                                                     buffer.data(),

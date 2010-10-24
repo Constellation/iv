@@ -82,7 +82,7 @@ def Build():
     env.CacheDir('cache')
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
   Help(var.GenerateHelpText(env))
-  env.ParseConfig('icu-config --cxxflags --cppflags --ldflags --ldflags-icuio')
+  env.ParseConfig('icu-config --cxxflags --cppflags --ldflags')
   # env.ParseConfig('llvm-config all --ldflags --libs')
 
   (object_files, main_prog) = Main(env)
