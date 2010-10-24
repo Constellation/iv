@@ -107,8 +107,7 @@ void Context::Initialize() {
     func_proto->DefineOwnProperty(
         this, Intern("toString"),
         DataDescriptor(func,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE),
+                       PropertyDescriptor::WRITABLE),
         false, NULL);
   }
 
@@ -121,8 +120,7 @@ void Context::Initialize() {
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE),
+                         PropertyDescriptor::WRITABLE),
           false, NULL);
     }
     {
@@ -131,8 +129,7 @@ void Context::Initialize() {
       obj_proto->DefineOwnProperty(
           this, Intern("toString"),
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE),
+                         PropertyDescriptor::WRITABLE),
           false, NULL);
     }
     builtins_[name] = obj_cls;
