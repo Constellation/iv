@@ -13,13 +13,16 @@ namespace core {
 class Source {
  public:
   static const int kEOS = -1;
-  explicit Source(const std::string&);
+  Source(const std::string&, const std::string& filename);
   inline UChar Get(std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
   }
   inline std::size_t size() const {
     return source_.size();
+  }
+  inline const std::string& filename() const {
+    return filename_;
   }
   inline const UString& source() const {
     return source_;
@@ -43,6 +46,7 @@ class Source {
   const char* SkipSingleLineComment(const char* begin, const char* end);
 
   UString source_;
+  std::string filename_;
 };
 
 } }  // namespace iv::core

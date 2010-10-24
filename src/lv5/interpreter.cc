@@ -6,7 +6,6 @@
 #include <tr1/array>
 #include <boost/foreach.hpp>
 #include "token.h"
-#include "size_t.h"
 #include "hint.h"
 #include "interpreter.h"
 #include "scope.h"
@@ -1234,7 +1233,7 @@ void Interpreter::Visit(core::ArrayLiteral* literal) {
       EVAL(expr);
       const JSVal value = GetValue(ctx_->ret(), CHECK);
       std::snprintf(buffer.data(), buffer.size(),
-                    Format<std::size_t>::printf, current);
+                    "%lu", static_cast<unsigned long>(current));
       const Symbol index = ctx_->Intern(buffer.data());
       ary->DefineOwnProperty(
           ctx_, index,

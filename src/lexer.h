@@ -60,6 +60,9 @@ class Lexer: private Noncopyable<Lexer>::type {
   std::size_t line_number() const {
     return line_number_;
   }
+  const std::string& filename() const {
+    return source_->filename();
+  }
   std::size_t pos() const {
     return pos_;
   }

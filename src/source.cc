@@ -4,8 +4,9 @@
 namespace iv {
 namespace core {
 
-Source::Source(const std::string& str)
-  : source_() {
+Source::Source(const std::string& str, const std::string& filename)
+  : source_(),
+    filename_(filename) {
   ParseMagicComment(str);
 }
 

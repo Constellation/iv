@@ -98,10 +98,10 @@ int main(int argc, char **argv) {
   }
 
   const std::vector<std::string>& rest = cmd.rest();
+  const std::string& filename = rest.front();
   if (!rest.empty()) {
     std::string str;
-    const char* filename = rest[0].c_str();
-    if (std::FILE* fp = std::fopen(filename, "r")) {
+    if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
       std::tr1::array<char, 1024> buf;
       while (std::size_t len = std::fread(buf.data(),
                                           1, sizeof(buf.size()), fp)) {
@@ -116,13 +116,13 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    iv::core::Source src(str);
+    iv::core::Source src(str, filename);
     iv::core::AstFactory factory;
     iv::core::Parser parser(&src, &factory);
     iv::core::FunctionLiteral* global = parser.ParseProgram();
 
     if (!global) {
-      std::perror(parser.error().c_str());
+      std::cerr << parser.error() << std::endl;
       return EXIT_FAILURE;
     }
 

@@ -249,7 +249,7 @@ void AstSerializer::Visit(const ExpressionStatement* exprstmt) {
 
 void AstSerializer::Visit(const Assignment* assign) {
   Append("{\"type\":\"assign\",\"op\":\"");
-  Append(Token::Content(assign->op()));
+  Append(Token::ToString(assign->op()));
   Append("\",\"left\":");
   assign->left()->Accept(this);
   Append(",\"right\":");
@@ -259,7 +259,7 @@ void AstSerializer::Visit(const Assignment* assign) {
 
 void AstSerializer::Visit(const BinaryOperation* binary) {
   Append("{\"type\":\"binary\",\"op\":\"");
-  Append(Token::Content(binary->op()));
+  Append(Token::ToString(binary->op()));
   Append("\",\"left\":");
   binary->left()->Accept(this);
   Append(",\"right\":");
@@ -279,7 +279,7 @@ void AstSerializer::Visit(const ConditionalExpression* cond) {
 
 void AstSerializer::Visit(const UnaryOperation* unary) {
   Append("{\"type\":\"unary\",\"op\":\"");
-  Append(Token::Content(unary->op()));
+  Append(Token::ToString(unary->op()));
   Append("\",\"exp\":");
   unary->expr()->Accept(this);
   Append('}');
@@ -287,7 +287,7 @@ void AstSerializer::Visit(const UnaryOperation* unary) {
 
 void AstSerializer::Visit(const PostfixExpression* postfix) {
   Append("{\"type\":\"postfix\",\"op\":\"");
-  Append(Token::Content(postfix->op()));
+  Append(Token::ToString(postfix->op()));
   Append("\",\"exp\":");
   postfix->expr()->Accept(this);
   Append('}');

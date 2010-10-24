@@ -118,7 +118,11 @@ class Parser : private Noncopyable<Parser>::type {
       const Identifier* const label) const;
   IterationStatement* LookupContinuableTarget() const;
 
-  void ReportUnexpectedToken();
+  inline void SetErrorHeader() {
+    SetErrorHeader(lexer_.line_number());
+  }
+  void SetErrorHeader(std::size_t line);
+  void ReportUnexpectedToken(Token::Type expected_token);
 
   bool ExpectSemicolon(bool *res);
   inline Lexer& lexer() {
@@ -208,7 +212,13 @@ class Parser : private Noncopyable<Parser>::type {
     bool prev_;
   };
 
-  static bool IsEvalOrArguments(const Identifier* ident);
+  enum EvalOrArguments {
+    kNone = 0,
+    kEval = 1,
+    kArguments = 2
+  };
+
+  static EvalOrArguments IsEvalOrArguments(const Identifier* ident);
 
   Lexer lexer_;
   Token::Type token_;

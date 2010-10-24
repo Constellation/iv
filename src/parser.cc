@@ -14,12 +14,11 @@
 #ifdef DEBUG
 
 #define REPORT\
-  std::printf("error line: %d\n", __LINE__);\
-  std::printf("error source: %d\n", lexer_.line_number());
+  /* std::printf("error line: %d\n", __LINE__);\
+  std::printf("error source: %d\n", lexer_.line_number()); */
 
 #define TRACE\
-  std::printf("check: %d\n", __LINE__);
-
+  /* std::printf("check: %d\n", __LINE__); */
 #else
 
 #define REPORT
@@ -31,8 +30,7 @@
   do {\
     if (token_ != token) {\
       *res = false;\
-      ReportUnexpectedToken();\
-      REPORT\
+      ReportUnexpectedToken(token);\
       return NULL;\
     }\
   } while (0)
@@ -41,17 +39,32 @@
   do {\
     if (token_ != token) {\
       *res = false;\
-      ReportUnexpectedToken();\
-      REPORT\
+      ReportUnexpectedToken(token);\
       return NULL;\
     }\
     Next();\
   } while (0)
 
-#define FAIL() \
+#define RAISE(str)\
   do {\
     *res = false;\
-    REPORT\
+    SetErrorHeader(lexer_.line_number());\
+    error_.append(str);\
+    return NULL;\
+  } while (0)
+
+#define RAISE_WITH_NUMBER(str, line)\
+  do {\
+    *res = false;\
+    SetErrorHeader(line);\
+    error_.append(str);\
+    return NULL;\
+  } while (0)
+
+#define UNEXPECT(token)\
+  do {\
+    *res = false;\
+    ReportUnexpectedToken(token);\
     return NULL;\
   } while (0)
 
@@ -255,7 +268,7 @@ Statement* Parser::ParseStatement(bool *res) {
       break;
 
     case Token::ILLEGAL:
-      FAIL();
+      UNEXPECT(token_);
       break;
 
     default:
@@ -360,8 +373,16 @@ Statement* Parser::ParseVariableDeclarations(VariableStatement* stmt,
     name = space_->NewIdentifier(lexer_.Buffer());
     // section 12.2.1
     // within the strict code, Identifier must not be "eval" or "arguments"
-    if (strict_ && IsEvalOrArguments(name)) {
-      FAIL();
+    if (strict_) {
+      const EvalOrArguments val = IsEvalOrArguments(name);
+      if (val) {
+        if (val == kEval) {
+          RAISE("assignment to \"eval\" not allowed in strict code");
+        } else {
+          assert(val == kArguments);
+          RAISE("assignment to \"arguments\" not allowed in strict code");
+        }
+      }
     }
     Next();
 
@@ -391,7 +412,7 @@ bool Parser::ExpectSemicolon(bool *res) {
       token_ == Token::EOS ) {
     return true;
   }
-  FAIL();
+  UNEXPECT(token_);
 }
 
 //  EmptyStatement
@@ -508,7 +529,7 @@ Statement* Parser::ParseForStatement(bool *res) {
         if (decls.size() != 1) {
           // ForInStatement requests VaraibleDeclarationNoIn (not List),
           // so check declarations' size is 1.
-          FAIL();
+          RAISE("invalid for-in left-hand-side");
         }
         Expression *enumerable = ParseExpression(true, CHECK);
         EXPECT(Token::RPAREN);
@@ -523,8 +544,8 @@ Statement* Parser::ParseForStatement(bool *res) {
       init = NEW(ExpressionStatement(init_expr));
       if (token_ == Token::IN) {
         // for in loop
-        if (init_expr == NULL || !init_expr->IsValidLeftHandSide()) {
-          FAIL();
+        if (!init_expr->IsValidLeftHandSide()) {
+          RAISE("invalid for-in left-hand-side");
         }
         Next();
         Expression *enumerable = ParseExpression(true, CHECK);
@@ -593,7 +614,7 @@ Statement* Parser::ParseContinueStatement(bool *res) {
     if (target) {
       continue_stmt->SetTarget(target);
     } else {
-      FAIL();
+      RAISE("label not found");
     }
     Next();
   } else {
@@ -601,7 +622,7 @@ Statement* Parser::ParseContinueStatement(bool *res) {
     if (target) {
       continue_stmt->SetTarget(target);
     } else {
-      FAIL();
+      RAISE("label not found");
     }
   }
   ExpectSemicolon(CHECK);
@@ -637,7 +658,7 @@ Statement* Parser::ParseBreakStatement(bool *res) {
       if (target) {
         break_stmt->SetTarget(target);
       } else {
-        FAIL();
+        RAISE("label not found");
       }
     }
     Next();
@@ -646,7 +667,7 @@ Statement* Parser::ParseBreakStatement(bool *res) {
     if (target) {
       break_stmt->SetTarget(target);
     } else {
-      FAIL();
+      RAISE("label not found");
     }
   }
   ExpectSemicolon(CHECK);
@@ -679,7 +700,7 @@ Statement* Parser::ParseWithStatement(bool *res) {
   // section 12.10.1
   // when in strict mode code, WithStatement is not allowed.
   if (strict_) {
-    FAIL();
+    RAISE("with statement not allowed in strict code");
   }
 
   EXPECT(Token::LPAREN);
@@ -765,7 +786,7 @@ Statement* Parser::ParseThrowStatement(bool *res) {
   Next();
   // Throw requires Expression
   if (lexer_.has_line_terminator_before_next()) {
-    FAIL();
+    RAISE("missing expression between throw and newline");
   }
   expr = ParseExpression(true, CHECK);
   ExpectSemicolon(CHECK);
@@ -802,8 +823,17 @@ Statement* Parser::ParseTryStatement(bool *res) {
     name = space_->NewIdentifier(lexer_.Buffer());
     // section 12.14.1
     // within the strict code, Identifier must not be "eval" or "arguments"
-    if (strict_ && IsEvalOrArguments(name)) {
-      FAIL();
+    if (strict_) {
+      const EvalOrArguments val = IsEvalOrArguments(name);
+      if (val) {
+        if (val == kEval) {
+          RAISE("catch placeholder \"eval\" not allowed in strict code");
+        } else {
+          assert(val == kArguments);
+          RAISE(
+              "catch placeholder \"arguments\" not allowed in strict code");
+        }
+      }
     }
     Next();
     EXPECT(Token::RPAREN);
@@ -820,7 +850,7 @@ Statement* Parser::ParseTryStatement(bool *res) {
   }
 
   if (!has_catch_or_finally) {
-    FAIL();
+    RAISE("missing catch or finally after try statement");
   }
 
   return try_stmt;
@@ -857,7 +887,7 @@ Statement* Parser::ParseExpressionOrLabelledStatement(bool *res) {
     }
     if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
       // duplicate label
-      FAIL();
+      RAISE("duplicate label");
     }
     labels->push_back(label);
     LabelScope scope(this, labels, exist_labels);
@@ -897,21 +927,25 @@ Expression* Parser::ParseAssignmentExpression(bool contains_in, bool *res) {
   if (!Token::IsAssignOp(token_)) {
     return result;
   }
-  if (result == NULL || !result->IsValidLeftHandSide()) {
-    FAIL();
+  if (!result->IsValidLeftHandSide()) {
+    RAISE("invalid left-hand-side in assignment");
   }
   // section 11.13.1 throwing SyntaxError
   if (strict_ &&
-      result->AsIdentifier() &&
-      IsEvalOrArguments(result->AsIdentifier())) {
-    FAIL();
+      result->AsIdentifier()) {
+    const EvalOrArguments val = IsEvalOrArguments(result->AsIdentifier());
+    if (val) {
+      if (val == kEval) {
+        RAISE("assignment to \"eval\" not allowed in strict code");
+      } else {
+        assert(val == kArguments);
+        RAISE("assignment to \"arguments\" not allowed in strict code");
+      }
+    }
   }
   const Token::Type op = token_;
   Next();
   Expression *right = ParseAssignmentExpression(contains_in, CHECK);
-  if (right == NULL) {
-    FAIL();
-  }
   return NEW(Assignment(op, result, right));
 }
 
@@ -1193,7 +1227,7 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
       expr = ParseUnaryExpression(CHECK);
       if (strict_ &&
           expr->AsIdentifier()) {
-        FAIL();
+        RAISE("delete to direct identifier not allowed in strict code");
       }
       result = NEW(UnaryOperation(op, expr));
       break;
@@ -1235,14 +1269,23 @@ Expression* Parser::ParseUnaryExpression(bool *res) {
     case Token::DEC:
       Next();
       expr = ParseMemberExpression(true, CHECK);
-      if (expr == NULL || !expr->IsValidLeftHandSide()) {
-        FAIL();
+      if (!expr->IsValidLeftHandSide()) {
+        RAISE("invalid left-hand-side in prefix expression");
       }
       // section 11.4.4, 11.4.5 throwing SyntaxError
       if (strict_ &&
-          expr->AsIdentifier() &&
-          IsEvalOrArguments(expr->AsIdentifier())) {
-        FAIL();
+          expr->AsIdentifier()) {
+        const EvalOrArguments val = IsEvalOrArguments(expr->AsIdentifier());
+        if (val) {
+          if (val == kEval) {
+            RAISE("prefix expression to \"eval\" "
+                  "not allowed in strict code");
+          } else {
+            assert(val == kArguments);
+            RAISE("prefix expression to \"arguments\" "
+                  "not allowed in strict code");
+          }
+        }
       }
       result = NEW(UnaryOperation(op, expr));
       break;
@@ -1263,14 +1306,22 @@ Expression* Parser::ParsePostfixExpression(bool *res) {
   expr = ParseMemberExpression(true, CHECK);
   if (!lexer_.has_line_terminator_before_next() &&
       (token_ == Token::INC || token_ == Token::DEC)) {
-    if (expr == NULL || !expr->IsValidLeftHandSide()) {
-      FAIL();
+    if (!expr->IsValidLeftHandSide()) {
+      RAISE("invalid left-hand-side in postfix expression");
     }
     // section 11.3.1, 11.3.2 throwing SyntaxError
     if (strict_ &&
-        expr->AsIdentifier() &&
-        IsEvalOrArguments(expr->AsIdentifier())) {
-      FAIL();
+        expr->AsIdentifier()) {
+      const EvalOrArguments val = IsEvalOrArguments(expr->AsIdentifier());
+      if (val) {
+        if (val == kEval) {
+          RAISE("postfix expression to \"eval\" not allowed in strict code");
+        } else {
+          assert(val == kArguments);
+          RAISE("postfix expression to \"arguments\" "
+                "not allowed in strict code");
+        }
+      }
     }
     expr = NEW(PostfixExpression(token_, expr));
     Next();
@@ -1394,7 +1445,7 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
       // section 7.8.3
       // strict mode forbids Octal Digits Literal
       if (strict_ && lexer_.NumericType() == Lexer::OCTAL) {
-        FAIL();
+        RAISE("octal integer literal not allowed in strict code");
       }
       result = NumberLiteral::New(space_, lexer_.Numeric());
       Next();
@@ -1403,7 +1454,7 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
     case Token::STRING: {
       const Lexer::State state = lexer_.StringEscapeType();
       if (strict_ && state == Lexer::OCTAL) {
-        FAIL();
+        RAISE("octal excape sequence not allowed in strict code");
       }
       if (state == Lexer::NONE) {
         result = space_->NewDirectivable(lexer_.Buffer());
@@ -1437,7 +1488,7 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
       break;
 
     default:
-      FAIL();
+      RAISE("invalid primary expression token");
       break;
   }
   return result;
@@ -1468,14 +1519,14 @@ Expression* Parser::ParseRegExpLiteral(bool contains_eq, bool *res) {
   if (lexer_.ScanRegExpLiteral(contains_eq)) {
     RegExpLiteral *expr = space_->NewRegExpLiteral(lexer_.Buffer());
     if (!lexer_.ScanRegExpFlags()) {
-      FAIL();
+      RAISE("invalid regular expression flag");
     } else {
       expr->SetFlags(lexer_.Buffer());
     }
     Next();
     return expr;
   } else {
-    FAIL();
+    RAISE("invalid regular expression");
   }
 }
 
@@ -1549,7 +1600,7 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
       // this is getter or setter or usual prop
       Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
       if (token_ == Token::COLON) {
-        // prop
+        // property
         ident = space_->NewIdentifier(is_get ? "get" : "set");
         Next();
         expr = ParseAssignmentExpression(true, CHECK);
@@ -1559,10 +1610,12 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
           map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
-            FAIL();
+            RAISE("accessor property and data property "
+                  "exist with the same name");
           } else {
             if (strict_) {
-              FAIL();
+              RAISE("multiple data property assignments "
+                    "with the same name not allowed in strict code");
             }
           }
         }
@@ -1588,12 +1641,18 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
           if (it == map.end()) {
             map.insert(ObjectMap::value_type(ident, type));
           } else if (it->second & (ObjectLiteral::DATA | type)) {
-            FAIL();
+            if (it->second & ObjectLiteral::DATA) {
+              RAISE("data property and accessor property "
+                    "exist with the same name");
+            } else {
+              RAISE("multiple same accessor properties "
+                    "exist with the same name");
+            }
           } else {
             it->second |= type;
           }
         } else {
-          FAIL();
+          RAISE("invalid property name");
         }
       }
     } else if (token_ == Token::IDENTIFIER ||
@@ -1609,15 +1668,17 @@ Expression* Parser::ParseObjectLiteral(bool *res) {
         map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
       } else {
         if (it->second != ObjectLiteral::DATA) {
-          FAIL();
+          RAISE("accessor property and data property "
+                "exist with the same name");
         } else {
           if (strict_) {
-            FAIL();
+            RAISE("multiple data property assignments "
+                  "with the same name not allowed in strict code");
           }
         }
       }
     } else {
-      FAIL();
+      RAISE("invalid property name");
     }
 
     if (token_ != Token::RBRACE) {
@@ -1637,11 +1698,13 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     bool *res) {
   // IDENTIFIER
   // IDENTIFIER_opt
+  std::size_t name_set_line = 0;
   FunctionLiteral *literal = space_->NewFunctionLiteral(decl_type);
   literal->set_strict(strict_);
   literal->set_source(lexer_.source());
   if (allow_identifier && token_ == Token::IDENTIFIER) {
     literal->SetName(space_->NewIdentifier(lexer_.Buffer()));
+    name_set_line = lexer_.line_number();
     Next();
   }
   const ScopeSwitcher switcher(this, literal->scope());
@@ -1650,19 +1713,22 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   //  '(' FormalParameterList_opt ')'
   EXPECT(Token::LPAREN);
 
+  std::vector<std::size_t> param_line;
   if (arg_type == FunctionLiteral::GETTER) {
-    // if getter, arguments count is 0
+    // if getter, parameter count is 0
     EXPECT(Token::RPAREN);
   } else if (arg_type == FunctionLiteral::SETTER) {
-    // if setter, arguments count is 1
+    // if setter, parameter count is 1
     IS(Token::IDENTIFIER);
     literal->AddParameter(space_->NewIdentifier(lexer_.Buffer()));
+    param_line.push_back(lexer_.line_number());
     Next();
     EXPECT(Token::RPAREN);
   } else {
     while (token_ != Token::RPAREN) {
       IS(Token::IDENTIFIER);
       literal->AddParameter(space_->NewIdentifier(lexer_.Buffer()));
+      param_line.push_back(lexer_.line_number());
       Next();
       if (token_ != Token::RPAREN) {
         EXPECT(Token::COMMA);
@@ -1682,20 +1748,46 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   if (strict_ || literal->strict()) {
     // section 13.1
     // Strict Mode Restrictions
-    if (literal->name() && IsEvalOrArguments(literal->name())) {
-      FAIL();
+    if (literal->name()) {
+      const EvalOrArguments val = IsEvalOrArguments(literal->name());
+      if (val) {
+        if (val == kEval) {
+          RAISE_WITH_NUMBER(
+              "function name \"eval\" not allowed in strict code",
+              name_set_line);
+        } else {
+          assert(val == kArguments);
+          RAISE_WITH_NUMBER(
+              "function name \"arguments\" not allowed in strict code",
+              name_set_line);
+        }
+      }
     }
+    std::vector<std::size_t>::const_iterator line = param_line.begin();
     for (AstNode::Identifiers::const_iterator it = literal->params().begin(),
          last = literal->params().end();
-         it != last; ++it) {
-      if (IsEvalOrArguments(*it)) {
-        FAIL();
+         it != last; ++it, ++line) {
+      const EvalOrArguments val = IsEvalOrArguments(*it);
+      if (val) {
+        if (val == kEval) {
+          RAISE_WITH_NUMBER(
+              "parameter \"eval\" not allowed in strict code",
+              *line);
+        } else {
+          assert(val == kArguments);
+          RAISE_WITH_NUMBER(
+              "parameter \"arguments\" not allowed in strict code",
+              *line);
+        }
       }
       AstNode::Identifiers::const_iterator searcher = it;
+      std::vector<std::size_t>::const_iterator searcher_line = line;
       ++searcher;
-      for (;searcher != last; ++searcher) {
+      for (;searcher != last; ++searcher, ++searcher_line) {
         if ((*it)->value() == (*searcher)->value()) {
-          FAIL();
+          RAISE_WITH_NUMBER(
+              "duplicate parameter not allowed in strict code",
+              *searcher_line);
         }
       }
     }
@@ -1783,33 +1875,61 @@ IterationStatement* Parser::LookupContinuableTarget() const {
   return NULL;
 }
 
-void Parser::ReportUnexpectedToken() {
+void Parser::SetErrorHeader(std::size_t line) {
+  std::tr1::array<char, 40> buf;
+  error_.append(lexer_.filename());
+  int num = std::snprintf(buf.data(), buf.size(),
+                          ":%lu: SyntaxError: ",
+                          static_cast<unsigned long>(line));  // NOLINT
+  error_.append(buf.data(), num);
+}
+
+void Parser::ReportUnexpectedToken(Token::Type expected_token) {
+  SetErrorHeader();
   switch (token_) {
     case Token::STRING:
+      error_.append("unexpected string");
       break;
     case Token::NUMBER:
+      error_.append("unexpected number");
       break;
     case Token::IDENTIFIER:
+      error_.append("unexpected identifier");
       break;
     case Token::EOS:
+      error_.append("unexpected EOS");
       break;
-    default:
+    case Token::ILLEGAL: {
+      error_.append("illegal character");
       break;
+    }
+    default: {
+      error_.append("unexpected token ");
+      error_.append(Token::ToString(token_));
+      break;
+    }
   }
 }
 
-bool Parser::IsEvalOrArguments(const Identifier* ident) {
+Parser::EvalOrArguments Parser::IsEvalOrArguments(const Identifier* ident) {
   const SpaceUString& str = ident->value();
-  return (str.compare(eval_string.data()) == 0 ||
-          str.compare(arguments_string.data()) == 0);
+  if (str.compare(eval_string.data()) == 0) {
+    return kEval;
+  } else if (str.compare(arguments_string.data()) == 0) {
+    return kArguments;
+  } else {
+    return kNone;
+  }
 }
 
 #undef REPORT
 #undef TRACE
 #undef CHECK
-#undef FAIL
 #undef EXPECT
+#undef UNEXPECT
 #undef IS
 #undef NEW
+#undef RAISE
+#undef RAISE_WITH_NUMBER
 
 } }  // namespace iv::core

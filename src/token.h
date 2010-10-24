@@ -153,12 +153,23 @@ class Token {
     NUM_TOKENS       // number of tokens
   };
   static const char* kContents[];
+  static const std::size_t kMaxSize = 12;  // "synchronized"
 
   static inline bool IsAssignOp(Token::Type type) {
     return Token::ASSIGN_FIRST < type && type < Token::ASSIGN_LAST;
   }
-  static inline const char* Content(Token::Type type) {
+  static inline const char* ToString(Token::Type type) {
     assert(0 <= type && type < NUM_TOKENS);
+    assert(type != Token::ASSIGN_FIRST &&
+           type != Token::ASSIGN_LAST &&
+           type != Token::REL_FIRST &&
+           type != Token::REL_LAST &&
+           type != Token::STRING &&
+           type != Token::NUMBER &&
+           type != Token::IDENTIFIER &&
+           type != Token::EOS &&
+           type != Token::ILLEGAL &&
+           type != Token::NOT_FOUND);
     return kContents[type];
   }
 };
