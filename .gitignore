@@ -7,3 +7,4 @@ obj
 src/config.h
 config.log
 .sconf_temp
+tools/*.pyc
