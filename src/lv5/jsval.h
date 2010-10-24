@@ -13,7 +13,7 @@
 
 namespace iv {
 namespace lv5 {
-#ifdef IS_LITTLE_ENDIAN
+#if IS_LITTLE_ENDIAN == 1
 static const bool kLittleEndian = true;
 #else
 static const bool kLittleEndian = false;

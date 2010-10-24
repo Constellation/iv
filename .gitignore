@@ -4,5 +4,6 @@ test.js
 cache
 obj
 .config
+src/config.h
 config.log
 .sconf_temp

@@ -1,0 +1,8 @@
+#ifndef _IV_CONFIG_H
+#define _IV_CONFIG_H_
+
+#define IV_VERSION "%VERSION%"
+#define IV_DEVELOPER "%DEVELOPER% <%EMAIL%>"
+#define IS_LITTLE_ENDIAN %IS_LITTLE_ENDIAN%
+
+#endif  // _IV_CONFIG_H_

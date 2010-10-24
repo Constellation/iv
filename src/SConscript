@@ -2,7 +2,7 @@ import sys
 import os
 from os.path import join, dirname, abspath
 
-Import('root_dir context')
+Import('root_dir context deps')
 
 files = [
   'lexer.cc',
@@ -36,7 +36,7 @@ def Build():
   )
   object_files.append(v8_dtoa)
   object_files.append(netlib_dtoa)
-  return env.Program('iv', ['main.cc'] + files)
+  return env.Program('iv', ['main.cc'] + files + deps)
 
 program = Build()
 Return("object_files program")

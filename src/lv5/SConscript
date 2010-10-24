@@ -5,8 +5,6 @@ Import('context object_files root_dir')
 def Build():
   env = context.Clone()
   env.Append(LIBS=['gc'])
-  if sys.byteorder == 'little':
-    env.Append(CPPDEFINES=["IS_LITTLE_ENDIAN"])
   return env.Program('lv5',
       [Glob('*.cc'), Glob('*.c'), object_files])
 
