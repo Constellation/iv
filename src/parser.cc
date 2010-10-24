@@ -133,13 +133,11 @@ bool Parser::ParseSourceElements(Token::Type end,
           if (expr->AsStringLiteral()->value().compare(
                   use_strict_string.data()) == 0) {
             switcher.SwitchStrictMode();
-            function->AddStatement(stmt);
             function->set_strict(true);
           }
         }
-      } else {
-        function->AddStatement(stmt);
       }
+      function->AddStatement(stmt);
     }
     recognize_use_strict_directive = false;
   }
