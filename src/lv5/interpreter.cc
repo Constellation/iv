@@ -29,20 +29,16 @@ namespace lv5 {
     return;\
   }\
   ((void)0
-
-
-#define CHECK_WITH(val) ctx_->error());\
-  if (ctx_->IsError()) {\
-    return val;\
-  }\
-  ((void)0
-
+#define DUMMY )  // to make indentation work
+#undef DUMMY
 
 #define CHECK_TO_WITH(error, val) error);\
   if (*error) {\
     return val;\
   }\
   ((void)0
+#define DUMMY )  // to make indentation work
+#undef DUMMY
 
 
 #define RETURN_STMT(type, val, target)\
