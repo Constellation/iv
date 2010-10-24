@@ -252,13 +252,13 @@ Statement* Parser::ParseStatement(bool *res) {
       result = ParseFunctionStatement(CHECK);
       break;
 
-    case Token::ILLEGAL:
-      FAIL();
-      break;
-
     case Token::IDENTIFIER:
       // LabelledStatement or ExpressionStatement
       result = ParseExpressionOrLabelledStatement(CHECK);
+      break;
+
+    case Token::ILLEGAL:
+      FAIL();
       break;
 
     default:
@@ -282,10 +282,10 @@ Statement* Parser::ParseStatement(bool *res) {
 //  FunctionStatement is not standard, but implemented in SpiderMonkey
 //  and this statement is very useful for not breaking FunctionDeclaration.
 Statement* Parser::ParseFunctionDeclaration(bool *res) {
-  FunctionLiteral *expr;
+  assert(token_ == Token::FUNCTION);
   Next();
   IS(Token::IDENTIFIER);
-  expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION,
+  FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION,
                               FunctionLiteral::GENERAL, true, CHECK);
   // define named function as FunctionDeclaration
   scope_->AddFunctionDeclaration(expr);
@@ -293,11 +293,11 @@ Statement* Parser::ParseFunctionDeclaration(bool *res) {
 }
 
 Statement* Parser::ParseFunctionStatement(bool *res) {
-  FunctionLiteral *expr;
+  assert(token_ == Token::FUNCTION);
   Next();
   IS(Token::IDENTIFIER);
-  expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT,
-                              FunctionLiteral::GENERAL, true, CHECK);
+  FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT,
+                                               FunctionLiteral::GENERAL, true, CHECK);
   // define named function as variable declaration
   scope_->AddUnresolved(expr->name(), false);
   return NEW(FunctionStatement(expr));
@@ -311,6 +311,7 @@ Statement* Parser::ParseFunctionStatement(bool *res) {
 //    : Statement
 //    | StatementList Statement
 Block* Parser::ParseBlock(bool *res) {
+  assert(token_ == Token::LBRACE);
   Block *block = NEW(Block(space_));
   Statement *stmt;
   Target target(this, block);
@@ -328,6 +329,7 @@ Block* Parser::ParseBlock(bool *res) {
 //    : VAR VariableDeclarationList ';'
 //    : CONST VariableDeclarationList ';'
 Statement* Parser::ParseVariableStatement(bool *res) {
+  assert(token_ == Token::VAR || token_ == Token::CONST);
   VariableStatement* stmt = NEW(VariableStatement(token_, space_));
   ParseVariableDeclarations(stmt, true, CHECK);
   ExpectSemicolon(CHECK);
@@ -397,6 +399,7 @@ bool Parser::ExpectSemicolon(bool *res) {
 //  EmptyStatement
 //    : ';'
 Statement* Parser::ParseEmptyStatement() {
+  assert(token_ == Token::SEMICOLON);
   Next();
   return space_->NewEmptyStatement();
 }
@@ -405,6 +408,7 @@ Statement* Parser::ParseEmptyStatement() {
 //    : IF '(' Expression ')' Statement ELSE Statement
 //    | IF '(' Expression ')' Statement
 Statement* Parser::ParseIfStatement(bool *res) {
+  assert(token_ == Token::IF);
   IfStatement *if_stmt = NULL;
   Statement* stmt;
   Next();
@@ -438,6 +442,7 @@ Statement* Parser::ParseIfStatement(bool *res) {
 //    | FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
 Statement* Parser::ParseDoWhileStatement(bool *res) {
   //  DO Statement WHILE '(' Expression ')' ';'
+  assert(token_ == Token::DO);
   DoWhileStatement* dowhile = NEW(DoWhileStatement());
   Target target(this, dowhile);
   Next();
@@ -460,6 +465,7 @@ Statement* Parser::ParseDoWhileStatement(bool *res) {
 
 Statement* Parser::ParseWhileStatement(bool *res) {
   //  WHILE '(' Expression ')' Statement
+  assert(token_ == Token::WHILE);
   Next();
 
   EXPECT(Token::LPAREN);
@@ -485,6 +491,7 @@ Statement* Parser::ParseForStatement(bool *res) {
   //          Statement
   //  FOR '(' LeftHandSideExpression IN Expression ')' Statement
   //  FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
+  assert(token_ == Token::FOR);
   Next();
 
   EXPECT(Token::LPAREN);
@@ -574,6 +581,7 @@ Statement* Parser::ParseForStatement(bool *res) {
 //  ContinueStatement
 //    : CONTINUE Identifier_opt ';'
 Statement* Parser::ParseContinueStatement(bool *res) {
+  assert(token_ == Token::CONTINUE);
   ContinueStatement *continue_stmt = NEW(ContinueStatement());
   Next();
   if (!lexer_.has_line_terminator_before_next() &&
@@ -605,6 +613,7 @@ Statement* Parser::ParseContinueStatement(bool *res) {
 //  BreakStatement
 //    : BREAK Identifier_opt ';'
 Statement* Parser::ParseBreakStatement(bool *res) {
+  assert(token_ == Token::BREAK);
   BreakStatement *break_stmt = NEW(BreakStatement());
   Next();
   if (!lexer_.has_line_terminator_before_next() &&
@@ -649,6 +658,7 @@ Statement* Parser::ParseBreakStatement(bool *res) {
 //  ReturnStatement
 //    : RETURN Expression_opt ';'
 Statement* Parser::ParseReturnStatement(bool *res) {
+  assert(token_ == Token::RETURN);
   Next();
   if (lexer_.has_line_terminator_before_next() ||
       token_ == Token::SEMICOLON ||
@@ -665,6 +675,7 @@ Statement* Parser::ParseReturnStatement(bool *res) {
 //  WithStatement
 //    : WITH '(' Expression ')' Statement
 Statement* Parser::ParseWithStatement(bool *res) {
+  assert(token_ == Token::WITH);
   Next();
 
   // section 12.10.1
@@ -690,6 +701,7 @@ Statement* Parser::ParseWithStatement(bool *res) {
 //    : '{' CaseClauses_opt '}'
 //    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
 Statement* Parser::ParseSwitchStatement(bool *res) {
+  assert(token_ == Token::SWITCH);
   CaseClause *case_clause;
   Next();
 
@@ -722,6 +734,7 @@ Statement* Parser::ParseSwitchStatement(bool *res) {
 //  DefaultClause
 //    : DEFAULT ':' StatementList_opt
 CaseClause* Parser::ParseCaseClause(bool *res) {
+  assert(token_ == Token::CASE || token_ == Token::DEFAULT);
   CaseClause *clause = NEW(CaseClause(space_));
   Statement *stmt;
 
@@ -749,6 +762,7 @@ CaseClause* Parser::ParseCaseClause(bool *res) {
 //  ThrowStatement
 //    : THROW Expression ';'
 Statement* Parser::ParseThrowStatement(bool *res) {
+  assert(token_ == Token::THROW);
   Expression *expr;
   Next();
   // Throw requires Expression
@@ -771,6 +785,7 @@ Statement* Parser::ParseThrowStatement(bool *res) {
 //  Finally
 //    : FINALLY Block
 Statement* Parser::ParseTryStatement(bool *res) {
+  assert(token_ == Token::TRY);
   Identifier *name;
   Block *block;
   bool has_catch_or_finally = false;
@@ -817,6 +832,7 @@ Statement* Parser::ParseTryStatement(bool *res) {
 //  DebuggerStatement
 //    : DEBUGGER ';'
 Statement* Parser::ParseDebuggerStatement(bool *res) {
+  assert(token_ == Token::DEBUGGER);
   Next();
   ExpectSemicolon(CHECK);
   return space_->NewDebuggerStatement();
