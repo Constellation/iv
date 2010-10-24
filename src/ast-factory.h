@@ -18,6 +18,7 @@ class AstFactory : public Space {
   Identifier* NewIdentifier(const std::vector<UChar>& buffer);
   Identifier* NewIdentifier(const std::vector<char>& buffer);
   StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer);
+  Directivable* NewDirectivable(const std::vector<UChar>& buffer);
   RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& buffer);
   FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type);
   ArrayLiteral* NewArrayLiteral();

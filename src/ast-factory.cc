@@ -33,6 +33,10 @@ StringLiteral* AstFactory::NewStringLiteral(const std::vector<UChar>& buffer) {
   return new (this) StringLiteral(buffer, this);
 }
 
+Directivable* AstFactory::NewDirectivable(const std::vector<UChar>& buffer) {
+  return new (this) Directivable(buffer, this);
+}
+
 RegExpLiteral* AstFactory::NewRegExpLiteral(const std::vector<UChar>& buffer) {
   return new (this) RegExpLiteral(buffer, this);
 }

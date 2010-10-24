@@ -129,18 +129,17 @@ bool Parser::ParseSourceElements(Token::Type end,
           !strict_ &&
           stmt->AsExpressionStatement()) {
         Expression* const expr = stmt->AsExpressionStatement()->expr();
-        if (expr->AsStringLiteral()) {
-          if (lexer_.StringEscapeType() == Lexer::NONE &&
-              expr->AsStringLiteral()->value().compare(
+        if (expr->AsDirectivable()) {
+          if (expr->AsStringLiteral()->value().compare(
                   use_strict_string.data()) == 0) {
             switcher.SwitchStrictMode();
             function->AddStatement(stmt);
             function->set_strict(true);
-            continue;
           }
         }
+      } else {
+        function->AddStatement(stmt);
       }
-      function->AddStatement(stmt);
     }
     recognize_use_strict_directive = false;
   }
@@ -297,7 +296,8 @@ Statement* Parser::ParseFunctionStatement(bool *res) {
   Next();
   IS(Token::IDENTIFIER);
   FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT,
-                                               FunctionLiteral::GENERAL, true, CHECK);
+                                               FunctionLiteral::GENERAL,
+                                               true, CHECK);
   // define named function as variable declaration
   scope_->AddUnresolved(expr->name(), false);
   return NEW(FunctionStatement(expr));
@@ -1402,13 +1402,19 @@ Expression* Parser::ParsePrimaryExpression(bool *res) {
       Next();
       break;
 
-    case Token::STRING:
-      if (strict_ && lexer_.StringEscapeType() == Lexer::OCTAL) {
+    case Token::STRING: {
+      const Lexer::State state = lexer_.StringEscapeType();
+      if (strict_ && state == Lexer::OCTAL) {
         FAIL();
       }
-      result = space_->NewStringLiteral(lexer_.Buffer());
+      if (state == Lexer::NONE) {
+        result = space_->NewDirectivable(lexer_.Buffer());
+      } else {
+        result = space_->NewStringLiteral(lexer_.Buffer());
+      }
       Next();
       break;
+    }
 
     case Token::DIV:
       result = ParseRegExpLiteral(false, CHECK);

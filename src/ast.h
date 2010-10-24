@@ -82,6 +82,7 @@ class TrueLiteral;
 class FalseLiteral;
 class NumberLiteral;
 class StringLiteral;
+class Directivable;
 class RegExpLiteral;
 class ArrayLiteral;
 class ObjectLiteral;
@@ -136,6 +137,7 @@ class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
   DECLARE_NODE_TYPE_BASE(Undefined)
   DECLARE_NODE_TYPE_BASE(NumberLiteral)
   DECLARE_NODE_TYPE_BASE(StringLiteral)
+  DECLARE_NODE_TYPE_BASE(Directivable)
   DECLARE_NODE_TYPE_BASE(Identifier)
   DECLARE_NODE_TYPE_BASE(RegExpLiteral)
   DECLARE_NODE_TYPE_BASE(ArrayLiteral)
@@ -582,6 +584,13 @@ class StringLiteral : public Literal {
   DECLARE_NODE_TYPE(StringLiteral)
  private:
   const SpaceUString value_;
+};
+
+class Directivable : public StringLiteral {
+ public:
+  explicit Directivable(const std::vector<UChar>& buffer, Space* factory)
+    : StringLiteral(buffer, factory) { }
+  DECLARE_NODE_TYPE(Directivable)
 };
 
 class NumberLiteral : public Literal {
