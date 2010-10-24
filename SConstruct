@@ -66,6 +66,9 @@ def Build():
     if not conf.CheckFunc('strtod'):
       print 'strtod must be provided'
       Exit(1)
+    if not conf.CheckFunc('snprintf'):
+      print 'strtod must be provided'
+      Exit(1)
     env = conf.Finish()
 
   if os.path.exists(join(root_dir, '.config')):
