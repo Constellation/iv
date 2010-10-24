@@ -295,8 +295,9 @@ Statement* Parser::ParseFunctionDeclaration(bool *res) {
   assert(token_ == Token::FUNCTION);
   Next();
   IS(Token::IDENTIFIER);
-  FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::DECLARATION,
-                              FunctionLiteral::GENERAL, true, CHECK);
+  FunctionLiteral* expr = ParseFunctionLiteral(
+      FunctionLiteral::DECLARATION,
+      FunctionLiteral::GENERAL, true, CHECK);
   // define named function as FunctionDeclaration
   scope_->AddFunctionDeclaration(expr);
   return NEW(FunctionStatement(expr));
