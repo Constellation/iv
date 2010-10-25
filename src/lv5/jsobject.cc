@@ -30,7 +30,7 @@ JSObject::JSObject(JSObject* proto,
 
 #define TRY(context, sym, arg, error)\
   do {\
-    JSVal method = Get(context, context->Intern(sym), error);\
+    JSVal method = Get(context, sym, error);\
     if (*error) {\
       return JSUndefined;\
     }\
@@ -49,11 +49,11 @@ JSVal JSObject::DefaultValue(Context* ctx,
   const Arguments args(ctx, this);
   if (hint != Hint::NUMBER) {
     // hint is STRING or NONE
-    TRY(ctx, "toString", args, res);
-    TRY(ctx, "valueOf", args, res);
+    TRY(ctx, ctx->toString_symbol(), args, res);
+    TRY(ctx, ctx->valueOf_symbol(), args, res);
   } else {
-    TRY(ctx, "valueOf", args, res);
-    TRY(ctx, "toString", args, res);
+    TRY(ctx, ctx->valueOf_symbol(), args, res);
+    TRY(ctx, ctx->toString_symbol(), args, res);
   }
   *res = JSErrorCode::TypeError;
   return JSUndefined;

@@ -1,5 +1,6 @@
 #ifndef _IV_CHARS_H_
 #define _IV_CHARS_H_
+#include <tr1/cstdint>
 #include "uchar.h"
 
 namespace iv {

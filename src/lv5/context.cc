@@ -15,6 +15,8 @@ const std::string eval_string("eval");
 const std::string arguments_string("arguments");
 const std::string caller_string("caller");
 const std::string callee_string("callee");
+const std::string toString_string("toString");
+const std::string valueOf_string("valueOf");
 
 }  // namespace
 
@@ -37,7 +39,9 @@ Context::Context()
     eval_symbol_(Intern(eval_string)),
     arguments_symbol_(Intern(arguments_string)),
     caller_symbol_(Intern(caller_string)),
-    callee_symbol_(Intern(callee_string)) {
+    callee_symbol_(Intern(callee_string)),
+    toString_symbol_(Intern(toString_string)),
+    valueOf_symbol_(Intern(valueOf_string)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
@@ -105,7 +109,7 @@ void Context::Initialize() {
     JSNativeFunction* const func =
         JSNativeFunction::New(this, &Runtime_FunctionToString);
     func_proto->DefineOwnProperty(
-        this, Intern("toString"),
+        this, toString_symbol_,
         DataDescriptor(func,
                        PropertyDescriptor::WRITABLE),
         false, NULL);
@@ -127,7 +131,7 @@ void Context::Initialize() {
       JSNativeFunction* const func =
           JSNativeFunction::New(this, &Runtime_ObjectToString);
       obj_proto->DefineOwnProperty(
-          this, Intern("toString"),
+          this, toString_symbol_,
           DataDescriptor(func,
                          PropertyDescriptor::WRITABLE),
           false, NULL);
