@@ -146,7 +146,6 @@ void Interpreter::CallCode(
     std::size_t n = 0;
     BOOST_FOREACH(core::Identifier* const ident,
                   code.code()->params()) {
-      ++n;
       Symbol arg_name = ctx_->Intern(ident->value());
       if (!env->HasBinding(arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name, configurable_bindings);
@@ -158,6 +157,7 @@ void Interpreter::CallCode(
         env->SetMutableBinding(ctx_, arg_name,
                                arguments[n], ctx_->IsStrict(), CHECK);
       }
+      ++n;
     }
   }
   BOOST_FOREACH(core::FunctionLiteral* const f,
