@@ -1,4 +1,6 @@
+#include "context.h"
 #include "error.h"
+#include "jsexception.h"
 
 namespace iv {
 namespace lv5 {
@@ -17,11 +19,11 @@ void Error::Clear() {
   code_ = Normal;
 }
 
-JSVal Error::Detail() const {
+JSVal Error::Detail(Context* ctx) const {
   if (code_ == User) {
     return value_;
   } else {
-    return JSUndefined;
+    return JSError::New(ctx, code_, JSString::NewAsciiString(ctx, detail_));
   }
 }
 

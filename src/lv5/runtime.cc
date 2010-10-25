@@ -8,6 +8,7 @@ namespace lv5 {
 namespace {
 
 const std::string function_prefix("function ");
+const std::string error_split(": ");
 
 }  // namespace
 
@@ -74,7 +75,44 @@ JSVal Runtime_FunctionToString(const Arguments& args,
       return JSString::New(args.ctx(), buffer);
     }
   }
-  error->Report(Error::Type, "Function.prototype.toString is not generic function");
+  error->Report(Error::Type,
+                "Function.prototype.toString is not generic function");
+  return JSUndefined;
+}
+
+JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
+  const JSVal& obj = args.this_binding();
+  Context* ctx = args.ctx();
+  if (obj.IsObject()) {
+    JSString* name;
+    {
+      const JSVal target = obj.object()->Get(ctx,
+                                             ctx->Intern("name"),
+                                             ERROR(error));
+      if (target.IsUndefined()) {
+        name = JSString::NewAsciiString(ctx, "Error");
+      } else {
+        name = target.ToString(ctx, ERROR(error));
+      }
+    }
+    JSString* msg;
+    {
+      const JSVal target = obj.object()->Get(ctx,
+                                             ctx->Intern("message"),
+                                             ERROR(error));
+      if (target.IsUndefined()) {
+        return JSUndefined;
+      } else {
+        msg = target.ToString(ctx, ERROR(error));
+      }
+    }
+    core::UString buffer;
+    buffer.append(name->data(), name->size());
+    buffer.append(error_split.begin(), error_split.end());
+    buffer.append(msg->data(), msg->size());
+    return JSString::New(ctx, buffer);
+  }
+  error->Report(Error::Type, "base must be object");
   return JSUndefined;
 }
 

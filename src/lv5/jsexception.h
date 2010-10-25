@@ -6,19 +6,15 @@ namespace iv {
 namespace lv5 {
 
 class JSVal;
+class JSString;
 
 class JSError : public JSObject {
  public:
-  static JSVal CreateFromCode(Error::Code code);
-  explicit JSError(Error::Code code);
+  explicit JSError(Context* ctx, Error::Code code, JSString* str);
+  static JSError* New(Context* ctx, Error::Code code, JSString* str);
  protected:
   Error::Code code_;
-};
-
-class JSReferenceError : public JSError {
-};
-
-class JSTypeError : public JSError {
+  JSString* detail_;
 };
 
 } }  // namespace iv::lv5

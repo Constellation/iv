@@ -602,13 +602,12 @@ void Interpreter::Visit(core::TryStatement* stmt) {
   stmt->body()->Accept(this);
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
+      const JSVal ex = ctx_->error()->Detail(ctx_);
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = ctx_->Intern(stmt->catch_name()->value());
-      const JSVal ex = (ctx_->IsMode<Context::THROW>()) ?
-          ctx_->ret() : JSUndefined;
       catch_env->CreateMutableBinding(ctx_, name, false);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK);
       {

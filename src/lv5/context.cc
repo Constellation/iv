@@ -163,6 +163,45 @@ void Context::Initialize() {
     const Symbol name = Intern("Array");
     builtins_[name] = cls;
   }
+
+  {
+    // Error
+    JSObject* const proto = JSObject::NewPlain(this);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      JSString::NewAsciiString(this, "Error"),
+      NULL,
+      proto
+    };
+    proto->set_cls(cls.name);
+    const Symbol name = Intern("Error");
+    builtins_[name] = cls;
+    {
+      // section 15.11.4.4 Error.prototype.toString()
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_ErrorToString);
+      proto->DefineOwnProperty(
+          this, toString_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE),
+          false, NULL);
+    }
+
+    // section 15.11.4.2 Error.prototype.name
+    proto->DefineOwnProperty(
+        this, Intern("name"),
+        DataDescriptor(
+            JSString::NewAsciiString(this, "Error"), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.11.4.3 Error.prototype.message
+    proto->DefineOwnProperty(
+        this, Intern("message"),
+        DataDescriptor(
+            JSString::NewAsciiString(this, ""), PropertyDescriptor::NONE),
+        false, NULL);
+  }
+
   {
     // Builtins
     // section 15.1.1.1 NaN

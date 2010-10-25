@@ -8,6 +8,7 @@
 namespace iv {
 namespace lv5 {
 
+class Context;
 class Error {
  public:
   typedef Error this_type;
@@ -39,7 +40,7 @@ class Error {
   void Report(Code code, const core::StringPiece& str);
   void Report(const JSVal& val);
   void Clear();
-  JSVal Detail() const;
+  JSVal Detail(Context* ctx) const;
 
   operator bool_type() const {
     return code_ != Normal ?
