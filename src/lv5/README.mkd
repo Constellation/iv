@@ -6,14 +6,13 @@ lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Interpreter writt
 ## MILESTONE
 + parser - done
 + interpreter - done
-+ statements - working
++ statements - done
 + expressions - done
 + builtin objects - working
 
 ## TODO
 + implement arguments
 + implement builtin objects
-+ refine error system
 
 ## TARGET
 Aims at the most precise interpreter of The ECMA262 5th Specification.
