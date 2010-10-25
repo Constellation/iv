@@ -1,3 +1,4 @@
+#include <cmath>
 #include "cstring"
 #include "ustring.h"
 #include "arguments.h"
@@ -48,6 +49,10 @@ Context::Context()
   lexical_env_ = env;
   variable_env_ = env;
   interp_.set_context(this);
+  // discard random
+  for (std::size_t i = 0; i < 20; ++i) {
+    Random();
+  }
   Initialize();
 }
 
@@ -199,6 +204,72 @@ void Context::Initialize() {
         this, Intern("message"),
         DataDescriptor(
             JSString::NewAsciiString(this, ""), PropertyDescriptor::NONE),
+        false, NULL);
+  }
+
+  {
+    // section 15.8 Math
+    JSObject* const math = JSObject::NewPlain(this);
+    math->set_prototype(obj_proto);
+    math->set_cls(JSString::NewAsciiString(this, "Math"));
+    global_obj_.DefineOwnProperty(
+        this, Intern("Math"),
+        DataDescriptor(math, PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.1.1 E
+    math->DefineOwnProperty(
+        this, Intern("E"),
+        DataDescriptor(std::exp(1.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.2 LN10
+    math->DefineOwnProperty(
+        this, Intern("LN10"),
+        DataDescriptor(std::exp(10.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.3 LN2
+    math->DefineOwnProperty(
+        this, Intern("LN2"),
+        DataDescriptor(std::exp(2.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.4 LOG2E
+    math->DefineOwnProperty(
+        this, Intern("LOG2E"),
+        DataDescriptor(1.0 / std::log(2.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.5 LOG10E
+    math->DefineOwnProperty(
+        this, Intern("LOG10E"),
+        DataDescriptor(1.0 / std::log(10.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.6 PI
+    math->DefineOwnProperty(
+        this, Intern("PI"),
+        DataDescriptor(std::acos(-1.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.7 SQRT1_2
+    math->DefineOwnProperty(
+        this, Intern("SQRT1_2"),
+        DataDescriptor(std::sqrt(0.5), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.1.8 SQRT2
+    math->DefineOwnProperty(
+        this, Intern("SQRT2"),
+        DataDescriptor(std::sqrt(2.0), PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.8.2.14 random()
+    math->DefineOwnProperty(
+        this, Intern("random"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom),
+                       PropertyDescriptor::WRITABLE),
         false, NULL);
   }
 

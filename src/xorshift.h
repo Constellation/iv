@@ -24,10 +24,10 @@ class Xor128 {
       w_(88675123) {
     seed(x0);
   }
-  result_type min() const {
+  static result_type min() {
     return limits::min();
   }
-  result_type max() const {
+  static result_type max() {
     return limits::max();
   }
   void seed() {
@@ -35,9 +35,9 @@ class Xor128 {
   }
   void seed(result_type x0) {
     x_ ^= x0;
-    y_ ^= RotateLeft<8>(x0);
-    z_ ^= RotateLeft<24>(x0);
-    w_ ^= RotateLeft<16>(x0);
+    y_ ^= RotateLeft<17>(x0);
+    z_ ^= RotateLeft<31>(x0);
+    w_ ^= RotateLeft<18>(x0);
   }
   void discard(unsigned long long count) {  // NOLINT
     for (unsigned long long i = 0; i < count; ++i) {  // NOLINT
@@ -64,7 +64,10 @@ class Xor128 {
     return (x << N) | (x >> (kIntBits - N));
   }
 
-  int_t x_, y_, z_, w_;
+  int_t x_;
+  int_t y_;
+  int_t z_;
+  int_t w_;
 };
 
 } }  // namespace iv::core

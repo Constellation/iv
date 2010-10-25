@@ -116,4 +116,8 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+JSVal Runtime_MathRandom(const Arguments& args, Error* error) {
+  return args.ctx()->Random();
+}
+
 } }  // namespace iv::lv5
