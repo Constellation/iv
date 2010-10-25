@@ -1,7 +1,6 @@
 #ifndef _IV_LV5_JSFUNCTION_H_
 #define _IV_LV5_JSFUNCTION_H_
 #include <tr1/functional>
-#include "jserrorcode.h"
 #include "jsobject.h"
 #include "jsenv.h"
 #include "arguments.h"
@@ -12,6 +11,7 @@ namespace lv5 {
 class Context;
 class JSCodeFunction;
 class JSNativeFunction;
+class Error;
 class JSFunction : public JSObject {
  public:
   bool IsCallable() const {

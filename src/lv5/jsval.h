@@ -9,7 +9,6 @@
 #include "utils.h"
 #include "hint.h"
 #include "jsstring.h"
-#include "jserrorcode.h"
 
 namespace iv {
 namespace lv5 {

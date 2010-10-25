@@ -4,11 +4,11 @@
 namespace iv {
 namespace lv5 {
 
-JSError::JSError(JSErrorCode::Type code)
+JSError::JSError(Error::Code code)
   : code_(code) {
 }
 
-JSVal JSError::CreateFromCode(JSErrorCode::Type code) {
+JSVal JSError::CreateFromCode(Error::Code code) {
   return new JSError(code);
 }
 

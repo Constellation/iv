@@ -4,7 +4,6 @@
 #include <iterator>
 #include <algorithm>
 #include "jsval.h"
-#include "jserrorcode.h"
 
 namespace iv {
 namespace lv5 {

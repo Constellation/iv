@@ -5,7 +5,6 @@
 #include "property.h"
 #include "hint.h"
 #include "jsstring.h"
-#include "jserrorcode.h"
 #include "gc-template.h"
 #include "symbol.h"
 
@@ -17,6 +16,7 @@ class JSFunction;
 class PropertyDescriptor;
 class Callable;
 class Context;
+class Error;
 
 class JSObject : public gc {
  public:

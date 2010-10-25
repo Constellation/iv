@@ -1,11 +1,11 @@
 #ifndef IV_LV5_RUNTIME_H_
 #define IV_LV5_RUNTIME_H_
-#include "jserrorcode.h"
 #include "arguments.h"
 #include "jsval.h"
 
 namespace iv {
 namespace lv5 {
+
 class Error;
 
 JSVal Runtime_ObjectConstructor(const Arguments& args, Error* error);

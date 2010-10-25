@@ -4,7 +4,6 @@
 #include "noncopyable.h"
 #include "ast.h"
 #include "utils.h"
-#include "jserrorcode.h"
 #include "jsval.h"
 #include "jsenv.h"
 #include "jsstring.h"
@@ -15,6 +14,7 @@ namespace iv {
 namespace lv5 {
 
 class Context;
+class Error;
 class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public core::AstVisitor {
  public:

@@ -11,7 +11,6 @@
 #include "jsval.h"
 #include "jsobject.h"
 #include "jsfunction.h"
-#include "jserrorcode.h"
 #include "symboltable.h"
 #include "class.h"
 #include "interpreter.h"

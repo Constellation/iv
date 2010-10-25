@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_JSEXCEPTION_H_
 #define _IV_LV5_JSEXCEPTION_H_
-#include "jserrorcode.h"
 #include "jsobject.h"
+#include "error.h"
 namespace iv {
 namespace lv5 {
 
@@ -9,10 +9,10 @@ class JSVal;
 
 class JSError : public JSObject {
  public:
-  static JSVal CreateFromCode(JSErrorCode::Type code);
-  explicit JSError(JSErrorCode::Type code);
+  static JSVal CreateFromCode(Error::Code code);
+  explicit JSError(Error::Code code);
  protected:
-  JSErrorCode::Type code_;
+  Error::Code code_;
 };
 
 class JSReferenceError : public JSError {
