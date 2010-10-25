@@ -265,10 +265,129 @@ void Context::Initialize() {
         DataDescriptor(std::sqrt(2.0), PropertyDescriptor::NONE),
         false, NULL);
 
+    // section 15.8.2.1 abs(x)
+    math->DefineOwnProperty(
+        this, Intern("abs"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAbs),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.2 acos(x)
+    math->DefineOwnProperty(
+        this, Intern("acos"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAcos),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.3 asin(x)
+    math->DefineOwnProperty(
+        this, Intern("acos"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.4 atan(x)
+    math->DefineOwnProperty(
+        this, Intern("atan"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.5 atan2(y, x)
+    math->DefineOwnProperty(
+        this, Intern("atan2"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan2),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.6 ceil(x)
+    math->DefineOwnProperty(
+        this, Intern("ceil"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCeil),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.7 cos(x)
+    math->DefineOwnProperty(
+        this, Intern("cos"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCos),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.8 exp(x)
+    math->DefineOwnProperty(
+        this, Intern("exp"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathExp),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.9 floor(x)
+    math->DefineOwnProperty(
+        this, Intern("floor"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathFloor),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.10 log(x)
+    math->DefineOwnProperty(
+        this, Intern("log"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathLog),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.11 max([value1[, value2[, ... ]]])
+    math->DefineOwnProperty(
+        this, Intern("max"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMax),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.12 min([value1[, value2[, ... ]]])
+    math->DefineOwnProperty(
+        this, Intern("min"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMin),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.13 pow(x, y)
+    math->DefineOwnProperty(
+        this, Intern("pow"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathPow),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
     // section 15.8.2.14 random()
     math->DefineOwnProperty(
         this, Intern("random"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.15 round(x)
+    math->DefineOwnProperty(
+        this, Intern("round"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRound),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.16 sin(x)
+    math->DefineOwnProperty(
+        this, Intern("sin"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSin),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.17 sqrt(x)
+    math->DefineOwnProperty(
+        this, Intern("sqrt"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSqrt),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+
+    // section 15.8.2.18 tan(x)
+    math->DefineOwnProperty(
+        this, Intern("tan"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathTan),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
   }
