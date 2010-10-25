@@ -104,7 +104,8 @@ int main(int argc, char **argv) {
     if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
       std::tr1::array<char, 1024> buf;
       while (std::size_t len = std::fread(buf.data(),
-                                          1, sizeof(buf.size()), fp)) {
+                                          1,
+                                          buf.size(), fp)) {
         str.append(buf.data(), len);
       }
       std::fclose(fp);
