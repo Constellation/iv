@@ -149,6 +149,7 @@ void Context::Initialize() {
     variable_env_->SetMutableBinding(this, name,
                                      obj_constructor, strict_, NULL);
   }
+
   {
     // Array
     JSObject* const proto = JSObject::NewPlain(this);
@@ -162,8 +163,28 @@ void Context::Initialize() {
     const Symbol name = Intern("Array");
     builtins_[name] = cls;
   }
-  global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
-  global_obj_.set_prototype(obj_proto);
+  {
+    // Builtins
+    // section 15.1.1.1 NaN
+    global_obj_.DefineOwnProperty(
+        this, Intern("NaN"),
+        DataDescriptor(
+            std::numeric_limits<double>::quiet_NaN(), PropertyDescriptor::NONE),
+        false, NULL);
+    // section 15.1.1.2 Infinity
+    global_obj_.DefineOwnProperty(
+        this, Intern("Infinity"),
+        DataDescriptor(
+            std::numeric_limits<double>::infinity(), PropertyDescriptor::NONE),
+        false, NULL);
+    // section 15.1.1.3 undefined
+    global_obj_.DefineOwnProperty(
+        this, Intern("undefined"),
+        DataDescriptor(JSUndefined, PropertyDescriptor::NONE),
+        false, NULL);
+    global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
+    global_obj_.set_prototype(obj_proto);
+  }
 }
 
 const Class& Context::Cls(Symbol name) {
