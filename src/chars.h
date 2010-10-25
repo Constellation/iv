@@ -1,11 +1,11 @@
-#ifndef _IV_CHAR_H_
-#define _IV_CHAR_H_
+#ifndef _IV_CHARS_H_
+#define _IV_CHARS_H_
 #include "uchar.h"
 
 namespace iv {
 namespace core {
 
-class ICU {
+class Chars {
  public:
   enum CharCategory {
     UPPERCASE_LETTER = U_MASK(U_UPPERCASE_LETTER),
@@ -76,5 +76,4 @@ class ICU {
 
 } }  // namespace iv::core
 
-#endif  // _IV_CHAR_H_
-
+#endif  // _IV_CHARS_H_

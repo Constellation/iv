@@ -3,7 +3,7 @@
 #include <tr1/array>
 #include <cstdlib>
 #include "conversions-inl.h"
-#include "char.h"
+#include "chars.h"
 #include "ustringpiece.h"
 #include "jsarray.h"
 #include "jsobject.h"
@@ -22,7 +22,7 @@ bool ConvertToUInt32(const core::UStringPiece& str, uint32_t* value) {
   uint16_t ch;
   core::UStringPiece::const_iterator it = str.begin();
   const core::UStringPiece::const_iterator last = str.end();
-  if (it != last && *it != '0' && core::ICU::IsDecimalDigit(*it)) {
+  if (it != last && *it != '0' && core::Chars::IsDecimalDigit(*it)) {
       *value = (*it - '0');
   } else {
     return false;
@@ -31,7 +31,7 @@ bool ConvertToUInt32(const core::UStringPiece& str, uint32_t* value) {
   for (;it != last; ++it) {
     prev = *value;
     ch = *it;
-    if (core::ICU::IsDecimalDigit(ch)) {
+    if (core::Chars::IsDecimalDigit(ch)) {
       *value = (ch - '0') + (prev * 10);
     } else {
       return false;

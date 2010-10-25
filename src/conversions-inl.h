@@ -5,7 +5,7 @@
 #include <tr1/array>
 #include <tr1/cstdint>
 #include "conversions.h"
-#include "char.h"
+#include "chars.h"
 #include "dtoa.h"
 #include "ustringpiece.h"
 namespace iv {
@@ -25,7 +25,7 @@ inline double StringToDouble(Iter it, Iter last) {
     return 0;
   }
 
-  while (it != last && (ICU::IsWhiteSpace(*it) || ICU::IsLineTerminator(*it))) {
+  while (it != last && (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
     ++it;
   }
 
@@ -46,7 +46,7 @@ inline double StringToDouble(Iter it, Iter last) {
     return Conversions::kNaN;
   }
 
-  if (ICU::IsDecimalDigit(*it)) {
+  if (Chars::IsDecimalDigit(*it)) {
     if (*it == '0') {
       ++it;
       if (it == last) {
@@ -58,14 +58,14 @@ inline double StringToDouble(Iter it, Iter last) {
         buffer[pos++] = *it;
         ++it;
         ++significant_digits;
-        if (it == last || !ICU::IsHexDigit(*it)) {
+        if (it == last || !Chars::IsHexDigit(*it)) {
           return Conversions::kNaN;
         }
         // waste leading zero
         while (it != last && *it == '0') {
           ++it;
         }
-        while (it != last && ICU::IsHexDigit(*it)) {
+        while (it != last && Chars::IsHexDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
             buffer[pos++] = *it;
             ++it;
@@ -83,7 +83,7 @@ inline double StringToDouble(Iter it, Iter last) {
     }
     if (is_decimal) {
       while (it != last &&
-             ICU::IsDecimalDigit(*it)) {
+             Chars::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
           buffer[pos++] = *it;
           ++significant_digits;
@@ -96,7 +96,7 @@ inline double StringToDouble(Iter it, Iter last) {
         buffer[pos++] = '.';
         ++it;
         while (it != last &&
-               ICU::IsDecimalDigit(*it)) {
+               Chars::IsDecimalDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
             buffer[pos++] = *it;
             ++significant_digits;
@@ -110,7 +110,7 @@ inline double StringToDouble(Iter it, Iter last) {
       buffer[pos++] = '.';
       ++it;
       while (it != last &&
-             ICU::IsDecimalDigit(*it)) {
+             Chars::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
           buffer[pos++] = *it;
           ++significant_digits;
@@ -128,7 +128,7 @@ inline double StringToDouble(Iter it, Iter last) {
       }
       // infinity
       while (it != last &&
-             (ICU::IsWhiteSpace(*it) || ICU::IsLineTerminator(*it))) {
+             (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
         ++it;
       }
       if (it == last) {
@@ -161,7 +161,7 @@ inline double StringToDouble(Iter it, Iter last) {
       return Conversions::kNaN;
     }
     // more than 1 decimal digit required
-    if (!ICU::IsDecimalDigit(*it)) {
+    if (!Chars::IsDecimalDigit(*it)) {
       return Conversions::kNaN;
     }
     int exponent = 0;
@@ -172,7 +172,7 @@ inline double StringToDouble(Iter it, Iter last) {
         exponent = exponent * 10 + (*it - '0');
       }
       ++it;
-    } while (it != last && ICU::IsDecimalDigit(*it));
+    } while (it != last && Chars::IsDecimalDigit(*it));
     exponent+=insignificant_digits;
     if (exponent > 9999) {
       exponent = 9999;
@@ -181,7 +181,7 @@ inline double StringToDouble(Iter it, Iter last) {
     pos+=4;
   }
 
-  while (it != last && (ICU::IsWhiteSpace(*it) || ICU::IsLineTerminator(*it))) {
+  while (it != last && (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
     ++it;
   }
 

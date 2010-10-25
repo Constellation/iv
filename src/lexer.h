@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 #include "uchar.h"
-#include "char.h"
+#include "chars.h"
 #include "token.h"
 #include "source.h"
 #include "noncopyable.h"

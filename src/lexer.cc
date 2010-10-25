@@ -24,7 +24,7 @@ Token::Type Lexer::Next(int type) {
   Token::Type token;
   has_line_terminator_before_next_ = false;
   do {
-    while (ICU::IsWhiteSpace(c_)) {
+    while (Chars::IsWhiteSpace(c_)) {
       // white space
       Advance();
     }
@@ -231,7 +231,7 @@ Token::Type Lexer::Next(int type) {
       case '.':
         // . Number
         Advance();
-        if (ICU::IsDecimalDigit(c_)) {
+        if (Chars::IsDecimalDigit(c_)) {
           // float number parse
           token = ScanNumber(true);
         } else {
@@ -310,11 +310,11 @@ Token::Type Lexer::Next(int type) {
         }
 
       default:
-        if (ICU::IsIdentifierStart(c_)) {
+        if (Chars::IsIdentifierStart(c_)) {
           token = ScanIdentifier(type);
-        } else if (ICU::IsDecimalDigit(c_)) {
+        } else if (Chars::IsDecimalDigit(c_)) {
           token = ScanNumber(false);
-        } else if (ICU::IsLineTerminator(c_)) {
+        } else if (Chars::IsLineTerminator(c_)) {
           SkipLineTerminator();
           has_line_terminator_before_next_ = true;
           token = Token::NOT_FOUND;
@@ -369,7 +369,7 @@ inline Token::Type Lexer::IsMatch(char const * keyword,
 Token::Type Lexer::SkipSingleLineComment() {
   Advance();
   // see ECMA-262 section 7.4
-  while (c_ >= 0 && !ICU::IsLineTerminator(c_)) {
+  while (c_ >= 0 && !Chars::IsLineTerminator(c_)) {
     Advance();
   }
   return Token::NOT_FOUND;
@@ -385,7 +385,7 @@ Token::Type Lexer::SkipMultiLineComment() {
     if (ch == '*' && c_ == '/') {
       c_ = ' ';
       return Token::NOT_FOUND;
-    } else if (ICU::IsLineTerminator(c_)) {
+    } else if (Chars::IsLineTerminator(c_)) {
       // see ECMA-262 section 7.4
       SkipLineTerminator();
       has_line_terminator_before_next_ = true;
@@ -414,7 +414,7 @@ Token::Type Lexer::ScanHtmlComment() {
 Token::Type Lexer::ScanMagicComment() {
   Advance();
   // see ECMA-262 section 7.4
-  while (c_ >= 0 && !ICU::IsLineTerminator(c_)) {
+  while (c_ >= 0 && !Chars::IsLineTerminator(c_)) {
     Advance();
   }
   return Token::NOT_FOUND;
@@ -433,7 +433,7 @@ Token::Type Lexer::ScanIdentifier(int type) {
     }
     Advance();
     uc = ScanHexEscape('u', 4);
-    if (uc == '\\' || !ICU::IsIdentifierStart(uc)) {
+    if (uc == '\\' || !Chars::IsIdentifierStart(uc)) {
       return Token::ILLEGAL;
     }
     Record16(uc);
@@ -441,7 +441,7 @@ Token::Type Lexer::ScanIdentifier(int type) {
     Record16Advance();
   }
 
-  while (ICU::IsIdentifierPart(c_)) {
+  while (Chars::IsIdentifierPart(c_)) {
     if (c_ == '\\') {
       Advance();
       if (c_ != 'u') {
@@ -449,7 +449,7 @@ Token::Type Lexer::ScanIdentifier(int type) {
       }
       Advance();
       uc = ScanHexEscape('u', 4);
-      if (uc == '\\' || !ICU::IsIdentifierPart(uc)) {
+      if (uc == '\\' || !Chars::IsIdentifierPart(uc)) {
         return Token::ILLEGAL;
       }
       Record16(uc);
@@ -861,7 +861,7 @@ Token::Type Lexer::ScanString() {
   const UChar quote = c_;
   buffer16_.clear();
   Advance();
-  while (c_ != quote && c_ >= 0 && !ICU::IsLineTerminator(c_)) {
+  while (c_ != quote && c_ >= 0 && !Chars::IsLineTerminator(c_)) {
     if (c_ == '\\') {
       Advance();
       // escape sequence
@@ -884,7 +884,7 @@ Token::Type Lexer::ScanString() {
 }
 
 void Lexer::ScanEscape() {
-  if (ICU::IsLineTerminator(c_)) {
+  if (Chars::IsLineTerminator(c_)) {
     SkipLineTerminator();
     return;
   }
@@ -961,13 +961,13 @@ Token::Type Lexer::ScanNumber(const bool period) {
         // 0x (hex)
         type = HEX;
         Record8Advance();
-        if (!ICU::IsHexDigit(c_)) {
+        if (!Chars::IsHexDigit(c_)) {
           return Token::ILLEGAL;
         }
-        while (ICU::IsHexDigit(c_)) {
+        while (Chars::IsHexDigit(c_)) {
           Record8Advance();
         }
-      } else if (ICU::IsOctalDigit(c_)) {
+      } else if (Chars::IsOctalDigit(c_)) {
         // 0 (octal)
         // octal number cannot convert with strtod
         type = OCTAL;
@@ -1004,7 +1004,7 @@ Token::Type Lexer::ScanNumber(const bool period) {
       Record8Advance();
     }
     // more than 1 decimal digit required
-    if (!ICU::IsDecimalDigit(c_)) {
+    if (!Chars::IsDecimalDigit(c_)) {
       return Token::ILLEGAL;
     }
     ScanDecimalDigits();
@@ -1013,7 +1013,7 @@ Token::Type Lexer::ScanNumber(const bool period) {
   // see ECMA-262 section 7.8.3
   // "immediately following a NumericLiteral must not be an IdentifierStart or
   // DecimalDigit."
-  if (ICU::IsDecimalDigit(c_) || ICU::IsIdentifierStart(c_)) {
+  if (Chars::IsDecimalDigit(c_) || Chars::IsIdentifierStart(c_)) {
     return Token::ILLEGAL;
   }
 
@@ -1086,7 +1086,7 @@ inline int Lexer::HexValue(const int c) const {
 }
 
 void Lexer::ScanDecimalDigits() {
-  while (ICU::IsDecimalDigit(c_)) {
+  while (Chars::IsDecimalDigit(c_)) {
     Record8Advance();
   }
 }
@@ -1108,13 +1108,13 @@ bool Lexer::ScanRegExpLiteral(bool contains_eq) {
   }
   while (c_ != '/' || character) {
     // invalid RegExp pattern
-    if (ICU::IsLineTerminator(c_) || c_ < 0) {
+    if (Chars::IsLineTerminator(c_) || c_ < 0) {
       return false;
     }
     if (c_ == '\\') {
       // escape
       Record16Advance();
-      if (ICU::IsLineTerminator(c_) || c_ < 0) {
+      if (Chars::IsLineTerminator(c_) || c_ < 0) {
         return false;
       }
       Record16Advance();
@@ -1134,7 +1134,7 @@ bool Lexer::ScanRegExpLiteral(bool contains_eq) {
 bool Lexer::ScanRegExpFlags() {
   buffer16_.clear();
   UChar uc;
-  while (ICU::IsIdentifierPart(c_)) {
+  while (Chars::IsIdentifierPart(c_)) {
     if (c_ == '\\') {
       Advance();
       if (c_ != 'u') {

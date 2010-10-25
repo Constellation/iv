@@ -1,5 +1,5 @@
 #include "source.h"
-#include "char.h"
+#include "ctype.h"
 
 namespace iv {
 namespace core {
@@ -52,9 +52,9 @@ const char* Source::SkipSingleLineComment(const char* current,
   int ch = Next(current, end);
   ++current;
   while (ch >= 0) {
-    if (ICU::IsLineTerminator(ch)) {
+    if (Chars::IsLineTerminator(ch)) {
       ch = Next(current, end);
-      if (ICU::IsLineTerminator(ch)) {
+      if (Chars::IsLineTerminator(ch)) {
         ++current;
       }
       return current;
