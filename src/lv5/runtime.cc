@@ -1,5 +1,6 @@
 #include <iostream>  // NOLINT
 #include "lv5.h"
+#include "error.h"
 #include "runtime.h"
 #include "context.h"
 namespace iv {
@@ -11,7 +12,7 @@ const std::string function_prefix("function ");
 }  // namespace
 
 JSVal Runtime_ObjectConstructor(const Arguments& args,
-                                JSErrorCode::Type* error) {
+                                Error* error) {
   if (args.size() == 1) {
     const JSVal& val = args[0];
     if (val.IsNull() || val.IsUndefined()) {
@@ -26,7 +27,7 @@ JSVal Runtime_ObjectConstructor(const Arguments& args,
 }
 
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
-                                   JSErrorCode::Type* error) {
+                                   Error* error) {
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* ctx = args.ctx();
@@ -42,7 +43,7 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
   }
 }
 
-JSVal Runtime_ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
+JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
   std::string ascii;
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
   JSString* const cls = obj->cls();
@@ -54,7 +55,7 @@ JSVal Runtime_ObjectToString(const Arguments& args, JSErrorCode::Type* error) {
 }
 
 JSVal Runtime_FunctionToString(const Arguments& args,
-                               JSErrorCode::Type* error) {
+                               Error* error) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
@@ -73,7 +74,7 @@ JSVal Runtime_FunctionToString(const Arguments& args,
       return JSString::New(args.ctx(), buffer);
     }
   }
-  *error = JSErrorCode::TypeError;
+  error->Report(Error::Type, "Function.prototype.toString is not generic function");
   return JSUndefined;
 }
 

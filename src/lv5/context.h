@@ -15,6 +15,7 @@
 #include "symboltable.h"
 #include "class.h"
 #include "interpreter.h"
+#include "error.h"
 
 namespace iv {
 namespace lv5 {
@@ -78,13 +79,13 @@ class Context : private core::Noncopyable<Context>::type {
   void set_strict(bool strict) {
     strict_ = strict;
   }
-  const JSErrorCode::Type* error() const {
+  const Error& error() const {
+    return error_;
+  }
+  Error* error() {
     return &error_;
   }
-  JSErrorCode::Type* error() {
-    return &error_;
-  }
-  void set_error(JSErrorCode::Type error) {
+  void set_error(const Error& error) {
     error_ = error;
   }
   const JSVal& ret() const {
@@ -160,6 +161,9 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol valueOf_symbol() const {
     return valueOf_symbol_;
   }
+  inline Symbol prototype_symbol() const {
+    return valueOf_symbol_;
+  }
   double Random();
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
@@ -174,7 +178,7 @@ class Context : private core::Noncopyable<Context>::type {
   Mode mode_;
   JSVal ret_;
   core::BreakableStatement* target_;
-  JSErrorCode::Type error_;
+  Error error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;
   random_generator random_engine_;
@@ -185,6 +189,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol callee_symbol_;
   Symbol toString_symbol_;
   Symbol valueOf_symbol_;
+  Symbol prototype_symbol_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_

@@ -22,7 +22,7 @@ JSCodeFunction::JSCodeFunction(core::FunctionLiteral* func,
 }
 
 JSVal JSCodeFunction::Call(const Arguments& args,
-                           JSErrorCode::Type* error) {
+                           Error* error) {
   Interpreter* const interp = args.interpreter();
   Context* const ctx = args.ctx();
   interp->CallCode(*this, args, error);
@@ -40,16 +40,16 @@ JSCodeFunction* JSCodeFunction::New(Context* ctx,
 }
 
 bool JSFunction::HasInstance(Context* ctx,
-                             const JSVal& val, JSErrorCode::Type* error) {
+                             const JSVal& val, Error* error) {
   if (!val.IsObject()) {
     return false;
   }
-  const JSVal got = Get(ctx, ctx->Intern("prototype"), error);
+  const JSVal got = Get(ctx, ctx->prototype_symbol(), error);
   if (*error) {
     return false;
   }
   if (!got.IsObject()) {
-    *error = JSErrorCode::TypeError;
+    error->Report(Error::Type, "\"prototype\" is not object");
     return false;
   }
   const JSObject* const proto = got.object();
@@ -65,7 +65,7 @@ bool JSFunction::HasInstance(Context* ctx,
 }
 
 JSVal JSFunction::Get(Context* ctx,
-                      Symbol name, JSErrorCode::Type* error) {
+                      Symbol name, Error* error) {
   const JSVal val = JSObject::Get(ctx, name, error);
   if (*error) {
     return val;
@@ -73,14 +73,15 @@ JSVal JSFunction::Get(Context* ctx,
   if (name == ctx->caller_symbol() &&
       val.IsCallable() &&
       val.object()->AsCallable()->IsStrict()) {
-    *error = JSErrorCode::TypeError;
+    error->Report(Error::Type,
+                  "\"caller\" property is not accessible in strict code");
     return JSFalse;
   }
   return val;
 }
 
 JSVal JSNativeFunction::Call(const Arguments& args,
-                             JSErrorCode::Type* error) {
+                             Error* error) {
   return func_(args, error);
 }
 

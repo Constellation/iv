@@ -1,6 +1,7 @@
 #include <limits>
 #include <tr1/array>
 #include "jsval.h"
+#include "error.h"
 #include "jsobject.h"
 #include "conversions-inl.h"
 namespace iv {
@@ -92,7 +93,7 @@ JSString* JSVal::TypeOf(Context* ctx) const {
   }
 }
 
-JSObject* JSVal::ToObject(Context* ctx, JSErrorCode::Type* res) const {
+JSObject* JSVal::ToObject(Context* ctx, Error* res) const {
   if (IsObject()) {
     return object();
   } else if (IsNumber()) {
@@ -101,8 +102,11 @@ JSObject* JSVal::ToObject(Context* ctx, JSErrorCode::Type* res) const {
     return JSStringObject::New(ctx, string());
   } else if (IsBoolean()) {
     return JSBooleanObject::New(ctx, boolean());
-  } else if (IsNull() || IsUndefined()) {
-    *res = JSErrorCode::TypeError;
+  } else if (IsNull()) {
+    res->Report(Error::Type, "null has no properties");
+    return NULL;
+  } else if (IsUndefined()) {
+    res->Report(Error::Type, "undefined has no properties");
     return NULL;
   } else {
     UNREACHABLE();
@@ -110,7 +114,7 @@ JSObject* JSVal::ToObject(Context* ctx, JSErrorCode::Type* res) const {
 }
 
 JSString* JSVal::ToString(Context* ctx,
-                          JSErrorCode::Type* res) const {
+                          Error* res) const {
   if (IsString()) {
     return string();
   } else if (IsNumber()) {
@@ -135,7 +139,7 @@ JSString* JSVal::ToString(Context* ctx,
   }
 }
 
-double JSVal::ToNumber(Context* ctx, JSErrorCode::Type* res) const {
+double JSVal::ToNumber(Context* ctx, Error* res) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
@@ -157,7 +161,7 @@ double JSVal::ToNumber(Context* ctx, JSErrorCode::Type* res) const {
 }
 
 JSVal JSVal::ToPrimitive(Context* ctx,
-                         Hint::Object hint, JSErrorCode::Type* res) const {
+                         Hint::Object hint, Error* res) const {
   if (IsObject()) {
     return object()->DefaultValue(ctx, hint, res);
   } else {
@@ -170,5 +174,13 @@ bool JSVal::IsCallable() const {
   return IsObject() && object()->IsCallable();
 }
 
+void JSVal::CheckObjectCoercible(Error* res) const {
+  assert(!IsEnvironment() && !IsReference());
+  if (IsNull()) {
+    res->Report(Error::Type, "null has no properties");
+  } else if (IsUndefined()) {
+    res->Report(Error::Type, "undefined has no properties");
+  }
+}
 
 } }  // namespace iv::lv5

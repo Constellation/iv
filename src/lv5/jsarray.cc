@@ -53,10 +53,10 @@ JSArray::JSArray(Context* ctx, std::size_t len)
                                              false, NULL);
 }
 
-#define REJECT()\
+#define REJECT(str)\
   do {\
     if (th) {\
-      *res = JSErrorCode::TypeError;\
+      res->Report(Error::Type, str);\
     }\
     return false;\
   } while (0)
@@ -65,7 +65,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 Symbol name,
                                 const PropertyDescriptor& desc,
                                 bool th,
-                                JSErrorCode::Type* res) {
+                                Error* res) {
   const Symbol length_symbol = ctx->length_symbol();
   PropertyDescriptor old_len_desc_upper = GetOwnProperty(length_symbol);
   assert(!old_len_desc_upper.IsEmpty() &&
@@ -84,7 +84,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
-        *res = JSErrorCode::RangeError;
+        res->Report(Error::Range, "out of range");
         return false;
       }
       double old_len = len_value.ToNumber(ctx, res);
@@ -97,7 +97,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                            new_len_desc, th, res);
       }
       if (!old_len_desc->IsWritable()) {
-        REJECT();
+        REJECT("\"length\" not writable");
       }
       const bool new_writable =
           new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
@@ -128,7 +128,10 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           }
           JSObject::DefineOwnProperty(ctx, length_symbol,
                                       new_len_desc, false, res);
-          REJECT();
+          if (*res) {
+            return false;
+          }
+          REJECT("shrink array failed");
         }
       }
       if (!new_writable) {
@@ -164,7 +167,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           return false;
         }
         if (!succeeded) {
-          REJECT();
+          REJECT("define own property failed");
         }
         if (index >= old_len) {
           old_len_desc->set_value(static_cast<double>(index+1));

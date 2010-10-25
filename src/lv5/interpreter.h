@@ -35,7 +35,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     ctx_ = context;
   }
   void CallCode(const JSCodeFunction& code, const Arguments& args,
-                JSErrorCode::Type* error);
+                Error* error);
 
   static JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env);
   static JSObjectEnv* NewObjectEnvironment(Context* ctx,
@@ -123,11 +123,11 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   bool InCurrentLabelSet(const core::BreakableStatement* stmt);
   bool StrictEqual(const JSVal& lhs, const JSVal& rhs);
   bool AbstractEqual(const JSVal& lhs, const JSVal& rhs,
-                     JSErrorCode::Type* error);
+                     Error* error);
   CompareKind Compare(const JSVal& lhs, const JSVal& rhs,
-                      bool left_first, JSErrorCode::Type* error);
-  JSVal GetValue(const JSVal& val, JSErrorCode::Type* error);
-  void PutValue(const JSVal& val, const JSVal& w, JSErrorCode::Type* error);
+                      bool left_first, Error* error);
+  JSVal GetValue(const JSVal& val, Error* error);
+  void PutValue(const JSVal& val, const JSVal& w, Error* error);
   JSReference* GetIdentifierReference(JSEnv* lex,
                                       Symbol name, bool strict);
 

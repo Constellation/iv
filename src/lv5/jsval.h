@@ -19,6 +19,7 @@ static const bool kLittleEndian = true;
 static const bool kLittleEndian = false;
 #endif  // IS_LITTLE_ENDIAN
 
+class Error;
 class JSEnv;
 class Context;
 class JSReference;
@@ -284,26 +285,21 @@ class JSVal {
     return IsNumber() ? kNumberTag : value_.struct_.tag_;
   }
 
-  JSObject* ToObject(Context* ctx, JSErrorCode::Type* res) const;
+  JSObject* ToObject(Context* ctx, Error* res) const;
 
   JSString* ToString(Context* ctx,
-                     JSErrorCode::Type* res) const;
+                     Error* res) const;
 
-  double ToNumber(Context* ctx, JSErrorCode::Type* res) const;
+  double ToNumber(Context* ctx, Error* res) const;
 
   JSVal ToPrimitive(Context* ctx,
-                    Hint::Object hint, JSErrorCode::Type* res) const;
+                    Hint::Object hint, Error* res) const;
 
   bool IsCallable() const;
 
-  inline void CheckObjectCoercible(JSErrorCode::Type* res) const {
-    assert(!IsEnvironment() && !IsReference());
-    if (IsNull() || IsUndefined()) {
-      *res = JSErrorCode::TypeError;
-    }
-  }
+  void CheckObjectCoercible(Error* res) const;
 
-  inline bool ToBoolean(JSErrorCode::Type* res) const {
+  inline bool ToBoolean(Error* res) const {
     if (IsNumber()) {
       const double& num = number();
       return num != 0 && !std::isnan(num);
@@ -332,7 +328,6 @@ class JSVal {
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
   }
-
 
  private:
   value_type value_;

@@ -117,7 +117,7 @@ Interpreter::~Interpreter() {
 void Interpreter::CallCode(
     const JSCodeFunction& code,
     const Arguments& args,
-    JSErrorCode::Type* error) {
+    Error* error) {
   // step 1
   JSVal this_value = args.this_binding();
   if (!code.IsStrict()) {
@@ -603,7 +603,7 @@ void Interpreter::Visit(core::TryStatement* stmt) {
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
       ctx_->set_mode(Context::NORMAL);
-      ctx_->set_error(JSErrorCode::Normal);
+      ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = ctx_->Intern(stmt->catch_name()->value());
@@ -621,7 +621,7 @@ void Interpreter::Visit(core::TryStatement* stmt) {
   const JSVal value = ctx_->ret();
   core::BreakableStatement* const target = ctx_->target();
 
-  ctx_->set_error(JSErrorCode::Normal);
+  ctx_->error()->Clear();
   ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
 
   if (stmt->finally_block()) {
@@ -751,7 +751,8 @@ void Interpreter::Visit(core::Assignment* assign) {
       const Symbol sym = ref->GetReferencedName();
       if (sym == ctx_->eval_symbol() ||
           sym == ctx_->arguments_symbol()) {
-        ctx_->set_error(JSErrorCode::SyntaxError);
+        // TODO(Constellation) remove SyntaxError
+        ctx_->error()->Report(Error::Syntax, "?");
         return;
       }
     }
@@ -901,12 +902,12 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
 
       case Token::INSTANCEOF: {  // instanceof
         if (!rhs.IsObject()) {
-          ctx_->set_error(JSErrorCode::TypeError);
+          ctx_->error()->Report(Error::Type, "instanceof requires object");
           return;
         }
         JSObject* const robj = rhs.object();
         if (!robj->IsCallable()) {
-          ctx_->set_error(JSErrorCode::TypeError);
+          ctx_->error()->Report(Error::Type, "instanceof requires constructor");
           return;
         }
         bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
@@ -916,7 +917,7 @@ void Interpreter::Visit(core::BinaryOperation* binary) {
 
       case Token::IN: {  // in
         if (!rhs.IsObject()) {
-          ctx_->set_error(JSErrorCode::TypeError);
+          ctx_->error()->Report(Error::Type, "in requires object");
           return;
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
@@ -1014,7 +1015,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
       const JSReference* const ref = ctx_->ret().reference();
       if (ref->IsUnresolvableReference()) {
         if (ref->IsStrictReference()) {
-          ctx_->set_error(JSErrorCode::SyntaxError);
+          // TODO(Constellation) remove SyntaxError
+          ctx_->error()->Report(Error::Syntax, "?");
           return;
         } else {
           ctx_->Return(true);
@@ -1029,7 +1031,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
       } else {
         assert(ref->base()->IsEnvironment());
         if (ref->IsStrictReference()) {
-          ctx_->set_error(JSErrorCode::SyntaxError);
+          // TODO(Constellation) remove SyntaxError
+          ctx_->error()->Report(Error::Syntax, "?");
           return;
         }
         ctx_->Return(
@@ -1070,7 +1073,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
           const Symbol sym = ref->GetReferencedName();
           if (sym == ctx_->eval_symbol() ||
               sym == ctx_->arguments_symbol()) {
-            ctx_->set_error(JSErrorCode::SyntaxError);
+            // TODO(Constellation) remove SyntaxError
+            ctx_->error()->Report(Error::Syntax, "?");
             return;
           }
         }
@@ -1093,7 +1097,8 @@ void Interpreter::Visit(core::UnaryOperation* unary) {
           const Symbol sym = ref->GetReferencedName();
           if (sym == ctx_->eval_symbol() ||
               sym == ctx_->arguments_symbol()) {
-            ctx_->set_error(JSErrorCode::SyntaxError);
+            // TODO(Constellation) remove SyntaxError
+            ctx_->error()->Report(Error::Syntax, "?");
             return;
           }
         }
@@ -1155,7 +1160,8 @@ void Interpreter::Visit(core::PostfixExpression* postfix) {
       const Symbol sym = ref->GetReferencedName();
       if (sym == ctx_->eval_symbol() ||
           sym == ctx_->arguments_symbol()) {
-        ctx_->set_error(JSErrorCode::SyntaxError);
+        // TODO(Constellation) remove SyntaxError
+        ctx_->error()->Report(Error::Syntax, "?");
         return;
       }
     }
@@ -1331,7 +1337,7 @@ void Interpreter::Visit(core::FunctionCall* call) {
 
   const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
-    ctx_->set_error(JSErrorCode::TypeError);
+    ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
   if (target.IsReference()) {
@@ -1363,7 +1369,7 @@ void Interpreter::Visit(core::ConstructorCall* call) {
 
   const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
-    ctx_->set_error(JSErrorCode::TypeError);
+    ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
   JSFunction* const constructor = func.object()->AsCallable();
@@ -1384,14 +1390,15 @@ void Interpreter::Visit(core::ConstructorCall* call) {
 
 
 // section 8.7.1 GetValue
-JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
+JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
   if (!val.IsReference()) {
     return val;
   }
   const JSReference* const ref = val.reference();
   const JSVal* const base = ref->base();
   if (ref->IsUnresolvableReference()) {
-    *error = JSErrorCode::TypeError;
+    // TODO(Constellation) add symbol name
+    error->Report(Error::Reference, "not defined");
     return JSUndefined;
   }
   if (ref->IsPropertyReference()) {
@@ -1450,16 +1457,19 @@ JSVal Interpreter::GetValue(const JSVal& val, JSErrorCode::Type* error) {
 
 // section 8.7.2 PutValue
 void Interpreter::PutValue(const JSVal& val, const JSVal& w,
-                           JSErrorCode::Type* error) {
+                           Error* error) {
   if (!val.IsReference()) {
-    *error = JSErrorCode::ReferenceError;
+    error->Report(Error::Reference,
+                  "target is not reference");
     return;
   }
   const JSReference* const ref = val.reference();
   const JSVal* const base = ref->base();
   if (ref->IsUnresolvableReference()) {
     if (ref->IsStrictReference()) {
-      *error = JSErrorCode::ReferenceError;
+      error->Report(Error::Reference,
+                    "putting to unresolvable reference "
+                    "not allowed in strict reference");
       return;
     }
     ctx_->global_obj()->Put(ctx_, ref->GetReferencedName(),
@@ -1471,14 +1481,15 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       JSObject* const o = base->ToObject(ctx_, ERRCHECK);
       if (!o->CanPut(sym)) {
         if (th) {
-          *error = JSErrorCode::TypeError;
+          error->Report(Error::Type, "cannot put value to object");
         }
         return;
       }
       const PropertyDescriptor own_desc = o->GetOwnProperty(sym);
       if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
         if (th) {
-          *error = JSErrorCode::TypeError;
+          // TODO(Constellation) add symbol name
+          error->Report(Error::Type, "value to symbol defined and not data descriptor");
         }
         return;
       }
@@ -1489,7 +1500,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
         ac->set()->AsCallable()->Call(Arguments(ctx_, *base), ERRCHECK);
       } else {
         if (th) {
-          *error = JSErrorCode::TypeError;
+          error->Report(Error::Type, "value to symbol in transient object");
         }
       }
       return;
@@ -1545,7 +1556,7 @@ bool Interpreter::StrictEqual(const JSVal& lhs, const JSVal& rhs) {
 
 
 bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
-                                JSErrorCode::Type* error) {
+                                Error* error) {
   if (lhs.type() == rhs.type()) {
     if (lhs.IsUndefined()) {
       return true;
@@ -1619,7 +1630,7 @@ bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
 Interpreter::CompareKind Interpreter::Compare(const JSVal& lhs,
                                               const JSVal& rhs,
                                               bool left_first,
-                                              JSErrorCode::Type* error) {
+                                              Error* error) {
   JSVal px;
   JSVal py;
   if (left_first) {

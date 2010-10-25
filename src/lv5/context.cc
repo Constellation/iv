@@ -17,6 +17,7 @@ const std::string caller_string("caller");
 const std::string callee_string("callee");
 const std::string toString_string("toString");
 const std::string valueOf_string("valueOf");
+const std::string prototype_string("prototype");
 
 }  // namespace
 
@@ -30,7 +31,7 @@ Context::Context()
     mode_(NORMAL),
     ret_(),
     target_(NULL),
-    error_(JSErrorCode::Normal),
+    error_(),
     builtins_(),
     strict_(false),
     random_engine_(random_engine_type(),
@@ -41,7 +42,8 @@ Context::Context()
     caller_symbol_(Intern(caller_string)),
     callee_symbol_(Intern(callee_string)),
     toString_symbol_(Intern(toString_string)),
-    valueOf_symbol_(Intern(valueOf_string)) {
+    valueOf_symbol_(Intern(valueOf_string)),
+    prototype_symbol_(Intern(prototype_string)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
@@ -139,7 +141,7 @@ void Context::Initialize() {
     builtins_[name] = obj_cls;
 
     obj_constructor->DefineOwnProperty(
-        this, Intern("prototype"),
+        this, prototype_symbol_,
         DataDescriptor(obj_proto, PropertyDescriptor::NONE),
         false, NULL);
 

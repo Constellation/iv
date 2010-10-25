@@ -15,7 +15,7 @@ class JSArray : public JSObject {
                          Symbol name,
                          const PropertyDescriptor& desc,
                          bool th,
-                         JSErrorCode::Type* res);
+                         Error* res);
 
   static JSArray* New(Context* ctx);
 

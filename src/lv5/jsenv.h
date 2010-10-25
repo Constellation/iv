@@ -19,9 +19,9 @@ class JSEnv : public gc {
   virtual void SetMutableBinding(Context* ctx,
                                  Symbol name,
                                  const JSVal& val,
-                                 bool strict, JSErrorCode::Type* res) = 0;
+                                 bool strict, Error* res) = 0;
   virtual JSVal GetBindingValue(Context* ctx, Symbol name,
-                                bool strict, JSErrorCode::Type* res) const = 0;
+                                bool strict, Error* res) const = 0;
   virtual JSVal ImplicitThisValue() const = 0;
   virtual JSDeclEnv* AsJSDeclEnv() = 0;
   virtual JSObjectEnv* AsJSObjectEnv() = 0;
@@ -52,9 +52,9 @@ class JSDeclEnv : public JSEnv {
   void SetMutableBinding(Context* ctx,
                          Symbol name,
                          const JSVal& val,
-                         bool strict, JSErrorCode::Type* res);
+                         bool strict, Error* res);
   JSVal GetBindingValue(Context* ctx, Symbol name,
-                        bool strict, JSErrorCode::Type* res) const;
+                        bool strict, Error* res) const;
   JSVal ImplicitThisValue() const;
   void CreateImmutableBinding(Symbol name);
   void InitializeImmutableBinding(Symbol name, const JSVal& val);
@@ -90,9 +90,9 @@ class JSObjectEnv : public JSEnv {
   void SetMutableBinding(Context* ctx,
                          Symbol name,
                          const JSVal& val,
-                         bool strict, JSErrorCode::Type* res);
+                         bool strict, Error* res);
   JSVal GetBindingValue(Context* ctx, Symbol name,
-                        bool strict, JSErrorCode::Type* res) const;
+                        bool strict, Error* res) const;
   JSVal ImplicitThisValue() const;
 
   JSDeclEnv* AsJSDeclEnv() {

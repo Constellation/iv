@@ -23,6 +23,7 @@
 #include "interpreter.h"
 #include "context.h"
 #include "jsval.h"
+#include "error.h"
 #include "arguments.h"
 
 #include "ustream.h"
@@ -31,10 +32,10 @@ namespace {
 using iv::lv5::Arguments;
 using iv::lv5::JSVal;
 using iv::lv5::JSUndefined;
-using iv::lv5::JSErrorCode;
 using iv::lv5::JSString;
+using iv::lv5::Error;
 
-static JSVal Print(const Arguments& args, JSErrorCode::Type* error) {
+static JSVal Print(const Arguments& args, Error* error) {
   if (args.args().size() > 0) {
     const std::size_t last = args.size();
     std::size_t index = 0;

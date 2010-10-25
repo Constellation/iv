@@ -21,11 +21,11 @@ class JSFunction : public JSObject {
     return this;
   }
   virtual JSVal Call(const Arguments& args,
-                     JSErrorCode::Type* error) = 0;
+                     Error* error) = 0;
   bool HasInstance(Context* ctx,
-                   const JSVal& val, JSErrorCode::Type* error);
+                   const JSVal& val, Error* error);
   JSVal Get(Context* ctx,
-            Symbol name, JSErrorCode::Type* error);
+            Symbol name, Error* error);
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;
   virtual bool IsStrict() const = 0;
@@ -37,7 +37,7 @@ class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(core::FunctionLiteral* func, JSEnv* env);
   JSVal Call(const Arguments& args,
-             JSErrorCode::Type* error);
+             Error* error);
   JSEnv* scope() const {
     return env_;
   }
@@ -68,12 +68,12 @@ class JSCodeFunction : public JSFunction {
 
 class JSNativeFunction : public JSFunction {
  public:
-  typedef JSVal(*value_type)(const Arguments&, JSErrorCode::Type*);
+  typedef JSVal(*value_type)(const Arguments&, Error*);
   explicit JSNativeFunction(value_type func)
     : func_(func) {
   }
   JSVal Call(const Arguments& args,
-             JSErrorCode::Type* error);
+             Error* error);
   JSCodeFunction* AsCodeFunction() {
     return NULL;
   }

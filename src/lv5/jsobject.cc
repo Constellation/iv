@@ -45,7 +45,7 @@ JSObject::JSObject(JSObject* proto,
     }\
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
-                             Hint::Object hint, JSErrorCode::Type* res) {
+                             Hint::Object hint, Error* res) {
   const Arguments args(ctx, this);
   if (hint != Hint::NUMBER) {
     // hint is STRING or NONE
@@ -55,13 +55,13 @@ JSVal JSObject::DefaultValue(Context* ctx,
     TRY(ctx, ctx->valueOf_symbol(), args, res);
     TRY(ctx, ctx->toString_symbol(), args, res);
   }
-  *res = JSErrorCode::TypeError;
+  res->Report(Error::Type, "invalid default value");
   return JSUndefined;
 }
 #undef TRY
 
 JSVal JSObject::Get(Context* ctx,
-                    Symbol name, JSErrorCode::Type* res) {
+                    Symbol name, Error* res) {
   const PropertyDescriptor desc = GetProperty(name);
   if (desc.IsEmpty()) {
     return JSUndefined;
@@ -127,10 +127,10 @@ bool JSObject::CanPut(Symbol name) const {
   }
 }
 
-#define REJECT()\
+#define REJECT(str)\
   do {\
     if (th) {\
-      *res = JSErrorCode::TypeError;\
+      res->Report(Error::Type, str);\
     }\
     return false;\
   } while (0)
@@ -139,12 +139,12 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
-                                 JSErrorCode::Type* res) {
+                                 Error* res) {
   // section 8.12.9 [[DefineOwnProperty]]
   const PropertyDescriptor current = GetOwnProperty(name);
   if (current.IsEmpty()) {
     if (!extensible_) {
-      REJECT();
+      REJECT("object not extensible");
     } else {
       assert(desc.IsDataDescriptor() || desc.IsAccessorDescriptor());
       table_[name] = desc.SetDefaultToAbsent();
@@ -159,20 +159,21 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   }
 
   // step 7
-  if (current.IsConfigurable()) {
+  if (!current.IsConfigurable()) {
     if (desc.Configurable() == PropertyDescriptor::kTRUE) {
-      REJECT();
+      REJECT(
+          "changing [[Configurable]] of unconfigurable property not allowed");
     }
     if (!desc.IsEnumerableAbsent() &&
         current.Enumerable() != desc.Enumerable()) {
-      REJECT();
+      REJECT("changing [[Enumerable]] of unconfigurable property not allowed");
     }
   }
 
   // step 9
   if (current.type() != desc.type()) {
-    if (current.Configurable()) {
-      REJECT();
+    if (!current.Configurable()) {
+      REJECT("changing descriptor type of unconfigurable property not allowed");
     }
     if (current.IsDataDescriptor()) {
       assert(desc.IsAccessorDescriptor());
@@ -183,14 +184,15 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     // step 10
     if (current.IsDataDescriptor()) {
       assert(desc.IsDataDescriptor());
-      if (current.IsConfigurable()) {
+      if (!current.IsConfigurable()) {
         if (!current.IsWritable()) {
           if (desc.Writable() == PropertyDescriptor::kTRUE) {
-            REJECT();
+            REJECT(
+                "changing [[Writable]] of unconfigurable property not allowed");
           }
           if (SameValue(current.AsDataDescriptor()->data(),
                         desc.AsDataDescriptor()->data())) {
-            REJECT();
+            REJECT("changing [[Value]] of readonly property not allowed");
           }
         }
       }
@@ -201,7 +203,8 @@ bool JSObject::DefineOwnProperty(Context* ctx,
         const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
         const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
         if (lhs->set() != rhs->set() || lhs->get() != rhs->get()) {
-          REJECT();
+          REJECT("changing [[Set]] or [[Get]] "
+                 "of unconfigurable property not allowed");
         }
       }
     }
@@ -214,10 +217,10 @@ bool JSObject::DefineOwnProperty(Context* ctx,
 
 void JSObject::Put(Context* ctx,
                    Symbol name,
-                   const JSVal& val, bool th, JSErrorCode::Type* res) {
+                   const JSVal& val, bool th, Error* res) {
   if (!CanPut(name)) {
     if (th) {
-      *res = JSErrorCode::TypeError;
+      res->Report(Error::Type, "put failed");
     }
     return;
   }
@@ -245,7 +248,7 @@ bool JSObject::HasProperty(Symbol name) const {
   return !GetProperty(name).IsEmpty();
 }
 
-bool JSObject::Delete(Symbol name, bool th, JSErrorCode::Type* res) {
+bool JSObject::Delete(Symbol name, bool th, Error* res) {
   const PropertyDescriptor desc = GetOwnProperty(name);
   if (desc.IsEmpty()) {
     return true;
@@ -255,7 +258,7 @@ bool JSObject::Delete(Symbol name, bool th, JSErrorCode::Type* res) {
     return true;
   } else {
     if (th) {
-      *res = JSErrorCode::TypeError;
+      res->Report(Error::Type, "delete failed");
     }
     return false;
   }

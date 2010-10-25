@@ -36,26 +36,25 @@ void JSDeclEnv::CreateMutableBinding(Context* ctx, Symbol name, bool del) {
 void JSDeclEnv::SetMutableBinding(Context* ctx,
                                   Symbol name,
                                   const JSVal& val,
-                                  bool strict, JSErrorCode::Type* res) {
+                                  bool strict, Error* res) {
   Record::const_iterator it(record_.find(name));
   assert(it != record_.end());
   if (it->second.first & MUTABLE) {
     record_[name] = std::make_pair(it->second.first, val);
   } else {
-    if (strict) {
-      *res = JSErrorCode::TypeError;
-    }
+    res->Report(Error::Type, "mutating immutable binding not allowed");
   }
 }
 
 JSVal JSDeclEnv::GetBindingValue(Context* ctx,
                                  Symbol name,
-                                 bool strict, JSErrorCode::Type* res) const {
+                                 bool strict, Error* res) const {
   Record::const_iterator it(record_.find(name));
   assert(it != record_.end());
   if (it->second.first & IM_UNINITIALIZED) {
     if (strict) {
-      *res = JSErrorCode::ReferenceError;
+      res->Report(Error::Reference,
+                  "uninitialized value access not allowed in strict code");
     }
     return JSUndefined;
   } else {
@@ -109,17 +108,18 @@ void JSObjectEnv::CreateMutableBinding(Context* ctx, Symbol name, bool del) {
 void JSObjectEnv::SetMutableBinding(Context* ctx,
                                     Symbol name,
                                     const JSVal& val,
-                                    bool strict, JSErrorCode::Type* res) {
+                                    bool strict, Error* res) {
   record_->Put(ctx, name, val, strict, res);
 }
 
 JSVal JSObjectEnv::GetBindingValue(Context* ctx,
                                    Symbol name,
-                                   bool strict, JSErrorCode::Type* res) const {
+                                   bool strict, Error* res) const {
   bool value = record_->HasProperty(name);
   if (!value) {
     if (strict) {
-      *res = JSErrorCode::ReferenceError;
+      // TODO(Constellation) add name of reference
+      res->Report(Error::Reference, "not defined");
     }
     return JSUndefined;
   }

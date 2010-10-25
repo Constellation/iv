@@ -26,21 +26,21 @@ class JSObject : public gc {
   JSObject(JSObject* proto, JSString* cls, bool extensible);
 
   virtual JSVal DefaultValue(Context* context,
-                             Hint::Object hint, JSErrorCode::Type* res);
+                             Hint::Object hint, Error* res);
   virtual JSVal Get(Context* context,
-                    Symbol name, JSErrorCode::Type* res);
+                    Symbol name, Error* res);
   virtual PropertyDescriptor GetOwnProperty(Symbol name) const;
   virtual PropertyDescriptor GetProperty(Symbol name) const;
   virtual bool CanPut(Symbol name) const;
   virtual void Put(Context* context, Symbol name,
-                   const JSVal& val, bool th, JSErrorCode::Type* res);
+                   const JSVal& val, bool th, Error* res);
   virtual bool HasProperty(Symbol name) const;
-  virtual bool Delete(Symbol name, bool th, JSErrorCode::Type* res);
+  virtual bool Delete(Symbol name, bool th, Error* res);
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
-                                 JSErrorCode::Type* res);
+                                 Error* res);
   virtual bool IsCallable() const {
     return false;
   }

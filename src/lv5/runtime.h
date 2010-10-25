@@ -6,11 +6,12 @@
 
 namespace iv {
 namespace lv5 {
+class Error;
 
-JSVal Runtime_ObjectConstructor(const Arguments& args, JSErrorCode::Type* error);
-JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, JSErrorCode::Type* error);
-JSVal Runtime_ObjectToString(const Arguments& args, JSErrorCode::Type* error);
-JSVal Runtime_FunctionToString(const Arguments& args, JSErrorCode::Type* error);
+JSVal Runtime_ObjectConstructor(const Arguments& args, Error* error);
+JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
+JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
+JSVal Runtime_FunctionToString(const Arguments& args, Error* error);
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_RUNTIME_H_
