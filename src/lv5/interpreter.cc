@@ -593,6 +593,7 @@ void Interpreter::Visit(core::SwitchStatement* stmt) {
 void Interpreter::Visit(core::ThrowStatement* stmt) {
   EVAL(stmt->expr());
   JSVal ref = GetValue(ctx_->ret(), CHECK);
+  ctx_->error()->Report(ref);
   RETURN_STMT(Context::THROW, ref, NULL);
 }
 
