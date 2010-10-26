@@ -88,6 +88,7 @@ def Build():
     else:
       conf.env.ParseConfig('icu-config --cxxflags --cppflags --ldflags')
       option_dict['%USE_ICU%'] = '1'
+    conf.CheckLibWithHeader('m', 'cmath', 'c++')
     env = conf.Finish()
 
   if options.get('cache'):
