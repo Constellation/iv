@@ -35,17 +35,17 @@ class JSFunction : public JSObject {
 
 class JSCodeFunction : public JSFunction {
  public:
-  JSCodeFunction(core::FunctionLiteral* func, JSEnv* env);
+  JSCodeFunction(const core::FunctionLiteral* func, JSEnv* env);
   JSVal Call(const Arguments& args,
              Error* error);
   JSEnv* scope() const {
     return env_;
   }
-  core::FunctionLiteral* code() const {
+  const core::FunctionLiteral* code() const {
     return function_;
   }
   static JSCodeFunction* New(Context* ctx,
-                             core::FunctionLiteral* func, JSEnv* env);
+                             const core::FunctionLiteral* func, JSEnv* env);
   JSCodeFunction* AsCodeFunction() {
     return this;
   }
@@ -55,14 +55,14 @@ class JSCodeFunction : public JSFunction {
   core::UStringPiece GetSource() const {
     return function_->GetSource();
   }
-  core::Identifier* name() const {
+  const core::Identifier* name() const {
     return function_->name();
   }
   bool IsStrict() const {
     return function_->strict();
   }
  private:
-  core::FunctionLiteral* function_;
+  const core::FunctionLiteral* function_;
   JSEnv* env_;
 };
 

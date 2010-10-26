@@ -106,7 +106,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void SetStatement(Mode mode, const JSVal& val,
-                    core::BreakableStatement* target) {
+                    const core::BreakableStatement* target) {
     mode_ = mode;
     ret_ = val;
     target_ = target;
@@ -115,9 +115,6 @@ class Context : private core::Noncopyable<Context>::type {
     return error_;
   }
   const core::BreakableStatement* target() const {
-    return target_;
-  }
-  core::BreakableStatement* target() {
     return target_;
   }
 
@@ -176,7 +173,7 @@ class Context : private core::Noncopyable<Context>::type {
   Interpreter interp_;
   Mode mode_;
   JSVal ret_;
-  core::BreakableStatement* target_;
+  const core::BreakableStatement* target_;
   Error error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;

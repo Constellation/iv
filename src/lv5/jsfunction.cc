@@ -15,7 +15,7 @@ void JSFunction::SetClass(Context* ctx, JSObject* obj) {
   obj->set_prototype(cls.prototype);
 }
 
-JSCodeFunction::JSCodeFunction(core::FunctionLiteral* func,
+JSCodeFunction::JSCodeFunction(const core::FunctionLiteral* func,
                                JSEnv* env)
   : function_(func),
     env_(env) {
@@ -33,7 +33,8 @@ JSVal JSCodeFunction::Call(const Arguments& args,
 }
 
 JSCodeFunction* JSCodeFunction::New(Context* ctx,
-                                    core::FunctionLiteral* func, JSEnv* env) {
+                                    const core::FunctionLiteral* func,
+                                    JSEnv* env) {
   JSCodeFunction* const obj = new JSCodeFunction(func, env);
   SetClass(ctx, obj);
   return obj;
