@@ -249,22 +249,23 @@ inline int32_t DoubleToUInt32(double d) {
 }
 
 inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
-  *value = 0;
-  uint32_t prev;
   uint16_t ch;
+  *value = 0;
   UStringPiece::const_iterator it = str.begin();
   const UStringPiece::const_iterator last = str.end();
   if (it != last && *it != '0' && Chars::IsDecimalDigit(*it)) {
-      *value = (*it - '0');
+    ch = *it - '0';
+    *value = ch;
   } else {
     return false;
   }
   ++it;
+  uint32_t prev = *value;
   for (;it != last; ++it) {
     prev = *value;
-    ch = *it;
-    if (Chars::IsDecimalDigit(ch)) {
-      *value = (ch - '0') + (prev * 10);
+    if (Chars::IsDecimalDigit(*it)) {
+      ch = *it - '0';
+      *value = ch + (prev * 10);
     } else {
       return false;
     }
