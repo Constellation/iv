@@ -6,6 +6,7 @@
 #include "property.h"
 #include "arguments.h"
 #include "gc-template.h"
+#include "jsfunction.h"
 namespace iv {
 namespace lv5 {
 
@@ -14,14 +15,17 @@ class JSObject;
 class Error;
 class JSDeclEnv;
 class JSArguments : public JSObject {
+ public:
   typedef core::AstNode::Identifiers Identifiers;
   JSArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),
       set_() { }
-  static JSObject* New(Context* ctx,
-                       JSDeclEnv* env,
-                       const Arguments& args,
-                       const Identifiers& names);
+  static JSArguments* New(Context* ctx,
+                          const JSCodeFunction& code,
+                          const Identifiers& names,
+                          const Arguments& args,
+                          JSDeclEnv* env,
+                          bool strict);
   JSVal Get(Context* context,
             Symbol name, Error* error);
   PropertyDescriptor GetOwnProperty(Symbol name) const;

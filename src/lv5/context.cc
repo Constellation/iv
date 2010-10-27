@@ -414,6 +414,17 @@ void Context::Initialize() {
     global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
     global_obj_.set_prototype(obj_proto);
   }
+
+  {
+    // Arguments
+    struct Class cls = {
+      JSString::NewAsciiString(this, "Arguments"),
+      NULL,
+      obj_proto
+    };
+    const Symbol name = Intern("Arguments");
+    builtins_[name] = cls;
+  }
 }
 
 const Class& Context::Cls(Symbol name) {

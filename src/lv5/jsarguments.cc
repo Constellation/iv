@@ -11,10 +11,12 @@
 namespace iv {
 namespace lv5 {
 
-JSObject* JSArguments::New(Context* ctx,
-                           JSDeclEnv* env,
-                           const Arguments& args,
-                           const Identifiers& names) {
+JSArguments* JSArguments::New(Context* ctx,
+                              const JSCodeFunction& code,
+                              const Identifiers& names,
+                              const Arguments& args,
+                              JSDeclEnv* env,
+                              bool strict) {
   JSArguments* const obj = new JSArguments(ctx, env);
   const std::size_t len = args.size();
   const std::size_t names_len = names.size();

@@ -15,6 +15,7 @@
 #include "jsfunction.h"
 #include "jsregexp.h"
 #include "jsexception.h"
+#include "jsarguments.h"
 #include "property.h"
 #include "jsenv.h"
 #include "jsarray.h"
@@ -124,29 +125,31 @@ void Interpreter::CallCode(
     if (this_value.IsUndefined()) {
       this_value.set_value(ctx_->global_obj());
     } else if (!this_value.IsObject()) {
-      JSObject* obj = this_value.ToObject(ctx_, CHECK);
+      JSObject* const obj = this_value.ToObject(ctx_, CHECK);
       this_value.set_value(obj);
     }
   }
-  JSDeclEnv* local_env = NewDeclarativeEnvironment(ctx_, code.scope());
-  ContextSwitcher switcher(ctx_, local_env,
-                           local_env, this_value,
-                           code.IsStrict());
-
   // section 10.5 Declaration Binding Instantiation
   const core::Scope& scope = code.code()->scope();
+
   // step 1
-  JSEnv* const env = ctx_->variable_env();
+  JSDeclEnv* const env = NewDeclarativeEnvironment(ctx_, code.scope());
+  const ContextSwitcher switcher(ctx_, env, env, this_value,
+                                 code.IsStrict());
+
   // step 2
+  // TODO(Constellation) code check (eval)
   const bool configurable_bindings = false;
+
   // step 4
   {
-    Arguments::JSVals arguments = args.args();
-    std::size_t arg_count = arguments.size();
+    const Arguments::JSVals& arguments = args.args();
+    const std::size_t arg_count = arguments.size();
     std::size_t n = 0;
     BOOST_FOREACH(core::Identifier* const ident,
                   code.code()->params()) {
-      Symbol arg_name = ctx_->Intern(ident->value());
+      ++n;
+      const Symbol arg_name = ctx_->Intern(ident->value());
       if (!env->HasBinding(arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name, configurable_bindings);
       }
@@ -155,11 +158,12 @@ void Interpreter::CallCode(
                                JSUndefined, ctx_->IsStrict(), CHECK);
       } else {
         env->SetMutableBinding(ctx_, arg_name,
-                               arguments[n], ctx_->IsStrict(), CHECK);
+                               arguments[n-1], ctx_->IsStrict(), CHECK);
       }
-      ++n;
     }
   }
+
+  // step 5
   BOOST_FOREACH(core::FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(f->name()->value());
@@ -170,6 +174,29 @@ void Interpreter::CallCode(
     }
     env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
   }
+
+  // step 6, 7
+  // TODO(Constellation) code check (function)
+  const Symbol arguments_symbol = ctx_->arguments_symbol();
+  if (!env->HasBinding(arguments_symbol)) {
+    JSArguments* const args_obj = JSArguments::New(ctx_,
+                                                   code,
+                                                   code.code()->params(),
+                                                   args,
+                                                   env,
+                                                   ctx_->IsStrict());
+    if (ctx_->IsStrict()) {
+      env->CreateImmutableBinding(arguments_symbol);
+      env->InitializeImmutableBinding(arguments_symbol, args_obj);
+    } else {
+      env->CreateMutableBinding(ctx_, ctx_->arguments_symbol(),
+                                configurable_bindings);
+      env->SetMutableBinding(ctx_, arguments_symbol,
+                             args_obj, false, CHECK);
+    }
+  }
+
+  // step 8
   BOOST_FOREACH(const core::Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(var.first->value());
     if (!env->HasBinding(dn)) {
@@ -203,7 +230,7 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
   const bool configurable_bindings = false;
   const core::Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
-  StrictSwitcher switcher(ctx_, global->strict());
+  const StrictSwitcher switcher(ctx_, global->strict());
   BOOST_FOREACH(core::FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(f->name()->value());
@@ -500,7 +527,7 @@ void Interpreter::Visit(const core::WithStatement* stmt) {
   JSObjectEnv* const new_env = NewObjectEnvironment(ctx_, obj, old_env);
   new_env->set_provide_this(true);
   {
-    LexicalEnvSwitcher switcher(ctx_, new_env);
+    const LexicalEnvSwitcher switcher(ctx_, new_env);
     EVAL(stmt->body());
   }
 }
@@ -612,7 +639,7 @@ void Interpreter::Visit(const core::TryStatement* stmt) {
       catch_env->CreateMutableBinding(ctx_, name, false);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK);
       {
-        LexicalEnvSwitcher switcher(ctx_, catch_env);
+        const LexicalEnvSwitcher switcher(ctx_, catch_env);
         EVAL(stmt->catch_block());
       }
     }
