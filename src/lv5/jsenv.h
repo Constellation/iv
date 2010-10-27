@@ -55,6 +55,7 @@ class JSDeclEnv : public JSEnv {
                          bool strict, Error* res);
   JSVal GetBindingValue(Context* ctx, Symbol name,
                         bool strict, Error* res) const;
+  JSVal GetBindingValue(Symbol name) const;
   JSVal ImplicitThisValue() const;
   void CreateImmutableBinding(Symbol name);
   void InitializeImmutableBinding(Symbol name, const JSVal& val);

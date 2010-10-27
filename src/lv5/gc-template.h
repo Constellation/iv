@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <tr1/unordered_map>
+#include <tr1/unordered_set>
 #include <gc/gc_allocator.h>
 #include "uchar.h"
 
@@ -33,6 +34,13 @@ struct GCHashMap {
                                     std::pair<const T1, T2> > > type;
 };
 
+template<typename T>
+struct GCHashSet {
+  typedef std::tr1::unordered_set<T,
+                                  std::tr1::hash<T>,
+                                  std::equal_to<T>,
+                                  gc_allocator<T> > type;
+};
 
 typedef std::basic_string<UChar,
                           std::char_traits<UChar>,

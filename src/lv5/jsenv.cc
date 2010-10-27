@@ -62,6 +62,12 @@ JSVal JSDeclEnv::GetBindingValue(Context* ctx,
   }
 }
 
+JSVal JSDeclEnv::GetBindingValue(Symbol name) const {
+  Record::const_iterator it(record_.find(name));
+  assert(it != record_.end() && !(it->second.first & IM_UNINITIALIZED));
+  return it->second.second;
+}
+
 JSVal JSDeclEnv::ImplicitThisValue() const {
   return JSUndefined;
 }
