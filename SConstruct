@@ -56,7 +56,8 @@ def Build():
   var = GetVariables()
   var.AddVariables(
     BoolVariable('debug', '', 0),
-    BoolVariable('gprof', '', 0)
+    BoolVariable('gprof', '', 0),
+    BoolVariable('gcov', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
@@ -108,6 +109,12 @@ def Build():
     env.Append(
       CCFLAGS=["-pg"],
       LINKFLAGS=["-pg"]
+    )
+
+  if env['gcov']:
+    env.Append(
+      CCFLAGS=["-coverage"],
+      LINKFLAGS=["-coverage"]
     )
 
 #  if env['debug']:
