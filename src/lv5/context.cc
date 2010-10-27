@@ -2,6 +2,7 @@
 #include "cstring"
 #include "ustring.h"
 #include "arguments.h"
+#include "jsfunction.h"
 #include "context.h"
 #include "interpreter.h"
 #include "property.h"
@@ -24,6 +25,7 @@ const std::string prototype_string("prototype");
 
 Context::Context()
   : global_obj_(),
+    throw_type_error_(&Runtime_ThrowTypeError),
     lexical_env_(NULL),
     variable_env_(NULL),
     binding_(&global_obj_),
@@ -92,18 +94,8 @@ void Context::Run(core::FunctionLiteral* global) {
 }
 
 void Context::Initialize() {
-  // Object
-  JSNativeFunction* const obj_constructor =
-      JSNativeFunction::New(this, &Runtime_ObjectConstructor);
+  // Object and Function
   JSObject* const obj_proto = JSObject::NewPlain(this);
-  obj_proto->set_cls(JSString::NewAsciiString(this, "Object"));
-
-  struct Class obj_cls = {
-    JSString::NewAsciiString(this, "Object"),
-    obj_constructor,
-    obj_proto
-  };
-  obj_proto->set_cls(obj_cls.name);
 
   // Function
   JSObject* const func_proto = JSObject::NewPlain(this);
@@ -116,6 +108,19 @@ void Context::Initialize() {
   func_proto->set_cls(func_cls.name);
   const Symbol func_name = Intern("Function");
   builtins_[func_name] = func_cls;
+
+  JSNativeFunction* const obj_constructor =
+      JSNativeFunction::New(this, &Runtime_ObjectConstructor);
+
+  struct Class obj_cls = {
+    JSString::NewAsciiString(this, "Object"),
+    obj_constructor,
+    obj_proto
+  };
+  obj_proto->set_cls(obj_cls.name);
+  const Symbol obj_name = Intern("Object");
+  builtins_[obj_name] = obj_cls;
+
   {
     JSNativeFunction* const func =
         JSNativeFunction::New(this, &Runtime_FunctionToString);
@@ -128,7 +133,6 @@ void Context::Initialize() {
 
   {
     // Object Define
-    const Symbol name = Intern("Object");
     {
       JSNativeFunction* const func =
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty);
@@ -147,15 +151,14 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE),
           false, NULL);
     }
-    builtins_[name] = obj_cls;
 
     obj_constructor->DefineOwnProperty(
         this, prototype_symbol_,
         DataDescriptor(obj_proto, PropertyDescriptor::NONE),
         false, NULL);
 
-    variable_env_->CreateMutableBinding(this, name, false);
-    variable_env_->SetMutableBinding(this, name,
+    variable_env_->CreateMutableBinding(this, obj_name, false);
+    variable_env_->SetMutableBinding(this, obj_name,
                                      obj_constructor, strict_, NULL);
   }
 
@@ -429,13 +432,16 @@ void Context::Initialize() {
     const Symbol name = Intern("Arguments");
     builtins_[name] = cls;
   }
+  JSFunction::SetClass(this, &throw_type_error_);
 }
 
 const Class& Context::Cls(Symbol name) {
+  assert(builtins_.find(name) != builtins_.end());
   return builtins_[name];
 }
 
 const Class& Context::Cls(const core::StringPiece& str) {
+  assert(builtins_.find(Intern(str)) != builtins_.end());
   return builtins_[Intern(str)];
 }
 

@@ -29,7 +29,6 @@ class JSFunction : public JSObject {
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;
   virtual bool IsStrict() const = 0;
- protected:
   static void SetClass(Context* ctx, JSObject* obj);
 };
 

@@ -14,6 +14,12 @@ const double kInfinity = std::numeric_limits<double>::infinity();
 
 }  // namespace
 
+JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {
+  error->Report(Error::Type,
+                "[[ThrowTypeError]] called");
+  return JSUndefined;
+}
+
 JSVal Runtime_ObjectConstructor(const Arguments& args,
                                 Error* error) {
   if (args.size() == 1) {

@@ -12,7 +12,7 @@ namespace iv {
 namespace lv5 {
 
 JSArguments* JSArguments::New(Context* ctx,
-                              const JSCodeFunction& code,
+                              JSCodeFunction* code,
                               const Identifiers& names,
                               const Arguments& args,
                               JSDeclEnv* env,
@@ -47,6 +47,25 @@ JSArguments* JSArguments::New(Context* ctx,
           std::make_pair(index_symbol, ctx->Intern(names[index]->value())));
     }
     index -= 1;
+  }
+  if (strict) {
+    JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+    obj->DefineOwnProperty(ctx, ctx->caller_symbol(),
+                           AccessorDescriptor(throw_type_error,
+                                              throw_type_error,
+                                              PropertyDescriptor::NONE),
+                           false, NULL);
+    obj->DefineOwnProperty(ctx, ctx->callee_symbol(),
+                           AccessorDescriptor(throw_type_error,
+                                              throw_type_error,
+                                              PropertyDescriptor::NONE),
+                           false, NULL);
+  } else {
+    obj->DefineOwnProperty(ctx, ctx->callee_symbol(),
+                           DataDescriptor(code,
+                                          PropertyDescriptor::WRITABLE |
+                                          PropertyDescriptor::CONFIGURABLE),
+                           false, NULL);
   }
   return obj;
 }

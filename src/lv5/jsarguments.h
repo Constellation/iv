@@ -21,7 +21,7 @@ class JSArguments : public JSObject {
     : env_(env),
       map_() { }
   static JSArguments* New(Context* ctx,
-                          const JSCodeFunction& code,
+                          JSCodeFunction* code,
                           const Identifiers& names,
                           const Arguments& args,
                           JSDeclEnv* env,

@@ -8,6 +8,8 @@ namespace lv5 {
 
 class Error;
 
+JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error);
+
 JSVal Runtime_ObjectConstructor(const Arguments& args, Error* error);
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);

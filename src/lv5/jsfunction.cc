@@ -25,7 +25,7 @@ JSVal JSCodeFunction::Call(const Arguments& args,
                            Error* error) {
   Interpreter* const interp = args.interpreter();
   Context* const ctx = args.ctx();
-  interp->CallCode(*this, args, error);
+  interp->CallCode(this, args, error);
   if (ctx->mode() == Context::RETURN) {
     ctx->set_mode(Context::NORMAL);
   }

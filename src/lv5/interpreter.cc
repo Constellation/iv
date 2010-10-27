@@ -116,12 +116,12 @@ Interpreter::~Interpreter() {
 
 // section 13.2.1 [[Call]]
 void Interpreter::CallCode(
-    const JSCodeFunction& code,
+    JSCodeFunction* code,
     const Arguments& args,
     Error* error) {
   // step 1
   JSVal this_value = args.this_binding();
-  if (!code.IsStrict()) {
+  if (!code->IsStrict()) {
     if (this_value.IsUndefined()) {
       this_value.set_value(ctx_->global_obj());
     } else if (!this_value.IsObject()) {
@@ -130,12 +130,12 @@ void Interpreter::CallCode(
     }
   }
   // section 10.5 Declaration Binding Instantiation
-  const core::Scope& scope = code.code()->scope();
+  const core::Scope& scope = code->code()->scope();
 
   // step 1
-  JSDeclEnv* const env = NewDeclarativeEnvironment(ctx_, code.scope());
+  JSDeclEnv* const env = NewDeclarativeEnvironment(ctx_, code->scope());
   const ContextSwitcher switcher(ctx_, env, env, this_value,
-                                 code.IsStrict());
+                                 code->IsStrict());
 
   // step 2
   // TODO(Constellation) code check (eval)
@@ -147,7 +147,7 @@ void Interpreter::CallCode(
     const std::size_t arg_count = arguments.size();
     std::size_t n = 0;
     BOOST_FOREACH(core::Identifier* const ident,
-                  code.code()->params()) {
+                  code->code()->params()) {
       ++n;
       const Symbol arg_name = ctx_->Intern(ident->value());
       if (!env->HasBinding(arg_name)) {
@@ -181,7 +181,7 @@ void Interpreter::CallCode(
   if (!env->HasBinding(arguments_symbol)) {
     JSArguments* const args_obj = JSArguments::New(ctx_,
                                                    code,
-                                                   code.code()->params(),
+                                                   code->code()->params(),
                                                    args,
                                                    env,
                                                    ctx_->IsStrict());
@@ -207,7 +207,7 @@ void Interpreter::CallCode(
   }
 
   JSVal value;
-  BOOST_FOREACH(core::Statement* const stmt, code.code()->body()) {
+  BOOST_FOREACH(core::Statement* const stmt, code->code()->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4

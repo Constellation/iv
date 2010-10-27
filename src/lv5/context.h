@@ -160,6 +160,9 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol prototype_symbol() const {
     return valueOf_symbol_;
   }
+  inline JSNativeFunction* throw_type_error() {
+    return &throw_type_error_;
+  }
   double Random();
   JSString* ToString(Symbol sym);
   const core::UString& GetContent(Symbol sym) const;
@@ -167,6 +170,7 @@ class Context : private core::Noncopyable<Context>::type {
   bool InCurrentLabelSet(const core::NamedOnlyBreakableStatement* stmt) const;
  private:
   JSObject global_obj_;
+  JSNativeFunction throw_type_error_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSVal binding_;
