@@ -1,6 +1,5 @@
 #ifndef _IV_LV5_JSARGUMENTS_H_
 #define _IV_LV5_JSARGUMENTS_H_
-#include <tr1/unordered_set>
 #include "ast.h"
 #include "symbol.h"
 #include "property.h"
@@ -17,9 +16,10 @@ class JSDeclEnv;
 class JSArguments : public JSObject {
  public:
   typedef core::AstNode::Identifiers Identifiers;
+  typedef GCHashMap<Symbol, Symbol>::type Index2Param;
   JSArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),
-      set_() { }
+      map_() { }
   static JSArguments* New(Context* ctx,
                           const JSCodeFunction& code,
                           const Identifiers& names,
@@ -35,12 +35,9 @@ class JSArguments : public JSObject {
                          bool th,
                          Error* error);
   bool Delete(Symbol name, bool th, Error* error);
-  inline void RegisterArgument(Symbol sym) {
-    set_.insert(sym);
-  }
  private:
   JSDeclEnv* env_;
-  GCHashSet<Symbol>::type set_;
+  Index2Param map_;
 };
 
 } }  // namespace iv::lv5

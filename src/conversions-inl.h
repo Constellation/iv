@@ -248,5 +248,31 @@ inline int32_t DoubleToUInt32(double d) {
   return static_cast<uint32_t>(d);
 }
 
+inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
+  *value = 0;
+  uint32_t prev;
+  uint16_t ch;
+  UStringPiece::const_iterator it = str.begin();
+  const UStringPiece::const_iterator last = str.end();
+  if (it != last && *it != '0' && Chars::IsDecimalDigit(*it)) {
+      *value = (*it - '0');
+  } else {
+    return false;
+  }
+  ++it;
+  for (;it != last; ++it) {
+    prev = *value;
+    ch = *it;
+    if (Chars::IsDecimalDigit(ch)) {
+      *value = (ch - '0') + (prev * 10);
+    } else {
+      return false;
+    }
+  }
+  return (prev < (std::numeric_limits<uint32_t>::max() / 10) ||
+          ((prev == (std::numeric_limits<uint32_t>::max() / 10)) &&
+           (ch < (std::numeric_limits<uint32_t>::max() % 10))));
+}
+
 } }  // namespace iv::core
 #endif  // IV_CONVERSIONS_INL_H_

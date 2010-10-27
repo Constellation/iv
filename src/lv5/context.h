@@ -162,6 +162,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
   double Random();
   JSString* ToString(Symbol sym);
+  const core::UString& GetContent(Symbol sym) const;
   bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const core::NamedOnlyBreakableStatement* stmt) const;
  private:

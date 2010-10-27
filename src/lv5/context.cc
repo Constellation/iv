@@ -72,6 +72,10 @@ JSString* Context::ToString(Symbol sym) {
   return table_.ToString(this, sym);
 }
 
+const core::UString& Context::GetContent(Symbol sym) const {
+  return table_.GetContent(sym);
+}
+
 bool Context::InCurrentLabelSet(
     const core::AnonymousBreakableStatement* stmt) const {
   // AnonymousBreakableStatement has empty label at first

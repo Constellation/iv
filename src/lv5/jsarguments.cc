@@ -1,6 +1,6 @@
 #include <cstdio>
+#include <utility>
 #include <tr1/array>
-#include <tr1/unordered_set>
 #include "stringpiece.h"
 #include "jsobject.h"
 #include "jsenv.h"
@@ -35,14 +35,16 @@ JSArguments* JSArguments::New(Context* ctx,
     int len = std::snprintf(buf.data(), buf.size(),
                             "%lu",
                             static_cast<unsigned long>(index));  // NOLINT
-    obj->DefineOwnProperty(ctx, ctx->Intern(core::StringPiece(buf.data(), len)),
+    const Symbol index_symbol = ctx->Intern(core::StringPiece(buf.data(), len));
+    obj->DefineOwnProperty(ctx, index_symbol,
                            DataDescriptor(*it,
                                           PropertyDescriptor::WRITABLE |
                                           PropertyDescriptor::ENUMERABLE |
                                           PropertyDescriptor::CONFIGURABLE),
                            false, NULL);
     if (index < names_len) {
-      obj->RegisterArgument(ctx->Intern(names[index]->value()));
+      obj->map_.insert(
+          std::make_pair(index_symbol, ctx->Intern(names[index]->value())));
     }
     index -= 1;
   }
@@ -51,8 +53,9 @@ JSArguments* JSArguments::New(Context* ctx,
 
 JSVal JSArguments::Get(Context* ctx,
                        Symbol name, Error* error) {
-  if (set_.find(name) != set_.end()) {
-    return env_->GetBindingValue(ctx, name, true, error);
+  const Index2Param::const_iterator it = map_.find(name);
+  if (it != map_.end()) {
+    return env_->GetBindingValue(ctx, it->second, true, error);
   } else {
     const JSVal v = JSObject::Get(ctx, name, error);
     if (*error) {
@@ -74,7 +77,7 @@ PropertyDescriptor JSArguments::GetOwnProperty(Symbol name) const {
   if (desc.IsEmpty()) {
     return desc;
   }
-  if (set_.find(name) != set_.end()) {
+  if (map_.find(name) != map_.end()) {
     const JSVal val = env_->GetBindingValue(name);
     return DataDescriptor(val);
   }
@@ -95,10 +98,10 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
     }
     return false;
   }
-  GCHashSet<Symbol>::type::const_iterator it = set_.find(name);
-  if (it != set_.end()) {
+  const Index2Param::const_iterator it = map_.find(name);
+  if (it != map_.end()) {
     if (desc.IsAccessorDescriptor()) {
-      set_.erase(it);
+      map_.erase(it);
     } else {
       // TODO(Constellation) [[Value]] check
       env_->SetMutableBinding(ctx,
@@ -108,7 +111,7 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
         return false;
       }
       if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
-        set_.erase(it);
+        map_.erase(it);
       }
     }
   }
@@ -121,9 +124,9 @@ bool JSArguments::Delete(Symbol name, bool th, Error* error) {
     return result;
   }
   if (result) {
-    GCHashSet<Symbol>::type::const_iterator it = set_.find(name);
-    if (it != set_.end()) {
-      set_.erase(it);
+    const Index2Param::const_iterator it = map_.find(name);
+    if (it != map_.end()) {
+      map_.erase(it);
       return true;
     }
   }

@@ -18,16 +18,15 @@ class SymbolTable {
   typedef std::vector<std::size_t> Indexes;
   typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
   SymbolTable();
-  JSString* ToString(Context* ctx, Symbol sym) const;
 
   template<class CharT>
-  Symbol Lookup(const CharT* str) {
+  inline Symbol Lookup(const CharT* str) {
     using std::char_traits;
     return Lookup(core::BasicStringPiece<CharT>(str));
   }
 
   template<class String>
-  Symbol Lookup(const String& str) {
+  inline Symbol Lookup(const String& str) {
     std::size_t hash = StringToHash(str);
     core::UString target(str.begin(), str.end());
     {
@@ -53,6 +52,16 @@ class SymbolTable {
       }
     }
   }
+
+  inline JSString* ToString(Context* ctx, Symbol sym) const {
+    const core::UString& str = strings_[sym];
+    return JSString::New(ctx, str);
+  }
+
+  inline const core::UString& GetContent(Symbol sym) const {
+    return strings_[sym];
+  }
+
  private:
   boost::mutex sync_;
   Table table_;
