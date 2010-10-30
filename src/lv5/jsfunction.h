@@ -30,7 +30,7 @@ class JSFunction : public JSObject {
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;
   virtual bool IsStrict() const = 0;
-  static void SetClass(Context* ctx, JSObject* obj);
+  void Initialize(Context* ctx);
 };
 
 class JSCodeFunction : public JSFunction {
@@ -70,9 +70,8 @@ class JSCodeFunction : public JSFunction {
 class JSNativeFunction : public JSFunction {
  public:
   typedef JSVal(*value_type)(const Arguments&, Error*);
-  explicit JSNativeFunction(value_type func)
-    : func_(func) {
-  }
+  JSNativeFunction() : func_() { }
+  JSNativeFunction(Context* ctx, value_type func, std::size_t n);
   JSVal Call(const Arguments& args,
              Error* error);
   JSCodeFunction* AsCodeFunction() {
@@ -86,11 +85,13 @@ class JSNativeFunction : public JSFunction {
   }
 
   template<typename Func>
-  static JSNativeFunction* New(Context* ctx, const Func& func) {
-    JSNativeFunction* const obj = new JSNativeFunction(func);
-    SetClass(ctx, obj);
+  static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
+    JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n);
+    static_cast<JSFunction*>(obj)->Initialize(ctx);
     return obj;
   }
+
+  void Initialize(Context* ctx, value_type func, std::size_t n);
 
  private:
   value_type func_;

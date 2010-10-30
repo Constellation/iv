@@ -119,8 +119,10 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   template<typename Func>
-  void DefineFunction(const Func& f, const core::StringPiece& func_name) {
-    JSFunction* const func = JSNativeFunction::New(this, f);
+  void DefineFunction(const Func& f,
+                      const core::StringPiece& func_name,
+                      std::size_t n) {
+    JSFunction* const func = JSNativeFunction::New(this, f, n);
     const Symbol name = Intern(func_name);
     variable_env_->CreateMutableBinding(this, name, false);
     variable_env_->SetMutableBinding(this,

@@ -10,10 +10,10 @@
 namespace iv {
 namespace lv5 {
 
-void JSFunction::SetClass(Context* ctx, JSObject* obj) {
+void JSFunction::Initialize(Context* ctx) {
   const Class& cls = ctx->Cls("Function");
-  obj->set_cls(cls.name);
-  obj->set_prototype(cls.prototype);
+  set_cls(cls.name);
+  set_prototype(cls.prototype);
 }
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
@@ -43,7 +43,7 @@ JSCodeFunction* JSCodeFunction::New(Context* ctx,
                                     const core::FunctionLiteral* func,
                                     JSEnv* env) {
   JSCodeFunction* const obj = new JSCodeFunction(ctx, func, env);
-  SetClass(ctx, obj);
+  obj->Initialize(ctx);
   return obj;
 }
 
@@ -88,9 +88,29 @@ JSVal JSFunction::Get(Context* ctx,
   return val;
 }
 
+JSNativeFunction::JSNativeFunction(Context* ctx, value_type func, std::size_t n)
+  : func_(func) {
+  DefineOwnProperty(
+      ctx, ctx->length_symbol(),
+      DataDescriptor(static_cast<double>(n),
+                     PropertyDescriptor::NONE),
+                     false, NULL);
+}
+
 JSVal JSNativeFunction::Call(const Arguments& args,
                              Error* error) {
   return func_(args, error);
+}
+
+
+void JSNativeFunction::Initialize(Context* ctx, value_type func, std::size_t n) {
+  func_ = func;
+  DefineOwnProperty(
+      ctx, ctx->length_symbol(),
+      DataDescriptor(static_cast<double>(n),
+                     PropertyDescriptor::NONE),
+                     false, NULL);
+  JSFunction::Initialize(ctx);
 }
 
 } }  // namespace iv::lv5

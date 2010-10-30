@@ -25,7 +25,7 @@ const std::string prototype_string("prototype");
 
 Context::Context()
   : global_obj_(),
-    throw_type_error_(&Runtime_ThrowTypeError),
+    throw_type_error_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     binding_(&global_obj_),
@@ -114,8 +114,9 @@ void Context::Initialize() {
   const Symbol func_name = Intern("Function");
   builtins_[func_name] = func_cls;
 
+  // section 15.2.2
   JSNativeFunction* const obj_constructor =
-      JSNativeFunction::New(this, &Runtime_ObjectConstructor);
+      JSNativeFunction::New(this, &Runtime_ObjectConstructor, 1);
 
   struct Class obj_cls = {
     JSString::NewAsciiString(this, "Object"),
@@ -128,7 +129,7 @@ void Context::Initialize() {
 
   {
     JSNativeFunction* const func =
-        JSNativeFunction::New(this, &Runtime_FunctionToString);
+        JSNativeFunction::New(this, &Runtime_FunctionToString, 0);
     func_proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(func,
@@ -140,7 +141,7 @@ void Context::Initialize() {
     // Object Define
     {
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty);
+          JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1);
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
           DataDescriptor(func,
@@ -149,7 +150,7 @@ void Context::Initialize() {
     }
     {
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ObjectToString);
+          JSNativeFunction::New(this, &Runtime_ObjectToString, 0);
       obj_proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -196,7 +197,7 @@ void Context::Initialize() {
     {
       // section 15.11.4.4 Error.prototype.toString()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ErrorToString);
+          JSNativeFunction::New(this, &Runtime_ErrorToString, 0);
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -280,126 +281,126 @@ void Context::Initialize() {
     // section 15.8.2.1 abs(x)
     math->DefineOwnProperty(
         this, Intern("abs"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAbs),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAbs, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.2 acos(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAcos),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAcos, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.3 asin(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.4 atan(x)
     math->DefineOwnProperty(
         this, Intern("atan"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.5 atan2(y, x)
     math->DefineOwnProperty(
         this, Intern("atan2"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan2),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan2, 2),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.6 ceil(x)
     math->DefineOwnProperty(
         this, Intern("ceil"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCeil),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCeil, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.7 cos(x)
     math->DefineOwnProperty(
         this, Intern("cos"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCos),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCos, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.8 exp(x)
     math->DefineOwnProperty(
         this, Intern("exp"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathExp),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathExp, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.9 floor(x)
     math->DefineOwnProperty(
         this, Intern("floor"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathFloor),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathFloor, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.10 log(x)
     math->DefineOwnProperty(
         this, Intern("log"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathLog),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathLog, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.11 max([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("max"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMax),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMax, 2),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.12 min([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("min"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMin),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMin, 2),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.13 pow(x, y)
     math->DefineOwnProperty(
         this, Intern("pow"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathPow),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathPow, 2),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.14 random()
     math->DefineOwnProperty(
         this, Intern("random"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom, 0),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.15 round(x)
     math->DefineOwnProperty(
         this, Intern("round"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRound),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRound, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.16 sin(x)
     math->DefineOwnProperty(
         this, Intern("sin"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSin),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSin, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.17 sqrt(x)
     math->DefineOwnProperty(
         this, Intern("sqrt"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSqrt),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSqrt, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
 
     // section 15.8.2.18 tan(x)
     math->DefineOwnProperty(
         this, Intern("tan"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathTan),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathTan, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
   }
@@ -437,7 +438,7 @@ void Context::Initialize() {
     const Symbol name = Intern("Arguments");
     builtins_[name] = cls;
   }
-  JSFunction::SetClass(this, &throw_type_error_);
+  throw_type_error_.Initialize(this, &Runtime_ThrowTypeError, 0);
 }
 
 const Class& Context::Cls(Symbol name) {

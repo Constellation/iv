@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
       std::cout << ser.out().data() << std::endl;
     } else {
       iv::lv5::Context ctx;
-      ctx.DefineFunction(&Print, "print");
+      ctx.DefineFunction(&Print, "print", 1);
       if (ctx.Run(global)) {
         const JSVal e = ctx.ErrorVal();
         ctx.error()->Clear();
