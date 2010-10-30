@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ast.h"
 #include "jsenv.h"
 #include "jsfunction.h"
@@ -15,10 +16,16 @@ void JSFunction::SetClass(Context* ctx, JSObject* obj) {
   obj->set_prototype(cls.prototype);
 }
 
-JSCodeFunction::JSCodeFunction(const core::FunctionLiteral* func,
+JSCodeFunction::JSCodeFunction(Context* ctx,
+                               const core::FunctionLiteral* func,
                                JSEnv* env)
   : function_(func),
     env_(env) {
+  DefineOwnProperty(
+      ctx, ctx->length_symbol(),
+      DataDescriptor(static_cast<double>(func->params().size()),
+                     PropertyDescriptor::NONE),
+                     false, NULL);
 }
 
 JSVal JSCodeFunction::Call(const Arguments& args,
@@ -35,7 +42,7 @@ JSVal JSCodeFunction::Call(const Arguments& args,
 JSCodeFunction* JSCodeFunction::New(Context* ctx,
                                     const core::FunctionLiteral* func,
                                     JSEnv* env) {
-  JSCodeFunction* const obj = new JSCodeFunction(func, env);
+  JSCodeFunction* const obj = new JSCodeFunction(ctx, func, env);
   SetClass(ctx, obj);
   return obj;
 }

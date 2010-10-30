@@ -129,7 +129,8 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Initialize();
-  void Run(core::FunctionLiteral* global);
+  bool Run(const core::FunctionLiteral* global);
+  JSVal ErrorVal();
 
   const Class& Cls(Symbol name);
   const Class& Cls(const core::StringPiece& str);

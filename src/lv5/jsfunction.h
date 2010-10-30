@@ -14,6 +14,7 @@ class JSNativeFunction;
 class Error;
 class JSFunction : public JSObject {
  public:
+  JSFunction() : JSObject() { }
   bool IsCallable() const {
     return true;
   }
@@ -34,7 +35,8 @@ class JSFunction : public JSObject {
 
 class JSCodeFunction : public JSFunction {
  public:
-  JSCodeFunction(const core::FunctionLiteral* func, JSEnv* env);
+  JSCodeFunction(Context* ctx,
+                 const core::FunctionLiteral* func, JSEnv* env);
   JSVal Call(const Arguments& args,
              Error* error);
   JSEnv* scope() const {

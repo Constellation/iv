@@ -132,9 +132,16 @@ int main(int argc, char **argv) {
       global->Accept(&ser);
       std::cout << ser.out().data() << std::endl;
     } else {
-      iv::lv5::Context context;
-      context.DefineFunction(&Print, "print");
-      context.Run(global);
+      iv::lv5::Context ctx;
+      ctx.DefineFunction(&Print, "print");
+      if (ctx.Run(global)) {
+        const JSVal e = ctx.ErrorVal();
+        ctx.error()->Clear();
+        const JSString* const str = e.ToString(&ctx, ctx.error());
+        if (!*ctx.error()) {
+          std::cout << str->data() << std::endl;
+        }
+      }
     }
   } else {
     std::cout << cmd.usage();

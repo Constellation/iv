@@ -89,8 +89,13 @@ bool Context::InCurrentLabelSet(
   return stmt == target_;
 }
 
-void Context::Run(core::FunctionLiteral* global) {
+bool Context::Run(const core::FunctionLiteral* global) {
   interp_.Run(global);
+  return error_;
+}
+
+JSVal Context::ErrorVal() {
+  return error_.Detail(this);
 }
 
 void Context::Initialize() {

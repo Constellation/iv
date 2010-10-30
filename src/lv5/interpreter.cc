@@ -146,7 +146,7 @@ void Interpreter::CallCode(
     const Arguments::JSVals& arguments = args.args();
     const std::size_t arg_count = arguments.size();
     std::size_t n = 0;
-    BOOST_FOREACH(core::Identifier* const ident,
+    BOOST_FOREACH(const core::Identifier* const ident,
                   code->code()->params()) {
       ++n;
       const Symbol arg_name = ctx_->Intern(ident->value());
@@ -164,7 +164,7 @@ void Interpreter::CallCode(
   }
 
   // step 5
-  BOOST_FOREACH(core::FunctionLiteral* const f,
+  BOOST_FOREACH(const core::FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(f->name()->value());
     EVAL(f);
@@ -206,8 +206,21 @@ void Interpreter::CallCode(
     }
   }
 
+  // TODO(Constellation) more test
+  {
+    const core::FunctionLiteral::DeclType type = code->code()->type();
+    if (type == core::FunctionLiteral::EXPRESSION ||
+        type == core::FunctionLiteral::STATEMENT) {
+      const Symbol name = ctx_->Intern(code->name()->value());
+      if (!env->HasBinding(name)) {
+        env->CreateImmutableBinding(name);
+        env->InitializeImmutableBinding(name, code);
+      }
+    }
+  }
+
   JSVal value;
-  BOOST_FOREACH(core::Statement* const stmt, code->code()->body()) {
+  BOOST_FOREACH(const core::Statement* const stmt, code->code()->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -231,7 +244,7 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
   const core::Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
-  BOOST_FOREACH(core::FunctionLiteral* const f,
+  BOOST_FOREACH(const core::FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(f->name()->value());
     EVAL(f);
@@ -253,7 +266,7 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
 
   JSVal value;
   // section 14 Program
-  BOOST_FOREACH(core::Statement* const stmt, global->body()) {
+  BOOST_FOREACH(const core::Statement* const stmt, global->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
