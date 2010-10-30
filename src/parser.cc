@@ -1699,22 +1699,29 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     bool *res) {
   // IDENTIFIER
   // IDENTIFIER_opt
-  std::size_t name_set_line = 0;
   std::tr1::unordered_set<IdentifierKey> param_set;
   std::size_t throw_error_if_strict_code_line = 0;
   enum {
     kDetectNone = 0,
-    kDetectEval,
-    kDetectArguments,
-    kDetectDuplicate
+    kDetectEvalName,
+    kDetectArgumentsName,
+    kDetectEvalParameter,
+    kDetectArgumentsParameter,
+    kDetectDuplicateParameter
   } throw_error_if_strict_code = kDetectNone;
 
   FunctionLiteral *literal = space_->NewFunctionLiteral(decl_type);
   literal->set_strict(strict_);
   literal->set_source(lexer_.source());
   if (allow_identifier && token_ == Token::IDENTIFIER) {
-    literal->SetName(space_->NewIdentifier(lexer_.Buffer()));
-    name_set_line = lexer_.line_number();
+    Identifier* const name = space_->NewIdentifier(lexer_.Buffer());
+    literal->SetName(name);
+    const EvalOrArguments val = IsEvalOrArguments(name);
+    if (val) {
+      throw_error_if_strict_code = (val == kEval) ?
+          kDetectEvalName : kDetectArgumentsName;
+      throw_error_if_strict_code_line = lexer_.line_number();
+    }
     Next();
   }
   const ScopeSwitcher switcher(this, literal->scope());
@@ -1730,10 +1737,13 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     // if setter, parameter count is 1
     IS(Token::IDENTIFIER);
     Identifier* const ident = space_->NewIdentifier(lexer_.Buffer());
-    const EvalOrArguments val = IsEvalOrArguments(ident);
-    if (val) {
-      throw_error_if_strict_code = (val == kEval) ? kDetectEval : kDetectArguments;
-      throw_error_if_strict_code_line = lexer_.line_number();
+    if (!throw_error_if_strict_code) {
+      const EvalOrArguments val = IsEvalOrArguments(ident);
+      if (val) {
+        throw_error_if_strict_code = (val == kEval) ?
+            kDetectEvalParameter : kDetectArgumentsParameter;
+        throw_error_if_strict_code_line = lexer_.line_number();
+      }
     }
     literal->AddParameter(ident);
     Next();
@@ -1745,12 +1755,13 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       if (!throw_error_if_strict_code) {
         const EvalOrArguments val = IsEvalOrArguments(ident);
         if (val) {
-          throw_error_if_strict_code = (val == kEval) ? kDetectEval : kDetectArguments;
+          throw_error_if_strict_code = (val == kEval) ?
+              kDetectEvalParameter : kDetectArgumentsParameter;
           throw_error_if_strict_code_line = lexer_.line_number();
         }
         if ((!throw_error_if_strict_code) &&
             (param_set.find(ident) != param_set.end())) {
-          throw_error_if_strict_code = kDetectDuplicate;
+          throw_error_if_strict_code = kDetectDuplicateParameter;
           throw_error_if_strict_code_line = lexer_.line_number();
         }
       }
@@ -1775,35 +1786,30 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   if (strict_ || literal->strict()) {
     // section 13.1
     // Strict Mode Restrictions
-    if (literal->name()) {
-      const EvalOrArguments val = IsEvalOrArguments(literal->name());
-      if (val) {
-        if (val == kEval) {
-          RAISE_WITH_NUMBER(
-              "function name \"eval\" not allowed in strict code",
-              name_set_line);
-        } else {
-          assert(val == kArguments);
-          RAISE_WITH_NUMBER(
-              "function name \"arguments\" not allowed in strict code",
-              name_set_line);
-        }
-      }
-    }
     switch (throw_error_if_strict_code) {
       case kDetectNone:
         break;
-      case kDetectEval:
+      case kDetectEvalName:
+        RAISE_WITH_NUMBER(
+            "function name \"eval\" not allowed in strict code",
+            throw_error_if_strict_code_line);
+        break;
+      case kDetectArgumentsName:
+        RAISE_WITH_NUMBER(
+            "function name \"arguments\" not allowed in strict code",
+            throw_error_if_strict_code_line);
+        break;
+      case kDetectEvalParameter:
         RAISE_WITH_NUMBER(
             "parameter \"eval\" not allowed in strict code",
             throw_error_if_strict_code_line);
         break;
-      case kDetectArguments:
+      case kDetectArgumentsParameter:
         RAISE_WITH_NUMBER(
             "parameter \"arguments\" not allowed in strict code",
             throw_error_if_strict_code_line);
         break;
-      case kDetectDuplicate:
+      case kDetectDuplicateParameter:
         RAISE_WITH_NUMBER(
             "duplicate parameter not allowed in strict code",
             throw_error_if_strict_code_line);
