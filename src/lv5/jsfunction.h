@@ -87,10 +87,13 @@ class JSNativeFunction : public JSFunction {
   template<typename Func>
   static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
     JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n);
-    static_cast<JSFunction*>(obj)->Initialize(ctx);
+    obj->Initialize(ctx);
     return obj;
   }
 
+  void Initialize(Context* ctx) {
+    JSFunction::Initialize(ctx);
+  }
   void Initialize(Context* ctx, value_type func, std::size_t n);
 
  private:
