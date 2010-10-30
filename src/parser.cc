@@ -1700,6 +1700,15 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   // IDENTIFIER
   // IDENTIFIER_opt
   std::size_t name_set_line = 0;
+  std::tr1::unordered_set<IdentifierKey> param_set;
+  std::size_t throw_error_if_strict_code_line = 0;
+  enum {
+    kDetectNone = 0,
+    kDetectEval,
+    kDetectArguments,
+    kDetectDuplicate
+  } throw_error_if_strict_code = kDetectNone;
+
   FunctionLiteral *literal = space_->NewFunctionLiteral(decl_type);
   literal->set_strict(strict_);
   literal->set_source(lexer_.source());
@@ -1714,22 +1723,39 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   //  '(' FormalParameterList_opt ')'
   EXPECT(Token::LPAREN);
 
-  std::vector<std::size_t> param_line;
   if (arg_type == FunctionLiteral::GETTER) {
     // if getter, parameter count is 0
     EXPECT(Token::RPAREN);
   } else if (arg_type == FunctionLiteral::SETTER) {
     // if setter, parameter count is 1
     IS(Token::IDENTIFIER);
-    literal->AddParameter(space_->NewIdentifier(lexer_.Buffer()));
-    param_line.push_back(lexer_.line_number());
+    Identifier* const ident = space_->NewIdentifier(lexer_.Buffer());
+    const EvalOrArguments val = IsEvalOrArguments(ident);
+    if (val) {
+      throw_error_if_strict_code = (val == kEval) ? kDetectEval : kDetectArguments;
+      throw_error_if_strict_code_line = lexer_.line_number();
+    }
+    literal->AddParameter(ident);
     Next();
     EXPECT(Token::RPAREN);
   } else {
     while (token_ != Token::RPAREN) {
       IS(Token::IDENTIFIER);
-      literal->AddParameter(space_->NewIdentifier(lexer_.Buffer()));
-      param_line.push_back(lexer_.line_number());
+      Identifier* const ident = space_->NewIdentifier(lexer_.Buffer());
+      if (!throw_error_if_strict_code) {
+        const EvalOrArguments val = IsEvalOrArguments(ident);
+        if (val) {
+          throw_error_if_strict_code = (val == kEval) ? kDetectEval : kDetectArguments;
+          throw_error_if_strict_code_line = lexer_.line_number();
+        }
+        if ((!throw_error_if_strict_code) &&
+            (param_set.find(ident) != param_set.end())) {
+          throw_error_if_strict_code = kDetectDuplicate;
+          throw_error_if_strict_code_line = lexer_.line_number();
+        }
+      }
+      literal->AddParameter(ident);
+      param_set.insert(ident);
       Next();
       if (token_ != Token::RPAREN) {
         EXPECT(Token::COMMA);
@@ -1764,33 +1790,24 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
         }
       }
     }
-    std::vector<std::size_t>::const_iterator line = param_line.begin();
-    for (AstNode::Identifiers::const_iterator it = literal->params().begin(),
-         last = literal->params().end();
-         it != last; ++it, ++line) {
-      const EvalOrArguments val = IsEvalOrArguments(*it);
-      if (val) {
-        if (val == kEval) {
-          RAISE_WITH_NUMBER(
-              "parameter \"eval\" not allowed in strict code",
-              *line);
-        } else {
-          assert(val == kArguments);
-          RAISE_WITH_NUMBER(
-              "parameter \"arguments\" not allowed in strict code",
-              *line);
-        }
-      }
-      AstNode::Identifiers::const_iterator searcher = it;
-      std::vector<std::size_t>::const_iterator searcher_line = line;
-      ++searcher;
-      for (;searcher != last; ++searcher, ++searcher_line) {
-        if ((*it)->value() == (*searcher)->value()) {
-          RAISE_WITH_NUMBER(
-              "duplicate parameter not allowed in strict code",
-              *searcher_line);
-        }
-      }
+    switch (throw_error_if_strict_code) {
+      case kDetectNone:
+        break;
+      case kDetectEval:
+        RAISE_WITH_NUMBER(
+            "parameter \"eval\" not allowed in strict code",
+            throw_error_if_strict_code_line);
+        break;
+      case kDetectArguments:
+        RAISE_WITH_NUMBER(
+            "parameter \"arguments\" not allowed in strict code",
+            throw_error_if_strict_code_line);
+        break;
+      case kDetectDuplicate:
+        RAISE_WITH_NUMBER(
+            "duplicate parameter not allowed in strict code",
+            throw_error_if_strict_code_line);
+        break;
     }
   }
   literal->set_end_position(lexer_.pos() - 2);
