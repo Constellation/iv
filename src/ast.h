@@ -72,8 +72,6 @@ class FunctionCall;
 class Identifier;
 class Declaration;
 
-class AstFactory;
-
 class ThisLiteral;
 class NullLiteral;
 class TrueLiteral;

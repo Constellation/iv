@@ -10,11 +10,11 @@ files = [
   'source.cc',
   'parser.cc',
   'ast-serializer.cc',
-  'ast-factory.cc',
   'ast.cc',
   'token.cc',
   'alloc.cc',
-  'conversions.cc'
+  'conversions.cc',
+  'regexp-creator.cc'
 ]
 
 src_files = [join(root_dir, 'src', x) for x in files ]

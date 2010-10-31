@@ -42,19 +42,6 @@ class Parser : private Noncopyable<Parser>::type {
   };
 
  public:
-  enum BinaryExpressionStage {
-    UNARY_STAGE,
-    MULTIPLICATIVE_STAGE,
-    ADDITIVE_STAGE,
-    SHIFT_STAGE,
-    RELATIONAL_STAGE,
-    EQUALITY_STAGE,
-    BITWISE_AND_STAGE,
-    BITWISE_XOR_STAGE,
-    BITWISE_OR_STAGE,
-    LOGICAL_AND_STAGE,
-    LOGICAL_OR_STAGE
-  };
 
   explicit Parser(Source* source, AstFactory* space);
   FunctionLiteral* ParseProgram();

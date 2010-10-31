@@ -1518,11 +1518,15 @@ Call* Parser::ParseArguments(Call* func, bool *res) {
 
 Expression* Parser::ParseRegExpLiteral(bool contains_eq, bool *res) {
   if (lexer_.ScanRegExpLiteral(contains_eq)) {
-    RegExpLiteral *expr = space_->NewRegExpLiteral(lexer_.Buffer());
+    RegExpLiteral* expr;
+    const std::vector<UChar> content(lexer_.Buffer());
     if (!lexer_.ScanRegExpFlags()) {
       RAISE("invalid regular expression flag");
     } else {
-      expr->SetFlags(lexer_.Buffer());
+      expr = space_->NewRegExpLiteral(content, lexer_.Buffer());
+      if (!expr) {
+        RAISE("invalid regular expression");
+      }
     }
     Next();
     return expr;
