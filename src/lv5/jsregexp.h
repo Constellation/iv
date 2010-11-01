@@ -1,5 +1,5 @@
 #ifndef _IV_LV5_JSREGEXP_H_
-#define _IV__JSREGEXP_H_
+#define _IV_LV5_JSREGEXP_H_
 #include <unicode/regex.h>
 #include <gc/gc_cpp.h>
 #include "jsobject.h"
@@ -7,12 +7,29 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 namespace iv {
+
+namespace core {
+class RegExpLiteral;
+}  // namespace iv::core
+
 namespace lv5 {
+
+class JSRegExpImpl : public gc_cleanup {
+ public:
+  JSRegExpImpl(const core::UStringPiece& value,
+               const core::UStringPiece& flags,
+               UErrorCode* status);
+  ~JSRegExpImpl();
+ private:
+  URegularExpression* regexp_;
+  bool global_;
+};
 
 class JSRegExp : public JSObject {
  public:
   JSRegExp(const core::UStringPiece& value,
            const core::UStringPiece& flags);
+  explicit JSRegExp(const JSRegExpImpl& reg);
 
   inline bool IsValid() const {
     return status_ == U_ZERO_ERROR;
@@ -24,19 +41,11 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(const core::UStringPiece& value,
                        const core::UStringPiece& flags);
+  static JSRegExp* New(const core::RegExpLiteral* reg);
 
  private:
-  class JSRegExpImpl : public gc_cleanup {
-   public:
-    JSRegExpImpl(const core::UStringPiece& value,
-                 uint32_t flags, bool is_global, UErrorCode* status);
-    ~JSRegExpImpl();
-   private:
-    URegularExpression* regexp_;
-    bool global_;
-  };
   UErrorCode status_;
-  JSRegExpImpl* impl_;
+  const JSRegExpImpl* impl_;
 };
 
 } }  // namespace iv::lv5

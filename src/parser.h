@@ -43,7 +43,7 @@ class Parser : private Noncopyable<Parser>::type {
 
  public:
 
-  explicit Parser(Source* source, AstFactory* space);
+  explicit Parser(Source* source, BasicAstFactory* space);
   FunctionLiteral* ParseProgram();
   bool ParseSourceElements(Token::Type end,
                            FunctionLiteral* function, bool *res);
@@ -211,7 +211,7 @@ class Parser : private Noncopyable<Parser>::type {
   Token::Type token_;
   std::string error_;
   bool strict_;
-  AstFactory* space_;
+  BasicAstFactory* space_;
   Scope* scope_;
   Target* target_;
   AstNode::Identifiers* labels_;

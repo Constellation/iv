@@ -214,13 +214,11 @@ Identifier::Identifier(const std::vector<char>& buffer, Space* factory)
            buffer.end(), SpaceUString::allocator_type(factory)) {
 }
 
-RegExpLiteral::RegExpLiteral(const std::vector<UChar>& buffer, Space* factory)
+RegExpLiteral::RegExpLiteral(const std::vector<UChar>& buffer,
+                             const std::vector<UChar>& flags,
+                             Space* factory)
   : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)),
-    flags_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
-}
-
-void RegExpLiteral::SetFlags(const std::vector<UChar>& buffer) {
-  flags_.assign(buffer.data(), buffer.size());
+    flags_(flags.data(), flags.size(), SpaceUString::allocator_type(factory)) {
 }
 
 ArrayLiteral::ArrayLiteral(Space* factory)

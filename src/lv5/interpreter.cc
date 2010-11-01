@@ -1261,7 +1261,7 @@ void Interpreter::Visit(const core::Undefined* lit) {
 
 
 void Interpreter::Visit(const core::RegExpLiteral* regexp) {
-  ctx_->Return(JSRegExp::New(regexp->value(), regexp->flags()));
+  ctx_->Return(JSRegExp::New(regexp));
 }
 
 

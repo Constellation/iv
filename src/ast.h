@@ -700,13 +700,14 @@ class Undefined : public Literal {
 
 class RegExpLiteral : public Literal {
  public:
-  explicit RegExpLiteral(const std::vector<UChar>& buffer, Space* factory);
-  void SetFlags(const std::vector<UChar>& buffer);
+  RegExpLiteral(const std::vector<UChar>& buffer,
+                const std::vector<UChar>& flags,
+                Space* factory);
   inline const SpaceUString& value() const { return value_; }
   inline const SpaceUString& flags() const { return flags_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(RegExpLiteral)
- private:
+ protected:
   SpaceUString value_;
   SpaceUString flags_;
 };

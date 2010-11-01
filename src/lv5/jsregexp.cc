@@ -1,62 +1,72 @@
 #include <boost/foreach.hpp>
+#include "regexp-icu.h"
 #include "jsregexp.h"
 namespace iv {
 namespace lv5 {
 
-JSRegExp::JSRegExp(const core::UStringPiece& value,
-                   const core::UStringPiece& flags)
-  : status_(U_ZERO_ERROR),
-    impl_(NULL) {
+JSRegExpImpl::JSRegExpImpl(const core::UStringPiece& value,
+                           const core::UStringPiece& flags,
+                           UErrorCode* status)
+  : regexp_(NULL),
+    global_(false) {
   uint32_t flagbits = 0;
-  bool is_global = false;
   BOOST_FOREACH(const UChar& c, flags) {
     if (c == 'g') {
-      if (is_global) {
-        status_ = U_REGEX_RULE_SYNTAX;
+      if (global_) {
+        *status = U_REGEX_RULE_SYNTAX;
         break;
       } else {
-        is_global = true;
+        global_ = true;
       }
     } else if (c == 'm') {
       if (flagbits & UREGEX_MULTILINE) {
-        status_ = U_REGEX_RULE_SYNTAX;
+        *status = U_REGEX_RULE_SYNTAX;
         break;
       } else {
         flagbits |= UREGEX_MULTILINE;
       }
     } else if (c == 'i') {
       if (flagbits & UREGEX_CASE_INSENSITIVE) {
-        status_ = U_REGEX_RULE_SYNTAX;
+        *status = U_REGEX_RULE_SYNTAX;
         break;
       } else {
         flagbits |= UREGEX_CASE_INSENSITIVE;
       }
     } else {
-      status_ = U_REGEX_RULE_SYNTAX;
+      *status = U_REGEX_RULE_SYNTAX;
       break;
     }
   }
-  if (status_ == U_ZERO_ERROR) {
-    impl_ = new JSRegExpImpl(value, flagbits, is_global, &status_);
+  if (*status == U_ZERO_ERROR) {
+    UParseError pstatus;
+    regexp_ = uregex_open(value.data(),
+                          value.size(), flagbits, &pstatus, status);
   }
 }
 
-JSRegExp::JSRegExpImpl::JSRegExpImpl(const core::UStringPiece& value,
-                                     uint32_t flags,
-                                     bool is_global, UErrorCode* status)
-  : regexp_(NULL),
-    global_(is_global) {
-  UParseError pstatus;
-  regexp_ = uregex_open(value.data(), value.size(), flags, &pstatus, status);
+JSRegExpImpl::~JSRegExpImpl() {
+  uregex_close(regexp_);
 }
 
-JSRegExp::JSRegExpImpl::~JSRegExpImpl() {
-  uregex_close(regexp_);
+JSRegExp::JSRegExp(const core::UStringPiece& value,
+                   const core::UStringPiece& flags)
+  : status_(U_ZERO_ERROR),
+    impl_(new JSRegExpImpl(value, flags, &status_)) {
+}
+
+JSRegExp::JSRegExp(const JSRegExpImpl& reg)
+  : status_(U_ZERO_ERROR),
+    impl_(&reg) {
 }
 
 JSRegExp* JSRegExp::New(const core::UStringPiece& value,
                         const core::UStringPiece& flags) {
   return new JSRegExp(value, flags);
+}
+
+JSRegExp* JSRegExp::New(const core::RegExpLiteral* reg) {
+  // TODO(Constellation) unsafe downcast
+  return new JSRegExp(static_cast<const ICURegExpLiteral*>(reg)->regexp());
 }
 
 } }  // namespace iv::lv5

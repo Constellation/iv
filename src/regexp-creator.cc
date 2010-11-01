@@ -7,9 +7,7 @@ namespace core {
 RegExpLiteral* RegExpCreator::Create(Space* space,
                                      const std::vector<UChar>& content,
                                      const std::vector<UChar>& flags) {
-  RegExpLiteral* expr = new (space) RegExpLiteral(content, space);
-  expr->SetFlags(flags);
-  return expr;
+  return new (space) RegExpLiteral(content, flags, space);
 }
 
 } }  // namespace iv::core

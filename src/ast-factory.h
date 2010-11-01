@@ -8,19 +8,19 @@
 namespace iv {
 namespace core {
 
-template<typename RegExpTraits>
 class BasicAstFactory : public Space {
  public:
   BasicAstFactory()
     : Space(),
-      undefined_instance_(new (this) Undefined()),
-      empty_statement_instance_(new (this) EmptyStatement()),
-      debugger_statement_instance_(new (this) DebuggerStatement()),
-      this_instance_(new (this) ThisLiteral()),
-      null_instance_(new (this) NullLiteral()),
-      true_instance_(new (this) TrueLiteral()),
-      false_instance_(new (this) FalseLiteral()) {
+      undefined_instance_(new(this)Undefined()),
+      empty_statement_instance_(new(this)EmptyStatement()),
+      debugger_statement_instance_(new(this)DebuggerStatement()),
+      this_instance_(new(this)ThisLiteral()),
+      null_instance_(new(this)NullLiteral()),
+      true_instance_(new(this)TrueLiteral()),
+      false_instance_(new(this)FalseLiteral()) {
   }
+  virtual ~BasicAstFactory() = 0;
 
   inline void Clear() {
     Space::Clear();
@@ -50,10 +50,8 @@ class BasicAstFactory : public Space {
     return new (this) Directivable(buffer, this);
   }
 
-  RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
-                                  const std::vector<UChar>& flags) {
-    return RegExpTraits::Create(this, content, flags);
-  }
+  virtual RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
+                                          const std::vector<UChar>& flags) = 0;
 
   FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
     return new (this) FunctionLiteral(type, this);
@@ -111,8 +109,15 @@ class BasicAstFactory : public Space {
   FalseLiteral* false_instance_;
 };
 
-// temp
-typedef BasicAstFactory<RegExpCreator> AstFactory;
+inline BasicAstFactory::~BasicAstFactory() { }
+
+template<typename RegExpTraits>
+class AstFactory : public BasicAstFactory {
+  RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
+                                  const std::vector<UChar>& flags) {
+    return RegExpTraits::Create(this, content, flags);
+  }
+};
 
 } }  // namespace iv::core
 #endif  // _IV_AST_FACTORY_H_

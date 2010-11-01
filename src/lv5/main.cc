@@ -19,6 +19,7 @@
 #include "ast.h"
 #include "ast-serializer.h"
 #include "parser.h"
+#include "factory-icu.h"
 
 #include "interpreter.h"
 #include "context.h"
@@ -118,7 +119,7 @@ int main(int argc, char **argv) {
     }
 
     iv::core::Source src(str, filename);
-    iv::core::AstFactory factory;
+    iv::core::AstFactory<iv::lv5::RegExpICU> factory;
     iv::core::Parser parser(&src, &factory);
     iv::core::FunctionLiteral* global = parser.ParseProgram();
 

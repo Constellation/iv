@@ -93,7 +93,7 @@ const UString eval_string(
     eval_prefix, eval_prefix+std::strlen(eval_prefix));
 }  // namespace
 
-Parser::Parser(Source* source, AstFactory* space)
+Parser::Parser(Source* source, BasicAstFactory* space)
   : lexer_(source),
     error_(),
     strict_(false),
