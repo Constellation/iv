@@ -209,8 +209,9 @@ void Interpreter::CallCode(
   // TODO(Constellation) more test
   {
     const core::FunctionLiteral::DeclType type = code->code()->type();
-    if (type == core::FunctionLiteral::EXPRESSION ||
-        type == core::FunctionLiteral::STATEMENT) {
+    if ((type == core::FunctionLiteral::EXPRESSION ||
+         type == core::FunctionLiteral::STATEMENT) &&
+        code->name()) {
       const Symbol name = ctx_->Intern(code->name()->value());
       if (!env->HasBinding(name)) {
         env->CreateImmutableBinding(name);
