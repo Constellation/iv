@@ -44,7 +44,7 @@ JSArguments* JSArguments::New(Context* ctx,
                            false, NULL);
     if (index < names_len) {
       obj->map_.insert(
-          std::make_pair(index_symbol, ctx->Intern(names[index]->value())));
+          std::make_pair(index_symbol, ctx->Intern((*names[index]))));
     }
     index -= 1;
   }
