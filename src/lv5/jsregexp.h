@@ -3,7 +3,6 @@
 #include <unicode/regex.h>
 #include <gc/gc_cpp.h>
 #include "jsobject.h"
-#include "alloc.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 namespace iv {
