@@ -183,6 +183,9 @@ Statement* Parser::ParseStatement(bool *res) {
       break;
 
     case Token::CONST:
+      if (strict_) {
+        RAISE("\"const\" not allowed in strict code");
+      }
     case Token::VAR:
       // VariableStatement
       result = ParseVariableStatement(CHECK);
@@ -305,6 +308,9 @@ Statement* Parser::ParseFunctionDeclaration(bool *res) {
 
 Statement* Parser::ParseFunctionStatement(bool *res) {
   assert(token_ == Token::FUNCTION);
+  if (strict_) {
+    RAISE("function statement not allowed in strict code");
+  }
   Next();
   IS(Token::IDENTIFIER);
   FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT,
