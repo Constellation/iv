@@ -1,0 +1,18 @@
+# iv / phonic
+
+phonic is ruby binding for iv AST API
+
+## MILESTONE
++ parser - done
++ specialized AST - working
+
+## TARGET
+Aims at the most precise interpreter of The ECMA262 5th Specification.
+
+## DEPS
+
++ libicu (ICU: International Component for Unicode)
+
+## INSTALL
+
+gem install iv-phonic

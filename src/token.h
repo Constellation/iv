@@ -2,9 +2,16 @@
 #define _IV_TOKEN_H_
 #include <cstddef>
 #include <cassert>
-
+#include "none.h"
 namespace iv {
 namespace core {
+namespace detail {
+template<typename T>
+struct TokenContents {
+  static const char* kContents[];
+};
+}  // namespace iv::core::detail
+typedef detail::TokenContents<None> TokenContents;
 
 class Token {
  public:
@@ -152,7 +159,6 @@ class Token {
 
     NUM_TOKENS       // number of tokens
   };
-  static const char* kContents[];
   static const std::size_t kMaxSize = 12;  // "synchronized"
 
   static inline bool IsAssignOp(Token::Type type) {
@@ -170,9 +176,136 @@ class Token {
            type != Token::EOS &&
            type != Token::ILLEGAL &&
            type != Token::NOT_FOUND);
-    return kContents[type];
+    return TokenContents::kContents[type];
   }
 };
 
+namespace detail {
+template<typename T>
+const char* TokenContents<T>::kContents[Token::NUM_TOKENS] = {
+  NULL,            // EOS
+  NULL,            // ILLEGAL
+  ".",
+  ":",
+  ";",
+  ",",
+  "(",
+  ")",
+  "[",
+  "]",
+  "{",
+  "}",
+  "?",
+  "==",
+  "===",
+  "!",
+  "!=",
+  "!==",
+  "++",
+  "--",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  NULL,            // RELATIONAL FIRST
+  "<",
+  ">",
+  "<=",
+  ">=",
+  "instanceof",
+  NULL,            // RELATIONAL LAST
+  ">>",
+  ">>>",
+  "<<",
+  "&",
+  "|",
+  "^",
+  "~",
+  "&&",
+  "||",
+  "<!--",
+  NULL,            // ASSIGN OP FIRST
+  "=",
+  "+=",
+  "-=",
+  "*=",
+  "%=",
+  "/=",
+  ">>=",
+  ">>>=",
+  "<<=",
+  "&=",
+  "|=",
+  NULL,            // ASSIGN OP LAST
+  "delete",
+  "typeof",
+  "void",
+  "break",
+  "case",
+  "catch",
+  "continue",
+  "debugger",
+  "default",
+  "do",
+  "else",
+  "finaly",
+  "for",
+  "function",
+  "if",
+  "in",
+  "new",
+  "return",
+  "switch",
+  "this",
+  "throw",
+  "try",
+  "var",
+  "while",
+  "with",
+  "abstract",
+  "boolean",
+  "byte",
+  "char",
+  "class",
+  "const",
+  "double",
+  "enum",
+  "export",
+  "extends",
+  "final",
+  "float",
+  "goto",
+  "implements",
+  "import",
+  "int",
+  "interface",
+  "long",
+  "native",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "short",
+  "static",
+  "super",
+  "synchronized",
+  "throws",
+  "transient",
+  "volatile",
+  "let",
+  "yield",
+  "get",
+  "set",
+  "null",
+  "false",
+  "true",
+  NULL,            // NUMBER LITERAL
+  NULL,            // STRING LITERAL
+  NULL,            // IDENTIFIER
+  NULL             // NOT FOUND
+};
+
+}  // namespace iv::core::detail
 } }  // namespace iv::core
 #endif  // _IV_TOKEN_H_
