@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
+#include <tr1/type_traits>
+#include "static_assert.h"
 #include "ast.h"
 #include "ast-factory.h"
 #include "scope.h"
@@ -107,11 +109,17 @@ const UString ParserData<T>::kEval(
 
 typedef detail::ParserData<None> ParserData;
 
-class Parser : private Noncopyable<Parser>::type {
+template<typename Factory>
+class Parser : private Noncopyable<Parser<Factory> >::type {
  protected:
+  typedef Parser<Factory> this_type;
+  typedef this_type parser_type;
+  typedef std::tr1::is_base_of<Space, Factory> space_is_base_of_factory;
+  IV_STATIC_ASSERT(space_is_base_of_factory::value);
+
   class Target : private Noncopyable<Target>::type {
    public:
-    Target(Parser* parser, BreakableStatement* target)
+    Target(parser_type * parser, BreakableStatement* target)
       : parser_(parser),
         prev_(parser->target()),
         node_(target) {
@@ -131,14 +139,14 @@ class Parser : private Noncopyable<Parser>::type {
       return node_;
     }
    private:
-    Parser* parser_;
+    parser_type* parser_;
     Target* prev_;
     BreakableStatement* node_;
   };
 
  public:
 
-  Parser(Source* source, BasicAstFactory* space)
+  Parser(Source* source, Factory* space)
     : lexer_(source),
       error_(),
       strict_(false),
@@ -2035,7 +2043,7 @@ class Parser : private Noncopyable<Parser>::type {
  protected:
   class ScopeSwitcher : private Noncopyable<ScopeSwitcher>::type {
    public:
-    ScopeSwitcher(Parser* parser, Scope* scope)
+    ScopeSwitcher(parser_type* parser, Scope* scope)
       : parser_(parser) {
       scope->SetUpperScope(parser_->scope());
       parser_->set_scope(scope);
@@ -2045,12 +2053,12 @@ class Parser : private Noncopyable<Parser>::type {
       parser_->set_scope(parser_->scope()->GetUpperScope());
     }
    private:
-    Parser* parser_;
+    parser_type* parser_;
   };
 
   class LabelScope : private Noncopyable<LabelScope>::type {
    public:
-    LabelScope(Parser* parser, AstNode::Identifiers* labels, bool exist_labels)
+    LabelScope(parser_type* parser, AstNode::Identifiers* labels, bool exist_labels)
       : parser_(parser),
         exist_labels_(exist_labels) {
       parser_->set_labels(labels);
@@ -2061,13 +2069,13 @@ class Parser : private Noncopyable<Parser>::type {
       }
     }
    private:
-    Parser* parser_;
+    parser_type* parser_;
     bool exist_labels_;
   };
 
   class StrictSwitcher : private Noncopyable<StrictSwitcher>::type {
    public:
-    explicit StrictSwitcher(Parser* parser)
+    explicit StrictSwitcher(parser_type* parser)
       : parser_(parser),
         prev_(parser->strict()) {
     }
@@ -2078,7 +2086,7 @@ class Parser : private Noncopyable<Parser>::type {
       parser_->set_strict(true);
     }
    private:
-    Parser* parser_;
+    parser_type* parser_;
     bool prev_;
   };
 
@@ -2103,7 +2111,7 @@ class Parser : private Noncopyable<Parser>::type {
   Token::Type token_;
   std::string error_;
   bool strict_;
-  BasicAstFactory* space_;
+  Factory* space_;
   Scope* scope_;
   Target* target_;
   AstNode::Identifiers* labels_;

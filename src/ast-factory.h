@@ -3,7 +3,6 @@
 #include "functor.h"
 #include "ast.h"
 #include "alloc-inl.h"
-#include "regexp-creator.h"
 
 namespace iv {
 namespace core {
@@ -20,82 +19,83 @@ class BasicAstFactory : public Space {
       true_instance_(new(this)TrueLiteral()),
       false_instance_(new(this)FalseLiteral()) {
   }
-  virtual ~BasicAstFactory() = 0;
 
   inline void Clear() {
     Space::Clear();
   }
 
-  virtual Identifier* NewIdentifier(const UChar* buffer) {
+  Identifier* NewIdentifier(const UChar* buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  virtual Identifier* NewIdentifier(const char* buffer) {
+  Identifier* NewIdentifier(const char* buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  virtual Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
+  Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  virtual Identifier* NewIdentifier(const std::vector<char>& buffer) {
+  Identifier* NewIdentifier(const std::vector<char>& buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  virtual StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer) {
+  StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer) {
     return new (this) StringLiteral(buffer, this);
   }
 
-  virtual Directivable* NewDirectivable(const std::vector<UChar>& buffer) {
+  Directivable* NewDirectivable(const std::vector<UChar>& buffer) {
     return new (this) Directivable(buffer, this);
   }
 
-  virtual RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
-                                          const std::vector<UChar>& flags) = 0;
+  RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
+                                  const std::vector<UChar>& flags) {
+    return new (this) RegExpLiteral(content, flags, this);
+  }
 
-  virtual FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
+  FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
     return new (this) FunctionLiteral(type, this);
   }
 
-  virtual ArrayLiteral* NewArrayLiteral() {
+  ArrayLiteral* NewArrayLiteral() {
     return new (this) ArrayLiteral(this);
   }
 
-  virtual ObjectLiteral* NewObjectLiteral() {
+  ObjectLiteral* NewObjectLiteral() {
     return new (this) ObjectLiteral(this);
   }
 
-  virtual AstNode::Identifiers* NewLabels() {
+  AstNode::Identifiers* NewLabels() {
     typedef AstNode::Identifiers Identifiers;
     return new (New(sizeof(Identifiers)))
         Identifiers(Identifiers::allocator_type(this));
   }
 
-  virtual NullLiteral* NewNullLiteral() {
+  NullLiteral* NewNullLiteral() {
     return null_instance_;
   }
 
-  virtual EmptyStatement* NewEmptyStatement() {
+  EmptyStatement* NewEmptyStatement() {
     return empty_statement_instance_;
   }
 
-  virtual DebuggerStatement* NewDebuggerStatement() {
+  DebuggerStatement* NewDebuggerStatement() {
     return debugger_statement_instance_;
   }
 
-  virtual ThisLiteral* NewThisLiteral() {
+  ThisLiteral* NewThisLiteral() {
     return this_instance_;
   }
 
-  virtual Undefined* NewUndefined() {
+  Undefined* NewUndefined() {
     return undefined_instance_;
   }
 
-  virtual TrueLiteral* NewTrueLiteral() {
+  TrueLiteral* NewTrueLiteral() {
     return true_instance_;
   }
 
-  virtual FalseLiteral* NewFalseLiteral() {
+  FalseLiteral* NewFalseLiteral() {
     return false_instance_;
   }
 
@@ -108,8 +108,6 @@ class BasicAstFactory : public Space {
   TrueLiteral* true_instance_;
   FalseLiteral* false_instance_;
 };
-
-inline BasicAstFactory::~BasicAstFactory() { }
 
 } }  // namespace iv::core
 #endif  // _IV_AST_FACTORY_H_

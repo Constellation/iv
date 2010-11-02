@@ -11,7 +11,7 @@ namespace lv5 {
 class AstFactory : public core::BasicAstFactory {
  public:
   typedef core::AstNode::List<core::RegExpLiteral*>::type DestReqs;
-  AstFactory(Context* ctx)
+  explicit AstFactory(Context* ctx)
     : ctx_(ctx),
       regexps_(DestReqs::allocator_type(this)) { }
 
