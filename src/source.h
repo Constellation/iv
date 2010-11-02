@@ -13,7 +13,12 @@ namespace core {
 class Source {
  public:
   static const int kEOS = -1;
-  Source(const std::string&, const std::string& filename);
+  Source(const std::string& str, const std::string& filename)
+    : source_(),
+      filename_(filename) {
+    ParseMagicComment(str);
+  }
+
   inline UChar Get(std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
@@ -42,8 +47,60 @@ class Source {
     return (begin == end) ? kEOS : *begin;
   }
 
-  void ParseMagicComment(const std::string& str);
-  const char* SkipSingleLineComment(const char* begin, const char* end);
+  void ParseMagicComment(const std::string& str) {
+    const char* begin = str.c_str();
+    const char* end   = begin + str.size();
+
+    const char* current = begin;
+
+    // parse shebang
+    int ch = Next(current, end);
+    ++current;
+    if (ch == '#') {
+      ch = Next(current, end);
+      ++current;
+      if (ch == '!') {
+        // shebang as SingleLineComment
+        current = SkipSingleLineComment(current, end);
+        ch = Next(current, end);
+        ++current;
+      } else {
+        // not valid shebang
+        ConvertToUTF16(str, &source_, "utf-8");
+        return;
+      }
+
+      // magic comment
+      if (ch == '/') {
+        ch = Next(current, end);
+        ++current;
+        if (ch == '/' || ch == '*') {
+          // comment
+          ConvertToUTF16(str, &source_, "utf-8");
+          return;
+        }
+      }
+    }
+    ConvertToUTF16(str, &source_, "utf-8");
+  }
+
+  const char* SkipSingleLineComment(const char* current,
+                                    const char* end) {
+    int ch = Next(current, end);
+    ++current;
+    while (ch >= 0) {
+      if (Chars::IsLineTerminator(ch)) {
+        ch = Next(current, end);
+        if (Chars::IsLineTerminator(ch)) {
+          ++current;
+        }
+        return current;
+      }
+      ch = Next(current, end);
+      ++current;
+    }
+    return current;
+  }
 
   UString source_;
   std::string filename_;
