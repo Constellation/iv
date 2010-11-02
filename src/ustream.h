@@ -1,6 +1,6 @@
 #ifndef _IV_USTREAM_H_
 #define _IV_USTREAM_H_
-#include <iostream>  // NOLINT
+#include <iosfwd>  // NOLINT
 #include <tr1/array>
 #include "config.h"
 
