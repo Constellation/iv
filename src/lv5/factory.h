@@ -3,21 +3,39 @@
 #include <vector>
 #include "alloc-inl.h"
 #include "regexp-icu.h"
+#include "ident-symbol.h"
 #include "ast-factory.h"
+#include "context.h"
 namespace iv {
 namespace lv5 {
-
 class AstFactory : public core::BasicAstFactory {
  public:
   typedef core::AstNode::List<core::RegExpLiteral*>::type DestReqs;
-  AstFactory()
-    : regexps_(DestReqs::allocator_type(this)) { }
+  AstFactory(Context* ctx)
+    : ctx_(ctx),
+      regexps_(DestReqs::allocator_type(this)) { }
 
   ~AstFactory() {
     for (DestReqs::const_iterator it = regexps_.begin(),
          last = regexps_.end(); it != last; ++it) {
       (*it)->~RegExpLiteral();
     }
+  }
+
+  core::Identifier* NewIdentifier(const UChar* buffer) {
+    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
+  }
+
+  core::Identifier* NewIdentifier(const char* buffer) {
+    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
+  }
+
+  core::Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
+    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
+  }
+
+  core::Identifier* NewIdentifier(const std::vector<char>& buffer) {
+    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
   inline core::RegExpLiteral* NewRegExpLiteral(
@@ -30,6 +48,7 @@ class AstFactory : public core::BasicAstFactory {
     return reg;
   }
  private:
+  Context* ctx_;
   DestReqs regexps_;
 };
 } }  // namespace iv::lv5

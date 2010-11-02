@@ -605,17 +605,17 @@ class NumberLiteral : public Literal {
 class Identifier : public Literal {
  public:
   typedef SpaceUString value_type;
-  explicit Identifier(const UChar* buffer, Space* factory);
-  explicit Identifier(const char* buffer, Space* factory);
-  explicit Identifier(const std::vector<UChar>& buffer, Space* factory);
-  explicit Identifier(const std::vector<char>& buffer, Space* factory);
+  Identifier(const UChar* buffer, Space* factory);
+  Identifier(const char* buffer, Space* factory);
+  Identifier(const std::vector<UChar>& buffer, Space* factory);
+  Identifier(const std::vector<char>& buffer, Space* factory);
   inline const SpaceUString& value() const {
     return value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Identifier)
- private:
+ protected:
   SpaceUString value_;
 };
 

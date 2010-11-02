@@ -119,7 +119,8 @@ int main(int argc, char **argv) {
     }
 
     iv::core::Source src(str, filename);
-    iv::lv5::AstFactory factory;
+    iv::lv5::Context ctx;
+    iv::lv5::AstFactory factory(&ctx);
     iv::core::Parser parser(&src, &factory);
     iv::core::FunctionLiteral* global = parser.ParseProgram();
 
@@ -133,7 +134,6 @@ int main(int argc, char **argv) {
       global->Accept(&ser);
       std::cout << ser.out().data() << std::endl;
     } else {
-      iv::lv5::Context ctx;
       ctx.DefineFunction(&Print, "print", 1);
       if (ctx.Run(global)) {
         const JSVal e = ctx.ErrorVal();

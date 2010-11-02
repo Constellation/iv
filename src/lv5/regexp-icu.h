@@ -15,7 +15,11 @@ class ICURegExpLiteral : public core::RegExpLiteral {
  public:
   ICURegExpLiteral(const std::vector<UChar>& buffer,
                    const std::vector<UChar>& flags,
-                   core::Space* space);
+                   core::Space* space)
+    : RegExpLiteral(buffer, flags, space),
+      status_(U_ZERO_ERROR),
+      regexp_(value_, flags_, &status_) {
+  }
   inline const JSRegExpImpl& regexp() const {
     return regexp_;
   }
@@ -33,7 +37,14 @@ class RegExpICU {
  public:
   static core::RegExpLiteral* Create(core::Space* space,
                                      const std::vector<UChar>& content,
-                                     const std::vector<UChar>& flags);
+                                     const std::vector<UChar>& flags) {
+    ICURegExpLiteral* expr = new(space)ICURegExpLiteral(content, flags, space);
+    if (expr->IsValid()) {
+      return expr;
+    } else {
+      return NULL;
+    }
+  }
 };
 
 } }  // namespace iv::lv5

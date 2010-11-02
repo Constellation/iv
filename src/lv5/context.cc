@@ -8,6 +8,7 @@
 #include "property.h"
 #include "class.h"
 #include "runtime.h"
+#include "ident-symbol.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -64,6 +65,11 @@ Symbol Context::Intern(const core::StringPiece& str) {
 
 Symbol Context::Intern(const core::UStringPiece& str) {
   return table_.Lookup(str);
+}
+
+Symbol Context::Intern(const core::Identifier& ident) {
+  // TODO(Constellation) unsafe downcast
+  return (static_cast<const IdentifierWithSymbol&>(ident)).symbol();
 }
 
 double Context::Random() {
