@@ -156,10 +156,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       labels_(NULL) {
   }
 
-  // Program
-  //   : SourceElements
+// Program
+//   : SourceElements
   FunctionLiteral* ParseProgram() {
-    FunctionLiteral* global = space_->NewFunctionLiteral(FunctionLiteral::GLOBAL);
+    FunctionLiteral* global = space_->NewFunctionLiteral(
+        FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
     bool error_flag = true;
     bool *res = &error_flag;
@@ -171,13 +172,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return (error_flag) ? global : NULL;
   }
 
-  // SourceElements
-  //   : SourceElement
-  //   | SourceElement SourceElements
-  //
-  // SourceElement
-  //   : Statements
-  //   | FunctionDeclaration
+// SourceElements
+//   : SourceElement
+//   | SourceElement SourceElements
+//
+// SourceElement
+//   : Statements
+//   | FunctionDeclaration
   bool ParseSourceElements(Token::Type end,
                            FunctionLiteral* function, bool *res) {
     Statement *stmt;
@@ -210,23 +211,23 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return true;
   }
 
-  //  Statement
-  //    : Block
-  //    | FunctionStatement    // This is not standard.
-  //    | VariableStatement
-  //    | EmptyStatement
-  //    | ExpressionStatement
-  //    | IfStatement
-  //    | IterationStatement
-  //    | ContinueStatement
-  //    | BreakStatement
-  //    | ReturnStatement
-  //    | WithStatement
-  //    | LabelledStatement
-  //    | SwitchStatement
-  //    | ThrowStatement
-  //    | TryStatement
-  //    | DebuggerStatement
+//  Statement
+//    : Block
+//    | FunctionStatement    // This is not standard.
+//    | VariableStatement
+//    | EmptyStatement
+//    | ExpressionStatement
+//    | IfStatement
+//    | IterationStatement
+//    | ContinueStatement
+//    | BreakStatement
+//    | ReturnStatement
+//    | WithStatement
+//    | LabelledStatement
+//    | SwitchStatement
+//    | ThrowStatement
+//    | TryStatement
+//    | DebuggerStatement
   Statement* ParseStatement(bool *res) {
     Statement *result = NULL;
     switch (token_) {
@@ -335,18 +336,18 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return result;
   }
 
-  //  FunctionDeclaration
-  //    : FUNCTION IDENTIFIER '(' FormalParameterList_opt ')' '{' FunctionBody '}'
-  //
-  //  FunctionStatement
-  //    : FUNCTION IDENTIFIER '(' FormalParameterList_opt ')' '{' FunctionBody '}'
-  //
-  //  FunctionExpression
-  //    : FUNCTION
-  //      IDENTIFIER_opt '(' FormalParameterList_opt ')' '{' FunctionBody '}'
-  //
-  //  FunctionStatement is not standard, but implemented in SpiderMonkey
-  //  and this statement is very useful for not breaking FunctionDeclaration.
+//  FunctionDeclaration
+//    : FUNCTION IDENTIFIER '(' FormalParameterList_opt ')' '{' FunctionBody '}'
+//
+//  FunctionStatement
+//    : FUNCTION IDENTIFIER '(' FormalParameterList_opt ')' '{' FunctionBody '}'
+//
+//  FunctionExpression
+//    : FUNCTION
+//      IDENTIFIER_opt '(' FormalParameterList_opt ')' '{' FunctionBody '}'
+//
+//  FunctionStatement is not standard, but implemented in SpiderMonkey
+//  and this statement is very useful for not breaking FunctionDeclaration.
   Statement* ParseFunctionDeclaration(bool *res) {
     assert(token_ == Token::FUNCTION);
     Next();
@@ -359,13 +360,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(FunctionStatement(expr));
   }
 
-  //  Block
-  //    : '{' '}'
-  //    | '{' StatementList '}'
-  //
-  //  StatementList
-  //    : Statement
-  //    | StatementList Statement
+//  Block
+//    : '{' '}'
+//    | '{' StatementList '}'
+//
+//  StatementList
+//    : Statement
+//    | StatementList Statement
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::LBRACE);
     Block *block = NEW(Block(space_));
@@ -381,9 +382,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return block;
   }
 
-  //  VariableStatement
-  //    : VAR VariableDeclarationList ';'
-  //    : CONST VariableDeclarationList ';'
+//  VariableStatement
+//    : VAR VariableDeclarationList ';'
+//    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
     VariableStatement* stmt = NEW(VariableStatement(token_, space_));
@@ -392,19 +393,19 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return stmt;
   }
 
-  //  VariableDeclarationList
-  //    : VariableDeclaration
-  //    | VariableDeclarationList ',' VariableDeclaration
-  //
-  //  VariableDeclaration
-  //    : IDENTIFIER Initialiser_opt
-  //
-  //  Initialiser_opt
-  //    :
-  //    | Initialiser
-  //
-  //  Initialiser
-  //    : '=' AssignmentExpression
+//  VariableDeclarationList
+//    : VariableDeclaration
+//    | VariableDeclarationList ',' VariableDeclaration
+//
+//  VariableDeclaration
+//    : IDENTIFIER Initialiser_opt
+//
+//  Initialiser_opt
+//    :
+//    | Initialiser
+//
+//  Initialiser
+//    : '=' AssignmentExpression
   Statement* ParseVariableDeclarations(VariableStatement* stmt,
                                        bool contains_in,
                                        bool *res) {
@@ -447,17 +448,17 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return stmt;
   }
 
-  //  EmptyStatement
-  //    : ';'
+//  EmptyStatement
+//    : ';'
   Statement* ParseEmptyStatement() {
     assert(token_ == Token::SEMICOLON);
     Next();
     return space_->NewEmptyStatement();
   }
 
-  //  IfStatement
-  //    : IF '(' Expression ')' Statement ELSE Statement
-  //    | IF '(' Expression ')' Statement
+//  IfStatement
+//    : IF '(' Expression ')' Statement ELSE Statement
+//    | IF '(' Expression ')' Statement
   Statement* ParseIfStatement(bool *res) {
     assert(token_ == Token::IF);
     IfStatement *if_stmt = NULL;
@@ -480,17 +481,17 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return if_stmt;
   }
 
-  //  IterationStatement
-  //    : DO Statement WHILE '(' Expression ')' ';'
-  //    | WHILE '(' Expression ')' Statement
-  //    | FOR '(' ExpressionNoIn_opt ';' Expression_opt ';' Expression_opt ')'
-  //      Statement
-  //    | FOR '(' VAR VariableDeclarationListNoIn ';'
-  //              Expression_opt ';'
-  //              Expression_opt ')'
-  //              Statement
-  //    | FOR '(' LeftHandSideExpression IN Expression ')' Statement
-  //    | FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
+//  IterationStatement
+//    : DO Statement WHILE '(' Expression ')' ';'
+//    | WHILE '(' Expression ')' Statement
+//    | FOR '(' ExpressionNoIn_opt ';' Expression_opt ';' Expression_opt ')'
+//      Statement
+//    | FOR '(' VAR VariableDeclarationListNoIn ';'
+//              Expression_opt ';'
+//              Expression_opt ')'
+//              Statement
+//    | FOR '(' LeftHandSideExpression IN Expression ')' Statement
+//    | FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::DO);
@@ -514,8 +515,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return dowhile;
   }
 
+//  WHILE '(' Expression ')' Statement
   Statement* ParseWhileStatement(bool *res) {
-    //  WHILE '(' Expression ')' Statement
     assert(token_ == Token::WHILE);
     Next();
 
@@ -533,15 +534,15 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return whilestmt;
   }
 
+//  FOR '(' ExpressionNoIn_opt ';' Expression_opt ';' Expression_opt ')'
+//  Statement
+//  FOR '(' VAR VariableDeclarationListNoIn ';'
+//          Expression_opt ';'
+//          Expression_opt ')'
+//          Statement
+//  FOR '(' LeftHandSideExpression IN Expression ')' Statement
+//  FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
   Statement* ParseForStatement(bool *res) {
-    //  FOR '(' ExpressionNoIn_opt ';' Expression_opt ';' Expression_opt ')'
-    //  Statement
-    //  FOR '(' VAR VariableDeclarationListNoIn ';'
-    //          Expression_opt ';'
-    //          Expression_opt ')'
-    //          Statement
-    //  FOR '(' LeftHandSideExpression IN Expression ')' Statement
-    //  FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
     assert(token_ == Token::FOR);
     Next();
 
@@ -629,8 +630,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return for_stmt;
   }
 
-  //  ContinueStatement
-  //    : CONTINUE Identifier_opt ';'
+//  ContinueStatement
+//    : CONTINUE Identifier_opt ';'
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
     ContinueStatement *continue_stmt = NEW(ContinueStatement());
@@ -661,8 +662,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return continue_stmt;
   }
 
-  //  BreakStatement
-  //    : BREAK Identifier_opt ';'
+//  BreakStatement
+//    : BREAK Identifier_opt ';'
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
     BreakStatement *break_stmt = NEW(BreakStatement());
@@ -706,8 +707,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return break_stmt;
   }
 
-  //  ReturnStatement
-  //    : RETURN Expression_opt ';'
+//  ReturnStatement
+//    : RETURN Expression_opt ';'
   Statement* ParseReturnStatement(bool *res) {
     assert(token_ == Token::RETURN);
     Next();
@@ -723,8 +724,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(ReturnStatement(expr));
   }
 
-  //  WithStatement
-  //    : WITH '(' Expression ')' Statement
+//  WithStatement
+//    : WITH '(' Expression ')' Statement
   Statement* ParseWithStatement(bool *res) {
     assert(token_ == Token::WITH);
     Next();
@@ -745,12 +746,12 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(WithStatement(expr, stmt));
   }
 
-  //  SwitchStatement
-  //    : SWITCH '(' Expression ')' CaseBlock
-  //
-  //  CaseBlock
-  //    : '{' CaseClauses_opt '}'
-  //    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
+//  SwitchStatement
+//    : SWITCH '(' Expression ')' CaseBlock
+//
+//  CaseBlock
+//    : '{' CaseClauses_opt '}'
+//    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
   Statement* ParseSwitchStatement(bool *res) {
     assert(token_ == Token::SWITCH);
     CaseClause *case_clause;
@@ -775,15 +776,15 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return switch_stmt;
   }
 
-  //  CaseClauses
-  //    : CaseClause
-  //    | CaseClauses CaseClause
-  //
-  //  CaseClause
-  //    : CASE Expression ':' StatementList_opt
-  //
-  //  DefaultClause
-  //    : DEFAULT ':' StatementList_opt
+//  CaseClauses
+//    : CaseClause
+//    | CaseClauses CaseClause
+//
+//  CaseClause
+//    : CASE Expression ':' StatementList_opt
+//
+//  DefaultClause
+//    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
     CaseClause *clause = NEW(CaseClause(space_));
@@ -810,8 +811,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return clause;
   }
 
-  //  ThrowStatement
-  //    : THROW Expression ';'
+//  ThrowStatement
+//    : THROW Expression ';'
   Statement* ParseThrowStatement(bool *res) {
     assert(token_ == Token::THROW);
     Expression *expr;
@@ -825,16 +826,16 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(ThrowStatement(expr));
   }
 
-  // TryStatement
-  //    : TRY Block Catch
-  //    | TRY Block Finally
-  //    | TRY Block Catch Finally
-  //
-  //  Catch
-  //    : CATCH '(' IDENTIFIER ')' Block
-  //
-  //  Finally
-  //    : FINALLY Block
+// TryStatement
+//    : TRY Block Catch
+//    | TRY Block Finally
+//    | TRY Block Catch Finally
+//
+//  Catch
+//    : CATCH '(' IDENTIFIER ')' Block
+//
+//  Finally
+//    : FINALLY Block
   Statement* ParseTryStatement(bool *res) {
     assert(token_ == Token::TRY);
     Identifier *name;
@@ -888,8 +889,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return try_stmt;
   }
 
-  //  DebuggerStatement
-  //    : DEBUGGER ';'
+//  DebuggerStatement
+//    : DEBUGGER ';'
   Statement* ParseDebuggerStatement(bool *res) {
     assert(token_ == Token::DEBUGGER);
     Next();
@@ -903,11 +904,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(ExpressionStatement(expr));
   }
 
-  //  LabelledStatement
-  //    : IDENTIFIER ':' Statement
-  //
-  //  ExpressionStatement
-  //    : Expression ';'
+//  LabelledStatement
+//    : IDENTIFIER ':' Statement
+//
+//  ExpressionStatement
+//    : Expression ';'
   Statement* ParseExpressionOrLabelledStatement(bool *res) {
     assert(token_ == Token::IDENTIFIER);
     Expression* expr = ParseExpression(true, CHECK);
@@ -951,9 +952,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(FunctionStatement(expr));
   }
 
-  //  Expression
-  //    : AssignmentExpression
-  //    | Expression ',' AssignmentExpression
+//  Expression
+//    : AssignmentExpression
+//    | Expression ',' AssignmentExpression
   Expression* ParseExpression(bool contains_in, bool *res) {
     Expression *right;
     Expression *result = ParseAssignmentExpression(contains_in, CHECK);
@@ -965,9 +966,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return result;
   }
 
-  //  AssignmentExpression
-  //    : ConditionalExpression
-  //    | LeftHandSideExpression AssignmentOperator AssignmentExpression
+//  AssignmentExpression
+//    : ConditionalExpression
+//    | LeftHandSideExpression AssignmentOperator AssignmentExpression
   Expression* ParseAssignmentExpression(bool contains_in, bool *res) {
     Expression *result = ParseConditionalExpression(contains_in, CHECK);
     if (!Token::IsAssignOp(token_)) {
@@ -995,9 +996,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return NEW(Assignment(op, result, right));
   }
 
-  //  ConditionalExpression
-  //    : LogicalOrExpression
-  //    | LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
+//  ConditionalExpression
+//    : LogicalOrExpression
+//    | LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
   Expression* ParseConditionalExpression(bool contains_in, bool *res) {
     Expression *result;
     result = ParseBinaryExpression(contains_in, 9, CHECK);
@@ -1012,58 +1013,58 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return result;
   }
 
-  //  LogicalOrExpression
-  //    : LogicalAndExpression
-  //    | LogicalOrExpression LOGICAL_OR LogicalAndExpression
-  //
-  //  LogicalAndExpression
-  //    : BitwiseOrExpression
-  //    | LogicalAndExpression LOGICAL_AND BitwiseOrExpression
-  //
-  //  BitwiseOrExpression
-  //    : BitwiseXorExpression
-  //    | BitwiseOrExpression '|' BitwiseXorExpression
-  //
-  //  BitwiseXorExpression
-  //    : BitwiseAndExpression
-  //    | BitwiseXorExpression '^' BitwiseAndExpression
-  //
-  //  BitwiseAndExpression
-  //    : EqualityExpression
-  //    | BitwiseAndExpression '&' EqualityExpression
-  //
-  //  EqualityExpression
-  //    : RelationalExpression
-  //    | EqualityExpression EQ_STRICT RelationalExpression
-  //    | EqualityExpression NE_STRICT RelationalExpression
-  //    | EqualityExpression EQ RelationalExpression
-  //    | EqualityExpression NE RelationalExpression
-  //
-  //  RelationalExpression
-  //    : ShiftExpression
-  //    | RelationalExpression LT ShiftExpression
-  //    | RelationalExpression GT ShiftExpression
-  //    | RelationalExpression LTE ShiftExpression
-  //    | RelationalExpression GTE ShiftExpression
-  //    | RelationalExpression INSTANCEOF ShiftExpression
-  //    | RelationalExpression IN ShiftExpression
-  //
-  //  ShiftExpression
-  //    : AdditiveExpression
-  //    | ShiftExpression SHL AdditiveExpression
-  //    | ShiftExpression SAR AdditiveExpression
-  //    | ShiftExpression SHR AdditiveExpression
-  //
-  //  AdditiveExpression
-  //    : MultiplicativeExpression
-  //    | AdditiveExpression ADD MultiplicativeExpression
-  //    | AdditiveExpression SUB MultiplicativeExpression
-  //
-  //  MultiplicativeExpression
-  //    : UnaryExpression
-  //    | MultiplicativeExpression MUL UnaryExpression
-  //    | MultiplicativeExpression DIV UnaryExpression
-  //    | MultiplicativeExpression MOD UnaryExpression
+//  LogicalOrExpression
+//    : LogicalAndExpression
+//    | LogicalOrExpression LOGICAL_OR LogicalAndExpression
+//
+//  LogicalAndExpression
+//    : BitwiseOrExpression
+//    | LogicalAndExpression LOGICAL_AND BitwiseOrExpression
+//
+//  BitwiseOrExpression
+//    : BitwiseXorExpression
+//    | BitwiseOrExpression '|' BitwiseXorExpression
+//
+//  BitwiseXorExpression
+//    : BitwiseAndExpression
+//    | BitwiseXorExpression '^' BitwiseAndExpression
+//
+//  BitwiseAndExpression
+//    : EqualityExpression
+//    | BitwiseAndExpression '&' EqualityExpression
+//
+//  EqualityExpression
+//    : RelationalExpression
+//    | EqualityExpression EQ_STRICT RelationalExpression
+//    | EqualityExpression NE_STRICT RelationalExpression
+//    | EqualityExpression EQ RelationalExpression
+//    | EqualityExpression NE RelationalExpression
+//
+//  RelationalExpression
+//    : ShiftExpression
+//    | RelationalExpression LT ShiftExpression
+//    | RelationalExpression GT ShiftExpression
+//    | RelationalExpression LTE ShiftExpression
+//    | RelationalExpression GTE ShiftExpression
+//    | RelationalExpression INSTANCEOF ShiftExpression
+//    | RelationalExpression IN ShiftExpression
+//
+//  ShiftExpression
+//    : AdditiveExpression
+//    | ShiftExpression SHL AdditiveExpression
+//    | ShiftExpression SAR AdditiveExpression
+//    | ShiftExpression SHR AdditiveExpression
+//
+//  AdditiveExpression
+//    : MultiplicativeExpression
+//    | AdditiveExpression ADD MultiplicativeExpression
+//    | AdditiveExpression SUB MultiplicativeExpression
+//
+//  MultiplicativeExpression
+//    : UnaryExpression
+//    | MultiplicativeExpression MUL UnaryExpression
+//    | MultiplicativeExpression DIV UnaryExpression
+//    | MultiplicativeExpression MOD UnaryExpression
   Expression* ParseBinaryExpression(bool contains_in,
                                     int prec, bool *res) {
     Expression *left, *right;
@@ -1082,7 +1083,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     // AdditiveExpression
     while (token_ == Token::ADD ||
-        token_ == Token::SUB) {
+           token_ == Token::SUB) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 0, CHECK);
@@ -1092,8 +1093,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     // ShiftExpression
     while (token_ == Token::SHL ||
-        token_ == Token::SAR ||
-        token_ == Token::SHR) {
+           token_ == Token::SAR ||
+           token_ == Token::SHR) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 1, CHECK);
@@ -1103,8 +1104,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     // RelationalExpression
     while ((Token::REL_FIRST < token_ &&
-        token_ < Token::REL_LAST) ||
-        (contains_in && token_ == Token::IN)) {
+            token_ < Token::REL_LAST) ||
+           (contains_in && token_ == Token::IN)) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 2, CHECK);
@@ -1114,9 +1115,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     // EqualityExpression
     while (token_ == Token::EQ_STRICT ||
-        token_ == Token::NE_STRICT ||
-        token_ == Token::EQ ||
-        token_ == Token::NE) {
+           token_ == Token::NE_STRICT ||
+           token_ == Token::EQ ||
+           token_ == Token::NE) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 3, CHECK);
@@ -1242,17 +1243,17 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
   }
 
-  //  UnaryExpression
-  //    : PostfixExpression
-  //    | DELETE UnaryExpression
-  //    | VOID UnaryExpression
-  //    | TYPEOF UnaryExpression
-  //    | INC UnaryExpression
-  //    | DEC UnaryExpression
-  //    | '+' UnaryExpression
-  //    | '-' UnaryExpression
-  //    | '~' UnaryExpression
-  //    | '!' UnaryExpression
+//  UnaryExpression
+//    : PostfixExpression
+//    | DELETE UnaryExpression
+//    | VOID UnaryExpression
+//    | TYPEOF UnaryExpression
+//    | INC UnaryExpression
+//    | DEC UnaryExpression
+//    | '+' UnaryExpression
+//    | '-' UnaryExpression
+//    | '~' UnaryExpression
+//    | '!' UnaryExpression
   Expression* ParseUnaryExpression(bool *res) {
     Expression *result, *expr;
     const Token::Type op = token_;
@@ -1343,10 +1344,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return result;
   }
 
-  //  PostfixExpression
-  //    : LeftHandSideExpression
-  //    | LeftHandSideExpression INCREMENT
-  //    | LeftHandSideExpression DECREMENT
+//  PostfixExpression
+//    : LeftHandSideExpression
+//    | LeftHandSideExpression INCREMENT
+//    | LeftHandSideExpression DECREMENT
   Expression* ParsePostfixExpression(bool *res) {
     Expression *expr;
     expr = ParseMemberExpression(true, CHECK);
@@ -1375,19 +1376,19 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return expr;
   }
 
-  //  LeftHandSideExpression
-  //    : NewExpression
-  //    | CallExpression
-  //
-  //  NewExpression
-  //    : MemberExpression
-  //    | NEW NewExpression
-  //
-  //  MemberExpression
-  //    : PrimaryExpression
-  //    | FunctionExpression
-  //    | MemberExpression '[' Expression ']'
-  //    | NEW MemberExpression Arguments
+//  LeftHandSideExpression
+//    : NewExpression
+//    | CallExpression
+//
+//  NewExpression
+//    : MemberExpression
+//    | NEW NewExpression
+//
+//  MemberExpression
+//    : PrimaryExpression
+//    | FunctionExpression
+//    | MemberExpression '[' Expression ']'
+//    | NEW MemberExpression Arguments
   Expression* ParseMemberExpression(bool allow_call, bool *res) {
     Expression *expr;
     if (token_ != Token::NEW) {
@@ -1444,21 +1445,21 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
   }
 
-  //  PrimaryExpression
-  //    : THIS
-  //    | IDENTIFIER
-  //    | Literal
-  //    | ArrayLiteral
-  //    | ObjectLiteral
-  //    | '(' Expression ')'
-  //
-  //  Literal
-  //    : NULL_LITERAL
-  //    | TRUE_LITERAL
-  //    | FALSE_LITERAL
-  //    | NUMBER
-  //    | STRING
-  //    | REGEXP
+//  PrimaryExpression
+//    : THIS
+//    | IDENTIFIER
+//    | Literal
+//    | ArrayLiteral
+//    | ObjectLiteral
+//    | '(' Expression ')'
+//
+//  Literal
+//    : NULL_LITERAL
+//    | TRUE_LITERAL
+//    | FALSE_LITERAL
+//    | NUMBER
+//    | STRING
+//    | REGEXP
   Expression* ParsePrimaryExpression(bool *res) {
     Expression *result = NULL;
     switch (token_) {
@@ -1540,13 +1541,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return result;
   }
 
-  //  Arguments
-  //    : '(' ')'
-  //    | '(' ArgumentList ')'
-  //
-  //  ArgumentList
-  //    : AssignmentExpression
-  //    | ArgumentList ',' AssignmentExpression
+//  Arguments
+//    : '(' ')'
+//    | '(' ArgumentList ')'
+//
+//  ArgumentList
+//    : AssignmentExpression
+//    | ArgumentList ',' AssignmentExpression
   Call* ParseArguments(Call* func, bool *res) {
     Expression *expr;
     Next();
@@ -1580,18 +1581,18 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
   }
 
-  //  ArrayLiteral
-  //    : '[' Elision_opt ']'
-  //    | '[' ElementList ']'
-  //    | '[' ElementList ',' Elision_opt ']'
-  //
-  //  ElementList
-  //    : Elision_opt AssignmentExpression
-  //    | ElementList ',' Elision_opt AssignmentExpression
-  //
-  //  Elision
-  //    : ','
-  //    | Elision ','
+//  ArrayLiteral
+//    : '[' Elision_opt ']'
+//    | '[' ElementList ']'
+//    | '[' ElementList ',' Elision_opt ']'
+//
+//  ElementList
+//    : Elision_opt AssignmentExpression
+//    | ElementList ',' Elision_opt AssignmentExpression
+//
+//  Elision
+//    : ','
+//    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
     ArrayLiteral *array = space_->NewArrayLiteral();
     Expression *expr;
@@ -1614,29 +1615,29 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
 
 
-  //  ObjectLiteral
-  //    : '{' PropertyNameAndValueList_opt '}'
-  //
-  //  PropertyNameAndValueList_opt
-  //    :
-  //    | PropertyNameAndValueList
-  //
-  //  PropertyNameAndValueList
-  //    : PropertyAssignment
-  //    | PropertyNameAndValueList ',' PropertyAssignment
-  //
-  //  PropertyAssignment
-  //    : PropertyName ':' AssignmentExpression
-  //    | 'get' PropertyName '(' ')' '{' FunctionBody '}'
-  //    | 'set' PropertyName '(' PropertySetParameterList ')' '{' FunctionBody '}'
-  //
-  //  PropertyName
-  //    : IDENTIFIER
-  //    | STRING
-  //    | NUMBER
-  //
-  //  PropertySetParameterList
-  //    : IDENTIFIER
+//  ObjectLiteral
+//    : '{' PropertyNameAndValueList_opt '}'
+//
+//  PropertyNameAndValueList_opt
+//    :
+//    | PropertyNameAndValueList
+//
+//  PropertyNameAndValueList
+//    : PropertyAssignment
+//    | PropertyNameAndValueList ',' PropertyAssignment
+//
+//  PropertyAssignment
+//    : PropertyName ':' AssignmentExpression
+//    | 'get' PropertyName '(' ')' '{' FunctionBody '}'
+//    | 'set' PropertyName '(' PropertySetParameterList ')' '{' FunctionBody '}'
+//
+//  PropertyName
+//    : IDENTIFIER
+//    | STRING
+//    | NUMBER
+//
+//  PropertySetParameterList
+//    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
     typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
     ObjectLiteral *object = space_->NewObjectLiteral();
@@ -2058,7 +2059,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
   class LabelScope : private Noncopyable<LabelScope>::type {
    public:
-    LabelScope(parser_type* parser, AstNode::Identifiers* labels, bool exist_labels)
+    LabelScope(parser_type* parser,
+               AstNode::Identifiers* labels, bool exist_labels)
       : parser_(parser),
         exist_labels_(exist_labels) {
       parser_->set_labels(labels);
