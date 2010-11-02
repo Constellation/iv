@@ -57,6 +57,11 @@ JSVal::JSVal(JSUndefinedKeywordType val)
   set_value(val);
 }
 
+JSVal::JSVal(JSEmptyKeywordType val)
+  : value_() {
+  set_value(val);
+}
+
 JSVal::JSVal(const value_type& val)
   : value_(val) {
 }
@@ -105,11 +110,10 @@ JSObject* JSVal::ToObject(Context* ctx, Error* res) const {
   } else if (IsNull()) {
     res->Report(Error::Type, "null has no properties");
     return NULL;
-  } else if (IsUndefined()) {
+  } else {
+    assert(IsUndefined());
     res->Report(Error::Type, "undefined has no properties");
     return NULL;
-  } else {
-    UNREACHABLE();
   }
 }
 
@@ -165,7 +169,7 @@ JSVal JSVal::ToPrimitive(Context* ctx,
   if (IsObject()) {
     return object()->DefaultValue(ctx, hint, res);
   } else {
-    assert(!IsEnvironment() && !IsReference());
+    assert(!IsEnvironment() && !IsReference() && !IsEmpty());
     return *this;
   }
 }
@@ -175,7 +179,7 @@ bool JSVal::IsCallable() const {
 }
 
 void JSVal::CheckObjectCoercible(Error* res) const {
-  assert(!IsEnvironment() && !IsReference());
+  assert(!IsEnvironment() && !IsReference() && !IsEmpty());
   if (IsNull()) {
     res->Report(Error::Type, "null has no properties");
   } else if (IsUndefined()) {

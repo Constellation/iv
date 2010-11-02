@@ -120,6 +120,7 @@ struct JSTrueType { };
 struct JSFalseType { };
 struct JSNullType { };
 struct JSUndefinedType { };
+struct JSEmptyType { };
 
 }  // namespace iv::lv5::detail
 
@@ -127,10 +128,12 @@ typedef bool (*JSTrueKeywordType)(JSVal, detail::JSTrueType);
 typedef bool (*JSFalseKeywordType)(JSVal, detail::JSFalseType);
 typedef bool (*JSNullKeywordType)(JSVal, detail::JSNullType);
 typedef bool (*JSUndefinedKeywordType)(JSVal, detail::JSUndefinedType);
+typedef bool (*JSEmptyKeywordType)(JSVal, detail::JSEmptyType);
 inline bool JSTrue(JSVal x, detail::JSTrueType dummy);
 inline bool JSFalse(JSVal x, detail::JSFalseType dummy);
 inline bool JSNull(JSVal x, detail::JSNullType dummy);
 inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
+inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy);
 
 class JSVal {
  public:
@@ -155,7 +158,6 @@ class JSVal {
   static const uint32_t kNumberTag      = 0xfffffff5;
   static const uint32_t kHighestTag     = kTrueTag;
   static const uint32_t kLowestTag      = kNumberTag;
-  static const uint32_t kVtables        = kHighestTag - kLowestTag + 1;
 
   JSVal();
   JSVal(const JSVal& rhs);
@@ -168,6 +170,7 @@ class JSVal {
   JSVal(JSFalseKeywordType val);  // NOLINT
   JSVal(JSNullKeywordType val);  // NOLINT
   JSVal(JSUndefinedKeywordType val);  // NOLINT
+  JSVal(JSEmptyKeywordType val);  // NOLINT
   JSVal(const value_type& val);  // NOLINT
   template<typename T>
   JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
@@ -205,20 +208,22 @@ class JSVal {
     value_.struct_.tag_ = kBoolTag;
   }
   inline void set_value(JSNullKeywordType val) {
-    value_.struct_.payload_.boolean_ = NULL;
     value_.struct_.tag_ = kNullTag;
   }
   inline void set_value(JSUndefinedKeywordType val) {
-    value_.struct_.payload_.boolean_ = NULL;
     value_.struct_.tag_ = kUndefinedTag;
   }
+  inline void set_value(JSEmptyKeywordType val) {
+    value_.struct_.tag_ = kEmptyTag;
+  }
   inline void set_null() {
-    value_.struct_.payload_.boolean_ = NULL;
     value_.struct_.tag_ = kNullTag;
   }
   inline void set_undefined() {
-    value_.struct_.payload_.boolean_ = NULL;
     value_.struct_.tag_ = kUndefinedTag;
+  }
+  inline void set_empty() {
+    value_.struct_.tag_ = kEmptyTag;
   }
 
   inline JSReference* reference() const {
@@ -251,6 +256,9 @@ class JSVal {
     return value_.struct_.payload_.boolean_;
   }
 
+  inline bool IsEmpty() const {
+    return value_.struct_.tag_ == kEmptyTag;
+  }
   inline bool IsUndefined() const {
     return value_.struct_.tag_ == kUndefinedTag;
   }
@@ -311,6 +319,7 @@ class JSVal {
     } else if (IsBoolean()) {
       return boolean();
     } else {
+      assert(!IsEmpty());
       return true;
     }
   }
@@ -352,6 +361,10 @@ inline bool JSUndefined(
   return false;
 }
 
+inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy = detail::JSEmptyType()) {
+  return false;
+}
+
 inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
   if (lhs.type() != rhs.type()) {
     return false;
@@ -387,6 +400,7 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
   if (lhs.IsObject()) {
     return lhs.object() == rhs.object();
   }
+  assert(!lhs.IsEmpty());
   return false;
 }
 
