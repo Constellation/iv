@@ -8,3 +8,4 @@ src/config.h
 config.log
 .sconf_temp
 tools/*.pyc
+src/phonic/
