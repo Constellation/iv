@@ -175,5 +175,4 @@ class Token {
 };
 
 } }  // namespace iv::core
-
 #endif  // _IV_TOKEN_H_

@@ -25,16 +25,21 @@ class Scope : public SpaceObject, private Noncopyable<Scope>::type  {
   void AddUnresolved(Identifier* name, bool is_const) {
     vars_.push_back(Variables::value_type(name, is_const));
   }
-  void AddFunctionDeclaration(FunctionLiteral* func);
-  void SetUpperScope(Scope* scope);
+  void AddFunctionDeclaration(FunctionLiteral* func) {
+    funcs_.push_back(func);
+  }
+  void SetUpperScope(Scope* scope) {
+    up_ = scope;
+  }
   inline const FunctionLiterals& function_declarations() const {
     return funcs_;
   }
   inline const Variables& variables() const {
     return vars_;
   }
-  Scope* GetUpperScope();
-  bool Contains(const Identifier& ident) const;
+  Scope* GetUpperScope() {
+    return up_;
+  }
  protected:
   Scope* up_;
   Variables vars_;

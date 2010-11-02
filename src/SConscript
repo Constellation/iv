@@ -6,15 +6,13 @@ Import('root_dir context deps')
 
 files = [
   'lexer.cc',
-  'scope.cc',
   'source.cc',
   'parser.cc',
   'ast-serializer.cc',
   'ast.cc',
   'token.cc',
   'alloc.cc',
-  'conversions.cc',
-  'regexp-creator.cc'
+  'conversions.cc'
 ]
 
 src_files = [join(root_dir, 'src', x) for x in files ]
