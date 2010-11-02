@@ -1,30 +1,10 @@
+#include <cstdio>
 #include <algorithm>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
 #include <tr1/functional>
-#include "utils.h"
-#ifdef DEBUG
-#include <cstdio>
-#include <iostream>  // NOLINT
-#endif  // DEBUG
-
 #include "parser.h"
 #include "utils.h"
-
-#ifdef DEBUG
-
-#define REPORT\
-  /* std::printf("error line: %d\n", __LINE__);\
-  std::printf("error source: %d\n", lexer_.line_number()); */
-
-#define TRACE\
-  /* std::printf("check: %d\n", __LINE__); */
-#else
-
-#define REPORT
-#define TRACE
-
-#endif  // DEBUG
 
 #define IS(token)\
   do {\
@@ -45,6 +25,13 @@
     Next();\
   } while (0)
 
+#define UNEXPECT(token)\
+  do {\
+    *res = false;\
+    ReportUnexpectedToken(token);\
+    return NULL;\
+  } while (0)
+
 #define RAISE(str)\
   do {\
     *res = false;\
@@ -61,16 +48,8 @@
     return NULL;\
   } while (0)
 
-#define UNEXPECT(token)\
-  do {\
-    *res = false;\
-    ReportUnexpectedToken(token);\
-    return NULL;\
-  } while (0)
-
 #define CHECK  res);\
   if (!*res) {\
-    TRACE\
     return NULL;\
   }\
   ((void)0
@@ -1913,8 +1892,8 @@ void Parser::SetErrorHeader(std::size_t line) {
   std::tr1::array<char, 40> buf;
   error_.append(lexer_.filename());
   int num = std::snprintf(buf.data(), buf.size(),
-                          ":%lu: SyntaxError: ",
-                          static_cast<unsigned long>(line));  // NOLINT
+                               ":%lu: SyntaxError: ",
+                               static_cast<unsigned long>(line));  // NOLINT
   error_.append(buf.data(), num);
 }
 
@@ -1956,14 +1935,12 @@ Parser::EvalOrArguments Parser::IsEvalOrArguments(const Identifier* ident) {
   }
 }
 
-#undef REPORT
-#undef TRACE
-#undef CHECK
+#undef IS
 #undef EXPECT
 #undef UNEXPECT
-#undef IS
-#undef NEW
 #undef RAISE
 #undef RAISE_WITH_NUMBER
+#undef CHECK
+#undef NEW
 
 } }  // namespace iv::core

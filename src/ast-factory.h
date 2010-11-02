@@ -26,76 +26,76 @@ class BasicAstFactory : public Space {
     Space::Clear();
   }
 
-  Identifier* NewIdentifier(const UChar* buffer) {
+  virtual Identifier* NewIdentifier(const UChar* buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  Identifier* NewIdentifier(const char* buffer) {
+  virtual Identifier* NewIdentifier(const char* buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
+  virtual Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  Identifier* NewIdentifier(const std::vector<char>& buffer) {
+  virtual Identifier* NewIdentifier(const std::vector<char>& buffer) {
     return new (this) Identifier(buffer, this);
   }
 
-  StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer) {
+  virtual StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer) {
     return new (this) StringLiteral(buffer, this);
   }
 
-  Directivable* NewDirectivable(const std::vector<UChar>& buffer) {
+  virtual Directivable* NewDirectivable(const std::vector<UChar>& buffer) {
     return new (this) Directivable(buffer, this);
   }
 
   virtual RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
                                           const std::vector<UChar>& flags) = 0;
 
-  FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
+  virtual FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
     return new (this) FunctionLiteral(type, this);
   }
 
-  ArrayLiteral* NewArrayLiteral() {
+  virtual ArrayLiteral* NewArrayLiteral() {
     return new (this) ArrayLiteral(this);
   }
 
-  ObjectLiteral* NewObjectLiteral() {
+  virtual ObjectLiteral* NewObjectLiteral() {
     return new (this) ObjectLiteral(this);
   }
 
-  AstNode::Identifiers* NewLabels() {
+  virtual AstNode::Identifiers* NewLabels() {
     typedef AstNode::Identifiers Identifiers;
     return new (New(sizeof(Identifiers)))
         Identifiers(Identifiers::allocator_type(this));
   }
 
-  inline NullLiteral* NewNullLiteral() {
+  virtual NullLiteral* NewNullLiteral() {
     return null_instance_;
   }
 
-  inline EmptyStatement* NewEmptyStatement() {
+  virtual EmptyStatement* NewEmptyStatement() {
     return empty_statement_instance_;
   }
 
-  inline DebuggerStatement* NewDebuggerStatement() {
+  virtual DebuggerStatement* NewDebuggerStatement() {
     return debugger_statement_instance_;
   }
 
-  inline ThisLiteral* NewThisLiteral() {
+  virtual ThisLiteral* NewThisLiteral() {
     return this_instance_;
   }
 
-  inline Undefined* NewUndefined() {
+  virtual Undefined* NewUndefined() {
     return undefined_instance_;
   }
 
-  inline TrueLiteral* NewTrueLiteral() {
+  virtual TrueLiteral* NewTrueLiteral() {
     return true_instance_;
   }
 
-  inline FalseLiteral* NewFalseLiteral() {
+  virtual FalseLiteral* NewFalseLiteral() {
     return false_instance_;
   }
 
@@ -110,14 +110,6 @@ class BasicAstFactory : public Space {
 };
 
 inline BasicAstFactory::~BasicAstFactory() { }
-
-template<typename RegExpTraits>
-class AstFactory : public BasicAstFactory {
-  RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
-                                  const std::vector<UChar>& flags) {
-    return RegExpTraits::Create(this, content, flags);
-  }
-};
 
 } }  // namespace iv::core
 #endif  // _IV_AST_FACTORY_H_

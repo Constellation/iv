@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     }
 
     iv::core::Source src(str, filename);
-    iv::core::AstFactory<iv::lv5::RegExpICU> factory;
+    iv::lv5::Lv5AstFactory factory;
     iv::core::Parser parser(&src, &factory);
     iv::core::FunctionLiteral* global = parser.ParseProgram();
 
