@@ -4,7 +4,7 @@
 #include <iterator>
 #include <cassert>
 #include <gc/gc_cpp.h>
-#include "conversions-inl.h"
+#include "conversions.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "gc-template.h"

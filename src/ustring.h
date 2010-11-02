@@ -11,7 +11,7 @@
 #include <unicode/uclean.h>
 #include <unicode/ucnv.h>
 #include "stringpiece.h"
-#include "conversions-inl.h"
+#include "conversions.h"
 namespace iv {
 namespace core {
 

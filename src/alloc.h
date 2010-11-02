@@ -14,7 +14,7 @@
 #include <tr1/functional>
 #include "uchar.h"
 #include "utils.h"
-#include "conversions-inl.h"
+#include "conversions.h"
 
 namespace iv {
 namespace core {

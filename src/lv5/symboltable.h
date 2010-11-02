@@ -8,7 +8,7 @@
 #include "jsstring.h"
 #include "symbol.h"
 #include "ustring.h"
-#include "conversions-inl.h"
+#include "conversions.h"
 namespace iv {
 namespace lv5 {
 class Context;

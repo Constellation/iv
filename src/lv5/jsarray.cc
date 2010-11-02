@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <tr1/array>
 #include <cstdlib>
-#include "conversions-inl.h"
+#include "conversions.h"
 #include "chars.h"
 #include "ustringpiece.h"
 #include "jsarray.h"
