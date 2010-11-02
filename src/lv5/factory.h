@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_FACTORY_ICU_H_
-#define _IV_LV5_FACTORY_ICU_H_
+#ifndef _IV_LV5_FACTORY_H_
+#define _IV_LV5_FACTORY_H_
 #include <vector>
 #include "alloc-inl.h"
 #include "regexp-icu.h"
@@ -7,13 +7,13 @@
 namespace iv {
 namespace lv5 {
 
-class Lv5AstFactory : public core::BasicAstFactory {
+class AstFactory : public core::BasicAstFactory {
  public:
   typedef core::AstNode::List<core::RegExpLiteral*>::type DestReqs;
-  Lv5AstFactory()
+  AstFactory()
     : regexps_(DestReqs::allocator_type(this)) { }
 
-  ~Lv5AstFactory() {
+  ~AstFactory() {
     for (DestReqs::const_iterator it = regexps_.begin(),
          last = regexps_.end(); it != last; ++it) {
       (*it)->~RegExpLiteral();
@@ -33,4 +33,4 @@ class Lv5AstFactory : public core::BasicAstFactory {
   DestReqs regexps_;
 };
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_FACTORY_ICU_H_
+#endif  // _IV_LV5_FACTORY_H_
