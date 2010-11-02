@@ -2108,6 +2108,11 @@ class Parser : private Noncopyable<Parser>::type {
   Target* target_;
   AstNode::Identifiers* labels_;
 };
-
+#undef IS
+#undef EXPECT
+#undef UNEXPECT
+#undef RAISE
+#undef RAISE_WITH_NUMBER
+#undef CHECK
 } }  // namespace iv::core
 #endif  // _IV_PARSER_H_
