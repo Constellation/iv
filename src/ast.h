@@ -688,7 +688,8 @@ class PostfixExpression : public Expression {
 class StringLiteral : public Literal {
  public:
   StringLiteral(const std::vector<uc16>& buffer, Space* factory)
-    : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
+    : value_(buffer.data(),
+             buffer.size(), SpaceUString::allocator_type(factory)) {
   }
 
   inline const SpaceUString& value() const {
@@ -709,7 +710,7 @@ class Directivable : public StringLiteral {
 
 class NumberLiteral : public Literal {
  public:
-  NumberLiteral(const double & val)
+  explicit NumberLiteral(const double & val)
     : value_(val) {
   }
   inline double value() const { return value_; }
@@ -731,7 +732,8 @@ class Identifier : public Literal {
              SpaceUString::allocator_type(factory)) {
   }
   Identifier(const std::vector<uc16>& buffer, Space* factory)
-    : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
+    : value_(buffer.data(),
+             buffer.size(), SpaceUString::allocator_type(factory)) {
   }
   Identifier(const std::vector<char>& buffer, Space* factory)
     : value_(buffer.begin(),
@@ -816,8 +818,10 @@ class RegExpLiteral : public Literal {
   RegExpLiteral(const std::vector<uc16>& buffer,
                 const std::vector<uc16>& flags,
                 Space* factory)
-    : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)),
-      flags_(flags.data(), flags.size(), SpaceUString::allocator_type(factory)) {
+    : value_(buffer.data(),
+             buffer.size(), SpaceUString::allocator_type(factory)),
+      flags_(flags.data(),
+             flags.size(), SpaceUString::allocator_type(factory)) {
   }
   inline const SpaceUString& value() const { return value_; }
   inline const SpaceUString& flags() const { return flags_; }

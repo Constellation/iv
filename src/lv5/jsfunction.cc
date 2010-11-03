@@ -1,4 +1,4 @@
-#include <iostream>
+#include <iostream>  // NOLINT
 #include "ast.h"
 #include "jsenv.h"
 #include "jsfunction.h"
@@ -103,7 +103,8 @@ JSVal JSNativeFunction::Call(const Arguments& args,
 }
 
 
-void JSNativeFunction::Initialize(Context* ctx, value_type func, std::size_t n) {
+void JSNativeFunction::Initialize(Context* ctx,
+                                  value_type func, std::size_t n) {
   func_ = func;
   DefineOwnProperty(
       ctx, ctx->length_symbol(),

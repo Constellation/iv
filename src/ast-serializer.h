@@ -382,7 +382,8 @@ class AstSerializer: public ConstAstVisitor {
   void Visit(const ObjectLiteral* literal) {
     using std::tr1::get;
     Append("{\"type\":\"object\",\"value\":[");
-    ObjectLiteral::Properties::const_iterator it = literal->properties().begin();
+    ObjectLiteral::Properties::const_iterator
+        it = literal->properties().begin();
     const ObjectLiteral::Properties::const_iterator
       end = literal->properties().end();
     while (it != end) {

@@ -361,7 +361,8 @@ inline bool JSUndefined(
   return false;
 }
 
-inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy = detail::JSEmptyType()) {
+inline bool JSEmpty(JSVal x,
+                    detail::JSEmptyType dummy = detail::JSEmptyType()) {
   return false;
 }
 

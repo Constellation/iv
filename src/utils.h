@@ -76,7 +76,8 @@ class Size {
   static const int kIntptrAlign  = AlignOf(intptr_t);  // NOLINT
 };
 
-#define POINTERSIZE (sizeof(void*))
+#define VOID_POINTER void*
+#define POINTERSIZE (sizeof(POINTER))
 #define UNREACHABLE() assert(!"UNREACHABLE")
 
 } }  // namespace iv::core

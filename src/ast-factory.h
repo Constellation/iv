@@ -179,7 +179,8 @@ class BasicAstFactory : public Space {
     return new (this) LabelledStatement(expr, stmt);
   }
 
-  BinaryOperation* NewBinaryOperation(Token::Type op, Expression* result, Expression* right) {
+  BinaryOperation* NewBinaryOperation(Token::Type op,
+                                      Expression* result, Expression* right) {
     return new (this) BinaryOperation(op, result, right);
   }
 
@@ -188,7 +189,8 @@ class BasicAstFactory : public Space {
     return new (this) BinaryOperation(OP, left, right);
   }
 
-  Assignment* NewAssignment(Token::Type op, Expression* left, Expression* right) {
+  Assignment* NewAssignment(Token::Type op,
+                            Expression* left, Expression* right) {
     return new (this) Assignment(op, left, right);
   }
 

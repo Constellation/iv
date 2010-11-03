@@ -561,7 +561,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
           Expression *enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt = factory_->NewForInStatement(init, enumerable);
+          ForInStatement* forstmt =
+              factory_->NewForInStatement(init, enumerable);
           Target target(this, forstmt);
           Statement *body = ParseStatement(CHECK);
           forstmt->set_body(body);
@@ -578,7 +579,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           Next();
           Expression *enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt = factory_->NewForInStatement(init, enumerable);
+          ForInStatement* forstmt =
+              factory_->NewForInStatement(init, enumerable);
           Target target(this, forstmt);
           Statement *body = ParseStatement(CHECK);
           forstmt->set_body(body);

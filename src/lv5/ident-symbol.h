@@ -19,11 +19,13 @@ class IdentifierWithSymbol : public core::Identifier {
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }
-  IdentifierWithSymbol(Context* ctx, const std::vector<uc16>& buffer, core::Space* factory)
+  IdentifierWithSymbol(Context* ctx,
+                       const std::vector<uc16>& buffer, core::Space* factory)
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }
-  IdentifierWithSymbol(Context* ctx, const std::vector<char>& buffer, core::Space* factory)
+  IdentifierWithSymbol(Context* ctx,
+                       const std::vector<char>& buffer, core::Space* factory)
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }

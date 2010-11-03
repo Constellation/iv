@@ -83,7 +83,8 @@ class BasicStringPiece {
   }
 
   std::basic_string<CharT, Traits> as_string() const {
-    // std::basic_string<CharT> doesn't like to take a NULL pointer even with a 0 size.
+    // std::basic_string<CharT> doesn't like to
+    // take a NULL pointer even with a 0 size.
     if (!empty()) {
       return std::basic_string<CharT, Traits>(data(), size());
     } else {
@@ -173,7 +174,8 @@ class BasicStringPiece {
       return std::min(length_, pos);
 
     const CharT * last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
-    const CharT * result = std::find_end(ptr_, last, s.ptr_, s.ptr_ + s.length_);
+    const CharT * result = std::find_end(ptr_, last,
+                                         s.ptr_, s.ptr_ + s.length_);
     return result != last ? static_cast<size_t>(result - ptr_) : npos;
   }
 
@@ -329,7 +331,8 @@ class BasicStringPiece {
 };
 
 template<class CharT>
-bool operator==(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+bool operator==(const BasicStringPiece<CharT>& x,
+                const BasicStringPiece<CharT>& y) {
   if (x.size() != y.size())
     return false;
 
@@ -337,35 +340,41 @@ bool operator==(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>&
 }
 
 template<class CharT>
-inline bool operator!=(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+inline bool operator!=(const BasicStringPiece<CharT>& x,
+                       const BasicStringPiece<CharT>& y) {
   return !(x == y);
 }
 
 template<class CharT>
-inline bool operator<(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+inline bool operator<(const BasicStringPiece<CharT>& x,
+                      const BasicStringPiece<CharT>& y) {
   const int r = BasicStringPiece<CharT>::wordmemcmp(x.data(), y.data(),
                                                std::min(x.size(), y.size()));
   return ((r < 0) || ((r == 0) && (x.size() < y.size())));
 }
 
 template<class CharT>
-inline bool operator>(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+inline bool operator>(const BasicStringPiece<CharT>& x,
+                      const BasicStringPiece<CharT>& y) {
   return y < x;
 }
 
 template<class CharT>
-inline bool operator<=(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+inline bool operator<=(const BasicStringPiece<CharT>& x,
+                       const BasicStringPiece<CharT>& y) {
   return !(x > y);
 }
 
 template<class CharT>
-inline bool operator>=(const BasicStringPiece<CharT>& x, const BasicStringPiece<CharT>& y) {
+inline bool operator>=(const BasicStringPiece<CharT>& x,
+                       const BasicStringPiece<CharT>& y) {
   return !(x < y);
 }
 
 // allow StringPiece to be logged (needed for unit testing).
 template<class CharT>
-std::ostream& operator<<(std::ostream& o, const BasicStringPiece<CharT>& piece) {
+std::ostream& operator<<(std::ostream& o,
+                         const BasicStringPiece<CharT>& piece) {
   o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
   return o;
 }
