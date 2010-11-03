@@ -75,9 +75,9 @@ class JSString : public GCUString, public gc {
   }
 
   JSString(const JSString& str);
-  JSString(size_type len, UChar ch);
-  explicit JSString(const UChar* s);  // NOLINT
-  JSString(const UChar* s, size_type len);
+  JSString(size_type len, uc16 ch);
+  explicit JSString(const uc16* s);  // NOLINT
+  JSString(const uc16* s, size_type len);
   JSString(const GCUString& s, size_type index, size_type len);
   template<typename Iter>
   JSString(Iter start, Iter last)

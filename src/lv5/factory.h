@@ -22,7 +22,7 @@ class AstFactory : public core::BasicAstFactory {
     }
   }
 
-  core::Identifier* NewIdentifier(const UChar* buffer) {
+  core::Identifier* NewIdentifier(const uc16* buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
@@ -30,7 +30,7 @@ class AstFactory : public core::BasicAstFactory {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  core::Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
+  core::Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
@@ -39,8 +39,8 @@ class AstFactory : public core::BasicAstFactory {
   }
 
   inline core::RegExpLiteral* NewRegExpLiteral(
-      const std::vector<UChar>& content,
-      const std::vector<UChar>& flags) {
+      const std::vector<uc16>& content,
+      const std::vector<uc16>& flags) {
     core::RegExpLiteral* reg = RegExpICU::Create(this, content, flags);
     if (reg) {
       regexps_.push_back(reg);

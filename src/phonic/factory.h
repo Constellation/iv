@@ -21,8 +21,8 @@ class AstFactory : public core::BasicAstFactory {
   }
 
   inline core::RegExpLiteral* NewRegExpLiteral(
-      const std::vector<UChar>& content,
-      const std::vector<UChar>& flags) {
+      const std::vector<uc16>& content,
+      const std::vector<uc16>& flags) {
     core::RegExpLiteral* reg = RegExpICU::Create(this, content, flags);
     if (reg) {
       regexps_.push_back(reg);

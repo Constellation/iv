@@ -1,12 +1,10 @@
 #include <cassert>
-#include <vector>
 #include "jsobject.h"
 #include "property.h"
 #include "jsfunction.h"
 #include "jsval.h"
 #include "jsenv.h"
 #include "context.h"
-#include "ustream.h"
 #include "class.h"
 
 namespace iv {

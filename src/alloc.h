@@ -212,9 +212,9 @@ struct SpaceList {
   typedef std::list<T, SpaceAllocator<T> > type;
 };
 
-typedef std::basic_string<UChar,
-                          std::char_traits<UChar>,
-                          SpaceAllocator<UChar> > SpaceUString;
+typedef std::basic_string<uc16,
+                          std::char_traits<uc16>,
+                          SpaceAllocator<uc16> > SpaceUString;
 
 } }  // namespace iv::core
 

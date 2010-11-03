@@ -19,7 +19,6 @@
 #include "property.h"
 #include "jsenv.h"
 #include "jsarray.h"
-#include "ustream.h"
 #include "context.h"
 
 namespace iv {

@@ -24,7 +24,7 @@ class BasicAstFactory : public Space {
     Space::Clear();
   }
 
-  Identifier* NewIdentifier(const UChar* buffer) {
+  Identifier* NewIdentifier(const uc16* buffer) {
     return new (this) Identifier(buffer, this);
   }
 
@@ -32,7 +32,7 @@ class BasicAstFactory : public Space {
     return new (this) Identifier(buffer, this);
   }
 
-  Identifier* NewIdentifier(const std::vector<UChar>& buffer) {
+  Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
     return new (this) Identifier(buffer, this);
   }
 
@@ -44,16 +44,16 @@ class BasicAstFactory : public Space {
     return new (this) NumberLiteral(val);
   }
 
-  StringLiteral* NewStringLiteral(const std::vector<UChar>& buffer) {
+  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer) {
     return new (this) StringLiteral(buffer, this);
   }
 
-  Directivable* NewDirectivable(const std::vector<UChar>& buffer) {
+  Directivable* NewDirectivable(const std::vector<uc16>& buffer) {
     return new (this) Directivable(buffer, this);
   }
 
-  RegExpLiteral* NewRegExpLiteral(const std::vector<UChar>& content,
-                                  const std::vector<UChar>& flags) {
+  RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
+                                  const std::vector<uc16>& flags) {
     return new (this) RegExpLiteral(content, flags, this);
   }
 

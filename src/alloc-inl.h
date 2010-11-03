@@ -1,5 +1,5 @@
-#ifndef IV_ALLOC_INL_H_
-#define IV_ALLOC_INL_H_
+#ifndef _IV_ALLOC_INL_H_
+#define _IV_ALLOC_INL_H_
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
@@ -146,4 +146,4 @@ inline Arena::Arena()
 }
 
 } }  // namespace iv::core
-#endif  // IV_ALLOC_INL_H_
+#endif  // _IV_ALLOC_INL_H_

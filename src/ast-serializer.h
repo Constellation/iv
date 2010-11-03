@@ -11,14 +11,11 @@
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "ustream.h"
 namespace iv {
 namespace core {
 
 class AstSerializer: public ConstAstVisitor {
  public:
-
-  friend std::ostream& operator<<(std::ostream& os, const AstSerializer& out);
 
   typedef void ReturnType;
 
@@ -35,7 +32,7 @@ class AstSerializer: public ConstAstVisitor {
     out_.append(str.begin(), str.end());
   }
 
-  void Append(UChar c) {
+  void Append(uc16 c) {
     out_.push_back(c);
   }
 
@@ -497,7 +494,7 @@ class AstSerializer: public ConstAstVisitor {
   void DecodeString(Iter it, const Iter last) {
     char buf[5];
     for (;it != last; ++it) {
-      const UChar val = *it;
+      const uc16 val = *it;
       switch (val) {
         case '"':
           Append("\\\"");

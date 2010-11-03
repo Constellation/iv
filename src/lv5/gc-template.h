@@ -42,9 +42,9 @@ struct GCHashSet {
                                   gc_allocator<T> > type;
 };
 
-typedef std::basic_string<UChar,
-                          std::char_traits<UChar>,
-                          gc_allocator<UChar> > GCUString;
+typedef std::basic_string<uc16,
+                          std::char_traits<uc16>,
+                          gc_allocator<uc16> > GCUString;
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_GC_TEMPLATE_H_

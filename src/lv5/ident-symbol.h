@@ -11,7 +11,7 @@ namespace lv5 {
 
 class IdentifierWithSymbol : public core::Identifier {
  public:
-  IdentifierWithSymbol(Context* ctx, const UChar* buffer, core::Space* factory)
+  IdentifierWithSymbol(Context* ctx, const uc16* buffer, core::Space* factory)
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }
@@ -19,7 +19,7 @@ class IdentifierWithSymbol : public core::Identifier {
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }
-  IdentifierWithSymbol(Context* ctx, const std::vector<UChar>& buffer, core::Space* factory)
+  IdentifierWithSymbol(Context* ctx, const std::vector<uc16>& buffer, core::Space* factory)
     : Identifier(buffer, factory),
       sym_(ctx->Intern(value_)) {
   }

@@ -32,7 +32,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     OCTAL
   };
 
-  explicit Lexer(Source* src)
+  explicit Lexer(BasicSource* src)
       : source_(src),
         buffer8_(kInitialReadBufferCapacity),
         buffer16_(kInitialReadBufferCapacity),
@@ -354,7 +354,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     return token;
   }
 
-  inline const std::vector<UChar>& Buffer() const {
+  inline const std::vector<uc16>& Buffer() const {
     return buffer16_;
   }
   inline const std::vector<char>& Buffer8() const {
@@ -387,7 +387,7 @@ class Lexer: private Noncopyable<Lexer>::type {
   std::size_t pos() const {
     return pos_;
   }
-  inline Source* source() const {
+  inline BasicSource* source() const {
     return source_;
   }
 
@@ -424,7 +424,7 @@ class Lexer: private Noncopyable<Lexer>::type {
 
   bool ScanRegExpFlags() {
     buffer16_.clear();
-    UChar uc;
+    uc16 uc;
     while (Chars::IsIdentifierPart(c_)) {
       if (c_ == '\\') {
         Advance();
@@ -490,7 +490,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     if (!strict) {
       return Token::IDENTIFIER;
     }
-    std::vector<UChar>::const_iterator it = buffer16_.begin();
+    std::vector<uc16>::const_iterator it = buffer16_.begin();
     do {
       if (*it++ != *keyword++) {
         return Token::IDENTIFIER;
@@ -502,7 +502,7 @@ class Lexer: private Noncopyable<Lexer>::type {
   inline Token::Type IsMatch(char const * keyword,
                              std::size_t len,
                              Token::Type guess) const {
-    std::vector<UChar>::const_iterator it = buffer16_.begin();
+    std::vector<uc16>::const_iterator it = buffer16_.begin();
     do {
       if (*it++ != *keyword++) {
         return Token::IDENTIFIER;
@@ -523,7 +523,7 @@ class Lexer: private Noncopyable<Lexer>::type {
   Token::Type SkipMultiLineComment() {
     Advance();
     // remember previous ch
-    UChar ch;
+    uc16 ch;
     while (c_ >= 0) {
       ch = c_;
       Advance();
@@ -567,7 +567,7 @@ class Lexer: private Noncopyable<Lexer>::type {
 
   Token::Type ScanIdentifier(int type) {
     Token::Type token = Token::IDENTIFIER;
-    UChar uc;
+    uc16 uc;
 
     buffer16_.clear();
 
@@ -1003,7 +1003,7 @@ class Lexer: private Noncopyable<Lexer>::type {
 
   Token::Type ScanString() {
     type_ = NONE;
-    const UChar quote = c_;
+    const uc16 quote = c_;
     buffer16_.clear();
     Advance();
     while (c_ != quote && c_ >= 0 && !Chars::IsLineTerminator(c_)) {
@@ -1177,8 +1177,8 @@ class Lexer: private Noncopyable<Lexer>::type {
     return Token::NUMBER;
   }
 
-  UChar ScanOctalEscape() {
-    UChar res = 0;
+  uc16 ScanOctalEscape() {
+    uc16 res = 0;
     for (int i = 0; i < 3; ++i) {
       const int d = OctalValue(c_);
       if (d < 0) {
@@ -1194,8 +1194,8 @@ class Lexer: private Noncopyable<Lexer>::type {
     return res;
   }
 
-  UChar ScanHexEscape(UChar c, int len) {
-    UChar res = 0;
+  uc16 ScanHexEscape(uc16 c, int len) {
+    uc16 res = 0;
     for (int i = 0; i < len; ++i) {
       const int d = HexValue(c_);
       if (d < 0) {
@@ -1237,7 +1237,7 @@ class Lexer: private Noncopyable<Lexer>::type {
   }
 
   void SkipLineTerminator() {
-    const UChar c = c_;
+    const uc16 c = c_;
     Advance();
     if (c + c_ == '\n' + '\r') {
       Advance();
@@ -1245,9 +1245,9 @@ class Lexer: private Noncopyable<Lexer>::type {
     ++line_number_;
   }
 
-  Source* source_;
+  BasicSource* source_;
   std::vector<char> buffer8_;
-  std::vector<UChar> buffer16_;
+  std::vector<uc16> buffer16_;
   double numeric_;
   State type_;
   std::size_t pos_;

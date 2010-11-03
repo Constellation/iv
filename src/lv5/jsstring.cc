@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "jsstring.h"
 #include "ustring.h"
+#include "icu/ustring.h"
 
 namespace iv {
 namespace lv5 {
@@ -14,17 +15,17 @@ JSString::JSString()
     hash_value_(core::StringToHash(*this)) {
 }
 
-JSString::JSString(size_type len, UChar ch)
+JSString::JSString(size_type len, uc16 ch)
   : GCUString(len, ch),
     hash_value_(core::StringToHash(*this)) {
 }
 
-JSString::JSString(const UChar* s)
+JSString::JSString(const uc16* s)
   : GCUString(s),
     hash_value_(core::StringToHash(*this)) {
 }
 
-JSString::JSString(const UChar* s, size_type len)
+JSString::JSString(const uc16* s, size_type len)
   : GCUString(s, len),
     hash_value_(core::StringToHash(*this)) {
 }
@@ -41,7 +42,7 @@ JSString::JSString(const JSString& str)
 
 JSString* JSString::New(Context* ctx, const core::StringPiece& str) {
   JSString* res = new JSString();
-  core::ConvertToUTF16(str, res);
+  icu::ConvertToUTF16(str, res);
   return res;
 }
 

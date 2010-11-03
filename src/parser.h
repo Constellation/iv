@@ -141,7 +141,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
  public:
 
-  Parser(Source* source, Factory* space)
+  Parser(BasicSource* source, Factory* space)
     : lexer_(source),
       error_(),
       strict_(false),
@@ -1559,7 +1559,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
       RegExpLiteral* expr;
-      const std::vector<UChar> content(lexer_.Buffer());
+      const std::vector<uc16> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
         RAISE("invalid regular expression flag");
       } else {
@@ -1757,7 +1757,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     FunctionLiteral *literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
-    literal->set_source(lexer_.source());
     if (allow_identifier && token_ == Token::IDENTIFIER) {
       Identifier* const name = factory_->NewIdentifier(lexer_.Buffer());
       literal->SetName(name);
@@ -1862,6 +1861,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       }
     }
     literal->set_end_position(lexer_.pos() - 2);
+    literal->SubStringSource(lexer_.source());
     Next();
     return literal;
   }

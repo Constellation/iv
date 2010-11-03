@@ -10,7 +10,7 @@ JSRegExpImpl::JSRegExpImpl(const core::UStringPiece& value,
   : regexp_(NULL),
     global_(false) {
   uint32_t flagbits = 0;
-  BOOST_FOREACH(const UChar& c, flags) {
+  BOOST_FOREACH(const uc16& c, flags) {
     if (c == 'g') {
       if (global_) {
         *status = U_REGEX_RULE_SYNTAX;

@@ -27,7 +27,8 @@
 #include "error.h"
 #include "arguments.h"
 
-#include "ustream.h"
+#include "icu/ustream.h"
+#include "icu/source.h"
 
 namespace {
 using iv::lv5::Arguments;
@@ -118,7 +119,7 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    iv::core::Source src(str, filename);
+    iv::icu::Source src(str, filename);
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
     iv::core::Parser<iv::lv5::AstFactory> parser(&src, &factory);

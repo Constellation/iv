@@ -238,7 +238,7 @@ class CodeGenerator
   const llvm::Type* pointersizety_;
 
   llvm::Value* ret_;
-  llvm::DenseMap<const UChar*, llvm::WeakVH> constant_strings_;
+  llvm::DenseMap<const uc16*, llvm::WeakVH> constant_strings_;
   ValueStack stack_;
 };
 

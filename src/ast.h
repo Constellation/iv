@@ -10,8 +10,8 @@
 #include "functor.h"
 #include "token.h"
 #include "scope.h"
-#include "source.h"
 #include "ast-visitor.h"
+#include "source.h"
 
 namespace iv {
 namespace core {
@@ -687,7 +687,7 @@ class PostfixExpression : public Expression {
 
 class StringLiteral : public Literal {
  public:
-  StringLiteral(const std::vector<UChar>& buffer, Space* factory)
+  StringLiteral(const std::vector<uc16>& buffer, Space* factory)
     : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
   }
 
@@ -702,7 +702,7 @@ class StringLiteral : public Literal {
 
 class Directivable : public StringLiteral {
  public:
-  explicit Directivable(const std::vector<UChar>& buffer, Space* factory)
+  explicit Directivable(const std::vector<uc16>& buffer, Space* factory)
     : StringLiteral(buffer, factory) { }
   DECLARE_NODE_TYPE(Directivable)
 };
@@ -722,7 +722,7 @@ class NumberLiteral : public Literal {
 class Identifier : public Literal {
  public:
   typedef SpaceUString value_type;
-  Identifier(const UChar* buffer, Space* factory)
+  Identifier(const uc16* buffer, Space* factory)
     : value_(buffer, SpaceUString::allocator_type(factory)) {
   }
   Identifier(const char* buffer, Space* factory)
@@ -730,7 +730,7 @@ class Identifier : public Literal {
              buffer+std::char_traits<char>::length(buffer),
              SpaceUString::allocator_type(factory)) {
   }
-  Identifier(const std::vector<UChar>& buffer, Space* factory)
+  Identifier(const std::vector<uc16>& buffer, Space* factory)
     : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)) {
   }
   Identifier(const std::vector<char>& buffer, Space* factory)
@@ -813,8 +813,8 @@ class Undefined : public Literal {
 
 class RegExpLiteral : public Literal {
  public:
-  RegExpLiteral(const std::vector<UChar>& buffer,
-                const std::vector<UChar>& flags,
+  RegExpLiteral(const std::vector<uc16>& buffer,
+                const std::vector<uc16>& flags,
                 Space* factory)
     : value_(buffer.data(), buffer.size(), SpaceUString::allocator_type(factory)),
       flags_(flags.data(), flags.size(), SpaceUString::allocator_type(factory)) {
@@ -929,12 +929,12 @@ class FunctionLiteral : public Literal {
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
-  inline void set_source(Source* src) {
-    source_ = src;
+  inline void SubStringSource(BasicSource* src) {
+    source_ = src->SubString(start_position_,
+                             end_position_ - start_position_ + 1);
   }
   inline UStringPiece GetSource() const {
-    return source_->SubString(start_position_,
-                              end_position_ - start_position_ + 1);
+    return source_;
   }
   FunctionLiteral(DeclType type, Space* factory)
     : name_(NULL),
@@ -963,7 +963,7 @@ class FunctionLiteral : public Literal {
   bool strict_;
   std::size_t start_position_;
   std::size_t end_position_;
-  Source* source_;
+  UStringPiece source_;
 };
 
 class PropertyAccess : public Expression {

@@ -1,15 +1,13 @@
-#ifndef _IV_USTREAM_H_
-#define _IV_USTREAM_H_
-#include <iosfwd>  // NOLINT
+#ifndef _IV_ICU_USTREAM_H_
+#define _IV_ICU_USTREAM_H_
+#include <iostream>  // NOLINT
 #include <tr1/array>
-#include "config.h"
-
-#if USE_ICU == 1
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
 #include <unicode/uchar.h>
+#include "uchar.h"
 
-inline std::ostream& operator<<(std::ostream& os, const UChar* str) {
+inline std::ostream& operator<<(std::ostream& os, const iv::uc16* str) {
   if (str) {
     std::tr1::array<char, 200> buffer;
     UErrorCode error = U_ZERO_ERROR;
@@ -17,7 +15,7 @@ inline std::ostream& operator<<(std::ostream& os, const UChar* str) {
     if (U_FAILURE(error)) {
       ucnv_close(conv);
     } else {
-      const UChar* limit = str + std::char_traits<UChar>::length(str);
+      const iv::uc16* limit = str + std::char_traits<iv::uc16>::length(str);
       char* s;
       const char* slimit = buffer.data() + buffer.size();
       do {
@@ -34,6 +32,4 @@ inline std::ostream& operator<<(std::ostream& os, const UChar* str) {
   return os;
 }
 
-#endif  // USE_ICU == 1
-
-#endif  // _IV_USTREAM_H_
+#endif  // _IV_ICU_USTREAM_H_

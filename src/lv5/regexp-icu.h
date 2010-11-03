@@ -13,8 +13,8 @@ class Space;
 namespace lv5 {
 class ICURegExpLiteral : public core::RegExpLiteral {
  public:
-  ICURegExpLiteral(const std::vector<UChar>& buffer,
-                   const std::vector<UChar>& flags,
+  ICURegExpLiteral(const std::vector<uc16>& buffer,
+                   const std::vector<uc16>& flags,
                    core::Space* space)
     : RegExpLiteral(buffer, flags, space),
       status_(U_ZERO_ERROR),
@@ -36,8 +36,8 @@ class ICURegExpLiteral : public core::RegExpLiteral {
 class RegExpICU {
  public:
   static core::RegExpLiteral* Create(core::Space* space,
-                                     const std::vector<UChar>& content,
-                                     const std::vector<UChar>& flags) {
+                                     const std::vector<uc16>& content,
+                                     const std::vector<uc16>& flags) {
     ICURegExpLiteral* expr = new(space)ICURegExpLiteral(content, flags, space);
     if (expr->IsValid()) {
       return expr;

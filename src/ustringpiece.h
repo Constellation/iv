@@ -4,6 +4,6 @@
 #include "stringpiece.h"
 namespace iv {
 namespace core {
-typedef BasicStringPiece<UChar, std::char_traits<UChar> > UStringPiece;
+typedef BasicStringPiece<uc16, std::char_traits<uc16> > UStringPiece;
 } }  // namespace iv::core
 #endif  // IV_USTRINGPIECE_H_
