@@ -2,7 +2,6 @@
 #define _IV_PARSER_H_
 #include <cstdio>
 #include <string>
-#include <algorithm>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
 #include <tr1/type_traits>
@@ -66,8 +65,6 @@
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-#define NEW(a) (new (space_) a)
-
 namespace iv {
 namespace core {
 namespace detail {
@@ -114,8 +111,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
  protected:
   typedef Parser<Factory> this_type;
   typedef this_type parser_type;
-  typedef std::tr1::is_base_of<Space, Factory> space_is_base_of_factory;
-  IV_STATIC_ASSERT(space_is_base_of_factory::value);
 
   class Target : private Noncopyable<Target>::type {
    public:
@@ -150,7 +145,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     : lexer_(source),
       error_(),
       strict_(false),
-      space_(space),
+      factory_(space),
       scope_(NULL),
       target_(NULL),
       labels_(NULL) {
@@ -159,7 +154,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 // Program
 //   : SourceElements
   FunctionLiteral* ParseProgram() {
-    FunctionLiteral* global = space_->NewFunctionLiteral(
+    FunctionLiteral* global = factory_->NewFunctionLiteral(
         FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
     bool error_flag = true;
@@ -357,7 +352,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         FunctionLiteral::GENERAL, true, CHECK);
     // define named function as FunctionDeclaration
     scope_->AddFunctionDeclaration(expr);
-    return NEW(FunctionStatement(expr));
+    return factory_->NewFunctionStatement(expr);
   }
 
 //  Block
@@ -369,7 +364,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | StatementList Statement
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::LBRACE);
-    Block *block = NEW(Block(space_));
+    Block *block = factory_->NewBlock();
     Statement *stmt;
     Target target(this, block);
 
@@ -387,7 +382,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
-    VariableStatement* stmt = NEW(VariableStatement(token_, space_));
+    VariableStatement* stmt = factory_->NewVariableStatement(token_);
     ParseVariableDeclarations(stmt, true, CHECK);
     ExpectSemicolon(CHECK);
     return stmt;
@@ -416,7 +411,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     do {
       Next();
       IS(Token::IDENTIFIER);
-      name = space_->NewIdentifier(lexer_.Buffer());
+      name = factory_->NewIdentifier(lexer_.Buffer());
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -436,10 +431,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         Next();
         // AssignmentExpression
         expr = ParseAssignmentExpression(contains_in, CHECK);
-        decl = NEW(Declaration(name, expr));
+        decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
-        decl = NEW(Declaration(name, space_->NewUndefined()));
+        decl = factory_->NewDeclaration(name, factory_->NewUndefined());
       }
       stmt->AddDeclaration(decl);
       scope_->AddUnresolved(name, stmt->IsConst());
@@ -453,7 +448,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseEmptyStatement() {
     assert(token_ == Token::SEMICOLON);
     Next();
-    return space_->NewEmptyStatement();
+    return factory_->NewEmptyStatement();
   }
 
 //  IfStatement
@@ -472,7 +467,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::RPAREN);
 
     stmt = ParseStatement(CHECK);
-    if_stmt = NEW(IfStatement(expr, stmt));
+    if_stmt = factory_->NewIfStatement(expr, stmt);
     if (token_ == Token::ELSE) {
       Next();
       stmt = ParseStatement(CHECK);
@@ -495,7 +490,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::DO);
-    DoWhileStatement* dowhile = NEW(DoWhileStatement());
+    DoWhileStatement* dowhile = factory_->NewDoWhileStatement();
     Target target(this, dowhile);
     Next();
 
@@ -523,7 +518,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::LPAREN);
 
     Expression *expr = ParseExpression(true, CHECK);
-    WhileStatement* whilestmt = NEW(WhileStatement(expr));
+    WhileStatement* whilestmt = factory_->NewWhileStatement(expr);
     Target target(this, whilestmt);
 
     EXPECT(Token::RPAREN);
@@ -552,7 +547,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
-        VariableStatement *var = NEW(VariableStatement(token_, space_));
+        VariableStatement *var = factory_->NewVariableStatement(token_);
         ParseVariableDeclarations(var, false, CHECK);
         init = var;
         if (token_ == Token::IN) {
@@ -566,7 +561,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
           Expression *enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt = NEW(ForInStatement(init, enumerable));
+          ForInStatement* forstmt = factory_->NewForInStatement(init, enumerable);
           Target target(this, forstmt);
           Statement *body = ParseStatement(CHECK);
           forstmt->set_body(body);
@@ -574,7 +569,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         }
       } else {
         Expression *init_expr = ParseExpression(false, CHECK);
-        init = NEW(ExpressionStatement(init_expr));
+        init = factory_->NewExpressionStatement(init_expr);
         if (token_ == Token::IN) {
           // for in loop
           if (!init_expr->IsValidLeftHandSide()) {
@@ -583,7 +578,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           Next();
           Expression *enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt = NEW(ForInStatement(init, enumerable));
+          ForInStatement* forstmt = factory_->NewForInStatement(init, enumerable);
           Target target(this, forstmt);
           Statement *body = ParseStatement(CHECK);
           forstmt->set_body(body);
@@ -609,11 +604,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Next();
     } else {
       Expression *next_expr = ParseExpression(true, CHECK);
-      next = NEW(ExpressionStatement(next_expr));
+      next = factory_->NewExpressionStatement(next_expr);
       EXPECT(Token::RPAREN);
     }
 
-    ForStatement *for_stmt = NEW(ForStatement());
+    ForStatement *for_stmt = factory_->NewForStatement();
     Target target(this, for_stmt);
     Statement *body = ParseStatement(CHECK);
     for_stmt->set_body(body);
@@ -634,14 +629,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : CONTINUE Identifier_opt ';'
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
-    ContinueStatement *continue_stmt = NEW(ContinueStatement());
+    ContinueStatement *continue_stmt = factory_->NewContinueStatement();
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
         token_ != Token::RBRACE &&
         token_ != Token::EOS) {
       IS(Token::IDENTIFIER);
-      Identifier* label = space_->NewIdentifier(lexer_.Buffer());
+      Identifier* label = factory_->NewIdentifier(lexer_.Buffer());
       continue_stmt->SetLabel(label);
       IterationStatement* target = LookupContinuableTarget(label);
       if (target) {
@@ -666,7 +661,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : BREAK Identifier_opt ';'
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
-    BreakStatement *break_stmt = NEW(BreakStatement());
+    BreakStatement *break_stmt = factory_->NewBreakStatement();
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
@@ -674,7 +669,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         token_ != Token::EOS) {
       // label
       IS(Token::IDENTIFIER);
-      Identifier* label = space_->NewIdentifier(lexer_.Buffer());
+      Identifier* label = factory_->NewIdentifier(lexer_.Buffer());
       break_stmt->SetLabel(label);
       if (ContainsLabel(labels_, label)) {
         // example
@@ -717,11 +712,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         token_ == Token::RBRACE ||
         token_ == Token::EOS) {
       ExpectSemicolon(CHECK);
-      return NEW(ReturnStatement(space_->NewUndefined()));
+      return factory_->NewReturnStatement(factory_->NewUndefined());
     }
     Expression *expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return NEW(ReturnStatement(expr));
+    return factory_->NewReturnStatement(expr);
   }
 
 //  WithStatement
@@ -743,7 +738,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::RPAREN);
 
     Statement *stmt = ParseStatement(CHECK);
-    return NEW(WithStatement(expr, stmt));
+    return factory_->NewWithStatement(expr, stmt);
   }
 
 //  SwitchStatement
@@ -760,7 +755,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::LPAREN);
 
     Expression *expr = ParseExpression(true, CHECK);
-    SwitchStatement *switch_stmt = NEW(SwitchStatement(expr, space_));
+    SwitchStatement *switch_stmt = factory_->NewSwitchStatement(expr);
     Target target(this, switch_stmt);
 
     EXPECT(Token::RPAREN);
@@ -787,7 +782,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
-    CaseClause *clause = NEW(CaseClause(space_));
+    CaseClause *clause = factory_->NewCaseClause();
     Statement *stmt;
 
     if (token_ == Token::CASE) {
@@ -823,7 +818,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
     expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return NEW(ThrowStatement(expr));
+    return factory_->NewThrowStatement(expr);
   }
 
 // TryStatement
@@ -845,7 +840,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     Next();
 
     block = ParseBlock(CHECK);
-    TryStatement *try_stmt = NEW(TryStatement(block));
+    TryStatement *try_stmt = factory_->NewTryStatement(block);
 
     if (token_ == Token::CATCH) {
       // Catch
@@ -853,7 +848,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Next();
       EXPECT(Token::LPAREN);
       IS(Token::IDENTIFIER);
-      name = space_->NewIdentifier(lexer_.Buffer());
+      name = factory_->NewIdentifier(lexer_.Buffer());
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -895,13 +890,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     assert(token_ == Token::DEBUGGER);
     Next();
     ExpectSemicolon(CHECK);
-    return space_->NewDebuggerStatement();
+    return factory_->NewDebuggerStatement();
   }
 
   Statement* ParseExpressionStatement(bool *res) {
     Expression* expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return NEW(ExpressionStatement(expr));
+    return factory_->NewExpressionStatement(expr);
   }
 
 //  LabelledStatement
@@ -921,7 +916,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Identifier* const label = expr->AsIdentifier();
       const bool exist_labels = labels;
       if (!exist_labels) {
-        labels = space_->NewLabels();
+        labels = factory_->NewLabels();
       }
       if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
         // duplicate label
@@ -931,10 +926,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       LabelScope scope(this, labels, exist_labels);
 
       Statement* stmt = ParseStatement(CHECK);
-      return NEW(LabelledStatement(expr, stmt));
+      return factory_->NewLabelledStatement(expr, stmt);
     }
     ExpectSemicolon(CHECK);
-    return NEW(ExpressionStatement(expr));
+    return factory_->NewExpressionStatement(expr);
   }
 
   Statement* ParseFunctionStatement(bool *res) {
@@ -949,7 +944,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
                                                  true, CHECK);
     // define named function as variable declaration
     scope_->AddUnresolved(expr->name(), false);
-    return NEW(FunctionStatement(expr));
+    return factory_->NewFunctionStatement(expr);
   }
 
 //  Expression
@@ -961,7 +956,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     while (token_ == Token::COMMA) {
       Next();
       right = ParseAssignmentExpression(contains_in, CHECK);
-      result = NEW(BinaryOperation(Token::COMMA, result, right));
+      result = factory_->NewBinaryOperation(Token::COMMA, result, right);
     }
     return result;
   }
@@ -993,7 +988,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     const Token::Type op = token_;
     Next();
     Expression *right = ParseAssignmentExpression(contains_in, CHECK);
-    return NEW(Assignment(op, result, right));
+    return factory_->NewAssignment(op, result, right);
   }
 
 //  ConditionalExpression
@@ -1008,7 +1003,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Expression *left = ParseAssignmentExpression(true, CHECK);
       EXPECT(Token::COLON);
       Expression *right = ParseAssignmentExpression(contains_in, CHECK);
-      result = NEW(ConditionalExpression(result, left, right));
+      result = factory_->NewConditionalExpression(result, left, right);
     }
     return result;
   }
@@ -1109,7 +1104,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 2, CHECK);
-      left = NEW(BinaryOperation(op, left, right));
+      left = factory_->NewBinaryOperation(op, left, right);
     }
     if (prec < 4) return left;
 
@@ -1121,7 +1116,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 3, CHECK);
-      left = NEW(BinaryOperation(op, left, right));
+      left = factory_->NewBinaryOperation(op, left, right);
     }
     if (prec < 5) return left;
 
@@ -1157,7 +1152,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 7, CHECK);
-      left = NEW(BinaryOperation(op, left, right));
+      left = factory_->NewBinaryOperation(op, left, right);
     }
     if (prec < 9) return left;
 
@@ -1166,7 +1161,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 8, CHECK);
-      left = NEW(BinaryOperation(op, left, right));
+      left = factory_->NewBinaryOperation(op, left, right);
     }
     return left;
   }
@@ -1181,65 +1176,65 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Expression* res;
       switch (op) {
         case Token::ADD:
-          res = NumberLiteral::New(space_, l_val + r_val);
+          res = factory_->NewNumberLiteral(l_val + r_val);
           break;
 
         case Token::SUB:
-          res = NumberLiteral::New(space_, l_val - r_val);
+          res = factory_->NewNumberLiteral(l_val - r_val);
           break;
 
         case Token::MUL:
-          res = NumberLiteral::New(space_, l_val * r_val);
+          res = factory_->NewNumberLiteral(l_val * r_val);
           break;
 
         case Token::DIV:
-          res = NumberLiteral::New(space_, l_val / r_val);
+          res = factory_->NewNumberLiteral(l_val / r_val);
           break;
 
         case Token::BIT_OR:
-          res = NumberLiteral::New(space_,
-                        DoubleToInt32(l_val) | DoubleToInt32(r_val));
+          res = factory_->NewNumberLiteral(
+              DoubleToInt32(l_val) | DoubleToInt32(r_val));
           break;
 
         case Token::BIT_AND:
-          res = NumberLiteral::New(space_,
-                        DoubleToInt32(l_val) & DoubleToInt32(r_val));
+          res = factory_->NewNumberLiteral(
+              DoubleToInt32(l_val) & DoubleToInt32(r_val));
           break;
 
         case Token::BIT_XOR:
-          res = NumberLiteral::New(space_,
-                        DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
+          res = factory_->NewNumberLiteral(
+              DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
           break;
 
         // section 11.7 Bitwise Shift Operators
         case Token::SHL: {
           const int32_t value = DoubleToInt32(l_val)
               << (DoubleToInt32(r_val) & 0x1f);
-          res = NumberLiteral::New(space_, value);
+          res = factory_->NewNumberLiteral(value);
           break;
         }
 
         case Token::SHR: {
           const uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           const uint32_t value = DoubleToUInt32(l_val) >> shift;
-          res = NumberLiteral::New(space_, value);
+          res = factory_->NewNumberLiteral(value);
           break;
         }
 
         case Token::SAR: {
           uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           int32_t value = DoubleToInt32(l_val) >> shift;
-          res = NumberLiteral::New(space_, value);
+          res = factory_->NewNumberLiteral(value);
           break;
         }
 
         default:
-          res = NEW(BinaryOperation(op, left, right));
+          res = factory_->NewBinaryOperation(op, left, right);
           break;
       }
       return res;
     } else {
-      return NEW(BinaryOperation(op, left, right));
+      return factory_->NewBinaryOperation(op, left, right);
     }
   }
 
@@ -1263,7 +1258,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       case Token::TYPEOF:
         Next();
         expr = ParseUnaryExpression(CHECK);
-        result = NEW(UnaryOperation(op, expr));
+        result = factory_->NewUnaryOperation(op, expr);
         break;
 
       case Token::DELETE:
@@ -1276,18 +1271,17 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             expr->AsIdentifier()) {
           RAISE("delete to direct identifier not allowed in strict code");
         }
-        result = NEW(UnaryOperation(op, expr));
+        result = factory_->NewUnaryOperation(op, expr);
         break;
 
       case Token::BIT_NOT:
         Next();
         expr = ParseUnaryExpression(CHECK);
         if (expr->AsNumberLiteral()) {
-          result = NumberLiteral::New(
-             space_,
-             ~DoubleToInt32(expr->AsNumberLiteral()->value()));
+          result = factory_->NewNumberLiteral(
+              ~DoubleToInt32(expr->AsNumberLiteral()->value()));
         } else {
-          result = NEW(UnaryOperation(op, expr));
+          result = factory_->NewUnaryOperation(op, expr);
         }
         break;
 
@@ -1297,7 +1291,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         if (expr->AsNumberLiteral()) {
           result = expr;
         } else {
-          result = NEW(UnaryOperation(op, expr));
+          result = factory_->NewUnaryOperation(op, expr);
         }
         break;
 
@@ -1305,10 +1299,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         Next();
         expr = ParseUnaryExpression(CHECK);
         if (expr->AsNumberLiteral()) {
-          result = NumberLiteral::New(space_,
-                                -(expr->AsNumberLiteral()->value()));
+          result = factory_->NewNumberLiteral(
+              -(expr->AsNumberLiteral()->value()));
         } else {
-          result = NEW(UnaryOperation(op, expr));
+          result = factory_->NewUnaryOperation(op, expr);
         }
         break;
 
@@ -1334,7 +1328,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             }
           }
         }
-        result = NEW(UnaryOperation(op, expr));
+        result = factory_->NewUnaryOperation(op, expr);
         break;
 
       default:
@@ -1370,7 +1364,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
         }
       }
-      expr = NEW(PostfixExpression(token_, expr));
+      expr = factory_->NewPostfixExpression(token_, expr);
       Next();
     }
     return expr;
@@ -1403,7 +1397,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else {
       Next();
       Expression *target = ParseMemberExpression(false, CHECK);
-      ConstructorCall *con = NEW(ConstructorCall(target, space_));
+      ConstructorCall *con = factory_->NewConstructorCall(target);
       if (token_ == Token::LPAREN) {
         ParseArguments(con, CHECK);
       }
@@ -1415,7 +1409,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         case Token::LBRACK: {
           Next();
           Expression* index = ParseExpression(true, CHECK);
-          expr = NEW(IndexAccess(expr, index));
+          expr = factory_->NewIndexAccess(expr, index);
           EXPECT(Token::RBRACK);
           break;
         }
@@ -1423,15 +1417,15 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         case Token::PERIOD: {
           Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
-          Identifier* ident = space_->NewIdentifier(lexer_.Buffer());
+          Identifier* ident = factory_->NewIdentifier(lexer_.Buffer());
           Next();
-          expr = NEW(IdentifierAccess(expr, ident));
+          expr = factory_->NewIdentifierAccess(expr, ident);
           break;
         }
 
         case Token::LPAREN:
           if (allow_call) {
-            funcall = NEW(FunctionCall(expr, space_));
+            funcall = factory_->NewFunctionCall(expr);
             ParseArguments(funcall, CHECK);
             expr = funcall;
           } else {
@@ -1464,27 +1458,27 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     Expression *result = NULL;
     switch (token_) {
       case Token::THIS:
-        result = space_->NewThisLiteral();
+        result = factory_->NewThisLiteral();
         Next();
         break;
 
       case Token::IDENTIFIER:
-        result = space_->NewIdentifier(lexer_.Buffer());
+        result = factory_->NewIdentifier(lexer_.Buffer());
         Next();
         break;
 
       case Token::NULL_LITERAL:
-        result = space_->NewNullLiteral();
+        result = factory_->NewNullLiteral();
         Next();
         break;
 
       case Token::TRUE_LITERAL:
-        result = space_->NewTrueLiteral();
+        result = factory_->NewTrueLiteral();
         Next();
         break;
 
       case Token::FALSE_LITERAL:
-        result = space_->NewFalseLiteral();
+        result = factory_->NewFalseLiteral();
         Next();
         break;
 
@@ -1494,7 +1488,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         if (strict_ && lexer_.NumericType() == Lexer::OCTAL) {
           RAISE("octal integer literal not allowed in strict code");
         }
-        result = NumberLiteral::New(space_, lexer_.Numeric());
+        result = factory_->NewNumberLiteral(lexer_.Numeric());
         Next();
         break;
 
@@ -1504,9 +1498,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           RAISE("octal excape sequence not allowed in strict code");
         }
         if (state == Lexer::NONE) {
-          result = space_->NewDirectivable(lexer_.Buffer());
+          result = factory_->NewDirectivable(lexer_.Buffer());
         } else {
-          result = space_->NewStringLiteral(lexer_.Buffer());
+          result = factory_->NewStringLiteral(lexer_.Buffer());
         }
         Next();
         break;
@@ -1569,7 +1563,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       if (!lexer_.ScanRegExpFlags()) {
         RAISE("invalid regular expression flag");
       } else {
-        expr = space_->NewRegExpLiteral(content, lexer_.Buffer());
+        expr = factory_->NewRegExpLiteral(content, lexer_.Buffer());
         if (!expr) {
           RAISE("invalid regular expression");
         }
@@ -1594,7 +1588,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : ','
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
-    ArrayLiteral *array = space_->NewArrayLiteral();
+    ArrayLiteral *array = factory_->NewArrayLiteral();
     Expression *expr;
     Next();
     while (token_ != Token::RBRACK) {
@@ -1640,7 +1634,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
     typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
-    ObjectLiteral *object = space_->NewObjectLiteral();
+    ObjectLiteral *object = factory_->NewObjectLiteral();
     ObjectMap map;
     Expression *expr;
     Identifier *ident;
@@ -1654,7 +1648,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
-          ident = space_->NewIdentifier(is_get ? "get" : "set");
+          ident = factory_->NewIdentifier(is_get ? "get" : "set");
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
           object->AddDataProperty(ident, expr);
@@ -1678,9 +1672,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = space_->NewIdentifier(lexer_.Buffer8());
+              ident = factory_->NewIdentifier(lexer_.Buffer8());
             } else {
-              ident = space_->NewIdentifier(lexer_.Buffer());
+              ident = factory_->NewIdentifier(lexer_.Buffer());
             }
             Next();
             ObjectLiteral::PropertyDescriptorType type =
@@ -1711,7 +1705,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       } else if (token_ == Token::IDENTIFIER ||
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
-        ident = space_->NewIdentifier(lexer_.Buffer());
+        ident = factory_->NewIdentifier(lexer_.Buffer());
         Next();
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
@@ -1761,11 +1755,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       kDetectDuplicateParameter
     } throw_error_if_strict_code = kDetectNone;
 
-    FunctionLiteral *literal = space_->NewFunctionLiteral(decl_type);
+    FunctionLiteral *literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
     literal->set_source(lexer_.source());
     if (allow_identifier && token_ == Token::IDENTIFIER) {
-      Identifier* const name = space_->NewIdentifier(lexer_.Buffer());
+      Identifier* const name = factory_->NewIdentifier(lexer_.Buffer());
       literal->SetName(name);
       const EvalOrArguments val = IsEvalOrArguments(name);
       if (val) {
@@ -1787,7 +1781,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
       IS(Token::IDENTIFIER);
-      Identifier* const ident = space_->NewIdentifier(lexer_.Buffer());
+      Identifier* const ident = factory_->NewIdentifier(lexer_.Buffer());
       if (!throw_error_if_strict_code) {
         const EvalOrArguments val = IsEvalOrArguments(ident);
         if (val) {
@@ -1802,7 +1796,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else {
       while (token_ != Token::RPAREN) {
         IS(Token::IDENTIFIER);
-        Identifier* const ident = space_->NewIdentifier(lexer_.Buffer());
+        Identifier* const ident = factory_->NewIdentifier(lexer_.Buffer());
         if (!throw_error_if_strict_code) {
           const EvalOrArguments val = IsEvalOrArguments(ident);
           if (val) {
@@ -2113,7 +2107,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Token::Type token_;
   std::string error_;
   bool strict_;
-  Factory* space_;
+  Factory* factory_;
   Scope* scope_;
   Target* target_;
   AstNode::Identifiers* labels_;

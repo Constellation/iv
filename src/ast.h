@@ -293,10 +293,6 @@ class Declaration : public AstNode {
 
 class EmptyStatement : public Statement {
  public:
-  static inline EmptyStatement* New(Space* f) {
-    return new (f) EmptyStatement();
-  }
-
   DECLARE_NODE_TYPE(EmptyStatement)
   ACCEPT_VISITOR
 };
@@ -719,9 +715,6 @@ class NumberLiteral : public Literal {
   inline double value() const { return value_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(NumberLiteral)
-  static NumberLiteral* New(Space* f, const double & val) {
-    return new (f) NumberLiteral(val);
-  }
  private:
   double value_;
 };
@@ -792,45 +785,30 @@ class ThisLiteral : public Literal {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ThisLiteral)
-  static ThisLiteral* New(Space* f) {
-    return new (f) ThisLiteral();
-  }
 };
 
 class NullLiteral : public Literal {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(NullLiteral)
-  static NullLiteral* New(Space* f) {
-    return new (f) NullLiteral();
-  }
 };
 
 class TrueLiteral : public Literal {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(TrueLiteral)
-  static TrueLiteral* New(Space* f) {
-    return new (f) TrueLiteral();
-  }
 };
 
 class FalseLiteral : public Literal {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(FalseLiteral)
-  static FalseLiteral* New(Space* f) {
-    return new (f) FalseLiteral();
-  }
 };
 
 class Undefined : public Literal {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Undefined)
-  static inline Undefined* New(Space* f) {
-    return new (f) Undefined();
-  }
 };
 
 class RegExpLiteral : public Literal {
