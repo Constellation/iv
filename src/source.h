@@ -17,7 +17,6 @@ class BasicSource {
   virtual uc16 Get(std::size_t pos) const = 0;
   virtual std::size_t size() const = 0;
   virtual const std::string& filename() const = 0;
-  virtual const UString& source() const = 0;
   virtual UStringPiece SubString(std::size_t n,
                                  std::size_t len = std::string::npos) const = 0;
 };

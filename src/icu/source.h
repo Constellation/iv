@@ -30,9 +30,6 @@ class Source : public core::BasicSource {
   inline const std::string& filename() const {
     return filename_;
   }
-  inline const core::UString& source() const {
-    return source_;
-  }
   inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
     if (len == std::string::npos) {

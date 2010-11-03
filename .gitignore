@@ -10,3 +10,4 @@ config.log
 .sconf_temp
 tools/*.pyc
 src/phonic/
+src/phonic/include/

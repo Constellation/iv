@@ -1,18 +1,14 @@
-# iv / phonic
+== iv / phonic
 
 phonic is ruby binding for iv AST API
 
-## MILESTONE
+== MILESTONE
 + parser - done
 + specialized AST - working
 
-## TARGET
+== TARGET
 Aims at flexible Ast Access API binding of ECMAScript 5th
 
-## DEPS
+== INSTALL
 
-+ libicu (ICU: International Component for Unicode)
-
-## INSTALL
-
-gem install iv-phonic
+  gem install iv-phonic

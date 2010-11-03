@@ -1,6 +1,7 @@
 #ifndef _IV_PARSER_H_
 #define _IV_PARSER_H_
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
