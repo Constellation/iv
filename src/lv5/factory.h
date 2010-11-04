@@ -1,11 +1,13 @@
 #ifndef _IV_LV5_FACTORY_H_
 #define _IV_LV5_FACTORY_H_
 #include <vector>
-#include "alloc-inl.h"
+#include "alloc.h"
 #include "regexp-icu.h"
 #include "ident-symbol.h"
 #include "ast-factory.h"
 #include "context.h"
+#include "ustringpiece.h"
+
 namespace iv {
 namespace lv5 {
 class AstFactory : public core::BasicAstFactory {
@@ -22,11 +24,7 @@ class AstFactory : public core::BasicAstFactory {
     }
   }
 
-  core::Identifier* NewIdentifier(const uc16* buffer) {
-    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
-  }
-
-  core::Identifier* NewIdentifier(const char* buffer) {
+  core::Identifier* NewIdentifier(const core::UStringPiece& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 

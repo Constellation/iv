@@ -2,7 +2,8 @@
 #define _IV_AST_FACTORY_H_
 #include "functor.h"
 #include "ast.h"
-#include "alloc-inl.h"
+#include "alloc.h"
+#include "ustringpiece.h"
 
 namespace iv {
 namespace core {
@@ -24,11 +25,7 @@ class BasicAstFactory : public Space {
     Space::Clear();
   }
 
-  Identifier* NewIdentifier(const uc16* buffer) {
-    return new (this) Identifier(buffer, this);
-  }
-
-  Identifier* NewIdentifier(const char* buffer) {
+  Identifier* NewIdentifier(const UStringPiece& buffer) {
     return new (this) Identifier(buffer, this);
   }
 

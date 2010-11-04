@@ -2,7 +2,7 @@
 #define _IV_SCOPE_H_
 #include <vector>
 #include "noncopyable.h"
-#include "alloc-inl.h"
+#include "alloc.h"
 namespace iv {
 namespace core {
 

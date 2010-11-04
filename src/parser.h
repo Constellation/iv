@@ -75,10 +75,14 @@ class ParserData {
   static const char* use_strict;
   static const char* arguments;
   static const char* eval;
+  static const char* get;
+  static const char* set;
  public:
   static const UString kUseStrict;
   static const UString kArguments;
   static const UString kEval;
+  static const UString kGet;
+  static const UString kSet;
 };
 
 template<typename T>
@@ -89,6 +93,12 @@ const char * ParserData<T>::arguments = "arguments";
 
 template<typename T>
 const char * ParserData<T>::eval = "eval";
+
+template<typename T>
+const char * ParserData<T>::get = "get";
+
+template<typename T>
+const char * ParserData<T>::set = "set";
 
 template<typename T>
 const UString ParserData<T>::kUseStrict(
@@ -102,6 +112,14 @@ template<typename T>
 const UString ParserData<T>::kEval(
     ParserData<T>::eval,
     ParserData<T>::eval + std::strlen(ParserData<T>::eval));
+template<typename T>
+const UString ParserData<T>::kGet(
+    ParserData<T>::get,
+    ParserData<T>::get + std::strlen(ParserData<T>::get));
+template<typename T>
+const UString ParserData<T>::kSet(
+    ParserData<T>::set,
+    ParserData<T>::set + std::strlen(ParserData<T>::set));
 
 }  // namespace iv::core::detail
 
@@ -1651,7 +1669,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
-          ident = factory_->NewIdentifier(is_get ? "get" : "set");
+          ident = factory_->NewIdentifier(
+              is_get ? ParserData::kGet : ParserData::kSet);
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
           object->AddDataProperty(ident, expr);

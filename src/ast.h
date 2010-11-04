@@ -6,12 +6,13 @@
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
-#include "alloc-inl.h"
+#include "alloc.h"
 #include "functor.h"
 #include "token.h"
 #include "scope.h"
 #include "ast-visitor.h"
 #include "source.h"
+#include "ustringpiece.h"
 
 namespace iv {
 namespace core {
@@ -723,14 +724,11 @@ class NumberLiteral : public Literal {
 class Identifier : public Literal {
  public:
   typedef SpaceUString value_type;
-  Identifier(const uc16* buffer, Space* factory)
-    : value_(buffer, SpaceUString::allocator_type(factory)) {
-  }
-  Identifier(const char* buffer, Space* factory)
-    : value_(buffer,
-             buffer+std::char_traits<char>::length(buffer),
+  Identifier(const UStringPiece& buffer, Space* factory)
+    : value_(buffer.data(),
+             buffer.size(),
              SpaceUString::allocator_type(factory)) {
-  }
+    }
   Identifier(const std::vector<uc16>& buffer, Space* factory)
     : value_(buffer.data(),
              buffer.size(), SpaceUString::allocator_type(factory)) {
@@ -1041,7 +1039,6 @@ class ConstructorCall : public Call {
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ConstructorCall)
 };
-
 } }  // namespace iv::core
 
 namespace std {

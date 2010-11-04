@@ -5,7 +5,7 @@
 #include <sstream>
 #include <tr1/tuple>
 #include "uchar.h"
-#include "alloc-inl.h"
+#include "alloc.h"
 #include "ast.h"
 #include "ast-visitor.h"
 #include "ustring.h"
