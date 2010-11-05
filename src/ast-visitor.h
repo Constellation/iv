@@ -2,9 +2,11 @@
 #define _IV_AST_VISITOR_H_
 #include <tr1/type_traits>
 #include "noncopyable.h"
+#include "ast-fwd.h"
 
 namespace iv {
 namespace core {
+namespace ast {
 namespace detail {
 
 template<bool IsConst, typename T>
@@ -23,60 +25,10 @@ struct AstVisitorTraits<false, T> {
       typename std::tr1::add_const<T>::type>::type type;
 };
 
-}  // namespace iv::core::detail
+}  // namespace iv::core::ast::detail
 
-class AstNode;
-class Statement;
-class Block;
-class FunctionStatement;
-class VariableStatement;
-class Declaration;
-class EmptyStatement;
-class IfStatement;
-class IterationStatement;
-class DoWhileStatement;
-class WhileStatement;
-class ForStatement;
-class ForInStatement;
-class ContinueStatement;
-class BreakStatement;
-class ReturnStatement;
-class WithStatement;
-class LabelledStatement;
-class CaseClause;
-class SwitchStatement;
-class ThrowStatement;
-class TryStatement;
-class DebuggerStatement;
-class ExpressionStatement;
-
-class Assignment;
-class BinaryOperation;
-class ConditionalExpression;
-class UnaryOperation;
-class PostfixExpression;
-
-class StringLiteral;
-class NumberLiteral;
-class Identifier;
-class ThisLiteral;
-class NullLiteral;
-class TrueLiteral;
-class FalseLiteral;
-class Undefined;
-class RegExpLiteral;
-class ArrayLiteral;
-class ObjectLiteral;
-class FunctionLiteral;
-
-class PropertyAccess;
-class IdentifierAccess;
-class IndexAccess;
-class FunctionCall;
-class ConstructorCall;
-
-template<bool IsConst>
-class BasicAstVisitor : private Noncopyable<BasicAstVisitor<IsConst> >::type {
+template<bool IsConst, typename Factory>
+class BasicAstVisitor : private Noncopyable<BasicAstVisitor<IsConst, Factory> >::type {
  private:
   template<typename T>
   struct add {
@@ -84,51 +36,51 @@ class BasicAstVisitor : private Noncopyable<BasicAstVisitor<IsConst> >::type {
   };
  public:
   virtual ~BasicAstVisitor() = 0;
-  virtual void Visit(typename add<Block>::type block) = 0;
-  virtual void Visit(typename add<FunctionStatement>::type func) = 0;
-  virtual void Visit(typename add<VariableStatement>::type var) = 0;
-  virtual void Visit(typename add<Declaration>::type decl) = 0;
-  virtual void Visit(typename add<EmptyStatement>::type empty) = 0;
-  virtual void Visit(typename add<IfStatement>::type ifstmt) = 0;
-  virtual void Visit(typename add<DoWhileStatement>::type dowhile) = 0;
-  virtual void Visit(typename add<WhileStatement>::type whilestmt) = 0;
-  virtual void Visit(typename add<ForStatement>::type forstmt) = 0;
-  virtual void Visit(typename add<ForInStatement>::type forstmt) = 0;
-  virtual void Visit(typename add<ContinueStatement>::type continuestmt) = 0;
-  virtual void Visit(typename add<BreakStatement>::type breakstmt) = 0;
-  virtual void Visit(typename add<ReturnStatement>::type returnstmt) = 0;
-  virtual void Visit(typename add<WithStatement>::type withstmt) = 0;
-  virtual void Visit(typename add<LabelledStatement>::type labelledstmt) = 0;
-  virtual void Visit(typename add<CaseClause>::type clause) = 0;
-  virtual void Visit(typename add<SwitchStatement>::type switchstmt) = 0;
-  virtual void Visit(typename add<ThrowStatement>::type throwstmt) = 0;
-  virtual void Visit(typename add<TryStatement>::type trystmt) = 0;
-  virtual void Visit(typename add<DebuggerStatement>::type debuggerstmt) = 0;
-  virtual void Visit(typename add<ExpressionStatement>::type exprstmt) = 0;
+  virtual void Visit(typename add<Block<Factory> >::type block) = 0;
+  virtual void Visit(typename add<FunctionStatement<Factory> >::type func) = 0;
+  virtual void Visit(typename add<VariableStatement<Factory> >::type var) = 0;
+  virtual void Visit(typename add<Declaration<Factory> >::type decl) = 0;
+  virtual void Visit(typename add<EmptyStatement<Factory> >::type empty) = 0;
+  virtual void Visit(typename add<IfStatement<Factory> >::type ifstmt) = 0;
+  virtual void Visit(typename add<DoWhileStatement<Factory> >::type dowhile) = 0;
+  virtual void Visit(typename add<WhileStatement<Factory> >::type whilestmt) = 0;
+  virtual void Visit(typename add<ForStatement<Factory> >::type forstmt) = 0;
+  virtual void Visit(typename add<ForInStatement<Factory> >::type forstmt) = 0;
+  virtual void Visit(typename add<ContinueStatement<Factory> >::type continuestmt) = 0;
+  virtual void Visit(typename add<BreakStatement<Factory> >::type breakstmt) = 0;
+  virtual void Visit(typename add<ReturnStatement<Factory> >::type returnstmt) = 0;
+  virtual void Visit(typename add<WithStatement<Factory> >::type withstmt) = 0;
+  virtual void Visit(typename add<LabelledStatement<Factory> >::type labelledstmt) = 0;
+  virtual void Visit(typename add<CaseClause<Factory> >::type clause) = 0;
+  virtual void Visit(typename add<SwitchStatement<Factory> >::type switchstmt) = 0;
+  virtual void Visit(typename add<ThrowStatement<Factory> >::type throwstmt) = 0;
+  virtual void Visit(typename add<TryStatement<Factory> >::type trystmt) = 0;
+  virtual void Visit(typename add<DebuggerStatement<Factory> >::type debuggerstmt) = 0;
+  virtual void Visit(typename add<ExpressionStatement<Factory> >::type exprstmt) = 0;
 
-  virtual void Visit(typename add<Assignment>::type assign) = 0;
-  virtual void Visit(typename add<BinaryOperation>::type binary) = 0;
-  virtual void Visit(typename add<ConditionalExpression>::type cond) = 0;
-  virtual void Visit(typename add<UnaryOperation>::type unary) = 0;
-  virtual void Visit(typename add<PostfixExpression>::type postfix) = 0;
+  virtual void Visit(typename add<Assignment<Factory> >::type assign) = 0;
+  virtual void Visit(typename add<BinaryOperation<Factory> >::type binary) = 0;
+  virtual void Visit(typename add<ConditionalExpression<Factory> >::type cond) = 0;
+  virtual void Visit(typename add<UnaryOperation<Factory> >::type unary) = 0;
+  virtual void Visit(typename add<PostfixExpression<Factory> >::type postfix) = 0;
 
-  virtual void Visit(typename add<StringLiteral>::type literal) = 0;
-  virtual void Visit(typename add<NumberLiteral>::type literal) = 0;
-  virtual void Visit(typename add<Identifier>::type literal) = 0;
-  virtual void Visit(typename add<ThisLiteral>::type literal) = 0;
-  virtual void Visit(typename add<NullLiteral>::type literal) = 0;
-  virtual void Visit(typename add<TrueLiteral>::type literal) = 0;
-  virtual void Visit(typename add<FalseLiteral>::type literal) = 0;
-  virtual void Visit(typename add<Undefined>::type literal) = 0;
-  virtual void Visit(typename add<RegExpLiteral>::type literal) = 0;
-  virtual void Visit(typename add<ArrayLiteral>::type literal) = 0;
-  virtual void Visit(typename add<ObjectLiteral>::type literal) = 0;
-  virtual void Visit(typename add<FunctionLiteral>::type literal) = 0;
+  virtual void Visit(typename add<StringLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<NumberLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<Identifier<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<ThisLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<NullLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<TrueLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<FalseLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<Undefined<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<RegExpLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<ArrayLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<ObjectLiteral<Factory> >::type literal) = 0;
+  virtual void Visit(typename add<FunctionLiteral<Factory> >::type literal) = 0;
 
-  virtual void Visit(typename add<IdentifierAccess>::type prop) = 0;
-  virtual void Visit(typename add<IndexAccess>::type prop) = 0;
-  virtual void Visit(typename add<FunctionCall>::type call) = 0;
-  virtual void Visit(typename add<ConstructorCall>::type call) = 0;
+  virtual void Visit(typename add<IdentifierAccess<Factory> >::type prop) = 0;
+  virtual void Visit(typename add<IndexAccess<Factory> >::type prop) = 0;
+  virtual void Visit(typename add<FunctionCall<Factory> >::type call) = 0;
+  virtual void Visit(typename add<ConstructorCall<Factory> >::type call) = 0;
  protected:
   template<typename T>
   class Acceptor {
@@ -155,11 +107,14 @@ class BasicAstVisitor : private Noncopyable<BasicAstVisitor<IsConst> >::type {
   };
 };
 
-template<bool IsConst>
-inline BasicAstVisitor<IsConst>::~BasicAstVisitor() { }
+template<bool IsConst, typename Factory>
+inline BasicAstVisitor<IsConst, Factory>::~BasicAstVisitor() { }
 
-typedef BasicAstVisitor<false> AstVisitor;
-typedef BasicAstVisitor<true> ConstAstVisitor;
+template<typename Factory>
+struct AstVisitor {
+  typedef BasicAstVisitor<false, Factory> type;
+  typedef BasicAstVisitor<true, Factory> const_type;
+};
 
-} }  // namespace iv::core
+} } }  // namespace iv::core::ast
 #endif  // _IV_AST_VISITOR_H_

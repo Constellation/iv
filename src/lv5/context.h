@@ -15,6 +15,8 @@
 #include "class.h"
 #include "interpreter.h"
 #include "error.h"
+#include "jsast.h"
+#include "factory.h"
 
 namespace iv {
 namespace lv5 {
@@ -106,7 +108,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void SetStatement(Mode mode, const JSVal& val,
-                    const core::BreakableStatement* target) {
+                    const BreakableStatement* target) {
     mode_ = mode;
     ret_ = val;
     target_ = target;
@@ -114,7 +116,7 @@ class Context : private core::Noncopyable<Context>::type {
   bool IsError() const {
     return error_;
   }
-  const core::BreakableStatement* target() const {
+  const BreakableStatement* target() const {
     return target_;
   }
 
@@ -131,7 +133,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Initialize();
-  bool Run(const core::FunctionLiteral* global);
+  bool Run(const FunctionLiteral* global);
   JSVal ErrorVal();
 
   const Class& Cls(Symbol name);
@@ -139,7 +141,7 @@ class Context : private core::Noncopyable<Context>::type {
 
   Symbol Intern(const core::StringPiece& str);
   Symbol Intern(const core::UStringPiece& str);
-  Symbol Intern(const core::Identifier& ident);
+  Symbol Intern(const Identifier& ident);
   inline Symbol length_symbol() const {
     return length_symbol_;
   }
@@ -164,14 +166,14 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol prototype_symbol() const {
     return valueOf_symbol_;
   }
-  inline JSNativeFunction* throw_type_error() {
+  JSNativeFunction* throw_type_error() {
     return &throw_type_error_;
   }
   double Random();
   JSString* ToString(Symbol sym);
   const core::UString& GetContent(Symbol sym) const;
-  bool InCurrentLabelSet(const core::AnonymousBreakableStatement* stmt) const;
-  bool InCurrentLabelSet(const core::NamedOnlyBreakableStatement* stmt) const;
+  bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
+  bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const;
  private:
   JSObject global_obj_;
   JSNativeFunction throw_type_error_;
@@ -182,7 +184,7 @@ class Context : private core::Noncopyable<Context>::type {
   Interpreter interp_;
   Mode mode_;
   JSVal ret_;
-  const core::BreakableStatement* target_;
+  const BreakableStatement* target_;
   Error error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;

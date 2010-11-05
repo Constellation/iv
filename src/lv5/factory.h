@@ -5,14 +5,15 @@
 #include "regexp-icu.h"
 #include "ident-symbol.h"
 #include "ast-factory.h"
-#include "context.h"
 #include "ustringpiece.h"
 
 namespace iv {
 namespace lv5 {
-class AstFactory : public core::BasicAstFactory {
+class Context;
+
+class AstFactory : public core::ast::BasicAstFactory<2, AstFactory> {
  public:
-  typedef core::AstNode::List<core::RegExpLiteral*>::type DestReqs;
+  typedef core::SpaceVector<AstFactory, RegExpLiteral*>::type DestReqs;
   explicit AstFactory(Context* ctx)
     : ctx_(ctx),
       regexps_(DestReqs::allocator_type(this)) { }
@@ -24,22 +25,22 @@ class AstFactory : public core::BasicAstFactory {
     }
   }
 
-  core::Identifier* NewIdentifier(const core::UStringPiece& buffer) {
+  Identifier* NewIdentifier(const core::UStringPiece& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  core::Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
+  Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  core::Identifier* NewIdentifier(const std::vector<char>& buffer) {
+  Identifier* NewIdentifier(const std::vector<char>& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  inline core::RegExpLiteral* NewRegExpLiteral(
+  inline RegExpLiteral* NewRegExpLiteral(
       const std::vector<uc16>& content,
       const std::vector<uc16>& flags) {
-    core::RegExpLiteral* reg = RegExpICU::Create(this, content, flags);
+    RegExpLiteral* reg = RegExpICU::Create(this, content, flags);
     if (reg) {
       regexps_.push_back(reg);
     }

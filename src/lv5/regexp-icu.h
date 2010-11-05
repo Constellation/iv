@@ -2,24 +2,17 @@
 #define _IV_LV5_REGEXP_ICU_H_
 #include <vector>
 #include "uchar.h"
-#include "ast.h"
 #include "jsregexp.h"
+#include "jsast.h"
+
 namespace iv {
-
-namespace core {
-class Space;
-}  // namespace iv::core
-
 namespace lv5 {
-class ICURegExpLiteral : public core::RegExpLiteral {
+
+class ICURegExpLiteral : public RegExpLiteral {
  public:
   ICURegExpLiteral(const std::vector<uc16>& buffer,
                    const std::vector<uc16>& flags,
-                   core::Space* space)
-    : RegExpLiteral(buffer, flags, space),
-      status_(U_ZERO_ERROR),
-      regexp_(value_, flags_, &status_) {
-  }
+                   AstFactory* space);
   inline const JSRegExpImpl& regexp() const {
     return regexp_;
   }
@@ -35,16 +28,9 @@ class ICURegExpLiteral : public core::RegExpLiteral {
 
 class RegExpICU {
  public:
-  static core::RegExpLiteral* Create(core::Space* space,
-                                     const std::vector<uc16>& content,
-                                     const std::vector<uc16>& flags) {
-    ICURegExpLiteral* expr = new(space)ICURegExpLiteral(content, flags, space);
-    if (expr->IsValid()) {
-      return expr;
-    } else {
-      return NULL;
-    }
-  }
+  static RegExpLiteral* Create(AstFactory* space,
+                               const std::vector<uc16>& content,
+                               const std::vector<uc16>& flags);
 };
 
 } }  // namespace iv::lv5

@@ -6,97 +6,76 @@
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
-#include "alloc.h"
+#include "space.h"
 #include "functor.h"
 #include "token.h"
-#include "scope.h"
+#include "ast-fwd.h"
 #include "ast-visitor.h"
 #include "source.h"
 #include "ustringpiece.h"
 
 namespace iv {
 namespace core {
+namespace ast {
 #define ACCEPT_VISITOR \
-  inline void Accept(AstVisitor* visitor) {\
+  inline void Accept(typename AstVisitor<Factory>::type* visitor) {\
     visitor->Visit(this);\
   }\
-  inline void Accept(ConstAstVisitor* visitor) const {\
+  inline void Accept(typename AstVisitor<Factory>::const_type * visitor) const {\
     visitor->Visit(this);\
   }
 
 #define DECLARE_NODE_TYPE(type) \
-  inline const type* As##type() const { return this; }\
-  inline type* As##type() { return this; }
+  inline const type<Factory>* As##type() const { return this; }\
+  inline type<Factory>* As##type() { return this; }
 
 #define DECLARE_NODE_TYPE_BASE(type) \
-  inline virtual const type* As##type() const { return NULL; }\
-  inline virtual type* As##type() { return NULL; }
+  inline virtual const type<Factory>* As##type() const { return NULL; }\
+  inline virtual type<Factory>* As##type() { return NULL; }
 
-// forward declarations
-class Statement;
-class ExpressionStatement;
-class EmptyStatement;
-class DebuggerStatement;
-class FunctionStatement;
-class IfStatement;
-class VariableStatement;
-class IterationStatement;
-class DoWhileStatement;
-class WhileStatement;
-class ForStatement;
-class ForInStatement;
-class ContinueStatement;
-class BreakStatement;
-class ReturnStatement;
-class WithStatement;
-class SwitchStatement;
-class LabelledStatement;
-class ThrowStatement;
-class TryStatement;
-class BreakableStatement;
-class NamedOnlyBreakableStatement;
-class AnonymousBreakableStatement;
-
-class Expression;
-class Literal;
-class FunctionLiteral;
-class Assignment;
-class UnaryOperation;
-class BinaryOperation;
-class ConditionalExpression;
-class PropertyAccess;
-class IdentifierAccess;
-class IndexAccess;
-class Call;
-class ConstructorCall;
-class FunctionCall;
-class Identifier;
-class Declaration;
-
-class ThisLiteral;
-class NullLiteral;
-class TrueLiteral;
-class FalseLiteral;
-class NumberLiteral;
-class StringLiteral;
-class Directivable;
-class RegExpLiteral;
-class ArrayLiteral;
-class ObjectLiteral;
-class FunctionLiteral;
-class Undefined;
-
-class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
+template<typename Factory>
+class Scope : public SpaceObject,
+              private Noncopyable<Scope<Factory> >::type {
  public:
-  template<class T>
-  struct List {
-    typedef typename SpaceVector<T>::type type;
-  };
-  typedef List<Expression*>::type Expressions;
-  typedef List<Statement*>::type Statements;
-  typedef List<Declaration*>::type Declarations;
-  typedef List<Identifier*>::type Identifiers;
+  typedef std::pair<Identifier<Factory>*, bool> Variable;
+  typedef typename SpaceVector<Factory, Variable>::type Variables;
+  typedef typename SpaceVector<Factory, FunctionLiteral<Factory>*>::type FunctionLiterals;
+  typedef Scope<Factory> this_type;
 
+  template<typename BaseFactory>
+  explicit Scope(BaseFactory* factory)
+    : up_(NULL),
+      vars_(typename Variables::allocator_type(factory)),
+      funcs_(typename FunctionLiterals::allocator_type(factory)) {
+  }
+  void AddUnresolved(Identifier<Factory>* name, bool is_const) {
+    vars_.push_back(std::make_pair(name, is_const));
+  }
+  void AddFunctionDeclaration(FunctionLiteral<Factory>* func) {
+    funcs_.push_back(func);
+  }
+  void SetUpperScope(this_type* scope) {
+    up_ = scope;
+  }
+  inline const FunctionLiterals& function_declarations() const {
+    return funcs_;
+  }
+  inline const Variables& variables() const {
+    return vars_;
+  }
+  this_type* GetUpperScope() {
+    return up_;
+  }
+ protected:
+  this_type* up_;
+  Variables vars_;
+  FunctionLiterals funcs_;
+};
+
+template<typename Factory>
+class AstNode : public SpaceObject,
+                private Noncopyable<AstNode<Factory> >::type {
+ public:
   virtual ~AstNode() = 0;
 
   DECLARE_NODE_TYPE_BASE(Statement)
@@ -153,11 +132,12 @@ class AstNode : public SpaceObject, private Noncopyable<AstNode>::type {
   DECLARE_NODE_TYPE_BASE(FunctionCall)
   DECLARE_NODE_TYPE_BASE(ConstructorCall)
 
-  virtual void Accept(AstVisitor* visitor) = 0;
-  virtual void Accept(ConstAstVisitor* visitor) const = 0;
+  virtual void Accept(typename AstVisitor<Factory>::type* visitor) = 0;
+  virtual void Accept(typename AstVisitor<Factory>::const_type* visitor) const = 0;
 };
 
-inline AstNode::~AstNode() { }
+template<typename Factory>
+inline AstNode<Factory>::~AstNode() { }
 
 #undef DECLARE_NODE_TYPE_BASE
 //  Statement
@@ -179,24 +159,29 @@ inline AstNode::~AstNode() { }
 //    | DebuggerStatement
 
 // Expression
-class Expression : public AstNode {
+template<typename Factory>
+class Expression : public AstNode<Factory> {
  public:
   inline virtual bool IsValidLeftHandSide() const { return false; }
   DECLARE_NODE_TYPE(Expression)
 };
 
-class Literal : public Expression {
+template<typename Factory>
+class Literal : public Expression<Factory> {
  public:
   DECLARE_NODE_TYPE(Literal)
 };
 
-class Statement : public AstNode {
+template<typename Factory>
+class Statement : public AstNode<Factory> {
  public:
   DECLARE_NODE_TYPE(Statement)
 };
 
-class BreakableStatement : public Statement {
+template<typename Factory>
+class BreakableStatement : public Statement<Factory> {
  public:
+  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
   BreakableStatement() : labels_(NULL) { }
   void set_labels(Identifiers* labels) {
     labels_ = labels;
@@ -209,22 +194,27 @@ class BreakableStatement : public Statement {
   Identifiers* labels_;
 };
 
-class NamedOnlyBreakableStatement : public BreakableStatement {
+template<typename Factory>
+class NamedOnlyBreakableStatement : public BreakableStatement<Factory> {
  public:
   DECLARE_NODE_TYPE(NamedOnlyBreakableStatement)
 };
 
-class AnonymousBreakableStatement : public BreakableStatement {
+template<typename Factory>
+class AnonymousBreakableStatement : public BreakableStatement<Factory> {
  public:
   DECLARE_NODE_TYPE(AnonymousBreakableStatement)
 };
 
-class Block : public NamedOnlyBreakableStatement {
+template<typename Factory>
+class Block : public NamedOnlyBreakableStatement<Factory> {
  public:
-  explicit Block(Space* factory)
-     : body_(Statements::allocator_type(factory)) { }
+  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
+  template<typename BaseFactory>
+  explicit Block(BaseFactory* factory)
+     : body_(typename Statements::allocator_type(factory)) { }
 
-  void AddStatement(Statement* stmt) {
+  void AddStatement(Statement<Factory>* stmt) {
     body_.push_back(stmt);
   }
 
@@ -237,27 +227,31 @@ class Block : public NamedOnlyBreakableStatement {
   Statements body_;
 };
 
-class FunctionStatement : public Statement {
+template<typename Factory>
+class FunctionStatement : public Statement<Factory> {
  public:
-  explicit FunctionStatement(FunctionLiteral* func)
+  explicit FunctionStatement(FunctionLiteral<Factory>* func)
     : function_(func) {
   }
-  inline FunctionLiteral* function() const {
+  inline FunctionLiteral<Factory>* function() const {
     return function_;
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(FunctionStatement)
  private:
-  FunctionLiteral* function_;
+  FunctionLiteral<Factory>* function_;
 };
 
-class VariableStatement : public Statement {
+template<typename Factory>
+class VariableStatement : public Statement<Factory> {
  public:
-  VariableStatement(Token::Type type, Space* factory)
+  typedef typename SpaceVector<Factory, Declaration<Factory>*>::type Declarations;
+  template<typename BaseFactory>
+  VariableStatement(Token::Type type, BaseFactory* factory)
     : is_const_(type == Token::CONST),
-      decls_(Declarations::allocator_type(factory)) { }
+      decls_(typename Declarations::allocator_type(factory)) { }
 
-  void AddDeclaration(Declaration* decl) {
+  void AddDeclaration(Declaration<Factory>* decl) {
     decls_.push_back(decl);
   }
 
@@ -274,229 +268,246 @@ class VariableStatement : public Statement {
   Declarations decls_;
 };
 
-class Declaration : public AstNode {
+template<typename Factory>
+class Declaration : public AstNode<Factory> {
  public:
-  Declaration(Identifier* name, Expression* expr)
+  Declaration(Identifier<Factory>* name, Expression<Factory>* expr)
     : name_(name),
       expr_(expr) {
   }
-  inline Identifier* name() const {
+  inline Identifier<Factory>* name() const {
     return name_;
   }
-  inline Expression* expr() const {
+  inline Expression<Factory>* expr() const {
     return expr_;
   }
   ACCEPT_VISITOR
  private:
-  Identifier* name_;
-  Expression* expr_;
+  Identifier<Factory>* name_;
+  Expression<Factory>* expr_;
 };
 
-class EmptyStatement : public Statement {
+template<typename Factory>
+class EmptyStatement : public Statement<Factory> {
  public:
   DECLARE_NODE_TYPE(EmptyStatement)
   ACCEPT_VISITOR
 };
 
-class IfStatement : public Statement {
+template<typename Factory>
+class IfStatement : public Statement<Factory> {
  public:
-  IfStatement(Expression* cond, Statement* then)
+  IfStatement(Expression<Factory>* cond, Statement<Factory>* then)
     : cond_(cond),
       then_(then),
       else_(NULL) {
   }
-  void SetElse(Statement* stmt) {
+  void SetElse(Statement<Factory>* stmt) {
     else_ = stmt;
   }
-  inline Expression* cond() const { return cond_; }
-  inline Statement* then_statement() const { return then_; }
-  inline Statement* else_statement() const { return else_; }
+  inline Expression<Factory>* cond() const { return cond_; }
+  inline Statement<Factory>* then_statement() const { return then_; }
+  inline Statement<Factory>* else_statement() const { return else_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(IfStatement)
  private:
-  Expression* cond_;
-  Statement* then_;
-  Statement* else_;
+  Expression<Factory>* cond_;
+  Statement<Factory>* then_;
+  Statement<Factory>* else_;
 };
 
-class IterationStatement : public AnonymousBreakableStatement {
+template<typename Factory>
+class IterationStatement : public AnonymousBreakableStatement<Factory> {
  public:
   IterationStatement()
     : body_(NULL) {
   }
-  inline Statement* body() const { return body_; }
-  inline void set_body(Statement* stmt) {
+  inline Statement<Factory>* body() const { return body_; }
+  inline void set_body(Statement<Factory>* stmt) {
     body_ = stmt;
   }
   DECLARE_NODE_TYPE(IterationStatement)
  private:
-  Statement* body_;
+  Statement<Factory>* body_;
 };
 
-class DoWhileStatement : public IterationStatement {
+template<typename Factory>
+class DoWhileStatement : public IterationStatement<Factory> {
  public:
   DoWhileStatement()
-    : IterationStatement(),
+    : IterationStatement<Factory>(),
       cond_(NULL) {
   }
-  inline Expression* cond() const { return cond_; }
-  inline void set_cond(Expression* expr) {
+  inline Expression<Factory>* cond() const { return cond_; }
+  inline void set_cond(Expression<Factory>* expr) {
     cond_ = expr;
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(DoWhileStatement)
  private:
-  Expression* cond_;
+  Expression<Factory>* cond_;
 };
 
-class WhileStatement : public IterationStatement {
+template<typename Factory>
+class WhileStatement : public IterationStatement<Factory> {
  public:
-  explicit WhileStatement(Expression* cond)
-    : IterationStatement(),
+  explicit WhileStatement(Expression<Factory>* cond)
+    : IterationStatement<Factory>(),
       cond_(cond) {
   }
-  inline Expression* cond() const { return cond_; }
+  inline Expression<Factory>* cond() const { return cond_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(WhileStatement)
  private:
-  Expression* cond_;
+  Expression<Factory>* cond_;
 };
 
-class ForStatement : public IterationStatement {
+template<typename Factory>
+class ForStatement : public IterationStatement<Factory> {
  public:
   ForStatement()
-    : IterationStatement(),
+    : IterationStatement<Factory>(),
       init_(NULL),
       cond_(NULL),
       next_(NULL) {
   }
-  inline void SetInit(Statement* init) { init_ = init; }
-  inline void SetCondition(Expression* cond) { cond_ = cond; }
-  inline void SetNext(Statement* next) { next_ = next; }
-  inline Statement* init() const { return init_; }
-  inline Expression* cond() const { return cond_; }
-  inline Statement* next() const { return next_; }
+  inline void SetInit(Statement<Factory>* init) { init_ = init; }
+  inline void SetCondition(Expression<Factory>* cond) { cond_ = cond; }
+  inline void SetNext(Statement<Factory>* next) { next_ = next; }
+  inline Statement<Factory>* init() const { return init_; }
+  inline Expression<Factory>* cond() const { return cond_; }
+  inline Statement<Factory>* next() const { return next_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ForStatement)
  private:
-  Statement* init_;
-  Expression* cond_;
-  Statement* next_;
+  Statement<Factory>* init_;
+  Expression<Factory>* cond_;
+  Statement<Factory>* next_;
 };
 
-class ForInStatement : public IterationStatement {
+template<typename Factory>
+class ForInStatement : public IterationStatement<Factory> {
  public:
-  ForInStatement(Statement* each,
-                 Expression* enumerable)
-    : IterationStatement(),
+  ForInStatement(Statement<Factory>* each,
+                 Expression<Factory>* enumerable)
+    : IterationStatement<Factory>(),
       each_(each),
       enumerable_(enumerable) {
   }
-  inline Statement* each() const { return each_; }
-  inline Expression* enumerable() const { return enumerable_; }
+  inline Statement<Factory>* each() const { return each_; }
+  inline Expression<Factory>* enumerable() const { return enumerable_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ForInStatement)
  private:
-  Statement* each_;
-  Expression* enumerable_;
+  Statement<Factory>* each_;
+  Expression<Factory>* enumerable_;
 };
 
-class ContinueStatement : public Statement {
+template<typename Factory>
+class ContinueStatement : public Statement<Factory> {
  public:
   ContinueStatement()
     : label_(NULL) {
   }
 
-  void SetLabel(Identifier* label) {
+  void SetLabel(Identifier<Factory>* label) {
     label_ = label;
   }
 
-  void SetTarget(IterationStatement* target) {
+  void SetTarget(IterationStatement<Factory>* target) {
     target_ = target;
   }
-  inline Identifier* label() const { return label_; }
-  inline IterationStatement* target() const { return target_; }
+  inline Identifier<Factory>* label() const { return label_; }
+  inline IterationStatement<Factory>* target() const { return target_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ContinueStatement)
  private:
-  Identifier* label_;
-  IterationStatement* target_;
+  Identifier<Factory>* label_;
+  IterationStatement<Factory>* target_;
 };
 
-class BreakStatement : public Statement {
+template<typename Factory>
+class BreakStatement : public Statement<Factory> {
  public:
   BreakStatement()
     : label_(NULL),
       target_(NULL) {
   }
 
-  void SetLabel(Identifier* label) {
+  void SetLabel(Identifier<Factory>* label) {
     label_ = label;
   }
 
-  void SetTarget(BreakableStatement* target) {
+  void SetTarget(BreakableStatement<Factory>* target) {
     target_ = target;
   }
-  inline Identifier* label() const { return label_; }
-  inline BreakableStatement* target() const { return target_; }
+  inline Identifier<Factory>* label() const { return label_; }
+  inline BreakableStatement<Factory>* target() const { return target_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(BreakStatement)
  private:
-  Identifier* label_;
-  BreakableStatement* target_;
+  Identifier<Factory>* label_;
+  BreakableStatement<Factory>* target_;
 };
 
-class ReturnStatement : public Statement {
+template<typename Factory>
+class ReturnStatement : public Statement<Factory> {
  public:
-  explicit ReturnStatement(Expression* expr)
+  explicit ReturnStatement(Expression<Factory>* expr)
     : expr_(expr) {
   }
-  inline Expression* expr() const { return expr_; }
+  inline Expression<Factory>* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ReturnStatement)
  private:
-  Expression* expr_;
+  Expression<Factory>* expr_;
 };
 
-class WithStatement : public Statement {
+template<typename Factory>
+class WithStatement : public Statement<Factory> {
  public:
-  WithStatement(Expression* context, Statement* body)
+  WithStatement(Expression<Factory>* context,
+                Statement<Factory>* body)
     : context_(context),
       body_(body) {
   }
-  inline Expression* context() const { return context_; }
-  inline Statement* body() const { return body_; }
+  inline Expression<Factory>* context() const { return context_; }
+  inline Statement<Factory>* body() const { return body_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(WithStatement)
  private:
-  Expression* context_;
-  Statement* body_;
+  Expression<Factory>* context_;
+  Statement<Factory>* body_;
 };
 
-class LabelledStatement : public Statement {
+template<typename Factory>
+class LabelledStatement : public Statement<Factory> {
  public:
-  LabelledStatement(Expression* expr, Statement* body)
+  LabelledStatement(Expression<Factory>* expr, Statement<Factory>* body)
     : body_(body) {
     label_ = expr->AsLiteral()->AsIdentifier();
   }
-  inline Identifier* label() const { return label_; }
-  inline Statement* body() const { return body_; }
+  inline Identifier<Factory>* label() const { return label_; }
+  inline Statement<Factory>* body() const { return body_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(LabelledStatement)
  private:
-  Identifier* label_;
-  Statement* body_;
+  Identifier<Factory>* label_;
+  Statement<Factory>* body_;
 };
 
-class CaseClause : public AstNode {
+template<typename Factory>
+class CaseClause : public AstNode<Factory> {
  public:
-  explicit CaseClause(Space* factory)
+  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
+  template<typename BaseFactory>
+  explicit CaseClause(BaseFactory* factory)
     : expr_(NULL),
-      body_(Statements::allocator_type(factory)),
+      body_(typename Statements::allocator_type(factory)),
       default_(false) {
   }
 
-  void SetExpression(Expression* expr) {
+  void SetExpression(Expression<Factory>* expr) {
     expr_ = expr;
   }
 
@@ -504,13 +515,13 @@ class CaseClause : public AstNode {
     default_ = true;
   }
 
-  void AddStatement(Statement* stmt) {
+  void AddStatement(Statement<Factory>* stmt) {
     body_.push_back(stmt);
   }
   inline bool IsDefault() const {
     return default_;
   }
-  inline Expression* expr() const {
+  inline Expression<Factory>* expr() const {
     return expr_;
   }
   inline const Statements& body() const {
@@ -518,198 +529,218 @@ class CaseClause : public AstNode {
   }
   ACCEPT_VISITOR
  private:
-  Expression* expr_;
+  Expression<Factory>* expr_;
   Statements body_;
   bool default_;
 };
 
-class SwitchStatement : public AnonymousBreakableStatement {
+template<typename Factory>
+class SwitchStatement : public AnonymousBreakableStatement<Factory> {
  public:
-  typedef List<CaseClause*>::type CaseClauses;
-  SwitchStatement(Expression* expr, Space* factory)
+  typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
+  template<typename BaseFactory>
+  SwitchStatement(Expression<Factory>* expr,
+                  BaseFactory* factory)
     : expr_(expr),
-      clauses_(CaseClauses::allocator_type(factory)) {
+      clauses_(typename CaseClauses::allocator_type(factory)) {
   }
 
-  void AddCaseClause(CaseClause* clause) {
+  void AddCaseClause(CaseClause<Factory>* clause) {
     clauses_.push_back(clause);
   }
-  inline Expression* expr() const { return expr_; }
+  inline Expression<Factory>* expr() const { return expr_; }
   inline const CaseClauses& clauses() const { return clauses_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(SwitchStatement)
  private:
-  Expression* expr_;
+  Expression<Factory>* expr_;
   CaseClauses clauses_;
 };
 
-class ThrowStatement : public Statement {
+template<typename Factory>
+class ThrowStatement : public Statement<Factory> {
  public:
-  explicit ThrowStatement(Expression* expr)
+  explicit ThrowStatement(Expression<Factory>* expr)
     : expr_(expr) {
   }
-  inline Expression* expr() const { return expr_; }
+  inline Expression<Factory>* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ThrowStatement)
  private:
-  Expression* expr_;
+  Expression<Factory>* expr_;
 };
 
-class TryStatement : public Statement {
+template<typename Factory>
+class TryStatement : public Statement<Factory> {
  public:
-  explicit TryStatement(Block* block)
+  explicit TryStatement(Block<Factory>* block)
     : body_(block),
       catch_name_(NULL),
       catch_block_(NULL),
       finally_block_(NULL) {
   }
 
-  void SetCatch(Identifier* name, Block* block) {
+  void SetCatch(Identifier<Factory>* name, Block<Factory>* block) {
     catch_name_ = name;
     catch_block_ = block;
   }
 
-  void SetFinally(Block* block) {
+  void SetFinally(Block<Factory>* block) {
     finally_block_ = block;
   }
-  inline Block* body() const { return body_; }
-  inline Identifier* catch_name() const { return catch_name_; }
-  inline Block* catch_block() const { return catch_block_; }
-  inline Block* finally_block() const { return finally_block_; }
+  inline Block<Factory>* body() const { return body_; }
+  inline Identifier<Factory>* catch_name() const { return catch_name_; }
+  inline Block<Factory>* catch_block() const { return catch_block_; }
+  inline Block<Factory>* finally_block() const { return finally_block_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(TryStatement)
  private:
-  Block* body_;
-  Identifier* catch_name_;
-  Block* catch_block_;
-  Block* finally_block_;
+  Block<Factory>* body_;
+  Identifier<Factory>* catch_name_;
+  Block<Factory>* catch_block_;
+  Block<Factory>* finally_block_;
 };
 
-class DebuggerStatement : public Statement {
+template<typename Factory>
+class DebuggerStatement : public Statement<Factory> {
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(DebuggerStatement)
 };
 
-class ExpressionStatement : public Statement {
+template<typename Factory>
+class ExpressionStatement : public Statement<Factory> {
  public:
-  explicit ExpressionStatement(Expression* expr) : expr_(expr) { }
-  inline Expression* expr() const { return expr_; }
+  explicit ExpressionStatement(Expression<Factory>* expr) : expr_(expr) { }
+  inline Expression<Factory>* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ExpressionStatement)
  private:
-  Expression* expr_;
+  Expression<Factory>* expr_;
 };
 
-class Assignment : public Expression {
+template<typename Factory>
+class Assignment : public Expression<Factory> {
  public:
   Assignment(Token::Type op,
-             Expression* left, Expression* right)
+             Expression<Factory>* left, Expression<Factory>* right)
     : op_(op),
       left_(left),
       right_(right) {
   }
   inline Token::Type op() const { return op_; }
-  inline Expression* left() const { return left_; }
-  inline Expression* right() const { return right_; }
+  inline Expression<Factory>* left() const { return left_; }
+  inline Expression<Factory>* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Assignment)
  private:
   Token::Type op_;
-  Expression* left_;
-  Expression* right_;
+  Expression<Factory>* left_;
+  Expression<Factory>* right_;
 };
 
-class BinaryOperation : public Expression {
+template<typename Factory>
+class BinaryOperation : public Expression<Factory> {
  public:
   BinaryOperation(Token::Type op,
-                  Expression* left, Expression* right)
+                  Expression<Factory>* left, Expression<Factory>* right)
     : op_(op),
       left_(left),
       right_(right) {
   }
   inline Token::Type op() const { return op_; }
-  inline Expression* left() const { return left_; }
-  inline Expression* right() const { return right_; }
+  inline Expression<Factory>* left() const { return left_; }
+  inline Expression<Factory>* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(BinaryOperation)
  private:
   Token::Type op_;
-  Expression* left_;
-  Expression* right_;
+  Expression<Factory>* left_;
+  Expression<Factory>* right_;
 };
 
-class ConditionalExpression : public Expression {
+template<typename Factory>
+class ConditionalExpression : public Expression<Factory> {
  public:
-  ConditionalExpression(Expression* cond,
-                        Expression* left,
-                        Expression* right)
+  ConditionalExpression(Expression<Factory>* cond,
+                        Expression<Factory>* left,
+                        Expression<Factory>* right)
     : cond_(cond), left_(left), right_(right) {
   }
-  inline Expression* cond() const { return cond_; }
-  inline Expression* left() const { return left_; }
-  inline Expression* right() const { return right_; }
+  inline Expression<Factory>* cond() const { return cond_; }
+  inline Expression<Factory>* left() const { return left_; }
+  inline Expression<Factory>* right() const { return right_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ConditionalExpression)
  private:
-  Expression* cond_;
-  Expression* left_;
-  Expression* right_;
+  Expression<Factory>* cond_;
+  Expression<Factory>* left_;
+  Expression<Factory>* right_;
 };
 
-class UnaryOperation : public Expression {
+template<typename Factory>
+class UnaryOperation : public Expression<Factory> {
  public:
-  UnaryOperation(Token::Type op, Expression* expr)
+  UnaryOperation(Token::Type op, Expression<Factory>* expr)
     : op_(op),
       expr_(expr) {
   }
   inline Token::Type op() const { return op_; }
-  inline Expression* expr() const { return expr_; }
+  inline Expression<Factory>* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(UnaryOperation)
  private:
   Token::Type op_;
-  Expression* expr_;
+  Expression<Factory>* expr_;
 };
 
-class PostfixExpression : public Expression {
+template<typename Factory>
+class PostfixExpression : public Expression<Factory> {
  public:
-  PostfixExpression(Token::Type op, Expression* expr)
+  PostfixExpression(Token::Type op, Expression<Factory>* expr)
     : op_(op),
       expr_(expr) {
   }
   inline Token::Type op() const { return op_; }
-  inline Expression* expr() const { return expr_; }
+  inline Expression<Factory>* expr() const { return expr_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(PostfixExpression)
  private:
   Token::Type op_;
-  Expression* expr_;
+  Expression<Factory>* expr_;
 };
 
-class StringLiteral : public Literal {
+template<typename Factory>
+class StringLiteral : public Literal<Factory> {
  public:
-  StringLiteral(const std::vector<uc16>& buffer, Space* factory)
+  template<typename BaseFactory>
+  StringLiteral(const std::vector<uc16>& buffer,
+                BaseFactory* factory)
     : value_(buffer.data(),
-             buffer.size(), SpaceUString::allocator_type(factory)) {
+             buffer.size(),
+             typename SpaceUString<Factory>::type::allocator_type(factory)) {
   }
 
-  inline const SpaceUString& value() const {
+  inline const typename SpaceUString<Factory>::type& value() const {
     return value_;
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(StringLiteral)
  private:
-  const SpaceUString value_;
+  const typename SpaceUString<Factory>::type value_;
 };
 
-class Directivable : public StringLiteral {
+template<typename Factory>
+class Directivable : public StringLiteral<Factory> {
  public:
-  explicit Directivable(const std::vector<uc16>& buffer, Space* factory)
-    : StringLiteral(buffer, factory) { }
+  template<typename BaseFactory>
+  explicit Directivable(const std::vector<uc16>& buffer,
+                        BaseFactory* factory)
+    : StringLiteral<Factory>(buffer, factory) { }
   DECLARE_NODE_TYPE(Directivable)
 };
 
-class NumberLiteral : public Literal {
+template<typename Factory>
+class NumberLiteral : public Literal<Factory> {
  public:
   explicit NumberLiteral(const double & val)
     : value_(val) {
@@ -721,41 +752,48 @@ class NumberLiteral : public Literal {
   double value_;
 };
 
-class Identifier : public Literal {
+template<typename Factory>
+class Identifier : public Literal<Factory> {
  public:
-  typedef SpaceUString value_type;
-  Identifier(const UStringPiece& buffer, Space* factory)
+  typedef typename SpaceUString<Factory>::type value_type;
+  template<typename BaseFactory>
+  Identifier(const UStringPiece& buffer, BaseFactory* factory)
     : value_(buffer.data(),
              buffer.size(),
-             SpaceUString::allocator_type(factory)) {
+             typename value_type::allocator_type(factory)) {
     }
-  Identifier(const std::vector<uc16>& buffer, Space* factory)
+  template<typename BaseFactory>
+  Identifier(const std::vector<uc16>& buffer, BaseFactory* factory)
     : value_(buffer.data(),
-             buffer.size(), SpaceUString::allocator_type(factory)) {
+             buffer.size(),
+             typename value_type::allocator_type(factory)) {
   }
-  Identifier(const std::vector<char>& buffer, Space* factory)
+  template<typename BaseFactory>
+  Identifier(const std::vector<char>& buffer, BaseFactory* factory)
     : value_(buffer.begin(),
-             buffer.end(), SpaceUString::allocator_type(factory)) {
+             buffer.end(),
+             typename value_type::allocator_type(factory)) {
   }
-  inline const SpaceUString& value() const {
+  inline const value_type& value() const {
     return value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Identifier)
  protected:
-  SpaceUString value_;
+  value_type value_;
 };
 
+template<typename Factory>
 class IdentifierKey {
  public:
-  typedef Identifier value_type;
-  typedef IdentifierKey this_type;
+  typedef Identifier<Factory> value_type;
+  typedef IdentifierKey<Factory> this_type;
   IdentifierKey(value_type* ident)  // NOLINT
     : ident_(ident) { }
-  IdentifierKey(const IdentifierKey& rhs)
+  IdentifierKey(const this_type& rhs)
     : ident_(rhs.ident_) { }
-  inline const value_type::value_type& value() const {
+  inline const typename value_type::value_type& value() const {
     return ident_->value();
   }
   inline bool operator==(const this_type& rhs) const {
@@ -781,61 +819,74 @@ class IdentifierKey {
   value_type* ident_;
 };
 
-class ThisLiteral : public Literal {
+template<typename Factory>
+class ThisLiteral : public Literal<Factory> {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ThisLiteral)
 };
 
-class NullLiteral : public Literal {
+template<typename Factory>
+class NullLiteral : public Literal<Factory> {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(NullLiteral)
 };
 
-class TrueLiteral : public Literal {
+template<typename Factory>
+class TrueLiteral : public Literal<Factory> {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(TrueLiteral)
 };
 
-class FalseLiteral : public Literal {
+template<typename Factory>
+class FalseLiteral : public Literal<Factory> {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(FalseLiteral)
 };
 
-class Undefined : public Literal {
+template<typename Factory>
+class Undefined : public Literal<Factory> {
  public:
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(Undefined)
 };
 
-class RegExpLiteral : public Literal {
+template<typename Factory>
+class RegExpLiteral : public Literal<Factory> {
  public:
+  typedef typename SpaceUString<Factory>::type value_type;
+
+  template<typename BaseFactory>
   RegExpLiteral(const std::vector<uc16>& buffer,
                 const std::vector<uc16>& flags,
-                Space* factory)
+                BaseFactory* factory)
     : value_(buffer.data(),
-             buffer.size(), SpaceUString::allocator_type(factory)),
+             buffer.size(), typename value_type::allocator_type(factory)),
       flags_(flags.data(),
-             flags.size(), SpaceUString::allocator_type(factory)) {
+             flags.size(), typename value_type::allocator_type(factory)) {
   }
-  inline const SpaceUString& value() const { return value_; }
-  inline const SpaceUString& flags() const { return flags_; }
+  inline const value_type& value() const { return value_; }
+  inline const value_type& flags() const { return flags_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(RegExpLiteral)
  protected:
-  SpaceUString value_;
-  SpaceUString flags_;
+  value_type value_;
+  value_type flags_;
 };
 
-class ArrayLiteral : public Literal {
+template<typename Factory>
+class ArrayLiteral : public Literal<Factory> {
  public:
-  explicit ArrayLiteral(Space* factory)
-    : items_(Expressions::allocator_type(factory)) {
+  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+
+  template<typename BaseFactory>
+  explicit ArrayLiteral(BaseFactory* factory)
+    : items_(typename Expressions::allocator_type(factory)) {
   }
-  inline void AddItem(Expression* expr) {
+  inline void AddItem(Expression<Factory>* expr) {
     items_.push_back(expr);
   }
   inline const Expressions& items() const {
@@ -847,7 +898,8 @@ class ArrayLiteral : public Literal {
   Expressions items_;
 };
 
-class ObjectLiteral : public Literal {
+template<typename Factory>
+class ObjectLiteral : public Literal<Factory> {
  public:
   enum PropertyDescriptorType {
     DATA = 1,
@@ -855,18 +907,21 @@ class ObjectLiteral : public Literal {
     SET  = 4
   };
   typedef std::tr1::tuple<PropertyDescriptorType,
-                          Identifier*,
-                          Expression*> Property;
-  typedef List<Property>::type Properties;
-  explicit ObjectLiteral(Space* factory)
-    : properties_(Properties::allocator_type(factory)) {
+                          Identifier<Factory>*,
+                          Expression<Factory>*> Property;
+  typedef typename SpaceVector<Factory, Property>::type Properties;
+  template<typename BaseFactory>
+  explicit ObjectLiteral(BaseFactory* factory)
+    : properties_(typename Properties::allocator_type(factory)) {
   }
 
-  inline void AddDataProperty(Identifier* key, Expression* val) {
+  inline void AddDataProperty(Identifier<Factory>* key,
+                              Expression<Factory>* val) {
     AddPropertyDescriptor(DATA, key, val);
   }
   inline void AddAccessor(PropertyDescriptorType type,
-                          Identifier* key, Expression* val) {
+                          Identifier<Factory>* key,
+                          Expression<Factory>* val) {
     AddPropertyDescriptor(type, key, val);
   }
   inline const Properties& properties() const {
@@ -876,15 +931,18 @@ class ObjectLiteral : public Literal {
   DECLARE_NODE_TYPE(ObjectLiteral)
  private:
   inline void AddPropertyDescriptor(PropertyDescriptorType type,
-                                    Identifier* key,
-                                    Expression* val) {
-    properties_.push_back(Properties::value_type(type, key, val));
+                                    Identifier<Factory>* key,
+                                    Expression<Factory>* val) {
+    properties_.push_back(std::tr1::make_tuple(type, key, val));
   }
   Properties properties_;
 };
 
-class FunctionLiteral : public Literal {
+template<typename Factory>
+class FunctionLiteral : public Literal<Factory> {
  public:
+  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
+  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
   enum DeclType {
     DECLARATION,
     STATEMENT,
@@ -896,8 +954,8 @@ class FunctionLiteral : public Literal {
     SETTER,
     GETTER
   };
-  inline void SetName(Identifier* name) { name_ = name; }
-  inline Identifier* name() const {
+  inline void SetName(Identifier<Factory>* name) { name_ = name; }
+  inline Identifier<Factory>* name() const {
     return name_;
   }
   inline DeclType type() const { return type_; }
@@ -907,10 +965,10 @@ class FunctionLiteral : public Literal {
   inline const Statements& body() const {
     return body_;
   }
-  inline Scope* scope() {
+  inline Scope<Factory>* scope() {
     return &scope_;
   }
-  inline const Scope& scope() const {
+  inline const Scope<Factory>& scope() const {
     return scope_;
   }
   inline void set_start_position(std::size_t start) {
@@ -938,125 +996,139 @@ class FunctionLiteral : public Literal {
   inline UStringPiece GetSource() const {
     return source_;
   }
-  FunctionLiteral(DeclType type, Space* factory)
+  template<typename BaseFactory>
+  FunctionLiteral(DeclType type, BaseFactory* factory)
     : name_(NULL),
       type_(type),
-      params_(Identifiers::allocator_type(factory)),
-      body_(Statements::allocator_type(factory)),
+      params_(typename Identifiers::allocator_type(factory)),
+      body_(typename Statements::allocator_type(factory)),
       scope_(factory),
       strict_(false) {
   }
 
-  void AddParameter(Identifier* param) {
+  void AddParameter(Identifier<Factory>* param) {
     params_.push_back(param);
   }
 
-  void AddStatement(Statement* stmt) {
+  void AddStatement(Statement<Factory>* stmt) {
     body_.push_back(stmt);
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(FunctionLiteral)
  private:
-  Identifier* name_;
+  Identifier<Factory>* name_;
   DeclType type_;
   Identifiers params_;
   Statements body_;
-  Scope scope_;
+  Scope<Factory> scope_;
   bool strict_;
   std::size_t start_position_;
   std::size_t end_position_;
   UStringPiece source_;
 };
 
-class PropertyAccess : public Expression {
+template<typename Factory>
+class PropertyAccess : public Expression<Factory> {
  public:
   inline bool IsValidLeftHandSide() const { return true; }
-  inline Expression* target() const { return target_; }
+  inline Expression<Factory>* target() const { return target_; }
   DECLARE_NODE_TYPE(PropertyAccess)
  protected:
-  explicit PropertyAccess(Expression* obj)
+  explicit PropertyAccess(Expression<Factory>* obj)
     : target_(obj) {
   }
-  Expression* target_;
+  Expression<Factory>* target_;
 };
 
-class IdentifierAccess : public PropertyAccess {
+template<typename Factory>
+class IdentifierAccess : public PropertyAccess<Factory> {
  public:
-  IdentifierAccess(Expression* obj, Identifier* key)
-    : PropertyAccess(obj),
+  IdentifierAccess(Expression<Factory>* obj,
+                   Identifier<Factory>* key)
+    : PropertyAccess<Factory>(obj),
       key_(key) {
   }
-  inline Identifier* key() const { return key_; }
+  inline Identifier<Factory>* key() const { return key_; }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(IdentifierAccess)
  private:
-  Identifier* key_;
+  Identifier<Factory>* key_;
 };
 
-class IndexAccess : public PropertyAccess {
+template<typename Factory>
+class IndexAccess : public PropertyAccess<Factory> {
  public:
-  IndexAccess(Expression* obj, Expression* key)
-    : PropertyAccess(obj),
+  IndexAccess(Expression<Factory>* obj,
+              Expression<Factory>* key)
+    : PropertyAccess<Factory>(obj),
       key_(key) {
   }
-  inline Expression* key() const { return key_; }
+  inline Expression<Factory>* key() const { return key_; }
   DECLARE_NODE_TYPE(IndexAccess)
   ACCEPT_VISITOR
  private:
-  Expression* key_;
+  Expression<Factory>* key_;
 };
 
-class Call : public Expression {
+template<typename Factory>
+class Call : public Expression<Factory> {
  public:
+  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
   inline bool IsValidLeftHandSide() const { return true; }
-  Call(Expression* target, Space* factory)
+  template<typename BaseFactory>
+  Call(Expression<Factory>* target,
+       BaseFactory* factory)
     : target_(target),
-      args_(Expressions::allocator_type(factory)) {
+      args_(typename Expressions::allocator_type(factory)) {
   }
-  void AddArgument(Expression* expr) { args_.push_back(expr); }
-  inline Expression* target() const { return target_; }
+  void AddArgument(Expression<Factory>* expr) { args_.push_back(expr); }
+  inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return args_; }
   DECLARE_NODE_TYPE(Call)
  protected:
-  Expression* target_;
+  Expression<Factory>* target_;
   Expressions args_;
 };
 
-class FunctionCall : public Call {
+template<typename Factory>
+class FunctionCall : public Call<Factory> {
  public:
-  FunctionCall(Expression* target, Space* factory)
-    : Call(target, factory) {
+  template<typename BaseFactory>
+  FunctionCall(Expression<Factory>* target,
+               BaseFactory* factory)
+    : Call<Factory>(target, factory) {
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(FunctionCall)
 };
 
-class ConstructorCall : public Call {
+template<typename Factory>
+class ConstructorCall : public Call<Factory> {
  public:
-  ConstructorCall(Expression* target, Space* factory)
-    : Call(target, factory) {
+  template<typename BaseFactory>
+  ConstructorCall(Expression<Factory>* target,
+                  BaseFactory* factory)
+    : Call<Factory>(target, factory) {
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(ConstructorCall)
 };
-} }  // namespace iv::core
 
+} } }  // namespace iv::core::ast
 namespace std {
 namespace tr1 {
 // template specialization
 // for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
 // allowed in section 17.4.3.1
-template<>
-struct hash<iv::core::IdentifierKey>
-  : public unary_function<iv::core::IdentifierKey, std::size_t> {
-  result_type operator()(const argument_type& x) const {
-    return hash<argument_type::value_type::value_type>()(x.value());
+template<class Factory>
+struct hash<iv::core::ast::IdentifierKey<Factory> >
+  : public unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
+  std::size_t operator()(const iv::core::ast::IdentifierKey<Factory>& x) const {
+    return hash<typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
   }
 };
-
+} }  // namespace std::tr1
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE
 #undef DECLARE_NODE_TYPE_BASE
-
-} }  // namespace std::tr1
 #endif  // _IV_AST_H_

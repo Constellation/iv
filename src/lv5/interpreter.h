@@ -16,7 +16,7 @@ namespace lv5 {
 class Context;
 class Error;
 class Interpreter : private core::Noncopyable<Interpreter>::type,
-                    public core::ConstAstVisitor {
+                    public AstVisitor {
  public:
   enum CompareKind {
     CMP_TRUE,
@@ -26,7 +26,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   };
   Interpreter();
   ~Interpreter();
-  void Run(const core::FunctionLiteral* global);
+  void Run(const FunctionLiteral* global);
 
   Context* context() const {
     return ctx_;
@@ -77,50 +77,50 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     bool prev_;
   };
 
-  void Visit(const core::Block* block);
-  void Visit(const core::FunctionStatement* func);
-  void Visit(const core::VariableStatement* var);
-  void Visit(const core::Declaration* decl);
-  void Visit(const core::EmptyStatement* stmt);
-  void Visit(const core::IfStatement* stmt);
-  void Visit(const core::DoWhileStatement* stmt);
-  void Visit(const core::WhileStatement* stmt);
-  void Visit(const core::ForStatement* stmt);
-  void Visit(const core::ForInStatement* stmt);
-  void Visit(const core::ContinueStatement* stmt);
-  void Visit(const core::BreakStatement* stmt);
-  void Visit(const core::ReturnStatement* stmt);
-  void Visit(const core::WithStatement* stmt);
-  void Visit(const core::LabelledStatement* stmt);
-  void Visit(const core::CaseClause* clause);
-  void Visit(const core::SwitchStatement* stmt);
-  void Visit(const core::ThrowStatement* stmt);
-  void Visit(const core::TryStatement* stmt);
-  void Visit(const core::DebuggerStatement* stmt);
-  void Visit(const core::ExpressionStatement* stmt);
-  void Visit(const core::Assignment* assign);
-  void Visit(const core::BinaryOperation* binary);
-  void Visit(const core::ConditionalExpression* cond);
-  void Visit(const core::UnaryOperation* unary);
-  void Visit(const core::PostfixExpression* postfix);
-  void Visit(const core::StringLiteral* literal);
-  void Visit(const core::NumberLiteral* literal);
-  void Visit(const core::Identifier* literal);
-  void Visit(const core::ThisLiteral* literal);
-  void Visit(const core::NullLiteral* lit);
-  void Visit(const core::TrueLiteral* lit);
-  void Visit(const core::FalseLiteral* lit);
-  void Visit(const core::Undefined* lit);
-  void Visit(const core::RegExpLiteral* literal);
-  void Visit(const core::ArrayLiteral* literal);
-  void Visit(const core::ObjectLiteral* literal);
-  void Visit(const core::FunctionLiteral* literal);
-  void Visit(const core::IdentifierAccess* prop);
-  void Visit(const core::IndexAccess* prop);
-  void Visit(const core::FunctionCall* call);
-  void Visit(const core::ConstructorCall* call);
+  void Visit(const Block* block);
+  void Visit(const FunctionStatement* func);
+  void Visit(const VariableStatement* var);
+  void Visit(const Declaration* decl);
+  void Visit(const EmptyStatement* stmt);
+  void Visit(const IfStatement* stmt);
+  void Visit(const DoWhileStatement* stmt);
+  void Visit(const WhileStatement* stmt);
+  void Visit(const ForStatement* stmt);
+  void Visit(const ForInStatement* stmt);
+  void Visit(const ContinueStatement* stmt);
+  void Visit(const BreakStatement* stmt);
+  void Visit(const ReturnStatement* stmt);
+  void Visit(const WithStatement* stmt);
+  void Visit(const LabelledStatement* stmt);
+  void Visit(const CaseClause* clause);
+  void Visit(const SwitchStatement* stmt);
+  void Visit(const ThrowStatement* stmt);
+  void Visit(const TryStatement* stmt);
+  void Visit(const DebuggerStatement* stmt);
+  void Visit(const ExpressionStatement* stmt);
+  void Visit(const Assignment* assign);
+  void Visit(const BinaryOperation* binary);
+  void Visit(const ConditionalExpression* cond);
+  void Visit(const UnaryOperation* unary);
+  void Visit(const PostfixExpression* postfix);
+  void Visit(const StringLiteral* literal);
+  void Visit(const NumberLiteral* literal);
+  void Visit(const Identifier* literal);
+  void Visit(const ThisLiteral* literal);
+  void Visit(const NullLiteral* lit);
+  void Visit(const TrueLiteral* lit);
+  void Visit(const FalseLiteral* lit);
+  void Visit(const Undefined* lit);
+  void Visit(const RegExpLiteral* literal);
+  void Visit(const ArrayLiteral* literal);
+  void Visit(const ObjectLiteral* literal);
+  void Visit(const FunctionLiteral* literal);
+  void Visit(const IdentifierAccess* prop);
+  void Visit(const IndexAccess* prop);
+  void Visit(const FunctionCall* call);
+  void Visit(const ConstructorCall* call);
 
-  bool InCurrentLabelSet(const core::BreakableStatement* stmt);
+  bool InCurrentLabelSet(const BreakableStatement* stmt);
   bool StrictEqual(const JSVal& lhs, const JSVal& rhs);
   bool AbstractEqual(const JSVal& lhs, const JSVal& rhs, Error* error);
   CompareKind Compare(const JSVal& lhs, const JSVal& rhs,

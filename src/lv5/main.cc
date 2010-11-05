@@ -17,12 +17,15 @@
 #include "config.h"
 #include "cmdline.h"
 #include "ast.h"
+
 #include "ast-serializer.h"
+
 #include "parser.h"
 #include "factory.h"
 
 #include "interpreter.h"
 #include "context.h"
+#include "jsast.h"
 #include "jsval.h"
 #include "error.h"
 #include "arguments.h"
@@ -123,7 +126,7 @@ int main(int argc, char **argv) {
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
     iv::core::Parser<iv::lv5::AstFactory> parser(&src, &factory);
-    iv::core::FunctionLiteral* global = parser.ParseProgram();
+    iv::lv5::FunctionLiteral* global = parser.ParseProgram();
 
     if (!global) {
       std::cerr << parser.error() << std::endl;
@@ -131,7 +134,7 @@ int main(int argc, char **argv) {
     }
 
     if (cmd.Exist("ast")) {
-      iv::core::AstSerializer ser;
+      iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
       global->Accept(&ser);
       std::cout << ser.out().data() << std::endl;
     } else {

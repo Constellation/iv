@@ -8,7 +8,6 @@
 #include "token.h"
 #include "hint.h"
 #include "interpreter.h"
-#include "scope.h"
 #include "jsreference.h"
 #include "jsobject.h"
 #include "jsstring.h"
@@ -20,6 +19,7 @@
 #include "jsenv.h"
 #include "jsarray.h"
 #include "context.h"
+#include "jsast.h"
 
 namespace iv {
 namespace lv5 {
@@ -129,7 +129,7 @@ void Interpreter::CallCode(
     }
   }
   // section 10.5 Declaration Binding Instantiation
-  const core::Scope& scope = code->code()->scope();
+  const Scope& scope = code->code()->scope();
 
   // step 1
   JSDeclEnv* const env = NewDeclarativeEnvironment(ctx_, code->scope());
@@ -145,7 +145,7 @@ void Interpreter::CallCode(
     const Arguments::JSVals& arguments = args.args();
     const std::size_t arg_count = arguments.size();
     std::size_t n = 0;
-    BOOST_FOREACH(const core::Identifier* const ident,
+    BOOST_FOREACH(const Identifier* const ident,
                   code->code()->params()) {
       ++n;
       const Symbol arg_name = ctx_->Intern(*ident);
@@ -163,7 +163,7 @@ void Interpreter::CallCode(
   }
 
   // step 5
-  BOOST_FOREACH(const core::FunctionLiteral* const f,
+  BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
     EVAL(f);
@@ -196,7 +196,7 @@ void Interpreter::CallCode(
   }
 
   // step 8
-  BOOST_FOREACH(const core::Scope::Variable& var, scope.variables()) {
+  BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
@@ -207,9 +207,9 @@ void Interpreter::CallCode(
 
   // TODO(Constellation) more test
   {
-    const core::FunctionLiteral::DeclType type = code->code()->type();
-    if (type == core::FunctionLiteral::STATEMENT ||
-        (type == core::FunctionLiteral::EXPRESSION && code->name())) {
+    const FunctionLiteral::DeclType type = code->code()->type();
+    if (type == FunctionLiteral::STATEMENT ||
+        (type == FunctionLiteral::EXPRESSION && code->name())) {
       const Symbol name = ctx_->Intern(*(code->name()));
       if (!env->HasBinding(name)) {
         env->CreateImmutableBinding(name);
@@ -219,7 +219,7 @@ void Interpreter::CallCode(
   }
 
   JSVal value;
-  BOOST_FOREACH(const core::Statement* const stmt, code->code()->body()) {
+  BOOST_FOREACH(const Statement* const stmt, code->code()->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -237,13 +237,13 @@ void Interpreter::CallCode(
 }
 
 
-void Interpreter::Run(const core::FunctionLiteral* global) {
+void Interpreter::Run(const FunctionLiteral* global) {
   // section 10.5 Declaration Binding Instantiation
   const bool configurable_bindings = false;
-  const core::Scope& scope = global->scope();
+  const Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
-  BOOST_FOREACH(const core::FunctionLiteral* const f,
+  BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
     EVAL(f);
@@ -254,7 +254,7 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
     env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
   }
 
-  BOOST_FOREACH(const core::Scope::Variable& var, scope.variables()) {
+  BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
@@ -265,7 +265,7 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
 
   JSVal value;
   // section 14 Program
-  BOOST_FOREACH(const core::Statement* const stmt, global->body()) {
+  BOOST_FOREACH(const Statement* const stmt, global->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -284,11 +284,11 @@ void Interpreter::Run(const core::FunctionLiteral* global) {
 }
 
 
-void Interpreter::Visit(const core::Block* block) {
+void Interpreter::Visit(const Block* block) {
   // section 12.1 Block
   ctx_->set_mode(Context::Context::NORMAL);
   JSVal value;
-  BOOST_FOREACH(const core::Statement* const stmt, block->body()) {
+  BOOST_FOREACH(const Statement* const stmt, block->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -312,8 +312,8 @@ void Interpreter::Visit(const core::Block* block) {
 }
 
 
-void Interpreter::Visit(const core::FunctionStatement* stmt) {
-  const core::FunctionLiteral* const func = stmt->function();
+void Interpreter::Visit(const FunctionStatement* stmt) {
+  const FunctionLiteral* const func = stmt->function();
   func->name()->Accept(this);
   const JSVal lhs = ctx_->ret();
   EVAL(func);
@@ -322,9 +322,9 @@ void Interpreter::Visit(const core::FunctionStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::VariableStatement* var) {
+void Interpreter::Visit(const VariableStatement* var) {
   // bool is_const = var->IsConst();
-  BOOST_FOREACH(const core::Declaration* const decl, var->decls()) {
+  BOOST_FOREACH(const Declaration* const decl, var->decls()) {
     EVAL(decl->name());
     const JSVal lhs = ctx_->ret();
     if (decl->expr()) {
@@ -337,17 +337,17 @@ void Interpreter::Visit(const core::VariableStatement* var) {
 }
 
 
-void Interpreter::Visit(const core::Declaration* decl) {
+void Interpreter::Visit(const Declaration* decl) {
   UNREACHABLE();
 }
 
 
-void Interpreter::Visit(const core::EmptyStatement* empty) {
+void Interpreter::Visit(const EmptyStatement* empty) {
   RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
-void Interpreter::Visit(const core::IfStatement* stmt) {
+void Interpreter::Visit(const IfStatement* stmt) {
   EVAL(stmt->cond());
   const JSVal expr = GetValue(ctx_->ret(), CHECK);
   const bool val = expr.ToBoolean(CHECK);
@@ -355,7 +355,7 @@ void Interpreter::Visit(const core::IfStatement* stmt) {
     EVAL(stmt->then_statement());
     return;
   } else {
-    const core::Statement* const else_stmt = stmt->else_statement();
+    const Statement* const else_stmt = stmt->else_statement();
     if (else_stmt) {
       EVAL(else_stmt);
       return;
@@ -366,7 +366,7 @@ void Interpreter::Visit(const core::IfStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::DoWhileStatement* stmt) {
+void Interpreter::Visit(const DoWhileStatement* stmt) {
   JSVal value;
   bool iterating = true;
   while (iterating) {
@@ -393,7 +393,7 @@ void Interpreter::Visit(const core::DoWhileStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::WhileStatement* stmt) {
+void Interpreter::Visit(const WhileStatement* stmt) {
   JSVal value;
   while (true) {
     EVAL(stmt->cond());
@@ -421,7 +421,7 @@ void Interpreter::Visit(const core::WhileStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::ForStatement* stmt) {
+void Interpreter::Visit(const ForStatement* stmt) {
   if (stmt->init()) {
     EVAL(stmt->init());
     GetValue(ctx_->ret(), CHECK);
@@ -458,7 +458,7 @@ void Interpreter::Visit(const core::ForStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::ForInStatement* stmt) {
+void Interpreter::Visit(const ForInStatement* stmt) {
   EVAL(stmt->enumerable());
   JSVal expr = GetValue(ctx_->ret(), CHECK);
   if (expr.IsNull() || expr.IsUndefined()) {
@@ -476,7 +476,7 @@ void Interpreter::Visit(const core::ForInStatement* stmt) {
       JSVal rhs(ctx_->ToString(set.first));
       EVAL(stmt->each());
       if (stmt->each()->AsVariableStatement()) {
-        const core::Identifier* const ident =
+        const Identifier* const ident =
             stmt->each()->AsVariableStatement()->decls().front()->name();
         EVAL(ident);
       }
@@ -503,12 +503,12 @@ void Interpreter::Visit(const core::ForInStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::ContinueStatement* stmt) {
+void Interpreter::Visit(const ContinueStatement* stmt) {
   RETURN_STMT(Context::CONTINUE, JSUndefined, stmt->target());
 }
 
 
-void Interpreter::Visit(const core::BreakStatement* stmt) {
+void Interpreter::Visit(const BreakStatement* stmt) {
   if (stmt->target()) {
   } else {
     if (stmt->label()) {
@@ -519,7 +519,7 @@ void Interpreter::Visit(const core::BreakStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::ReturnStatement* stmt) {
+void Interpreter::Visit(const ReturnStatement* stmt) {
   if (stmt->expr()) {
     EVAL(stmt->expr());
     const JSVal value = GetValue(ctx_->ret(), CHECK);
@@ -531,7 +531,7 @@ void Interpreter::Visit(const core::ReturnStatement* stmt) {
 
 
 // section 12.10 The with Statement
-void Interpreter::Visit(const core::WithStatement* stmt) {
+void Interpreter::Visit(const WithStatement* stmt) {
   EVAL(stmt->context());
   const JSVal val = GetValue(ctx_->ret(), CHECK);
   JSObject* const obj = val.ToObject(ctx_, CHECK);
@@ -545,24 +545,23 @@ void Interpreter::Visit(const core::WithStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::LabelledStatement* stmt) {
+void Interpreter::Visit(const LabelledStatement* stmt) {
   EVAL(stmt->body());
 }
 
 
-void Interpreter::Visit(const core::CaseClause* clause) {
+void Interpreter::Visit(const CaseClause* clause) {
   UNREACHABLE();
 }
 
 
-void Interpreter::Visit(const core::SwitchStatement* stmt) {
+void Interpreter::Visit(const SwitchStatement* stmt) {
   EVAL(stmt->expr());
   const JSVal cond = GetValue(ctx_->ret(), CHECK);
   // Case Block
   JSVal value;
   {
-    typedef core::SwitchStatement::CaseClauses CaseClauses;
-    using core::CaseClause;
+    typedef SwitchStatement::CaseClauses CaseClauses;
     bool found = false;
     bool default_found = false;
     bool finalize = false;
@@ -585,7 +584,7 @@ void Interpreter::Visit(const core::SwitchStatement* stmt) {
       }
       // case's fall through
       if (found) {
-        BOOST_FOREACH(const core::Statement* const st, clause->body()) {
+        BOOST_FOREACH(const Statement* const st, clause->body()) {
           EVAL(st);
           if (!ctx_->ret().IsUndefined()) {
             value = ctx_->ret();
@@ -604,7 +603,7 @@ void Interpreter::Visit(const core::SwitchStatement* stmt) {
     if (!finalize && !found && default_found) {
       for (CaseClauses::const_iterator it = default_it,
            last = clauses.end(); it != last; ++it) {
-        BOOST_FOREACH(const core::Statement* const st, (*it)->body()) {
+        BOOST_FOREACH(const Statement* const st, (*it)->body()) {
           EVAL(st);
           if (!ctx_->ret().IsUndefined()) {
             value = ctx_->ret();
@@ -629,7 +628,7 @@ void Interpreter::Visit(const core::SwitchStatement* stmt) {
 
 
 // section 12.13 The throw Statement
-void Interpreter::Visit(const core::ThrowStatement* stmt) {
+void Interpreter::Visit(const ThrowStatement* stmt) {
   EVAL(stmt->expr());
   JSVal ref = GetValue(ctx_->ret(), CHECK);
   ctx_->error()->Report(ref);
@@ -638,7 +637,7 @@ void Interpreter::Visit(const core::ThrowStatement* stmt) {
 
 
 // section 12.14 The try Statement
-void Interpreter::Visit(const core::TryStatement* stmt) {
+void Interpreter::Visit(const TryStatement* stmt) {
   stmt->body()->Accept(this);
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
@@ -658,7 +657,7 @@ void Interpreter::Visit(const core::TryStatement* stmt) {
   }
   const Context::Mode mode = ctx_->mode();
   const JSVal value = ctx_->ret();
-  const core::BreakableStatement* const target = ctx_->target();
+  const BreakableStatement* const target = ctx_->target();
 
   ctx_->error()->Clear();
   ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
@@ -672,21 +671,21 @@ void Interpreter::Visit(const core::TryStatement* stmt) {
 }
 
 
-void Interpreter::Visit(const core::DebuggerStatement* stmt) {
+void Interpreter::Visit(const DebuggerStatement* stmt) {
   // section 12.15 debugger statement
   // implementation define debugging facility is not available
   RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
-void Interpreter::Visit(const core::ExpressionStatement* stmt) {
+void Interpreter::Visit(const ExpressionStatement* stmt) {
   EVAL(stmt->expr());
   const JSVal value = GetValue(ctx_->ret(), CHECK);
   RETURN_STMT(Context::NORMAL, value, NULL);
 }
 
 
-void Interpreter::Visit(const core::Assignment* assign) {
+void Interpreter::Visit(const Assignment* assign) {
   using core::Token;
   EVAL(assign->left());
   const JSVal lref(ctx_->ret());
@@ -801,7 +800,7 @@ void Interpreter::Visit(const core::Assignment* assign) {
 }
 
 
-void Interpreter::Visit(const core::BinaryOperation* binary) {
+void Interpreter::Visit(const BinaryOperation* binary) {
   using core::Token;
   const Token::Type token = binary->op();
   EVAL(binary->left());
@@ -1026,7 +1025,7 @@ void Interpreter::Visit(const core::BinaryOperation* binary) {
 }
 
 
-void Interpreter::Visit(const core::ConditionalExpression* cond) {
+void Interpreter::Visit(const ConditionalExpression* cond) {
   EVAL(cond->cond());
   const JSVal expr = GetValue(ctx_->ret(), CHECK);
   const bool condition = expr.ToBoolean(CHECK);
@@ -1042,7 +1041,7 @@ void Interpreter::Visit(const core::ConditionalExpression* cond) {
 }
 
 
-void Interpreter::Visit(const core::UnaryOperation* unary) {
+void Interpreter::Visit(const UnaryOperation* unary) {
   using core::Token;
   switch (unary->op()) {
     case Token::DELETE: {
@@ -1189,7 +1188,7 @@ void Interpreter::Visit(const core::UnaryOperation* unary) {
 }
 
 
-void Interpreter::Visit(const core::PostfixExpression* postfix) {
+void Interpreter::Visit(const PostfixExpression* postfix) {
   EVAL(postfix->expr());
   JSVal lref = ctx_->ret();
   if (lref.IsReference()) {
@@ -1214,17 +1213,17 @@ void Interpreter::Visit(const core::PostfixExpression* postfix) {
 }
 
 
-void Interpreter::Visit(const core::StringLiteral* str) {
+void Interpreter::Visit(const StringLiteral* str) {
   ctx_->Return(JSString::New(ctx_, str->value()));
 }
 
 
-void Interpreter::Visit(const core::NumberLiteral* num) {
+void Interpreter::Visit(const NumberLiteral* num) {
   ctx_->Return(num->value());
 }
 
 
-void Interpreter::Visit(const core::Identifier* ident) {
+void Interpreter::Visit(const Identifier* ident) {
   // section 10.3.1 Identifier Resolution
   JSEnv* const env = ctx_->lexical_env();
   ctx_->Return(
@@ -1234,42 +1233,42 @@ void Interpreter::Visit(const core::Identifier* ident) {
 }
 
 
-void Interpreter::Visit(const core::ThisLiteral* literal) {
+void Interpreter::Visit(const ThisLiteral* literal) {
   ctx_->Return(ctx_->this_binding());
 }
 
 
-void Interpreter::Visit(const core::NullLiteral* lit) {
+void Interpreter::Visit(const NullLiteral* lit) {
   ctx_->ret().set_null();
 }
 
 
-void Interpreter::Visit(const core::TrueLiteral* lit) {
+void Interpreter::Visit(const TrueLiteral* lit) {
   ctx_->Return(JSTrue);
 }
 
 
-void Interpreter::Visit(const core::FalseLiteral* lit) {
+void Interpreter::Visit(const FalseLiteral* lit) {
   ctx_->Return(JSFalse);
 }
 
 
-void Interpreter::Visit(const core::Undefined* lit) {
+void Interpreter::Visit(const Undefined* lit) {
   ctx_->ret().set_undefined();
 }
 
 
-void Interpreter::Visit(const core::RegExpLiteral* regexp) {
+void Interpreter::Visit(const RegExpLiteral* regexp) {
   ctx_->Return(JSRegExp::New(regexp));
 }
 
 
-void Interpreter::Visit(const core::ArrayLiteral* literal) {
+void Interpreter::Visit(const ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
   JSArray* const ary = JSArray::New(ctx_);
   std::size_t current = 0;
   std::tr1::array<char, 30> buffer;
-  BOOST_FOREACH(const core::Expression* const expr, literal->items()) {
+  BOOST_FOREACH(const Expression* const expr, literal->items()) {
     if (expr) {
       EVAL(expr);
       const JSVal value = GetValue(ctx_->ret(), CHECK);
@@ -1292,15 +1291,14 @@ void Interpreter::Visit(const core::ArrayLiteral* literal) {
 }
 
 
-void Interpreter::Visit(const core::ObjectLiteral* literal) {
+void Interpreter::Visit(const ObjectLiteral* literal) {
   using std::tr1::get;
-  using core::ObjectLiteral;
   JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5
   BOOST_FOREACH(const ObjectLiteral::Property& prop, literal->properties()) {
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
-    const core::Identifier* const ident = get<1>(prop);
+    const Identifier* const ident = get<1>(prop);
     const Symbol name = ctx_->Intern(*(ident));
     PropertyDescriptor desc;
     if (type == ObjectLiteral::DATA) {
@@ -1333,13 +1331,13 @@ void Interpreter::Visit(const core::ObjectLiteral* literal) {
 }
 
 
-void Interpreter::Visit(const core::FunctionLiteral* func) {
+void Interpreter::Visit(const FunctionLiteral* func) {
   ctx_->Return(
       JSCodeFunction::New(ctx_, func, ctx_->lexical_env()));
 }
 
 
-void Interpreter::Visit(const core::IdentifierAccess* prop) {
+void Interpreter::Visit(const IdentifierAccess* prop) {
   EVAL(prop->target());
   const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   base_value.CheckObjectCoercible(CHECK);
@@ -1349,7 +1347,7 @@ void Interpreter::Visit(const core::IdentifierAccess* prop) {
 }
 
 
-void Interpreter::Visit(const core::IndexAccess* prop) {
+void Interpreter::Visit(const IndexAccess* prop) {
   EVAL(prop->target());
   const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   EVAL(prop->key());
@@ -1364,13 +1362,13 @@ void Interpreter::Visit(const core::IndexAccess* prop) {
 }
 
 
-void Interpreter::Visit(const core::FunctionCall* call) {
+void Interpreter::Visit(const FunctionCall* call) {
   EVAL(call->target());
   const JSVal target = ctx_->ret();
 
   Arguments args(ctx_, call->args().size());
   std::size_t n = 0;
-  BOOST_FOREACH(const core::Expression* const expr, call->args()) {
+  BOOST_FOREACH(const Expression* const expr, call->args()) {
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }
@@ -1396,13 +1394,13 @@ void Interpreter::Visit(const core::FunctionCall* call) {
 }
 
 
-void Interpreter::Visit(const core::ConstructorCall* call) {
+void Interpreter::Visit(const ConstructorCall* call) {
   EVAL(call->target());
   const JSVal target = ctx_->ret();
 
   Arguments args(ctx_, call->args().size());
   std::size_t n = 0;
-  BOOST_FOREACH(const core::Expression* const expr, call->args()) {
+  BOOST_FOREACH(const Expression* const expr, call->args()) {
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }

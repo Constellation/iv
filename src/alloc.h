@@ -1,22 +1,13 @@
 #ifndef _IV_ALLOC_H_
 #define _IV_ALLOC_H_
-#include <cassert>
 #include <cstdlib>
-#include <cstdio>
 #include <new>
 #include <vector>
-#include <map>
-#include <list>
 #include <algorithm>
 #include <string>
 #include <limits>
-#include <functional>
-#include <numeric>
-#include <tr1/unordered_map>
-#include <tr1/functional>
 #include "uchar.h"
 #include "utils.h"
-#include "conversions.h"
 
 namespace iv {
 namespace core {
@@ -119,6 +110,7 @@ class Arena {
   Arena* next_;
 };
 
+template<std::size_t N>
 class Space {
  public:
   Space()
@@ -177,7 +169,7 @@ class Space {
 
  private:
   static const std::size_t kThreshold = 256;
-  static const unsigned int kInitArenas = 4;
+  static const std::size_t kInitArenas = N;
 
   inline Arena* NewArena() {
     Arena* arena = NULL;
@@ -204,152 +196,5 @@ class Space {
   std::vector<void*>malloced_;
 };
 
-class SpaceObject {
- public:
-  template<typename SP>
-  void* operator new(std::size_t size, SP* factory) {
-    return factory->New(size);
-  }
-  void operator delete(void*, std::size_t) {
-    UNREACHABLE();
-  }
-};
-
-template<class T>
-class SpaceAllocator {
- public:
-  typedef std::size_t size_type;
-  typedef std::ptrdiff_t difference_type;
-  typedef T*        pointer;
-  typedef const T*  const_pointer;
-  typedef T&        reference;
-  typedef const T&  const_reference;
-  typedef T         value_type;
-  template<class U>
-  struct rebind {
-    typedef SpaceAllocator<U> other;
-  };
-
-  SpaceAllocator() : space_(NULL) { }
-  explicit SpaceAllocator(Space* factory) throw() : space_(factory) { }
-
-  template<class U>
-  SpaceAllocator(const SpaceAllocator<U>& alloc) throw()  // NOLINT
-    : space_(alloc.space()) {
-  }
-
-  ~SpaceAllocator() throw() {}
-
-  inline pointer address(reference x) const {
-    return &x;
-  }
-
-  inline const_pointer address(const_reference x) const {
-    return &x;
-  }
-
-  inline pointer allocate(size_type n, const void* = 0) {
-    assert(space_);
-    return reinterpret_cast<pointer>(space_->New(n * sizeof(T)));
-  }
-
-  inline void deallocate(pointer, size_type) { }
-
-  inline size_type max_size() const {
-    return std::numeric_limits<size_type>::max() / sizeof(T);
-  }
-
-  inline void construct(pointer p, const T& val) {
-    new(reinterpret_cast<void*>(p)) T(val);
-  }
-
-  inline void destroy(pointer p) {
-    (p)->~T();
-  }
-
-  inline char* _Charalloc(size_type n) {
-    return allocate(n);
-  }
-
-  template<typename Other>
-  inline SpaceAllocator<T>& operator=(const SpaceAllocator<Other>& rhs) {
-    if (this != &rhs) {
-      SpaceAllocator<T>(rhs).Swap(*this);
-    }
-    return *this;
-  }
-
-  Space* space() const {
-    return space_;
-  }
-
- protected:
-  void Swap(SpaceAllocator<T>& rhs) {
-    using std::swap;
-    swap(space_, rhs.space_);
-  }
-  Space* space_;
-
- private:
-  void operator=(const SpaceAllocator&);
-};
-
-template <typename T>
-bool operator==(const SpaceAllocator<T>& lhs, const SpaceAllocator<T>& rhs) {
-  return true;
-}
-
-template <typename T>
-bool operator!=(const SpaceAllocator<T>& lhs, const SpaceAllocator<T>& rhs) {
-  return false;
-}
-
-template<typename T>
-struct SpaceVector {
-  typedef std::vector<T, SpaceAllocator<T> > type;
-};
-
-template<typename T1, typename T2>
-struct SpaceMap {
-  typedef std::map<T1,
-                   T2,
-                   std::less<T1>,
-                   SpaceAllocator<std::pair<const T1, T2> > > type;
-};
-
-template<typename T1, typename T2>
-struct SpaceHashMap {
-  typedef std::tr1::unordered_map<T1,
-                                  T2,
-                                  std::tr1::hash<T1>,
-                                  std::equal_to<T1>,
-                                  SpaceAllocator<
-                                    std::pair<const T1, T2> > > type;
-};
-
-template<typename T>
-struct SpaceList {
-  typedef std::list<T, SpaceAllocator<T> > type;
-};
-
-typedef std::basic_string<uc16,
-                          std::char_traits<uc16>,
-                          SpaceAllocator<uc16> > SpaceUString;
-
 } }  // namespace iv::core
-
-namespace std {
-namespace tr1 {
-
-// template specialization for SpaceUString in std::tr1::unordered_map
-// allowed in section 17.4.3.1
-template<>
-struct hash<iv::core::SpaceUString>
-  : public unary_function<iv::core::SpaceUString, std::size_t> {
-  std::size_t operator()(const iv::core::SpaceUString& x) const {
-    return iv::core::StringToHash(x);
-  }
-};
-
-} }  // namespace std::tr1
 #endif  // _IV_ALLOC_H_

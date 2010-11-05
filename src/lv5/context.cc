@@ -1,14 +1,15 @@
 #include <cmath>
 #include "cstring"
 #include "ustring.h"
-#include "arguments.h"
 #include "jsfunction.h"
+#include "arguments.h"
 #include "context.h"
 #include "interpreter.h"
 #include "property.h"
 #include "class.h"
 #include "runtime.h"
 #include "ident-symbol.h"
+#include "jsast.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -67,7 +68,7 @@ Symbol Context::Intern(const core::UStringPiece& str) {
   return table_.Lookup(str);
 }
 
-Symbol Context::Intern(const core::Identifier& ident) {
+Symbol Context::Intern(const Identifier& ident) {
   // TODO(Constellation) unsafe downcast
   return (static_cast<const IdentifierWithSymbol&>(ident)).symbol();
 }
@@ -85,17 +86,17 @@ const core::UString& Context::GetContent(Symbol sym) const {
 }
 
 bool Context::InCurrentLabelSet(
-    const core::AnonymousBreakableStatement* stmt) const {
+    const AnonymousBreakableStatement* stmt) const {
   // AnonymousBreakableStatement has empty label at first
   return !target_ || stmt == target_;
 }
 
 bool Context::InCurrentLabelSet(
-    const core::NamedOnlyBreakableStatement* stmt) const {
+    const NamedOnlyBreakableStatement* stmt) const {
   return stmt == target_;
 }
 
-bool Context::Run(const core::FunctionLiteral* global) {
+bool Context::Run(const FunctionLiteral* global) {
   interp_.Run(global);
   return error_;
 }

@@ -17,8 +17,7 @@ void JSFunction::Initialize(Context* ctx) {
 }
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
-                               const core::FunctionLiteral* func,
-                               JSEnv* env)
+                 const FunctionLiteral* func, JSEnv* env)
   : function_(func),
     env_(env) {
   DefineOwnProperty(
@@ -28,8 +27,9 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
                      false, NULL);
 }
 
-JSVal JSCodeFunction::Call(const Arguments& args,
-                           Error* error) {
+JSVal JSCodeFunction::Call(
+    const Arguments& args,
+    Error* error) {
   Interpreter* const interp = args.interpreter();
   Context* const ctx = args.ctx();
   interp->CallCode(this, args, error);
@@ -37,14 +37,6 @@ JSVal JSCodeFunction::Call(const Arguments& args,
     ctx->set_mode(Context::NORMAL);
   }
   return ctx->ret();
-}
-
-JSCodeFunction* JSCodeFunction::New(Context* ctx,
-                                    const core::FunctionLiteral* func,
-                                    JSEnv* env) {
-  JSCodeFunction* const obj = new JSCodeFunction(ctx, func, env);
-  obj->Initialize(ctx);
-  return obj;
 }
 
 bool JSFunction::HasInstance(Context* ctx,

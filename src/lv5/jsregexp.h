@@ -3,14 +3,10 @@
 #include <unicode/regex.h>
 #include <gc/gc_cpp.h>
 #include "jsobject.h"
+#include "jsast.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 namespace iv {
-
-namespace core {
-class RegExpLiteral;
-}  // namespace iv::core
-
 namespace lv5 {
 
 class JSRegExpImpl : public gc_cleanup {
@@ -40,7 +36,7 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(const core::UStringPiece& value,
                        const core::UStringPiece& flags);
-  static JSRegExp* New(const core::RegExpLiteral* reg);
+  static JSRegExp* New(const RegExpLiteral* reg);
 
  private:
   UErrorCode status_;

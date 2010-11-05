@@ -6,6 +6,7 @@
 #include "arguments.h"
 #include "gc-template.h"
 #include "jsfunction.h"
+#include "factory.h"
 namespace iv {
 namespace lv5 {
 
@@ -15,7 +16,7 @@ class Error;
 class JSDeclEnv;
 class JSArguments : public JSObject {
  public:
-  typedef core::AstNode::Identifiers Identifiers;
+  typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
   typedef GCHashMap<Symbol, Symbol>::type Index2Param;
   JSArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),

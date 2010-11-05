@@ -1,75 +1,89 @@
 #ifndef _IV_AST_FACTORY_H_
 #define _IV_AST_FACTORY_H_
+#include <tr1/type_traits>
 #include "functor.h"
 #include "ast.h"
 #include "alloc.h"
+#include "static_assert.h"
 #include "ustringpiece.h"
 
 namespace iv {
 namespace core {
+namespace ast {
 
-class BasicAstFactory : public Space {
+template<std::size_t N, typename Factory>
+class BasicAstFactory : public Space<N> {
  public:
-  BasicAstFactory()
-    : Space(),
-      undefined_instance_(new(this)Undefined()),
-      empty_statement_instance_(new(this)EmptyStatement()),
-      debugger_statement_instance_(new(this)DebuggerStatement()),
-      this_instance_(new(this)ThisLiteral()),
-      null_instance_(new(this)NullLiteral()),
-      true_instance_(new(this)TrueLiteral()),
-      false_instance_(new(this)FalseLiteral()) {
-  }
+  typedef BasicAstFactory<N, Factory> this_type;
 
-  inline void Clear() {
-    Space::Clear();
+#define V(AST) typedef typename ast::AST<Factory> AST;
+  AST_NODE_LIST(V)
+#undef V
+#define V(X, XS) typedef typename SpaceVector<Factory, X*>::type XS;
+  AST_LIST_LIST(V)
+#undef V
+#define V(S) typedef typename SpaceUString<Factory>::type S;
+  AST_STRING(V)
+#undef V
+
+  BasicAstFactory()
+    : Space<N>(),
+      undefined_instance_(new(static_cast<Factory*>(this))Undefined()),
+      empty_statement_instance_(new(static_cast<Factory*>(this))EmptyStatement()),
+      debugger_statement_instance_(new(static_cast<Factory*>(this))DebuggerStatement()),
+      this_instance_(new(static_cast<Factory*>(this))ThisLiteral()),
+      null_instance_(new(static_cast<Factory*>(this))NullLiteral()),
+      true_instance_(new(static_cast<Factory*>(this))TrueLiteral()),
+      false_instance_(new(static_cast<Factory*>(this))FalseLiteral()) {
+    typedef std::tr1::is_convertible<Factory, this_type> is_convertible_to_this;
+    typedef std::tr1::is_base_of<this_type, Factory> is_base_of_factory;
+    IV_STATIC_ASSERT(is_convertible_to_this::value || is_base_of_factory::value);
   }
 
   Identifier* NewIdentifier(const UStringPiece& buffer) {
-    return new (this) Identifier(buffer, this);
+    return new (static_cast<Factory*>(this)) Identifier(buffer, static_cast<Factory*>(this));
   }
 
   Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
-    return new (this) Identifier(buffer, this);
+    return new (static_cast<Factory*>(this)) Identifier(buffer, static_cast<Factory*>(this));
   }
 
   Identifier* NewIdentifier(const std::vector<char>& buffer) {
-    return new (this) Identifier(buffer, this);
+    return new (static_cast<Factory*>(this)) Identifier(buffer, static_cast<Factory*>(this));
   }
 
   NumberLiteral* NewNumberLiteral(const double& val) {
-    return new (this) NumberLiteral(val);
+    return new (static_cast<Factory*>(this)) NumberLiteral(val);
   }
 
   StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer) {
-    return new (this) StringLiteral(buffer, this);
+    return new (static_cast<Factory*>(this)) StringLiteral(buffer, static_cast<Factory*>(this));
   }
 
   Directivable* NewDirectivable(const std::vector<uc16>& buffer) {
-    return new (this) Directivable(buffer, this);
+    return new (static_cast<Factory*>(this)) Directivable(buffer, static_cast<Factory*>(this));
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
                                   const std::vector<uc16>& flags) {
-    return new (this) RegExpLiteral(content, flags, this);
+    return new (static_cast<Factory*>(this)) RegExpLiteral(content, flags, static_cast<Factory*>(this));
   }
 
-  FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
-    return new (this) FunctionLiteral(type, this);
+  FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type) {
+    return new (static_cast<Factory*>(this)) FunctionLiteral(type, static_cast<Factory*>(this));
   }
 
   ArrayLiteral* NewArrayLiteral() {
-    return new (this) ArrayLiteral(this);
+    return new (static_cast<Factory*>(this)) ArrayLiteral(static_cast<Factory*>(this));
   }
 
   ObjectLiteral* NewObjectLiteral() {
-    return new (this) ObjectLiteral(this);
+    return new (static_cast<Factory*>(this)) ObjectLiteral(static_cast<Factory*>(this));
   }
 
-  AstNode::Identifiers* NewLabels() {
-    typedef AstNode::Identifiers Identifiers;
-    return new (New(sizeof(Identifiers)))
-        Identifiers(Identifiers::allocator_type(this));
+  Identifiers* NewLabels() {
+    return new (Space<N>::New(sizeof(Identifiers)))
+        Identifiers(typename Identifiers::allocator_type(static_cast<Factory*>(this)));
   }
 
   NullLiteral* NewNullLiteral() {
@@ -101,124 +115,130 @@ class BasicAstFactory : public Space {
   }
 
   FunctionStatement* NewFunctionStatement(FunctionLiteral* func) {
-    return new (this) FunctionStatement(func);
+    return new (static_cast<Factory*>(this)) FunctionStatement(func);
   }
 
   Block* NewBlock() {
-    return new (this) Block(this);
+    return new (static_cast<Factory*>(this)) Block(static_cast<Factory*>(this));
   }
 
   VariableStatement* NewVariableStatement(Token::Type token) {
-    return new (this) VariableStatement(token, this);
+    return new (static_cast<Factory*>(this)) VariableStatement(token, static_cast<Factory*>(this));
   }
 
   Declaration* NewDeclaration(Identifier* name, Expression* expr) {
-    return new (this) Declaration(name, expr);
+    return new (static_cast<Factory*>(this)) Declaration(name, expr);
   }
 
   IfStatement* NewIfStatement(Expression* cond, Statement* then) {
-    return new (this) IfStatement(cond, then);
+    return new (static_cast<Factory*>(this)) IfStatement(cond, then);
   }
 
   DoWhileStatement* NewDoWhileStatement() {
-    return new (this) DoWhileStatement();
+    return new (static_cast<Factory*>(this)) DoWhileStatement();
   }
 
   WhileStatement* NewWhileStatement(Expression* expr) {
-    return new (this) WhileStatement(expr);
+    return new (static_cast<Factory*>(this)) WhileStatement(expr);
   }
 
-  ForInStatement* NewForInStatement(Statement* each, Expression* enumerable) {
-    return new (this) ForInStatement(each, enumerable);
+  ForInStatement* NewForInStatement(Statement* each,
+                                    Expression* enumerable) {
+    return new (static_cast<Factory*>(this)) ForInStatement(each, enumerable);
   }
 
   ExpressionStatement* NewExpressionStatement(Expression* expr) {
-    return new (this) ExpressionStatement(expr);
+    return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 
   ForStatement* NewForStatement() {
-    return new (this) ForStatement();
+    return new (static_cast<Factory*>(this)) ForStatement();
   }
 
   ContinueStatement* NewContinueStatement() {
-    return new (this) ContinueStatement();
+    return new (static_cast<Factory*>(this)) ContinueStatement();
   }
 
   BreakStatement* NewBreakStatement() {
-    return new (this) BreakStatement();
+    return new (static_cast<Factory*>(this)) BreakStatement();
   }
 
-  ReturnStatement* NewReturnStatement(Expression* expr) {
-    return new (this) ReturnStatement(expr);
+  ReturnStatement* NewReturnStatement(
+      Expression* expr) {
+    return new (static_cast<Factory*>(this)) ReturnStatement(expr);
   }
 
-  WithStatement* NewWithStatement(Expression* expr, Statement* stmt) {
-    return new (this) WithStatement(expr, stmt);
+  WithStatement* NewWithStatement(
+      Expression* expr, Statement* stmt) {
+    return new (static_cast<Factory*>(this)) WithStatement(expr, stmt);
   }
 
   SwitchStatement* NewSwitchStatement(Expression* expr) {
-    return new (this) SwitchStatement(expr, this);
+    return new (static_cast<Factory*>(this)) SwitchStatement(expr, static_cast<Factory*>(this));
   }
 
   CaseClause* NewCaseClause() {
-    return new (this) CaseClause(this);
+    return new (static_cast<Factory*>(this)) CaseClause(static_cast<Factory*>(this));
   }
 
   ThrowStatement*  NewThrowStatement(Expression* expr) {
-    return new (this) ThrowStatement(expr);
+    return new (static_cast<Factory*>(this)) ThrowStatement(expr);
   }
 
   TryStatement* NewTryStatement(Block* block) {
-    return new (this) TryStatement(block);
+    return new (static_cast<Factory*>(this)) TryStatement(block);
   }
 
-  LabelledStatement* NewLabelledStatement(Expression* expr, Statement* stmt) {
-    return new (this) LabelledStatement(expr, stmt);
+  LabelledStatement* NewLabelledStatement(
+      Expression* expr,
+      Statement* stmt) {
+    return new (static_cast<Factory*>(this)) LabelledStatement(expr, stmt);
   }
 
-  BinaryOperation* NewBinaryOperation(Token::Type op,
-                                      Expression* result, Expression* right) {
-    return new (this) BinaryOperation(op, result, right);
-  }
-
-  template<Token::Type OP>
-  BinaryOperation* NewBinaryOperation(Expression* left, Expression* right) {
-    return new (this) BinaryOperation(OP, left, right);
+  BinaryOperation* NewBinaryOperation(
+      Token::Type op,
+      Expression* result, Expression* right) {
+    return new (static_cast<Factory*>(this)) BinaryOperation(op, result, right);
   }
 
   Assignment* NewAssignment(Token::Type op,
-                            Expression* left, Expression* right) {
-    return new (this) Assignment(op, left, right);
+                            Expression* left,
+                            Expression* right) {
+    return new (static_cast<Factory*>(this)) Assignment(op, left, right);
   }
 
-  ConditionalExpression* NewConditionalExpression(Expression* cond,
-                                                  Expression* left,
-                                                  Expression* right) {
-    return new (this) ConditionalExpression(cond, left, right);
+  ConditionalExpression* NewConditionalExpression(
+      Expression* cond,
+      Expression* left,
+      Expression* right) {
+    return new (static_cast<Factory*>(this)) ConditionalExpression(cond, left, right);
   }
 
   UnaryOperation* NewUnaryOperation(Token::Type op, Expression* expr) {
-    return new (this) UnaryOperation(op, expr);
+    return new (static_cast<Factory*>(this)) UnaryOperation(op, expr);
   }
 
-  PostfixExpression* NewPostfixExpression(Token::Type op, Expression* expr) {
-    return new (this) PostfixExpression(op, expr);
+  PostfixExpression* NewPostfixExpression(
+      Token::Type op, Expression* expr) {
+    return new (static_cast<Factory*>(this)) PostfixExpression(op, expr);
   }
 
   FunctionCall* NewFunctionCall(Expression* expr) {
-    return new (this) FunctionCall(expr, this);
+    return new (static_cast<Factory*>(this)) FunctionCall(expr, static_cast<Factory*>(this));
   }
 
   ConstructorCall* NewConstructorCall(Expression* target) {
-    return new (this) ConstructorCall(target, this);
+    return new (static_cast<Factory*>(this)) ConstructorCall(target, static_cast<Factory*>(this));
   }
 
-  IndexAccess* NewIndexAccess(Expression* expr, Expression* index) {
-    return new (this) IndexAccess(expr, index);
+  IndexAccess* NewIndexAccess(Expression* expr,
+                              Expression* index) {
+    return new (static_cast<Factory*>(this)) IndexAccess(expr, index);
   }
 
-  IdentifierAccess* NewIdentifierAccess(Expression* expr, Identifier* ident) {
-    return new (this) IdentifierAccess(expr, ident);
+  IdentifierAccess* NewIdentifierAccess(
+      Expression* expr, Identifier* ident) {
+    return new (static_cast<Factory*>(this)) IdentifierAccess(expr, ident);
   }
 
  private:
@@ -231,5 +251,5 @@ class BasicAstFactory : public Space {
   FalseLiteral* false_instance_;
 };
 
-} }  // namespace iv::core
+} } }  // namespace iv::core::ast
 #endif  // _IV_AST_FACTORY_H_

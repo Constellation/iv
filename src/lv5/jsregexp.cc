@@ -64,7 +64,7 @@ JSRegExp* JSRegExp::New(const core::UStringPiece& value,
   return new JSRegExp(value, flags);
 }
 
-JSRegExp* JSRegExp::New(const core::RegExpLiteral* reg) {
+JSRegExp* JSRegExp::New(const RegExpLiteral* reg) {
   // TODO(Constellation) unsafe downcast
   return new JSRegExp(static_cast<const ICURegExpLiteral*>(reg)->regexp());
 }

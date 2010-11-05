@@ -5,7 +5,6 @@
 #include <sstream>
 #include <tr1/tuple>
 #include "uchar.h"
-#include "alloc.h"
 #include "ast.h"
 #include "ast-visitor.h"
 #include "ustring.h"
@@ -13,11 +12,23 @@
 #include "ustringpiece.h"
 namespace iv {
 namespace core {
+namespace ast {
 
-class AstSerializer: public ConstAstVisitor {
+template<typename Factory>
+class AstSerializer: public AstVisitor<Factory>::const_type {
  public:
 
   typedef void ReturnType;
+
+#define V(AST) typedef typename iv::core::ast::AST<Factory> AST;
+  AST_NODE_LIST(V)
+#undef V
+#define V(X, XS) typedef typename core::SpaceVector<Factory, X *>::type XS;
+  AST_LIST_LIST(V)
+#undef V
+#define V(S) typedef typename core::SpaceUString<Factory>::type S;
+  AST_STRING(V)
+#undef V
 
   AstSerializer() : out_() { }
   inline const UString& out() const {
@@ -42,8 +53,8 @@ class AstSerializer: public ConstAstVisitor {
 
   void Visit(const Block* block) {
     Append("{\"type\":\"block\",\"body\":[");
-    AstNode::Statements::const_iterator it = block->body().begin();
-    const AstNode::Statements::const_iterator end = block->body().end();
+    typename Statements::const_iterator it = block->body().begin();
+    const typename Statements::const_iterator end = block->body().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -67,8 +78,8 @@ class AstSerializer: public ConstAstVisitor {
     } else {
       Append("\"var\",\"decls\":[");
     }
-    AstNode::Declarations::const_iterator it = var->decls().begin();
-    const AstNode::Declarations::const_iterator end = var->decls().end();
+    typename Declarations::const_iterator it = var->decls().begin();
+    const typename Declarations::const_iterator end = var->decls().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -198,8 +209,8 @@ class AstSerializer: public ConstAstVisitor {
       clause->expr()->Accept(this);
     }
     Append(",\"body\"[");
-    AstNode::Statements::const_iterator it = clause->body().begin();
-    const AstNode::Statements::const_iterator end = clause->body().end();
+    typename Statements::const_iterator it = clause->body().begin();
+    const typename Statements::const_iterator end = clause->body().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -214,9 +225,9 @@ class AstSerializer: public ConstAstVisitor {
     Append("{\"type\":\"switch\",\"exp\":");
     switchstmt->expr()->Accept(this);
     Append(",\"clauses\":[");
-    SwitchStatement::CaseClauses::const_iterator
+    typename CaseClauses::const_iterator
         it = switchstmt->clauses().begin();
-    const SwitchStatement::CaseClauses::const_iterator
+    const typename CaseClauses::const_iterator
         end = switchstmt->clauses().end();
     while (it != end) {
       (*it)->Accept(this);
@@ -358,8 +369,8 @@ class AstSerializer: public ConstAstVisitor {
 
   void Visit(const ArrayLiteral* literal) {
     Append("{\"type\":\"array\",\"value\":[");
-    AstNode::Expressions::const_iterator it = literal->items().begin();
-    const AstNode::Expressions::const_iterator end = literal->items().end();
+    typename Expressions::const_iterator it = literal->items().begin();
+    const typename Expressions::const_iterator end = literal->items().end();
     bool previous_is_elision = false;
     while (it != end) {
       if ((*it)) {
@@ -382,13 +393,13 @@ class AstSerializer: public ConstAstVisitor {
   void Visit(const ObjectLiteral* literal) {
     using std::tr1::get;
     Append("{\"type\":\"object\",\"value\":[");
-    ObjectLiteral::Properties::const_iterator
+    typename ObjectLiteral::Properties::const_iterator
         it = literal->properties().begin();
-    const ObjectLiteral::Properties::const_iterator
+    const typename ObjectLiteral::Properties::const_iterator
       end = literal->properties().end();
     while (it != end) {
       Append("{\"type\":");
-      const ObjectLiteral::PropertyDescriptorType type(get<0>(*it));
+      const typename ObjectLiteral::PropertyDescriptorType type(get<0>(*it));
       if (type == ObjectLiteral::DATA) {
         Append("\"data\"");
       } else if (type == ObjectLiteral::SET) {
@@ -416,8 +427,8 @@ class AstSerializer: public ConstAstVisitor {
       literal->name()->Accept(this);
     }
     Append(",\"params\":[");
-    AstNode::Identifiers::const_iterator it = literal->params().begin();
-    const AstNode::Identifiers::const_iterator end = literal->params().end();
+    typename Identifiers::const_iterator it = literal->params().begin();
+    const typename Identifiers::const_iterator end = literal->params().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -427,8 +438,8 @@ class AstSerializer: public ConstAstVisitor {
       Append(',');
     }
     Append("],\"body\":[");
-    AstNode::Statements::const_iterator it_body = literal->body().begin();
-    const AstNode::Statements::const_iterator end_body = literal->body().end();
+    typename Statements::const_iterator it_body = literal->body().begin();
+    const typename Statements::const_iterator end_body = literal->body().end();
     while (it_body != end_body) {
       (*it_body)->Accept(this);
       ++it_body;
@@ -460,8 +471,8 @@ class AstSerializer: public ConstAstVisitor {
     Append("{\"type\":\"funcall\",\"target\":");
     call->target()->Accept(this);
     Append(",\"args\":[");
-    AstNode::Expressions::const_iterator it = call->args().begin();
-    const AstNode::Expressions::const_iterator end = call->args().end();
+    typename Expressions::const_iterator it = call->args().begin();
+    const typename Expressions::const_iterator end = call->args().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -477,8 +488,8 @@ class AstSerializer: public ConstAstVisitor {
     Append("{\"type\":\"new\",\"target\":");
     call->target()->Accept(this);
     Append(",\"args\":[");
-    AstNode::Expressions::const_iterator it = call->args().begin();
-    const AstNode::Expressions::const_iterator end = call->args().end();
+    typename Expressions::const_iterator it = call->args().begin();
+    const typename Expressions::const_iterator end = call->args().end();
     while (it != end) {
       (*it)->Accept(this);
       ++it;
@@ -564,5 +575,5 @@ class AstSerializer: public ConstAstVisitor {
   UString out_;
 };
 
-} }  // namespace iv::core
+} } }  // namespace iv::core::ast
 #endif  // _IV_AST_SERIALIZER_H_

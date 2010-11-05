@@ -9,7 +9,6 @@
 #include "static_assert.h"
 #include "ast.h"
 #include "ast-factory.h"
-#include "scope.h"
 #include "source.h"
 #include "lexer.h"
 #include "noncopyable.h"
@@ -127,10 +126,18 @@ typedef detail::ParserData<None> ParserData;
 
 template<typename Factory>
 class Parser : private Noncopyable<Parser<Factory> >::type {
- protected:
+ public:
   typedef Parser<Factory> this_type;
-  typedef this_type parser_type;
-
+  typedef Parser<Factory> parser_type;
+#define V(AST) typedef typename ast::AST<Factory> AST;
+  AST_NODE_LIST(V)
+#undef V
+#define V(X, XS) typedef typename SpaceVector<Factory, X *>::type XS;
+  AST_LIST_LIST(V)
+#undef V
+#define V(S) typedef typename SpaceUString<Factory>::type S;
+  AST_STRING(V)
+#undef V
   class Target : private Noncopyable<Target>::type {
    public:
     Target(parser_type * parser, BreakableStatement* target)
@@ -157,8 +164,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     Target* prev_;
     BreakableStatement* node_;
   };
-
- public:
 
   Parser(BasicSource* source, Factory* space)
     : lexer_(source),
@@ -572,7 +577,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         if (token_ == Token::IN) {
           // for in loop
           Next();
-          const AstNode::Declarations& decls = var->decls();
+          const Declarations& decls = var->decls();
           if (decls.size() != 1) {
             // ForInStatement requests VaraibleDeclarationNoIn (not List),
             // so check declarations' size is 1.
@@ -933,7 +938,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       // LabelledStatement
       Next();
 
-      AstNode::Identifiers* labels = labels_;
+      Identifiers* labels = labels_;
       Identifier* const label = expr->AsIdentifier();
       const bool exist_labels = labels;
       if (!exist_labels) {
@@ -1674,9 +1679,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
           object->AddDataProperty(ident, expr);
-          ObjectMap::iterator it = map.find(ident);
+          typename ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
-            map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
+            map.insert(typename ObjectMap::value_type(ident, ObjectLiteral::DATA));
           } else {
             if (it->second != ObjectLiteral::DATA) {
               RAISE("accessor property and data property "
@@ -1699,16 +1704,16 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
               ident = factory_->NewIdentifier(lexer_.Buffer());
             }
             Next();
-            ObjectLiteral::PropertyDescriptorType type =
+            typename ObjectLiteral::PropertyDescriptorType type =
                 (is_get) ? ObjectLiteral::GET : ObjectLiteral::SET;
             expr = ParseFunctionLiteral(
                 FunctionLiteral::EXPRESSION,
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
                 false, CHECK);
             object->AddAccessor(type, ident, expr);
-            ObjectMap::iterator it = map.find(ident);
+            typename ObjectMap::iterator it = map.find(ident);
             if (it == map.end()) {
-              map.insert(ObjectMap::value_type(ident, type));
+              map.insert(typename ObjectMap::value_type(ident, type));
             } else if (it->second & (ObjectLiteral::DATA | type)) {
               if (it->second & ObjectLiteral::DATA) {
                 RAISE("data property and accessor property "
@@ -1732,9 +1737,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         object->AddDataProperty(ident, expr);
-        ObjectMap::iterator it = map.find(ident);
+        typename ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
-          map.insert(ObjectMap::value_type(ident, ObjectLiteral::DATA));
+          map.insert(typename ObjectMap::value_type(ident, ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
             RAISE("accessor property and data property "
@@ -1760,8 +1765,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return object;
   }
 
-  FunctionLiteral* ParseFunctionLiteral(FunctionLiteral::DeclType decl_type,
-                                        FunctionLiteral::ArgType arg_type,
+  FunctionLiteral* ParseFunctionLiteral(typename FunctionLiteral::DeclType decl_type,
+                                        typename FunctionLiteral::ArgType arg_type,
                                         bool allow_identifier,
                                         bool *res) {
     // IDENTIFIER
@@ -1888,13 +1893,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return literal;
   }
 
-  bool ContainsLabel(const AstNode::Identifiers* const labels,
-                             const Identifier * const label) const {
+  bool ContainsLabel(const Identifiers* const labels,
+                     const Identifier * const label) const {
     assert(label != NULL);
     if (labels) {
       const SpaceUString& value = label->value();
-      for (AstNode::Identifiers::const_iterator it = labels->begin(),
-                                                last = labels->end();
+      for (typename Identifiers::const_iterator it = labels->begin(),
+           last = labels->end();
            it != last; ++it) {
         if ((*it)->value() == value) {
           return true;
@@ -2044,10 +2049,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   inline void set_target(Target* target) {
     target_ = target;
   }
-  inline AstNode::Identifiers* labels() const {
+  inline Identifiers* labels() const {
     return labels_;
   }
-  inline void set_labels(AstNode::Identifiers* labels) {
+  inline void set_labels(Identifiers* labels) {
     labels_ = labels;
   }
   inline bool strict() const {
@@ -2076,7 +2081,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   class LabelScope : private Noncopyable<LabelScope>::type {
    public:
     LabelScope(parser_type* parser,
-               AstNode::Identifiers* labels, bool exist_labels)
+               Identifiers* labels, bool exist_labels)
       : parser_(parser),
         exist_labels_(exist_labels) {
       parser_->set_labels(labels);
@@ -2132,7 +2137,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Factory* factory_;
   Scope* scope_;
   Target* target_;
-  AstNode::Identifiers* labels_;
+  Identifiers* labels_;
 };
 #undef IS
 #undef EXPECT

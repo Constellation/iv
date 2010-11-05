@@ -5,6 +5,8 @@
 #include "jsenv.h"
 #include "arguments.h"
 #include "ustringpiece.h"
+#include "jsast.h"
+#include "factory.h"
 namespace iv {
 namespace lv5 {
 
@@ -12,6 +14,7 @@ class Context;
 class JSCodeFunction;
 class JSNativeFunction;
 class Error;
+
 class JSFunction : public JSObject {
  public:
   JSFunction() : JSObject() { }
@@ -27,8 +30,8 @@ class JSFunction : public JSObject {
                    const JSVal& val, Error* error);
   JSVal Get(Context* ctx,
             Symbol name, Error* error);
-  virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSNativeFunction* AsNativeFunction() = 0;
+  virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual bool IsStrict() const = 0;
   void Initialize(Context* ctx);
 };
@@ -36,17 +39,24 @@ class JSFunction : public JSObject {
 class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(Context* ctx,
-                 const core::FunctionLiteral* func, JSEnv* env);
-  JSVal Call(const Arguments& args,
-             Error* error);
+                 const FunctionLiteral* func, JSEnv* env);
+  JSVal Call(const Arguments& args, Error* error);
   JSEnv* scope() const {
     return env_;
   }
-  const core::FunctionLiteral* code() const {
+  const FunctionLiteral* code() const {
     return function_;
   }
+
   static JSCodeFunction* New(Context* ctx,
-                             const core::FunctionLiteral* func, JSEnv* env);
+                             const FunctionLiteral* func,
+                             JSEnv* env) {
+    JSCodeFunction* const obj =
+        new JSCodeFunction(ctx, func, env);
+    obj->Initialize(ctx);
+    return obj;
+  }
+
   JSCodeFunction* AsCodeFunction() {
     return this;
   }
@@ -56,14 +66,14 @@ class JSCodeFunction : public JSFunction {
   core::UStringPiece GetSource() const {
     return function_->GetSource();
   }
-  const core::Identifier* name() const {
+  const Identifier* name() const {
     return function_->name();
   }
   bool IsStrict() const {
     return function_->strict();
   }
  private:
-  const core::FunctionLiteral* function_;
+  const FunctionLiteral* function_;
   JSEnv* env_;
 };
 
