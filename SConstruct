@@ -101,8 +101,8 @@ def Build():
     option_dict['%IS_LITTLE_ENDIAN%'] = '0'
 
   header = env.SubstInFile(
-      join(root_dir, 'src', 'config.h'),
-      join(root_dir, 'src', 'config.h.in'),
+      join(root_dir, 'src', 'config', 'config.h'),
+      join(root_dir, 'src', 'config', 'config.h.in'),
       SUBST_DICT=option_dict)
 
   uc = env.Command(

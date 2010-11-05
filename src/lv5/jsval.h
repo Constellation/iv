@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <tr1/cstdint>
 #include <tr1/type_traits>
+#include "config/config.h"
 #include "enable_if.h"
 #include "static_assert.h"
 #include "utils.h"

@@ -4,7 +4,7 @@ test.js
 cache
 obj
 .config
-src/config.h
+src/config/config.h
 src/ucdata.h
 config.log
 .sconf_temp

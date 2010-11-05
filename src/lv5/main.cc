@@ -10,11 +10,11 @@
 #include <unicode/ustdio.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
+#include "config/config.h"
 
 #include "stringpiece.h"
 #include "ustringpiece.h"
 
-#include "config.h"
 #include "cmdline.h"
 #include "ast.h"
 
