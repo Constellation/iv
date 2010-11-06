@@ -18,10 +18,12 @@ namespace iv {
 namespace core {
 namespace ast {
 #define ACCEPT_VISITOR \
-  inline void Accept(typename AstVisitor<Factory>::type* visitor) {\
+  inline void Accept(\
+      typename AstVisitor<Factory>::type* visitor) {\
     visitor->Visit(this);\
   }\
-  inline void Accept(typename AstVisitor<Factory>::const_type * visitor) const {\
+  inline void Accept(\
+      typename AstVisitor<Factory>::const_type * visitor) const {\
     visitor->Visit(this);\
   }
 
@@ -39,11 +41,12 @@ class Scope : public SpaceObject,
  public:
   typedef std::pair<Identifier<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
-  typedef typename SpaceVector<Factory, FunctionLiteral<Factory>*>::type FunctionLiterals;
+  typedef typename SpaceVector<
+            Factory,
+            FunctionLiteral<Factory>*>::type FunctionLiterals;
   typedef Scope<Factory> this_type;
 
-  template<typename BaseFactory>
-  explicit Scope(BaseFactory* factory)
+  explicit Scope(Factory* factory)
     : up_(NULL),
       vars_(typename Variables::allocator_type(factory)),
       funcs_(typename FunctionLiterals::allocator_type(factory)) {
@@ -132,8 +135,10 @@ class AstNode : public SpaceObject,
   DECLARE_NODE_TYPE_BASE(FunctionCall)
   DECLARE_NODE_TYPE_BASE(ConstructorCall)
 
-  virtual void Accept(typename AstVisitor<Factory>::type* visitor) = 0;
-  virtual void Accept(typename AstVisitor<Factory>::const_type* visitor) const = 0;
+  virtual void Accept(
+      typename AstVisitor<Factory>::type* visitor) = 0;
+  virtual void Accept(
+      typename AstVisitor<Factory>::const_type* visitor) const = 0;
 };
 
 template<typename Factory>
@@ -210,8 +215,7 @@ template<typename Factory>
 class Block : public NamedOnlyBreakableStatement<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  template<typename BaseFactory>
-  explicit Block(BaseFactory* factory)
+  explicit Block(Factory* factory)
      : body_(typename Statements::allocator_type(factory)) { }
 
   void AddStatement(Statement<Factory>* stmt) {
@@ -245,9 +249,10 @@ class FunctionStatement : public Statement<Factory> {
 template<typename Factory>
 class VariableStatement : public Statement<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Declaration<Factory>*>::type Declarations;
-  template<typename BaseFactory>
-  VariableStatement(Token::Type type, BaseFactory* factory)
+  typedef typename SpaceVector<
+            Factory,
+            Declaration<Factory>*>::type Declarations;
+  VariableStatement(Token::Type type, Factory* factory)
     : is_const_(type == Token::CONST),
       decls_(typename Declarations::allocator_type(factory)) { }
 
@@ -500,8 +505,7 @@ template<typename Factory>
 class CaseClause : public AstNode<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  template<typename BaseFactory>
-  explicit CaseClause(BaseFactory* factory)
+  explicit CaseClause(Factory* factory)
     : expr_(NULL),
       body_(typename Statements::allocator_type(factory)),
       default_(false) {
@@ -538,9 +542,8 @@ template<typename Factory>
 class SwitchStatement : public AnonymousBreakableStatement<Factory> {
  public:
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
-  template<typename BaseFactory>
   SwitchStatement(Expression<Factory>* expr,
-                  BaseFactory* factory)
+                  Factory* factory)
     : expr_(expr),
       clauses_(typename CaseClauses::allocator_type(factory)) {
   }
@@ -712,9 +715,8 @@ class PostfixExpression : public Expression<Factory> {
 template<typename Factory>
 class StringLiteral : public Literal<Factory> {
  public:
-  template<typename BaseFactory>
   StringLiteral(const std::vector<uc16>& buffer,
-                BaseFactory* factory)
+                Factory* factory)
     : value_(buffer.data(),
              buffer.size(),
              typename SpaceUString<Factory>::type::allocator_type(factory)) {
@@ -732,9 +734,8 @@ class StringLiteral : public Literal<Factory> {
 template<typename Factory>
 class Directivable : public StringLiteral<Factory> {
  public:
-  template<typename BaseFactory>
   explicit Directivable(const std::vector<uc16>& buffer,
-                        BaseFactory* factory)
+                        Factory* factory)
     : StringLiteral<Factory>(buffer, factory) { }
   DECLARE_NODE_TYPE(Directivable)
 };
@@ -756,20 +757,17 @@ template<typename Factory>
 class Identifier : public Literal<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  template<typename BaseFactory>
-  Identifier(const UStringPiece& buffer, BaseFactory* factory)
+  Identifier(const UStringPiece& buffer, Factory* factory)
     : value_(buffer.data(),
              buffer.size(),
              typename value_type::allocator_type(factory)) {
     }
-  template<typename BaseFactory>
-  Identifier(const std::vector<uc16>& buffer, BaseFactory* factory)
+  Identifier(const std::vector<uc16>& buffer, Factory* factory)
     : value_(buffer.data(),
              buffer.size(),
              typename value_type::allocator_type(factory)) {
   }
-  template<typename BaseFactory>
-  Identifier(const std::vector<char>& buffer, BaseFactory* factory)
+  Identifier(const std::vector<char>& buffer, Factory* factory)
     : value_(buffer.begin(),
              buffer.end(),
              typename value_type::allocator_type(factory)) {
@@ -791,7 +789,7 @@ class IdentifierKey {
   typedef IdentifierKey<Factory> this_type;
   IdentifierKey(value_type* ident)  // NOLINT
     : ident_(ident) { }
-  IdentifierKey(const this_type& rhs)
+  IdentifierKey(const this_type& rhs)  // NOLINT
     : ident_(rhs.ident_) { }
   inline const typename value_type::value_type& value() const {
     return ident_->value();
@@ -859,10 +857,9 @@ class RegExpLiteral : public Literal<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
 
-  template<typename BaseFactory>
   RegExpLiteral(const std::vector<uc16>& buffer,
                 const std::vector<uc16>& flags,
-                BaseFactory* factory)
+                Factory* factory)
     : value_(buffer.data(),
              buffer.size(), typename value_type::allocator_type(factory)),
       flags_(flags.data(),
@@ -882,8 +879,7 @@ class ArrayLiteral : public Literal<Factory> {
  public:
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
 
-  template<typename BaseFactory>
-  explicit ArrayLiteral(BaseFactory* factory)
+  explicit ArrayLiteral(Factory* factory)
     : items_(typename Expressions::allocator_type(factory)) {
   }
   inline void AddItem(Expression<Factory>* expr) {
@@ -910,8 +906,7 @@ class ObjectLiteral : public Literal<Factory> {
                           Identifier<Factory>*,
                           Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
-  template<typename BaseFactory>
-  explicit ObjectLiteral(BaseFactory* factory)
+  explicit ObjectLiteral(Factory* factory)
     : properties_(typename Properties::allocator_type(factory)) {
   }
 
@@ -996,8 +991,7 @@ class FunctionLiteral : public Literal<Factory> {
   inline UStringPiece GetSource() const {
     return source_;
   }
-  template<typename BaseFactory>
-  FunctionLiteral(DeclType type, BaseFactory* factory)
+  FunctionLiteral(DeclType type, Factory* factory)
     : name_(NULL),
       type_(type),
       params_(typename Identifiers::allocator_type(factory)),
@@ -1075,9 +1069,8 @@ class Call : public Expression<Factory> {
  public:
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
   inline bool IsValidLeftHandSide() const { return true; }
-  template<typename BaseFactory>
   Call(Expression<Factory>* target,
-       BaseFactory* factory)
+       Factory* factory)
     : target_(target),
       args_(typename Expressions::allocator_type(factory)) {
   }
@@ -1093,9 +1086,8 @@ class Call : public Expression<Factory> {
 template<typename Factory>
 class FunctionCall : public Call<Factory> {
  public:
-  template<typename BaseFactory>
   FunctionCall(Expression<Factory>* target,
-               BaseFactory* factory)
+               Factory* factory)
     : Call<Factory>(target, factory) {
   }
   ACCEPT_VISITOR
@@ -1105,9 +1097,8 @@ class FunctionCall : public Call<Factory> {
 template<typename Factory>
 class ConstructorCall : public Call<Factory> {
  public:
-  template<typename BaseFactory>
   ConstructorCall(Expression<Factory>* target,
-                  BaseFactory* factory)
+                  Factory* factory)
     : Call<Factory>(target, factory) {
   }
   ACCEPT_VISITOR
@@ -1124,7 +1115,8 @@ template<class Factory>
 struct hash<iv::core::ast::IdentifierKey<Factory> >
   : public unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
   std::size_t operator()(const iv::core::ast::IdentifierKey<Factory>& x) const {
-    return hash<typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
+    return hash<
+        typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
   }
 };
 } }  // namespace std::tr1
