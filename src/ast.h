@@ -715,20 +715,21 @@ class PostfixExpression : public Expression<Factory> {
 template<typename Factory>
 class StringLiteral : public Literal<Factory> {
  public:
+  typedef typename SpaceUString<Factory>::type value_type;
   StringLiteral(const std::vector<uc16>& buffer,
                 Factory* factory)
     : value_(buffer.data(),
              buffer.size(),
-             typename SpaceUString<Factory>::type::allocator_type(factory)) {
+             typename value_type::allocator_type(factory)) {
   }
 
-  inline const typename SpaceUString<Factory>::type& value() const {
+  inline const value_type& value() const {
     return value_;
   }
   ACCEPT_VISITOR
   DECLARE_NODE_TYPE(StringLiteral)
  private:
-  const typename SpaceUString<Factory>::type value_;
+  const value_type value_;
 };
 
 template<typename Factory>

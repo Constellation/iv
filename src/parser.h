@@ -1681,7 +1681,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           object->AddDataProperty(ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
-            map.insert(typename ObjectMap::value_type(ident, ObjectLiteral::DATA));
+            map.insert(std::make_pair(ident, ObjectLiteral::DATA));
           } else {
             if (it->second != ObjectLiteral::DATA) {
               RAISE("accessor property and data property "
@@ -1713,7 +1713,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             object->AddAccessor(type, ident, expr);
             typename ObjectMap::iterator it = map.find(ident);
             if (it == map.end()) {
-              map.insert(typename ObjectMap::value_type(ident, type));
+              map.insert(std::make_pair(ident, type));
             } else if (it->second & (ObjectLiteral::DATA | type)) {
               if (it->second & ObjectLiteral::DATA) {
                 RAISE("data property and accessor property "
@@ -1739,7 +1739,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         object->AddDataProperty(ident, expr);
         typename ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
-          map.insert(typename ObjectMap::value_type(ident, ObjectLiteral::DATA));
+          map.insert(std::make_pair(ident, ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
             RAISE("accessor property and data property "
@@ -1765,10 +1765,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     return object;
   }
 
-  FunctionLiteral* ParseFunctionLiteral(typename FunctionLiteral::DeclType decl_type,
-                                        typename FunctionLiteral::ArgType arg_type,
-                                        bool allow_identifier,
-                                        bool *res) {
+  FunctionLiteral* ParseFunctionLiteral(
+      typename FunctionLiteral::DeclType decl_type,
+      typename FunctionLiteral::ArgType arg_type,
+      bool allow_identifier,
+      bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
     std::tr1::unordered_set<IdentifierKey> param_set;

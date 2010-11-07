@@ -10,6 +10,7 @@
 #include "chars.h"
 #include "token.h"
 #include "source.h"
+#include "location.h"
 #include "noncopyable.h"
 
 namespace iv {
@@ -40,7 +41,8 @@ class Lexer: private Noncopyable<Lexer>::type {
         end_(source_->size()),
         has_line_terminator_before_next_(false),
         has_shebang_(false),
-        line_number_(1) {
+        line_number_(1),
+        location_() {
     Initialize();
   }
 
@@ -48,6 +50,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     Token::Type token;
     has_line_terminator_before_next_ = false;
     do {
+      location_.begin_position_ = pos();
       while (Chars::IsWhiteSpace(c_)) {
         // white space
         Advance();
@@ -351,44 +354,58 @@ class Lexer: private Noncopyable<Lexer>::type {
           break;
       }
     } while (token == Token::NOT_FOUND);
+    location_.end_position_ = pos();
     return token;
   }
 
   inline const std::vector<uc16>& Buffer() const {
     return buffer16_;
   }
+
   inline const std::vector<char>& Buffer8() const {
     return buffer8_;
   }
+
   inline const double& Numeric() const {
     return numeric_;
   }
+
   inline State NumericType() const {
     assert(type_ == DECIMAL ||
            type_ == HEX ||
            type_ == OCTAL);
     return type_;
   }
+
   inline State StringEscapeType() const {
     assert(type_ == NONE ||
            type_ == ESCAPE ||
            type_ == OCTAL);
     return type_;
   }
+
   inline bool has_line_terminator_before_next() const {
     return has_line_terminator_before_next_;
   }
+
   std::size_t line_number() const {
     return line_number_;
   }
+
   const std::string& filename() const {
     return source_->filename();
   }
+
   std::size_t pos() const {
     return pos_;
   }
+
   inline BasicSource* source() const {
     return source_;
+  }
+
+  inline Location location() const {
+    return location_;
   }
 
   bool ScanRegExpLiteral(bool contains_eq) {
@@ -1256,9 +1273,9 @@ class Lexer: private Noncopyable<Lexer>::type {
   bool has_shebang_;
   int c_;
   std::size_t line_number_;
+  Location location_;
 };
 
 
 } }  // namespace iv::core
-
 #endif  // _IV_LEXER_H_
