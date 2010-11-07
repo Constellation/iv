@@ -631,7 +631,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
 
     ForStatement* const forstmt = factory_->NewForStatement();
-    Target target(this, forstmt);
+    const Target target(this, forstmt);
     Statement* const body = ParseStatement(CHECK);
     forstmt->Initialize(body, init, cond, next);
 
@@ -763,7 +763,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     Expression *expr = ParseExpression(true, CHECK);
     SwitchStatement *switch_stmt = factory_->NewSwitchStatement(expr);
-    Target target(this, switch_stmt);
+    const Target target(this, switch_stmt);
 
     EXPECT(Token::RPAREN);
 
@@ -789,8 +789,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
-    CaseClause *clause;
-    Statement *stmt;
+    CaseClause* clause;
+    Statement* stmt;
 
     if (token_ == Token::CASE) {
       Next();
@@ -817,13 +817,12 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : THROW Expression ';'
   Statement* ParseThrowStatement(bool *res) {
     assert(token_ == Token::THROW);
-    Expression *expr;
     Next();
     // Throw requires Expression
     if (lexer_.has_line_terminator_before_next()) {
       RAISE("missing expression between throw and newline");
     }
-    expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
     return factory_->NewThrowStatement(expr);
   }
@@ -900,7 +899,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   }
 
   Statement* ParseExpressionStatement(bool *res) {
-    Expression* expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
     return factory_->NewExpressionStatement(expr);
   }
@@ -912,7 +911,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : Expression ';'
   Statement* ParseExpressionOrLabelledStatement(bool *res) {
     assert(token_ == Token::IDENTIFIER);
-    Expression* expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, CHECK);
     if (token_ == Token::COLON &&
         expr->AsIdentifier()) {
       // LabelledStatement
@@ -929,9 +928,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         RAISE("duplicate label");
       }
       labels->push_back(label);
-      LabelScope scope(this, labels, exist_labels);
+      const LabelScope scope(this, labels, exist_labels);
 
-      Statement* stmt = ParseStatement(CHECK);
+      Statement* const stmt = ParseStatement(CHECK);
       return factory_->NewLabelledStatement(expr, stmt);
     }
     ExpectSemicolon(CHECK);
@@ -945,9 +944,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
     Next();
     IS(Token::IDENTIFIER);
-    FunctionLiteral* expr = ParseFunctionLiteral(FunctionLiteral::STATEMENT,
-                                                 FunctionLiteral::GENERAL,
-                                                 true, CHECK);
+    FunctionLiteral* const expr = ParseFunctionLiteral(
+        FunctionLiteral::STATEMENT,
+        FunctionLiteral::GENERAL,
+        true, CHECK);
     // define named function as variable declaration
     scope_->AddUnresolved(expr->name(), false);
     return factory_->NewFunctionStatement(expr);
@@ -957,8 +957,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : AssignmentExpression
 //    | Expression ',' AssignmentExpression
   Expression* ParseExpression(bool contains_in, bool *res) {
-    Expression *right;
-    Expression *result = ParseAssignmentExpression(contains_in, CHECK);
+    Expression* right;
+    Expression* result = ParseAssignmentExpression(contains_in, CHECK);
     while (token_ == Token::COMMA) {
       Next();
       right = ParseAssignmentExpression(contains_in, CHECK);
@@ -971,7 +971,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : ConditionalExpression
 //    | LeftHandSideExpression AssignmentOperator AssignmentExpression
   Expression* ParseAssignmentExpression(bool contains_in, bool *res) {
-    Expression *result = ParseConditionalExpression(contains_in, CHECK);
+    Expression* const result = ParseConditionalExpression(contains_in, CHECK);
     if (!Token::IsAssignOp(token_)) {
       return result;
     }
@@ -993,7 +993,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
     const Token::Type op = token_;
     Next();
-    Expression *right = ParseAssignmentExpression(contains_in, CHECK);
+    Expression* const right = ParseAssignmentExpression(contains_in, CHECK);
     return factory_->NewAssignment(op, result, right);
   }
 
@@ -1001,14 +1001,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : LogicalOrExpression
 //    | LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
   Expression* ParseConditionalExpression(bool contains_in, bool *res) {
-    Expression *result;
-    result = ParseBinaryExpression(contains_in, 9, CHECK);
+    Expression* result = ParseBinaryExpression(contains_in, 9, CHECK);
     if (token_ == Token::CONDITIONAL) {
       Next();
       // see ECMA-262 section 11.12
-      Expression *left = ParseAssignmentExpression(true, CHECK);
+      Expression* const left = ParseAssignmentExpression(true, CHECK);
       EXPECT(Token::COLON);
-      Expression *right = ParseAssignmentExpression(contains_in, CHECK);
+      Expression* const right = ParseAssignmentExpression(contains_in, CHECK);
       result = factory_->NewConditionalExpression(result, left, right);
     }
     return result;
@@ -1349,8 +1348,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | LeftHandSideExpression INCREMENT
 //    | LeftHandSideExpression DECREMENT
   Expression* ParsePostfixExpression(bool *res) {
-    Expression *expr;
-    expr = ParseMemberExpression(true, CHECK);
+    Expression* expr = ParseMemberExpression(true, CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
         (token_ == Token::INC || token_ == Token::DEC)) {
       if (!expr->IsValidLeftHandSide()) {
@@ -1409,7 +1407,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       }
       expr = con;
     }
-    FunctionCall *funcall;
     while (true) {
       switch (token_) {
         case Token::LBRACK: {
@@ -1423,8 +1420,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         case Token::PERIOD: {
           Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
-          Identifier* ident = factory_->NewIdentifier(lexer_.location(),
-                                                      lexer_.Buffer());
+          Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
+                                                            lexer_.Buffer());
           Next();
           expr = factory_->NewIdentifierAccess(expr, ident);
           break;
@@ -1432,7 +1429,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
         case Token::LPAREN:
           if (allow_call) {
-            funcall = factory_->NewFunctionCall(expr);
+            FunctionCall* const funcall = factory_->NewFunctionCall(expr);
             ParseArguments(funcall, CHECK);
             expr = funcall;
           } else {
@@ -1462,7 +1459,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | STRING
 //    | REGEXP
   Expression* ParsePrimaryExpression(bool *res) {
-    Expression *result = NULL;
+    Expression* result = NULL;
     switch (token_) {
       case Token::THIS:
         result = factory_->NewThisLiteral();
@@ -1550,7 +1547,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : AssignmentExpression
 //    | ArgumentList ',' AssignmentExpression
   Call* ParseArguments(Call* func, bool *res) {
-    Expression *expr;
+    Expression* expr;
     Next();
     while (token_ != Token::RPAREN) {
       expr = ParseAssignmentExpression(true, CHECK);
@@ -1595,8 +1592,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : ','
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
-    ArrayLiteral *array = factory_->NewArrayLiteral();
-    Expression *expr;
+    ArrayLiteral* const array = factory_->NewArrayLiteral();
+    Expression* expr;
     Next();
     while (token_ != Token::RBRACK) {
       if (token_ == Token::COMMA) {
@@ -1641,10 +1638,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
     typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
-    ObjectLiteral *object = factory_->NewObjectLiteral();
+    ObjectLiteral* const object = factory_->NewObjectLiteral();
     ObjectMap map;
-    Expression *expr;
-    Identifier *ident;
+    Expression* expr;
+    Identifier* ident;
 
     // IDENTIFIERNAME
     Next(Lexer::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
@@ -1767,7 +1764,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       kDetectDuplicateParameter
     } throw_error_if_strict_code = kDetectNone;
 
-    FunctionLiteral *literal = factory_->NewFunctionLiteral(decl_type);
+    FunctionLiteral* const literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
     if (allow_identifier && token_ == Token::IDENTIFIER) {
       Identifier* const name = factory_->NewIdentifier(lexer_.location(),
@@ -1885,7 +1882,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
                      const Identifier * const label) const {
     assert(label != NULL);
     if (labels) {
-      const SpaceUString& value = label->value();
+      const typename Identifier::value_type& value = label->value();
       for (typename Identifiers::const_iterator it = labels->begin(),
            last = labels->end();
            it != last; ++it) {
@@ -1899,7 +1896,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
   bool TargetsContainsLabel(const Identifier* const label) const {
     assert(label != NULL);
-    for (Target* target = target_;
+    for (const Target* target = target_;
          target != NULL;
          target = target->previous()) {
       if (ContainsLabel(target->node()->labels(), label)) {
