@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+
+require 'rubygems'
+require 'rake/extensiontask'
+require 'hoe'
+require 'pp'
+$root = File.dirname(__FILE__)
+
+directory "ext/include/iv"
+
+HOE = Hoe.spec 'iv-phonic' do
+  developer('Constellation', 'utatane.tea@gmail.com')
+  self.version = '0.0.1'
+  self.readme_file = 'README.rdoc'
+  self.history_file = 'ChangeLog'
+  self.extra_rdoc_files = FileList['*.rdoc']
+  self.extra_dev_deps << ['rake-compiler', '>= 0']
+  self.spec_extras = {
+    :extensions => ['ext/iv/phonic/extconf.rb']
+  }
+  self.summary = "iv / phonic : ECMAScript AST"
+  self.require_ruby_version '>= 1.9.1'
+end
+
+Rake::ExtensionTask.new('phonic', HOE.spec) do |ext|
+  ext.lib_dir = File.join('lib', 'iv', 'phonic')
+  ext.ext_dir = File.join('ext', 'iv', 'phonic')
+  ext.config_options << "--with-iv-include=#{File.join($root, 'ext', 'include')}"
+end
+
+Rake::Task[:test].prerequisites << :compile
+
+task :checkout => ["ext/include/iv"] do |t|
+  list = [
+    ".autotest",
+    "Manifest.txt",
+    "README.rdoc",
+    "Rakefile",
+    "test/test_iv_phonic.rb"
+  ]
+  Dir.glob("../*.h") do |f|
+    path = File.join("ext", "include", "iv", File.basename(f))
+    list << path
+    cp f, File.expand_path(path)
+  end
+  Dir.glob("ext/iv/phonic/*.*") do |f|
+    list << f
+  end
+  File.open("Manifest.txt", "w") do |f|
+    f.write(list.join("\n"))
+  end
+end
+
+# vim: syntax=ruby
