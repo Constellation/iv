@@ -23,18 +23,21 @@ class AstFactory : public core::Space<2> {
       false_instance_(new(this)FalseLiteral()) {
   }
 
-  Identifier* NewIdentifier(const core::UStringPiece& buffer) {
-    Identifier* ident = new (this) Identifier(buffer, this);
+  Identifier* NewIdentifier(const core::Location& location,
+                            const core::UStringPiece& buffer) {
+    Identifier* ident = new(this)Identifier(buffer, this);
     return ident;
   }
 
-  Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
-    Identifier* ident = new (this) Identifier(buffer, this);
+  Identifier* NewIdentifier(const core::Location& location,
+                            const std::vector<uc16>& buffer) {
+    Identifier* ident = new(this)Identifier(buffer, this);
     return ident;
   }
 
-  Identifier* NewIdentifier(const std::vector<char>& buffer) {
-    Identifier* ident = new (this) Identifier(buffer, this);
+  Identifier* NewIdentifier(const core::Location& location,
+                            const std::vector<char>& buffer) {
+    Identifier* ident = new(this)Identifier(buffer, this);
     return ident;
   }
 
@@ -57,8 +60,10 @@ class AstFactory : public core::Space<2> {
 //    // TODO(Constellation) Little Endian?
 //    int r = onig_new(&reg,
 //                     reinterpret_cast<const OnigUChar*>(content.data()),
-//                     reinterpret_cast<const OnigUChar*>(content.data()+content.size()),
-//                     ONIG_OPTION_DEFAULT, rb_enc_get(Encoding::UTF16LEEncoding()),
+//                     reinterpret_cast<const OnigUChar*>(
+//                         content.data()+content.size()),
+//                     ONIG_OPTION_DEFAULT,
+//                     rb_enc_get(Encoding::UTF16LEEncoding()),
 //                     ONIG_SYNTAX_DEFAULT, &einfo);
 //    if (r != ONIG_NORMAL) {
 //      return NULL;
@@ -128,20 +133,24 @@ class AstFactory : public core::Space<2> {
     return new (this) Declaration(name, expr);
   }
 
-  IfStatement* NewIfStatement(Expression* cond, Statement* then) {
-    return new (this) IfStatement(cond, then);
+  IfStatement* NewIfStatement(Expression* cond,
+                              Statement* then_statement,
+                              Statement* else_statement) {
+    return new (this) IfStatement(cond,
+                                  then_statement,
+                                  else_statement);
   }
 
   DoWhileStatement* NewDoWhileStatement() {
     return new (this) DoWhileStatement();
   }
 
-  WhileStatement* NewWhileStatement(Expression* expr) {
-    return new (this) WhileStatement(expr);
+  WhileStatement* NewWhileStatement() {
+    return new (this) WhileStatement();
   }
 
-  ForInStatement* NewForInStatement(Statement* each, Expression* enumerable) {
-    return new (this) ForInStatement(each, enumerable);
+  ForInStatement* NewForInStatement() {
+    return new (this) ForInStatement();
   }
 
   ExpressionStatement* NewExpressionStatement(Expression* expr) {
@@ -152,12 +161,14 @@ class AstFactory : public core::Space<2> {
     return new (this) ForStatement();
   }
 
-  ContinueStatement* NewContinueStatement() {
-    return new (this) ContinueStatement();
+  ContinueStatement* NewContinueStatement(Identifier* label,
+                                          IterationStatement* target) {
+    return new (this) ContinueStatement(label, target);
   }
 
-  BreakStatement* NewBreakStatement() {
-    return new (this) BreakStatement();
+  BreakStatement* NewBreakStatement(Identifier* label,
+                                    BreakableStatement* target) {
+    return new (this) BreakStatement(label, target);
   }
 
   ReturnStatement* NewReturnStatement(Expression* expr) {
@@ -172,16 +183,22 @@ class AstFactory : public core::Space<2> {
     return new (this) SwitchStatement(expr, this);
   }
 
-  CaseClause* NewCaseClause() {
-    return new (this) CaseClause(this);
+  CaseClause* NewCaseClause(bool is_default, Expression* expr) {
+    return new (this) CaseClause(is_default, expr, this);
   }
 
   ThrowStatement*  NewThrowStatement(Expression* expr) {
     return new (this) ThrowStatement(expr);
   }
 
-  TryStatement* NewTryStatement(Block* block) {
-    return new (this) TryStatement(block);
+  TryStatement* NewTryStatement(Block* try_block,
+                                Identifier* catch_name,
+                                Block* catch_block,
+                                Block* finally_block) {
+    return new (this) TryStatement(try_block,
+                                   catch_name,
+                                   catch_block,
+                                   finally_block);
   }
 
   LabelledStatement* NewLabelledStatement(Expression* expr, Statement* stmt) {

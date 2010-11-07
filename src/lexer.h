@@ -404,7 +404,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     return source_;
   }
 
-  inline Location location() const {
+  inline const Location& location() const {
     return location_;
   }
 

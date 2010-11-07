@@ -200,7 +200,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //   | FunctionDeclaration
   bool ParseSourceElements(Token::Type end,
                            FunctionLiteral* function, bool *res) {
-    Statement *stmt;
+    Statement* stmt;
     bool recognize_use_strict_directive = true;
     const StrictSwitcher switcher(this);
     while (token_ != end) {
@@ -371,7 +371,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     assert(token_ == Token::FUNCTION);
     Next();
     IS(Token::IDENTIFIER);
-    FunctionLiteral* expr = ParseFunctionLiteral(
+    FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::DECLARATION,
         FunctionLiteral::GENERAL, true, CHECK);
     // define named function as FunctionDeclaration
@@ -388,9 +388,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | StatementList Statement
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::LBRACE);
-    Block *block = factory_->NewBlock();
-    Statement *stmt;
-    Target target(this, block);
+    Block* const block = factory_->NewBlock();
+    Statement* stmt;
+    const Target target(this, block);
 
     Next();
     while (token_ != Token::RBRACE) {
@@ -406,7 +406,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
-    VariableStatement* stmt = factory_->NewVariableStatement(token_);
+    VariableStatement* const stmt = factory_->NewVariableStatement(token_);
     ParseVariableDeclarations(stmt, true, CHECK);
     ExpectSemicolon(CHECK);
     return stmt;
@@ -428,14 +428,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseVariableDeclarations(VariableStatement* stmt,
                                        bool contains_in,
                                        bool *res) {
-    Identifier *name;
-    Expression *expr;
-    Declaration *decl;
+    Identifier* name;
+    Expression* expr;
+    Declaration* decl;
 
     do {
       Next();
       IS(Token::IDENTIFIER);
-      name = factory_->NewIdentifier(lexer_.Buffer());
+      name = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -480,24 +480,23 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | IF '(' Expression ')' Statement
   Statement* ParseIfStatement(bool *res) {
     assert(token_ == Token::IF);
-    IfStatement *if_stmt = NULL;
-    Statement* stmt;
+    Statement* else_statement = NULL;
     Next();
 
     EXPECT(Token::LPAREN);
 
-    Expression *expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, CHECK);
 
     EXPECT(Token::RPAREN);
 
-    stmt = ParseStatement(CHECK);
-    if_stmt = factory_->NewIfStatement(expr, stmt);
+    Statement* const then_statement = ParseStatement(CHECK);
     if (token_ == Token::ELSE) {
       Next();
-      stmt = ParseStatement(CHECK);
-      if_stmt->SetElse(stmt);
+      else_statement = ParseStatement(CHECK);
     }
-    return if_stmt;
+    return factory_->NewIfStatement(expr,
+                                    then_statement,
+                                    else_statement);
   }
 
 //  IterationStatement
@@ -514,23 +513,22 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::DO);
-    DoWhileStatement* dowhile = factory_->NewDoWhileStatement();
-    Target target(this, dowhile);
+    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement();
+    const Target target(this, dowhile);
     Next();
 
-    Statement *stmt = ParseStatement(CHECK);
-    dowhile->set_body(stmt);
+    Statement* const stmt = ParseStatement(CHECK);
 
     EXPECT(Token::WHILE);
 
     EXPECT(Token::LPAREN);
 
-    Expression *expr = ParseExpression(true, CHECK);
-    dowhile->set_cond(expr);
+    Expression* const expr = ParseExpression(true, CHECK);
 
     EXPECT(Token::RPAREN);
 
     ExpectSemicolon(CHECK);
+    dowhile->Initialize(stmt, expr);
     return dowhile;
   }
 
@@ -541,14 +539,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     EXPECT(Token::LPAREN);
 
-    Expression *expr = ParseExpression(true, CHECK);
-    WhileStatement* whilestmt = factory_->NewWhileStatement(expr);
-    Target target(this, whilestmt);
+    Expression* const expr = ParseExpression(true, CHECK);
+    WhileStatement* const whilestmt = factory_->NewWhileStatement();
+    const Target target(this, whilestmt);
 
     EXPECT(Token::RPAREN);
 
-    Statement* stmt = ParseStatement(CHECK);
-    whilestmt->set_body(stmt);
+    Statement* const stmt = ParseStatement(CHECK);
+    whilestmt->Initialize(stmt, expr);
 
     return whilestmt;
   }
@@ -571,7 +569,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
-        VariableStatement *var = factory_->NewVariableStatement(token_);
+        VariableStatement* const var = factory_->NewVariableStatement(token_);
         ParseVariableDeclarations(var, false, CHECK);
         init = var;
         if (token_ == Token::IN) {
@@ -583,17 +581,16 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             // so check declarations' size is 1.
             RAISE("invalid for-in left-hand-side");
           }
-          Expression *enumerable = ParseExpression(true, CHECK);
+          Expression* const enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt =
-              factory_->NewForInStatement(init, enumerable);
-          Target target(this, forstmt);
-          Statement *body = ParseStatement(CHECK);
-          forstmt->set_body(body);
+          ForInStatement* const forstmt = factory_->NewForInStatement();
+          const Target target(this, forstmt);
+          Statement* const body = ParseStatement(CHECK);
+          forstmt->Initialize(body, init, enumerable);
           return forstmt;
         }
       } else {
-        Expression *init_expr = ParseExpression(false, CHECK);
+        Expression* const init_expr = ParseExpression(false, CHECK);
         init = factory_->NewExpressionStatement(init_expr);
         if (token_ == Token::IN) {
           // for in loop
@@ -601,13 +598,12 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             RAISE("invalid for-in left-hand-side");
           }
           Next();
-          Expression *enumerable = ParseExpression(true, CHECK);
+          Expression* const enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* forstmt =
-              factory_->NewForInStatement(init, enumerable);
-          Target target(this, forstmt);
-          Statement *body = ParseStatement(CHECK);
-          forstmt->set_body(body);
+          ForInStatement* const forstmt = factory_->NewForInStatement();
+          const Target target(this, forstmt);
+          Statement* const body = ParseStatement(CHECK);
+          forstmt->Initialize(body, init, enumerable);
           return forstmt;
         }
       }
@@ -616,7 +612,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     // ordinary for loop
     EXPECT(Token::SEMICOLON);
 
-    Expression *cond = NULL;
+    Expression* cond = NULL;
     if (token_ == Token::SEMICOLON) {
       // no cond expr
       Next();
@@ -625,7 +621,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       EXPECT(Token::SEMICOLON);
     }
 
-    ExpressionStatement *next = NULL;
+    ExpressionStatement* next = NULL;
     if (token_ == Token::RPAREN) {
       Next();
     } else {
@@ -634,60 +630,49 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       EXPECT(Token::RPAREN);
     }
 
-    ForStatement *for_stmt = factory_->NewForStatement();
-    Target target(this, for_stmt);
-    Statement *body = ParseStatement(CHECK);
-    for_stmt->set_body(body);
-    if (init) {
-      for_stmt->SetInit(init);
-    }
-    if (cond) {
-      for_stmt->SetCondition(cond);
-    }
-    if (next) {
-      for_stmt->SetNext(next);
-    }
+    ForStatement* const forstmt = factory_->NewForStatement();
+    Target target(this, forstmt);
+    Statement* const body = ParseStatement(CHECK);
+    forstmt->Initialize(body, init, cond, next);
 
-    return for_stmt;
+    return forstmt;
   }
 
 //  ContinueStatement
 //    : CONTINUE Identifier_opt ';'
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
-    ContinueStatement *continue_stmt = factory_->NewContinueStatement();
+    Identifier* label = NULL;
+    IterationStatement* target;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
         token_ != Token::RBRACE &&
         token_ != Token::EOS) {
       IS(Token::IDENTIFIER);
-      Identifier* label = factory_->NewIdentifier(lexer_.Buffer());
-      continue_stmt->SetLabel(label);
-      IterationStatement* target = LookupContinuableTarget(label);
-      if (target) {
-        continue_stmt->SetTarget(target);
-      } else {
+      label = factory_->NewIdentifier(lexer_.location(),
+                                      lexer_.Buffer());
+      target = LookupContinuableTarget(label);
+      if (!target) {
         RAISE("label not found");
       }
       Next();
     } else {
-      IterationStatement* target = LookupContinuableTarget();
-      if (target) {
-        continue_stmt->SetTarget(target);
-      } else {
+      target = LookupContinuableTarget();
+      if (!target) {
         RAISE("label not found");
       }
     }
     ExpectSemicolon(CHECK);
-    return continue_stmt;
+    return factory_->NewContinueStatement(label, target);
   }
 
 //  BreakStatement
 //    : BREAK Identifier_opt ';'
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
-    BreakStatement *break_stmt = factory_->NewBreakStatement();
+    Identifier* label = NULL;
+    BreakableStatement* target = NULL;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
@@ -695,8 +680,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         token_ != Token::EOS) {
       // label
       IS(Token::IDENTIFIER);
-      Identifier* label = factory_->NewIdentifier(lexer_.Buffer());
-      break_stmt->SetLabel(label);
+      label = factory_->NewIdentifier(lexer_.location(),
+                                      lexer_.Buffer());
       if (ContainsLabel(labels_, label)) {
         // example
         //
@@ -708,24 +693,20 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         // In iv, BreakStatement with label, but without target is
         // interpreted as EmptyStatement
       } else {
-        BreakableStatement* target = LookupBreakableTarget(label);
-        if (target) {
-          break_stmt->SetTarget(target);
-        } else {
+        target = LookupBreakableTarget(label);
+        if (!target) {
           RAISE("label not found");
         }
       }
       Next();
     } else {
-      BreakableStatement* target = LookupBreakableTarget();
-      if (target) {
-        break_stmt->SetTarget(target);
-      } else {
+      target = LookupBreakableTarget();
+      if (!target) {
         RAISE("label not found");
       }
     }
     ExpectSemicolon(CHECK);
-    return break_stmt;
+    return factory_->NewBreakStatement(label, target);
   }
 
 //  ReturnStatement
@@ -808,16 +789,16 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
-    CaseClause *clause = factory_->NewCaseClause();
+    CaseClause *clause;
     Statement *stmt;
 
     if (token_ == Token::CASE) {
       Next();
-      Expression *expr = ParseExpression(true, CHECK);
-      clause->SetExpression(expr);
+      Expression* const expr = ParseExpression(true, CHECK);
+      clause = factory_->NewCaseClause(false, expr);
     } else  {
       EXPECT(Token::DEFAULT);
-      clause->SetDefault();
+      clause = factory_->NewCaseClause(true, NULL);
     }
 
     EXPECT(Token::COLON);
@@ -859,14 +840,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    : FINALLY Block
   Statement* ParseTryStatement(bool *res) {
     assert(token_ == Token::TRY);
-    Identifier *name;
-    Block *block;
+    Identifier* name = NULL;
+    Block* catch_block = NULL;
+    Block* finally_block = NULL;
     bool has_catch_or_finally = false;
 
     Next();
 
-    block = ParseBlock(CHECK);
-    TryStatement *try_stmt = factory_->NewTryStatement(block);
+    Block* const try_block = ParseBlock(CHECK);
 
     if (token_ == Token::CATCH) {
       // Catch
@@ -874,7 +855,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Next();
       EXPECT(Token::LPAREN);
       IS(Token::IDENTIFIER);
-      name = factory_->NewIdentifier(lexer_.Buffer());
+      name = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -891,23 +872,22 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       }
       Next();
       EXPECT(Token::RPAREN);
-      block = ParseBlock(CHECK);
-      try_stmt->SetCatch(name, block);
+      catch_block = ParseBlock(CHECK);
     }
 
     if (token_ == Token::FINALLY) {
       // Finally
       has_catch_or_finally= true;
       Next();
-      block = ParseBlock(CHECK);
-      try_stmt->SetFinally(block);
+      finally_block = ParseBlock(CHECK);
     }
 
     if (!has_catch_or_finally) {
       RAISE("missing catch or finally after try statement");
     }
 
-    return try_stmt;
+    return factory_->NewTryStatement(try_block,
+                                     name, catch_block, finally_block);
   }
 
 //  DebuggerStatement
@@ -1443,7 +1423,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         case Token::PERIOD: {
           Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
-          Identifier* ident = factory_->NewIdentifier(lexer_.Buffer());
+          Identifier* ident = factory_->NewIdentifier(lexer_.location(),
+                                                      lexer_.Buffer());
           Next();
           expr = factory_->NewIdentifierAccess(expr, ident);
           break;
@@ -1489,7 +1470,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         break;
 
       case Token::IDENTIFIER:
-        result = factory_->NewIdentifier(lexer_.Buffer());
+        result = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
         Next();
         break;
 
@@ -1675,6 +1656,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         if (token_ == Token::COLON) {
           // property
           ident = factory_->NewIdentifier(
+              lexer_.location(),
               is_get ? ParserData::kGet : ParserData::kSet);
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
@@ -1699,9 +1681,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = factory_->NewIdentifier(lexer_.Buffer8());
+              ident = factory_->NewIdentifier(lexer_.location(),
+                                              lexer_.Buffer8());
             } else {
-              ident = factory_->NewIdentifier(lexer_.Buffer());
+              ident = factory_->NewIdentifier(lexer_.location(),
+                                              lexer_.Buffer());
             }
             Next();
             typename ObjectLiteral::PropertyDescriptorType type =
@@ -1732,7 +1716,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       } else if (token_ == Token::IDENTIFIER ||
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
-        ident = factory_->NewIdentifier(lexer_.Buffer());
+        ident = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
         Next();
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
@@ -1786,7 +1770,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     FunctionLiteral *literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
     if (allow_identifier && token_ == Token::IDENTIFIER) {
-      Identifier* const name = factory_->NewIdentifier(lexer_.Buffer());
+      Identifier* const name = factory_->NewIdentifier(lexer_.location(),
+                                                       lexer_.Buffer());
       literal->SetName(name);
       const EvalOrArguments val = IsEvalOrArguments(name);
       if (val) {
@@ -1808,7 +1793,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
       IS(Token::IDENTIFIER);
-      Identifier* const ident = factory_->NewIdentifier(lexer_.Buffer());
+      Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
+                                                        lexer_.Buffer());
       if (!throw_error_if_strict_code) {
         const EvalOrArguments val = IsEvalOrArguments(ident);
         if (val) {
@@ -1823,7 +1809,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else {
       while (token_ != Token::RPAREN) {
         IS(Token::IDENTIFIER);
-        Identifier* const ident = factory_->NewIdentifier(lexer_.Buffer());
+        Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
+                                                          lexer_.Buffer());
         if (!throw_error_if_strict_code) {
           const EvalOrArguments val = IsEvalOrArguments(ident);
           if (val) {

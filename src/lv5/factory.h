@@ -5,6 +5,7 @@
 #include "regexp-icu.h"
 #include "ident-symbol.h"
 #include "ast-factory.h"
+#include "location.h"
 #include "ustringpiece.h"
 
 namespace iv {
@@ -25,15 +26,18 @@ class AstFactory : public core::ast::BasicAstFactory<2, AstFactory> {
     }
   }
 
-  Identifier* NewIdentifier(const core::UStringPiece& buffer) {
+  Identifier* NewIdentifier(const core::Location& location,
+                            const core::UStringPiece& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
+  Identifier* NewIdentifier(const core::Location& location,
+                            const std::vector<uc16>& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 
-  Identifier* NewIdentifier(const std::vector<char>& buffer) {
+  Identifier* NewIdentifier(const core::Location& location,
+                            const std::vector<char>& buffer) {
     return new (this) IdentifierWithSymbol(ctx_, buffer, this);
   }
 

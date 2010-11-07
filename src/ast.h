@@ -29,11 +29,24 @@ namespace ast {
 
 #define DECLARE_NODE_TYPE(type) \
   inline const type<Factory>* As##type() const { return this; }\
-  inline type<Factory>* As##type() { return this; }
+  inline type<Factory>* As##type() { return this; }\
+
+#define DECLARE_DERIVED_NODE_TYPE(type) \
+  DECLARE_NODE_TYPE(type)\
+  ACCEPT_VISITOR\
+  inline NodeType Type() const { return k##type; }
 
 #define DECLARE_NODE_TYPE_BASE(type) \
   inline virtual const type<Factory>* As##type() const { return NULL; }\
   inline virtual type<Factory>* As##type() { return NULL; }
+
+enum NodeType {
+#define V(type)\
+  k##type,
+AST_DERIVED_NODE_LIST(V)
+#undef V
+  kNodeCount
+};
 
 template<typename Factory>
 class Scope : public SpaceObject,
@@ -139,6 +152,7 @@ class AstNode : public SpaceObject,
       typename AstVisitor<Factory>::type* visitor) = 0;
   virtual void Accept(
       typename AstVisitor<Factory>::const_type* visitor) const = 0;
+  virtual NodeType Type() const = 0;
 };
 
 template<typename Factory>
@@ -225,8 +239,7 @@ class Block : public NamedOnlyBreakableStatement<Factory> {
   inline const Statements& body() const {
     return body_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(Block)
+  DECLARE_DERIVED_NODE_TYPE(Block)
  private:
   Statements body_;
 };
@@ -240,8 +253,7 @@ class FunctionStatement : public Statement<Factory> {
   inline FunctionLiteral<Factory>* function() const {
     return function_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(FunctionStatement)
+  DECLARE_DERIVED_NODE_TYPE(FunctionStatement)
  private:
   FunctionLiteral<Factory>* function_;
 };
@@ -266,8 +278,7 @@ class VariableStatement : public Statement<Factory> {
   inline bool IsConst() const {
     return is_const_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(VariableStatement)
+  DECLARE_DERIVED_NODE_TYPE(VariableStatement)
  private:
   const bool is_const_;
   Declarations decls_;
@@ -286,7 +297,7 @@ class Declaration : public AstNode<Factory> {
   inline Expression<Factory>* expr() const {
     return expr_;
   }
-  ACCEPT_VISITOR
+  DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
   Identifier<Factory>* name_;
   Expression<Factory>* expr_;
@@ -295,26 +306,24 @@ class Declaration : public AstNode<Factory> {
 template<typename Factory>
 class EmptyStatement : public Statement<Factory> {
  public:
-  DECLARE_NODE_TYPE(EmptyStatement)
-  ACCEPT_VISITOR
+  DECLARE_DERIVED_NODE_TYPE(EmptyStatement)
 };
 
 template<typename Factory>
 class IfStatement : public Statement<Factory> {
  public:
-  IfStatement(Expression<Factory>* cond, Statement<Factory>* then)
+  IfStatement(Expression<Factory>* cond,
+              Statement<Factory>* then,
+              Statement<Factory>* elses)
     : cond_(cond),
       then_(then),
-      else_(NULL) {
-  }
-  void SetElse(Statement<Factory>* stmt) {
-    else_ = stmt;
+      else_(elses) {
+    // else maybe NULL
   }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Statement<Factory>* then_statement() const { return then_; }
   inline Statement<Factory>* else_statement() const { return else_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(IfStatement)
+  DECLARE_DERIVED_NODE_TYPE(IfStatement)
  private:
   Expression<Factory>* cond_;
   Statement<Factory>* then_;
@@ -328,7 +337,7 @@ class IterationStatement : public AnonymousBreakableStatement<Factory> {
     : body_(NULL) {
   }
   inline Statement<Factory>* body() const { return body_; }
-  inline void set_body(Statement<Factory>* stmt) {
+  inline void Initialize(Statement<Factory>* stmt) {
     body_ = stmt;
   }
   DECLARE_NODE_TYPE(IterationStatement)
@@ -344,11 +353,11 @@ class DoWhileStatement : public IterationStatement<Factory> {
       cond_(NULL) {
   }
   inline Expression<Factory>* cond() const { return cond_; }
-  inline void set_cond(Expression<Factory>* expr) {
-    cond_ = expr;
+  inline void Initialize(Statement<Factory>* body, Expression<Factory>* cond) {
+    IterationStatement<Factory>::Initialize(body);
+    cond_ = cond;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(DoWhileStatement)
+  DECLARE_DERIVED_NODE_TYPE(DoWhileStatement)
  private:
   Expression<Factory>* cond_;
 };
@@ -356,13 +365,16 @@ class DoWhileStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class WhileStatement : public IterationStatement<Factory> {
  public:
-  explicit WhileStatement(Expression<Factory>* cond)
+  explicit WhileStatement()
     : IterationStatement<Factory>(),
-      cond_(cond) {
+      cond_(NULL) {
   }
   inline Expression<Factory>* cond() const { return cond_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(WhileStatement)
+  inline void Initialize(Statement<Factory>* body, Expression<Factory>* cond) {
+    IterationStatement<Factory>::Initialize(body);
+    cond_ = cond;
+  }
+  DECLARE_DERIVED_NODE_TYPE(WhileStatement)
  private:
   Expression<Factory>* cond_;
 };
@@ -376,14 +388,19 @@ class ForStatement : public IterationStatement<Factory> {
       cond_(NULL),
       next_(NULL) {
   }
-  inline void SetInit(Statement<Factory>* init) { init_ = init; }
-  inline void SetCondition(Expression<Factory>* cond) { cond_ = cond; }
-  inline void SetNext(Statement<Factory>* next) { next_ = next; }
   inline Statement<Factory>* init() const { return init_; }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Statement<Factory>* next() const { return next_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ForStatement)
+  inline void Initialize(Statement<Factory>* body,
+                         Statement<Factory>* init,
+                         Expression<Factory>* cond,
+                         Statement<Factory>* next) {
+    IterationStatement<Factory>::Initialize(body);
+    init_ = init;
+    cond_ = cond;
+    next_ = next;
+  }
+  DECLARE_DERIVED_NODE_TYPE(ForStatement)
  private:
   Statement<Factory>* init_;
   Expression<Factory>* cond_;
@@ -393,16 +410,21 @@ class ForStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class ForInStatement : public IterationStatement<Factory> {
  public:
-  ForInStatement(Statement<Factory>* each,
-                 Expression<Factory>* enumerable)
+  ForInStatement()
     : IterationStatement<Factory>(),
-      each_(each),
-      enumerable_(enumerable) {
+      each_(NULL),
+      enumerable_(NULL) {
   }
   inline Statement<Factory>* each() const { return each_; }
   inline Expression<Factory>* enumerable() const { return enumerable_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ForInStatement)
+  inline void Initialize(Statement<Factory>* body,
+                         Statement<Factory>* each,
+                         Expression<Factory>* enumerable) {
+    IterationStatement<Factory>::Initialize(body);
+    each_ = each;
+    enumerable_ = enumerable;
+  }
+  DECLARE_DERIVED_NODE_TYPE(ForInStatement)
  private:
   Statement<Factory>* each_;
   Expression<Factory>* enumerable_;
@@ -411,21 +433,14 @@ class ForInStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class ContinueStatement : public Statement<Factory> {
  public:
-  ContinueStatement()
-    : label_(NULL) {
-  }
-
-  void SetLabel(Identifier<Factory>* label) {
-    label_ = label;
-  }
-
-  void SetTarget(IterationStatement<Factory>* target) {
-    target_ = target;
+  ContinueStatement(Identifier<Factory>* label,
+                    IterationStatement<Factory>* target)
+    : label_(label),
+      target_(target) {
   }
   inline Identifier<Factory>* label() const { return label_; }
   inline IterationStatement<Factory>* target() const { return target_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ContinueStatement)
+  DECLARE_DERIVED_NODE_TYPE(ContinueStatement)
  private:
   Identifier<Factory>* label_;
   IterationStatement<Factory>* target_;
@@ -434,22 +449,14 @@ class ContinueStatement : public Statement<Factory> {
 template<typename Factory>
 class BreakStatement : public Statement<Factory> {
  public:
-  BreakStatement()
-    : label_(NULL),
-      target_(NULL) {
-  }
-
-  void SetLabel(Identifier<Factory>* label) {
-    label_ = label;
-  }
-
-  void SetTarget(BreakableStatement<Factory>* target) {
-    target_ = target;
+  BreakStatement(Identifier<Factory>* label,
+                 BreakableStatement<Factory>* target)
+    : label_(label),
+      target_(target) {
   }
   inline Identifier<Factory>* label() const { return label_; }
   inline BreakableStatement<Factory>* target() const { return target_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(BreakStatement)
+  DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:
   Identifier<Factory>* label_;
   BreakableStatement<Factory>* target_;
@@ -462,8 +469,7 @@ class ReturnStatement : public Statement<Factory> {
     : expr_(expr) {
   }
   inline Expression<Factory>* expr() const { return expr_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ReturnStatement)
+  DECLARE_DERIVED_NODE_TYPE(ReturnStatement)
  private:
   Expression<Factory>* expr_;
 };
@@ -478,8 +484,7 @@ class WithStatement : public Statement<Factory> {
   }
   inline Expression<Factory>* context() const { return context_; }
   inline Statement<Factory>* body() const { return body_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(WithStatement)
+  DECLARE_DERIVED_NODE_TYPE(WithStatement)
  private:
   Expression<Factory>* context_;
   Statement<Factory>* body_;
@@ -494,8 +499,7 @@ class LabelledStatement : public Statement<Factory> {
   }
   inline Identifier<Factory>* label() const { return label_; }
   inline Statement<Factory>* body() const { return body_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(LabelledStatement)
+  DECLARE_DERIVED_NODE_TYPE(LabelledStatement)
  private:
   Identifier<Factory>* label_;
   Statement<Factory>* body_;
@@ -505,20 +509,12 @@ template<typename Factory>
 class CaseClause : public AstNode<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  explicit CaseClause(Factory* factory)
-    : expr_(NULL),
+  explicit CaseClause(bool is_default,
+                      Expression<Factory>* expr, Factory* factory)
+    : expr_(expr),
       body_(typename Statements::allocator_type(factory)),
-      default_(false) {
+      default_(is_default) {
   }
-
-  void SetExpression(Expression<Factory>* expr) {
-    expr_ = expr;
-  }
-
-  void SetDefault() {
-    default_ = true;
-  }
-
   void AddStatement(Statement<Factory>* stmt) {
     body_.push_back(stmt);
   }
@@ -531,7 +527,7 @@ class CaseClause : public AstNode<Factory> {
   inline const Statements& body() const {
     return body_;
   }
-  ACCEPT_VISITOR
+  DECLARE_DERIVED_NODE_TYPE(CaseClause)
  private:
   Expression<Factory>* expr_;
   Statements body_;
@@ -553,8 +549,7 @@ class SwitchStatement : public AnonymousBreakableStatement<Factory> {
   }
   inline Expression<Factory>* expr() const { return expr_; }
   inline const CaseClauses& clauses() const { return clauses_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(SwitchStatement)
+  DECLARE_DERIVED_NODE_TYPE(SwitchStatement)
  private:
   Expression<Factory>* expr_;
   CaseClauses clauses_;
@@ -567,8 +562,7 @@ class ThrowStatement : public Statement<Factory> {
     : expr_(expr) {
   }
   inline Expression<Factory>* expr() const { return expr_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ThrowStatement)
+  DECLARE_DERIVED_NODE_TYPE(ThrowStatement)
  private:
   Expression<Factory>* expr_;
 };
@@ -576,27 +570,20 @@ class ThrowStatement : public Statement<Factory> {
 template<typename Factory>
 class TryStatement : public Statement<Factory> {
  public:
-  explicit TryStatement(Block<Factory>* block)
-    : body_(block),
-      catch_name_(NULL),
-      catch_block_(NULL),
-      finally_block_(NULL) {
-  }
-
-  void SetCatch(Identifier<Factory>* name, Block<Factory>* block) {
-    catch_name_ = name;
-    catch_block_ = block;
-  }
-
-  void SetFinally(Block<Factory>* block) {
-    finally_block_ = block;
+  explicit TryStatement(Block<Factory>* try_block,
+                        Identifier<Factory>* catch_name,
+                        Block<Factory>* catch_block,
+                        Block<Factory>* finally_block)
+    : body_(try_block),
+      catch_name_(catch_name),
+      catch_block_(catch_block),
+      finally_block_(finally_block) {
   }
   inline Block<Factory>* body() const { return body_; }
   inline Identifier<Factory>* catch_name() const { return catch_name_; }
   inline Block<Factory>* catch_block() const { return catch_block_; }
   inline Block<Factory>* finally_block() const { return finally_block_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(TryStatement)
+  DECLARE_DERIVED_NODE_TYPE(TryStatement)
  private:
   Block<Factory>* body_;
   Identifier<Factory>* catch_name_;
@@ -606,8 +593,7 @@ class TryStatement : public Statement<Factory> {
 
 template<typename Factory>
 class DebuggerStatement : public Statement<Factory> {
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(DebuggerStatement)
+  DECLARE_DERIVED_NODE_TYPE(DebuggerStatement)
 };
 
 template<typename Factory>
@@ -615,8 +601,7 @@ class ExpressionStatement : public Statement<Factory> {
  public:
   explicit ExpressionStatement(Expression<Factory>* expr) : expr_(expr) { }
   inline Expression<Factory>* expr() const { return expr_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ExpressionStatement)
+  DECLARE_DERIVED_NODE_TYPE(ExpressionStatement)
  private:
   Expression<Factory>* expr_;
 };
@@ -633,8 +618,7 @@ class Assignment : public Expression<Factory> {
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(Assignment)
+  DECLARE_DERIVED_NODE_TYPE(Assignment)
  private:
   Token::Type op_;
   Expression<Factory>* left_;
@@ -653,8 +637,7 @@ class BinaryOperation : public Expression<Factory> {
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(BinaryOperation)
+  DECLARE_DERIVED_NODE_TYPE(BinaryOperation)
  private:
   Token::Type op_;
   Expression<Factory>* left_;
@@ -672,8 +655,7 @@ class ConditionalExpression : public Expression<Factory> {
   inline Expression<Factory>* cond() const { return cond_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ConditionalExpression)
+  DECLARE_DERIVED_NODE_TYPE(ConditionalExpression)
  private:
   Expression<Factory>* cond_;
   Expression<Factory>* left_;
@@ -689,8 +671,7 @@ class UnaryOperation : public Expression<Factory> {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(UnaryOperation)
+  DECLARE_DERIVED_NODE_TYPE(UnaryOperation)
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
@@ -705,8 +686,7 @@ class PostfixExpression : public Expression<Factory> {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(PostfixExpression)
+  DECLARE_DERIVED_NODE_TYPE(PostfixExpression)
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
@@ -726,8 +706,7 @@ class StringLiteral : public Literal<Factory> {
   inline const value_type& value() const {
     return value_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(StringLiteral)
+  DECLARE_DERIVED_NODE_TYPE(StringLiteral)
  private:
   const value_type value_;
 };
@@ -748,8 +727,7 @@ class NumberLiteral : public Literal<Factory> {
     : value_(val) {
   }
   inline double value() const { return value_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(NumberLiteral)
+  DECLARE_DERIVED_NODE_TYPE(NumberLiteral)
  private:
   double value_;
 };
@@ -777,8 +755,7 @@ class Identifier : public Literal<Factory> {
     return value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(Identifier)
+  DECLARE_DERIVED_NODE_TYPE(Identifier)
  protected:
   value_type value_;
 };
@@ -821,36 +798,31 @@ class IdentifierKey {
 template<typename Factory>
 class ThisLiteral : public Literal<Factory> {
  public:
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ThisLiteral)
+  DECLARE_DERIVED_NODE_TYPE(ThisLiteral)
 };
 
 template<typename Factory>
 class NullLiteral : public Literal<Factory> {
  public:
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(NullLiteral)
+  DECLARE_DERIVED_NODE_TYPE(NullLiteral)
 };
 
 template<typename Factory>
 class TrueLiteral : public Literal<Factory> {
  public:
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(TrueLiteral)
+  DECLARE_DERIVED_NODE_TYPE(TrueLiteral)
 };
 
 template<typename Factory>
 class FalseLiteral : public Literal<Factory> {
  public:
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(FalseLiteral)
+  DECLARE_DERIVED_NODE_TYPE(FalseLiteral)
 };
 
 template<typename Factory>
 class Undefined : public Literal<Factory> {
  public:
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(Undefined)
+  DECLARE_DERIVED_NODE_TYPE(Undefined)
 };
 
 template<typename Factory>
@@ -868,8 +840,7 @@ class RegExpLiteral : public Literal<Factory> {
   }
   inline const value_type& value() const { return value_; }
   inline const value_type& flags() const { return flags_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(RegExpLiteral)
+  DECLARE_DERIVED_NODE_TYPE(RegExpLiteral)
  protected:
   value_type value_;
   value_type flags_;
@@ -889,8 +860,7 @@ class ArrayLiteral : public Literal<Factory> {
   inline const Expressions& items() const {
     return items_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ArrayLiteral)
+  DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
  private:
   Expressions items_;
 };
@@ -923,8 +893,7 @@ class ObjectLiteral : public Literal<Factory> {
   inline const Properties& properties() const {
     return properties_;
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ObjectLiteral)
+  DECLARE_DERIVED_NODE_TYPE(ObjectLiteral)
  private:
   inline void AddPropertyDescriptor(PropertyDescriptorType type,
                                     Identifier<Factory>* key,
@@ -1008,8 +977,7 @@ class FunctionLiteral : public Literal<Factory> {
   void AddStatement(Statement<Factory>* stmt) {
     body_.push_back(stmt);
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(FunctionLiteral)
+  DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
  private:
   Identifier<Factory>* name_;
   DeclType type_;
@@ -1044,8 +1012,7 @@ class IdentifierAccess : public PropertyAccess<Factory> {
       key_(key) {
   }
   inline Identifier<Factory>* key() const { return key_; }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(IdentifierAccess)
+  DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
  private:
   Identifier<Factory>* key_;
 };
@@ -1059,8 +1026,7 @@ class IndexAccess : public PropertyAccess<Factory> {
       key_(key) {
   }
   inline Expression<Factory>* key() const { return key_; }
-  DECLARE_NODE_TYPE(IndexAccess)
-  ACCEPT_VISITOR
+  DECLARE_DERIVED_NODE_TYPE(IndexAccess)
  private:
   Expression<Factory>* key_;
 };
@@ -1091,8 +1057,7 @@ class FunctionCall : public Call<Factory> {
                Factory* factory)
     : Call<Factory>(target, factory) {
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(FunctionCall)
+  DECLARE_DERIVED_NODE_TYPE(FunctionCall)
 };
 
 template<typename Factory>
@@ -1102,8 +1067,7 @@ class ConstructorCall : public Call<Factory> {
                   Factory* factory)
     : Call<Factory>(target, factory) {
   }
-  ACCEPT_VISITOR
-  DECLARE_NODE_TYPE(ConstructorCall)
+  DECLARE_DERIVED_NODE_TYPE(ConstructorCall)
 };
 
 } } }  // namespace iv::core::ast
@@ -1121,7 +1085,4 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
   }
 };
 } }  // namespace std::tr1
-#undef ACCEPT_VISITOR
-#undef DECLARE_NODE_TYPE
-#undef DECLARE_NODE_TYPE_BASE
 #endif  // _IV_AST_H_

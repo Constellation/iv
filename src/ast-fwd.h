@@ -4,8 +4,7 @@ namespace iv {
 namespace core {
 namespace ast {
 
-#define STATEMENT_NODE_LIST(V)\
-V(Statement)\
+#define STATEMENT_DERIVED_NODE_LIST(V)\
 V(EmptyStatement)\
 V(DebuggerStatement)\
 V(FunctionStatement)\
@@ -25,10 +24,14 @@ V(SwitchStatement)\
 V(ThrowStatement)\
 V(TryStatement)\
 V(LabelledStatement)\
+
+#define STATEMENT_NODE_LIST(V)\
+V(Statement)\
+V(IterationStatement)\
 V(BreakableStatement)\
 V(NamedOnlyBreakableStatement)\
 V(AnonymousBreakableStatement)\
-V(IterationStatement)
+STATEMENT_DERIVED_NODE_LIST(V)
 
 #define LITERAL_NODE_LIST(V)\
 V(Literal)\
@@ -46,11 +49,7 @@ V(Undefined)\
 V(TrueLiteral)\
 V(FalseLiteral)
 
-#define EXPRESSION_NODE_LIST(V)\
-V(Expression)\
-V(IndexAccess)\
-V(PropertyAccess)\
-V(Call)\
+#define EXPRESSION_DERIVED_NODE_LIST(V)\
 V(FunctionCall)\
 V(ConstructorCall)\
 V(BinaryOperation)\
@@ -59,15 +58,30 @@ V(ConditionalExpression)\
 V(UnaryOperation)\
 V(PostfixExpression)\
 V(IdentifierAccess)\
+V(IndexAccess)\
 LITERAL_NODE_LIST(V)
 
-#define OTHER_NODE_LIST(V)\
-V(AstNode)\
+#define EXPRESSION_NODE_LIST(V)\
+V(Expression)\
+V(PropertyAccess)\
+V(Call)\
+EXPRESSION_DERIVED_NODE_LIST(V)
+
+#define OTHER_DERIVED_NODE_LIST(V)\
 V(Variable)\
 V(Declaration)\
 V(IdentifierKey)\
 V(Scope)\
 V(CaseClause)
+
+#define OTHER_NODE_LIST(V)\
+V(AstNode)\
+OTHER_DERIVED_NODE_LIST(V)
+
+#define AST_DERIVED_NODE_LIST(V)\
+STATEMENT_DERIVED_NODE_LIST(V)\
+EXPRESSION_DERIVED_NODE_LIST(V)\
+OTHER_DERIVED_NODE_LIST(V)
 
 #define AST_NODE_LIST(V)\
 OTHER_NODE_LIST(V)\
@@ -79,7 +93,7 @@ V(Identifier, Identifiers)\
 V(Declaration, Declarations)\
 V(Expression, Expressions)\
 V(Statement, Statements)\
-V(CaseClause, CaseClauses)\
+V(CaseClause, CaseClauses)
 
 #define AST_STRING(V) V(SpaceUString)
 

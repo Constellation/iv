@@ -2,6 +2,7 @@
 #define _IV_AST_FACTORY_H_
 #include <tr1/type_traits>
 #include "functor.h"
+#include "location.h"
 #include "ast.h"
 #include "alloc.h"
 #include "static_assert.h"
@@ -48,17 +49,20 @@ class BasicAstFactory : public Space<N> {
                      is_base_of_factory::value);
   }
 
-  Identifier* NewIdentifier(const UStringPiece& buffer) {
+  Identifier* NewIdentifier(const Location& location,
+                            const UStringPiece& buffer) {
     return new (static_cast<Factory*>(this))
         Identifier(buffer, static_cast<Factory*>(this));
   }
 
-  Identifier* NewIdentifier(const std::vector<uc16>& buffer) {
+  Identifier* NewIdentifier(const Location& location,
+                            const std::vector<uc16>& buffer) {
     return new (static_cast<Factory*>(this))
         Identifier(buffer, static_cast<Factory*>(this));
   }
 
-  Identifier* NewIdentifier(const std::vector<char>& buffer) {
+  Identifier* NewIdentifier(const Location& location,
+                            const std::vector<char>& buffer) {
     return new (static_cast<Factory*>(this))
         Identifier(buffer, static_cast<Factory*>(this));
   }
@@ -149,21 +153,24 @@ class BasicAstFactory : public Space<N> {
     return new (static_cast<Factory*>(this)) Declaration(name, expr);
   }
 
-  IfStatement* NewIfStatement(Expression* cond, Statement* then) {
-    return new (static_cast<Factory*>(this)) IfStatement(cond, then);
+  IfStatement* NewIfStatement(Expression* cond,
+                              Statement* then_statement,
+                              Statement* else_statement) {
+    return new (static_cast<Factory*>(this)) IfStatement(cond,
+                                                         then_statement,
+                                                         else_statement);
   }
 
   DoWhileStatement* NewDoWhileStatement() {
     return new (static_cast<Factory*>(this)) DoWhileStatement();
   }
 
-  WhileStatement* NewWhileStatement(Expression* expr) {
-    return new (static_cast<Factory*>(this)) WhileStatement(expr);
+  WhileStatement* NewWhileStatement() {
+    return new (static_cast<Factory*>(this)) WhileStatement();
   }
 
-  ForInStatement* NewForInStatement(Statement* each,
-                                    Expression* enumerable) {
-    return new (static_cast<Factory*>(this)) ForInStatement(each, enumerable);
+  ForInStatement* NewForInStatement() {
+    return new (static_cast<Factory*>(this)) ForInStatement();
   }
 
   ExpressionStatement* NewExpressionStatement(Expression* expr) {
@@ -174,12 +181,14 @@ class BasicAstFactory : public Space<N> {
     return new (static_cast<Factory*>(this)) ForStatement();
   }
 
-  ContinueStatement* NewContinueStatement() {
-    return new (static_cast<Factory*>(this)) ContinueStatement();
+  ContinueStatement* NewContinueStatement(Identifier* label,
+                                          IterationStatement* target) {
+    return new (static_cast<Factory*>(this)) ContinueStatement(label, target);
   }
 
-  BreakStatement* NewBreakStatement() {
-    return new (static_cast<Factory*>(this)) BreakStatement();
+  BreakStatement* NewBreakStatement(Identifier* label,
+                                    BreakableStatement* target) {
+    return new (static_cast<Factory*>(this)) BreakStatement(label, target);
   }
 
   ReturnStatement* NewReturnStatement(
@@ -197,17 +206,23 @@ class BasicAstFactory : public Space<N> {
         SwitchStatement(expr, static_cast<Factory*>(this));
   }
 
-  CaseClause* NewCaseClause() {
+  CaseClause* NewCaseClause(bool is_default, Expression* expr) {
     return new (static_cast<Factory*>(this))
-        CaseClause(static_cast<Factory*>(this));
+        CaseClause(is_default, expr, static_cast<Factory*>(this));
   }
 
   ThrowStatement*  NewThrowStatement(Expression* expr) {
     return new (static_cast<Factory*>(this)) ThrowStatement(expr);
   }
 
-  TryStatement* NewTryStatement(Block* block) {
-    return new (static_cast<Factory*>(this)) TryStatement(block);
+  TryStatement* NewTryStatement(Block* try_block,
+                                Identifier* catch_name,
+                                Block* catch_block,
+                                Block* finally_block) {
+    return new (static_cast<Factory*>(this)) TryStatement(try_block,
+                                                          catch_name,
+                                                          catch_block,
+                                                          finally_block);
   }
 
   LabelledStatement* NewLabelledStatement(
