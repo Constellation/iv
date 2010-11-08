@@ -697,7 +697,6 @@ void Interpreter::Visit(const Assignment* assign) {
         ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
         return;
       }
-      assert(lprim.IsNumber() && rprim.IsNumber());
       const double left_num = lprim.ToNumber(ctx_, CHECK);
       const double right_num = rprim.ToNumber(ctx_, CHECK);
       result.set_value(left_num + right_num);
@@ -863,7 +862,6 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
           return;
         }
-        assert(lprim.IsNumber() && rprim.IsNumber());
         const double left_num = lprim.ToNumber(ctx_, CHECK);
         const double right_num = rprim.ToNumber(ctx_, CHECK);
         ctx_->Return(left_num + right_num);
