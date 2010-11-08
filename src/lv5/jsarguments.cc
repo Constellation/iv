@@ -125,12 +125,13 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
     if (desc.IsAccessorDescriptor()) {
       map_.erase(it);
     } else {
-      // TODO(Constellation) [[Value]] check
-      env_->SetMutableBinding(ctx,
-                              it->second, desc.AsDataDescriptor()->data(),
-                              th, error);
-      if (*error) {
-        return false;
+      if (!desc.IsEmpty()) {
+        env_->SetMutableBinding(ctx,
+                                it->second, desc.AsDataDescriptor()->data(),
+                                th, error);
+        if (*error) {
+          return false;
+        }
       }
       if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
         map_.erase(it);
