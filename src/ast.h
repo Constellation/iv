@@ -285,7 +285,8 @@ class VariableStatement : public Statement<Factory> {
 };
 
 template<typename Factory>
-class Declaration : public AstNode<Factory> {
+class Declaration : public SpaceObject,
+                    private Noncopyable<Declaration<Factory> >::type {
  public:
   Declaration(Identifier<Factory>* name, Expression<Factory>* expr)
     : name_(name),
@@ -297,7 +298,6 @@ class Declaration : public AstNode<Factory> {
   inline Expression<Factory>* expr() const {
     return expr_;
   }
-  DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
   Identifier<Factory>* name_;
   Expression<Factory>* expr_;
@@ -506,7 +506,8 @@ class LabelledStatement : public Statement<Factory> {
 };
 
 template<typename Factory>
-class CaseClause : public AstNode<Factory> {
+class CaseClause : public SpaceObject,
+                   private Noncopyable<CaseClause<Factory> >::type {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   explicit CaseClause(bool is_default,
@@ -527,7 +528,6 @@ class CaseClause : public AstNode<Factory> {
   inline const Statements& body() const {
     return body_;
   }
-  DECLARE_DERIVED_NODE_TYPE(CaseClause)
  private:
   Expression<Factory>* expr_;
   Statements body_;

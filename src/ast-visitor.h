@@ -40,7 +40,6 @@ class BasicAstVisitor
   virtual void Visit(typename add<Block<Factory> >::type block) = 0;  //NOLINT
   virtual void Visit(typename add<FunctionStatement<Factory> >::type func) = 0;  //NOLINT
   virtual void Visit(typename add<VariableStatement<Factory> >::type var) = 0;  //NOLINT
-  virtual void Visit(typename add<Declaration<Factory> >::type decl) = 0;  //NOLINT
   virtual void Visit(typename add<EmptyStatement<Factory> >::type empty) = 0;  //NOLINT
   virtual void Visit(typename add<IfStatement<Factory> >::type ifstmt) = 0;  //NOLINT
   virtual void Visit(typename add<DoWhileStatement<Factory> >::type dowhile) = 0;  //NOLINT
@@ -52,7 +51,6 @@ class BasicAstVisitor
   virtual void Visit(typename add<ReturnStatement<Factory> >::type returnstmt) = 0;  //NOLINT
   virtual void Visit(typename add<WithStatement<Factory> >::type withstmt) = 0;  //NOLINT
   virtual void Visit(typename add<LabelledStatement<Factory> >::type labelledstmt) = 0;  //NOLINT
-  virtual void Visit(typename add<CaseClause<Factory> >::type clause) = 0;  //NOLINT
   virtual void Visit(typename add<SwitchStatement<Factory> >::type switchstmt) = 0;  //NOLINT
   virtual void Visit(typename add<ThrowStatement<Factory> >::type throwstmt) = 0;  //NOLINT
   virtual void Visit(typename add<TryStatement<Factory> >::type trystmt) = 0;  //NOLINT

@@ -80,7 +80,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const Block* block);
   void Visit(const FunctionStatement* func);
   void Visit(const VariableStatement* var);
-  void Visit(const Declaration* decl);
   void Visit(const EmptyStatement* stmt);
   void Visit(const IfStatement* stmt);
   void Visit(const DoWhileStatement* stmt);
@@ -92,7 +91,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const ReturnStatement* stmt);
   void Visit(const WithStatement* stmt);
   void Visit(const LabelledStatement* stmt);
-  void Visit(const CaseClause* clause);
   void Visit(const SwitchStatement* stmt);
   void Visit(const ThrowStatement* stmt);
   void Visit(const TryStatement* stmt);

@@ -337,11 +337,6 @@ void Interpreter::Visit(const VariableStatement* var) {
 }
 
 
-void Interpreter::Visit(const Declaration* decl) {
-  UNREACHABLE();
-}
-
-
 void Interpreter::Visit(const EmptyStatement* empty) {
   RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
@@ -547,11 +542,6 @@ void Interpreter::Visit(const WithStatement* stmt) {
 
 void Interpreter::Visit(const LabelledStatement* stmt) {
   EVAL(stmt->body());
-}
-
-
-void Interpreter::Visit(const CaseClause* clause) {
-  UNREACHABLE();
 }
 
 

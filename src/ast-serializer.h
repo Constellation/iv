@@ -81,23 +81,20 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     typename Declarations::const_iterator it = var->decls().begin();
     const typename Declarations::const_iterator end = var->decls().end();
     while (it != end) {
-      (*it)->Accept(this);
+      const Declaration& decl = **it;
+      Append("{\"type\":\"decl\",\"name\":");
+      decl.name()->Accept(this);
+      Append(",\"exp\":");
+      if (decl.expr()) {
+        decl.expr()->Accept(this);
+      }
+      Append('}');
       ++it;
       if (it != end) {
         Append(',');
       }
     }
     Append("]}");
-  }
-
-  void Visit(const Declaration* decl) {
-    Append("{\"type\":\"decl\",\"name\":");
-    decl->name()->Accept(this);
-    Append(",\"exp\":");
-    if (decl->expr()) {
-      decl->expr()->Accept(this);
-    }
-    Append('}');
   }
 
   void Visit(const EmptyStatement* empty) {
@@ -201,26 +198,6 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     Append('}');
   }
 
-  void Visit(const CaseClause* clause) {
-    if (clause->IsDefault()) {
-      Append("{\"type\":\"default\"");
-    } else {
-      Append("{\"type\":\"case\",\"exp\":");
-      clause->expr()->Accept(this);
-    }
-    Append(",\"body\"[");
-    typename Statements::const_iterator it = clause->body().begin();
-    const typename Statements::const_iterator end = clause->body().end();
-    while (it != end) {
-      (*it)->Accept(this);
-      ++it;
-      if (it != end) {
-        Append(',');
-      }
-    }
-    Append("]}");
-  }
-
   void Visit(const SwitchStatement* switchstmt) {
     Append("{\"type\":\"switch\",\"exp\":");
     switchstmt->expr()->Accept(this);
@@ -230,7 +207,24 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     const typename CaseClauses::const_iterator
         end = switchstmt->clauses().end();
     while (it != end) {
-      (*it)->Accept(this);
+      const CaseClause& clause = **it;
+      if (clause.IsDefault()) {
+        Append("{\"type\":\"default\"");
+      } else {
+        Append("{\"type\":\"case\",\"exp\":");
+        clause.expr()->Accept(this);
+      }
+      Append(",\"body\"[");
+      typename Statements::const_iterator stit = clause.body().begin();
+      const typename Statements::const_iterator stend = clause.body().end();
+      while (stit != stend) {
+        (*stit)->Accept(this);
+        ++stit;
+        if (stit != stend) {
+          Append(',');
+        }
+      }
+      Append("]}");
       ++it;
       if (it != end) {
         Append(',');

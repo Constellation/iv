@@ -512,14 +512,6 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     ret_ = hash;
   }
 
-  void Visit(const Declaration* decl) {
-    UNREACHABLE();
-  }
-
-  void Visit(const CaseClause* clause) {
-    UNREACHABLE();
-  }
-
  private:
   VALUE ret_;
 };
