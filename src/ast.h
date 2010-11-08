@@ -12,6 +12,7 @@
 #include "ast-fwd.h"
 #include "ast-visitor.h"
 #include "source.h"
+#include "location.h"
 #include "ustringpiece.h"
 
 namespace iv {
@@ -94,59 +95,8 @@ class AstNode : public SpaceObject,
  public:
   virtual ~AstNode() = 0;
 
-  DECLARE_NODE_TYPE_BASE(Statement)
-  DECLARE_NODE_TYPE_BASE(Block)
-  DECLARE_NODE_TYPE_BASE(ExpressionStatement)
-  DECLARE_NODE_TYPE_BASE(EmptyStatement)
-  DECLARE_NODE_TYPE_BASE(VariableStatement)
-  DECLARE_NODE_TYPE_BASE(DebuggerStatement)
-  DECLARE_NODE_TYPE_BASE(FunctionStatement)
-  DECLARE_NODE_TYPE_BASE(IfStatement)
-  DECLARE_NODE_TYPE_BASE(IterationStatement)
-  DECLARE_NODE_TYPE_BASE(DoWhileStatement)
-  DECLARE_NODE_TYPE_BASE(WhileStatement)
-  DECLARE_NODE_TYPE_BASE(ForStatement)
-  DECLARE_NODE_TYPE_BASE(ForInStatement)
-  DECLARE_NODE_TYPE_BASE(ContinueStatement)
-  DECLARE_NODE_TYPE_BASE(BreakStatement)
-  DECLARE_NODE_TYPE_BASE(ReturnStatement)
-  DECLARE_NODE_TYPE_BASE(WithStatement)
-  DECLARE_NODE_TYPE_BASE(LabelledStatement)
-  DECLARE_NODE_TYPE_BASE(SwitchStatement)
-  DECLARE_NODE_TYPE_BASE(ThrowStatement)
-  DECLARE_NODE_TYPE_BASE(TryStatement)
-  DECLARE_NODE_TYPE_BASE(BreakableStatement)
-  DECLARE_NODE_TYPE_BASE(NamedOnlyBreakableStatement)
-  DECLARE_NODE_TYPE_BASE(AnonymousBreakableStatement)
-
-  DECLARE_NODE_TYPE_BASE(Expression)
-
-  DECLARE_NODE_TYPE_BASE(Literal)
-  DECLARE_NODE_TYPE_BASE(ThisLiteral)
-  DECLARE_NODE_TYPE_BASE(NullLiteral)
-  DECLARE_NODE_TYPE_BASE(FalseLiteral)
-  DECLARE_NODE_TYPE_BASE(TrueLiteral)
-  DECLARE_NODE_TYPE_BASE(Undefined)
-  DECLARE_NODE_TYPE_BASE(NumberLiteral)
-  DECLARE_NODE_TYPE_BASE(StringLiteral)
-  DECLARE_NODE_TYPE_BASE(Directivable)
-  DECLARE_NODE_TYPE_BASE(Identifier)
-  DECLARE_NODE_TYPE_BASE(RegExpLiteral)
-  DECLARE_NODE_TYPE_BASE(ArrayLiteral)
-  DECLARE_NODE_TYPE_BASE(ObjectLiteral)
-  DECLARE_NODE_TYPE_BASE(FunctionLiteral)
-
-  DECLARE_NODE_TYPE_BASE(UnaryOperation)
-  DECLARE_NODE_TYPE_BASE(PostfixExpression)
-  DECLARE_NODE_TYPE_BASE(Assignment)
-  DECLARE_NODE_TYPE_BASE(BinaryOperation)
-  DECLARE_NODE_TYPE_BASE(ConditionalExpression)
-  DECLARE_NODE_TYPE_BASE(PropertyAccess)
-  DECLARE_NODE_TYPE_BASE(IdentifierAccess)
-  DECLARE_NODE_TYPE_BASE(IndexAccess)
-  DECLARE_NODE_TYPE_BASE(Call)
-  DECLARE_NODE_TYPE_BASE(FunctionCall)
-  DECLARE_NODE_TYPE_BASE(ConstructorCall)
+  STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
+  EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
 
   virtual void Accept(
       typename AstVisitor<Factory>::type* visitor) = 0;
