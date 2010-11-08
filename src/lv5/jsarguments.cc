@@ -98,9 +98,10 @@ PropertyDescriptor JSArguments::GetOwnProperty(Symbol name) const {
   if (desc.IsEmpty()) {
     return desc;
   }
-  if (map_.find(name) != map_.end()) {
-    const JSVal val = env_->GetBindingValue(name);
-    return DataDescriptor(val);
+  const Index2Param::const_iterator it = map_.find(name);
+  if (it != map_.end()) {
+    const JSVal val = env_->GetBindingValue(it->second);
+    return DataDescriptor(val, desc.attrs() & PropertyDescriptor::kAttrField);
   }
   return desc;
 }
@@ -126,7 +127,7 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
     } else {
       // TODO(Constellation) [[Value]] check
       env_->SetMutableBinding(ctx,
-                              name, desc.AsDataDescriptor()->data(),
+                              it->second, desc.AsDataDescriptor()->data(),
                               th, error);
       if (*error) {
         return false;

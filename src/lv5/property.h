@@ -40,6 +40,7 @@ class PropertyDescriptor {
   static const int kDefaultAttr = UNDEF_WRITABLE |
       UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE;
   static const int kTypeMask = DATA | ACCESSOR;
+  static const int kAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
 
   PropertyDescriptor(JSUndefinedKeywordType val)  // NOLINT
     : attrs_(kDefaultAttr | EMPTY),

@@ -12,7 +12,7 @@ bool JSDeclEnv::HasBinding(Symbol name) const {
 }
 
 bool JSDeclEnv::DeleteBinding(Symbol name) {
-  Record::const_iterator it(record_.find(name));
+  const Record::const_iterator it(record_.find(name));
   if (it == record_.end()) {
     return true;
   }
@@ -37,7 +37,7 @@ void JSDeclEnv::SetMutableBinding(Context* ctx,
                                   Symbol name,
                                   const JSVal& val,
                                   bool strict, Error* res) {
-  Record::const_iterator it(record_.find(name));
+  const Record::const_iterator it(record_.find(name));
   assert(it != record_.end());
   if (it->second.first & MUTABLE) {
     record_[name] = std::make_pair(it->second.first, val);
@@ -49,7 +49,7 @@ void JSDeclEnv::SetMutableBinding(Context* ctx,
 JSVal JSDeclEnv::GetBindingValue(Context* ctx,
                                  Symbol name,
                                  bool strict, Error* res) const {
-  Record::const_iterator it(record_.find(name));
+  const Record::const_iterator it(record_.find(name));
   assert(it != record_.end());
   if (it->second.first & IM_UNINITIALIZED) {
     if (strict) {
@@ -63,7 +63,7 @@ JSVal JSDeclEnv::GetBindingValue(Context* ctx,
 }
 
 JSVal JSDeclEnv::GetBindingValue(Symbol name) const {
-  Record::const_iterator it(record_.find(name));
+  const Record::const_iterator it(record_.find(name));
   assert(it != record_.end() && !(it->second.first & IM_UNINITIALIZED));
   return it->second.second;
 }
@@ -121,7 +121,7 @@ void JSObjectEnv::SetMutableBinding(Context* ctx,
 JSVal JSObjectEnv::GetBindingValue(Context* ctx,
                                    Symbol name,
                                    bool strict, Error* res) const {
-  bool value = record_->HasProperty(name);
+  const bool value = record_->HasProperty(name);
   if (!value) {
     if (strict) {
       // TODO(Constellation) add name of reference
