@@ -369,11 +369,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //  and this statement is very useful for not breaking FunctionDeclaration.
   Statement* ParseFunctionDeclaration(bool *res) {
     assert(token_ == Token::FUNCTION);
-    Next();
-    IS(Token::IDENTIFIER);
     FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::DECLARATION,
-        FunctionLiteral::GENERAL, true, CHECK);
+        FunctionLiteral::GENERAL, CHECK);
     // define named function as FunctionDeclaration
     scope_->AddFunctionDeclaration(expr);
     return factory_->NewFunctionStatement(expr);
@@ -936,12 +934,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     if (strict_) {
       RAISE("function statement not allowed in strict code");
     }
-    Next();
-    IS(Token::IDENTIFIER);
     FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::STATEMENT,
         FunctionLiteral::GENERAL,
-        true, CHECK);
+        CHECK);
     // define named function as variable declaration
     scope_->AddUnresolved(expr->name(), false);
     return factory_->NewFunctionStatement(expr);
@@ -1386,9 +1382,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     if (token_ != Token::NEW) {
       if (token_ == Token::FUNCTION) {
         // FunctionExpression
-        Next();
         expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
-                                    FunctionLiteral::GENERAL, true, CHECK);
+                                    FunctionLiteral::GENERAL, CHECK);
       } else {
         expr = ParsePrimaryExpression(CHECK);
       }
@@ -1676,7 +1671,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             expr = ParseFunctionLiteral(
                 FunctionLiteral::EXPRESSION,
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
-                false, CHECK);
+                CHECK);
             object->AddAccessor(type, ident, expr);
             typename ObjectMap::iterator it = map.find(ident);
             if (it == map.end()) {
@@ -1734,7 +1729,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   FunctionLiteral* ParseFunctionLiteral(
       typename FunctionLiteral::DeclType decl_type,
       typename FunctionLiteral::ArgType arg_type,
-      bool allow_identifier,
       bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
@@ -1751,16 +1745,25 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     FunctionLiteral* const literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
-    if (allow_identifier && token_ == Token::IDENTIFIER) {
-      Identifier* const name = ParseIdentifier(lexer_.Buffer());
-      literal->SetName(name);
-      const EvalOrArguments val = IsEvalOrArguments(name);
-      if (val) {
-        throw_error_if_strict_code = (val == kEval) ?
-            kDetectEvalName : kDetectArgumentsName;
-        throw_error_if_strict_code_line = lexer_.line_number();
+
+    if (arg_type == FunctionLiteral::GENERAL) {
+      assert(token_ == Token::FUNCTION);
+      Next();
+      if (token_ == Token::IDENTIFIER) {
+        Identifier* const name = ParseIdentifier(lexer_.Buffer());
+        literal->SetName(name);
+        const EvalOrArguments val = IsEvalOrArguments(name);
+        if (val) {
+          throw_error_if_strict_code = (val == kEval) ?
+              kDetectEvalName : kDetectArgumentsName;
+          throw_error_if_strict_code_line = lexer_.line_number();
+        }
+      } else if (decl_type == FunctionLiteral::DECLARATION ||
+                 decl_type == FunctionLiteral::STATEMENT) {
+        IS(Token::IDENTIFIER);
       }
     }
+
     const ScopeSwitcher switcher(this, literal->scope());
     literal->set_start_position(lexer_.pos() - 2);
 
