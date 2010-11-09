@@ -23,21 +23,9 @@ class AstFactory : public core::Space<2> {
       false_instance_(new(this)FalseLiteral()) {
   }
 
-  Identifier* NewIdentifier(const core::Location& location,
-                            const core::UStringPiece& buffer) {
-    Identifier* ident = new(this)Identifier(buffer, this);
-    return ident;
-  }
-
-  Identifier* NewIdentifier(const core::Location& location,
-                            const std::vector<uc16>& buffer) {
-    Identifier* ident = new(this)Identifier(buffer, this);
-    return ident;
-  }
-
-  Identifier* NewIdentifier(const core::Location& location,
-                            const std::vector<char>& buffer) {
-    Identifier* ident = new(this)Identifier(buffer, this);
+  template<typename Range>
+  Identifier* NewIdentifier(const Range& range) {
+    Identifier* ident = new(this)Identifier(range, this);
     return ident;
   }
 

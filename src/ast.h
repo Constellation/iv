@@ -686,19 +686,10 @@ template<typename Factory>
 class Identifier : public Literal<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  Identifier(const UStringPiece& buffer, Factory* factory)
-    : value_(buffer.data(),
-             buffer.size(),
-             typename value_type::allocator_type(factory)) {
-    }
-  Identifier(const std::vector<uc16>& buffer, Factory* factory)
-    : value_(buffer.data(),
-             buffer.size(),
-             typename value_type::allocator_type(factory)) {
-  }
-  Identifier(const std::vector<char>& buffer, Factory* factory)
-    : value_(buffer.begin(),
-             buffer.end(),
+  template<typename Range>
+  Identifier(const Range& range, Factory* factory)
+    : value_(range.begin(),
+             range.end(),
              typename value_type::allocator_type(factory)) {
   }
   inline const value_type& value() const {

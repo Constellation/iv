@@ -435,7 +435,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     do {
       Next();
       IS(Token::IDENTIFIER);
-      name = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
+      name = ParseIdentifier(lexer_.Buffer());
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -449,7 +449,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
         }
       }
-      Next();
 
       if (token_ == Token::ASSIGN) {
         Next();
@@ -650,13 +649,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         token_ != Token::RBRACE &&
         token_ != Token::EOS) {
       IS(Token::IDENTIFIER);
-      label = factory_->NewIdentifier(lexer_.location(),
-                                      lexer_.Buffer());
+      label = ParseIdentifier(lexer_.Buffer());
       target = LookupContinuableTarget(label);
       if (!target) {
         RAISE("label not found");
       }
-      Next();
     } else {
       target = LookupContinuableTarget();
       if (!target) {
@@ -680,8 +677,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         token_ != Token::EOS) {
       // label
       IS(Token::IDENTIFIER);
-      label = factory_->NewIdentifier(lexer_.location(),
-                                      lexer_.Buffer());
+      label = ParseIdentifier(lexer_.Buffer());
       if (ContainsLabel(labels_, label)) {
         // example
         //
@@ -698,7 +694,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           RAISE("label not found");
         }
       }
-      Next();
     } else {
       target = LookupBreakableTarget();
       if (!target) {
@@ -854,7 +849,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       Next();
       EXPECT(Token::LPAREN);
       IS(Token::IDENTIFIER);
-      name = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
+      name = ParseIdentifier(lexer_.Buffer());
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -869,7 +864,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
         }
       }
-      Next();
       EXPECT(Token::RPAREN);
       catch_block = ParseBlock(CHECK);
     }
@@ -1420,9 +1414,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         case Token::PERIOD: {
           Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
-          Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
-                                                            lexer_.Buffer());
-          Next();
+          Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           expr = factory_->NewIdentifierAccess(expr, ident);
           break;
         }
@@ -1467,8 +1459,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         break;
 
       case Token::IDENTIFIER:
-        result = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
-        Next();
+        result = ParseIdentifier(lexer_.Buffer());
         break;
 
       case Token::NULL_LITERAL:
@@ -1652,10 +1643,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
-          ident = factory_->NewIdentifier(
-              lexer_.location(),
+          ident = ParseIdentifier(
               is_get ? ParserData::kGet : ParserData::kSet);
-          Next();
           expr = ParseAssignmentExpression(true, CHECK);
           object->AddDataProperty(ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
@@ -1678,13 +1667,10 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = factory_->NewIdentifier(lexer_.location(),
-                                              lexer_.Buffer8());
+              ident = ParseIdentifier(lexer_.Buffer8());
             } else {
-              ident = factory_->NewIdentifier(lexer_.location(),
-                                              lexer_.Buffer());
+              ident = ParseIdentifier(lexer_.Buffer());
             }
-            Next();
             typename ObjectLiteral::PropertyDescriptorType type =
                 (is_get) ? ObjectLiteral::GET : ObjectLiteral::SET;
             expr = ParseFunctionLiteral(
@@ -1713,8 +1699,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       } else if (token_ == Token::IDENTIFIER ||
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
-        ident = factory_->NewIdentifier(lexer_.location(), lexer_.Buffer());
-        Next();
+        ident = ParseIdentifier(lexer_.Buffer());
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         object->AddDataProperty(ident, expr);
@@ -1767,8 +1752,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     FunctionLiteral* const literal = factory_->NewFunctionLiteral(decl_type);
     literal->set_strict(strict_);
     if (allow_identifier && token_ == Token::IDENTIFIER) {
-      Identifier* const name = factory_->NewIdentifier(lexer_.location(),
-                                                       lexer_.Buffer());
+      Identifier* const name = ParseIdentifier(lexer_.Buffer());
       literal->SetName(name);
       const EvalOrArguments val = IsEvalOrArguments(name);
       if (val) {
@@ -1776,7 +1760,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
             kDetectEvalName : kDetectArgumentsName;
         throw_error_if_strict_code_line = lexer_.line_number();
       }
-      Next();
     }
     const ScopeSwitcher switcher(this, literal->scope());
     literal->set_start_position(lexer_.pos() - 2);
@@ -1790,8 +1773,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
       IS(Token::IDENTIFIER);
-      Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
-                                                        lexer_.Buffer());
+      Identifier* const ident = ParseIdentifier(lexer_.Buffer());
       if (!throw_error_if_strict_code) {
         const EvalOrArguments val = IsEvalOrArguments(ident);
         if (val) {
@@ -1801,13 +1783,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         }
       }
       literal->AddParameter(ident);
-      Next();
       EXPECT(Token::RPAREN);
     } else {
       while (token_ != Token::RPAREN) {
         IS(Token::IDENTIFIER);
-        Identifier* const ident = factory_->NewIdentifier(lexer_.location(),
-                                                          lexer_.Buffer());
+        Identifier* const ident = ParseIdentifier(lexer_.Buffer());
         if (!throw_error_if_strict_code) {
           const EvalOrArguments val = IsEvalOrArguments(ident);
           if (val) {
@@ -1823,7 +1803,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         }
         literal->AddParameter(ident);
         param_set.insert(ident);
-        Next();
         if (token_ != Token::RPAREN) {
           EXPECT(Token::COMMA);
         }
@@ -1876,6 +1855,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     literal->SubStringSource(lexer_.source());
     Next();
     return literal;
+  }
+
+  template<typename Range>
+  Identifier* ParseIdentifier(const Range& range) {
+    Identifier* const ident = factory_->NewIdentifier(range);
+    Next();
+    return ident;
   }
 
   bool ContainsLabel(const Identifiers* const labels,

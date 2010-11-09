@@ -49,22 +49,10 @@ class BasicAstFactory : public Space<N> {
                      is_base_of_factory::value);
   }
 
-  Identifier* NewIdentifier(const Location& location,
-                            const UStringPiece& buffer) {
+  template<typename Range>
+  Identifier* NewIdentifier(const Range& range) {
     return new (static_cast<Factory*>(this))
-        Identifier(buffer, static_cast<Factory*>(this));
-  }
-
-  Identifier* NewIdentifier(const Location& location,
-                            const std::vector<uc16>& buffer) {
-    return new (static_cast<Factory*>(this))
-        Identifier(buffer, static_cast<Factory*>(this));
-  }
-
-  Identifier* NewIdentifier(const Location& location,
-                            const std::vector<char>& buffer) {
-    return new (static_cast<Factory*>(this))
-        Identifier(buffer, static_cast<Factory*>(this));
+        Identifier(range, static_cast<Factory*>(this));
   }
 
   NumberLiteral* NewNumberLiteral(const double& val) {

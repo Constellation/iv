@@ -26,19 +26,9 @@ class AstFactory : public core::ast::BasicAstFactory<2, AstFactory> {
     }
   }
 
-  Identifier* NewIdentifier(const core::Location& location,
-                            const core::UStringPiece& buffer) {
-    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
-  }
-
-  Identifier* NewIdentifier(const core::Location& location,
-                            const std::vector<uc16>& buffer) {
-    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
-  }
-
-  Identifier* NewIdentifier(const core::Location& location,
-                            const std::vector<char>& buffer) {
-    return new (this) IdentifierWithSymbol(ctx_, buffer, this);
+  template<typename Range>
+  Identifier* NewIdentifier(const Range& range) {
+    return new (this) IdentifierWithSymbol(ctx_, range, this);
   }
 
   inline RegExpLiteral* NewRegExpLiteral(

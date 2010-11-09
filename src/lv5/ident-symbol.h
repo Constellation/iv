@@ -12,19 +12,18 @@ class AstFactory;
 
 class IdentifierWithSymbol : public Identifier {
  public:
+  template<typename Range>
   IdentifierWithSymbol(Context* ctx,
-                       const core::UStringPiece& buffer,
-                       AstFactory* factory);
-  IdentifierWithSymbol(Context* ctx,
-                       const std::vector<uc16>& buffer,
-                       AstFactory* factory);
-  IdentifierWithSymbol(Context* ctx,
-                       const std::vector<char>& buffer,
-                       AstFactory* factory);
+                       const Range& buffer,
+                       AstFactory* factory)
+    : Identifier(buffer, factory),
+      sym_(Intern(ctx)) {
+  }
   Symbol symbol() const {
     return sym_;
   }
  private:
+  Symbol Intern(Context* ctx);
   Symbol sym_;
 };
 
