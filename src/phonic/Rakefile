@@ -10,7 +10,7 @@ directory "ext/include/iv"
 
 HOE = Hoe.spec 'iv-phonic' do
   developer('Constellation', 'utatane.tea@gmail.com')
-  self.version = '0.0.1'
+  self.version = '0.0.3'
   self.readme_file = 'README.rdoc'
   self.history_file = 'ChangeLog'
   self.extra_rdoc_files = FileList['*.rdoc']
@@ -23,7 +23,7 @@ HOE = Hoe.spec 'iv-phonic' do
 end
 
 Rake::ExtensionTask.new('phonic', HOE.spec) do |ext|
-  ext.lib_dir = File.join('lib', 'iv', 'phonic')
+  ext.lib_dir = File.join('lib', 'iv')
   ext.ext_dir = File.join('ext', 'iv', 'phonic')
   ext.config_options << "--with-iv-include=#{File.join($root, 'ext', 'include')}"
 end

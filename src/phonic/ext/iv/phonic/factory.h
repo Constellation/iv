@@ -129,33 +129,41 @@ class AstFactory : public core::Space<2> {
                                   else_statement);
   }
 
-  DoWhileStatement* NewDoWhileStatement() {
-    return new (this) DoWhileStatement();
+  DoWhileStatement* NewDoWhileStatement(Statement* body,
+                                        Expression* cond) {
+    return new (this) DoWhileStatement(body, cond);
   }
 
-  WhileStatement* NewWhileStatement() {
-    return new (this) WhileStatement();
+  WhileStatement* NewWhileStatement(Statement* body,
+                                    Expression* cond) {
+    return new (this) WhileStatement(body, cond);
   }
 
-  ForInStatement* NewForInStatement() {
-    return new (this) ForInStatement();
+  ForInStatement* NewForInStatement(Statement* body,
+                                    Statement* each,
+                                    Expression* enumerable) {
+    return new (this) ForInStatement(body, each, enumerable);
   }
 
   ExpressionStatement* NewExpressionStatement(Expression* expr) {
     return new (this) ExpressionStatement(expr);
   }
 
-  ForStatement* NewForStatement() {
-    return new (this) ForStatement();
+  ForStatement* NewForStatement(Statement* body,
+                                Statement* init,
+                                Expression* cond,
+                                Statement* next) {
+    return new (this) ForStatement(body, init, cond, next);
   }
 
+
   ContinueStatement* NewContinueStatement(Identifier* label,
-                                          IterationStatement* target) {
+                                          IterationStatement** target) {
     return new (this) ContinueStatement(label, target);
   }
 
   BreakStatement* NewBreakStatement(Identifier* label,
-                                    BreakableStatement* target) {
+                                    BreakableStatement** target) {
     return new (this) BreakStatement(label, target);
   }
 
