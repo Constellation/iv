@@ -14,7 +14,7 @@ namespace icu {
 template<typename Out>
 inline void ConvertToUTF16(const core::StringPiece& str,
                            Out* out,
-                           const StringPiece code = "utf-8") {
+                           const core::StringPiece code = "utf-8") {
   UErrorCode error = U_ZERO_ERROR;
   u_init(&error);
   UConverter* const conv = ucnv_open(code.data(), &error);
