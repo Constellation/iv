@@ -150,17 +150,7 @@ class Statement : public AstNode<Factory> {
 template<typename Factory>
 class BreakableStatement : public Statement<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
-  BreakableStatement() : labels_(NULL) { }
-  void set_labels(Identifiers* labels) {
-    labels_ = labels;
-  }
-  Identifiers* labels() const {
-    return labels_;
-  }
   DECLARE_NODE_TYPE(BreakableStatement)
- protected:
-  Identifiers* labels_;
 };
 
 template<typename Factory>
@@ -283,13 +273,10 @@ class IfStatement : public Statement<Factory> {
 template<typename Factory>
 class IterationStatement : public AnonymousBreakableStatement<Factory> {
  public:
-  IterationStatement()
-    : body_(NULL) {
+  explicit IterationStatement(Statement<Factory>* stmt)
+    : body_(stmt) {
   }
   inline Statement<Factory>* body() const { return body_; }
-  inline void Initialize(Statement<Factory>* stmt) {
-    body_ = stmt;
-  }
   DECLARE_NODE_TYPE(IterationStatement)
  private:
   Statement<Factory>* body_;
@@ -298,15 +285,11 @@ class IterationStatement : public AnonymousBreakableStatement<Factory> {
 template<typename Factory>
 class DoWhileStatement : public IterationStatement<Factory> {
  public:
-  DoWhileStatement()
-    : IterationStatement<Factory>(),
-      cond_(NULL) {
+  DoWhileStatement(Statement<Factory>* body, Expression<Factory>* cond)
+    : IterationStatement<Factory>(body),
+      cond_(cond) {
   }
   inline Expression<Factory>* cond() const { return cond_; }
-  inline void Initialize(Statement<Factory>* body, Expression<Factory>* cond) {
-    IterationStatement<Factory>::Initialize(body);
-    cond_ = cond;
-  }
   DECLARE_DERIVED_NODE_TYPE(DoWhileStatement)
  private:
   Expression<Factory>* cond_;
@@ -315,15 +298,11 @@ class DoWhileStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class WhileStatement : public IterationStatement<Factory> {
  public:
-  explicit WhileStatement()
-    : IterationStatement<Factory>(),
-      cond_(NULL) {
+  WhileStatement(Statement<Factory>* body, Expression<Factory>* cond)
+    : IterationStatement<Factory>(body),
+      cond_(cond) {
   }
   inline Expression<Factory>* cond() const { return cond_; }
-  inline void Initialize(Statement<Factory>* body, Expression<Factory>* cond) {
-    IterationStatement<Factory>::Initialize(body);
-    cond_ = cond;
-  }
   DECLARE_DERIVED_NODE_TYPE(WhileStatement)
  private:
   Expression<Factory>* cond_;
@@ -332,24 +311,18 @@ class WhileStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class ForStatement : public IterationStatement<Factory> {
  public:
-  ForStatement()
-    : IterationStatement<Factory>(),
-      init_(NULL),
-      cond_(NULL),
-      next_(NULL) {
+  ForStatement(Statement<Factory>* body,
+               Statement<Factory>* init,
+               Expression<Factory>* cond,
+               Statement<Factory>* next)
+    : IterationStatement<Factory>(body),
+      init_(init),
+      cond_(cond),
+      next_(next) {
   }
   inline Statement<Factory>* init() const { return init_; }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Statement<Factory>* next() const { return next_; }
-  inline void Initialize(Statement<Factory>* body,
-                         Statement<Factory>* init,
-                         Expression<Factory>* cond,
-                         Statement<Factory>* next) {
-    IterationStatement<Factory>::Initialize(body);
-    init_ = init;
-    cond_ = cond;
-    next_ = next;
-  }
   DECLARE_DERIVED_NODE_TYPE(ForStatement)
  private:
   Statement<Factory>* init_;
@@ -360,20 +333,15 @@ class ForStatement : public IterationStatement<Factory> {
 template<typename Factory>
 class ForInStatement : public IterationStatement<Factory> {
  public:
-  ForInStatement()
-    : IterationStatement<Factory>(),
-      each_(NULL),
-      enumerable_(NULL) {
+  ForInStatement(Statement<Factory>* body,
+                 Statement<Factory>* each,
+                 Expression<Factory>* enumerable)
+    : IterationStatement<Factory>(body),
+      each_(each),
+      enumerable_(enumerable) {
   }
   inline Statement<Factory>* each() const { return each_; }
   inline Expression<Factory>* enumerable() const { return enumerable_; }
-  inline void Initialize(Statement<Factory>* body,
-                         Statement<Factory>* each,
-                         Expression<Factory>* enumerable) {
-    IterationStatement<Factory>::Initialize(body);
-    each_ = each;
-    enumerable_ = enumerable;
-  }
   DECLARE_DERIVED_NODE_TYPE(ForInStatement)
  private:
   Statement<Factory>* each_;
@@ -384,32 +352,40 @@ template<typename Factory>
 class ContinueStatement : public Statement<Factory> {
  public:
   ContinueStatement(Identifier<Factory>* label,
-                    IterationStatement<Factory>* target)
+                    IterationStatement<Factory>** target)
     : label_(label),
       target_(target) {
+    assert(target_);
   }
   inline Identifier<Factory>* label() const { return label_; }
-  inline IterationStatement<Factory>* target() const { return target_; }
+  inline IterationStatement<Factory>* target() const {
+    assert(target_ && *target_);
+    return *target_;
+  }
   DECLARE_DERIVED_NODE_TYPE(ContinueStatement)
  private:
   Identifier<Factory>* label_;
-  IterationStatement<Factory>* target_;
+  IterationStatement<Factory>** target_;
 };
 
 template<typename Factory>
 class BreakStatement : public Statement<Factory> {
  public:
   BreakStatement(Identifier<Factory>* label,
-                 BreakableStatement<Factory>* target)
+                 BreakableStatement<Factory>** target)
     : label_(label),
       target_(target) {
+    assert(target_);
   }
   inline Identifier<Factory>* label() const { return label_; }
-  inline BreakableStatement<Factory>* target() const { return target_; }
+  inline BreakableStatement<Factory>* target() const {
+    assert(target_ && *target_);
+    return *target_;
+  }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:
   Identifier<Factory>* label_;
-  BreakableStatement<Factory>* target_;
+  BreakableStatement<Factory>** target_;
 };
 
 template<typename Factory>

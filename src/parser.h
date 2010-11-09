@@ -140,15 +140,20 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 #undef V
   class Target : private Noncopyable<Target>::type {
    public:
-    Target(parser_type * parser, BreakableStatement* target)
+    typedef typename SpaceVector<Factory, Identifier*>::type Identifiers;
+    enum Type {
+      kNamedOnlyStatement = 0,  // (00)2
+      kIterationStatement = 2,  // (10)2
+      kSwitchStatement = 3      // (11)2
+    };
+    Target(parser_type* parser, Type type)
       : parser_(parser),
         prev_(parser->target()),
-        node_(target) {
+        labels_(parser->labels()),
+        node_(NULL),
+        type_(type) {
       parser_->set_target(this);
-      if (parser_->labels()) {
-        target->set_labels(parser_->labels());
-        parser_->set_labels(NULL);
-      }
+      parser_->set_labels(NULL);
     }
     ~Target() {
       parser_->set_target(prev_);
@@ -156,13 +161,36 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     inline Target* previous() const {
       return prev_;
     }
-    inline BreakableStatement* node() const {
+    inline bool IsAnonymous() const {
+      return type_ & 2;
+    }
+    inline bool IsIteration() const {
+      return type_ == kIterationStatement;
+    }
+    inline bool IsSwitch() const {
+      return type_ == kSwitchStatement;
+    }
+    inline bool IsNamedOnly() const {
+      return !IsAnonymous();
+    }
+    inline BreakableStatement** node() {
+      node_ = new(parser_->factory())BreakableStatement*();
       return node_;
+    }
+    inline Identifiers* labels() const {
+      return labels_;
+    }
+    inline void set_node(BreakableStatement* node) {
+      if (node_) {
+        *node_ = node;
+      }
     }
    private:
     parser_type* parser_;
     Target* prev_;
-    BreakableStatement* node_;
+    Identifiers* labels_;
+    BreakableStatement** node_;
+    int type_;
   };
 
   Parser(BasicSource* source, Factory* space)
@@ -388,7 +416,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     assert(token_ == Token::LBRACE);
     Block* const block = factory_->NewBlock();
     Statement* stmt;
-    const Target target(this, block);
+    Target target(this, Target::kNamedOnlyStatement);
 
     Next();
     while (token_ != Token::RBRACE) {
@@ -396,6 +424,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       block->AddStatement(stmt);
     }
     Next();
+    target.set_node(block);
     return block;
   }
 
@@ -510,8 +539,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::DO);
-    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement();
-    const Target target(this, dowhile);
+    Target target(this, Target::kIterationStatement);
     Next();
 
     Statement* const stmt = ParseStatement(CHECK);
@@ -525,7 +553,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::RPAREN);
 
     ExpectSemicolon(CHECK);
-    dowhile->Initialize(stmt, expr);
+    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(stmt, expr);
+    target.set_node(dowhile);
     return dowhile;
   }
 
@@ -537,14 +566,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     EXPECT(Token::LPAREN);
 
     Expression* const expr = ParseExpression(true, CHECK);
-    WhileStatement* const whilestmt = factory_->NewWhileStatement();
-    const Target target(this, whilestmt);
+    Target target(this, Target::kIterationStatement);
 
     EXPECT(Token::RPAREN);
 
     Statement* const stmt = ParseStatement(CHECK);
-    whilestmt->Initialize(stmt, expr);
+    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt, expr);
 
+    target.set_node(whilestmt);
     return whilestmt;
   }
 
@@ -580,10 +609,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           }
           Expression* const enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* const forstmt = factory_->NewForInStatement();
-          const Target target(this, forstmt);
+          Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
-          forstmt->Initialize(body, init, enumerable);
+          ForInStatement* const forstmt =
+              factory_->NewForInStatement(body, init, enumerable);
+          target.set_node(forstmt);
           return forstmt;
         }
       } else {
@@ -597,10 +627,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           Next();
           Expression* const enumerable = ParseExpression(true, CHECK);
           EXPECT(Token::RPAREN);
-          ForInStatement* const forstmt = factory_->NewForInStatement();
-          const Target target(this, forstmt);
+          Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
-          forstmt->Initialize(body, init, enumerable);
+          ForInStatement* const forstmt =
+              factory_->NewForInStatement(body, init, enumerable);
+          target.set_node(forstmt);
           return forstmt;
         }
       }
@@ -627,11 +658,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       EXPECT(Token::RPAREN);
     }
 
-    ForStatement* const forstmt = factory_->NewForStatement();
-    const Target target(this, forstmt);
+    Target target(this, Target::kIterationStatement);
     Statement* const body = ParseStatement(CHECK);
-    forstmt->Initialize(body, init, cond, next);
-
+    ForStatement* const forstmt =
+        factory_->NewForStatement(body, init, cond, next);
+    target.set_node(forstmt);
     return forstmt;
   }
 
@@ -640,7 +671,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
     Identifier* label = NULL;
-    IterationStatement* target;
+    IterationStatement** target;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
@@ -667,7 +698,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
     Identifier* label = NULL;
-    BreakableStatement* target = NULL;
+    BreakableStatement** target = NULL;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
         token_ != Token::SEMICOLON &&
@@ -756,7 +787,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
     Expression *expr = ParseExpression(true, CHECK);
     SwitchStatement *switch_stmt = factory_->NewSwitchStatement(expr);
-    const Target target(this, switch_stmt);
+    Target target(this, Target::kSwitchStatement);
 
     EXPECT(Token::RPAREN);
 
@@ -768,6 +799,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
     Next();
 
+    target.set_node(switch_stmt);
     return switch_stmt;
   }
 
@@ -1888,58 +1920,56 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     for (const Target* target = target_;
          target != NULL;
          target = target->previous()) {
-      if (ContainsLabel(target->node()->labels(), label)) {
+      if (ContainsLabel(target->labels(), label)) {
         return true;
       }
     }
     return false;
   }
 
-  BreakableStatement* LookupBreakableTarget(
+  BreakableStatement** LookupBreakableTarget(
       const Identifier* const label) const {
     assert(label != NULL);
-    for (const Target* target = target_;
+    for (Target* target = target_;
          target != NULL;
          target = target->previous()) {
-      if (ContainsLabel(target->node()->labels(), label)) {
+      if (ContainsLabel(target->labels(), label)) {
         return target->node();
       }
     }
     return NULL;
   }
 
-  BreakableStatement* LookupBreakableTarget() const {
-    for (const Target* target = target_;
+  BreakableStatement** LookupBreakableTarget() const {
+    for (Target* target = target_;
          target != NULL;
          target = target->previous()) {
-      if (target->node()->AsAnonymousBreakableStatement()) {
+      if (target->IsAnonymous()) {
         return target->node();
       }
     }
     return NULL;
   }
 
-  IterationStatement* LookupContinuableTarget(
+  IterationStatement** LookupContinuableTarget(
       const Identifier* const label) const {
     assert(label != NULL);
-    for (const Target* target = target_;
+    for (Target* target = target_;
          target != NULL;
          target = target->previous()) {
-      IterationStatement* const iter = target->node()->AsIterationStatement();
-      if (iter && ContainsLabel(iter->labels(), label)) {
-        return iter;
+      if (target->IsIteration() && ContainsLabel(target->labels(), label)) {
+        return reinterpret_cast<IterationStatement**>(target->node());
       }
     }
     return NULL;
   }
 
-  IterationStatement* LookupContinuableTarget() const {
-    for (const Target* target = target_;
+  IterationStatement** LookupContinuableTarget() const {
+    for (Target* target = target_;
          target != NULL;
          target = target->previous()) {
-      IterationStatement* const iter = target->node()->AsIterationStatement();
-      if (iter) {
-        return iter;
+      if (target->IsIteration()) {
+        return reinterpret_cast<IterationStatement**>(target->node());
       }
     }
     return NULL;
@@ -2022,6 +2052,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
   }
   inline void set_target(Target* target) {
     target_ = target;
+  }
+  inline Factory* factory() const {
+    return factory_;
   }
   inline Identifiers* labels() const {
     return labels_;

@@ -149,33 +149,42 @@ class BasicAstFactory : public Space<N> {
                                                          else_statement);
   }
 
-  DoWhileStatement* NewDoWhileStatement() {
-    return new (static_cast<Factory*>(this)) DoWhileStatement();
+  DoWhileStatement* NewDoWhileStatement(Statement* body,
+                                        Expression* cond) {
+    return new (static_cast<Factory*>(this)) DoWhileStatement(body, cond);
   }
 
-  WhileStatement* NewWhileStatement() {
-    return new (static_cast<Factory*>(this)) WhileStatement();
+  WhileStatement* NewWhileStatement(Statement* body,
+                                    Expression* cond) {
+    return new (static_cast<Factory*>(this)) WhileStatement(body, cond);
   }
 
-  ForInStatement* NewForInStatement() {
-    return new (static_cast<Factory*>(this)) ForInStatement();
+  ForInStatement* NewForInStatement(Statement* body,
+                                    Statement* each,
+                                    Expression* enumerable) {
+    return new (static_cast<Factory*>(this)) ForInStatement(body,
+                                                            each, enumerable);
   }
 
   ExpressionStatement* NewExpressionStatement(Expression* expr) {
     return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 
-  ForStatement* NewForStatement() {
-    return new (static_cast<Factory*>(this)) ForStatement();
+  ForStatement* NewForStatement(Statement* body,
+                                Statement* init,
+                                Expression* cond,
+                                Statement* next) {
+    return new (static_cast<Factory*>(this)) ForStatement(body, init,
+                                                          cond, next);
   }
 
   ContinueStatement* NewContinueStatement(Identifier* label,
-                                          IterationStatement* target) {
+                                          IterationStatement** target) {
     return new (static_cast<Factory*>(this)) ContinueStatement(label, target);
   }
 
   BreakStatement* NewBreakStatement(Identifier* label,
-                                    BreakableStatement* target) {
+                                    BreakableStatement** target) {
     return new (static_cast<Factory*>(this)) BreakStatement(label, target);
   }
 
