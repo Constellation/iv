@@ -2,12 +2,10 @@
 #define _IV_LV5_CONTEXT_H_
 #include <tr1/unordered_map>
 #include <tr1/random>
-#include <tr1/type_traits>
 #include "xorshift.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
-#include "enable_if.h"
 #include "ast.h"
 #include "jsenv.h"
 #include "jsval.h"
@@ -101,9 +99,15 @@ class Context : private core::Noncopyable<Context>::type {
     ret_ = ret;
   }
 
-  void Return(JSVal val) {
+  template<class T>
+  void Return(T val) {
+    ret_.set_value(val);
+  }
+  void Return(const JSVal& val) {
     ret_ = val;
   }
+  template
+  void Return(T
 
   void SetStatement(Mode mode, const JSVal& val,
                     const BreakableStatement* target) {

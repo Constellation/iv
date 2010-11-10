@@ -904,25 +904,41 @@ void Interpreter::Visit(const BinaryOperation* binary) {
 
       case Token::LT: {  // <
         const CompareKind res = Compare(lhs, rhs, true, CHECK);
-        ctx_->Return(res == CMP_TRUE);
+        if (res == CMP_TRUE) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::GT: {  // >
         const CompareKind res = Compare(rhs, lhs, false, CHECK);
-        ctx_->Return(res == CMP_TRUE);
+        if (res == CMP_TRUE) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::LTE: {  // <=
         const CompareKind res = Compare(rhs, lhs, false, CHECK);
-        ctx_->Return(res == CMP_FALSE);
+        if (res == CMP_FALSE) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::GTE: {  // >=
         const CompareKind res = Compare(lhs, rhs, true, CHECK);
-        ctx_->Return(res == CMP_FALSE);
+        if (res == CMP_FALSE) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
@@ -936,8 +952,12 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           ctx_->error()->Report(Error::Type, "instanceof requires constructor");
           return;
         }
-        bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
-        ctx_->Return(res);
+        const bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
+        if (res) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
@@ -947,30 +967,50 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           return;
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
-        ctx_->Return(
-            rhs.object()->HasProperty(ctx_->Intern(*name)));
+        const bool res = rhs.object()->HasProperty(ctx_->Intern(*name));
+        if (res) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::EQ: {  // ==
         const bool res = AbstractEqual(lhs, rhs, CHECK);
-        ctx_->Return(res);
+        if (res) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::NE: {  // !=
         const bool res = AbstractEqual(lhs, rhs, CHECK);
-        ctx_->Return(!res);
+        if (!res) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::EQ_STRICT: {  // ===
-        ctx_->Return(StrictEqual(lhs, rhs));
+        if (StrictEqual(lhs, rhs)) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
       case Token::NE_STRICT: {  // !==
-        ctx_->Return(!StrictEqual(lhs, rhs));
+        if (!StrictEqual(lhs, rhs)) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
         return;
       }
 
@@ -1035,7 +1075,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::DELETE: {
       EVAL(unary->expr());
       if (!ctx_->ret().IsReference()) {
-        ctx_->Return(true);
+        ctx_->Return(JSTrue);
         return;
       }
       const JSReference* const ref = ctx_->ret().reference();
@@ -1045,7 +1085,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
           ctx_->error()->Report(Error::Syntax, "?");
           return;
         } else {
-          ctx_->Return(true);
+          ctx_->Return(JSTrue);
           return;
         }
       }
@@ -1053,7 +1093,11 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         JSObject* const obj = ref->base()->ToObject(ctx_, CHECK);
         const bool result = obj->Delete(ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
-        ctx_->Return(result);
+        if (result) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
       } else {
         assert(ref->base()->IsEnvironment());
         if (ref->IsStrictReference()) {
@@ -1061,9 +1105,13 @@ void Interpreter::Visit(const UnaryOperation* unary) {
           ctx_->error()->Report(Error::Syntax, "?");
           return;
         }
-        ctx_->Return(
-            ref->base()->environment()->DeleteBinding(
-                ref->GetReferencedName()));
+        const bool res = ref->base()->environment()->DeleteBinding(
+            ref->GetReferencedName());
+        if (res) {
+          ctx_->Return(JSTrue);
+        } else {
+          ctx_->Return(JSFalse);
+        }
       }
       return;
     }
@@ -1166,7 +1214,11 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const bool value = expr.ToBoolean(CHECK);
-      ctx_->Return(!value);
+      if (!value) {
+        ctx_->Return(JSTrue);
+      } else {
+        ctx_->Return(JSFalse);
+      }
       return;
     }
 
