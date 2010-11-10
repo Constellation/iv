@@ -50,11 +50,11 @@ class Lexer: private Noncopyable<Lexer>::type {
     Token::Type token;
     has_line_terminator_before_next_ = false;
     do {
-      location_.begin_position_ = pos();
       while (Chars::IsWhiteSpace(c_)) {
         // white space
         Advance();
       }
+      location_.set_begin_position(pos() - 1);
       switch (c_) {
         case '"':
         case '\'':
@@ -354,7 +354,7 @@ class Lexer: private Noncopyable<Lexer>::type {
           break;
       }
     } while (token == Token::NOT_FOUND);
-    location_.end_position_ = pos();
+    location_.set_end_position(pos() - 1);
     return token;
   }
 
@@ -409,6 +409,8 @@ class Lexer: private Noncopyable<Lexer>::type {
   }
 
   bool ScanRegExpLiteral(bool contains_eq) {
+    // location begin_position is the same with DIV
+    // so, no need to set
     bool character = false;
     buffer16_.clear();
     if (contains_eq) {
@@ -435,7 +437,7 @@ class Lexer: private Noncopyable<Lexer>::type {
         Record16Advance();
       }
     }
-    Advance();
+    Advance();  // waste '/'
     return true;
   }
 
@@ -458,6 +460,7 @@ class Lexer: private Noncopyable<Lexer>::type {
         Record16Advance();
       }
     }
+    location_.set_end_position(pos() - 1);
     return true;
   }
 

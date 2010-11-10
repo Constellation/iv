@@ -15,6 +15,12 @@ struct Location {
   inline std::size_t end_position() const {
     return end_position_;
   }
+  inline void set_begin_position(std::size_t begin) {
+    begin_position_ = begin;
+  }
+  inline void set_end_position(std::size_t end) {
+    end_position_ = end;
+  }
 };
 
 IV_STATIC_ASSERT(std::tr1::is_pod<Location>::value);
