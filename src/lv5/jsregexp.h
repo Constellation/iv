@@ -8,17 +8,7 @@
 #include "ustringpiece.h"
 namespace iv {
 namespace lv5 {
-
-class JSRegExpImpl : public gc_cleanup {
- public:
-  JSRegExpImpl(const core::UStringPiece& value,
-               const core::UStringPiece& flags,
-               UErrorCode* status);
-  ~JSRegExpImpl();
- private:
-  URegularExpression* regexp_;
-  bool global_;
-};
+class JSRegExpImpl;
 
 class JSRegExp : public JSObject {
  public:

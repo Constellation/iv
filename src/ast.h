@@ -3,6 +3,7 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include <tr1/tuple>
+#include <tr1/type_traits>
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
@@ -13,6 +14,7 @@
 #include "ast-visitor.h"
 #include "source.h"
 #include "location.h"
+#include "static_assert.h"
 #include "ustringpiece.h"
 
 namespace iv {
@@ -44,14 +46,23 @@ namespace ast {
 enum NodeType {
 #define V(type)\
   k##type,
-AST_DERIVED_NODE_LIST(V)
+AST_NODE_LIST(V)
 #undef V
   kNodeCount
 };
 
+template<typename Factory, NodeType type>
+class Inherit {
+};
+
+#define INHERIT(type)\
+template<typename Factory>\
+class type##Base\
+  : public Inherit<Factory, k##type> {\
+}
+
 template<typename Factory>
-class Scope : public SpaceObject,
-              private Noncopyable<Scope<Factory> >::type {
+class Scope : private Noncopyable<Scope<Factory> >::type {
  public:
   typedef std::pair<Identifier<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
@@ -90,8 +101,14 @@ class Scope : public SpaceObject,
 };
 
 template<typename Factory>
-class AstNode : public SpaceObject,
-                private Noncopyable<AstNode<Factory> >::type {
+class Inherit<Factory, kAstNode>
+  : public SpaceObject,
+    private Noncopyable<Inherit<Factory, kAstNode> >::type {
+};
+INHERIT(AstNode);
+
+template<typename Factory>
+class AstNode : public AstNodeBase<Factory> {
  public:
   virtual ~AstNode() = 0;
 
@@ -129,44 +146,93 @@ inline AstNode<Factory>::~AstNode() { }
 
 // Expression
 template<typename Factory>
-class Expression : public AstNode<Factory> {
+class Inherit<Factory, kExpression>
+  : public AstNode<Factory> {
+};
+INHERIT(Expression);
+
+template<typename Factory>
+class Expression : public ExpressionBase<Factory> {
  public:
   inline virtual bool IsValidLeftHandSide() const { return false; }
   DECLARE_NODE_TYPE(Expression)
 };
 
+// Literal
 template<typename Factory>
-class Literal : public Expression<Factory> {
+class Inherit<Factory, kLiteral>
+  : public Expression<Factory> {
+};
+INHERIT(Literal);
+
+template<typename Factory>
+class Literal : public LiteralBase<Factory> {
  public:
   DECLARE_NODE_TYPE(Literal)
 };
 
+
+// Statement
 template<typename Factory>
-class Statement : public AstNode<Factory> {
+class Inherit<Factory, kStatement>
+  : public AstNode<Factory> {
+};
+INHERIT(Statement);
+
+template<typename Factory>
+class Statement : public StatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(Statement)
 };
 
+// BreakableStatement
 template<typename Factory>
-class BreakableStatement : public Statement<Factory> {
+class Inherit<Factory, kBreakableStatement>
+  : public Statement<Factory> {
+};
+INHERIT(BreakableStatement);
+
+template<typename Factory>
+class BreakableStatement : public BreakableStatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(BreakableStatement)
 };
 
+// NamedOnlyBreakableStatement
 template<typename Factory>
-class NamedOnlyBreakableStatement : public BreakableStatement<Factory> {
+class Inherit<Factory, kNamedOnlyBreakableStatement>
+  : public BreakableStatement<Factory> {
+};
+INHERIT(NamedOnlyBreakableStatement);
+
+template<typename Factory>
+class NamedOnlyBreakableStatement : public NamedOnlyBreakableStatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(NamedOnlyBreakableStatement)
 };
 
+// AnonymousBreakableStatement
 template<typename Factory>
-class AnonymousBreakableStatement : public BreakableStatement<Factory> {
+class Inherit<Factory, kAnonymousBreakableStatement>
+  : public BreakableStatement<Factory> {
+};
+INHERIT(AnonymousBreakableStatement);
+
+template<typename Factory>
+class AnonymousBreakableStatement : public AnonymousBreakableStatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(AnonymousBreakableStatement)
 };
 
+// Block
 template<typename Factory>
-class Block : public NamedOnlyBreakableStatement<Factory> {
+class Inherit<Factory, kBlock>
+  : public NamedOnlyBreakableStatement<Factory> {
+};
+INHERIT(Block);
+
+template<typename Factory>
+class Block : public BlockBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   explicit Block(Factory* factory)
@@ -184,8 +250,15 @@ class Block : public NamedOnlyBreakableStatement<Factory> {
   Statements body_;
 };
 
+// FunctionStatement
 template<typename Factory>
-class FunctionStatement : public Statement<Factory> {
+class Inherit<Factory, kFunctionStatement>
+  : public Statement<Factory> {
+};
+INHERIT(FunctionStatement);
+
+template<typename Factory>
+class FunctionStatement : public FunctionStatementBase<Factory> {
  public:
   explicit FunctionStatement(FunctionLiteral<Factory>* func)
     : function_(func) {
@@ -198,8 +271,15 @@ class FunctionStatement : public Statement<Factory> {
   FunctionLiteral<Factory>* function_;
 };
 
+// VariableStatement
 template<typename Factory>
-class VariableStatement : public Statement<Factory> {
+class Inherit<Factory, kVariableStatement>
+  : public Statement<Factory> {
+};
+INHERIT(VariableStatement);
+
+template<typename Factory>
+class VariableStatement : public VariableStatementBase<Factory> {
  public:
   typedef typename SpaceVector<
             Factory,
@@ -224,9 +304,16 @@ class VariableStatement : public Statement<Factory> {
   Declarations decls_;
 };
 
+// Declaration
 template<typename Factory>
-class Declaration : public SpaceObject,
-                    private Noncopyable<Declaration<Factory> >::type {
+class Inherit<Factory, kDeclaration>
+  : public SpaceObject,
+    private Noncopyable<Inherit<Factory, kDeclaration> >::type {
+};
+INHERIT(Declaration);
+
+template<typename Factory>
+class Declaration : public DeclarationBase<Factory> {
  public:
   Declaration(Identifier<Factory>* name, Expression<Factory>* expr)
     : name_(name),
@@ -243,14 +330,28 @@ class Declaration : public SpaceObject,
   Expression<Factory>* expr_;
 };
 
+// EmptyStatement
 template<typename Factory>
-class EmptyStatement : public Statement<Factory> {
+class Inherit<Factory, kEmptyStatement>
+  : public Statement<Factory> {
+};
+INHERIT(EmptyStatement);
+
+template<typename Factory>
+class EmptyStatement : public EmptyStatementBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(EmptyStatement)
 };
 
+// IfStatement
 template<typename Factory>
-class IfStatement : public Statement<Factory> {
+class Inherit<Factory, kIfStatement>
+  : public Statement<Factory> {
+};
+INHERIT(IfStatement);
+
+template<typename Factory>
+class IfStatement : public IfStatementBase<Factory> {
  public:
   IfStatement(Expression<Factory>* cond,
               Statement<Factory>* then,
@@ -270,86 +371,130 @@ class IfStatement : public Statement<Factory> {
   Statement<Factory>* else_;
 };
 
+// IterationStatement
 template<typename Factory>
-class IterationStatement : public AnonymousBreakableStatement<Factory> {
- public:
-  explicit IterationStatement(Statement<Factory>* stmt)
-    : body_(stmt) {
-  }
-  inline Statement<Factory>* body() const { return body_; }
-  DECLARE_NODE_TYPE(IterationStatement)
- private:
-  Statement<Factory>* body_;
+class Inherit<Factory, kIterationStatement>
+  : public AnonymousBreakableStatement<Factory> {
 };
+INHERIT(IterationStatement);
 
 template<typename Factory>
-class DoWhileStatement : public IterationStatement<Factory> {
+class IterationStatement : public IterationStatementBase<Factory> {
+ public:
+  DECLARE_NODE_TYPE(IterationStatement)
+};
+
+// DoWhileStatement
+template<typename Factory>
+class Inherit<Factory, kDoWhileStatement>
+  : public IterationStatement<Factory> {
+};
+INHERIT(DoWhileStatement);
+
+template<typename Factory>
+class DoWhileStatement : public DoWhileStatementBase<Factory> {
  public:
   DoWhileStatement(Statement<Factory>* body, Expression<Factory>* cond)
-    : IterationStatement<Factory>(body),
+    : body_(body),
       cond_(cond) {
   }
+  inline Statement<Factory>* body() const { return body_; }
   inline Expression<Factory>* cond() const { return cond_; }
   DECLARE_DERIVED_NODE_TYPE(DoWhileStatement)
  private:
+  Statement<Factory>* body_;
   Expression<Factory>* cond_;
 };
 
+// WhileStatement
 template<typename Factory>
-class WhileStatement : public IterationStatement<Factory> {
+class Inherit<Factory, kWhileStatement>
+  : public IterationStatement<Factory> {
+};
+INHERIT(WhileStatement);
+
+template<typename Factory>
+class WhileStatement : public WhileStatementBase<Factory> {
  public:
   WhileStatement(Statement<Factory>* body, Expression<Factory>* cond)
-    : IterationStatement<Factory>(body),
+    : body_(body),
       cond_(cond) {
   }
+  inline Statement<Factory>* body() const { return body_; }
   inline Expression<Factory>* cond() const { return cond_; }
   DECLARE_DERIVED_NODE_TYPE(WhileStatement)
  private:
+  Statement<Factory>* body_;
   Expression<Factory>* cond_;
 };
 
+// ForStatement
 template<typename Factory>
-class ForStatement : public IterationStatement<Factory> {
+class Inherit<Factory, kForStatement>
+  : public IterationStatement<Factory> {
+};
+INHERIT(ForStatement);
+
+template<typename Factory>
+class ForStatement : public ForStatementBase<Factory> {
  public:
   ForStatement(Statement<Factory>* body,
                Statement<Factory>* init,
                Expression<Factory>* cond,
                Statement<Factory>* next)
-    : IterationStatement<Factory>(body),
+    : body_(body),
       init_(init),
       cond_(cond),
       next_(next) {
   }
+  inline Statement<Factory>* body() const { return body_; }
   inline Statement<Factory>* init() const { return init_; }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Statement<Factory>* next() const { return next_; }
   DECLARE_DERIVED_NODE_TYPE(ForStatement)
  private:
+  Statement<Factory>* body_;
   Statement<Factory>* init_;
   Expression<Factory>* cond_;
   Statement<Factory>* next_;
 };
 
+// ForInStatement
 template<typename Factory>
-class ForInStatement : public IterationStatement<Factory> {
+class Inherit<Factory, kForInStatement>
+  : public IterationStatement<Factory> {
+};
+INHERIT(ForInStatement);
+
+template<typename Factory>
+class ForInStatement : public ForInStatementBase<Factory> {
  public:
   ForInStatement(Statement<Factory>* body,
                  Statement<Factory>* each,
                  Expression<Factory>* enumerable)
-    : IterationStatement<Factory>(body),
+    : body_(body),
       each_(each),
       enumerable_(enumerable) {
   }
+  inline Statement<Factory>* body() const { return body_; }
   inline Statement<Factory>* each() const { return each_; }
   inline Expression<Factory>* enumerable() const { return enumerable_; }
   DECLARE_DERIVED_NODE_TYPE(ForInStatement)
  private:
+  Statement<Factory>* body_;
   Statement<Factory>* each_;
   Expression<Factory>* enumerable_;
 };
 
+// ContinueStatement
 template<typename Factory>
-class ContinueStatement : public Statement<Factory> {
+class Inherit<Factory, kContinueStatement>
+  : public Statement<Factory> {
+};
+INHERIT(ContinueStatement);
+
+template<typename Factory>
+class ContinueStatement : public ContinueStatementBase<Factory> {
  public:
   ContinueStatement(Identifier<Factory>* label,
                     IterationStatement<Factory>** target)
@@ -368,8 +513,15 @@ class ContinueStatement : public Statement<Factory> {
   IterationStatement<Factory>** target_;
 };
 
+// BreakStatement
 template<typename Factory>
-class BreakStatement : public Statement<Factory> {
+class Inherit<Factory, kBreakStatement>
+  : public Statement<Factory> {
+};
+INHERIT(BreakStatement);
+
+template<typename Factory>
+class BreakStatement : public BreakStatementBase<Factory> {
  public:
   BreakStatement(Identifier<Factory>* label,
                  BreakableStatement<Factory>** target)
@@ -388,8 +540,15 @@ class BreakStatement : public Statement<Factory> {
   BreakableStatement<Factory>** target_;
 };
 
+// ReturnStatement
 template<typename Factory>
-class ReturnStatement : public Statement<Factory> {
+class Inherit<Factory, kReturnStatement>
+  : public Statement<Factory> {
+};
+INHERIT(ReturnStatement);
+
+template<typename Factory>
+class ReturnStatement : public ReturnStatementBase<Factory> {
  public:
   explicit ReturnStatement(Expression<Factory>* expr)
     : expr_(expr) {
@@ -400,8 +559,15 @@ class ReturnStatement : public Statement<Factory> {
   Expression<Factory>* expr_;
 };
 
+// WithStatement
 template<typename Factory>
-class WithStatement : public Statement<Factory> {
+class Inherit<Factory, kWithStatement>
+  : public Statement<Factory> {
+};
+INHERIT(WithStatement);
+
+template<typename Factory>
+class WithStatement : public WithStatementBase<Factory> {
  public:
   WithStatement(Expression<Factory>* context,
                 Statement<Factory>* body)
@@ -416,8 +582,15 @@ class WithStatement : public Statement<Factory> {
   Statement<Factory>* body_;
 };
 
+// LabelledStatement
 template<typename Factory>
-class LabelledStatement : public Statement<Factory> {
+class Inherit<Factory, kLabelledStatement>
+  : public Statement<Factory> {
+};
+INHERIT(LabelledStatement);
+
+template<typename Factory>
+class LabelledStatement : public LabelledStatementBase<Factory> {
  public:
   LabelledStatement(Expression<Factory>* expr, Statement<Factory>* body)
     : body_(body) {
@@ -431,9 +604,16 @@ class LabelledStatement : public Statement<Factory> {
   Statement<Factory>* body_;
 };
 
+// CaseClause
 template<typename Factory>
-class CaseClause : public SpaceObject,
-                   private Noncopyable<CaseClause<Factory> >::type {
+class Inherit<Factory, kCaseClause>
+  : public SpaceObject,
+    private Noncopyable<Inherit<Factory, kCaseClause> >::type {
+};
+INHERIT(CaseClause);
+
+template<typename Factory>
+class CaseClause : public CaseClauseBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   explicit CaseClause(bool is_default,
@@ -460,8 +640,15 @@ class CaseClause : public SpaceObject,
   bool default_;
 };
 
+// SwitchStatement
 template<typename Factory>
-class SwitchStatement : public AnonymousBreakableStatement<Factory> {
+class Inherit<Factory, kSwitchStatement>
+  : public AnonymousBreakableStatement<Factory> {
+};
+INHERIT(SwitchStatement);
+
+template<typename Factory>
+class SwitchStatement : public SwitchStatementBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
   SwitchStatement(Expression<Factory>* expr,
@@ -481,8 +668,15 @@ class SwitchStatement : public AnonymousBreakableStatement<Factory> {
   CaseClauses clauses_;
 };
 
+// ThrowStatement
 template<typename Factory>
-class ThrowStatement : public Statement<Factory> {
+class Inherit<Factory, kThrowStatement>
+  : public Statement<Factory> {
+};
+INHERIT(ThrowStatement);
+
+template<typename Factory>
+class ThrowStatement : public ThrowStatementBase<Factory> {
  public:
   explicit ThrowStatement(Expression<Factory>* expr)
     : expr_(expr) {
@@ -493,8 +687,15 @@ class ThrowStatement : public Statement<Factory> {
   Expression<Factory>* expr_;
 };
 
+// TryStatement
 template<typename Factory>
-class TryStatement : public Statement<Factory> {
+class Inherit<Factory, kTryStatement>
+  : public Statement<Factory> {
+};
+INHERIT(TryStatement);
+
+template<typename Factory>
+class TryStatement : public TryStatementBase<Factory> {
  public:
   explicit TryStatement(Block<Factory>* try_block,
                         Identifier<Factory>* catch_name,
@@ -517,13 +718,27 @@ class TryStatement : public Statement<Factory> {
   Block<Factory>* finally_block_;
 };
 
+// DebuggerStatement
 template<typename Factory>
-class DebuggerStatement : public Statement<Factory> {
+class Inherit<Factory, kDebuggerStatement>
+  : public Statement<Factory> {
+};
+INHERIT(DebuggerStatement);
+
+template<typename Factory>
+class DebuggerStatement : public DebuggerStatementBase<Factory> {
   DECLARE_DERIVED_NODE_TYPE(DebuggerStatement)
 };
 
+// ExpressionStatement
 template<typename Factory>
-class ExpressionStatement : public Statement<Factory> {
+class Inherit<Factory, kExpressionStatement>
+  : public Statement<Factory> {
+};
+INHERIT(ExpressionStatement);
+
+template<typename Factory>
+class ExpressionStatement : public ExpressionStatementBase<Factory> {
  public:
   explicit ExpressionStatement(Expression<Factory>* expr) : expr_(expr) { }
   inline Expression<Factory>* expr() const { return expr_; }
@@ -532,8 +747,15 @@ class ExpressionStatement : public Statement<Factory> {
   Expression<Factory>* expr_;
 };
 
+// Assignment
 template<typename Factory>
-class Assignment : public Expression<Factory> {
+class Inherit<Factory, kAssignment>
+  : public Expression<Factory> {
+};
+INHERIT(Assignment);
+
+template<typename Factory>
+class Assignment : public AssignmentBase<Factory> {
  public:
   Assignment(Token::Type op,
              Expression<Factory>* left, Expression<Factory>* right)
@@ -551,8 +773,15 @@ class Assignment : public Expression<Factory> {
   Expression<Factory>* right_;
 };
 
+// BinaryOperation
 template<typename Factory>
-class BinaryOperation : public Expression<Factory> {
+class Inherit<Factory, kBinaryOperation>
+  : public Expression<Factory> {
+};
+INHERIT(BinaryOperation);
+
+template<typename Factory>
+class BinaryOperation : public BinaryOperationBase<Factory> {
  public:
   BinaryOperation(Token::Type op,
                   Expression<Factory>* left, Expression<Factory>* right)
@@ -570,8 +799,15 @@ class BinaryOperation : public Expression<Factory> {
   Expression<Factory>* right_;
 };
 
+// ConditionalExpression
 template<typename Factory>
-class ConditionalExpression : public Expression<Factory> {
+class Inherit<Factory, kConditionalExpression>
+  : public Expression<Factory> {
+};
+INHERIT(ConditionalExpression);
+
+template<typename Factory>
+class ConditionalExpression : public ConditionalExpressionBase<Factory> {
  public:
   ConditionalExpression(Expression<Factory>* cond,
                         Expression<Factory>* left,
@@ -588,8 +824,15 @@ class ConditionalExpression : public Expression<Factory> {
   Expression<Factory>* right_;
 };
 
+// UnaryOperation
 template<typename Factory>
-class UnaryOperation : public Expression<Factory> {
+class Inherit<Factory, kUnaryOperation>
+  : public Expression<Factory> {
+};
+INHERIT(UnaryOperation);
+
+template<typename Factory>
+class UnaryOperation : public UnaryOperationBase<Factory> {
  public:
   UnaryOperation(Token::Type op, Expression<Factory>* expr)
     : op_(op),
@@ -603,8 +846,15 @@ class UnaryOperation : public Expression<Factory> {
   Expression<Factory>* expr_;
 };
 
+// PostfixExpression
 template<typename Factory>
-class PostfixExpression : public Expression<Factory> {
+class Inherit<Factory, kPostfixExpression>
+  : public Expression<Factory> {
+};
+INHERIT(PostfixExpression);
+
+template<typename Factory>
+class PostfixExpression : public PostfixExpressionBase<Factory> {
  public:
   PostfixExpression(Token::Type op, Expression<Factory>* expr)
     : op_(op),
@@ -618,36 +868,66 @@ class PostfixExpression : public Expression<Factory> {
   Expression<Factory>* expr_;
 };
 
+// StringLiteral
 template<typename Factory>
-class StringLiteral : public Literal<Factory> {
+class Inherit<Factory, kStringLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(StringLiteral);
+
+template<typename Factory>
+class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
   StringLiteral(const std::vector<uc16>& buffer,
                 Factory* factory)
-    : value_(buffer.data(),
-             buffer.size(),
-             typename value_type::allocator_type(factory)) {
+  {
+    InitializeStringLiteral(buffer, factory);
   }
 
   inline const value_type& value() const {
     return value_;
   }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
+ protected:
+  StringLiteral() { }
+  void InitializeStringLiteral(const std::vector<uc16>& buffer,
+                               Factory* factory) {
+    value_ = value_type(
+        buffer.data(),
+        buffer.size(),
+        typename value_type::allocator_type(factory));
+  }
  private:
-  const value_type value_;
+  value_type value_;
 };
 
+// Directivable
 template<typename Factory>
-class Directivable : public StringLiteral<Factory> {
+class Inherit<Factory, kDirectivable>
+  : public StringLiteral<Factory> {
+};
+INHERIT(Directivable);
+
+template<typename Factory>
+class Directivable : public DirectivableBase<Factory> {
  public:
   explicit Directivable(const std::vector<uc16>& buffer,
-                        Factory* factory)
-    : StringLiteral<Factory>(buffer, factory) { }
+                        Factory* factory) {
+    InitializeStringLiteral(buffer, factory);
+  }
   DECLARE_NODE_TYPE(Directivable)
 };
 
+// NumberLiteral
 template<typename Factory>
-class NumberLiteral : public Literal<Factory> {
+class Inherit<Factory, kNumberLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(NumberLiteral);
+
+template<typename Factory>
+class NumberLiteral : public NumberLiteralBase<Factory> {
  public:
   explicit NumberLiteral(const double & val)
     : value_(val) {
@@ -658,8 +938,15 @@ class NumberLiteral : public Literal<Factory> {
   double value_;
 };
 
+// Identifier
 template<typename Factory>
-class Identifier : public Literal<Factory> {
+class Inherit<Factory, kIdentifier>
+  : public Literal<Factory> {
+};
+INHERIT(Identifier);
+
+template<typename Factory>
+class Identifier : public IdentifierBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
   template<typename Range>
@@ -712,38 +999,80 @@ class IdentifierKey {
   value_type* ident_;
 };
 
+// ThisLiteral
 template<typename Factory>
-class ThisLiteral : public Literal<Factory> {
+class Inherit<Factory, kThisLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(ThisLiteral);
+
+template<typename Factory>
+class ThisLiteral : public ThisLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(ThisLiteral)
 };
 
+// NullLiteral
 template<typename Factory>
-class NullLiteral : public Literal<Factory> {
+class Inherit<Factory, kNullLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(NullLiteral);
+
+template<typename Factory>
+class NullLiteral : public NullLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(NullLiteral)
 };
 
+// TrueLiteral
 template<typename Factory>
-class TrueLiteral : public Literal<Factory> {
+class Inherit<Factory, kTrueLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(TrueLiteral);
+
+template<typename Factory>
+class TrueLiteral : public TrueLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(TrueLiteral)
 };
 
+// FalseLiteral
 template<typename Factory>
-class FalseLiteral : public Literal<Factory> {
+class Inherit<Factory, kFalseLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(FalseLiteral);
+
+template<typename Factory>
+class FalseLiteral : public FalseLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(FalseLiteral)
 };
 
+// Undefined
 template<typename Factory>
-class Undefined : public Literal<Factory> {
+class Inherit<Factory, kUndefined>
+  : public Literal<Factory> {
+};
+INHERIT(Undefined);
+
+template<typename Factory>
+class Undefined : public UndefinedBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(Undefined)
 };
 
+// RegExpLiteral
 template<typename Factory>
-class RegExpLiteral : public Literal<Factory> {
+class Inherit<Factory, kRegExpLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(RegExpLiteral);
+
+template<typename Factory>
+class RegExpLiteral : public RegExpLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
 
@@ -763,8 +1092,15 @@ class RegExpLiteral : public Literal<Factory> {
   value_type flags_;
 };
 
+// ArrayLiteral
 template<typename Factory>
-class ArrayLiteral : public Literal<Factory> {
+class Inherit<Factory, kArrayLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(ArrayLiteral);
+
+template<typename Factory>
+class ArrayLiteral : public ArrayLiteralBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
 
@@ -782,8 +1118,15 @@ class ArrayLiteral : public Literal<Factory> {
   Expressions items_;
 };
 
+// ObjectLiteral
 template<typename Factory>
-class ObjectLiteral : public Literal<Factory> {
+class Inherit<Factory, kObjectLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(ObjectLiteral);
+
+template<typename Factory>
+class ObjectLiteral : public ObjectLiteralBase<Factory> {
  public:
   enum PropertyDescriptorType {
     DATA = 1,
@@ -820,8 +1163,15 @@ class ObjectLiteral : public Literal<Factory> {
   Properties properties_;
 };
 
+// FunctionLiteral
 template<typename Factory>
-class FunctionLiteral : public Literal<Factory> {
+class Inherit<Factory, kFunctionLiteral>
+  : public Literal<Factory> {
+};
+INHERIT(FunctionLiteral);
+
+template<typename Factory>
+class FunctionLiteral : public FunctionLiteralBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
@@ -907,26 +1257,40 @@ class FunctionLiteral : public Literal<Factory> {
   UStringPiece source_;
 };
 
+// PropertyAccess
 template<typename Factory>
-class PropertyAccess : public Expression<Factory> {
+class Inherit<Factory, kPropertyAccess>
+  : public Expression<Factory> {
+};
+INHERIT(PropertyAccess);
+
+template<typename Factory>
+class PropertyAccess : public PropertyAccessBase<Factory> {
  public:
   inline bool IsValidLeftHandSide() const { return true; }
   inline Expression<Factory>* target() const { return target_; }
   DECLARE_NODE_TYPE(PropertyAccess)
  protected:
-  explicit PropertyAccess(Expression<Factory>* obj)
-    : target_(obj) {
+  void InitializePropertyAccess(Expression<Factory>* obj) {
+    target_ = obj;
   }
   Expression<Factory>* target_;
 };
 
+// IdentifierAccess
 template<typename Factory>
-class IdentifierAccess : public PropertyAccess<Factory> {
+class Inherit<Factory, kIdentifierAccess>
+  : public PropertyAccess<Factory> {
+};
+INHERIT(IdentifierAccess);
+
+template<typename Factory>
+class IdentifierAccess : public IdentifierAccessBase<Factory> {
  public:
   IdentifierAccess(Expression<Factory>* obj,
                    Identifier<Factory>* key)
-    : PropertyAccess<Factory>(obj),
-      key_(key) {
+    : key_(key) {
+    InitializePropertyAccess(obj);
   }
   inline Identifier<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
@@ -934,13 +1298,20 @@ class IdentifierAccess : public PropertyAccess<Factory> {
   Identifier<Factory>* key_;
 };
 
+// IndexAccess
 template<typename Factory>
-class IndexAccess : public PropertyAccess<Factory> {
+class Inherit<Factory, kIndexAccess>
+  : public PropertyAccess<Factory> {
+};
+INHERIT(IndexAccess);
+
+template<typename Factory>
+class IndexAccess : public IndexAccessBase<Factory> {
  public:
   IndexAccess(Expression<Factory>* obj,
               Expression<Factory>* key)
-    : PropertyAccess<Factory>(obj),
-      key_(key) {
+    : key_(key) {
+    InitializePropertyAccess(obj);
   }
   inline Expression<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IndexAccess)
@@ -948,43 +1319,68 @@ class IndexAccess : public PropertyAccess<Factory> {
   Expression<Factory>* key_;
 };
 
+// Call
 template<typename Factory>
-class Call : public Expression<Factory> {
+class Inherit<Factory, kCall>
+  : public Expression<Factory> {
+};
+INHERIT(Call);
+
+template<typename Factory>
+class Call : public CallBase<Factory> {
+ public:
+  inline bool IsValidLeftHandSide() const { return true; }
+  DECLARE_NODE_TYPE(Call)
+};
+
+// FunctionCall
+template<typename Factory>
+class Inherit<Factory, kFunctionCall>
+  : public Call<Factory> {
+};
+INHERIT(FunctionCall);
+
+template<typename Factory>
+class FunctionCall : public FunctionCallBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
-  inline bool IsValidLeftHandSide() const { return true; }
-  Call(Expression<Factory>* target,
-       Factory* factory)
+  FunctionCall(Expression<Factory>* target,
+               Factory* factory)
     : target_(target),
       args_(typename Expressions::allocator_type(factory)) {
   }
   void AddArgument(Expression<Factory>* expr) { args_.push_back(expr); }
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return args_; }
-  DECLARE_NODE_TYPE(Call)
- protected:
+  DECLARE_DERIVED_NODE_TYPE(FunctionCall)
+ private:
   Expression<Factory>* target_;
   Expressions args_;
 };
 
+// ConstructorCall
 template<typename Factory>
-class FunctionCall : public Call<Factory> {
- public:
-  FunctionCall(Expression<Factory>* target,
-               Factory* factory)
-    : Call<Factory>(target, factory) {
-  }
-  DECLARE_DERIVED_NODE_TYPE(FunctionCall)
+class Inherit<Factory, kConstructorCall>
+  : public Call<Factory> {
 };
+INHERIT(ConstructorCall);
 
 template<typename Factory>
-class ConstructorCall : public Call<Factory> {
+class ConstructorCall : public ConstructorCallBase<Factory> {
  public:
+  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
   ConstructorCall(Expression<Factory>* target,
                   Factory* factory)
-    : Call<Factory>(target, factory) {
+    : target_(target),
+      args_(typename Expressions::allocator_type(factory)) {
   }
+  void AddArgument(Expression<Factory>* expr) { args_.push_back(expr); }
+  inline Expression<Factory>* target() const { return target_; }
+  inline const Expressions& args() const { return args_; }
   DECLARE_DERIVED_NODE_TYPE(ConstructorCall)
+ private:
+  Expression<Factory>* target_;
+  Expressions args_;
 };
 
 } } }  // namespace iv::core::ast

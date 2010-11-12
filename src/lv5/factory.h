@@ -1,12 +1,12 @@
 #ifndef _IV_LV5_FACTORY_H_
 #define _IV_LV5_FACTORY_H_
 #include <vector>
+#include "symbol.h"
 #include "alloc.h"
-#include "regexp-icu.h"
-#include "ident-symbol.h"
 #include "ast-factory.h"
 #include "location.h"
 #include "ustringpiece.h"
+#include "jsast.h"
 
 namespace iv {
 namespace lv5 {
@@ -28,19 +28,26 @@ class AstFactory : public core::ast::BasicAstFactory<2, AstFactory> {
 
   template<typename Range>
   Identifier* NewIdentifier(const Range& range) {
-    return new (this) IdentifierWithSymbol(ctx_, range, this);
+    Identifier* ident = new (this) Identifier(range, this);
+    ident->set_symbol(Intern(*ident));
+    return ident;
   }
 
   inline RegExpLiteral* NewRegExpLiteral(
       const std::vector<uc16>& content,
       const std::vector<uc16>& flags) {
-    RegExpLiteral* reg = RegExpICU::Create(this, content, flags);
-    if (reg) {
-      regexps_.push_back(reg);
+
+    RegExpLiteral* expr = new (this) RegExpLiteral(content, flags, this);
+    expr->Initialize();
+    if (expr->IsValid()) {
+      regexps_.push_back(expr);
+      return expr;
+    } else {
+      return NULL;
     }
-    return reg;
   }
  private:
+  Symbol Intern(const Identifier& ident);
   Context* ctx_;
   DestReqs regexps_;
 };

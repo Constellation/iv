@@ -6,7 +6,7 @@
 #include <iv/alloc.h>
 #include <iv/ustringpiece.h>
 #include "encoding.h"
-#include "ast.h"
+#include "ast-fwd.h"
 namespace iv {
 namespace phonic {
 

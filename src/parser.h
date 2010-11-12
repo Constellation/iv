@@ -138,6 +138,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 #define V(S) typedef typename SpaceUString<Factory>::type S;
   AST_STRING(V)
 #undef V
+
   class Target : private Noncopyable<Target>::type {
    public:
     typedef typename SpaceVector<Factory, Identifier*>::type Identifiers;
@@ -1564,7 +1565,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //  ArgumentList
 //    : AssignmentExpression
 //    | ArgumentList ',' AssignmentExpression
-  Call* ParseArguments(Call* func, bool *res) {
+  template<typename Callable>
+  Callable* ParseArguments(Callable* func, bool *res) {
     Expression* expr;
     Next();
     while (token_ != Token::RPAREN) {

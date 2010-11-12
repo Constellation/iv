@@ -4,8 +4,24 @@
 #include <iv/ast.h>
 namespace iv {
 namespace phonic {
-
 class AstFactory;
+}  // namespace iv::phonic
+namespace core {
+namespace ast {
+template<>
+class AstNodeBase<iv::phonic::AstFactory>
+  : public Inherit<iv::phonic::AstFactory, kAstNode> {
+ public:
+  void Location(std::size_t begin, std::size_t end) {
+    begin_ = begin;
+    end_ = end;
+  }
+ private:
+  std::size_t begin_;
+  std::size_t end_;
+};
+} }  // namespace iv::core::ast
+namespace phonic {
 #define V(AST) typedef core::ast::AST<AstFactory> AST;
   AST_NODE_LIST(V)
 #undef V
