@@ -21,6 +21,7 @@ const std::string callee_string("callee");
 const std::string toString_string("toString");
 const std::string valueOf_string("valueOf");
 const std::string prototype_string("prototype");
+const std::string constructor_string("constructor");
 
 }  // namespace
 
@@ -47,7 +48,8 @@ Context::Context()
     callee_symbol_(Intern(callee_string)),
     toString_symbol_(Intern(toString_string)),
     valueOf_symbol_(Intern(valueOf_string)),
-    prototype_symbol_(Intern(prototype_string)) {
+    prototype_symbol_(Intern(prototype_string)),
+    constructor_symbol_(Intern(constructor_string)) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
@@ -185,6 +187,72 @@ void Context::Initialize() {
     proto->set_cls(cls.name);
     const Symbol name = Intern("Array");
     builtins_[name] = cls;
+  }
+
+  {
+    // Number
+    JSObject* const proto = JSObject::NewPlain(this);
+    // section 15.7.3 The Number Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::New(this, &Runtime_NumberConstructor, 1);
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      JSString::NewAsciiString(this, "Number"),
+      constructor,
+      proto
+    };
+    proto->set_cls(cls.name);
+    const Symbol name = Intern("Number");
+    builtins_[name] = cls;
+    variable_env_->CreateMutableBinding(this, name, false);
+    variable_env_->SetMutableBinding(this, name,
+                                     constructor, false, NULL);
+    // section 15.7.3.2 Number.MAX_VALUE
+    constructor->DefineOwnProperty(
+        this, Intern("MAX_VALUE"),
+        DataDescriptor(std::numeric_limits<double>::max(),
+                       PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.7.3.3 Number.MIN_VALUE
+    constructor->DefineOwnProperty(
+        this, Intern("MIN_VALUE"),
+        DataDescriptor(std::numeric_limits<double>::min(),
+                       PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.7.3.4 Number.NaN
+    constructor->DefineOwnProperty(
+        this, Intern("NaN"),
+        DataDescriptor(std::numeric_limits<double>::quiet_NaN(),
+                       PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.7.3.5 Number.NEGATIVE_INFINITY
+    constructor->DefineOwnProperty(
+        this, Intern("NEGATIVE_INFINITY"),
+        DataDescriptor(-std::numeric_limits<double>::infinity(),
+                       PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.7.3.6 Number.POSITIVE_INFINITY
+    constructor->DefineOwnProperty(
+        this, Intern("POSITIVE_INFINITY"),
+        DataDescriptor(std::numeric_limits<double>::infinity(),
+                       PropertyDescriptor::NONE),
+        false, NULL);
+
+    // section 15.7.4.1 Number.prototype.constructor
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::NONE),
+        false, NULL);
   }
 
   {

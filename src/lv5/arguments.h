@@ -4,13 +4,14 @@
 #include <iterator>
 #include <algorithm>
 #include "jsval.h"
+#include "noncopyable.h"
 
 namespace iv {
 namespace lv5 {
 class Interpreter;
 class Context;
 
-class Arguments {
+class Arguments : private core::Noncopyable<Arguments>::type {
  public:
   typedef std::vector<JSVal> JSVals;
   typedef Arguments this_type;
@@ -67,11 +68,18 @@ class Arguments {
   inline void set_this_binding(const JSVal& binding) {
     this_binding_ = binding;
   }
+  inline void set_constructor_call(bool val) {
+    constructor_call_ = val;
+  }
+  inline bool IsConstructorCalled() const {
+    return constructor_call_;
+  }
 
  private:
   Context* ctx_;
   JSVal this_binding_;
   std::vector<JSVal> args_;
+  bool constructor_call_;
 };
 
 } }  // namespace iv::lv5

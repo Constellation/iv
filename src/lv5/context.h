@@ -162,7 +162,10 @@ class Context : private core::Noncopyable<Context>::type {
     return valueOf_symbol_;
   }
   inline Symbol prototype_symbol() const {
-    return valueOf_symbol_;
+    return prototype_symbol_;
+  }
+  inline Symbol constructor_symbol() const {
+    return constructor_symbol_;
   }
   JSNativeFunction* throw_type_error() {
     return &throw_type_error_;
@@ -195,6 +198,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol toString_symbol_;
   Symbol valueOf_symbol_;
   Symbol prototype_symbol_;
+  Symbol constructor_symbol_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_

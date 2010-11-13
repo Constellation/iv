@@ -6,21 +6,24 @@ namespace lv5 {
 Arguments::Arguments(Context* ctx)
   : ctx_(ctx),
     this_binding_(),
-    args_() {
+    args_(),
+    constructor_call_(false) {
 }
 
 Arguments::Arguments(Context* ctx,
                      const JSVal& this_binding)
   : ctx_(ctx),
     this_binding_(this_binding),
-    args_() {
+    args_(),
+    constructor_call_(false) {
 }
 
 Arguments::Arguments(Context* ctx,
                      std::size_t n)
   : ctx_(ctx),
     this_binding_(),
-    args_(n) {
+    args_(n),
+    constructor_call_(false) {
 }
 
 Interpreter* Arguments::interpreter() const {

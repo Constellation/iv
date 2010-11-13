@@ -178,6 +178,22 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+JSVal Runtime_NumberConstructor(const Arguments& args, Error* error) {
+  if (args.IsConstructorCalled()) {
+    double res = 0.0;
+    if (args.size() > 0) {
+      res = args[0].ToNumber(args.ctx(), ERROR(error));
+    }
+    return JSNumberObject::New(args.ctx(), res);
+  } else {
+    if (args.size() > 0) {
+      return args[0].ToNumber(args.ctx(), error);
+    } else {
+      return 0.0;
+    }
+  }
+}
+
 JSVal Runtime_MathAbs(const Arguments& args, Error* error) {
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));

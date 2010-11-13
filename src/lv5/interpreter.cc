@@ -1439,6 +1439,7 @@ void Interpreter::Visit(const ConstructorCall* call) {
   const JSVal target = ctx_->ret();
 
   Arguments args(ctx_, call->args().size());
+  args.set_constructor_call(true);
   std::size_t n = 0;
   BOOST_FOREACH(const Expression* const expr, call->args()) {
     EVAL(expr);
