@@ -93,6 +93,7 @@ class JSString : public GCUString, public gc {
   static JSString* New(Context* context, const core::UStringPiece& str);
   static JSString* NewAsciiString(Context* context,
                                   const core::StringPiece& str);
+  static JSString* NewEmptyString(Context* ctx);
  protected:
   std::size_t hash_value_;
 };

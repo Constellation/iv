@@ -170,7 +170,7 @@ void Context::Initialize() {
 
     variable_env_->CreateMutableBinding(this, obj_name, false);
     variable_env_->SetMutableBinding(this, obj_name,
-                                     obj_constructor, strict_, NULL);
+                                     obj_constructor, false, NULL);
   }
 
   {
@@ -190,10 +190,18 @@ void Context::Initialize() {
   {
     // Error
     JSObject* const proto = JSObject::NewPlain(this);
+    // section 15.11.2 The Error Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::New(this, &Runtime_ErrorConstructor, 1);
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
       JSString::NewAsciiString(this, "Error"),
-      NULL,
+      constructor,
       proto
     };
     proto->set_cls(cls.name);
@@ -223,6 +231,213 @@ void Context::Initialize() {
         DataDescriptor(
             JSString::NewAsciiString(this, ""), PropertyDescriptor::NONE),
         false, NULL);
+    variable_env_->CreateMutableBinding(this, name, false);
+    variable_env_->SetMutableBinding(this, name,
+                                     constructor, false, NULL);
+
+    {
+      // section 15.11.6.1 EvalError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_EvalErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "EvalError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("EvalError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "EvalError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.6.2 RangeError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_RangeErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "RangeError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("RangeError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "RangeError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.6.3 ReferenceError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_ReferenceErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "ReferenceError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("ReferenceError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "ReferenceError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.6.4 SyntaxError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_SyntaxErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "SyntaxError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("SyntaxError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "SyntaxError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.6.5 TypeError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_TypeErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "TypeError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("TypeError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "TypeError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.6.6 URIError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_URIErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "URIError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("URIError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "URIError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
+    {
+      // section 15.11.7.2 NativeError
+      JSObject* const sub_proto = JSObject::NewPlain(this);
+      JSNativeFunction* const sub_constructor =
+          JSNativeFunction::New(this, &Runtime_NativeErrorConstructor, 1);
+      // set prototype
+      sub_constructor->DefineOwnProperty(
+          this, prototype_symbol_,
+          DataDescriptor(proto, PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->set_prototype(proto);
+      struct Class sub_cls = {
+        JSString::NewAsciiString(this, "NativeError"),
+        sub_constructor,
+        sub_proto
+      };
+      sub_proto->set_cls(sub_cls.name);
+      const Symbol sub_name = Intern("NativeError");
+      builtins_[sub_name] = sub_cls;
+      variable_env_->CreateMutableBinding(this, sub_name, false);
+      variable_env_->SetMutableBinding(this, sub_name,
+                                       sub_constructor, false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, Intern("name"),
+          DataDescriptor(
+              JSString::NewAsciiString(this, "NativeError"),
+              PropertyDescriptor::NONE),
+          false, NULL);
+    }
   }
 
   {

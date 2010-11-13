@@ -15,6 +15,14 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
 JSVal Runtime_FunctionToString(const Arguments& args, Error* error);
 JSVal Runtime_ErrorToString(const Arguments& args, Error* error);
+JSVal Runtime_ErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_NativeErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_EvalErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_RangeErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_ReferenceErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_SyntaxErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_TypeErrorConstructor(const Arguments& args, Error* error);
+JSVal Runtime_URIErrorConstructor(const Arguments& args, Error* error);
 
 JSVal Runtime_MathAbs(const Arguments& args, Error* error);
 JSVal Runtime_MathAcos(const Arguments& args, Error* error);

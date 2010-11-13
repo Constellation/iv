@@ -55,4 +55,8 @@ JSString* JSString::NewAsciiString(Context* ctx,
   return new JSString(str.begin(), str.end());
 }
 
+JSString* JSString::NewEmptyString(Context* ctx) {
+  return new JSString();
+}
+
 } }  // namespace iv::lv5

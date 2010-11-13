@@ -1,6 +1,7 @@
 #include <iostream>  // NOLINT
 #include "lv5.h"
 #include "error.h"
+#include "jsexception.h"
 #include "runtime.h"
 #include "context.h"
 namespace iv {
@@ -11,6 +12,19 @@ const std::string function_prefix("function ");
 const std::string error_split(": ");
 const double kNaN = std::numeric_limits<double>::quiet_NaN();
 const double kInfinity = std::numeric_limits<double>::infinity();
+
+static JSString* ErrorMessageString(const Arguments& args, Error* error) {
+  if (args.size() > 0) {
+    const JSVal& msg = args[0];
+    if (!msg.IsUndefined()) {
+      return msg.ToString(args.ctx(), ERROR_WITH(error, NULL));
+    } else {
+      return JSString::NewEmptyString(args.ctx());
+    }
+  } else {
+    return JSString::NewEmptyString(args.ctx());
+  }
+}
 
 }  // namespace
 
@@ -88,9 +102,49 @@ JSVal Runtime_FunctionToString(const Arguments& args,
   return JSUndefined;
 }
 
+JSVal Runtime_ErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::New(args.ctx(), Error::User, message);
+}
+
+JSVal Runtime_NativeErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewSyntaxError(args.ctx(), message);
+}
+
+JSVal Runtime_EvalErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewEvalError(args.ctx(), message);
+}
+
+JSVal Runtime_RangeErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewRangeError(args.ctx(), message);
+}
+
+JSVal Runtime_ReferenceErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewReferenceError(args.ctx(), message);
+}
+
+JSVal Runtime_SyntaxErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewSyntaxError(args.ctx(), message);
+}
+
+JSVal Runtime_TypeErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewTypeError(args.ctx(), message);
+}
+
+JSVal Runtime_URIErrorConstructor(const Arguments& args, Error* error) {
+  JSString* message = ErrorMessageString(args, ERROR(error));
+  return JSError::NewURIError(args.ctx(), message);
+}
+
 JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
-  Context* ctx = args.ctx();
+  Context* const ctx = args.ctx();
   if (obj.IsObject()) {
     JSString* name;
     {
