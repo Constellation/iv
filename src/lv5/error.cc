@@ -1,6 +1,6 @@
 #include "context.h"
 #include "error.h"
-#include "jsexception.h"
+#include "jserror.h"
 
 namespace iv {
 namespace lv5 {

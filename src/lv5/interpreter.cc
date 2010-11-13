@@ -13,7 +13,7 @@
 #include "jsstring.h"
 #include "jsfunction.h"
 #include "jsregexp.h"
-#include "jsexception.h"
+#include "jserror.h"
 #include "jsarguments.h"
 #include "property.h"
 #include "jsenv.h"

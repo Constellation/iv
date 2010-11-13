@@ -1,4 +1,4 @@
-#include "jsexception.h"
+#include "jserror.h"
 #include "jsval.h"
 #include "context.h"
 

@@ -1,7 +1,7 @@
 #include <iostream>  // NOLINT
 #include "lv5.h"
 #include "error.h"
-#include "jsexception.h"
+#include "jserror.h"
 #include "runtime.h"
 #include "context.h"
 namespace iv {
