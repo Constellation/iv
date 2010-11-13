@@ -1411,7 +1411,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | MemberExpression '[' Expression ']'
 //    | NEW MemberExpression Arguments
   Expression* ParseMemberExpression(bool allow_call, bool *res) {
-    Expression *expr;
+    Expression* expr;
     if (token_ != Token::NEW) {
       if (token_ == Token::FUNCTION) {
         // FunctionExpression
@@ -1422,8 +1422,8 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       }
     } else {
       Next();
-      Expression *target = ParseMemberExpression(false, CHECK);
-      ConstructorCall *con = factory_->NewConstructorCall(target);
+      Expression* const target = ParseMemberExpression(false, CHECK);
+      ConstructorCall* const con = factory_->NewConstructorCall(target);
       if (token_ == Token::LPAREN) {
         ParseArguments(con, CHECK);
       }
@@ -1433,7 +1433,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       switch (token_) {
         case Token::LBRACK: {
           Next();
-          Expression* index = ParseExpression(true, CHECK);
+          Expression* const index = ParseExpression(true, CHECK);
           expr = factory_->NewIndexAccess(expr, index);
           EXPECT(Token::RBRACK);
           break;
@@ -1567,10 +1567,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 //    | ArgumentList ',' AssignmentExpression
   template<typename Callable>
   Callable* ParseArguments(Callable* func, bool *res) {
-    Expression* expr;
     Next();
     while (token_ != Token::RPAREN) {
-      expr = ParseAssignmentExpression(true, CHECK);
+      Expression* const expr = ParseAssignmentExpression(true, CHECK);
       func->AddArgument(expr);
       if (token_ != Token::RPAREN) {
         EXPECT(Token::COMMA);
@@ -1582,15 +1581,14 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
-      RegExpLiteral* expr;
       const std::vector<uc16> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
         RAISE("invalid regular expression flag");
-      } else {
-        expr = factory_->NewRegExpLiteral(content, lexer_.Buffer());
-        if (!expr) {
-          RAISE("invalid regular expression");
-        }
+      }
+      RegExpLiteral* const expr =
+          factory_->NewRegExpLiteral(content, lexer_.Buffer());
+      if (!expr) {
+        RAISE("invalid regular expression");
       }
       Next();
       return expr;

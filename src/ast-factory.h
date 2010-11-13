@@ -91,7 +91,7 @@ class BasicAstFactory : public Space<N> {
   }
 
   Identifiers* NewLabels() {
-    return new (Space<N>::New(sizeof(Identifiers)))
+    return new (static_cast<Factory*>(this))
         Identifiers(
             typename Identifiers::allocator_type(static_cast<Factory*>(this)));
   }

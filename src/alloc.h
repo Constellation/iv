@@ -122,7 +122,7 @@ class Space {
       init_arenas_[c].SetNext(&init_arenas_[c+1]);
     }
   }
-  virtual ~Space() {
+  ~Space() {
     if (start_malloced_) {
       Arena *now = start_malloced_, *next = start_malloced_;
       while (now) {
@@ -161,7 +161,7 @@ class Space {
     }
   }
 
-  virtual inline void Clear() {
+  inline void Clear() {
     arena_ = init_arenas_;
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
     malloced_.clear();

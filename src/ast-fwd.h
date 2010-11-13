@@ -98,5 +98,6 @@ template<typename Factory>\
 class AST;
 AST_NODE_LIST(V)
 #undef V
+
 } } }  // namespace iv::core::ast
 #endif  // _IV_AST_FWD_H_

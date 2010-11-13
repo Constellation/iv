@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
     iv::core::Parser<iv::lv5::AstFactory> parser(&src, &factory);
-    iv::lv5::FunctionLiteral* global = parser.ParseProgram();
+    const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
     if (!global) {
       std::cerr << parser.error() << std::endl;
