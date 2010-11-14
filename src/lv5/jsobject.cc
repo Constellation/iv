@@ -277,7 +277,7 @@ JSObject* JSObject::NewPlain(Context* ctx) {
 
 JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
   JSStringObject* const obj = new JSStringObject(str);
-  const Symbol name = ctx->Intern("Object");
+  const Symbol name = ctx->Intern("String");
   const Class& cls = ctx->Cls(name);
   obj->set_cls(JSString::NewAsciiString(ctx, "String"));
   obj->set_prototype(cls.prototype);
@@ -286,11 +286,15 @@ JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
 
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
   JSNumberObject* const obj = new JSNumberObject(value);
-  const Symbol name = ctx->Intern("Object");
+  const Symbol name = ctx->Intern("Number");
   const Class& cls = ctx->Cls(name);
   obj->set_cls(JSString::NewAsciiString(ctx, "Number"));
   obj->set_prototype(cls.prototype);
   return obj;
+}
+
+JSNumberObject* JSNumberObject::NewPlain(Context* ctx, const double& value) {
+  return new JSNumberObject(value);
 }
 
 JSBooleanObject::JSBooleanObject(bool value)
@@ -300,7 +304,7 @@ JSBooleanObject::JSBooleanObject(bool value)
 
 JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
   JSBooleanObject* const obj = new JSBooleanObject(value);
-  const Symbol name = ctx->Intern("Object");
+  const Symbol name = ctx->Intern("Boolean");
   const Class& cls = ctx->Cls(name);
   obj->set_cls(JSString::NewAsciiString(ctx, "Boolean"));
   obj->set_prototype(cls.prototype);

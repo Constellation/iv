@@ -89,6 +89,10 @@ class JSString : public GCUString, public gc {
     return hash_value_;
   }
 
+  inline void ReCalcHash() {
+    hash_value_ = core::StringToHash(*this);
+  }
+
   static JSString* New(Context* context, const core::StringPiece& str);
   static JSString* New(Context* context, const core::UStringPiece& str);
   static JSString* NewAsciiString(Context* context,

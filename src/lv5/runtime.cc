@@ -194,6 +194,49 @@ JSVal Runtime_NumberConstructor(const Arguments& args, Error* error) {
   }
 }
 
+JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
+  const JSVal& obj = args.this_binding();
+  double num;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() && obj.object()->AsNumberObject()) {
+      num = obj.object()->AsNumberObject()->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.toString is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    num = obj.number();
+  }
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    double radix = first.ToNumber(args.ctx(), ERROR(error));
+    radix = core::DoubleToInteger(radix);
+    if (2 <= radix && radix <= 36) {
+      // if radix == 10, through to radix 10 or no radix
+      if (radix != 10) {
+        std::string buffer;
+        core::DoubleToStringWithRadix(
+            num,
+            static_cast<int>(radix),
+            &buffer);
+        return JSString::NewAsciiString(args.ctx(), buffer);
+      }
+    } else {
+      // TODO(Constellation) more details
+      error->Report(Error::Range,
+                    "inllegal radix");
+      return JSUndefined;
+    }
+  }
+  // radix 10 or no radix
+  std::tr1::array<char, 80> buffer;
+  const char* const str = core::DoubleToCString(num,
+                                                buffer.data(),
+                                                buffer.size());
+  return JSString::NewAsciiString(args.ctx(), str);
+}
+
 JSVal Runtime_MathAbs(const Arguments& args, Error* error) {
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));

@@ -15,6 +15,9 @@ class JSVal;
 class JSFunction;
 class PropertyDescriptor;
 class Callable;
+class JSNumberObject;
+class JSStringObject;
+class JSBooleanObject;
 class Context;
 class Error;
 
@@ -45,6 +48,15 @@ class JSObject : public gc {
     return false;
   }
   virtual JSFunction* AsCallable() {
+    return NULL;
+  }
+  virtual JSNumberObject* AsNumberObject() {
+    return NULL;
+  }
+  virtual JSBooleanObject* AsBooleanObject() {
+    return NULL;
+  }
+  virtual JSStringObject* AsStringObject() {
     return NULL;
   }
 
@@ -81,6 +93,9 @@ class JSStringObject : public JSObject {
  public:
   explicit JSStringObject(JSString* value) : value_(value) { }
   static JSStringObject* New(Context* ctx, JSString* str);
+  JSStringObject* AsStringObject() {
+    return this;
+  }
  private:
   JSString* value_;
 };
@@ -89,6 +104,13 @@ class JSNumberObject : public JSObject {
  public:
   explicit JSNumberObject(const double& value) : value_(value) { }
   static JSNumberObject* New(Context* ctx, const double& value);
+  static JSNumberObject* NewPlain(Context* ctx, const double& value);
+  JSNumberObject* AsNumberObject() {
+    return this;
+  }
+  const double& value() const {
+    return value_;
+  }
  private:
   double value_;
 };
@@ -97,6 +119,9 @@ class JSBooleanObject : public JSObject {
  public:
   explicit JSBooleanObject(bool value);
   static JSBooleanObject* New(Context* ctx, bool value);
+  JSBooleanObject* AsBooleanObject() {
+    return this;
+  }
  private:
   bool value_;
 };

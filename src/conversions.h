@@ -21,6 +21,8 @@ class Conversions {
   static const std::string kInfinity;
   static const double DoubleToInt32_Two32;
   static const double DoubleToInt32_Two31;
+  static const char* kHex;
+  static const int kMaxDoubleToStringWithRadixBufferSize = 2200;
 };
 template<typename T>
 const double Conversions<T>::kNaN = std::numeric_limits<double>::quiet_NaN();
@@ -33,6 +35,10 @@ const double Conversions<T>::DoubleToInt32_Two32 = 4294967296.0;
 
 template<typename T>
 const double Conversions<T>::DoubleToInt32_Two31 = 2147483648.0;
+
+template<typename T>
+const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
+
 }  // namespace iv::core::detail
 
 typedef detail::Conversions<None> Conversions;
@@ -276,6 +282,16 @@ inline int32_t DoubleToUInt32(double d) {
   return static_cast<uint32_t>(d);
 }
 
+inline double DoubleToInteger(double d) {
+  if (std::isnan(d)) {
+    return 0;
+  }
+  if (!std::isfinite(d) || d == 0) {
+    return d;
+  }
+  return std::floor(std::abs(d)) * (std::signbit(d) ? -1 : 1);
+}
+
 inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
   uint16_t ch;
   *value = 0;
@@ -303,6 +319,52 @@ inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
            (ch < (std::numeric_limits<uint32_t>::max() % 10))));
 }
 
+template<typename T>
+inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
+  static const int kMaxBufSize = 1100;
+  std::tr1::array<
+      char,
+      Conversions::kMaxDoubleToStringWithRadixBufferSize> buffer;
+  const bool is_negative = v < 0.0;
+  if (is_negative) {
+    v = -v;
+  }
+  double integer = std::floor(v);
+  double decimal = v - integer;
+
+  // integer part
+  int integer_pos = kMaxBufSize - 1;
+  do {
+    buffer[integer_pos--] =
+        Conversions::kHex[static_cast<std::size_t>(std::fmod(integer, radix))];
+    integer /= radix;
+  } while (integer >= 1.0);
+  if (is_negative) {
+    buffer[integer_pos--] = '-';
+  }
+  assert(integer_pos >= 0);
+
+  // decimal part
+  int decimal_pos = kMaxBufSize;
+  if (decimal) {
+    buffer[decimal_pos++] = '.';
+    while ((decimal > 0.0) && (decimal_pos < (kMaxBufSize * 2))) {
+      decimal *= radix;
+      const std::size_t res = static_cast<std::size_t>(std::floor(decimal));
+      buffer[decimal_pos++] = Conversions::kHex[res];
+      decimal -= res;
+    }
+  }
+  buf->assign(buffer.data() + integer_pos + 1,
+              buffer.data() + decimal_pos);
+  return decimal_pos - integer_pos - 1;  // size
+}
+
+inline std::string DoubleToStringWithRadix(double v, int radix) {
+  std::string str;
+  DoubleToStringWithRadix(v, radix, &str);
+  return str;
+}
 
 } }  // namespace iv::core
 #endif  // IV_CONVERSIONS_H_

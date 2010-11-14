@@ -191,10 +191,12 @@ void Context::Initialize() {
 
   {
     // Number
-    JSObject* const proto = JSObject::NewPlain(this);
+    JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
+
     // section 15.7.3 The Number Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::New(this, &Runtime_NumberConstructor, 1);
+
     // set prototype
     constructor->DefineOwnProperty(
         this, prototype_symbol_,
@@ -207,6 +209,7 @@ void Context::Initialize() {
       proto
     };
     proto->set_cls(cls.name);
+
     const Symbol name = Intern("Number");
     builtins_[name] = cls;
     variable_env_->CreateMutableBinding(this, name, false);
@@ -253,6 +256,17 @@ void Context::Initialize() {
         DataDescriptor(constructor,
                        PropertyDescriptor::NONE),
         false, NULL);
+
+    {
+      // section 15.7.4.2 Number.prototype.toString([radix])
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_NumberToString, 1);
+      proto->DefineOwnProperty(
+          this, toString_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE),
+          false, NULL);
+    }
   }
 
   {
