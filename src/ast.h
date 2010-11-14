@@ -527,12 +527,21 @@ class BreakStatement : public BreakStatementBase<Factory> {
                  BreakableStatement<Factory>** target)
     : label_(label),
       target_(target) {
-    assert(target_);
+    // example >
+    //   do {
+    //     test: break test;
+    //   } while (0);
+    // if above example, target is NULL
+    assert(target_ || label_);
   }
   inline Identifier<Factory>* label() const { return label_; }
   inline BreakableStatement<Factory>* target() const {
-    assert(target_ && *target_);
-    return *target_;
+    if (target_) {
+      assert(*target_);
+      return *target_;
+    } else {
+      return NULL;
+    }
   }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:

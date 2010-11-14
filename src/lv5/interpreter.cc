@@ -504,9 +504,9 @@ void Interpreter::Visit(const ContinueStatement* stmt) {
 
 
 void Interpreter::Visit(const BreakStatement* stmt) {
-  if (stmt->target()) {
-  } else {
+  if (!stmt->target()) {
     if (stmt->label()) {
+      // interpret as EmptyStatement
       RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
     }
   }
