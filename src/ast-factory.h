@@ -12,10 +12,10 @@ namespace iv {
 namespace core {
 namespace ast {
 
-template<std::size_t N, typename Factory>
-class BasicAstFactory : public Space<N> {
+template<typename Factory>
+class BasicAstFactory {
  public:
-  typedef BasicAstFactory<N, Factory> this_type;
+  typedef BasicAstFactory<Factory> this_type;
 
 #define V(AST) typedef typename ast::AST<Factory> AST;
   AST_NODE_LIST(V)
@@ -28,8 +28,7 @@ class BasicAstFactory : public Space<N> {
 #undef V
 
   BasicAstFactory()
-    : Space<N>(),
-      undefined_instance_(
+    : undefined_instance_(
           new(static_cast<Factory*>(this))Undefined()),
       empty_statement_instance_(
           new(static_cast<Factory*>(this))EmptyStatement()),

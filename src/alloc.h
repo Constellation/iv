@@ -117,7 +117,7 @@ class Space {
     : arena_(&init_arenas_[0]),
       start_malloced_(NULL),
       malloced_() {
-    for (int c = 0; c < N-1; ++c) {
+    for (std::size_t c = 0; c < N-1; ++c) {
       init_arenas_[c].SetNext(&init_arenas_[c+1]);
     }
   }

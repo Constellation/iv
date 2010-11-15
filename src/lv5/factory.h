@@ -12,11 +12,15 @@ namespace iv {
 namespace lv5 {
 class Context;
 
-class AstFactory : public core::ast::BasicAstFactory<1, AstFactory> {
+class AstFactory
+  : public core::Space<1>,
+    public core::ast::BasicAstFactory<AstFactory> {
  public:
   typedef core::SpaceVector<AstFactory, RegExpLiteral*>::type DestReqs;
   explicit AstFactory(Context* ctx)
-    : ctx_(ctx),
+    : core::Space<1>(),
+      core::ast::BasicAstFactory<AstFactory>(),
+      ctx_(ctx),
       regexps_(DestReqs::allocator_type(this)) { }
 
   ~AstFactory() {
