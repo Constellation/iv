@@ -205,7 +205,6 @@ void Interpreter::CallCode(
     }
   }
 
-  // TODO(Constellation) more test
   {
     const FunctionLiteral::DeclType type = code->code()->type();
     if (type == FunctionLiteral::STATEMENT ||
@@ -771,19 +770,9 @@ void Interpreter::Visit(const Assignment* assign) {
       break;
     }
   }
-  if (lref.IsReference()) {
-    const JSReference* const ref = lref.reference();
-    if (ref->IsStrictReference() &&
-        ref->base()->IsEnvironment()) {
-      const Symbol sym = ref->GetReferencedName();
-      if (sym == ctx_->eval_symbol() ||
-          sym == ctx_->arguments_symbol()) {
-        // TODO(Constellation) remove SyntaxError
-        ctx_->error()->Report(Error::Syntax, "?");
-        return;
-      }
-    }
-  }
+  // when parser find eval / arguments identifier in strict code,
+  // parser raise "SyntaxError".
+  // so, this path is not used in interpreter. (section 11.13.1 step4)
   PutValue(lref, result, CHECK);
   ctx_->Return(result);
 }
@@ -1078,18 +1067,16 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         ctx_->Return(JSTrue);
         return;
       }
+      // UnresolvableReference / EnvironmentReference is always created
+      // by Identifier. and Identifier doesn't create PropertyReference.
+      // so, in parser, when "delete Identifier" is found in strict code,
+      // parser raise SyntaxError.
+      // so, this path (section 11.4.1 step 3.a, step 5.a) is not used.
       const JSReference* const ref = ctx_->ret().reference();
       if (ref->IsUnresolvableReference()) {
-        if (ref->IsStrictReference()) {
-          // TODO(Constellation) remove SyntaxError
-          ctx_->error()->Report(Error::Syntax, "?");
-          return;
-        } else {
-          ctx_->Return(JSTrue);
-          return;
-        }
-      }
-      if (ref->IsPropertyReference()) {
+        ctx_->Return(JSTrue);
+        return;
+      } else if (ref->IsPropertyReference()) {
         JSObject* const obj = ref->base()->ToObject(ctx_, CHECK);
         const bool result = obj->Delete(ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
@@ -1100,11 +1087,6 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         }
       } else {
         assert(ref->base()->IsEnvironment());
-        if (ref->IsStrictReference()) {
-          // TODO(Constellation) remove SyntaxError
-          ctx_->error()->Report(Error::Syntax, "?");
-          return;
-        }
         const bool res = ref->base()->environment()->DeleteBinding(
             ref->GetReferencedName());
         if (res) {
@@ -1140,19 +1122,9 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::INC: {
       EVAL(unary->expr());
       const JSVal expr = ctx_->ret();
-      if (expr.IsReference()) {
-        JSReference* const ref = expr.reference();
-        if (ref->IsStrictReference() &&
-            ref->base()->IsEnvironment()) {
-          const Symbol sym = ref->GetReferencedName();
-          if (sym == ctx_->eval_symbol() ||
-              sym == ctx_->arguments_symbol()) {
-            // TODO(Constellation) remove SyntaxError
-            ctx_->error()->Report(Error::Syntax, "?");
-            return;
-          }
-        }
-      }
+      // when parser find eval / arguments identifier in strict code,
+      // parser raise "SyntaxError".
+      // so, this path is not used in interpreter. (section 11.4.4 step2)
       const JSVal value = GetValue(expr, CHECK);
       const double old_value = value.ToNumber(ctx_, CHECK);
       const JSVal new_value(old_value + 1);
@@ -1164,19 +1136,9 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::DEC: {
       EVAL(unary->expr());
       const JSVal expr = ctx_->ret();
-      if (expr.IsReference()) {
-        JSReference* const ref = expr.reference();
-        if (ref->IsStrictReference() &&
-            ref->base()->IsEnvironment()) {
-          const Symbol sym = ref->GetReferencedName();
-          if (sym == ctx_->eval_symbol() ||
-              sym == ctx_->arguments_symbol()) {
-            // TODO(Constellation) remove SyntaxError
-            ctx_->error()->Report(Error::Syntax, "?");
-            return;
-          }
-        }
-      }
+      // when parser find eval / arguments identifier in strict code,
+      // parser raise "SyntaxError".
+      // so, this path is not used in interpreter. (section 11.4.5 step2)
       const JSVal value = GetValue(expr, CHECK);
       const double old_value = value.ToNumber(ctx_, CHECK);
       const JSVal new_value(old_value - 1);
@@ -1231,19 +1193,10 @@ void Interpreter::Visit(const UnaryOperation* unary) {
 void Interpreter::Visit(const PostfixExpression* postfix) {
   EVAL(postfix->expr());
   JSVal lref = ctx_->ret();
-  if (lref.IsReference()) {
-    const JSReference* const ref = lref.reference();
-    if (ref->IsStrictReference() &&
-        ref->base()->IsEnvironment()) {
-      const Symbol sym = ref->GetReferencedName();
-      if (sym == ctx_->eval_symbol() ||
-          sym == ctx_->arguments_symbol()) {
-        // TODO(Constellation) remove SyntaxError
-        ctx_->error()->Report(Error::Syntax, "?");
-        return;
-      }
-    }
-  }
+  // when parser find eval / arguments identifier in strict code,
+  // parser raise "SyntaxError".
+  // so, this path is not used in interpreter.
+  // (section 11.3.1 step2, 11.3.2 step2)
   JSVal old = GetValue(lref, CHECK);
   const double& value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
