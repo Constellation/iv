@@ -83,5 +83,4 @@ class Arguments : private core::Noncopyable<Arguments>::type {
 };
 
 } }  // namespace iv::lv5
-
 #endif  // IV_LV5_ARGUMENTS_H_

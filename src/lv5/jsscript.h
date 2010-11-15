@@ -37,6 +37,15 @@ class JSScript : public gc_cleanup {
                                 const FunctionLiteral* function,
                                 AstFactory* factory,
                                 core::BasicSource* source);
+  inline Type type() const {
+    return type_;
+  }
+  inline const FunctionLiteral* function() const {
+    return function_;
+  }
+  inline AstFactory* factory() const {
+    return factory_;
+  }
   inline core::BasicSource* source() const {
     return source_;
   }

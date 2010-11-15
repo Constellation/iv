@@ -41,7 +41,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   static JSObjectEnv* NewObjectEnvironment(Context* ctx,
                                            JSObject* val, JSEnv* env);
 
- private:
   class ContextSwitcher : private core::Noncopyable<ContextSwitcher>::type {
    public:
     ContextSwitcher(Context* ctx,
@@ -77,6 +76,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     bool prev_;
   };
 
+ private:
   void Visit(const Block* block);
   void Visit(const FunctionStatement* func);
   void Visit(const VariableStatement* var);

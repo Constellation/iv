@@ -1,9 +1,12 @@
 #include <iostream>  // NOLINT
+#include <gc/gc.h>  // NOLINT
 #include "lv5.h"
 #include "error.h"
 #include "jserror.h"
 #include "runtime.h"
 #include "context.h"
+#include "eval-source.h"
+#include "parser.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -26,6 +29,23 @@ static JSString* ErrorMessageString(const Arguments& args, Error* error) {
   }
 }
 
+static JSScript* CompileScript(Context* ctx, JSString* str, Error* error) {
+  EvalSource* const src = new EvalSource(str);
+  AstFactory* const factory = new AstFactory(ctx);
+  core::Parser<AstFactory> parser(src, factory);
+  parser.set_strict(ctx->IsStrict());
+  const iv::lv5::FunctionLiteral* const eval = parser.ParseProgram();
+  if (!eval) {
+    delete src;
+    delete factory;
+    error->Report(Error::Syntax,
+                  parser.error());
+    return NULL;
+  } else {
+    return iv::lv5::JSScript::NewEval(ctx, eval, factory, src);
+  }
+}
+
 }  // namespace
 
 JSVal Runtime_GlobalEval(const Arguments& args, Error* error) {
@@ -39,13 +59,62 @@ JSVal Runtime_GlobalEval(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_DirectCallToEval(const Arguments& args, Error* error) {
-  // TODO(Constellation) implement eval
-  return JSUndefined;
+  if (!args.size()) {
+    return JSUndefined;
+  }
+  const JSVal& first = args[0];
+  if (!first.IsString()) {
+    return first;
+  }
+  Context* const ctx = args.ctx();
+  JSScript* const script = CompileScript(args.ctx(), first.string(), ERROR(error));
+  if (script->function()->strict()) {
+    JSDeclEnv* const env = Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    const Interpreter::ContextSwitcher switcher(ctx,
+                                                env,
+                                                env,
+                                                ctx->this_binding(),
+                                                true);
+    ctx->Run(script);
+  } else {
+    const Interpreter::ContextSwitcher switcher(ctx,
+                                                ctx->global_env(),
+                                                ctx->global_env(),
+                                                ctx->global_obj(),
+                                                false);
+    ctx->Run(script);
+  }
+  if (ctx->IsShouldGC()) {
+    GC_gcollect();
+  }
+  return ctx->ret();
 }
 
 JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
-  // TODO(Constellation) implement eval
-  return JSUndefined;
+  if (!args.size()) {
+    return JSUndefined;
+  }
+  const JSVal& first = args[0];
+  if (!first.IsString()) {
+    return first;
+  }
+  Context* const ctx = args.ctx();
+  JSScript* const script = CompileScript(args.ctx(), first.string(), ERROR(error));
+  if (script->function()->strict()) {
+    JSDeclEnv* const env = Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    const Interpreter::ContextSwitcher switcher(ctx,
+                                                env,
+                                                env,
+                                                ctx->this_binding(),
+                                                true);
+    ctx->Run(script);
+  } else {
+    ctx->Run(script);
+  }
+  if (ctx->IsShouldGC()) {
+    GC_gcollect();
+  }
+  return ctx->ret();
 }
 
 JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {

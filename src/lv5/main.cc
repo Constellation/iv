@@ -29,6 +29,7 @@
 #include "jsval.h"
 #include "error.h"
 #include "arguments.h"
+#include "jsscript.h"
 
 #include "icu/ustream.h"
 #include "icu/source.h"
@@ -125,7 +126,6 @@ int main(int argc, char **argv) {
     iv::icu::Source src(str, filename);
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
-    ctx.set_factory(&factory);
     iv::core::Parser<iv::lv5::AstFactory> parser(&src, &factory);
     const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
@@ -140,7 +140,9 @@ int main(int argc, char **argv) {
       std::cout << ser.out().data() << std::endl;
     } else {
       ctx.DefineFunction(&Print, "print", 1);
-      if (ctx.Run(global, &src)) {
+      iv::lv5::JSScript* const script = iv::lv5::JSScript::NewGlobal(
+          &ctx, global, &factory, &src);
+      if (ctx.Run(script)) {
         const JSVal e = ctx.ErrorVal();
         ctx.error()->Clear();
         const JSString* const str = e.ToString(&ctx, ctx.error());

@@ -55,6 +55,9 @@ class Context : private core::Noncopyable<Context>::type {
   void set_variable_env(JSEnv* env) {
     variable_env_ = env;
   }
+  JSEnv* global_env() const {
+    return global_env_;
+  }
   JSVal this_binding() const {
     return binding_;
   }
@@ -106,10 +109,6 @@ class Context : private core::Noncopyable<Context>::type {
     ret_ = val;
   }
 
-  void set_factory(AstFactory* factory) {
-    factory_ = factory;
-  }
-
   void SetStatement(Mode mode, const JSVal& val,
                     const BreakableStatement* target) {
     mode_ = mode;
@@ -136,9 +135,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Initialize();
-  bool Run(const FunctionLiteral* global, core::BasicSource* src);
-
-  JSVal Eval(const FunctionLiteral* eval, core::BasicSource* src);
+  bool Run(JSScript* script);
 
   JSVal ErrorVal();
 
@@ -184,6 +181,15 @@ class Context : private core::Noncopyable<Context>::type {
   void set_current_script(JSScript* script) {
     current_script_ = script;
   }
+  bool IsShouldGC() {
+    ++generate_script_counter_;
+    if (generate_script_counter_ > 10) {
+      generate_script_counter_ = 0;
+      return true;
+    } else {
+      return false;
+    }
+  }
   double Random();
   JSString* ToString(Symbol sym);
   const core::UString& GetContent(Symbol sym) const;
@@ -194,6 +200,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSNativeFunction throw_type_error_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
+  JSEnv* global_env_;
   JSVal binding_;
   SymbolTable table_;
   Interpreter interp_;
@@ -203,7 +210,7 @@ class Context : private core::Noncopyable<Context>::type {
   Error error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;
-  AstFactory* factory_;
+  std::size_t generate_script_counter_;
   random_generator random_engine_;
   Symbol length_symbol_;
   Symbol eval_symbol_;

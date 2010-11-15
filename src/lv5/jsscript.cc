@@ -1,6 +1,7 @@
 #include "jsscript.h"
 #include "factory.h"
 #include "context.h"
+#include <iostream>
 namespace iv {
 namespace lv5 {
 

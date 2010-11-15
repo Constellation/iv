@@ -207,8 +207,9 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
 // Program
 //   : SourceElements
   FunctionLiteral* ParseProgram() {
-    FunctionLiteral* global = factory_->NewFunctionLiteral(
+    FunctionLiteral* const global = factory_->NewFunctionLiteral(
         FunctionLiteral::GLOBAL);
+    global->set_strict(strict_);
     assert(target_ == NULL);
     bool error_flag = true;
     bool *res = &error_flag;

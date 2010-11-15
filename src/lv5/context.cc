@@ -46,6 +46,7 @@ Context::Context()
     throw_type_error_(),
     lexical_env_(NULL),
     variable_env_(NULL),
+    global_env_(NULL),
     binding_(&global_obj_),
     table_(),
     interp_(),
@@ -55,7 +56,7 @@ Context::Context()
     error_(),
     builtins_(),
     strict_(false),
-    factory_(NULL),
+    generate_script_counter_(0),
     random_engine_(random_engine_type(),
                    random_distribution_type(0, 1)),
     length_symbol_(Intern(length_string)),
@@ -71,6 +72,7 @@ Context::Context()
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
+  global_env_ = env;
   interp_.set_context(this);
   // discard random
   for (std::size_t i = 0; i < 20; ++i) {
@@ -114,20 +116,10 @@ bool Context::InCurrentLabelSet(
   return stmt == target_;
 }
 
-bool Context::Run(const FunctionLiteral* global,
-                  core::BasicSource* src) {
-  const ScriptScope scope(this,
-                          JSScript::NewGlobal(this, global, factory_, src));
-  interp_.Run(global);
+bool Context::Run(JSScript* script) {
+  const ScriptScope scope(this, script);
+  interp_.Run(script->function());
   return error_;
-}
-
-JSVal Context::Eval(const FunctionLiteral* eval,
-                    core::BasicSource* src) {
-  const ScriptScope scope(this,
-                          JSScript::NewEval(this, eval, factory_, src));
-  interp_.Run(eval);
-  return JSUndefined;
 }
 
 JSVal Context::ErrorVal() {
