@@ -168,7 +168,7 @@ void Interpreter::CallCode(
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
     EVAL(f);
-    JSVal fo = ctx_->ret();
+    const JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
       env->CreateMutableBinding(ctx_, fn, configurable_bindings);
     }
@@ -455,7 +455,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
 
 void Interpreter::Visit(const ForInStatement* stmt) {
   EVAL(stmt->enumerable());
-  JSVal expr = GetValue(ctx_->ret(), CHECK);
+  const JSVal expr = GetValue(ctx_->ret(), CHECK);
   if (expr.IsNull() || expr.IsUndefined()) {
     RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
   }
@@ -620,7 +620,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
 // section 12.13 The throw Statement
 void Interpreter::Visit(const ThrowStatement* stmt) {
   EVAL(stmt->expr());
-  JSVal ref = GetValue(ctx_->ret(), CHECK);
+  const JSVal ref = GetValue(ctx_->ret(), CHECK);
   ctx_->error()->Report(ref);
   RETURN_STMT(Context::THROW, ref, NULL);
 }
@@ -1195,12 +1195,12 @@ void Interpreter::Visit(const UnaryOperation* unary) {
 
 void Interpreter::Visit(const PostfixExpression* postfix) {
   EVAL(postfix->expr());
-  JSVal lref = ctx_->ret();
+  const JSVal lref = ctx_->ret();
   // when parser find eval / arguments identifier in strict code,
   // parser raise "SyntaxError".
   // so, this path is not used in interpreter.
   // (section 11.3.1 step2, 11.3.2 step2)
-  JSVal old = GetValue(lref, CHECK);
+  const JSVal old = GetValue(lref, CHECK);
   const double& value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
       ((postfix->op() == core::Token::INC) ? 1 : -1);
@@ -1384,12 +1384,12 @@ void Interpreter::Visit(const FunctionCall* call) {
       args.set_this_binding(ref->base()->environment()->ImplicitThisValue());
       // direct call to eval check
       {
-        JSNativeFunction* const native =
+        const JSNativeFunction* const native =
             func.object()->AsCallable()->AsNativeFunction();
         if (native &&
             native->function() == &Runtime_GlobalEval) {
           // this function is eval function
-          Identifier* const maybe_eval = call->target()->AsIdentifier();
+          const Identifier* const maybe_eval = call->target()->AsIdentifier();
           if (maybe_eval &&
               maybe_eval->symbol() == ctx_->eval_symbol()) {
             // direct call to eval point
@@ -1470,8 +1470,8 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
-                                                    error);
+          const JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
+                                                          error);
           if (*error) {
             return JSUndefined;
           }
@@ -1481,8 +1481,8 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         }
       }
     } else {
-      JSVal res = base->object()->Get(ctx_,
-                                      ref->GetReferencedName(), error);
+      const JSVal res = base->object()->Get(ctx_,
+                                            ref->GetReferencedName(), error);
       if (*error) {
         return JSUndefined;
       }
@@ -1490,7 +1490,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
     }
     return JSUndefined;
   } else {
-    JSVal res = base->environment()->GetBindingValue(
+    const JSVal res = base->environment()->GetBindingValue(
         ctx_, ref->GetReferencedName(), ref->IsStrictReference(), error);
     if (*error) {
       return JSUndefined;
