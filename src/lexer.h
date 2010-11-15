@@ -408,6 +408,14 @@ class Lexer: private Noncopyable<Lexer>::type {
     return location_;
   }
 
+  inline std::size_t begin_position() const {
+    return location_.begin_position();
+  }
+
+  inline std::size_t end_position() const {
+    return location_.end_position();
+  }
+
   bool ScanRegExpLiteral(bool contains_eq) {
     // location begin_position is the same with DIV
     // so, no need to set

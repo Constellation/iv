@@ -1798,7 +1798,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
 
     const ScopeSwitcher switcher(this, literal->scope());
-    literal->set_start_position(lexer_.pos() - 2);
+    literal->set_start_position(lexer_.begin_position());
 
     //  '(' FormalParameterList_opt ')'
     EXPECT(Token::LPAREN);
@@ -1887,7 +1887,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
           break;
       }
     }
-    literal->set_end_position(lexer_.pos() - 2);
+    literal->set_end_position(lexer_.end_position());
     Next();
     return literal;
   }

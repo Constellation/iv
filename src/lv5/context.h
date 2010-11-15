@@ -183,7 +183,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
   bool IsShouldGC() {
     ++generate_script_counter_;
-    if (generate_script_counter_ > 10) {
+    if (generate_script_counter_ > 30) {
       generate_script_counter_ = 0;
       return true;
     } else {
