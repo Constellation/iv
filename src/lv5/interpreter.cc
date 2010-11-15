@@ -1388,11 +1388,13 @@ void Interpreter::Visit(const FunctionCall* call) {
             func.object()->AsCallable()->AsNativeFunction();
         if (native &&
             native->function() == &Runtime_GlobalEval) {
+          // this function is eval function
           Identifier* const maybe_eval = call->target()->AsIdentifier();
           if (maybe_eval &&
               maybe_eval->symbol() == ctx_->eval_symbol()) {
-            // eval call
-            // TODO(Constellation) direct call to eval point
+            // direct call to eval point
+            ctx_->ret() = Runtime_DirectCallToEval(args, CHECK);
+            return;
           }
         }
       }

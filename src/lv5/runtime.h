@@ -9,6 +9,8 @@ namespace lv5 {
 class Error;
 
 JSVal Runtime_GlobalEval(const Arguments& args, Error* error);
+JSVal Runtime_DirectCallToEval(const Arguments& args, Error* error);
+JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error);
 
 JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error);
 
