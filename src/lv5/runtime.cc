@@ -28,6 +28,11 @@ static JSString* ErrorMessageString(const Arguments& args, Error* error) {
 
 }  // namespace
 
+JSVal Runtime_GlobalEval(const Arguments& args, Error* error) {
+  // TODO(Constellation) implement eval
+  return JSUndefined;
+}
+
 JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {
   error->Report(Error::Type,
                 "[[ThrowTypeError]] called");

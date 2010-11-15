@@ -20,6 +20,7 @@
 #include "jsarray.h"
 #include "context.h"
 #include "jsast.h"
+#include "runtime.h"
 
 namespace iv {
 namespace lv5 {
@@ -678,96 +679,98 @@ void Interpreter::Visit(const Assignment* assign) {
   using core::Token;
   EVAL(assign->left());
   const JSVal lref(ctx_->ret());
-  const JSVal lhs = GetValue(lref, CHECK);
-  EVAL(assign->right());
-  const JSVal rhs = GetValue(ctx_->ret(), CHECK);
   JSVal result;
-  switch (assign->op()) {
-    case Token::ASSIGN: {  // =
-      result = rhs;
-      break;
-    }
-    case Token::ASSIGN_ADD: {  // +=
-      const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
-      const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
-      if (lprim.IsString() || rprim.IsString()) {
-        const JSString* const lstr = lprim.ToString(ctx_, CHECK);
-        const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-        ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
-        return;
+  if (assign->op() == Token::ASSIGN) {  // =
+    EVAL(assign->right());
+    const JSVal rhs = GetValue(ctx_->ret(), CHECK);
+    result = rhs;
+  } else {
+    const JSVal lhs = GetValue(lref, CHECK);
+    EVAL(assign->right());
+    const JSVal rhs = GetValue(ctx_->ret(), CHECK);
+    switch (assign->op()) {
+      case Token::ASSIGN_ADD: {  // +=
+        const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
+        const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
+        if (lprim.IsString() || rprim.IsString()) {
+          const JSString* const lstr = lprim.ToString(ctx_, CHECK);
+          const JSString* const rstr = rprim.ToString(ctx_, CHECK);
+          ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
+          return;
+        }
+        const double left_num = lprim.ToNumber(ctx_, CHECK);
+        const double right_num = rprim.ToNumber(ctx_, CHECK);
+        result.set_value(left_num + right_num);
+        break;
       }
-      const double left_num = lprim.ToNumber(ctx_, CHECK);
-      const double right_num = rprim.ToNumber(ctx_, CHECK);
-      result.set_value(left_num + right_num);
-      break;
-    }
-    case Token::ASSIGN_SUB: {  // -=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(left_num - right_num);
-      break;
-    }
-    case Token::ASSIGN_MUL: {  // *=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(left_num * right_num);
-      break;
-    }
-    case Token::ASSIGN_MOD: {  // %=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(std::fmod(left_num, right_num));
-      break;
-    }
-    case Token::ASSIGN_DIV: {  // /=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(left_num / right_num);
-      break;
-    }
-    case Token::ASSIGN_SAR: {  // >>=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(
-          static_cast<double>(core::DoubleToInt32(left_num)
-                 >> (core::DoubleToInt32(right_num) & 0x1f)));
-      break;
-    }
-    case Token::ASSIGN_SHR: {  // >>>=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(
-          static_cast<double>(core::DoubleToUInt32(left_num)
-                 >> (core::DoubleToInt32(right_num) & 0x1f)));
-      break;
-    }
-    case Token::ASSIGN_SHL: {  // <<=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(
-          static_cast<double>(core::DoubleToInt32(left_num)
-                 << (core::DoubleToInt32(right_num) & 0x1f)));
-      break;
-    }
-    case Token::ASSIGN_BIT_AND: {  // &=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(
-          static_cast<double>(core::DoubleToInt32(left_num)
-                 & (core::DoubleToInt32(right_num))));
-      break;
-    }
-    case Token::ASSIGN_BIT_OR: {  // |=
-      const double left_num = lhs.ToNumber(ctx_, CHECK);
-      const double right_num = rhs.ToNumber(ctx_, CHECK);
-      result.set_value(
-          static_cast<double>(core::DoubleToInt32(left_num)
-                 | (core::DoubleToInt32(right_num))));
-      break;
-    }
-    default: {
-      UNREACHABLE();
-      break;
+      case Token::ASSIGN_SUB: {  // -=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(left_num - right_num);
+        break;
+      }
+      case Token::ASSIGN_MUL: {  // *=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(left_num * right_num);
+        break;
+      }
+      case Token::ASSIGN_MOD: {  // %=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(std::fmod(left_num, right_num));
+        break;
+      }
+      case Token::ASSIGN_DIV: {  // /=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(left_num / right_num);
+        break;
+      }
+      case Token::ASSIGN_SAR: {  // >>=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        break;
+      }
+      case Token::ASSIGN_SHR: {  // >>>=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(
+            static_cast<double>(core::DoubleToUInt32(left_num)
+                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        break;
+      }
+      case Token::ASSIGN_SHL: {  // <<=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   << (core::DoubleToInt32(right_num) & 0x1f)));
+        break;
+      }
+      case Token::ASSIGN_BIT_AND: {  // &=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   & (core::DoubleToInt32(right_num))));
+        break;
+      }
+      case Token::ASSIGN_BIT_OR: {  // |=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(
+            static_cast<double>(core::DoubleToInt32(left_num)
+                   | (core::DoubleToInt32(right_num))));
+        break;
+      }
+      default: {
+        UNREACHABLE();
+        break;
+      }
     }
   }
   // when parser find eval / arguments identifier in strict code,
@@ -1326,7 +1329,8 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
 
 void Interpreter::Visit(const FunctionLiteral* func) {
   ctx_->Return(
-      JSCodeFunction::New(ctx_, func, ctx_->current_script(), ctx_->lexical_env()));
+      JSCodeFunction::New(ctx_, func,
+                          ctx_->current_script(), ctx_->lexical_env()));
 }
 
 
@@ -1378,6 +1382,20 @@ void Interpreter::Visit(const FunctionCall* call) {
     } else {
       assert(ref->base()->IsEnvironment());
       args.set_this_binding(ref->base()->environment()->ImplicitThisValue());
+      // direct call to eval check
+      {
+        JSNativeFunction* const native =
+            func.object()->AsCallable()->AsNativeFunction();
+        if (native &&
+            native->function() == &Runtime_GlobalEval) {
+          Identifier* const maybe_eval = call->target()->AsIdentifier();
+          if (maybe_eval &&
+              maybe_eval->symbol() == ctx_->eval_symbol()) {
+            // eval call
+            // TODO(Constellation) direct call to eval point
+          }
+        }
+      }
     }
   } else {
     args.set_this_binding(JSUndefined);

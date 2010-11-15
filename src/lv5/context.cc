@@ -755,6 +755,12 @@ void Context::Initialize() {
         this, Intern("undefined"),
         DataDescriptor(JSUndefined, PropertyDescriptor::NONE),
         false, NULL);
+    // section 15.1.2.1 eval(x)
+    global_obj_.DefineOwnProperty(
+        this, Intern("eval"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalEval, 1),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
     global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
     global_obj_.set_prototype(obj_proto);
   }

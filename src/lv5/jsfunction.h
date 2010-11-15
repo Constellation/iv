@@ -96,6 +96,9 @@ class JSNativeFunction : public JSFunction {
   bool IsStrict() const {
     return false;
   }
+  value_type function() const {
+    return func_;
+  }
 
   template<typename Func>
   static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
