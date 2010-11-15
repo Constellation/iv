@@ -7,6 +7,7 @@
 #include "interpreter.h"
 #include "context.h"
 #include "arguments.h"
+#include "jsscript.h"
 namespace iv {
 namespace lv5 {
 
@@ -17,8 +18,11 @@ void JSFunction::Initialize(Context* ctx) {
 }
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
-                 const FunctionLiteral* func, JSEnv* env)
+                               const FunctionLiteral* func,
+                               JSScript* script,
+                               JSEnv* env)
   : function_(func),
+    script_(script),
     env_(env) {
   DefineOwnProperty(
       ctx, ctx->length_symbol(),
@@ -37,6 +41,13 @@ JSVal JSCodeFunction::Call(
     ctx->set_mode(Context::NORMAL);
   }
   return ctx->ret();
+}
+
+core::UStringPiece JSCodeFunction::GetSource() const {
+  const std::size_t start_pos = function_->start_position();
+  const std::size_t end_pos = function_->end_position();
+  return script_->source()->SubString(start_pos,
+                                      end_pos - start_pos + 1);
 }
 
 bool JSFunction::HasInstance(Context* ctx,

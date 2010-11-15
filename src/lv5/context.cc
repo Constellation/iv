@@ -9,6 +9,7 @@
 #include "class.h"
 #include "runtime.h"
 #include "jsast.h"
+#include "jsscript.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -22,6 +23,21 @@ const std::string toString_string("toString");
 const std::string valueOf_string("valueOf");
 const std::string prototype_string("prototype");
 const std::string constructor_string("constructor");
+
+class ScriptScope : private core::Noncopyable<ScriptScope>::type {
+ public:
+  ScriptScope(Context* ctx, JSScript* script)
+   : ctx_(ctx),
+     prev_(ctx->current_script()) {
+    ctx_->set_current_script(script);
+  }
+  ~ScriptScope() {
+    ctx_->set_current_script(prev_);
+  }
+ private:
+  Context* ctx_;
+  JSScript* prev_;
+};
 
 }  // namespace
 
@@ -39,6 +55,7 @@ Context::Context()
     error_(),
     builtins_(),
     strict_(false),
+    factory_(NULL),
     random_engine_(random_engine_type(),
                    random_distribution_type(0, 1)),
     length_symbol_(Intern(length_string)),
@@ -49,7 +66,8 @@ Context::Context()
     toString_symbol_(Intern(toString_string)),
     valueOf_symbol_(Intern(valueOf_string)),
     prototype_symbol_(Intern(prototype_string)),
-    constructor_symbol_(Intern(constructor_string)) {
+    constructor_symbol_(Intern(constructor_string)),
+    current_script_(NULL) {
   JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
   lexical_env_ = env;
   variable_env_ = env;
@@ -96,9 +114,20 @@ bool Context::InCurrentLabelSet(
   return stmt == target_;
 }
 
-bool Context::Run(const FunctionLiteral* global) {
+bool Context::Run(const FunctionLiteral* global,
+                  core::BasicSource* src) {
+  const ScriptScope scope(this,
+                          JSScript::NewGlobal(this, global, factory_, src));
   interp_.Run(global);
   return error_;
+}
+
+JSVal Context::Eval(const FunctionLiteral* eval,
+                    core::BasicSource* src) {
+  const ScriptScope scope(this,
+                          JSScript::NewEval(this, eval, factory_, src));
+  interp_.Run(eval);
+  return JSUndefined;
 }
 
 JSVal Context::ErrorVal() {

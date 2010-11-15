@@ -12,7 +12,7 @@ namespace iv {
 namespace lv5 {
 class Context;
 
-class AstFactory : public core::ast::BasicAstFactory<2, AstFactory> {
+class AstFactory : public core::ast::BasicAstFactory<1, AstFactory> {
  public:
   typedef core::SpaceVector<AstFactory, RegExpLiteral*>::type DestReqs;
   explicit AstFactory(Context* ctx)

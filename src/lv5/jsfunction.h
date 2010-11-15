@@ -14,6 +14,7 @@ class Context;
 class JSCodeFunction;
 class JSNativeFunction;
 class Error;
+class JSScript;
 
 class JSFunction : public JSObject {
  public:
@@ -39,7 +40,9 @@ class JSFunction : public JSObject {
 class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(Context* ctx,
-                 const FunctionLiteral* func, JSEnv* env);
+                 const FunctionLiteral* func,
+                 JSScript* script,
+                 JSEnv* env);
   JSVal Call(const Arguments& args, Error* error);
   JSEnv* scope() const {
     return env_;
@@ -50,9 +53,10 @@ class JSCodeFunction : public JSFunction {
 
   static JSCodeFunction* New(Context* ctx,
                              const FunctionLiteral* func,
+                             JSScript* script,
                              JSEnv* env) {
     JSCodeFunction* const obj =
-        new JSCodeFunction(ctx, func, env);
+        new JSCodeFunction(ctx, func, script, env);
     obj->Initialize(ctx);
     return obj;
   }
@@ -63,9 +67,7 @@ class JSCodeFunction : public JSFunction {
   JSNativeFunction* AsNativeFunction() {
     return NULL;
   }
-  core::UStringPiece GetSource() const {
-    return function_->GetSource();
-  }
+  core::UStringPiece GetSource() const;
   const Identifier* name() const {
     return function_->name();
   }
@@ -74,6 +76,7 @@ class JSCodeFunction : public JSFunction {
   }
  private:
   const FunctionLiteral* function_;
+  JSScript* script_;
   JSEnv* env_;
 };
 

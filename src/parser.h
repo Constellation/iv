@@ -1887,7 +1887,6 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       }
     }
     literal->set_end_position(lexer_.pos() - 2);
-    literal->SubStringSource(lexer_.source());
     Next();
     return literal;
   }

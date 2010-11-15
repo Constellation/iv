@@ -1230,13 +1230,6 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
-  inline void SubStringSource(BasicSource* src) {
-    source_ = src->SubString(start_position_,
-                             end_position_ - start_position_ + 1);
-  }
-  inline UStringPiece GetSource() const {
-    return source_;
-  }
   FunctionLiteral(DeclType type, Factory* factory)
     : name_(NULL),
       type_(type),
@@ -1263,7 +1256,6 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   bool strict_;
   std::size_t start_position_;
   std::size_t end_position_;
-  UStringPiece source_;
 };
 
 // PropertyAccess

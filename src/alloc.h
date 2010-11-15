@@ -117,8 +117,7 @@ class Space {
     : arena_(&init_arenas_[0]),
       start_malloced_(NULL),
       malloced_() {
-    unsigned int c = 0;
-    for (; c < kInitArenas-1; ++c) {
+    for (int c = 0; c < N-1; ++c) {
       init_arenas_[c].SetNext(&init_arenas_[c+1]);
     }
   }
@@ -195,6 +194,14 @@ class Space {
   Arena* start_malloced_;
   std::vector<void*>malloced_;
 };
+
+// surpress compiler warning
+template<>
+inline Space<1>::Space()
+  : arena_(&init_arenas_[0]),
+    start_malloced_(NULL),
+    malloced_() {
+}
 
 } }  // namespace iv::core
 #endif  // _IV_ALLOC_H_

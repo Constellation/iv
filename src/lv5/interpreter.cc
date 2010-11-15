@@ -1373,7 +1373,7 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
 
 void Interpreter::Visit(const FunctionLiteral* func) {
   ctx_->Return(
-      JSCodeFunction::New(ctx_, func, ctx_->lexical_env()));
+      JSCodeFunction::New(ctx_, func, ctx_->current_script(), ctx_->lexical_env()));
 }
 
 

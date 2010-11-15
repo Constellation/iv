@@ -18,6 +18,7 @@
 #include "interpreter.h"
 #include "error.h"
 #include "jsast.h"
+#include "jsscript.h"
 #include "factory.h"
 
 namespace iv {
@@ -105,6 +106,10 @@ class Context : private core::Noncopyable<Context>::type {
     ret_ = val;
   }
 
+  void set_factory(AstFactory* factory) {
+    factory_ = factory;
+  }
+
   void SetStatement(Mode mode, const JSVal& val,
                     const BreakableStatement* target) {
     mode_ = mode;
@@ -131,7 +136,10 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Initialize();
-  bool Run(const FunctionLiteral* global);
+  bool Run(const FunctionLiteral* global, core::BasicSource* src);
+
+  JSVal Eval(const FunctionLiteral* eval, core::BasicSource* src);
+
   JSVal ErrorVal();
 
   const Class& Cls(Symbol name);
@@ -170,6 +178,12 @@ class Context : private core::Noncopyable<Context>::type {
   JSNativeFunction* throw_type_error() {
     return &throw_type_error_;
   }
+  JSScript* current_script() const {
+    return current_script_;
+  }
+  void set_current_script(JSScript* script) {
+    current_script_ = script;
+  }
   double Random();
   JSString* ToString(Symbol sym);
   const core::UString& GetContent(Symbol sym) const;
@@ -189,6 +203,7 @@ class Context : private core::Noncopyable<Context>::type {
   Error error_;
   std::tr1::unordered_map<Symbol, Class> builtins_;
   bool strict_;
+  AstFactory* factory_;
   random_generator random_engine_;
   Symbol length_symbol_;
   Symbol eval_symbol_;
@@ -199,6 +214,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol valueOf_symbol_;
   Symbol prototype_symbol_;
   Symbol constructor_symbol_;
+  JSScript* current_script_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_
