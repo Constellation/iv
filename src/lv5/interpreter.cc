@@ -654,6 +654,9 @@ void Interpreter::Visit(const TryStatement* stmt) {
     ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
     stmt->finally_block()->Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
+      if (mode == Context::THROW) {
+        ctx_->error()->Report(value);
+      }
       RETURN_STMT(mode, value, target);
     }
   }
