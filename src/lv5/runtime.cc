@@ -126,6 +126,32 @@ JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
   }
 }
 
+JSVal Runtime_GlobalIsNaN(const Arguments& args, Error* error) {
+  if (args.size() > 0) {
+    const double number = args[0].ToNumber(args.ctx(), ERROR(error));
+    if (std::isnan(number)) {
+      return JSTrue;
+    } else {
+      return JSFalse;
+    }
+  } else {
+    return JSTrue;
+  }
+}
+
+JSVal Runtime_GlobalIsFinite(const Arguments& args, Error* error) {
+  if (args.size() > 0) {
+    const double number = args[0].ToNumber(args.ctx(), ERROR(error));
+    if (std::isfinite(number)) {
+      return JSTrue;
+    } else {
+      return JSFalse;
+    }
+  } else {
+    return JSTrue;
+  }
+}
+
 JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {
   error->Report(Error::Type,
                 "[[ThrowTypeError]] called");

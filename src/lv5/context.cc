@@ -759,6 +759,18 @@ void Context::Initialize() {
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
+    // section 15.1.2.4 isNaN(number)
+    global_obj_.DefineOwnProperty(
+        this, Intern("isNaN"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsNaN, 1),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+    // section 15.1.2.5 isFinite(number)
+    global_obj_.DefineOwnProperty(
+        this, Intern("isFinite"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsFinite, 1),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
     global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
     global_obj_.set_prototype(obj_proto);
   }
