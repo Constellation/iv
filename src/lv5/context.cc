@@ -161,7 +161,8 @@ void Context::Initialize() {
     func_proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(func,
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
 
@@ -173,7 +174,8 @@ void Context::Initialize() {
       obj_proto->DefineOwnProperty(
           this, Intern("hasOwnProperty"),
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE),
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
     {
@@ -182,7 +184,8 @@ void Context::Initialize() {
       obj_proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE),
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
 
@@ -191,9 +194,12 @@ void Context::Initialize() {
         DataDescriptor(obj_proto, PropertyDescriptor::NONE),
         false, NULL);
 
-    variable_env_->CreateMutableBinding(this, obj_name, false);
-    variable_env_->SetMutableBinding(this, obj_name,
-                                     obj_constructor, false, NULL);
+    global_obj_.DefineOwnProperty(
+        this, obj_name,
+        DataDescriptor(obj_constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
@@ -233,9 +239,12 @@ void Context::Initialize() {
 
     const Symbol name = Intern("Number");
     builtins_[name] = cls;
-    variable_env_->CreateMutableBinding(this, name, false);
-    variable_env_->SetMutableBinding(this, name,
-                                     constructor, false, NULL);
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
     // section 15.7.3.2 Number.MAX_VALUE
     constructor->DefineOwnProperty(
         this, Intern("MAX_VALUE"),
@@ -275,7 +284,8 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, constructor_symbol_,
         DataDescriptor(constructor,
-                       PropertyDescriptor::NONE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     {
@@ -285,7 +295,8 @@ void Context::Initialize() {
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE),
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
   }
@@ -317,7 +328,8 @@ void Context::Initialize() {
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE),
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
 
@@ -334,9 +346,12 @@ void Context::Initialize() {
         DataDescriptor(
             JSString::NewAsciiString(this, ""), PropertyDescriptor::NONE),
         false, NULL);
-    variable_env_->CreateMutableBinding(this, name, false);
-    variable_env_->SetMutableBinding(this, name,
-                                     constructor, false, NULL);
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
 
     {
       // section 15.11.6.1 EvalError
@@ -357,9 +372,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("EvalError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -386,9 +404,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("RangeError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -415,9 +436,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("ReferenceError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -444,9 +468,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("SyntaxError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -473,9 +500,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("TypeError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -502,9 +532,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("URIError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -531,9 +564,12 @@ void Context::Initialize() {
       sub_proto->set_cls(sub_cls.name);
       const Symbol sub_name = Intern("NativeError");
       builtins_[sub_name] = sub_cls;
-      variable_env_->CreateMutableBinding(this, sub_name, false);
-      variable_env_->SetMutableBinding(this, sub_name,
-                                       sub_constructor, false, NULL);
+      global_obj_.DefineOwnProperty(
+          this, sub_name,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
@@ -550,7 +586,9 @@ void Context::Initialize() {
     math->set_cls(JSString::NewAsciiString(this, "Math"));
     global_obj_.DefineOwnProperty(
         this, Intern("Math"),
-        DataDescriptor(math, PropertyDescriptor::WRITABLE),
+        DataDescriptor(math,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.1.1 E
@@ -605,126 +643,144 @@ void Context::Initialize() {
     math->DefineOwnProperty(
         this, Intern("abs"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAbs, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.2 acos(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAcos, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.3 asin(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.4 atan(x)
     math->DefineOwnProperty(
         this, Intern("atan"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.5 atan2(y, x)
     math->DefineOwnProperty(
         this, Intern("atan2"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan2, 2),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.6 ceil(x)
     math->DefineOwnProperty(
         this, Intern("ceil"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCeil, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.7 cos(x)
     math->DefineOwnProperty(
         this, Intern("cos"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCos, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.8 exp(x)
     math->DefineOwnProperty(
         this, Intern("exp"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathExp, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.9 floor(x)
     math->DefineOwnProperty(
         this, Intern("floor"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathFloor, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.10 log(x)
     math->DefineOwnProperty(
         this, Intern("log"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathLog, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.11 max([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("max"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMax, 2),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.12 min([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("min"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMin, 2),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.13 pow(x, y)
     math->DefineOwnProperty(
         this, Intern("pow"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathPow, 2),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.14 random()
     math->DefineOwnProperty(
         this, Intern("random"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom, 0),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.15 round(x)
     math->DefineOwnProperty(
         this, Intern("round"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRound, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.16 sin(x)
     math->DefineOwnProperty(
         this, Intern("sin"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSin, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.17 sqrt(x)
     math->DefineOwnProperty(
         this, Intern("sqrt"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSqrt, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.18 tan(x)
     math->DefineOwnProperty(
         this, Intern("tan"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathTan, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
 
@@ -751,25 +807,29 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("eval"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalEval, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.3 parseFloat(string)
     global_obj_.DefineOwnProperty(
         this, Intern("parseFloat"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.4 isNaN(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isNaN"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsNaN, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.5 isFinite(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isFinite"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsFinite, 1),
-                       PropertyDescriptor::WRITABLE),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
     global_obj_.set_prototype(obj_proto);
