@@ -47,6 +47,7 @@ template<typename Iter>
 inline double StringToDouble(Iter it, Iter last) {
   bool is_decimal = true;
   bool is_signed = false;
+  bool is_sign_found = false;
   std::size_t pos = 0;
   int significant_digits = 0;
   int insignificant_digits = 0;
@@ -71,8 +72,10 @@ inline double StringToDouble(Iter it, Iter last) {
     buffer[pos++] = '-';
     ++it;
     is_signed = true;
+    is_sign_found = true;
   } else if (*it == '+') {
     ++it;
+    is_sign_found = true;
   }
 
   if (it == last) {
@@ -86,6 +89,9 @@ inline double StringToDouble(Iter it, Iter last) {
         return 0;
       }
       if (*it == 'x' || *it == 'X') {
+        if (is_sign_found) {
+          return Conversions::kNaN;
+        }
         is_decimal = false;
         buffer[pos++] = '0';
         buffer[pos++] = *it;
