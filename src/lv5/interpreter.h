@@ -26,7 +26,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   };
   Interpreter();
   ~Interpreter();
-  void Run(const FunctionLiteral* global);
+  void Run(const FunctionLiteral* global, bool is_eval);
 
   Context* context() const {
     return ctx_;

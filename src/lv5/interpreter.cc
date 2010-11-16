@@ -138,7 +138,6 @@ void Interpreter::CallCode(
                                  code->IsStrict());
 
   // step 2
-  // TODO(Constellation) code check (eval)
   const bool configurable_bindings = false;
 
   // step 4
@@ -237,9 +236,9 @@ void Interpreter::CallCode(
 }
 
 
-void Interpreter::Run(const FunctionLiteral* global) {
+void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   // section 10.5 Declaration Binding Instantiation
-  const bool configurable_bindings = false;
+  const bool configurable_bindings = is_eval;
   const Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
@@ -645,14 +644,14 @@ void Interpreter::Visit(const TryStatement* stmt) {
       }
     }
   }
-  const Context::Mode mode = ctx_->mode();
-  const JSVal value = ctx_->ret();
-  const BreakableStatement* const target = ctx_->target();
-
-  ctx_->error()->Clear();
-  ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
 
   if (stmt->finally_block()) {
+    const Context::Mode mode = ctx_->mode();
+    const JSVal value = ctx_->ret();
+    const BreakableStatement* const target = ctx_->target();
+
+    ctx_->error()->Clear();
+    ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
     stmt->finally_block()->Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
       RETURN_STMT(mode, value, target);
