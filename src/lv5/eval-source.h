@@ -1,8 +1,8 @@
 #ifndef IV_LV5_EVAL_SOURCE_H_
 #define IV_LV5_EVAL_SOURCE_H_
 #include "none.h"
-#include "source.h"
 #include "jsstring.h"
+#include "noncopyable.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -18,7 +18,7 @@ const std::string EvalSourceData<T>::kEvalSource = "(eval)";
 
 typedef detail::EvalSourceData<core::None> EvalSourceData;
 
-class EvalSource : public core::BasicSource {
+class EvalSource : public core::Noncopyable<EvalSource>::type {
  public:
   EvalSource(JSString* str)
     : source_(str) {

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "jsstring.h"
 #include "ustring.h"
-#include "icu/ustring.h"
+#include "icu/uconv.h"
 
 namespace iv {
 namespace lv5 {

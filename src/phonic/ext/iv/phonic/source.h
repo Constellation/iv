@@ -5,7 +5,6 @@
 #include <string>
 #include <tr1/cstdint>
 #include <ruby.h>
-#include <iv/source.h>
 #include <iv/stringpiece.h>
 #include <iv/ustring.h>
 #include <iv/none.h>
@@ -25,7 +24,7 @@ const std::string FilenameData<T>::kFilename = "<anonymous>";
 
 typedef detail::FilenameData<core::None> FilenameData;
 
-class AsciiSource : public core::BasicSource {
+class AsciiSource {
  public:
   static const int kEOS = -1;
   explicit AsciiSource(const char* str)
@@ -52,7 +51,7 @@ class AsciiSource : public core::BasicSource {
   std::string source_;
 };
 
-class UTF16Source : public core::BasicSource {
+class UTF16Source {
  public:
   static const int kEOS = -1;
   explicit UTF16Source(const char* str, std::size_t len)
@@ -82,7 +81,7 @@ class UTF16Source : public core::BasicSource {
   std::size_t size_;
 };
 
-class UTF16LESource : public core::BasicSource {
+class UTF16LESource {
  public:
   static const int kEOS = -1;
   explicit UTF16LESource(const char* str, std::size_t len)
@@ -112,7 +111,7 @@ class UTF16LESource : public core::BasicSource {
   std::size_t size_;
 };
 
-class UTF16BESource : public core::BasicSource {
+class UTF16BESource {
  public:
   static const int kEOS = -1;
   explicit UTF16BESource(const char* str, std::size_t len)

@@ -9,14 +9,14 @@
 #include "uchar.h"
 #include "chars.h"
 #include "token.h"
-#include "source.h"
 #include "location.h"
 #include "noncopyable.h"
 
 namespace iv {
 namespace core {
 
-class Lexer: private Noncopyable<Lexer>::type {
+template<typename Source>
+class Lexer: private Noncopyable<Lexer<Source> >::type {
  public:
   enum LexType {
     kClear = 0,
@@ -33,7 +33,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     OCTAL
   };
 
-  explicit Lexer(BasicSource* src)
+  explicit Lexer(Source* src)
       : source_(src),
         buffer8_(kInitialReadBufferCapacity),
         buffer16_(kInitialReadBufferCapacity),
@@ -46,8 +46,8 @@ class Lexer: private Noncopyable<Lexer>::type {
     Initialize();
   }
 
-  Token::Type Next(int type) {
-    Token::Type token;
+  typename Token::Type Next(int type) {
+    typename Token::Type token;
     has_line_terminator_before_next_ = false;
     do {
       while (Chars::IsWhiteSpace(c_)) {
@@ -400,7 +400,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     return pos_;
   }
 
-  inline BasicSource* source() const {
+  inline Source* source() const {
     return source_;
   }
 
@@ -1273,7 +1273,7 @@ class Lexer: private Noncopyable<Lexer>::type {
     ++line_number_;
   }
 
-  BasicSource* source_;
+  Source* source_;
   std::vector<char> buffer8_;
   std::vector<uc16> buffer16_;
   double numeric_;

@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     iv::icu::Source src(str, filename);
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
-    iv::core::Parser<iv::lv5::AstFactory> parser(&src, &factory);
+    iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, &src);
     const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
     if (!global) {

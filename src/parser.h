@@ -9,10 +9,10 @@
 #include "static_assert.h"
 #include "ast.h"
 #include "ast-factory.h"
-#include "source.h"
 #include "lexer.h"
 #include "noncopyable.h"
 #include "utils.h"
+#include "ustring.h"
 #include "none.h"
 
 #define IS(token)\
@@ -124,11 +124,12 @@ const UString ParserData<T>::kSet(
 
 typedef detail::ParserData<None> ParserData;
 
-template<typename Factory>
-class Parser : private Noncopyable<Parser<Factory> >::type {
+template<typename Factory, typename Source>
+class Parser : private Noncopyable<Parser<Factory, Source> >::type {
  public:
-  typedef Parser<Factory> this_type;
-  typedef Parser<Factory> parser_type;
+  typedef Parser<Factory, Source> this_type;
+  typedef Parser<Factory, Source> parser_type;
+  typedef Lexer<Source> lexer_type;
 #define V(AST) typedef typename ast::AST<Factory> AST;
   AST_NODE_LIST(V)
 #undef V
@@ -194,7 +195,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     int type_;
   };
 
-  Parser(BasicSource* source, Factory* space)
+  Parser(Factory* space, Source* source)
     : lexer_(source),
       error_(),
       strict_(false),
@@ -1441,7 +1442,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         }
 
         case Token::PERIOD: {
-          Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
+          Next(lexer_type::kIgnoreReservedWords);  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           expr = factory_->NewIdentifierAccess(expr, ident);
@@ -1509,7 +1510,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       case Token::NUMBER:
         // section 7.8.3
         // strict mode forbids Octal Digits Literal
-        if (strict_ && lexer_.NumericType() == Lexer::OCTAL) {
+        if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
           RAISE("octal integer literal not allowed in strict code");
         }
         result = factory_->NewNumberLiteral(lexer_.Numeric());
@@ -1517,11 +1518,11 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
         break;
 
       case Token::STRING: {
-        const Lexer::State state = lexer_.StringEscapeType();
-        if (strict_ && state == Lexer::OCTAL) {
+        const typename lexer_type::State state = lexer_.StringEscapeType();
+        if (strict_ && state == lexer_type::OCTAL) {
           RAISE("octal excape sequence not allowed in strict code");
         }
-        if (state == Lexer::NONE) {
+        if (state == lexer_type::NONE) {
           result = factory_->NewDirectivable(lexer_.Buffer());
         } else {
           result = factory_->NewStringLiteral(lexer_.Buffer());
@@ -1663,12 +1664,12 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     Identifier* ident;
 
     // IDENTIFIERNAME
-    Next(Lexer::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
+    Next(lexer_type::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
     while (token_ != Token::RBRACE) {
       if (token_ == Token::GET || token_ == Token::SET) {
         const bool is_get = token_ == Token::GET;
         // this is getter or setter or usual prop
-        Next(Lexer::kIgnoreReservedWords);  // IDENTIFIERNAME
+        Next(lexer_type::kIgnoreReservedWords);  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
           ident = ParseIdentifier(
@@ -1752,7 +1753,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
       if (token_ != Token::RBRACE) {
         IS(Token::COMMA);
         // IDENTIFIERNAME
-        Next(Lexer::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
+        Next(lexer_type::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
       }
     }
     Next();
@@ -2028,12 +2029,13 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     UNEXPECT(token_);
   }
 
-  inline Lexer& lexer() {
+  inline lexer_type& lexer() {
     return lexer_;
   }
-  inline Token::Type Next(Lexer::LexType type = Lexer::kIdentifyReservedWords) {
+  inline Token::Type Next(typename lexer_type::LexType type =
+                          lexer_type::kIdentifyReservedWords) {
     return token_ = lexer_.Next(
-        type | (strict_ ? Lexer::kStrict : Lexer::kClear));
+        type | (strict_ ? lexer_type::kStrict : lexer_type::kClear));
   }
   inline Token::Type Peek() const {
     return token_;
@@ -2137,7 +2139,7 @@ class Parser : private Noncopyable<Parser<Factory> >::type {
     }
   }
 
-  Lexer lexer_;
+  lexer_type lexer_;
   Token::Type token_;
   std::string error_;
   bool strict_;

@@ -32,7 +32,7 @@ static JSString* ErrorMessageString(const Arguments& args, Error* error) {
 static JSScript* CompileScript(Context* ctx, JSString* str, Error* error) {
   EvalSource* const src = new EvalSource(str);
   AstFactory* const factory = new AstFactory(ctx);
-  core::Parser<AstFactory> parser(src, factory);
+  core::Parser<AstFactory, EvalSource> parser(factory, src);
   parser.set_strict(ctx->IsStrict());
   const iv::lv5::FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {

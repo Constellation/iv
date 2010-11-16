@@ -4,33 +4,31 @@
 namespace iv {
 namespace lv5 {
 
-JSScript::~JSScript() {
+JSEvalScript::~JSEvalScript() {
   // this container has ownership to factory
-  if (type_ != kGlobal) {
-    delete factory_;
-    delete source_;
-  }
+  delete source_;
+  delete factory();
 }
 
 JSScript* JSScript::NewGlobal(Context* ctx,
                               const FunctionLiteral* function,
                               AstFactory* factory,
-                              core::BasicSource* source) {
-  return new JSScript(kGlobal, function, factory, source);
+                              icu::Source* source) {
+  return new JSGlobalScript(function, factory, source);
 }
 
 JSScript* JSScript::NewEval(Context* ctx,
                             const FunctionLiteral* function,
                             AstFactory* factory,
-                            core::BasicSource* source) {
-  return new JSScript(kEval, function, factory, source);
+                            EvalSource* source) {
+  return new JSEvalScript(function, factory, source);
 }
 
 JSScript* JSScript::NewFunction(Context* ctx,
                                 const FunctionLiteral* function,
                                 AstFactory* factory,
-                                core::BasicSource* source) {
-  return new JSScript(kFunction, function, factory, source);
+                                EvalSource* source) {
+  return new JSEvalScript(function, factory, source);
 }
 
 } }  // namespace iv::lv5

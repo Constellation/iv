@@ -12,7 +12,6 @@
 #include "token.h"
 #include "ast-fwd.h"
 #include "ast-visitor.h"
-#include "source.h"
 #include "location.h"
 #include "static_assert.h"
 #include "ustringpiece.h"

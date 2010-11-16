@@ -27,10 +27,10 @@ class RParser {
                                          0,
                                          Qnil);
     const char* str = StringValuePtr(encoded_rb_str);
-    std::size_t len = RSTRING_LEN(encoded_rb_str);
+    const std::size_t len = RSTRING_LEN(encoded_rb_str);
     UTF16Source source(str, len);
-    Parser parser(&source, &factory);
-    FunctionLiteral* global = parser.ParseProgram();
+    Parser parser(&factory, &source);
+    const FunctionLiteral* global = parser.ParseProgram();
     if (!global) {
       rb_raise(cParseError, "%s", parser.error().c_str());
     } else {

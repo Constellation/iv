@@ -5,13 +5,12 @@
 #include <string>
 #include "ustring.h"
 #include "ustringpiece.h"
-#include "source.h"
-#include "icu/ustring.h"
+#include "icu/uconv.h"
 
 namespace iv {
 namespace icu {
 
-class Source : public core::BasicSource {
+class Source {
  public:
   static const int kEOS = -1;
   Source(const std::string& str, const std::string& filename)
