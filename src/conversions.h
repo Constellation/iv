@@ -55,7 +55,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
 
   // empty string ""
   if (it == last) {
-    return 0;
+    return (parse_float) ? Conversions::kNaN : 0;
   }
 
   while (it != last &&
@@ -65,7 +65,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
 
   // white space only "  "
   if (it == last) {
-    return 0;
+    return (parse_float) ? Conversions::kNaN : 0;
   }
 
   if (*it == '-') {
@@ -170,7 +170,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
              (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
         ++it;
       }
-      if (it == last) {
+      if (it == last || parse_float) {
         if (is_signed) {
           return -std::numeric_limits<double>::infinity();
         } else {
@@ -228,7 +228,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   if (it == last || parse_float) {
     if (pos == 0) {
       // empty
-      return 0;
+      return (parse_float) ? Conversions::kNaN : 0;
     } else {
       buffer[pos++] = '\0';
       return std::strtod(buffer.data(), NULL);
