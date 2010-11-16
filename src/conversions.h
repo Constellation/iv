@@ -44,7 +44,7 @@ const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
 typedef detail::Conversions<None> Conversions;
 
 template<typename Iter>
-inline double StringToDouble(Iter it, Iter last) {
+inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   bool is_decimal = true;
   bool is_signed = false;
   bool is_sign_found = false;
@@ -88,7 +88,7 @@ inline double StringToDouble(Iter it, Iter last) {
       if (it == last) {
         return 0;
       }
-      if (*it == 'x' || *it == 'X') {
+      if (!parse_float && (*it == 'x' || *it == 'X')) {
         if (is_sign_found) {
           return Conversions::kNaN;
         }
@@ -225,7 +225,7 @@ inline double StringToDouble(Iter it, Iter last) {
     ++it;
   }
 
-  if (it == last) {
+  if (it == last || parse_float) {
     if (pos == 0) {
       // empty
       return 0;
@@ -238,12 +238,12 @@ inline double StringToDouble(Iter it, Iter last) {
   }
 }
 
-inline double StringToDouble(const StringPiece& str) {
-  return StringToDouble(str.begin(), str.end());
+inline double StringToDouble(const StringPiece& str, bool parse_float) {
+  return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
-inline double StringToDouble(const UStringPiece& str) {
-  return StringToDouble(str.begin(), str.end());
+inline double StringToDouble(const UStringPiece& str, bool parse_float) {
+  return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
 inline std::size_t StringToHash(const UStringPiece& x) {

@@ -117,6 +117,15 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
+JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
+  if (args.size() > 0) {
+    JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    return core::StringToDouble(*str, true);
+  } else {
+    return kNaN;
+  }
+}
+
 JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {
   error->Report(Error::Type,
                 "[[ThrowTypeError]] called");

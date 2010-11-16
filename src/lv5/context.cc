@@ -753,6 +753,12 @@ void Context::Initialize() {
         DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalEval, 1),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
+    // section 15.1.2.3 parseFloat(string)
+    global_obj_.DefineOwnProperty(
+        this, Intern("parseFloat"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
     global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
     global_obj_.set_prototype(obj_proto);
   }
