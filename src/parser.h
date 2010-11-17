@@ -1562,7 +1562,6 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         break;
 
       default:
-        // TODO(Constellation) OKKOK
         UNEXPECT(token_);
         break;
     }
