@@ -1,5 +1,6 @@
 #include <iostream>  // NOLINT
-#include <gc/gc.h>  // NOLINT
+#include <gc/gc.h>
+#include <tr1/memory>
 #include "lv5.h"
 #include "error.h"
 #include "jserror.h"
@@ -30,19 +31,18 @@ static JSString* ErrorMessageString(const Arguments& args, Error* error) {
 }
 
 static JSScript* CompileScript(Context* ctx, JSString* str, Error* error) {
-  EvalSource* const src = new EvalSource(str);
+  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(str));
   AstFactory* const factory = new AstFactory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(factory, src);
+  core::Parser<AstFactory, EvalSource> parser(factory, src.get());
   parser.set_strict(ctx->IsStrict());
   const iv::lv5::FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
-    delete src;
     delete factory;
     error->Report(Error::Syntax,
                   parser.error());
     return NULL;
   } else {
-    return iv::lv5::JSScript::NewEval(ctx, eval, factory, src);
+    return iv::lv5::JSEvalScript<EvalSource>::New(ctx, eval, factory, src);
   }
 }
 

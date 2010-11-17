@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_JSSCRIPT_H_
 #define _IV_LV5_JSSCRIPT_H_
 #include <gc/gc_cpp.h>
+#include <tr1/memory>
 #include "jsast.h"
 #include "icu/source.h"
 #include "eval-source.h"
@@ -21,18 +22,6 @@ class JSScript : public gc_cleanup {
     : function_(function),
       factory_(factory) {
   }
-  static this_type* NewGlobal(Context* ctx,
-                              const FunctionLiteral* function,
-                              AstFactory* factory,
-                              icu::Source* source);
-  static this_type* NewEval(Context* ctx,
-                            const FunctionLiteral* function,
-                            AstFactory* factory,
-                            EvalSource* source);
-  static this_type* NewFunction(Context* ctx,
-                                const FunctionLiteral* function,
-                                AstFactory* factory,
-                                EvalSource* source);
   virtual Type type() const = 0;
   virtual core::UStringPiece SubString(std::size_t start,
                                        std::size_t len) const = 0;
@@ -47,31 +36,43 @@ class JSScript : public gc_cleanup {
   AstFactory* factory_;
 };
 
+template<typename Source>
 class JSEvalScript : public JSScript {
  public:
+  typedef JSEvalScript<Source> this_type;
   JSEvalScript(const FunctionLiteral* function,
                AstFactory* factory,
-               EvalSource* source)
+               std::tr1::shared_ptr<Source> source)
     : JSScript(function, factory),
       source_(source) {
   }
-  ~JSEvalScript();
+  ~JSEvalScript() {
+    // this container has ownership to factory
+    delete factory();
+  }
   inline Type type() const {
     return kEval;
   }
-  inline EvalSource* source() const {
+  inline std::tr1::shared_ptr<Source> source() const {
     return source_;
   }
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
     return source_->SubString(start, len);
   }
+  static this_type* New(Context* ctx,
+                        const FunctionLiteral* function,
+                        AstFactory* factory,
+                        std::tr1::shared_ptr<Source> source) {
+    return new JSEvalScript<Source>(function, factory, source);
+  }
  private:
-  EvalSource* source_;
+  std::tr1::shared_ptr<Source> source_;
 };
 
 class JSGlobalScript : public JSScript {
  public:
+  typedef JSGlobalScript this_type;
   JSGlobalScript(const FunctionLiteral* function,
                  AstFactory* factory,
                  icu::Source* source)
@@ -87,6 +88,12 @@ class JSGlobalScript : public JSScript {
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
     return source_->SubString(start, len);
+  }
+  static this_type* New(Context* ctx,
+                        const FunctionLiteral* function,
+                        AstFactory* factory,
+                        icu::Source* source) {
+    return new JSGlobalScript(function, factory, source);
   }
  private:
   icu::Source* source_;

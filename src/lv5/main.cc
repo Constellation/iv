@@ -30,6 +30,7 @@
 #include "error.h"
 #include "arguments.h"
 #include "jsscript.h"
+#include "interactive.h"
 
 #include "icu/ustream.h"
 #include "icu/source.h"
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  if (argc == 1 || cmd.Exist("help")) {
+  if (cmd.Exist("help")) {
     std::cout << cmd.usage();
     return EXIT_SUCCESS;
   }
@@ -140,7 +141,7 @@ int main(int argc, char **argv) {
       std::cout << ser.out().data() << std::endl;
     } else {
       ctx.DefineFunction(&Print, "print", 1);
-      iv::lv5::JSScript* const script = iv::lv5::JSScript::NewGlobal(
+      iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
           &ctx, global, &factory, &src);
       if (ctx.Run(script)) {
         const JSVal e = ctx.ErrorVal();
@@ -152,8 +153,9 @@ int main(int argc, char **argv) {
       }
     }
   } else {
-    std::cout << cmd.usage();
-    return EXIT_FAILURE;
+    // Interactive Shell Mode
+    iv::lv5::Interactive shell;
+    return shell.Run();
   }
   return 0;
 }

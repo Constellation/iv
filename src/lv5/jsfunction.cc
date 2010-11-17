@@ -47,7 +47,7 @@ core::UStringPiece JSCodeFunction::GetSource() const {
   const std::size_t start_pos = function_->start_position();
   const std::size_t end_pos = function_->end_position();
   return script_->SubString(start_pos,
-                            end_pos - start_pos + 1);
+                            end_pos - start_pos);
 }
 
 bool JSFunction::HasInstance(Context* ctx,

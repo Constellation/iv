@@ -140,6 +140,10 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   AST_STRING(V)
 #undef V
 
+  enum ErrorState {
+    kNotRecoverable = 1
+  };
+
   class Target : private Noncopyable<Target>::type {
    public:
     typedef typename SpaceVector<Factory, Identifier*>::type Identifiers;
@@ -199,6 +203,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     : lexer_(source),
       error_(),
       strict_(false),
+      error_state_(0),
       factory_(space),
       scope_(NULL),
       target_(NULL),
@@ -848,6 +853,8 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     Next();
     // Throw requires Expression
     if (lexer_.has_line_terminator_before_next()) {
+      // TODO(Constellation) more refined parse error system
+      error_state_ |= kNotRecoverable;
       RAISE("missing expression between throw and newline");
     }
     Expression* const expr = ParseExpression(true, CHECK);
@@ -2070,6 +2077,9 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
+  inline bool RecoverableError() const {
+    return (!(error_state_ & kNotRecoverable)) && token_ == Token::EOS;
+  }
 
  protected:
   class ScopeSwitcher : private Noncopyable<ScopeSwitcher>::type {
@@ -2143,6 +2153,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   Token::Type token_;
   std::string error_;
   bool strict_;
+  int error_state_;
   Factory* factory_;
   Scope* scope_;
   Target* target_;

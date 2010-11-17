@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string>
 #include "ustring.h"
+#include "stringpiece.h"
 #include "ustringpiece.h"
 #include "icu/uconv.h"
 
@@ -13,9 +14,10 @@ namespace icu {
 class Source {
  public:
   static const int kEOS = -1;
-  Source(const std::string& str, const std::string& filename)
+  Source(const core::StringPiece& str,
+         const core::StringPiece& filename)
     : source_(),
-      filename_(filename) {
+      filename_(filename.data(), filename.size()) {
     ParseMagicComment(str);
   }
 
@@ -44,8 +46,8 @@ class Source {
     return (begin == end) ? kEOS : *begin;
   }
 
-  void ParseMagicComment(const std::string& str) {
-    const char* begin = str.c_str();
+  void ParseMagicComment(const core::StringPiece& str) {
+    const char* begin = str.data();
     const char* end   = begin + str.size();
 
     const char* current = begin;
