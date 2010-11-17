@@ -201,6 +201,25 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     int type_;
   };
 
+  class TargetScope : private Noncopyable<Target>::type {
+   public:
+    TargetScope(parser_type* parser)
+      : parser_(parser),
+        target_(parser->target()),
+        labels_(parser->labels()) {
+      parser_->set_target(NULL);
+      parser_->set_labels(NULL);
+    }
+    ~TargetScope() {
+      parser_->set_target(target_);
+      parser_->set_labels(labels_);
+    }
+   private:
+    parser_type* parser_;
+    Target* target_;
+    Identifiers* labels_;
+  };
+
   Parser(Factory* space, Source* source)
     : lexer_(source),
       error_(),
@@ -1807,6 +1826,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     }
 
     const ScopeSwitcher switcher(this, literal->scope());
+    const TargetScope scope(this);
     literal->set_start_position(lexer_.begin_position());
 
     //  '(' FormalParameterList_opt ')'

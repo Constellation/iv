@@ -217,22 +217,17 @@ void Interpreter::CallCode(
     }
   }
 
-  JSVal value;
   BOOST_FOREACH(const Statement* const stmt, code->code()->body()) {
     EVAL(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
-      // section 12.1 step 4
-      // TODO(Constellation) value to exception
-      RETURN_STMT(Context::THROW, value, NULL);
-      return;
+      RETURN_STMT(Context::THROW, ctx_->ret(), NULL);
     }
-    if (!ctx_->ret().IsUndefined()) {
-      value = ctx_->ret();
+    if (ctx_->IsMode<Context::RETURN>()) {
+      RETURN_STMT(Context::RETURN, ctx_->ret(), NULL);
     }
-    if (!ctx_->IsMode<Context::NORMAL>()) {
-      ABRUPT();
-    }
+    assert(ctx_->IsMode<Context::NORMAL>());
   }
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
@@ -270,7 +265,6 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
-      return;
     }
     if (!ctx_->ret().IsUndefined()) {
       value = ctx_->ret();
@@ -293,7 +287,6 @@ void Interpreter::Visit(const Block* block) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
-      return;
     }
     if (!ctx_->ret().IsUndefined()) {
       value = ctx_->ret();
