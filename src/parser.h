@@ -44,6 +44,7 @@
 #define RAISE(str)\
   do {\
     *res = false;\
+    error_state_ |= kNotRecoverable;\
     SetErrorHeader(lexer_.line_number());\
     error_.append(str);\
     return NULL;\
@@ -52,6 +53,7 @@
 #define RAISE_WITH_NUMBER(str, line)\
   do {\
     *res = false;\
+    error_state_ |= kNotRecoverable;\
     SetErrorHeader(line);\
     error_.append(str);\
     return NULL;\
@@ -854,7 +856,6 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     // Throw requires Expression
     if (lexer_.has_line_terminator_before_next()) {
       // TODO(Constellation) more refined parse error system
-      error_state_ |= kNotRecoverable;
       RAISE("missing expression between throw and newline");
     }
     Expression* const expr = ParseExpression(true, CHECK);
@@ -1561,7 +1562,8 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         break;
 
       default:
-        RAISE("invalid primary expression token");
+        // TODO(Constellation) OKKOK
+        UNEXPECT(token_);
         break;
     }
     return result;
