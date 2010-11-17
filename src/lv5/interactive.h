@@ -14,6 +14,7 @@
 #include "jsscript.h"
 #include "jsval.h"
 #include "jsstring.h"
+#include "print.h"
 #include "icu/source.h"
 #include "icu/ustream.h"
 namespace iv {
@@ -34,6 +35,7 @@ class Interactive {
  public:
   Interactive()
     : ctx_() {
+    ctx_.DefineFunction(&lv5::Print, "print", 1);
   }
   int Run() {
     std::string buffer;

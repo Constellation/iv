@@ -7,9 +7,6 @@
 #include <iostream>  // NOLINT
 #include <algorithm>
 #include <tr1/array>
-#include <unicode/ustdio.h>
-#include <unicode/utypes.h>
-#include <unicode/ucnv.h>
 #include "config/config.h"
 
 #include "stringpiece.h"
@@ -27,41 +24,16 @@
 #include "context.h"
 #include "jsast.h"
 #include "jsval.h"
-#include "error.h"
-#include "arguments.h"
+#include "jsstring.h"
 #include "jsscript.h"
+#include "print.h"
 #include "interactive.h"
 
 #include "icu/ustream.h"
 #include "icu/source.h"
 
-namespace {
-using iv::lv5::Arguments;
-using iv::lv5::JSVal;
-using iv::lv5::JSUndefined;
-using iv::lv5::JSString;
-using iv::lv5::Error;
-
-static JSVal Print(const Arguments& args, Error* error) {
-  if (args.args().size() > 0) {
-    const std::size_t last = args.size();
-    std::size_t index = 0;
-    BOOST_FOREACH(const JSVal& val, args) {
-      ++index;
-      const JSString* const str = val.ToString(args.ctx(), error);
-      if (*error) {
-        return JSUndefined;
-      }
-      std::cout << str->data() << ((index == last) ? "\n" : " ");
-    }
-    std::cout << std::flush;
-  }
-  return JSUndefined;
-}
-
-}  // namespace
-
 int main(int argc, char **argv) {
+  using iv::lv5::JSVal;
   std::locale::global(std::locale(""));
 
   iv::cmdline::Parser cmd("lv5");
@@ -127,7 +99,8 @@ int main(int argc, char **argv) {
     iv::icu::Source src(str, filename);
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
-    iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, &src);
+    iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source>
+        parser(&factory, &src);
     const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
     if (!global) {
@@ -140,13 +113,13 @@ int main(int argc, char **argv) {
       global->Accept(&ser);
       std::cout << ser.out().data() << std::endl;
     } else {
-      ctx.DefineFunction(&Print, "print", 1);
+      ctx.DefineFunction(&iv::lv5::Print, "print", 1);
       iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
           &ctx, global, &factory, &src);
       if (ctx.Run(script)) {
         const JSVal e = ctx.ErrorVal();
         ctx.error()->Clear();
-        const JSString* const str = e.ToString(&ctx, ctx.error());
+        const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
         if (!*ctx.error()) {
           std::cout << str->data() << std::endl;
         }
