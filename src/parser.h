@@ -431,7 +431,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         FunctionLiteral::GENERAL, CHECK);
     // define named function as FunctionDeclaration
     scope_->AddFunctionDeclaration(expr);
-    return factory_->NewFunctionStatement(expr);
+    return factory_->NewFunctionDeclaration(expr);
   }
 
 //  Block

@@ -329,6 +329,11 @@ void Interpreter::Visit(const VariableStatement* var) {
 }
 
 
+void Interpreter::Visit(const FunctionDeclaration* func) {
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+}
+
+
 void Interpreter::Visit(const EmptyStatement* empty) {
   RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }

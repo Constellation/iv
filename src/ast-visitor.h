@@ -39,6 +39,7 @@ class BasicAstVisitor
   virtual ~BasicAstVisitor() = 0;
   virtual void Visit(typename add<Block<Factory> >::type block) = 0;  //NOLINT
   virtual void Visit(typename add<FunctionStatement<Factory> >::type func) = 0;  //NOLINT
+  virtual void Visit(typename add<FunctionDeclaration<Factory> >::type func) = 0;  //NOLINT
   virtual void Visit(typename add<VariableStatement<Factory> >::type var) = 0;  //NOLINT
   virtual void Visit(typename add<EmptyStatement<Factory> >::type empty) = 0;  //NOLINT
   virtual void Visit(typename add<IfStatement<Factory> >::type ifstmt) = 0;  //NOLINT

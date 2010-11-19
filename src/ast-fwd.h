@@ -24,6 +24,7 @@ V(SwitchStatement)\
 V(ThrowStatement)\
 V(TryStatement)\
 V(LabelledStatement)\
+V(FunctionDeclaration)
 
 #define STATEMENT_NODE_LIST(V)\
 V(Statement)\

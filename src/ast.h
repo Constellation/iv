@@ -270,6 +270,27 @@ class FunctionStatement : public FunctionStatementBase<Factory> {
   FunctionLiteral<Factory>* function_;
 };
 
+// FunctionDeclaration
+template<typename Factory>
+class Inherit<Factory, kFunctionDeclaration>
+  : public Statement<Factory> {
+};
+INHERIT(FunctionDeclaration);
+
+template<typename Factory>
+class FunctionDeclaration : public FunctionDeclarationBase<Factory> {
+ public:
+  explicit FunctionDeclaration(FunctionLiteral<Factory>* func)
+    : function_(func) {
+  }
+  inline FunctionLiteral<Factory>* function() const {
+    return function_;
+  }
+  DECLARE_DERIVED_NODE_TYPE(FunctionDeclaration)
+ private:
+  FunctionLiteral<Factory>* function_;
+};
+
 // VariableStatement
 template<typename Factory>
 class Inherit<Factory, kVariableStatement>

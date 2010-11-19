@@ -127,6 +127,10 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) FunctionStatement(func);
   }
 
+  FunctionDeclaration* NewFunctionDeclaration(FunctionLiteral* func) {
+    return new (static_cast<Factory*>(this)) FunctionDeclaration(func);
+  }
+
   Block* NewBlock() {
     return new (static_cast<Factory*>(this)) Block(static_cast<Factory*>(this));
   }

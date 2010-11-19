@@ -79,6 +79,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
  private:
   void Visit(const Block* block);
   void Visit(const FunctionStatement* func);
+  void Visit(const FunctionDeclaration* func);
   void Visit(const VariableStatement* var);
   void Visit(const EmptyStatement* stmt);
   void Visit(const IfStatement* stmt);

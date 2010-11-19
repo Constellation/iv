@@ -71,6 +71,12 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     Append('}');
   }
 
+  void Visit(const FunctionDeclaration* func) {
+    Append("{\"type\":\"function_declaration\",\"def\":");
+    func->function()->Accept(this);
+    Append('}');
+  }
+
   void Visit(const VariableStatement* var) {
     Append("{\"type\":");
     if (var->IsConst()) {
