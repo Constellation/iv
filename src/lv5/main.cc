@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     if (cmd.Exist("ast")) {
       iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
       global->Accept(&ser);
-      std::cout << ser.out().data() << std::endl;
+      std::cout << ser.out() << std::endl;
     } else {
       ctx.DefineFunction(&iv::lv5::Print, "print", 1);
       iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         ctx.error()->Clear();
         const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
         if (!*ctx.error()) {
-          std::cout << str->data() << std::endl;
+          std::cout << *str << std::endl;
         }
       }
     }

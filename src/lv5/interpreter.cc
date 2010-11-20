@@ -326,6 +326,7 @@ void Interpreter::Visit(const VariableStatement* var) {
       // TODO(Constellation) 12.2 step 5 Return a String value
     }
   }
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 

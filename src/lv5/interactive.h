@@ -62,12 +62,14 @@ class Interactive {
         } else {
           val = ctx_.ret();
         }
-        const JSString* const str = val.ToString(&ctx_, ctx_.error());
-        if (!ctx_.IsError()) {
-          std::cout << str->data() << std::endl;
-        } else {
-          std::cout << "FATAL ERROR" << std::endl;
-          break;
+        if (!val.IsUndefined()) {
+          const JSString* const str = val.ToString(&ctx_, ctx_.error());
+          if (!ctx_.IsError()) {
+            std::cout << *str << std::endl;
+          } else {
+            std::cout << "FATAL ERROR" << std::endl;
+            break;
+          }
         }
       } else if (!recover) {
         buffer.clear();

@@ -19,7 +19,7 @@ inline JSVal Print(const Arguments& args, Error* error) {
       if (*error) {
         return JSUndefined;
       }
-      std::cout << str->data() << ((index == last_index) ? "\n" : " ");
+      std::cout << *str << ((index == last_index) ? "\n" : " ");
     }
     std::cout << std::flush;
   }
