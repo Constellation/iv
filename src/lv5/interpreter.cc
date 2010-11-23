@@ -33,6 +33,14 @@ namespace lv5 {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
+#define CHECK_IN_STMT  ctx_->error());\
+  if (ctx_->IsError()) {\
+    RETURN_STMT(Context::THROW, JSUndefined, NULL);\
+  }\
+  ((void)0
+#define DUMMY )  // to make indentation work
+#undef DUMMY
+
 #define CHECK_TO_WITH(error, val) error);\
   if (*error) {\
     return val;\
@@ -59,6 +67,12 @@ namespace lv5 {
   node->Accept(this);\
   if (ctx_->IsError()) {\
     return;\
+  }
+
+#define EVAL_IN_STMT(node)\
+  node->Accept(this);\
+  if (ctx_->IsError()) {\
+    RETURN_STMT(Context::THROW, JSUndefined, NULL);\
   }
 
 Interpreter::ContextSwitcher::ContextSwitcher(Context* ctx,
@@ -125,7 +139,7 @@ void Interpreter::CallCode(
     if (this_value.IsUndefined()) {
       this_value.set_value(ctx_->global_obj());
     } else if (!this_value.IsObject()) {
-      JSObject* const obj = this_value.ToObject(ctx_, CHECK);
+      JSObject* const obj = this_value.ToObject(ctx_, CHECK_IN_STMT);
       this_value.set_value(obj);
     }
   }
@@ -154,10 +168,10 @@ void Interpreter::CallCode(
       }
       if (n > arg_count) {
         env->SetMutableBinding(ctx_, arg_name,
-                               JSUndefined, ctx_->IsStrict(), CHECK);
+                               JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
       } else {
         env->SetMutableBinding(ctx_, arg_name,
-                               arguments[n-1], ctx_->IsStrict(), CHECK);
+                               arguments[n-1], ctx_->IsStrict(), CHECK_IN_STMT);
       }
     }
   }
@@ -166,12 +180,12 @@ void Interpreter::CallCode(
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
-    EVAL(f);
+    EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
       env->CreateMutableBinding(ctx_, fn, configurable_bindings);
     }
-    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
+    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK_IN_STMT);
   }
 
   // step 6, 7
@@ -191,7 +205,7 @@ void Interpreter::CallCode(
       env->CreateMutableBinding(ctx_, ctx_->arguments_symbol(),
                                 configurable_bindings);
       env->SetMutableBinding(ctx_, arguments_symbol,
-                             args_obj, false, CHECK);
+                             args_obj, false, CHECK_IN_STMT);
     }
   }
 
@@ -201,7 +215,7 @@ void Interpreter::CallCode(
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
       env->SetMutableBinding(ctx_, dn,
-                             JSUndefined, ctx_->IsStrict(), CHECK);
+                             JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
     }
   }
 
@@ -218,7 +232,7 @@ void Interpreter::CallCode(
   }
 
   BOOST_FOREACH(const Statement* const stmt, code->code()->body()) {
-    EVAL(stmt);
+    EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       RETURN_STMT(Context::THROW, ctx_->ret(), NULL);
     }
@@ -240,12 +254,12 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
-    EVAL(f);
+    EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
       env->CreateMutableBinding(ctx_, fn, configurable_bindings);
     }
-    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK);
+    env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK_IN_STMT);
   }
 
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
@@ -253,14 +267,14 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     if (!env->HasBinding(dn)) {
       env->CreateMutableBinding(ctx_, dn, configurable_bindings);
       env->SetMutableBinding(ctx_, dn,
-                             JSUndefined, ctx_->IsStrict(), CHECK);
+                             JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
     }
   }
 
   JSVal value;
   // section 14 Program
   BOOST_FOREACH(const Statement* const stmt, global->body()) {
-    EVAL(stmt);
+    EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
@@ -279,10 +293,10 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
 
 void Interpreter::Visit(const Block* block) {
   // section 12.1 Block
-  ctx_->set_mode(Context::Context::NORMAL);
+  ctx_->set_mode(Context::NORMAL);
   JSVal value;
   BOOST_FOREACH(const Statement* const stmt, block->body()) {
-    EVAL(stmt);
+    EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       // TODO(Constellation) value to exception
@@ -306,24 +320,23 @@ void Interpreter::Visit(const Block* block) {
 
 void Interpreter::Visit(const FunctionStatement* stmt) {
   const FunctionLiteral* const func = stmt->function();
-  func->name()->Accept(this);
+  Visit(func->name());
   const JSVal lhs = ctx_->ret();
-  EVAL(func);
-  const JSVal val = GetValue(ctx_->ret(), CHECK);
-  PutValue(lhs, val, CHECK);
+  Visit(func);
+  const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
+  PutValue(lhs, val, CHECK_IN_STMT);
 }
 
 
 void Interpreter::Visit(const VariableStatement* var) {
   // bool is_const = var->IsConst();
   BOOST_FOREACH(const Declaration* const decl, var->decls()) {
-    EVAL(decl->name());
+    Visit(decl->name());
     const JSVal lhs = ctx_->ret();
     if (decl->expr()) {
-      EVAL(decl->expr());
-      const JSVal val = GetValue(ctx_->ret(), CHECK);
-      PutValue(lhs, val, CHECK);
-      // TODO(Constellation) 12.2 step 5 Return a String value
+      EVAL_IN_STMT(decl->expr());
+      const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
+      PutValue(lhs, val, CHECK_IN_STMT);
     }
   }
   RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
@@ -341,17 +354,17 @@ void Interpreter::Visit(const EmptyStatement* empty) {
 
 
 void Interpreter::Visit(const IfStatement* stmt) {
-  EVAL(stmt->cond());
-  const JSVal expr = GetValue(ctx_->ret(), CHECK);
-  const bool val = expr.ToBoolean(CHECK);
+  EVAL_IN_STMT(stmt->cond());
+  const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
+  const bool val = expr.ToBoolean(CHECK_IN_STMT);
   if (val) {
-    EVAL(stmt->then_statement());
-    return;
+    EVAL_IN_STMT(stmt->then_statement());
+    // through then statement's result
   } else {
     const Statement* const else_stmt = stmt->else_statement();
     if (else_stmt) {
-      EVAL(else_stmt);
-      return;
+      EVAL_IN_STMT(else_stmt);
+      // through else statement's result
     } else {
       RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
     }
@@ -363,7 +376,7 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
   JSVal value;
   bool iterating = true;
   while (iterating) {
-    EVAL(stmt->body());
+    EVAL_IN_STMT(stmt->body());
     if (!ctx_->ret().IsUndefined()) {
       value = ctx_->ret();
     }
@@ -377,9 +390,9 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
         ABRUPT();
       }
     }
-    EVAL(stmt->cond());
-    const JSVal expr = GetValue(ctx_->ret(), CHECK);
-    const bool val = expr.ToBoolean(CHECK);
+    EVAL_IN_STMT(stmt->cond());
+    const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
+    const bool val = expr.ToBoolean(CHECK_IN_STMT);
     iterating = val;
   }
   RETURN_STMT(Context::NORMAL, value, NULL);
@@ -389,11 +402,11 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
 void Interpreter::Visit(const WhileStatement* stmt) {
   JSVal value;
   while (true) {
-    EVAL(stmt->cond());
-    const JSVal expr = GetValue(ctx_->ret(), CHECK);
-    const bool val = expr.ToBoolean(CHECK);
+    EVAL_IN_STMT(stmt->cond());
+    const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
+    const bool val = expr.ToBoolean(CHECK_IN_STMT);
     if (val) {
-      EVAL(stmt->body());
+      EVAL_IN_STMT(stmt->body());
       if (!ctx_->ret().IsUndefined()) {
         value = ctx_->ret();
       }
@@ -416,20 +429,20 @@ void Interpreter::Visit(const WhileStatement* stmt) {
 
 void Interpreter::Visit(const ForStatement* stmt) {
   if (stmt->init()) {
-    EVAL(stmt->init());
-    GetValue(ctx_->ret(), CHECK);
+    EVAL_IN_STMT(stmt->init());
+    GetValue(ctx_->ret(), CHECK_IN_STMT);
   }
   JSVal value;
   while (true) {
     if (stmt->cond()) {
-      EVAL(stmt->cond());
-      const JSVal expr = GetValue(ctx_->ret(), CHECK);
-      const bool val = expr.ToBoolean(CHECK);
+      EVAL_IN_STMT(stmt->cond());
+      const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
+      const bool val = expr.ToBoolean(CHECK_IN_STMT);
       if (!val) {
         RETURN_STMT(Context::NORMAL, value, NULL);
       }
     }
-    EVAL(stmt->body());
+    EVAL_IN_STMT(stmt->body());
     if (!ctx_->ret().IsUndefined()) {
       value = ctx_->ret();
     }
@@ -444,20 +457,20 @@ void Interpreter::Visit(const ForStatement* stmt) {
       }
     }
     if (stmt->next()) {
-      EVAL(stmt->next());
-      GetValue(ctx_->ret(), CHECK);
+      EVAL_IN_STMT(stmt->next());
+      GetValue(ctx_->ret(), CHECK_IN_STMT);
     }
   }
 }
 
 
 void Interpreter::Visit(const ForInStatement* stmt) {
-  EVAL(stmt->enumerable());
-  const JSVal expr = GetValue(ctx_->ret(), CHECK);
+  EVAL_IN_STMT(stmt->enumerable());
+  const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
   if (expr.IsNull() || expr.IsUndefined()) {
     RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
   }
-  JSObject* const obj = expr.ToObject(ctx_, CHECK);
+  JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value;
   JSObject* current = obj;
   do {
@@ -467,15 +480,15 @@ void Interpreter::Visit(const ForInStatement* stmt) {
         continue;
       }
       JSVal rhs(ctx_->ToString(set.first));
-      EVAL(stmt->each());
+      EVAL_IN_STMT(stmt->each());
       if (stmt->each()->AsVariableStatement()) {
         const Identifier* const ident =
             stmt->each()->AsVariableStatement()->decls().front()->name();
-        EVAL(ident);
+        EVAL_IN_STMT(ident);
       }
       JSVal lhs = ctx_->ret();
-      PutValue(lhs, rhs, CHECK);
-      EVAL(stmt->body());
+      PutValue(lhs, rhs, CHECK_IN_STMT);
+      EVAL_IN_STMT(stmt->body());
       if (!ctx_->ret().IsUndefined()) {
         value = ctx_->ret();
       }
@@ -502,11 +515,9 @@ void Interpreter::Visit(const ContinueStatement* stmt) {
 
 
 void Interpreter::Visit(const BreakStatement* stmt) {
-  if (!stmt->target()) {
-    if (stmt->label()) {
-      // interpret as EmptyStatement
-      RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
-    }
+  if (!stmt->target() && stmt->label()) {
+    // interpret as EmptyStatement
+    RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
   }
   RETURN_STMT(Context::BREAK, JSUndefined, stmt->target());
 }
@@ -514,8 +525,8 @@ void Interpreter::Visit(const BreakStatement* stmt) {
 
 void Interpreter::Visit(const ReturnStatement* stmt) {
   if (stmt->expr()) {
-    EVAL(stmt->expr());
-    const JSVal value = GetValue(ctx_->ret(), CHECK);
+    EVAL_IN_STMT(stmt->expr());
+    const JSVal value = GetValue(ctx_->ret(), CHECK_IN_STMT);
     RETURN_STMT(Context::RETURN, value, NULL);
   } else {
     RETURN_STMT(Context::RETURN, JSUndefined, NULL);
@@ -525,27 +536,27 @@ void Interpreter::Visit(const ReturnStatement* stmt) {
 
 // section 12.10 The with Statement
 void Interpreter::Visit(const WithStatement* stmt) {
-  EVAL(stmt->context());
-  const JSVal val = GetValue(ctx_->ret(), CHECK);
-  JSObject* const obj = val.ToObject(ctx_, CHECK);
+  EVAL_IN_STMT(stmt->context());
+  const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
+  JSObject* const obj = val.ToObject(ctx_, CHECK_IN_STMT);
   JSEnv* const old_env = ctx_->lexical_env();
   JSObjectEnv* const new_env = NewObjectEnvironment(ctx_, obj, old_env);
   new_env->set_provide_this(true);
   {
     const LexicalEnvSwitcher switcher(ctx_, new_env);
-    EVAL(stmt->body());
+    EVAL_IN_STMT(stmt->body());  // RETURN_STMT is body's value
   }
 }
 
 
 void Interpreter::Visit(const LabelledStatement* stmt) {
-  EVAL(stmt->body());
+  EVAL_IN_STMT(stmt->body());
 }
 
 
 void Interpreter::Visit(const SwitchStatement* stmt) {
-  EVAL(stmt->expr());
-  const JSVal cond = GetValue(ctx_->ret(), CHECK);
+  EVAL_IN_STMT(stmt->expr());
+  const JSVal cond = GetValue(ctx_->ret(), CHECK_IN_STMT);
   // Case Block
   JSVal value;
   {
@@ -563,8 +574,8 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
         default_found = true;
       } else {
         if (!found) {
-          EVAL(clause->expr());
-          const JSVal res = GetValue(ctx_->ret(), CHECK);
+          EVAL_IN_STMT(clause->expr());
+          const JSVal res = GetValue(ctx_->ret(), CHECK_IN_STMT);
           if (StrictEqual(cond, res)) {
             found = true;
           }
@@ -573,7 +584,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
       // case's fall through
       if (found) {
         BOOST_FOREACH(const Statement* const st, clause->body()) {
-          EVAL(st);
+          EVAL_IN_STMT(st);
           if (!ctx_->ret().IsUndefined()) {
             value = ctx_->ret();
           }
@@ -592,7 +603,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
       for (CaseClauses::const_iterator it = default_it,
            last = clauses.end(); it != last; ++it) {
         BOOST_FOREACH(const Statement* const st, (*it)->body()) {
-          EVAL(st);
+          EVAL_IN_STMT(st);
           if (!ctx_->ret().IsUndefined()) {
             value = ctx_->ret();
           }
@@ -617,8 +628,8 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
 
 // section 12.13 The throw Statement
 void Interpreter::Visit(const ThrowStatement* stmt) {
-  EVAL(stmt->expr());
-  const JSVal ref = GetValue(ctx_->ret(), CHECK);
+  EVAL_IN_STMT(stmt->expr());
+  const JSVal ref = GetValue(ctx_->ret(), CHECK_IN_STMT);
   ctx_->error()->Report(ref);
   RETURN_STMT(Context::THROW, ref, NULL);
 }
@@ -626,7 +637,7 @@ void Interpreter::Visit(const ThrowStatement* stmt) {
 
 // section 12.14 The try Statement
 void Interpreter::Visit(const TryStatement* stmt) {
-  stmt->body()->Accept(this);
+  stmt->body()->Accept(this);  // evaluate with no error check
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
       const JSVal ex = ctx_->error()->Detail(ctx_);
@@ -636,10 +647,11 @@ void Interpreter::Visit(const TryStatement* stmt) {
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = ctx_->Intern(*(stmt->catch_name()));
       catch_env->CreateMutableBinding(ctx_, name, false);
-      catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK);
+      catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);
-        EVAL(stmt->catch_block());
+        // evaluate with no error check (finally)
+        stmt->catch_block()->Accept(this);
       }
     }
   }
@@ -670,7 +682,7 @@ void Interpreter::Visit(const DebuggerStatement* stmt) {
 
 
 void Interpreter::Visit(const ExpressionStatement* stmt) {
-  EVAL(stmt->expr());
+  EVAL_IN_STMT(stmt->expr());
   const JSVal value = GetValue(ctx_->ret(), CHECK);
   RETURN_STMT(Context::NORMAL, value, NULL);
 }
