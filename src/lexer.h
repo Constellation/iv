@@ -252,7 +252,12 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         case '^':
           // ^
           Advance();
-          token = Token::BIT_XOR;
+          if (c_ == '=') {
+            Advance();
+            token = Token::ASSIGN_BIT_XOR;
+          } else {
+            token = Token::BIT_XOR;
+          }
           break;
 
         case '.':

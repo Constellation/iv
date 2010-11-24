@@ -775,6 +775,13 @@ void Interpreter::Visit(const Assignment* assign) {
                          | (core::DoubleToInt32(right_num)));
         break;
       }
+      case Token::ASSIGN_BIT_XOR: {  // ^=
+        const double left_num = lhs.ToNumber(ctx_, CHECK);
+        const double right_num = rhs.ToNumber(ctx_, CHECK);
+        result.set_value(core::DoubleToInt32(left_num)
+                         ^ (core::DoubleToInt32(right_num)));
+        break;
+      }
       default: {
         UNREACHABLE();
         break;

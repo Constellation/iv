@@ -83,6 +83,7 @@ class Token {
     ASSIGN_SHL,      // <<=
     ASSIGN_BIT_AND,  // &=
     ASSIGN_BIT_OR,   // |=
+    ASSIGN_BIT_XOR,  // ^=
     ASSIGN_LAST,     // ASSIGN OP LAST
 
     DELETE,          // delete
