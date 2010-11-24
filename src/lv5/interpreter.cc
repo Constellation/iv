@@ -743,41 +743,36 @@ void Interpreter::Visit(const Assignment* assign) {
       case Token::ASSIGN_SAR: {  // >>=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        result.set_value(core::DoubleToInt32(left_num)
+                         >> (core::DoubleToInt32(right_num) & 0x1f));
         break;
       }
       case Token::ASSIGN_SHR: {  // >>>=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(
-            static_cast<double>(core::DoubleToUInt32(left_num)
-                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        result.set_value(core::DoubleToUInt32(left_num)
+                         >> (core::DoubleToInt32(right_num) & 0x1f));
         break;
       }
       case Token::ASSIGN_SHL: {  // <<=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   << (core::DoubleToInt32(right_num) & 0x1f)));
+        result.set_value(core::DoubleToInt32(left_num)
+                         << (core::DoubleToInt32(right_num) & 0x1f));
         break;
       }
       case Token::ASSIGN_BIT_AND: {  // &=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   & (core::DoubleToInt32(right_num))));
+        result.set_value(core::DoubleToInt32(left_num)
+                         & (core::DoubleToInt32(right_num)));
         break;
       }
       case Token::ASSIGN_BIT_OR: {  // |=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   | (core::DoubleToInt32(right_num))));
+        result.set_value(core::DoubleToInt32(left_num)
+                         | (core::DoubleToInt32(right_num)));
         break;
       }
       default: {
@@ -883,27 +878,24 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       case Token::SHL: {  // <<
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   << (core::DoubleToInt32(right_num) & 0x1f)));
+        ctx_->Return(core::DoubleToInt32(left_num)
+                     << (core::DoubleToInt32(right_num) & 0x1f));
         return;
       }
 
       case Token::SAR: {  // >>
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        ctx_->Return(core::DoubleToInt32(left_num)
+                     >> (core::DoubleToInt32(right_num) & 0x1f));
         return;
       }
 
       case Token::SHR: {  // >>>
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToUInt32(left_num)
-                   >> (core::DoubleToInt32(right_num) & 0x1f)));
+        ctx_->Return(core::DoubleToUInt32(left_num)
+                     >> (core::DoubleToInt32(right_num) & 0x1f));
         return;
       }
 
@@ -1023,27 +1015,24 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       case Token::BIT_AND: {  // &
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   & (core::DoubleToInt32(right_num))));
+        ctx_->Return(core::DoubleToInt32(left_num)
+                     & (core::DoubleToInt32(right_num)));
         return;
       }
 
       case Token::BIT_XOR: {  // ^
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   ^ (core::DoubleToInt32(right_num))));
+        ctx_->Return(core::DoubleToInt32(left_num)
+                     ^ (core::DoubleToInt32(right_num)));
         return;
       }
 
       case Token::BIT_OR: {  // |
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(
-            static_cast<double>(core::DoubleToInt32(left_num)
-                   | (core::DoubleToInt32(right_num))));
+        ctx_->Return(core::DoubleToInt32(left_num)
+                     | (core::DoubleToInt32(right_num)));
         return;
       }
 
@@ -1183,8 +1172,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const double value = expr.ToNumber(ctx_, CHECK);
-      ctx_->Return(
-          static_cast<double>(~core::DoubleToInt32(value)));
+      ctx_->Return(~core::DoubleToInt32(value));
       return;
     }
 
@@ -1295,7 +1283,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     ++current;
   }
   ary->Put(ctx_, ctx_->length_symbol(),
-           static_cast<double>(current), false, CHECK);
+           current, false, CHECK);
   ctx_->Return(ary);
 }
 

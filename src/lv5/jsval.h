@@ -179,7 +179,12 @@ class JSVal {
     IV_STATIC_ASSERT(!(cond::value));
   }
 
-  this_type& operator=(const this_type&);
+  this_type& operator=(const this_type& rhs) {
+    if (this != &rhs) {
+      this_type(rhs).swap(*this);
+    }
+    return *this;
+  }
 
   inline void set_value(double val) {
     value_.number_.as_ = val;

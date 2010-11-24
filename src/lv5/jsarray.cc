@@ -19,7 +19,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
     length_(len) {
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
-                              DataDescriptor(static_cast<double>(0),
+                              DataDescriptor(0.0,
                                              PropertyDescriptor::WRITABLE),
                                              false, NULL);
 }
@@ -44,7 +44,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
   DataDescriptor* const old_len_desc = old_len_desc_upper.AsDataDescriptor();
 
   const JSVal& len_value = old_len_desc->data();
-  JSString* const name_string = ctx->ToString(name);
+  const core::UString& name_string = ctx->GetContent(name);
 
   if (name == length_symbol) {
     if (desc.IsDataDescriptor()) {
@@ -62,7 +62,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (*res) {
         return false;
       }
-      DataDescriptor new_len_desc(static_cast<double>(new_len), desc.attrs());
+      DataDescriptor new_len_desc(new_len, desc.attrs());
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);
@@ -93,7 +93,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           return false;
         }
         if (!delete_succeeded) {
-          new_len_desc.set_value(static_cast<double>(old_len + 1));
+          new_len_desc.set_value(old_len + 1);
           if (!new_writable) {
             new_len_desc.SetWritable(false);
           }
@@ -117,36 +117,29 @@ bool JSArray::DefineOwnProperty(Context* ctx,
     }
   } else {
     uint32_t index;
-    if (core::ConvertToUInt32(*name_string, &index)) {
-      std::tr1::array<char, 80> buffer;
-      const char* const str = core::DoubleToCString(static_cast<double>(index),
-                                                    buffer.data(),
-                                                    buffer.size());
-      const JSString* const converted = JSString::NewAsciiString(ctx, str);
-      if (*converted == *name_string) {
-        // array index
-        const double old_len = len_value.ToNumber(ctx, res);
-        if (*res) {
-          return false;
-        }
-        if (index >= old_len && !old_len_desc->IsWritable()) {
-          return false;
-        }
-        const bool succeeded = JSObject::DefineOwnProperty(ctx, name,
-                                                           desc, false, res);
-        if (*res) {
-          return false;
-        }
-        if (!succeeded) {
-          REJECT("define own property failed");
-        }
-        if (index >= old_len) {
-          old_len_desc->set_value(static_cast<double>(index+1));
-          JSObject::DefineOwnProperty(ctx, length_symbol,
-                                      *old_len_desc, false, res);
-        }
-        return true;
+    if (core::ConvertToUInt32(name_string, &index)) {
+      // array index
+      const double old_len = len_value.ToNumber(ctx, res);
+      if (*res) {
+        return false;
       }
+      if (index >= old_len && !old_len_desc->IsWritable()) {
+        return false;
+      }
+      const bool succeeded = JSObject::DefineOwnProperty(ctx, name,
+                                                         desc, false, res);
+      if (*res) {
+        return false;
+      }
+      if (!succeeded) {
+        REJECT("define own property failed");
+      }
+      if (index >= old_len) {
+        old_len_desc->set_value(index+1);
+        JSObject::DefineOwnProperty(ctx, length_symbol,
+                                    *old_len_desc, false, res);
+      }
+      return true;
     }
     return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
   }

@@ -24,7 +24,7 @@ JSArguments* JSArguments::New(Context* ctx,
   obj->set_cls(cls.name);
   obj->set_prototype(cls.prototype);
   obj->DefineOwnProperty(ctx, ctx->length_symbol(),
-                         DataDescriptor(static_cast<double>(len),
+                         DataDescriptor(len,
                                         PropertyDescriptor::WRITABLE |
                                         PropertyDescriptor::CONFIGURABLE),
                          false, NULL);

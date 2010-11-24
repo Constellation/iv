@@ -26,7 +26,7 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
     env_(env) {
   DefineOwnProperty(
       ctx, ctx->length_symbol(),
-      DataDescriptor(static_cast<double>(func->params().size()),
+      DataDescriptor(func->params().size(),
                      PropertyDescriptor::NONE),
                      false, NULL);
 }
@@ -95,7 +95,7 @@ JSNativeFunction::JSNativeFunction(Context* ctx, value_type func, std::size_t n)
   : func_(func) {
   DefineOwnProperty(
       ctx, ctx->length_symbol(),
-      DataDescriptor(static_cast<double>(n),
+      DataDescriptor(n,
                      PropertyDescriptor::NONE),
                      false, NULL);
 }
@@ -111,7 +111,7 @@ void JSNativeFunction::Initialize(Context* ctx,
   func_ = func;
   DefineOwnProperty(
       ctx, ctx->length_symbol(),
-      DataDescriptor(static_cast<double>(n),
+      DataDescriptor(n,
                      PropertyDescriptor::NONE),
                      false, NULL);
   JSFunction::Initialize(ctx);

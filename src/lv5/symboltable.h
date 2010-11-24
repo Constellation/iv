@@ -17,7 +17,11 @@ class SymbolTable {
   typedef std::vector<core::UString> Strings;
   typedef std::vector<std::size_t> Indexes;
   typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
-  SymbolTable();
+  SymbolTable()
+    : sync_(),
+      table_(),
+      strings_() {
+  }
 
   template<class CharT>
   inline Symbol Lookup(const CharT* str) {

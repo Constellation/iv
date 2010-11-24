@@ -70,13 +70,6 @@ JSVal::JSVal(const this_type& rhs)
   : value_(rhs.value_) {
 }
 
-JSVal& JSVal::operator=(const this_type& rhs) {
-  if (this != &rhs) {
-    this_type(rhs).swap(*this);
-  }
-  return *this;
-}
-
 JSString* JSVal::TypeOf(Context* ctx) const {
   if (IsObject()) {
     if (object()->IsCallable()) {
