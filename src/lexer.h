@@ -464,8 +464,9 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           return false;
         }
         Advance();
-        uc = ScanHexEscape('u', 4);
-        if (uc == '\\') {
+        bool ng = false;
+        uc = ScanHexEscape('u', 4, &ng);
+        if (ng || uc == '\\') {
           return false;
         }
         Record16(uc);
@@ -610,8 +611,9 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         return Token::ILLEGAL;
       }
       Advance();
-      uc = ScanHexEscape('u', 4);
-      if (uc == '\\' || !Chars::IsIdentifierStart(uc)) {
+      bool ng = false;
+      uc = ScanHexEscape('u', 4, &ng);
+      if (ng || uc == '\\' || !Chars::IsIdentifierStart(uc)) {
         return Token::ILLEGAL;
       }
       Record16(uc);
@@ -626,8 +628,9 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           return Token::ILLEGAL;
         }
         Advance();
-        uc = ScanHexEscape('u', 4);
-        if (uc == '\\' || !Chars::IsIdentifierPart(uc)) {
+        bool ng = false;
+        uc = ScanHexEscape('u', 4, &ng);
+        if (ng || uc == '\\' || !Chars::IsIdentifierPart(uc)) {
           return Token::ILLEGAL;
         }
         Record16(uc);
@@ -1047,7 +1050,9 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         if (type_ == NONE) {
           type_ = ESCAPE;
         }
-        ScanEscape();
+        if (!ScanEscape()) {
+          return Token::ILLEGAL;
+        }
       } else {
         Record16Advance();
       }
@@ -1061,10 +1066,10 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return Token::STRING;
   }
 
-  void ScanEscape() {
+  bool ScanEscape() {
     if (Chars::IsLineTerminator(c_)) {
       SkipLineTerminator();
-      return;
+      return true;
     }
     switch (c_) {
       case '\'':
@@ -1092,18 +1097,30 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16('\t');
         Advance();
         break;
-      case 'u' :
+      case 'u' : {
         Advance();
-        Record16(ScanHexEscape('u', 4));
+        bool ng = false;
+        const uc16 uc = ScanHexEscape('u', 4, &ng);
+        if (ng) {
+          return false;
+        }
+        Record16(uc);
         break;
+      }
       case 'v' :
         Record16('\v');
         Advance();
         break;
-      case 'x' :
+      case 'x' : {
         Advance();
-        Record16(ScanHexEscape('x', 2));
+        bool ng = false;
+        const uc16 uc = ScanHexEscape('x', 2, &ng);
+        if (ng) {
+          return false;
+        }
+        Record16(uc);
         break;
+      }
       case '0' :
       case '1' :
       case '2' :
@@ -1118,10 +1135,16 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16(ScanOctalEscape());
         break;
 
+      case '8' :
+      case '9' :
+        // section 7.8.4 and B1.2
+        return false;
+
       default:
         Record16Advance();
         break;
     }
+    return true;
   }
 
   Token::Type ScanNumber(const bool period) {
@@ -1227,7 +1250,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return res;
   }
 
-  uc16 ScanHexEscape(uc16 c, int len) {
+  uc16 ScanHexEscape(uc16 c, int len, bool* ng) {
     uc16 res = 0;
     for (int i = 0; i < len; ++i) {
       const int d = HexValue(c_);
@@ -1235,6 +1258,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         for (int j = i - 1; j >= 0; --j) {
           PushBack();
         }
+        *ng = true;
         return c;
       }
       res = res * 16 + d;
