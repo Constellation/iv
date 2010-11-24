@@ -77,11 +77,13 @@ class PropertyDescriptor {
     return attrs_ & ACCESSOR;
   }
 
-  const DataDescriptor* AsDataDescriptor() const;
-  DataDescriptor* AsDataDescriptor();
+  inline const DataDescriptor* AsDataDescriptor() const;
 
-  const AccessorDescriptor* AsAccessorDescriptor() const;
-  AccessorDescriptor* AsAccessorDescriptor();
+  inline DataDescriptor* AsDataDescriptor();
+
+  inline const AccessorDescriptor* AsAccessorDescriptor() const;
+
+  inline AccessorDescriptor* AsAccessorDescriptor();
 
   inline bool IsWritable() const {
     return attrs_ & WRITABLE;
@@ -279,6 +281,27 @@ class DataDescriptor: public PropertyDescriptor {
     value_.data_ = val.Layout();
   }
 };
+
+inline const DataDescriptor* PropertyDescriptor::AsDataDescriptor() const {
+  assert(IsDataDescriptor());
+  return static_cast<const DataDescriptor* const>(this);
+}
+
+inline DataDescriptor* PropertyDescriptor::AsDataDescriptor() {
+  assert(IsDataDescriptor());
+  return static_cast<DataDescriptor*>(this);
+}
+
+inline
+const AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() const {
+  assert(IsAccessorDescriptor());
+  return static_cast<const AccessorDescriptor*>(this);
+}
+
+inline AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
+  assert(IsAccessorDescriptor());
+  return static_cast<AccessorDescriptor*>(this);
+}
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_PROPERTY_H_

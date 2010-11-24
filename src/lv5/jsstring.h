@@ -8,6 +8,8 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "gc-template.h"
+#include "ustring.h"
+#include "icu/uconv.h"
 
 namespace iv {
 namespace lv5 {
@@ -67,18 +69,37 @@ class JSString : public GCUString, public gc {
 //  using GCUString::front;
 //  using GCUString::back;
 
-  JSString();
+  JSString()
+    : GCUString(),
+      hash_value_(core::StringToHash(*this)) {
+  }
+
   template<class String>
   explicit JSString(const String& rhs)
     : GCUString(rhs.begin(), rhs.end()),
       hash_value_(core::StringToHash(*this)) {
   }
 
-  JSString(const JSString& str);
-  JSString(size_type len, uc16 ch);
-  explicit JSString(const uc16* s);  // NOLINT
-  JSString(const uc16* s, size_type len);
-  JSString(const GCUString& s, size_type index, size_type len);
+  JSString(const JSString& str)
+    : GCUString(str.begin(), str.end()),
+      hash_value_(str.hash_value_) {
+  }
+
+  JSString(size_type len, uc16 ch)
+    : GCUString(len, ch),
+      hash_value_(core::StringToHash(*this)) {
+  }
+
+  JSString(const uc16* s, size_type len)
+    : GCUString(s, len),
+      hash_value_(core::StringToHash(*this)) {
+  }
+
+  JSString(const GCUString& s, size_type index, size_type len)
+    : GCUString(s, index, len),
+      hash_value_(core::StringToHash(*this)) {
+  }
+
   template<typename Iter>
   JSString(Iter start, Iter last)
     : GCUString(start, last),
@@ -93,12 +114,26 @@ class JSString : public GCUString, public gc {
     hash_value_ = core::StringToHash(*this);
   }
 
-  static JSString* New(Context* context, const core::StringPiece& str);
-  static JSString* New(Context* context, const core::UStringPiece& str);
+  static JSString* New(Context* context, const core::StringPiece& str) {
+    JSString* res = new JSString();
+    icu::ConvertToUTF16(str, res);
+    return res;
+  }
+
+  static JSString* New(Context* context, const core::UStringPiece& str) {
+    return new JSString(str.data(), str.size());
+  }
+
   static JSString* NewAsciiString(Context* context,
-                                  const core::StringPiece& str);
-  static JSString* NewEmptyString(Context* ctx);
- protected:
+                                  const core::StringPiece& str) {
+    return new JSString(str.begin(), str.end());
+  }
+
+  static JSString* NewEmptyString(Context* ctx) {
+    return new JSString();
+  }
+
+ private:
   std::size_t hash_value_;
 };
 
