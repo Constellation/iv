@@ -238,6 +238,7 @@ const char* TokenContents<T>::kContents[Token::NUM_TOKENS] = {
   "<<=",
   "&=",
   "|=",
+  "~=",
   NULL,            // ASSIGN OP LAST
   "delete",
   "typeof",
