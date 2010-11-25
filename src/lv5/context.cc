@@ -222,7 +222,9 @@ void Context::Initialize() {
 
     // section 15.5.2 The String Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::New(this, &Runtime_StringConstructor, 1);
+        JSNativeFunction::NewPlain(this, &Runtime_StringConstructor, 1);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
 
     // set prototype
     constructor->DefineOwnProperty(
@@ -245,6 +247,12 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
@@ -254,7 +262,9 @@ void Context::Initialize() {
 
     // section 15.5.2 The Boolean Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::New(this, &Runtime_BooleanConstructor, 1);
+        JSNativeFunction::NewPlain(this, &Runtime_BooleanConstructor, 1);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
 
     // set prototype
     constructor->DefineOwnProperty(
@@ -277,6 +287,12 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
@@ -285,7 +301,9 @@ void Context::Initialize() {
 
     // section 15.7.3 The Number Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::New(this, &Runtime_NumberConstructor, 1);
+        JSNativeFunction::NewPlain(this, &Runtime_NumberConstructor, 1);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
 
     // set prototype
     constructor->DefineOwnProperty(
@@ -370,7 +388,9 @@ void Context::Initialize() {
     JSObject* const proto = JSObject::NewPlain(this);
     // section 15.11.2 The Error Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::New(this, &Runtime_ErrorConstructor, 1);
+        JSNativeFunction::NewPlain(this, &Runtime_ErrorConstructor, 1);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
     // set prototype
     constructor->DefineOwnProperty(
         this, prototype_symbol_,
@@ -385,6 +405,12 @@ void Context::Initialize() {
     proto->set_cls(cls.name);
     const Symbol name = Intern("Error");
     builtins_[name] = cls;
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
     {
       // section 15.11.4.4 Error.prototype.toString()
       JSNativeFunction* const func =
@@ -421,7 +447,9 @@ void Context::Initialize() {
       // section 15.11.6.1 EvalError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_EvalErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_EvalErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -448,12 +476,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "EvalError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.6.2 RangeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_RangeErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_RangeErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -480,12 +516,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "RangeError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.6.3 ReferenceError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_ReferenceErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_ReferenceErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -512,12 +556,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "ReferenceError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.6.4 SyntaxError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_SyntaxErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_SyntaxErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -544,12 +596,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "SyntaxError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.6.5 TypeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_TypeErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_TypeErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -576,12 +636,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "TypeError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.6.6 URIError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_URIErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_URIErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -608,12 +676,20 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "URIError"),
               PropertyDescriptor::NONE),
           false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
     }
     {
       // section 15.11.7.2 NativeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::New(this, &Runtime_NativeErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &Runtime_NativeErrorConstructor, 1);
+      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
@@ -639,6 +715,12 @@ void Context::Initialize() {
           DataDescriptor(
               JSString::NewAsciiString(this, "NativeError"),
               PropertyDescriptor::NONE),
+          false, NULL);
+      sub_proto->DefineOwnProperty(
+          this, constructor_symbol_,
+          DataDescriptor(sub_constructor,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
   }

@@ -20,7 +20,7 @@ void JSFunction::Initialize(Context* ctx) {
 
   JSObject* const proto = JSObject::New(ctx);
   proto->DefineOwnProperty(
-      ctx, ctx->Intern("constructor"),
+      ctx, ctx->constructor_symbol(),
       DataDescriptor(this,
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
