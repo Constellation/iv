@@ -32,8 +32,12 @@
 #include "icu/ustream.h"
 #include "icu/source.h"
 
+#include "fpu.h"
+
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
+  iv::lv5::FixFPU();
+
   std::locale::global(std::locale(""));
 
   iv::cmdline::Parser cmd("lv5");
