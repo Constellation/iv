@@ -121,7 +121,8 @@ int main(int argc, char **argv) {
         ctx.error()->Clear();
         const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
         if (!*ctx.error()) {
-          std::cout << *str << std::endl;
+          std::cerr << *str << std::endl;
+          return EXIT_FAILURE;
         }
       }
     }
