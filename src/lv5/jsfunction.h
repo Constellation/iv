@@ -113,8 +113,6 @@ class JSNativeFunction : public JSFunction {
     return new JSNativeFunction(ctx, func, n);
   }
 
-  static JSNativeFunction* NewPrototype(Context* ctx);
-
   void Initialize(Context* ctx) {
     JSFunction::Initialize(ctx);
   }

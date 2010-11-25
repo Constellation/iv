@@ -50,6 +50,14 @@
     return NULL;\
   } while (0)
 
+#define RAISE_RECOVERVABLE(str)\
+  do {\
+    *res = false;\
+    SetErrorHeader(lexer_.line_number());\
+    error_.append(str);\
+    return NULL;\
+  } while (0)
+
 #define RAISE_WITH_NUMBER(str, line)\
   do {\
     *res = false;\
@@ -1758,7 +1766,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
               it->second |= type;
             }
           } else {
-            RAISE("invalid property name");
+            RAISE_RECOVERVABLE("invalid property name");
           }
         }
       } else if (token_ == Token::IDENTIFIER ||
@@ -1787,7 +1795,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
           }
         }
       } else {
-        RAISE("invalid property name");
+        RAISE_RECOVERVABLE("invalid property name");
       }
 
       if (token_ != Token::RBRACE) {

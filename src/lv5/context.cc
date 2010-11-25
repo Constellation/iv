@@ -131,7 +131,8 @@ void Context::Initialize() {
   JSObject* const obj_proto = JSObject::NewPlain(this);
 
   // Function
-  JSObject* const func_proto = JSObject::NewPlain(this);
+  JSNativeFunction* const func_proto =
+      JSNativeFunction::NewPlain(this, &Runtime_FunctionPrototype, 0);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
     JSString::NewAsciiString(this, "Function"),
@@ -155,7 +156,8 @@ void Context::Initialize() {
   const Symbol obj_name = Intern("Object");
   builtins_[obj_name] = obj_cls;
 
-  obj_constructor->Initialize(this);  // lazy initialization
+  // lazy initialization
+  obj_constructor->Initialize(this);
 
   {
     JSNativeFunction* const func =

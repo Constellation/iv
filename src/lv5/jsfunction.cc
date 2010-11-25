@@ -13,15 +13,37 @@ namespace iv {
 namespace lv5 {
 
 void JSFunction::Initialize(Context* ctx) {
+  // section 13.2 Creating Function Objects
   const Class& cls = ctx->Cls("Function");
   set_cls(cls.name);
   set_prototype(cls.prototype);
 
+  JSObject* const proto = JSObject::New(ctx);
+  proto->DefineOwnProperty(
+      ctx, ctx->Intern("constructor"),
+      DataDescriptor(this,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+                     false, NULL);
   DefineOwnProperty(
       ctx, ctx->prototype_symbol(),
-      DataDescriptor(JSNativeFunction::NewPrototype(ctx),
-                     PropertyDescriptor::NONE),
+      DataDescriptor(proto,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
                      false, NULL);
+  if (ctx->IsStrict()) {
+    JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+    DefineOwnProperty(ctx, ctx->caller_symbol(),
+                      AccessorDescriptor(throw_type_error,
+                                         throw_type_error,
+                                         PropertyDescriptor::NONE),
+                      false, NULL);
+    DefineOwnProperty(ctx, ctx->callee_symbol(),
+                      AccessorDescriptor(throw_type_error,
+                                         throw_type_error,
+                                         PropertyDescriptor::NONE),
+                      false, NULL);
+  }
 }
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
@@ -122,13 +144,6 @@ void JSNativeFunction::Initialize(Context* ctx,
                      PropertyDescriptor::NONE),
                      false, NULL);
   JSFunction::Initialize(ctx);
-}
-
-JSNativeFunction* JSNativeFunction::NewPrototype(Context* ctx) {
-  JSNativeFunction* const obj = new JSNativeFunction(ctx, &Runtime_FunctionPrototype, 0);
-  obj->set_prototype(ctx->Cls("Object").prototype);
-  obj->set_cls(ctx->Cls("Function").name);
-  return obj;
 }
 
 } }  // namespace iv::lv5
