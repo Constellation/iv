@@ -89,8 +89,14 @@ class BasicAstFactory {
         ObjectLiteral(static_cast<Factory*>(this));
   }
 
+  template<typename T>
+  T** NewPtr() {
+    return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(NULL);
+  }
+
   Identifiers* NewLabels() {
-    return new (static_cast<Factory*>(this))
+    void* place = static_cast<Factory*>(this)->New(sizeof(Identifiers));
+    return new (place)
         Identifiers(
             typename Identifiers::allocator_type(static_cast<Factory*>(this)));
   }

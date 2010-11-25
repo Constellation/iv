@@ -182,7 +182,9 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
       return !IsAnonymous();
     }
     inline BreakableStatement** node() {
-      node_ = new(parser_->factory())BreakableStatement*();
+      if (!node_) {
+        node_ = parser_->factory()->template NewPtr<BreakableStatement>();
+      }
       return node_;
     }
     inline Identifiers* labels() const {
