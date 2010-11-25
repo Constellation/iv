@@ -251,6 +251,38 @@ void Context::Initialize() {
   }
 
   {
+    // Boolean
+    // TODO(Constellation) more
+    JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
+
+    // section 15.5.2 The Boolean Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::New(this, &Runtime_BooleanConstructor, 1);
+
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      JSString::NewAsciiString(this, "Boolean"),
+      constructor,
+      proto
+    };
+    proto->set_cls(cls.name);
+
+    const Symbol name = Intern("Boolean");
+    builtins_[name] = cls;
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+  }
+
+  {
     // Number
     JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
 

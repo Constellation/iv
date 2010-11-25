@@ -36,6 +36,8 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error);
 
 JSVal Runtime_StringConstructor(const Arguments& args, Error* error);
 
+JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error);
+
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error);
 JSVal Runtime_NumberToString(const Arguments& args, Error* error);
 

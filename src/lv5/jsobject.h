@@ -119,6 +119,7 @@ class JSNumberObject : public JSObject {
 class JSBooleanObject : public JSObject {
  public:
   explicit JSBooleanObject(bool value);
+  static JSBooleanObject* NewPlain(Context* ctx, bool value);
   static JSBooleanObject* New(Context* ctx, bool value);
   JSBooleanObject* AsBooleanObject() {
     return this;

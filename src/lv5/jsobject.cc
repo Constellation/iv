@@ -305,11 +305,14 @@ JSBooleanObject::JSBooleanObject(bool value)
     value_(value) {
 }
 
+JSBooleanObject* JSBooleanObject::NewPlain(Context* ctx, bool value) {
+  return new JSBooleanObject(value);
+}
+
 JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
   JSBooleanObject* const obj = new JSBooleanObject(value);
-  const Symbol name = ctx->Intern("Boolean");
-  const Class& cls = ctx->Cls(name);
-  obj->set_cls(JSString::NewAsciiString(ctx, "Boolean"));
+  const Class& cls = ctx->Cls(ctx->Intern("Boolean"));
+  obj->set_cls(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }

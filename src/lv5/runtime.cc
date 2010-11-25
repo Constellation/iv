@@ -311,6 +311,27 @@ JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
+  if (args.IsConstructorCalled()) {
+    bool res = false;
+    if (args.size() > 0) {
+      res = args[0].ToBoolean(ERROR(error));
+    }
+    return JSBooleanObject::New(args.ctx(), res);
+  } else {
+    if (args.size() > 0) {
+      const bool res = args[0].ToBoolean(ERROR(error));
+      if (res) {
+        return JSTrue;
+      } else {
+        return JSFalse;
+      }
+    } else {
+      return JSFalse;
+    }
+  }
+}
+
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     double res = 0.0;
