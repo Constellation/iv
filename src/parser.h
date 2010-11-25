@@ -583,7 +583,14 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 
     EXPECT(Token::RPAREN);
 
-    ExpectSemicolon(CHECK);
+    // ex:
+    //   do {
+    //     print("valid syntax");
+    //   } while (0) return true;
+    // is syntax valid
+    if (token_ == Token::SEMICOLON) {
+      Next();
+    }
     DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(stmt, expr);
     target.set_node(dowhile);
     return dowhile;
