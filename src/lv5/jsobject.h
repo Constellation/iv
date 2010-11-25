@@ -93,6 +93,7 @@ class JSStringObject : public JSObject {
  public:
   explicit JSStringObject(JSString* value) : value_(value) { }
   static JSStringObject* New(Context* ctx, JSString* str);
+  static JSStringObject* NewPlain(Context* ctx);
   JSStringObject* AsStringObject() {
     return this;
   }

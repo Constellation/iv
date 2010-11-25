@@ -144,7 +144,7 @@ void Context::Initialize() {
 
   // section 15.2.2
   JSNativeFunction* const obj_constructor =
-      JSNativeFunction::New(this, &Runtime_ObjectConstructor, 1);
+      JSNativeFunction::NewPlain(this, &Runtime_ObjectConstructor, 1);
 
   struct Class obj_cls = {
     JSString::NewAsciiString(this, "Object"),
@@ -154,6 +154,8 @@ void Context::Initialize() {
   obj_proto->set_cls(obj_cls.name);
   const Symbol obj_name = Intern("Object");
   builtins_[obj_name] = obj_cls;
+
+  obj_constructor->Initialize(this);  // lazy initialization
 
   {
     JSNativeFunction* const func =
@@ -217,6 +219,38 @@ void Context::Initialize() {
   }
 
   {
+    // String
+    // TODO(Constellation) more
+    JSStringObject* const proto = JSStringObject::NewPlain(this);
+
+    // section 15.5.2 The String Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::New(this, &Runtime_StringConstructor, 1);
+
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      JSString::NewAsciiString(this, "String"),
+      constructor,
+      proto
+    };
+    proto->set_cls(cls.name);
+
+    const Symbol name = Intern("String");
+    builtins_[name] = cls;
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+  }
+
+  {
     // Number
     JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
 
@@ -245,6 +279,7 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
     // section 15.7.3.2 Number.MAX_VALUE
     constructor->DefineOwnProperty(
         this, Intern("MAX_VALUE"),

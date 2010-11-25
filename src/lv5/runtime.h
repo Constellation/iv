@@ -21,6 +21,7 @@ JSVal Runtime_ObjectConstructor(const Arguments& args, Error* error);
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
 
+JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error);
 JSVal Runtime_FunctionToString(const Arguments& args, Error* error);
 
 JSVal Runtime_ErrorConstructor(const Arguments& args, Error* error);
@@ -32,6 +33,8 @@ JSVal Runtime_SyntaxErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_TypeErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_URIErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_ErrorToString(const Arguments& args, Error* error);
+
+JSVal Runtime_StringConstructor(const Arguments& args, Error* error);
 
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error);
 JSVal Runtime_NumberToString(const Arguments& args, Error* error);

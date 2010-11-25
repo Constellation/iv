@@ -107,6 +107,14 @@ class JSNativeFunction : public JSFunction {
     return obj;
   }
 
+  template<typename Func>
+  static JSNativeFunction* NewPlain(Context* ctx,
+                                    const Func& func, std::size_t n) {
+    return new JSNativeFunction(ctx, func, n);
+  }
+
+  static JSNativeFunction* NewPrototype(Context* ctx);
+
   void Initialize(Context* ctx) {
     JSFunction::Initialize(ctx);
   }

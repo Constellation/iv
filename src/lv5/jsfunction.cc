@@ -8,6 +8,7 @@
 #include "context.h"
 #include "arguments.h"
 #include "jsscript.h"
+#include "runtime.h"
 namespace iv {
 namespace lv5 {
 
@@ -15,6 +16,12 @@ void JSFunction::Initialize(Context* ctx) {
   const Class& cls = ctx->Cls("Function");
   set_cls(cls.name);
   set_prototype(cls.prototype);
+
+  DefineOwnProperty(
+      ctx, ctx->prototype_symbol(),
+      DataDescriptor(JSNativeFunction::NewPrototype(ctx),
+                     PropertyDescriptor::NONE),
+                     false, NULL);
 }
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
@@ -115,6 +122,13 @@ void JSNativeFunction::Initialize(Context* ctx,
                      PropertyDescriptor::NONE),
                      false, NULL);
   JSFunction::Initialize(ctx);
+}
+
+JSNativeFunction* JSNativeFunction::NewPrototype(Context* ctx) {
+  JSNativeFunction* const obj = new JSNativeFunction(ctx, &Runtime_FunctionPrototype, 0);
+  obj->set_prototype(ctx->Cls("Object").prototype);
+  obj->set_cls(ctx->Cls("Function").name);
+  return obj;
 }
 
 } }  // namespace iv::lv5

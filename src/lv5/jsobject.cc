@@ -279,16 +279,19 @@ JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
   JSStringObject* const obj = new JSStringObject(str);
   const Symbol name = ctx->Intern("String");
   const Class& cls = ctx->Cls(name);
-  obj->set_cls(JSString::NewAsciiString(ctx, "String"));
+  obj->set_cls(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }
 
+JSStringObject* JSStringObject::NewPlain(Context* ctx) {
+  return new JSStringObject(JSString::NewEmptyString(ctx));
+}
+
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
   JSNumberObject* const obj = new JSNumberObject(value);
-  const Symbol name = ctx->Intern("Number");
-  const Class& cls = ctx->Cls(name);
-  obj->set_cls(JSString::NewAsciiString(ctx, "Number"));
+  const Class& cls = ctx->Cls("Number");
+  obj->set_cls(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }

@@ -201,6 +201,10 @@ JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
   return JSString::NewAsciiString(args.ctx(), str.c_str());
 }
 
+JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error) {
+  return JSUndefined;
+}
+
 JSVal Runtime_FunctionToString(const Arguments& args,
                                Error* error) {
   const JSVal& obj = args.this_binding();
@@ -299,6 +303,11 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
     return JSString::New(ctx, buffer);
   }
   error->Report(Error::Type, "base must be object");
+  return JSUndefined;
+}
+
+// TODO(Constellation) this is mock
+JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
