@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_FPU_H_
 #define _IV_LV5_FPU_H_
+
 #if (defined __GNUC__ && defined __i386__)
 #include <fpu_control.h>
 namespace iv {
@@ -25,4 +26,4 @@ inline void FixFPU() {
 } }  // namespace iv::lv5
 #endif
 
-#endif  // _IV_LV5_LV5_H_
+#endif  // _IV_LV5_FPU_H_
