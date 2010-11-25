@@ -312,14 +312,14 @@ void Context::Initialize() {
     // section 15.7.3.2 Number.MAX_VALUE
     constructor->DefineOwnProperty(
         this, Intern("MAX_VALUE"),
-        DataDescriptor(std::numeric_limits<double>::max(),
+        DataDescriptor(1.7976931348623157e+308,
                        PropertyDescriptor::NONE),
         false, NULL);
 
     // section 15.7.3.3 Number.MIN_VALUE
     constructor->DefineOwnProperty(
         this, Intern("MIN_VALUE"),
-        DataDescriptor(std::numeric_limits<double>::min(),
+        DataDescriptor(5e-324,
                        PropertyDescriptor::NONE),
         false, NULL);
 
@@ -721,7 +721,7 @@ void Context::Initialize() {
 
     // section 15.8.2.3 asin(x)
     math->DefineOwnProperty(
-        this, Intern("acos"),
+        this, Intern("asin"),
         DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
