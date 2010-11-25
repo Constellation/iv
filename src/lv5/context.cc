@@ -193,11 +193,6 @@ void Context::Initialize() {
           false, NULL);
     }
 
-    obj_constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(obj_proto, PropertyDescriptor::NONE),
-        false, NULL);
-
     global_obj_.DefineOwnProperty(
         this, obj_name,
         DataDescriptor(obj_constructor,
