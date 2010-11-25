@@ -82,6 +82,8 @@ def Build():
     if not conf.CheckFunc('snprintf'):
       print 'strtod must be provided'
       Exit(1)
+    if not conf.CheckHeader('fpu_control.h'):
+      print 'this toolchain msvc compiler'
     if options.get('noicu'):
       # use iconv
       conf.CheckLibWithHeader('iconv', 'iconv.h', 'c++')
