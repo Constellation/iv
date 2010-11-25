@@ -76,7 +76,7 @@ JSString* JSVal::TypeOf(Context* ctx) const {
   } else if (IsBoolean()) {
     return JSString::NewAsciiString(ctx, "boolean");
   } else if (IsNull()) {
-    return JSString::NewAsciiString(ctx, "null");
+    return JSString::NewAsciiString(ctx, "object");
   } else {
     assert(IsUndefined());
     return JSString::NewAsciiString(ctx, "undefined");
