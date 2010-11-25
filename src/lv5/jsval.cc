@@ -62,14 +62,6 @@ JSVal::JSVal(JSEmptyKeywordType val)
   set_value(val);
 }
 
-JSVal::JSVal(const value_type& val)
-  : value_(val) {
-}
-
-JSVal::JSVal(const this_type& rhs)
-  : value_(rhs.value_) {
-}
-
 JSString* JSVal::TypeOf(Context* ctx) const {
   if (IsObject()) {
     if (object()->IsCallable()) {
@@ -146,7 +138,7 @@ double JSVal::ToNumber(Context* ctx, Error* res) const {
   } else if (IsNull()) {
     return +0;
   } else if (IsUndefined()) {
-    return std::numeric_limits<double>::quiet_NaN();
+    return JSValData::kNaN;
   } else {
     assert(IsObject());
     JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER, res);

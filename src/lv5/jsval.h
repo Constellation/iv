@@ -7,6 +7,7 @@
 #include "config/config.h"
 #include "enable_if.h"
 #include "static_assert.h"
+#include "none.h"
 #include "utils.h"
 #include "hint.h"
 #include "jsstring.h"
@@ -39,6 +40,9 @@ struct Layout<4, true> {
       double as_;
     } number_;
     struct {
+      uint64_t as_;
+    } bits_;
+    struct {
       union {
         bool boolean_;
         JSObject* object_;
@@ -61,6 +65,10 @@ struct Layout<8, true> {
       double as_;
     } number_;
     struct {
+      uint32_t overhead_;
+      uint64_t as_;
+    } bits_;
+    struct {
       union {
         bool boolean_;
         JSObject* object_;
@@ -81,6 +89,9 @@ struct Layout<4, false> {
     struct {
       double as_;
     } number_;
+    struct {
+      uint64_t as_;
+    } bits_;
     struct {
       uint32_t tag_;
       union {
@@ -103,6 +114,9 @@ struct Layout<8, false> {
       double as_;
     } number_;
     struct {
+      uint64_t as_;
+    } bits_;
+    struct {
       uint32_t tag_;
       union {
         bool boolean_;
@@ -122,6 +136,26 @@ struct JSFalseType { };
 struct JSNullType { };
 struct JSUndefinedType { };
 struct JSEmptyType { };
+struct JSNaNType { };
+
+union Trans64 {
+  uint64_t bits_;
+  double double_;
+};
+
+template<typename T>
+class JSValData {
+ public:
+  static const Trans64 kTrans;
+  static const double kNaN;
+};
+
+// 111111111111000000000000000000000000000000000000000000000000000
+template<typename T>
+const Trans64 JSValData<T>::kTrans = { 0x7FF8000000000000LL };
+
+template<typename T>
+const double JSValData<T>::kNaN = JSValData<T>::kTrans.double_;
 
 }  // namespace iv::lv5::detail
 
@@ -130,11 +164,15 @@ typedef bool (*JSFalseKeywordType)(JSVal, detail::JSFalseType);
 typedef bool (*JSNullKeywordType)(JSVal, detail::JSNullType);
 typedef bool (*JSUndefinedKeywordType)(JSVal, detail::JSUndefinedType);
 typedef bool (*JSEmptyKeywordType)(JSVal, detail::JSEmptyType);
+typedef bool (*JSNaNKeywordType)(JSVal, detail::JSNaNType);
 inline bool JSTrue(JSVal x, detail::JSTrueType dummy);
 inline bool JSFalse(JSVal x, detail::JSFalseType dummy);
 inline bool JSNull(JSVal x, detail::JSNullType dummy);
 inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
 inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy);
+inline bool JSNaN(JSVal x, detail::JSNaNType dummy);
+
+typedef detail::JSValData<core::None> JSValData;
 
 class JSVal {
  public:
@@ -161,7 +199,9 @@ class JSVal {
   static const uint32_t kLowestTag      = kNumberTag;
 
   JSVal();
-  JSVal(const JSVal& rhs);
+  JSVal(const JSVal& rhs)
+    : value_(rhs.value_) {
+  }
   JSVal(const double& val);  // NOLINT
   JSVal(JSObject* val);  // NOLINT
   JSVal(JSString* val);  // NOLINT
@@ -172,7 +212,13 @@ class JSVal {
   JSVal(JSNullKeywordType val);  // NOLINT
   JSVal(JSUndefinedKeywordType val);  // NOLINT
   JSVal(JSEmptyKeywordType val);  // NOLINT
-  JSVal(const value_type& val);  // NOLINT
+  JSVal(JSNaNKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+  JSVal(const value_type& val)  // NOLINT
+    : value_(val) {
+  }
   template<typename T>
   JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
     typedef std::tr1::is_same<bool, T> cond;
@@ -187,7 +233,7 @@ class JSVal {
   }
 
   inline void set_value(double val) {
-    value_.number_.as_ = val;
+    value_.number_.as_ = (val == val) ? val : JSValData::kNaN;
   }
   inline void set_value(JSObject* val) {
     value_.struct_.payload_.object_ = val;
@@ -221,6 +267,9 @@ class JSVal {
   }
   inline void set_value(JSEmptyKeywordType val) {
     value_.struct_.tag_ = kEmptyTag;
+  }
+  inline void set_value(JSNaNKeywordType val) {
+    value_.number_.as_ = JSValData::kNaN;
   }
   inline void set_null() {
     value_.struct_.tag_ = kNullTag;
@@ -369,6 +418,11 @@ inline bool JSUndefined(
 
 inline bool JSEmpty(JSVal x,
                     detail::JSEmptyType dummy = detail::JSEmptyType()) {
+  return false;
+}
+
+inline bool JSNaN(JSVal x,
+                  detail::JSNaNType dummy = detail::JSNaNType()) {
   return false;
 }
 

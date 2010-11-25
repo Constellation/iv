@@ -329,7 +329,7 @@ void Context::Initialize() {
     // section 15.7.3.4 Number.NaN
     constructor->DefineOwnProperty(
         this, Intern("NaN"),
-        DataDescriptor(std::numeric_limits<double>::quiet_NaN(),
+        DataDescriptor(JSValData::kNaN,
                        PropertyDescriptor::NONE),
         false, NULL);
 
@@ -857,7 +857,7 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("NaN"),
         DataDescriptor(
-            std::numeric_limits<double>::quiet_NaN(), PropertyDescriptor::NONE),
+            JSValData::kNaN, PropertyDescriptor::NONE),
         false, NULL);
     // section 15.1.1.2 Infinity
     global_obj_.DefineOwnProperty(
