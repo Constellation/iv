@@ -1764,7 +1764,11 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
       } else if (token_ == Token::IDENTIFIER ||
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
-        ident = ParseIdentifier(lexer_.Buffer());
+        if (token_ == Token::NUMBER) {
+          ident = ParseIdentifier(lexer_.Buffer8());
+        } else {
+          ident = ParseIdentifier(lexer_.Buffer());
+        }
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         object->AddDataProperty(ident, expr);
