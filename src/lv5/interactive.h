@@ -16,7 +16,6 @@
 #include "jsstring.h"
 #include "print.h"
 #include "icu/source.h"
-#include "icu/ustream.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

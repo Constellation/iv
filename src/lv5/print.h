@@ -4,7 +4,6 @@
 #include "jsval.h"
 #include "error.h"
 #include "arguments.h"
-#include "icu/ustream.h"
 namespace iv {
 namespace lv5 {
 

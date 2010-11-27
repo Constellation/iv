@@ -708,7 +708,8 @@ void Interpreter::Visit(const Assignment* assign) {
         if (lprim.IsString() || rprim.IsString()) {
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
+          ctx_->Return(JSString::New(ctx_,
+                                     lstr->value(), rstr->value()));
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -866,7 +867,8 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         if (lprim.IsString() || rprim.IsString()) {
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          ctx_->Return(JSString::New(ctx_, *lstr + *rstr));
+          ctx_->Return(JSString::New(ctx_,
+                                     lstr->value(), rstr->value()));
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -971,7 +973,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           return;
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
-        const bool res = rhs.object()->HasProperty(ctx_->Intern(*name));
+        const bool res = rhs.object()->HasProperty(ctx_->Intern(name->value()));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1362,7 +1364,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
   ctx_->Return(
       JSReference::New(ctx_,
                        base_value,
-                       ctx_->Intern(*name),
+                       ctx_->Intern(name->value()),
                        ctx_->IsStrict()));
 }
 

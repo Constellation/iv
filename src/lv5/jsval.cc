@@ -132,7 +132,7 @@ double JSVal::ToNumber(Context* ctx, Error* res) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
-    return core::StringToDouble(*string(), false);
+    return core::StringToDouble(string()->value(), false);
   } else if (IsBoolean()) {
     return boolean() ? 1 : +0;
   } else if (IsNull()) {

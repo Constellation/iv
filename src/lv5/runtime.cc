@@ -119,7 +119,7 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
 JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
-    return core::StringToDouble(*str, true);
+    return core::StringToDouble(str->value(), true);
   } else {
     return JSNaN;
   }
@@ -179,7 +179,7 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
     Context* ctx = args.ctx();
     JSString* const str = val.ToString(ctx, ERROR(error));
     JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-    if (!obj->GetOwnProperty(ctx->Intern(*str)).IsEmpty()) {
+    if (!obj->GetOwnProperty(ctx->Intern(str->value())).IsEmpty()) {
       return JSTrue;
     } else {
       return JSFalse;
