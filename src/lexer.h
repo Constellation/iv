@@ -11,6 +11,7 @@
 #include "token.h"
 #include "location.h"
 #include "noncopyable.h"
+#include "keyword.h"
 
 namespace iv {
 namespace core {
@@ -18,13 +19,7 @@ namespace core {
 template<typename Source>
 class Lexer: private Noncopyable<Lexer<Source> >::type {
  public:
-  enum LexType {
-    kClear = 0,
-    kIdentifyReservedWords = 1,
-    kIgnoreReservedWords = 2,
-    kIgnoreReservedWordsAndIdentifyGetterOrSetter = 4,
-    kStrict = 8
-  };
+
   enum State {
     NONE,
     ESCAPE,
@@ -46,7 +41,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     Initialize();
   }
 
-  typename Token::Type Next(int type) {
+  template<typename LexType>
+  typename Token::Type Next(bool strict) {
     typename Token::Type token;
     has_line_terminator_before_next_ = false;
     do {
@@ -343,7 +339,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
         default:
           if (Chars::IsIdentifierStart(c_)) {
-            token = ScanIdentifier(type);
+            token = ScanIdentifier<LexType>(strict);
           } else if (Chars::IsDecimalDigit(c_)) {
             token = ScanNumber(false);
           } else if (Chars::IsLineTerminator(c_)) {
@@ -518,33 +514,6 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     }
   }
 
-  inline Token::Type IsMatch(char const * keyword,
-                             std::size_t len,
-                             Token::Type guess, bool strict) const {
-    if (!strict) {
-      return Token::IDENTIFIER;
-    }
-    std::vector<uc16>::const_iterator it = buffer16_.begin();
-    do {
-      if (*it++ != *keyword++) {
-        return Token::IDENTIFIER;
-      }
-    } while (--len);
-    return guess;
-  }
-
-  inline Token::Type IsMatch(char const * keyword,
-                             std::size_t len,
-                             Token::Type guess) const {
-    std::vector<uc16>::const_iterator it = buffer16_.begin();
-    do {
-      if (*it++ != *keyword++) {
-        return Token::IDENTIFIER;
-      }
-    } while (--len);
-    return guess;
-  }
-
   Token::Type SkipSingleLineComment() {
     Advance();
     // see ECMA-262 section 7.4
@@ -599,8 +568,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return Token::NOT_FOUND;
   }
 
-  Token::Type ScanIdentifier(int type) {
-    Token::Type token = Token::IDENTIFIER;
+  template<typename LexType>
+  Token::Type ScanIdentifier(bool strict) {
     uc16 uc;
 
     buffer16_.clear();
@@ -639,402 +608,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       }
     }
 
-    if (type & kIdentifyReservedWords) {
-      token = DetectKeyword(type & kStrict);
-    } else if (type & kIgnoreReservedWordsAndIdentifyGetterOrSetter) {
-      token = DetectGetOrSet();
-    }
-
-    return token;
-  }
-
-  // detect which Identifier is Keyword, FutureReservedWord or not
-  // Keyword and FutureReservedWord are defined in ECMA-262 5th.
-  //
-  // Some words such as :
-  // int, short, boolean, byte, long, char, float, double, abstract, volatile,
-  // transient, final, throws, goto, native, synchronized
-  // were defined as FutureReservedWord in ECMA-262 3rd, but not in 5th.
-  // So, DetectKeyword interprets them as Identifier.
-  Token::Type DetectKeyword(bool strict) const {
-    const std::size_t len = buffer16_.size();
-    Token::Type token = Token::IDENTIFIER;
-    switch (len) {
-      case 2:
-        // if in do
-        if (buffer16_[0] == 'i') {
-          if (buffer16_[1] == 'f') {
-            token = Token::IF;
-          } else if (buffer16_[1] == 'n') {
-            token = Token::IN;
-          }
-        } else if (buffer16_[0] == 'd' && buffer16_[1] == 'o') {
-          // do
-          token = Token::DO;
-        }
-        break;
-      case 3:
-        // for var int new try let
-        switch (buffer16_[2]) {
-          case 't':
-            if (buffer16_[0] == 'l' && buffer16_[1] == 'e' && strict) {
-              // let
-              token = Token::LET;
-            } else if (buffer16_[0] == 'i' && buffer16_[1] == 'n') {
-              // int (removed)
-              // token = Token::INT;
-            }
-            break;
-          case 'r':
-            // for var
-            if (buffer16_[0] == 'f' && buffer16_[1] == 'o') {
-              // for
-              token = Token::FOR;
-            } else if (buffer16_[0] == 'v' && buffer16_[1] == 'a') {
-              // var
-              token = Token::VAR;
-            }
-            break;
-          case 'y':
-            // try
-            if (buffer16_[0] == 't' && buffer16_[1] == 'r') {
-              token = Token::TRY;
-            }
-            break;
-          case 'w':
-            // new
-            if (buffer16_[0] == 'n' && buffer16_[1] == 'e') {
-              token = Token::NEW;
-            }
-            break;
-        }
-        break;
-      case 4:
-        // else case true byte null this
-        // void with long enum char goto
-        // number 3 character is most duplicated
-        switch (buffer16_[3]) {
-          case 'e':
-            // else case true byte
-            if (buffer16_[2] == 's') {
-              if (buffer16_[0] == 'e' && buffer16_[1] == 'l') {
-                // else
-                token = Token::ELSE;
-              } else if (buffer16_[0] == 'c' && buffer16_[1] == 'a') {
-                // case
-                token = Token::CASE;
-              }
-            } else if (buffer16_[0] == 't' &&
-                       buffer16_[1] == 'r' && buffer16_[2] == 'u') {
-              // true
-              token = Token::TRUE_LITERAL;
-            } else if (buffer16_[0] == 'b' &&
-                       buffer16_[1] == 'y' && buffer16_[2] == 't') {
-              // byte (removed)
-              // token = Token::BYTE;
-            }
-            break;
-          case 'l':
-            // null
-            if (buffer16_[0] == 'n' &&
-                buffer16_[1] == 'u' && buffer16_[2] == 'l') {
-              token = Token::NULL_LITERAL;
-            }
-            break;
-          case 's':
-            // this
-            if (buffer16_[0] == 't' &&
-                buffer16_[1] == 'h' && buffer16_[2] == 'i') {
-              token = Token::THIS;
-            }
-            break;
-          case 'd':
-            // void
-            if (buffer16_[0] == 'v' &&
-                buffer16_[1] == 'o' && buffer16_[2] == 'i') {
-              token = Token::VOID;
-            }
-            break;
-          case 'h':
-            // with
-            if (buffer16_[0] == 'w' &&
-                buffer16_[1] == 'i' && buffer16_[2] == 't') {
-              token = Token::WITH;
-            }
-            break;
-          case 'g':
-            // long (removed)
-            if (buffer16_[0] == 'l' &&
-                buffer16_[1] == 'o' && buffer16_[2] == 'n') {
-              // token = Token::LONG;
-            }
-            break;
-          case 'm':
-            // enum
-            if (buffer16_[0] == 'e' &&
-                buffer16_[1] == 'n' && buffer16_[2] == 'u') {
-              token = Token::ENUM;
-            }
-            break;
-          case 'r':
-            // char (removed)
-            if (buffer16_[0] == 'c' &&
-                buffer16_[1] == 'h' && buffer16_[2] == 'a') {
-              // token = Token::CHAR;
-            }
-            break;
-          case 'o':
-            // goto (removed)
-            if (buffer16_[0] == 'g' &&
-                buffer16_[1] == 'o' && buffer16_[2] == 't') {
-              // token = Token::GOTO;
-            }
-            break;
-        }
-        break;
-      case 5:
-        // break final float catch super while
-        // throw short class const false yield
-        // number 3 character is most duplicated
-        switch (buffer16_[3]) {
-          case 'a':
-            // break final float
-            if (buffer16_[0] == 'b' && buffer16_[1] == 'r' &&
-                buffer16_[2] == 'e' && buffer16_[4] == 'k') {
-              // break
-              token = Token::BREAK;
-            } else if (buffer16_[0] == 'f') {
-              if (buffer16_[1] == 'i' &&
-                  buffer16_[2] == 'n' && buffer16_[4] == 'l') {
-                // final (removed)
-                // token = Token::FINAL;
-              } else if (buffer16_[1] == 'l' &&
-                         buffer16_[2] == 'o' && buffer16_[4] == 't') {
-                // float (removed)
-                // token = Token::FLOAT;
-              }
-            }
-            break;
-          case 'c':
-            if (buffer16_[0] == 'c' && buffer16_[1] == 'a' &&
-                buffer16_[2] == 't' && buffer16_[4] == 'h') {
-              // catch
-              token = Token::CATCH;
-            }
-            break;
-          case 'e':
-            if (buffer16_[0] == 's' && buffer16_[1] == 'u' &&
-                buffer16_[2] == 'p' && buffer16_[4] == 'r') {
-              // super
-              token = Token::SUPER;
-            }
-            break;
-          case 'l':
-            if (buffer16_[0] == 'w' && buffer16_[1] == 'h' &&
-                buffer16_[2] == 'i' && buffer16_[4] == 'e') {
-              // while
-              token = Token::WHILE;
-            } else if (strict &&
-                       buffer16_[0] == 'y' && buffer16_[1] == 'i' &&
-                       buffer16_[2] == 'e' && buffer16_[4] == 'd') {
-              // yield
-              token = Token::YIELD;
-            }
-            break;
-          case 'o':
-            if (buffer16_[0] == 't' && buffer16_[1] == 'h' &&
-                buffer16_[2] == 'r' && buffer16_[4] == 'w') {
-              // throw
-              token = Token::THROW;
-            }
-            break;
-          case 'r':
-            if (buffer16_[0] == 's' && buffer16_[1] == 'h' &&
-                buffer16_[2] == 'o' && buffer16_[4] == 't') {
-              // short (removed)
-              // token = Token::SHORT;
-            }
-            break;
-          case 's':
-            // class const false
-            if (buffer16_[0] == 'c') {
-              if (buffer16_[1] == 'l' &&
-                  buffer16_[2] == 'a' && buffer16_[4] == 's') {
-                // class
-                token = Token::CLASS;
-              } else if (buffer16_[1] == 'o' &&
-                         buffer16_[2] == 'n' && buffer16_[4] == 't') {
-                // const
-                token = Token::CONST;
-              }
-            } else if (buffer16_[0] == 'f' && buffer16_[1] == 'a' &&
-                       buffer16_[2] == 'l' && buffer16_[4] == 'e') {
-              // false
-              token = Token::FALSE_LITERAL;
-            }
-            break;
-        }
-        break;
-      case 6:
-        // double delete export import native
-        // public return static switch typeof throws
-        // number 0 character is most duplicated
-        switch (buffer16_[0]) {
-          case 'd':
-            // double delete
-            if (buffer16_[5] == 'e' &&
-                buffer16_[4] == 'l' && buffer16_[3] == 'b' &&
-                buffer16_[2] == 'u' && buffer16_[1] == 'o') {
-              // double
-              // token = Token::DOUBLE;
-            } else if (buffer16_[5] == 'e' &&
-                       buffer16_[4] == 't' && buffer16_[3] == 'e' &&
-                       buffer16_[2] == 'l' && buffer16_[1] == 'e') {
-              // delete
-              token = Token::DELETE;
-            }
-            break;
-          case 'e':
-            // export
-            token = IsMatch("export", len, Token::EXPORT);
-            break;
-          case 'i':
-            // import
-            token = IsMatch("import", len, Token::IMPORT);
-            break;
-          case 'n':
-            // native (removed)
-            // token = IsMatch("native", len, Token::NATIVE);
-            break;
-          case 'p':
-            // public
-            token = IsMatch("public", len, Token::PUBLIC, strict);
-            break;
-          case 'r':
-            // return
-            token = IsMatch("return", len, Token::RETURN);
-            break;
-          case 's':
-            // switch static
-            if (buffer16_[1] == 'w' &&
-                buffer16_[2] == 'i' && buffer16_[3] == 't' &&
-                buffer16_[4] == 'c' && buffer16_[5] == 'h') {
-              // switch
-              token = Token::SWITCH;
-            } else if (strict &&
-                       buffer16_[1] == 't' &&
-                       buffer16_[2] == 'a' && buffer16_[3] == 't' &&
-                       buffer16_[4] == 'i' && buffer16_[5] == 'c') {
-              // static
-              token = Token::STATIC;
-            }
-            break;
-          case 't':
-            // typeof throws
-            if (buffer16_[5] == 'f' &&
-                buffer16_[4] == 'o' && buffer16_[3] == 'e' &&
-                buffer16_[2] == 'p' && buffer16_[1] == 'y') {
-              // typeof
-              token = Token::TYPEOF;
-            } else if (buffer16_[5] == 's' &&
-                       buffer16_[4] == 'w' && buffer16_[3] == 'o' &&
-                       buffer16_[2] == 'r' && buffer16_[1] == 'h') {
-              // throws (removed)
-              // token = Token::THROWS;
-            }
-            break;
-        }
-        break;
-      case 7:
-        // boolean default extends finally package private
-        // number 0 character is most duplicated
-        switch (buffer16_[0]) {
-          case 'b':
-            // boolean (removed)
-            // token = IsMatch("boolean", len, Token::BOOLEAN);
-            break;
-          case 'd':
-            token = IsMatch("default", len, Token::DEFAULT);
-            break;
-          case 'e':
-            token = IsMatch("extends", len, Token::EXTENDS);
-            break;
-          case 'f':
-            token = IsMatch("finally", len, Token::FINALLY);
-            break;
-          case 'p':
-            if (buffer16_[1] == 'a') {
-              token = IsMatch("package", len, Token::PACKAGE, strict);
-            } else if (buffer16_[1] == 'r') {
-              token = IsMatch("private", len, Token::PRIVATE, strict);
-            }
-            break;
-        }
-        break;
-      case 8:
-        // debugger continue abstract volatile function
-        // number 4 character is most duplicated
-        switch (buffer16_[4]) {
-          case 'g':
-            token = IsMatch("debugger", len, Token::DEBUGGER);
-            break;
-          case 'i':
-            token = IsMatch("continue", len, Token::CONTINUE);
-            break;
-          case 'r':
-            // abstract (removed)
-            // token = IsMatch("abstract", len, Token::ABSTRACT);
-            break;
-          case 't':
-            if (buffer16_[1] == 'o') {
-              // token = IsMatch("volatile", len, Token::VOLATILE);
-            } else if (buffer16_[1] == 'u') {
-              token = IsMatch("function", len, Token::FUNCTION);
-            }
-            break;
-        }
-        break;
-      case 9:
-        // interface protected transient
-        if (buffer16_[1] == 'n') {
-          token = IsMatch("interface", len, Token::INTERFACE, strict);
-        } else if (buffer16_[1] == 'r') {
-          if (buffer16_[0] == 'p') {
-            token = IsMatch("protected", len, Token::PROTECTED, strict);
-          } else if (buffer16_[0] == 't') {
-            // transient (removed)
-            // token = IsMatch("transient", len, Token::TRANSIENT);
-          }
-        }
-        break;
-      case 10:
-        // instanceof implements
-        if (buffer16_[1] == 'n') {
-          token = IsMatch("instanceof", len, Token::INSTANCEOF);
-        } else if (buffer16_[1] == 'm') {
-          token = IsMatch("implements", len, Token::IMPLEMENTS, strict);
-        }
-        break;
-      case 12:
-        // synchronized (removed)
-        // token = IsMatch("synchronized", len, Token::SYNCHRONIZED);
-        token = Token::IDENTIFIER;
-        break;
-    }
-    return token;
-  }
-
-  Token::Type DetectGetOrSet() const {
-    if (buffer16_.size() == 3) {
-      if (buffer16_[1] == 'e' && buffer16_[2] == 't') {
-        if (buffer16_[0] == 'g') {
-          return Token::GET;
-        } else if (buffer16_[0] == 's') {
-          return Token::SET;
-        }
-      }
-    }
-    return Token::IDENTIFIER;
+    return detail::Keyword<LexType>::Detect(buffer16_, strict);
   }
 
   Token::Type ScanString() {

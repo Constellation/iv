@@ -1486,7 +1486,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         }
 
         case Token::PERIOD: {
-          Next(lexer_type::kIgnoreReservedWords);  // IDENTIFIERNAME
+          Next<IgnoreReservedWords>();  // IDENTIFIERNAME
           IS(Token::IDENTIFIER);
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           expr = factory_->NewIdentifierAccess(expr, ident);
@@ -1708,12 +1708,12 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     Identifier* ident;
 
     // IDENTIFIERNAME
-    Next(lexer_type::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
+    Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
     while (token_ != Token::RBRACE) {
       if (token_ == Token::GET || token_ == Token::SET) {
         const bool is_get = token_ == Token::GET;
         // this is getter or setter or usual prop
-        Next(lexer_type::kIgnoreReservedWords);  // IDENTIFIERNAME
+        Next<IgnoreReservedWords>();  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
           ident = ParseIdentifier(
@@ -1801,7 +1801,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
       if (token_ != Token::RBRACE) {
         IS(Token::COMMA);
         // IDENTIFIERNAME
-        Next(lexer_type::kIgnoreReservedWordsAndIdentifyGetterOrSetter);
+        Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
       }
     }
     Next();
@@ -2081,10 +2081,12 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   inline lexer_type& lexer() {
     return lexer_;
   }
-  inline Token::Type Next(typename lexer_type::LexType type =
-                          lexer_type::kIdentifyReservedWords) {
-    return token_ = lexer_.Next(
-        type | (strict_ ? lexer_type::kStrict : lexer_type::kClear));
+  template<typename LexType>
+  inline Token::Type Next() {
+    return token_ = lexer_.Next<LexType>(strict_);
+  }
+  inline Token::Type Next() {
+    return token_ = lexer_.Next<IdentifyReservedWords>(strict_);
   }
   inline Token::Type Peek() const {
     return token_;
