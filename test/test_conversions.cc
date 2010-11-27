@@ -71,6 +71,8 @@ TEST(ConversionsCase, UStringToDoubleTest) {
   ASSERT_EQ(1.0, StringToDouble("   +1   ", false));
   ASSERT_TRUE(std::isnan(StringToDouble("   -  1   ", false)));
   ASSERT_TRUE(std::isnan(StringToDouble("   +  1   ", false)));
+  ASSERT_TRUE(std::isnan(StringToDouble("+\t1", false)));
+  ASSERT_TRUE(std::isnan(StringToDouble("-\t1", false)));
 }
 
 TEST(ConversionsCase, BigNumberTest) {
