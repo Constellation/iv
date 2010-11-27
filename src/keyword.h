@@ -1,5 +1,6 @@
 #ifndef _IV_KEYWORD_H_
 #define _IV_KEYWORD_H_
+#include <cstddef>
 #include "token.h"
 namespace iv {
 namespace core {
