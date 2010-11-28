@@ -66,9 +66,11 @@ JSVal Runtime_DirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(), ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(),
+                                         first.string(), ERROR(error));
   if (script->function()->strict()) {
-    JSDeclEnv* const env = Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    JSDeclEnv* const env =
+        Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
     const Interpreter::ContextSwitcher switcher(ctx,
                                                 env,
                                                 env,
@@ -98,9 +100,11 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(), ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(),
+                                         first.string(), ERROR(error));
   if (script->function()->strict()) {
-    JSDeclEnv* const env = Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    JSDeclEnv* const env =
+        Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
     const Interpreter::ContextSwitcher switcher(ctx,
                                                 env,
                                                 env,
@@ -352,6 +356,28 @@ JSVal Runtime_StringValueOf(const Arguments& args, Error* error) {
   return StringToStringValueOfImpl(
       args, error,
       "String.prototype.valueOf is not generic function");
+}
+
+// section 15.5.4.4 String.prototype.charAt(pos)
+JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  JSString* str = val.ToString(args.ctx(), ERROR(error));
+  double position;
+  if (args.size() > 0) {
+    position = args[0].ToNumber(args.ctx(), ERROR(error));
+    position = core::DoubleToInteger(position);
+  } else {
+    // undefined -> NaN -> 0
+    position = 0;
+  }
+  if (position < 0 || position >= str->size()) {
+    return JSString::NewEmptyString(args.ctx());
+  } else {
+    return JSString::New(
+        args.ctx(),
+        core::UStringPiece(str->data() + core::DoubleToUInt32(position), 1));
+  }
 }
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {

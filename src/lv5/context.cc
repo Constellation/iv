@@ -275,6 +275,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.5.4.4 String.prototype.charAt(pos)
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringCharAt, 1);
+      proto->DefineOwnProperty(
+          this, Intern("charAt"),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {
