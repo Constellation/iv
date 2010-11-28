@@ -41,6 +41,7 @@ JSVal Runtime_StringCharAt(const Arguments& args, Error* error);
 JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error);
 JSVal Runtime_StringConcat(const Arguments& args, Error* error);
 JSVal Runtime_StringIndexOf(const Arguments& args, Error* error);
+JSVal Runtime_StringLastIndexOf(const Arguments& args, Error* error);
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error);
 

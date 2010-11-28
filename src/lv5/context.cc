@@ -319,6 +319,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringLastIndexOf, 1);
+      proto->DefineOwnProperty(
+          this, Intern("lastIndexOf"),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {

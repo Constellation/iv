@@ -434,7 +434,31 @@ JSVal Runtime_StringIndexOf(const Arguments& args, Error* error) {
   }
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
-  const GCUString::size_type loc = str->value().find(search_str->value(), start);
+  const GCUString::size_type loc =
+      str->value().find(search_str->value(), start);
+  return (loc == GCUString::npos) ? -1.0 : loc;
+}
+
+// section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
+JSVal Runtime_StringLastIndexOf(const Arguments& args, Error* error) {
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  const JSString* search_str;
+  // undefined -> NaN -> 0
+  std::size_t pos = std::numeric_limits<std::size_t>::max();
+  if (args.size() > 0) {
+    search_str = args[0].ToString(args.ctx(), ERROR(error));
+    if (args.size() > 1) {
+      const double position = args[1].ToNumber(args.ctx(), ERROR(error));
+      pos = core::DoubleToUInt32(core::DoubleToInteger(position));
+    }
+  } else {
+    // undefined -> "undefined"
+    search_str = JSString::NewAsciiString(args.ctx(), "undefined");
+  }
+  const GCUString::size_type loc =
+      str->value().rfind(search_str->value(), std::min(pos, str->size()));
   return (loc == GCUString::npos) ? -1.0 : loc;
 }
 
