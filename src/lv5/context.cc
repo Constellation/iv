@@ -308,6 +308,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.5.4.7 String.prototype.indexOf(searchString, position)
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringIndexOf, 1);
+      proto->DefineOwnProperty(
+          this, Intern("indexOf"),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {
