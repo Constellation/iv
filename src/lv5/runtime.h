@@ -38,6 +38,7 @@ JSVal Runtime_StringConstructor(const Arguments& args, Error* error);
 JSVal Runtime_StringToString(const Arguments& args, Error* error);
 JSVal Runtime_StringValueOf(const Arguments& args, Error* error);
 JSVal Runtime_StringCharAt(const Arguments& args, Error* error);
+JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error);
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error);
 

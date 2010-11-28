@@ -380,6 +380,26 @@ JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.5.4.5 String.prototype.charCodeAt(pos)
+JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error) {
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  JSString* str = val.ToString(args.ctx(), ERROR(error));
+  double position;
+  if (args.size() > 0) {
+    position = args[0].ToNumber(args.ctx(), ERROR(error));
+    position = core::DoubleToInteger(position);
+  } else {
+    // undefined -> NaN -> 0
+    position = 0;
+  }
+  if (position < 0 || position >= str->size()) {
+    return JSNaN;
+  } else {
+    return (*str)[core::DoubleToUInt32(position)];
+  }
+}
+
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     bool res = false;

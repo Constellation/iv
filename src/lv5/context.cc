@@ -286,6 +286,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.5.4.5 String.prototype.charCodeAt(pos)
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringCharCodeAt, 1);
+      proto->DefineOwnProperty(
+          this, Intern("charCodeAt"),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {
