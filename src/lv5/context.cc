@@ -297,6 +297,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringConcat, 1);
+      proto->DefineOwnProperty(
+          this, Intern("concat"),
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {

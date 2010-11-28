@@ -362,7 +362,7 @@ JSVal Runtime_StringValueOf(const Arguments& args, Error* error) {
 JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
-  JSString* str = val.ToString(args.ctx(), ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
   double position;
   if (args.size() > 0) {
     position = args[0].ToNumber(args.ctx(), ERROR(error));
@@ -384,7 +384,7 @@ JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
 JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
-  JSString* str = val.ToString(args.ctx(), ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
   double position;
   if (args.size() > 0) {
     position = args[0].ToNumber(args.ctx(), ERROR(error));
@@ -398,6 +398,20 @@ JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error) {
   } else {
     return (*str)[core::DoubleToUInt32(position)];
   }
+}
+
+// section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
+JSVal Runtime_StringConcat(const Arguments& args, Error* error) {
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  core::UString result(str->begin(), str->end());
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it) {
+    const JSString* const r = it->ToString(args.ctx(), ERROR(error));
+    result.append(r->begin(), r->end());
+  }
+  return JSString::New(args.ctx(), result);
 }
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
