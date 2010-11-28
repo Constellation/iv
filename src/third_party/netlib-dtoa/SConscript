@@ -1,9 +1,14 @@
 Import('context')
+import sys
 
 def Build():
   env = Environment()
-  env.Append(
-      CPPDEFINES=["IEEE_8087"])
+  if sys.byteorder == 'little':
+    env.Append(
+        CPPDEFINES=["IEEE_8087"])
+  else:
+    env.Append(
+        CPPDEFINES=["IEEE_MC68k"])
   return env.StaticLibrary('netlib-dtoa', [Glob('*.c')])
 
 program = Build()
