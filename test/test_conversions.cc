@@ -73,6 +73,9 @@ TEST(ConversionsCase, UStringToDoubleTest) {
   ASSERT_TRUE(std::isnan(StringToDouble("   +  1   ", false)));
   ASSERT_TRUE(std::isnan(StringToDouble("+\t1", false)));
   ASSERT_TRUE(std::isnan(StringToDouble("-\t1", false)));
+
+  ASSERT_EQ(StringToDouble("0x20", false), 32);
+  ASSERT_EQ(StringToDouble("0x20", true), 0);
 }
 
 TEST(ConversionsCase, BigNumberTest) {

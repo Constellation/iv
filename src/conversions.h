@@ -48,6 +48,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   bool is_decimal = true;
   bool is_signed = false;
   bool is_sign_found = false;
+  bool is_found_zero = false;
   std::size_t pos = 0;
   int significant_digits = 0;
   int insignificant_digits = 0;
@@ -84,6 +85,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
 
   if (Chars::IsDecimalDigit(*it)) {
     if (*it == '0') {
+      is_found_zero = true;
       ++it;
       if (it == last) {
         return 0;
@@ -228,7 +230,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   if (it == last || parse_float) {
     if (pos == 0) {
       // empty
-      return (parse_float) ? Conversions::kNaN : 0;
+      return (parse_float && !is_found_zero) ? Conversions::kNaN : 0;
     } else {
       buffer[pos++] = '\0';
       return std::strtod(buffer.data(), NULL);
@@ -244,6 +246,11 @@ inline double StringToDouble(const StringPiece& str, bool parse_float) {
 
 inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
+}
+
+template<typename Iter>
+inline double StringToIntegerWithRadix(Iter it, Iter last,int radix) {
+  return 0.0;
 }
 
 inline std::size_t StringToHash(const UStringPiece& x) {
@@ -299,6 +306,7 @@ inline double DoubleToInteger(double d) {
 }
 
 inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
+  static const uint32_t uint32_t_max = std::numeric_limits<uint32_t>::max();
   uint16_t ch;
   *value = 0;
   UStringPiece::const_iterator it = str.begin();
@@ -320,9 +328,9 @@ inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
       return false;
     }
   }
-  return (prev < (std::numeric_limits<uint32_t>::max() / 10) ||
-          ((prev == (std::numeric_limits<uint32_t>::max() / 10)) &&
-           (ch < (std::numeric_limits<uint32_t>::max() % 10))));
+  return (prev < (uint32_t_max / 10) ||
+          ((prev == (uint32_t_max / 10)) &&
+           (ch < (uint32_t_max % 10))));
 }
 
 template<typename T>
