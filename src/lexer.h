@@ -28,7 +28,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     OCTAL
   };
 
-  explicit Lexer(Source* src)
+  explicit Lexer(const Source* src)
       : source_(src),
         buffer8_(),
         buffer16_(kInitialReadBufferCapacity),
@@ -401,7 +401,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return pos_;
   }
 
-  inline Source* source() const {
+  inline const Source* source() const {
     return source_;
   }
 
@@ -875,7 +875,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     ++line_number_;
   }
 
-  Source* source_;
+  const Source* source_;
   std::string buffer8_;
   std::vector<uc16> buffer16_;
   double numeric_;

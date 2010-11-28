@@ -230,7 +230,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
     Identifiers* labels_;
   };
 
-  Parser(Factory* space, Source* source)
+  Parser(Factory* space, const Source* source)
     : lexer_(source),
       error_(),
       strict_(false),
