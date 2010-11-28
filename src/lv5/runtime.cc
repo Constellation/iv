@@ -305,9 +305,22 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
-// TODO(Constellation) this is mock
 JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
-  return JSUndefined;
+  if (args.IsConstructorCalled()) {
+    JSString* str;
+    if (args.size() > 0) {
+      str = args[0].ToString(args.ctx(), ERROR(error));
+    } else {
+      str = JSString::NewEmptyString(args.ctx());
+    }
+    return JSStringObject::New(args.ctx(), str);
+  } else {
+    if (args.size() > 0) {
+      return args[0].ToString(args.ctx(), error);
+    } else {
+      return JSString::NewEmptyString(args.ctx());
+    }
+  }
 }
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
