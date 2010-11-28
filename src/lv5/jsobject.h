@@ -97,6 +97,9 @@ class JSStringObject : public JSObject {
   JSStringObject* AsStringObject() {
     return this;
   }
+  JSString* value() const {
+    return value_;
+  }
  private:
   JSString* value_;
 };

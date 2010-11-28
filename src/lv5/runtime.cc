@@ -305,6 +305,7 @@ JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+// section 15.5.1
 JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     JSString* str;
@@ -321,6 +322,36 @@ JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
       return JSString::NewEmptyString(args.ctx());
     }
   }
+}
+
+static JSVal StringToStringValueOfImpl(const Arguments& args,
+                                       Error* error,
+                                       const char* msg) {
+  const JSVal& obj = args.this_binding();
+  if (!obj.IsString()) {
+    if (obj.IsObject() && obj.object()->AsStringObject()) {
+      return obj.object()->AsStringObject()->value();
+    } else {
+      error->Report(Error::Type, msg);
+      return JSUndefined;
+    }
+  } else {
+    return obj.string();
+  }
+}
+
+// section 15.5.4.2 String.prototype.toString()
+JSVal Runtime_StringToString(const Arguments& args, Error* error) {
+  return StringToStringValueOfImpl(
+      args, error,
+      "String.prototype.toString is not generic function");
+}
+
+// section 15.5.4.3 String.prototype.valueOf()
+JSVal Runtime_StringValueOf(const Arguments& args, Error* error) {
+  return StringToStringValueOfImpl(
+      args, error,
+      "String.prototype.valueOf is not generic function");
 }
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {

@@ -35,6 +35,8 @@ JSVal Runtime_URIErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_ErrorToString(const Arguments& args, Error* error);
 
 JSVal Runtime_StringConstructor(const Arguments& args, Error* error);
+JSVal Runtime_StringToString(const Arguments& args, Error* error);
+JSVal Runtime_StringValueOf(const Arguments& args, Error* error);
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error);
 

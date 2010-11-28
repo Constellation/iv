@@ -253,6 +253,28 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+    {
+      // section 15.5.4.2 String.prototype.toString()
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringToString, 0);
+      proto->DefineOwnProperty(
+          this, toString_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
+    {
+      // section 15.5.4.3 String.prototype.valueOf()
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_StringValueOf, 0);
+      proto->DefineOwnProperty(
+          this, valueOf_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {
