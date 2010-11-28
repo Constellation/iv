@@ -39,7 +39,7 @@ class EvalSource : public core::Noncopyable<EvalSource>::type {
     if (len == std::string::npos) {
       return core::UStringPiece((source_->data() + n), (source_->size() - n));
     } else {
-      return core::UStringPiece((source_->data() + n), len + 1);
+      return core::UStringPiece((source_->data() + n), len);
     }
   }
  private:
