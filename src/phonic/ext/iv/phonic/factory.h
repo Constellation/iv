@@ -77,6 +77,11 @@ class AstFactory : public core::Space<2> {
         Identifiers(Identifiers::allocator_type(this));
   }
 
+  template<typename T>
+  T** NewPtr() {
+    return new (New(sizeof(T*))) T*;
+  }
+
   NullLiteral* NewNullLiteral() {
     return null_instance_;
   }
@@ -107,6 +112,10 @@ class AstFactory : public core::Space<2> {
 
   FunctionStatement* NewFunctionStatement(FunctionLiteral* func) {
     return new (this) FunctionStatement(func);
+  }
+
+  FunctionDeclaration* NewFunctionDeclaration(FunctionLiteral* func) {
+    return new (this) FunctionDeclaration(func);
   }
 
   Block* NewBlock() {

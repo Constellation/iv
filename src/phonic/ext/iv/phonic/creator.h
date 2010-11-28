@@ -45,6 +45,14 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     ret_ = hash;
   }
 
+  void Visit(const FunctionDeclaration* decl) {
+    VALUE hash = rb_hash_new();
+    rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("FunctionDeclaration"));
+    Visit(decl->function());
+    rb_hash_aset(hash, SYM("body"), ret_);
+    ret_ = hash;
+  }
+
   void Visit(const VariableStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("VariableStatement"));

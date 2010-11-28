@@ -2,7 +2,6 @@
 #define _IV_PHONIC_RPARSER_H_
 #include <cstdlib>
 #include <cstring>
-#include <tr1/type_traits>
 #include <ruby.h>
 #include <ruby/encoding.h>
 #include <ruby/intern.h>

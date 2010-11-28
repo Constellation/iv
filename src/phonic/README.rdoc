@@ -8,8 +8,8 @@ phonic is ruby binding for iv AST API
 
 == MILESTONE
 
-+ parser - done
-+ specialized AST - working
+* parser - done
+* specialized AST - working
 
 == TARGET
 
