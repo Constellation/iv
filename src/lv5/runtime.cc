@@ -581,6 +581,15 @@ JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
+        if (std::isnan(num)) {
+          return JSString::NewAsciiString(args.ctx(), "NaN");
+        } else if (!std::isfinite(num)) {
+          if (num > 0) {
+            return JSString::NewAsciiString(args.ctx(), "Infinity");
+          } else {
+            return JSString::NewAsciiString(args.ctx(), "-Infinity");
+          }
+        }
         JSString* const result = JSString::NewEmptyString(args.ctx());
         core::DoubleToStringWithRadix(
             num,
