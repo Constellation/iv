@@ -134,6 +134,12 @@ JSVal JSNativeFunction::Call(const Arguments& args,
   return func_(args, error);
 }
 
+void JSNativeFunction::InitializeSimple(Context* ctx) {
+  // section 13.2 Creating Function Objects
+  const Class& cls = ctx->Cls("Function");
+  set_cls(cls.name);
+  set_prototype(cls.prototype);
+}
 
 void JSNativeFunction::Initialize(Context* ctx,
                                   value_type func, std::size_t n) {
