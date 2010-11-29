@@ -196,17 +196,22 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     buffer[pos++] = *it;
     ++it;
     if (it == last) {
+      if (parse_float) {
+        --it;
+        goto exponent_pasing_done;
+      }
       return Conversions::kNaN;
     }
     if (*it == '+' || *it == '-') {
       buffer[pos++] = *it;
       ++it;
     }
-    if (it == last) {
-      return Conversions::kNaN;
-    }
-    // more than 1 decimal digit required
-    if (!Chars::IsDecimalDigit(*it)) {
+    if (it == last || !Chars::IsDecimalDigit(*it)) {
+      if (parse_float) {
+        --it;
+        --it;
+        goto exponent_pasing_done;
+      }
       return Conversions::kNaN;
     }
     int exponent = 0;
@@ -225,6 +230,9 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     std::snprintf(buffer.data()+pos, 5, "%d", exponent);  // NOLINT
     pos+=4;
   }
+
+  // exponent_pasing_done label
+  exponent_pasing_done:
 
   while (it != last &&
          (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {

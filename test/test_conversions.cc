@@ -76,6 +76,14 @@ TEST(ConversionsCase, UStringToDoubleTest) {
 
   ASSERT_EQ(StringToDouble("0x20", false), 32);
   ASSERT_EQ(StringToDouble("0x20", true), 0);
+
+  ASSERT_EQ(StringToDouble("1ex", true), 1);
+  ASSERT_TRUE(std::isnan(StringToDouble("1ex", false)));
+
+  ASSERT_EQ(StringToDouble("0.x", true), 0);
+  ASSERT_TRUE(std::isnan(StringToDouble(".x", true)));
+
+  ASSERT_TRUE(std::isnan(StringToDouble("0.x", false)));
 }
 
 TEST(ConversionsCase, BigNumberTest) {
