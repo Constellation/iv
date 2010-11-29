@@ -48,13 +48,8 @@ static JSScript* CompileScript(Context* ctx, JSString* str, Error* error) {
 }  // namespace
 
 JSVal Runtime_GlobalEval(const Arguments& args, Error* error) {
-  if (args.IsConstructorCalled()) {
-    error->Report(Error::Type,
-                  "function eval() { [native code] } is not a constructor");
-    return JSUndefined;
-  } else {
-    return Runtime_InDirectCallToEval(args, error);
-  }
+  CONSTRUCTOR_CHECK("eval", args, error);
+  return Runtime_InDirectCallToEval(args, error);
 }
 
 JSVal Runtime_DirectCallToEval(const Arguments& args, Error* error) {
@@ -121,11 +116,7 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
-  if (args.IsConstructorCalled()) {
-    error->Report(Error::Type,
-                  "function parseInt() { [native code] } is not a constructor");
-    return JSUndefined;
-  }
+  CONSTRUCTOR_CHECK("parseInt", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     int radix = 0;
@@ -153,11 +144,7 @@ JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
-  if (args.IsConstructorCalled()) {
-    error->Report(Error::Type,
-                  "function parseFloat() { [native code] } is not a constructor");
-    return JSUndefined;
-  }
+  CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     return core::StringToDouble(str->value(), true);
@@ -167,6 +154,7 @@ JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalIsNaN(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("isNaN", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), ERROR(error));
     if (std::isnan(number)) {
@@ -180,6 +168,7 @@ JSVal Runtime_GlobalIsNaN(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalIsFinite(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), ERROR(error));
     if (std::isfinite(number)) {
@@ -215,6 +204,7 @@ JSVal Runtime_ObjectConstructor(const Arguments& args,
 
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
                                    Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* ctx = args.ctx();
@@ -231,6 +221,7 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
 }
 
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
   std::string ascii;
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
   JSString* const cls = obj->cls();
@@ -242,11 +233,13 @@ JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype", args, error);
   return JSUndefined;
 }
 
 JSVal Runtime_FunctionToString(const Arguments& args,
                                Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
@@ -311,6 +304,7 @@ JSVal Runtime_URIErrorConstructor(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_ErrorToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Error.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   Context* const ctx = args.ctx();
   if (obj.IsObject()) {
@@ -367,6 +361,7 @@ JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
 
 // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
 JSVal Runtime_StringFromCharCode(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.fromCharCode", args, error);
   std::vector<uc16> buf(args.size());
   std::vector<uc16>::iterator target = buf.begin();
   for (Arguments::const_iterator it = args.begin(),
@@ -395,6 +390,7 @@ static JSVal StringToStringValueOfImpl(const Arguments& args,
 
 // section 15.5.4.2 String.prototype.toString()
 JSVal Runtime_StringToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.toString", args, error);
   return StringToStringValueOfImpl(
       args, error,
       "String.prototype.toString is not generic function");
@@ -402,6 +398,7 @@ JSVal Runtime_StringToString(const Arguments& args, Error* error) {
 
 // section 15.5.4.3 String.prototype.valueOf()
 JSVal Runtime_StringValueOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.valueOf", args, error);
   return StringToStringValueOfImpl(
       args, error,
       "String.prototype.valueOf is not generic function");
@@ -409,6 +406,7 @@ JSVal Runtime_StringValueOf(const Arguments& args, Error* error) {
 
 // section 15.5.4.4 String.prototype.charAt(pos)
 JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.charAt", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -431,6 +429,7 @@ JSVal Runtime_StringCharAt(const Arguments& args, Error* error) {
 
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
 JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -451,6 +450,7 @@ JSVal Runtime_StringCharCodeAt(const Arguments& args, Error* error) {
 
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
 JSVal Runtime_StringConcat(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.concat", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -465,6 +465,7 @@ JSVal Runtime_StringConcat(const Arguments& args, Error* error) {
 
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
 JSVal Runtime_StringIndexOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.indexOf", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -490,6 +491,7 @@ JSVal Runtime_StringIndexOf(const Arguments& args, Error* error) {
 
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
 JSVal Runtime_StringLastIndexOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -533,6 +535,7 @@ JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_BooleanToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
@@ -550,6 +553,7 @@ JSVal Runtime_BooleanToString(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_BooleanValueOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
@@ -583,6 +587,7 @@ JSVal Runtime_NumberConstructor(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
@@ -636,6 +641,7 @@ JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_NumberValueOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->AsNumberObject()) {
@@ -651,6 +657,7 @@ JSVal Runtime_NumberValueOf(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathAbs(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.abs", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::abs(x);
@@ -659,6 +666,7 @@ JSVal Runtime_MathAbs(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathAcos(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.acos", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::acos(x);
@@ -667,6 +675,7 @@ JSVal Runtime_MathAcos(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathAsin(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.asin", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::asin(x);
@@ -675,6 +684,7 @@ JSVal Runtime_MathAsin(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathAtan(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.atan", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::atan(x);
@@ -683,6 +693,7 @@ JSVal Runtime_MathAtan(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathAtan2(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.atan2", args, error);
   if (args.size() > 1) {
     const double y = args[0].ToNumber(args.ctx(), ERROR(error));
     const double x = args[1].ToNumber(args.ctx(), ERROR(error));
@@ -692,6 +703,7 @@ JSVal Runtime_MathAtan2(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathCeil(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.ceil", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::ceil(x);
@@ -700,6 +712,7 @@ JSVal Runtime_MathCeil(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathCos(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.cos", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::cos(x);
@@ -708,6 +721,7 @@ JSVal Runtime_MathCos(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathExp(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.exp", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::exp(x);
@@ -716,6 +730,7 @@ JSVal Runtime_MathExp(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathFloor(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.floor", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::floor(x);
@@ -724,6 +739,7 @@ JSVal Runtime_MathFloor(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathLog(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.log", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::log(x);
@@ -732,6 +748,7 @@ JSVal Runtime_MathLog(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathMax(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.max", args, error);
   double max = -kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
@@ -746,6 +763,7 @@ JSVal Runtime_MathMax(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathMin(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.min", args, error);
   double min = kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
@@ -760,6 +778,7 @@ JSVal Runtime_MathMin(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathPow(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.pow", args, error);
   if (args.size() > 1) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     const double y = args[1].ToNumber(args.ctx(), ERROR(error));
@@ -769,10 +788,12 @@ JSVal Runtime_MathPow(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathRandom(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.random", args, error);
   return args.ctx()->Random();
 }
 
 JSVal Runtime_MathRound(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.round", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     const double res = std::ceil(x);
@@ -786,6 +807,7 @@ JSVal Runtime_MathRound(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathSin(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.sin", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::sin(x);
@@ -794,6 +816,7 @@ JSVal Runtime_MathSin(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathSqrt(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.sqrt", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::sqrt(x);
@@ -802,6 +825,7 @@ JSVal Runtime_MathSqrt(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_MathTan(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Math.tan", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     return std::tan(x);
