@@ -37,7 +37,7 @@ JSObject::JSObject(JSObject* proto,
       if (*error) {\
         return JSUndefined;\
       }\
-      if (val.IsPrimitive()) {\
+      if (val.IsPrimitive() || val.IsNull() || val.IsUndefined()) {\
         return val;\
       }\
     }\
