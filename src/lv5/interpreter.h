@@ -122,8 +122,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   bool InCurrentLabelSet(const BreakableStatement* stmt);
   bool StrictEqual(const JSVal& lhs, const JSVal& rhs);
   bool AbstractEqual(const JSVal& lhs, const JSVal& rhs, Error* error);
-  CompareKind Compare(const JSVal& lhs, const JSVal& rhs,
-                      bool left_first, Error* error);
+  CompareKind Compare(const JSVal& lhs, const JSVal& rhs, Error* error);
   JSVal GetValue(const JSVal& val, Error* error);
   void PutValue(const JSVal& val, const JSVal& w, Error* error);
   JSReference* GetIdentifierReference(JSEnv* lex, Symbol name, bool strict);

@@ -499,6 +499,17 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+    {
+      // section 15.7.4.4 Number.prototype.toString([radix])
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_NumberValueOf, 0);
+      proto->DefineOwnProperty(
+          this, valueOf_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {

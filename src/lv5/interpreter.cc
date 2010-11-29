@@ -750,8 +750,9 @@ void Interpreter::Visit(const Assignment* assign) {
       case Token::ASSIGN_SHR: {  // >>>=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToUInt32(left_num)
-                         >> (core::DoubleToInt32(right_num) & 0x1f));
+        const uint32_t res = core::DoubleToUInt32(left_num)
+            >> (core::DoubleToInt32(right_num) & 0x1f);
+        result.set_value(res);
         break;
       }
       case Token::ASSIGN_SHL: {  // <<=
@@ -902,13 +903,14 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       case Token::SHR: {  // >>>
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        ctx_->Return(core::DoubleToUInt32(left_num)
-                     >> (core::DoubleToInt32(right_num) & 0x1f));
+        const uint32_t res = core::DoubleToUInt32(left_num)
+            >> (core::DoubleToInt32(right_num) & 0x1f);
+        ctx_->Return(res);
         return;
       }
 
       case Token::LT: {  // <
-        const CompareKind res = Compare(lhs, rhs, true, CHECK);
+        const CompareKind res = Compare(lhs, rhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -918,7 +920,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GT: {  // >
-        const CompareKind res = Compare(rhs, lhs, false, CHECK);
+        const CompareKind res = Compare(rhs, lhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -928,7 +930,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LTE: {  // <=
-        const CompareKind res = Compare(rhs, lhs, false, CHECK);
+        const CompareKind res = Compare(rhs, lhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {
@@ -938,7 +940,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GTE: {  // >=
-        const CompareKind res = Compare(lhs, rhs, true, CHECK);
+        const CompareKind res = Compare(lhs, rhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {
@@ -1479,8 +1481,8 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          const JSVal res = ac->get()->AsCallable()->Call(Arguments(ctx_, *base),
-                                                          error);
+          const JSVal res = ac->get()->AsCallable()->Call(
+              Arguments(ctx_, *base), error);
           if (*error) {
             return JSUndefined;
           }
@@ -1691,17 +1693,9 @@ bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
 
 Interpreter::CompareKind Interpreter::Compare(const JSVal& lhs,
                                               const JSVal& rhs,
-                                              bool left_first,
                                               Error* error) {
-  JSVal px;
-  JSVal py;
-  if (left_first) {
-    px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-    py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-  } else {
-    py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-    px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-  }
+  const JSVal px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
+  const JSVal py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
   if (px.IsString() && py.IsString()) {
     // step 4
     return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;

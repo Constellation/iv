@@ -51,6 +51,7 @@ JSVal Runtime_BooleanValueOf(const Arguments& args, Error* error);
 
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error);
 JSVal Runtime_NumberToString(const Arguments& args, Error* error);
+JSVal Runtime_NumberValueOf(const Arguments& args, Error* error);
 
 JSVal Runtime_MathAbs(const Arguments& args, Error* error);
 JSVal Runtime_MathAcos(const Arguments& args, Error* error);

@@ -121,6 +121,11 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
+  if (args.IsConstructorCalled()) {
+    error->Report(Error::Type,
+                  "function parseInt() { [native code] } is not a constructor");
+    return JSUndefined;
+  }
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     int radix = 0;
@@ -148,6 +153,11 @@ JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
 }
 
 JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
+  if (args.IsConstructorCalled()) {
+    error->Report(Error::Type,
+                  "function parseFloat() { [native code] } is not a constructor");
+    return JSUndefined;
+  }
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     return core::StringToDouble(str->value(), true);
@@ -623,6 +633,21 @@ JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
                                                 buffer.data(),
                                                 buffer.size());
   return JSString::NewAsciiString(args.ctx(), str);
+}
+
+JSVal Runtime_NumberValueOf(const Arguments& args, Error* error) {
+  const JSVal& obj = args.this_binding();
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() && obj.object()->AsNumberObject()) {
+      return obj.object()->AsNumberObject()->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.valueOf is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    return obj.number();
+  }
 }
 
 JSVal Runtime_MathAbs(const Arguments& args, Error* error) {
