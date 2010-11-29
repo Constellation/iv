@@ -708,9 +708,8 @@ void Interpreter::Visit(const Assignment* assign) {
         if (lprim.IsString() || rprim.IsString()) {
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          ctx_->Return(JSString::New(ctx_,
-                                     lstr->value(), rstr->value()));
-          return;
+          result.set_value(JSString::New(ctx_, lstr->value(), rstr->value()));
+          break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
         const double right_num = rprim.ToNumber(ctx_, CHECK);
