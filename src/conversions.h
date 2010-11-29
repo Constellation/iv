@@ -198,18 +198,25 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     if (it == last) {
       if (parse_float) {
         --it;
+        --pos;
         goto exponent_pasing_done;
       }
       return Conversions::kNaN;
     }
+    bool is_signed_exp = false;
     if (*it == '+' || *it == '-') {
       buffer[pos++] = *it;
       ++it;
+      is_signed_exp = true;
     }
     if (it == last || !Chars::IsDecimalDigit(*it)) {
       if (parse_float) {
         --it;
-        --it;
+        --pos;
+        if (is_signed_exp) {
+          --it;
+          --pos;
+        }
         goto exponent_pasing_done;
       }
       return Conversions::kNaN;
