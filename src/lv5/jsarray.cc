@@ -32,6 +32,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
     return false;\
   } while (0)
 
+// TODO(Constellation) res => NULL safe
 bool JSArray::DefineOwnProperty(Context* ctx,
                                 Symbol name,
                                 const PropertyDescriptor& desc,
@@ -55,7 +56,9 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
-        res->Report(Error::Range, "out of range");
+        if (th) {
+          res->Report(Error::Range, "out of range");
+        }
         return false;
       }
       double old_len = len_value.ToNumber(ctx, res);

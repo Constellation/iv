@@ -182,6 +182,34 @@ void Context::Initialize() {
 
   {
     // Object Define
+
+    // section 15.2.3.2 Object.getPrototypeOf(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("getPrototypeOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectGetPrototypeOf, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("getOwnPropertyDescriptor"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectGetOwnPropertyDescriptor, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.4 Object.getOwnPropertyNames(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("getOwnPropertyNames"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectGetOwnPropertyNames, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     {
       JSNativeFunction* const func =
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1);

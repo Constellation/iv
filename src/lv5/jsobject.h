@@ -59,6 +59,9 @@ class JSObject : public gc {
   virtual JSStringObject* AsStringObject() {
     return NULL;
   }
+  virtual bool IsNativeObject() const {
+    return true;
+  }
 
   bool IsExtensible() const {
     return extensible_;

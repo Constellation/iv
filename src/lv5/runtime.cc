@@ -4,10 +4,12 @@
 #include "lv5.h"
 #include "error.h"
 #include "jserror.h"
+#include "jsarray.h"
 #include "runtime.h"
 #include "context.h"
 #include "eval-source.h"
 #include "parser.h"
+#include "internal.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -187,19 +189,116 @@ JSVal Runtime_ThrowTypeError(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
-JSVal Runtime_ObjectConstructor(const Arguments& args,
-                                Error* error) {
-  if (args.size() == 1) {
-    const JSVal& val = args[0];
-    if (val.IsNull() || val.IsUndefined()) {
-      return JSObject::New(args.ctx());
-    } else {
-      JSObject* const obj = val.ToObject(args.ctx(), ERROR(error));
-      return obj;
+// section 15.2.1.1 Object([value])
+// section 15.2.2.1 new Object([value])
+JSVal Runtime_ObjectConstructor(const Arguments& args, Error* error) {
+  if (args.IsConstructorCalled()) {
+    if (args.size() > 0) {
+      const JSVal& val = args[0];
+      if (val.IsObject()) {
+        JSObject* const obj = val.object();
+        if (obj->IsNativeObject()) {
+          return obj;
+        } else {
+          // 15.2.2.1 step 1.a.ii
+          // implementation dependent host object behavior
+          return JSUndefined;
+        }
+      }
+      if (val.IsString() ||
+          val.IsBoolean() ||
+          val.IsNumber()) {
+        return val.ToObject(args.ctx(), error);
+      }
+      assert(val.IsNull() || val.IsUndefined());
     }
-  } else {
     return JSObject::New(args.ctx());
+  } else {
+    if (args.size() > 0) {
+      const JSVal& val = args[0];
+      if (val.IsNull() || val.IsUndefined()) {
+        return JSObject::New(args.ctx());
+      } else {
+        return val.ToObject(args.ctx(), error);
+      }
+    } else {
+      return JSObject::New(args.ctx());
+    }
   }
+}
+
+// section 15.2.3.2 Object.getPrototypeOf(O)
+JSVal Runtime_ObjectGetPrototypeOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.getPrototypeOf", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object()->prototype();
+      if (obj) {
+        return obj;
+      } else {
+        return JSNull;
+      }
+    }
+  }
+  error->Report(Error::Type,
+                "Object.getPrototypeOf requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
+JSVal Runtime_ObjectGetOwnPropertyDescriptor(const Arguments& args,
+                                             Error* error) {
+  CONSTRUCTOR_CHECK("Object.getOwnPropertyDescriptor", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      Symbol name;
+      if (args.size() > 1) {
+        JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
+        name = args.ctx()->Intern(str->value());
+      } else {
+        name = args.ctx()->Intern("undefined");
+      }
+      const PropertyDescriptor desc = obj->GetOwnProperty(name);
+      return FromPropertyDescriptor(args.ctx(), desc);
+    }
+  }
+  error->Report(Error::Type,
+                "Object.getOwnPropertyDescriptor requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.4 Object.getOwnPropertyNames(O)
+JSVal Runtime_ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.getOwnPropertyNames", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      JSArray* const ary = JSArray::New(args.ctx());
+      std::size_t n = 0;
+      std::tr1::array<char, 80> buffer;
+      for (JSObject::Properties::const_iterator it = obj->table().begin(),
+           last = obj->table().end(); it != last; ++it, ++n) {
+        const char* const str = core::DoubleToCString(n,
+                                                      buffer.data(),
+                                                      buffer.size());
+        ary->DefineOwnProperty(
+            args.ctx(), args.ctx()->Intern(str),
+            DataDescriptor(args.ctx()->ToString(it->first),
+                           PropertyDescriptor::WRITABLE |
+                           PropertyDescriptor::ENUMERABLE |
+                           PropertyDescriptor::CONFIGURABLE),
+            false, ERROR(error));
+      }
+      return ary;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.getOwnPropertyNames requires Object argument");
+  return JSUndefined;
 }
 
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
