@@ -150,6 +150,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     if (*it == '.') {
       buffer[pos++] = '.';
       ++it;
+      const Iter start = it;
       while (it != last &&
              Chars::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
@@ -157,6 +158,9 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
           ++significant_digits;
         }
         ++it;
+      }
+      if (start == it) {
+        return Conversions::kNaN;
       }
     } else {
       for (std::string::const_iterator inf_it = Conversions::kInfinity.begin(),
