@@ -45,11 +45,13 @@ JSObject::JSObject(JSObject* proto,
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint::Object hint, Error* res) {
   const Arguments args(ctx, this);
-  if (hint != Hint::NUMBER) {
-    // hint is STRING or NONE
+  if (hint == Hint::STRING) {
+    // hint is STRING
     TRY(ctx, ctx->toString_symbol(), args, res);
     TRY(ctx, ctx->valueOf_symbol(), args, res);
   } else {
+    // section 8.12.8
+    // hint is NUMBER or NONE
     TRY(ctx, ctx->valueOf_symbol(), args, res);
     TRY(ctx, ctx->toString_symbol(), args, res);
   }
