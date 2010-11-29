@@ -844,13 +844,13 @@ void Context::Initialize() {
     // section 15.8.1.2 LN10
     math->DefineOwnProperty(
         this, Intern("LN10"),
-        DataDescriptor(std::exp(10.0), PropertyDescriptor::NONE),
+        DataDescriptor(std::log(10.0), PropertyDescriptor::NONE),
         false, NULL);
 
     // section 15.8.1.3 LN2
     math->DefineOwnProperty(
         this, Intern("LN2"),
-        DataDescriptor(std::exp(2.0), PropertyDescriptor::NONE),
+        DataDescriptor(std::log(2.0), PropertyDescriptor::NONE),
         false, NULL);
 
     // section 15.8.1.4 LOG2E
