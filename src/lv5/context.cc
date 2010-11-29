@@ -157,8 +157,18 @@ void Context::Initialize() {
   builtins_[obj_name] = obj_cls;
 
   // lazy initialization
-  obj_constructor->Initialize(this);
-
+  obj_constructor->set_cls(func_cls.name);
+  obj_constructor->set_prototype(func_cls.prototype);
+  obj_constructor->DefineOwnProperty(
+      this, prototype_symbol_,
+      DataDescriptor(obj_proto, PropertyDescriptor::NONE),
+      false, NULL);
+  obj_proto->DefineOwnProperty(
+      this, constructor_symbol_,
+      DataDescriptor(obj_constructor,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
   {
     JSNativeFunction* const func =
         JSNativeFunction::New(this, &Runtime_FunctionToString, 0);
