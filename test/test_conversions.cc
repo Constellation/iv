@@ -97,3 +97,12 @@ TEST(ConversionsCase, DoubleToStringWithRadix) {
   ASSERT_EQ(DoubleToStringWithRadix(12.0, 16), "c");
   DoubleToStringWithRadix(std::numeric_limits<double>::max(), 2);
 }
+
+TEST(ConversionsCase, StringToIntegerWithRadix) {
+  using iv::core::StringToIntegerWithRadix;
+  ASSERT_EQ(StringToIntegerWithRadix("20", 10, true), 20);
+  ASSERT_EQ(StringToIntegerWithRadix("20dddd", 10, true), 20);
+  ASSERT_EQ(StringToIntegerWithRadix("ff", 16, true), 255);
+  ASSERT_EQ(StringToIntegerWithRadix("go", 36, true), 600);
+  ASSERT_TRUE(std::isnan(StringToIntegerWithRadix("20dddd", 2, true)));
+}

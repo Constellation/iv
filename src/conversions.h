@@ -248,9 +248,106 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
+inline int OctalValue(const int c) {
+  if ('0' <= c && c <= '8') {
+    return c - '0';
+  }
+  return -1;
+}
+
+inline int HexValue(const int c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
+  }
+  if ('a' <= c && c <= 'f') {
+    return c - 'a' + 10;
+  }
+  if ('A' <= c && c <= 'F') {
+    return c - 'A' + 10;
+  }
+  return -1;
+}
+
+inline int Radix36Value(const int c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
+  }
+  if ('a' <= c && c <= 'z') {
+    return c - 'a' + 10;
+  }
+  if ('A' <= c && c <= 'A') {
+    return c - 'A' + 10;
+  }
+  return -1;
+}
+
 template<typename Iter>
-inline double StringToIntegerWithRadix(Iter it, Iter last,int radix) {
-  return 0.0;
+inline double StringToIntegerWithRadix(Iter it, Iter last,
+                                       int radix, bool strip_prefix) {
+  // remove leading white space
+  while (it != last &&
+         (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
+    ++it;
+  }
+
+  // empty string ""
+  if (it == last) {
+    return Conversions::kNaN;
+  }
+
+  int sign = 1;
+  if (*it == '-') {
+    sign = -1;
+    ++it;
+  } else if (*it == '+') {
+    ++it;
+  }
+
+  if (it == last) {
+    return Conversions::kNaN;
+  }
+
+  if (strip_prefix) {
+    if (*it == '0') {
+      ++it;
+      if (it != last &&
+          (*it == 'x' || *it == 'X')) {
+        // strip_prefix
+        ++it;
+        radix = 16;
+      } else {
+        --it;
+      }
+    }
+  }
+
+  if (it == last) {
+    return Conversions::kNaN;
+  }
+
+  double result = 0;
+  const Iter start = it;
+  for (; it != last; ++it) {
+    const int val = Radix36Value(*it);
+    if (val != -1 && val < radix) {
+      result = result * radix + val;
+    } else {
+      return (start == it) ? Conversions::kNaN : sign * result;
+    }
+  }
+  return sign * result;
+}
+
+inline double StringToIntegerWithRadix(const StringPiece& range,
+                                       int radix, bool strip_prefix) {
+  return StringToIntegerWithRadix(range.begin(), range.end(),
+                                  radix, strip_prefix);
+}
+
+inline double StringToIntegerWithRadix(const UStringPiece& range,
+                                       int radix, bool strip_prefix) {
+  return StringToIntegerWithRadix(range.begin(), range.end(),
+                                  radix, strip_prefix);
 }
 
 inline std::size_t StringToHash(const UStringPiece& x) {

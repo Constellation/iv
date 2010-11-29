@@ -1033,6 +1033,13 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+    // section 15.1.2.3 parseIng(string, radix)
+    global_obj_.DefineOwnProperty(
+        this, Intern("parseInt"),
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseInt, 2),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
     // section 15.1.2.3 parseFloat(string)
     global_obj_.DefineOwnProperty(
         this, Intern("parseFloat"),

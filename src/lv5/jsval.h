@@ -392,6 +392,14 @@ class JSVal {
     return lhs.swap(rhs);
   }
 
+  static inline JSVal Bool(bool val) {
+    if (val) {
+      return JSTrue;
+    } else {
+      return JSFalse;
+    }
+  }
+
  private:
   value_type value_;
 };

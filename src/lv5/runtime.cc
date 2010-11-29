@@ -120,6 +120,33 @@ JSVal Runtime_InDirectCallToEval(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
+JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
+  if (args.size() > 0) {
+    JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    int radix = 0;
+    if (args.size() > 1) {
+      const double ret = args[1].ToNumber(args.ctx(), ERROR(error));
+      radix = core::DoubleToInt32(ret);
+    }
+    bool strip_prefix = true;
+    if (radix != 0) {
+      if (radix < 2 || radix > 36) {
+        return JSNaN;
+      }
+      if (radix == 16) {
+        strip_prefix = false;
+      }
+    } else {
+      radix = 10;
+    }
+    return core::StringToIntegerWithRadix(str->begin(), str->end(),
+                                          radix,
+                                          strip_prefix);
+  } else {
+    return JSNaN;
+  }
+}
+
 JSVal Runtime_GlobalParseFloat(const Arguments& args, Error* error) {
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
@@ -520,12 +547,13 @@ JSVal Runtime_NumberToString(const Arguments& args, Error* error) {
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
-        std::string buffer;
+        JSString* const result = JSString::NewEmptyString(args.ctx());
         core::DoubleToStringWithRadix(
             num,
             static_cast<int>(radix),
-            &buffer);
-        return JSString::NewAsciiString(args.ctx(), buffer);
+            result);
+        result->ReCalcHash();
+        return result;
       }
     } else {
       // TODO(Constellation) more details

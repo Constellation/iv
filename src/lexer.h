@@ -12,6 +12,7 @@
 #include "location.h"
 #include "noncopyable.h"
 #include "keyword.h"
+#include "conversions.h"
 
 namespace iv {
 namespace core {
@@ -838,26 +839,6 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       Advance();
     }
     return res;
-  }
-
-  inline int OctalValue(const int c) const {
-    if ('0' <= c && c <= '8') {
-      return c - '0';
-    }
-    return -1;
-  }
-
-  inline int HexValue(const int c) const {
-    if ('0' <= c && c <= '9') {
-      return c - '0';
-    }
-    if ('a' <= c && c <= 'f') {
-      return c - 'a' + 10;
-    }
-    if ('A' <= c && c <= 'F') {
-      return c - 'A' + 10;
-    }
-    return -1;
   }
 
   void ScanDecimalDigits() {
