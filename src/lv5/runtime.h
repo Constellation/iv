@@ -45,6 +45,8 @@ JSVal Runtime_StringIndexOf(const Arguments& args, Error* error);
 JSVal Runtime_StringLastIndexOf(const Arguments& args, Error* error);
 
 JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error);
+JSVal Runtime_BooleanToString(const Arguments& args, Error* error);
+JSVal Runtime_BooleanValueOf(const Arguments& args, Error* error);
 
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error);
 JSVal Runtime_NumberToString(const Arguments& args, Error* error);

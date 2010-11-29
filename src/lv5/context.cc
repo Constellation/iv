@@ -334,7 +334,6 @@ void Context::Initialize() {
 
   {
     // Boolean
-    // TODO(Constellation) more
     JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
 
     // section 15.5.2 The Boolean Constructor
@@ -370,6 +369,28 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+    {
+      // section 15.6.4.2 Boolean.prototype.toString()
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_BooleanToString, 0);
+      proto->DefineOwnProperty(
+          this, toString_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
+    {
+      // section 15.6.4.3 Boolean.prototype.valueOf()
+      JSNativeFunction* const func =
+          JSNativeFunction::New(this, &Runtime_BooleanValueOf, 0);
+      proto->DefineOwnProperty(
+          this, valueOf_symbol_,
+          DataDescriptor(func,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, NULL);
+    }
   }
 
   {

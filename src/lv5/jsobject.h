@@ -127,6 +127,9 @@ class JSBooleanObject : public JSObject {
   JSBooleanObject* AsBooleanObject() {
     return this;
   }
+  bool value() const {
+    return value_;
+  }
  private:
   bool value_;
 };

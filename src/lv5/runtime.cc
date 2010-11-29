@@ -510,6 +510,40 @@ JSVal Runtime_BooleanConstructor(const Arguments& args, Error* error) {
   }
 }
 
+JSVal Runtime_BooleanToString(const Arguments& args, Error* error) {
+  const JSVal& obj = args.this_binding();
+  bool b;
+  if (!obj.IsBoolean()) {
+    if (obj.IsObject() && obj.object()->AsBooleanObject()) {
+      b = obj.object()->AsBooleanObject()->value();
+    } else {
+      error->Report(Error::Type,
+                    "Boolean.prototype.toString is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    b = obj.boolean();
+  }
+  return JSString::NewAsciiString(args.ctx(), (b) ? "true" : "false");
+}
+
+JSVal Runtime_BooleanValueOf(const Arguments& args, Error* error) {
+  const JSVal& obj = args.this_binding();
+  bool b;
+  if (!obj.IsBoolean()) {
+    if (obj.IsObject() && obj.object()->AsBooleanObject()) {
+      b = obj.object()->AsBooleanObject()->value();
+    } else {
+      error->Report(Error::Type,
+                    "Boolean.prototype.valueOf is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    b = obj.boolean();
+  }
+  return JSVal::Bool(b);
+}
+
 JSVal Runtime_NumberConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     double res = 0.0;
