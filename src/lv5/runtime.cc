@@ -129,7 +129,7 @@ JSVal Runtime_GlobalParseInt(const Arguments& args, Error* error) {
       if (radix < 2 || radix > 36) {
         return JSNaN;
       }
-      if (radix == 16) {
+      if (radix != 16) {
         strip_prefix = false;
       }
     } else {
