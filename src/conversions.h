@@ -88,7 +88,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       is_found_zero = true;
       ++it;
       if (it == last) {
-        return 0;
+        return (is_signed) ? -0.0 : 0.0;
       }
       if (!parse_float && (*it == 'x' || *it == 'X')) {
         if (is_sign_found) {
@@ -275,7 +275,7 @@ inline int Radix36Value(const int c) {
   if ('a' <= c && c <= 'z') {
     return c - 'a' + 10;
   }
-  if ('A' <= c && c <= 'A') {
+  if ('A' <= c && c <= 'Z') {
     return c - 'A' + 10;
   }
   return -1;
