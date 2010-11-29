@@ -355,6 +355,18 @@ JSVal Runtime_StringConstructor(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
+JSVal Runtime_StringFromCharCode(const Arguments& args, Error* error) {
+  std::vector<uc16> buf(args.size());
+  std::vector<uc16>::iterator target = buf.begin();
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it, ++target) {
+    const double val = it->ToNumber(args.ctx(), ERROR(error));
+    *target = core::DoubleToUInt32(val);
+  }
+  return JSString::New(args.ctx(), core::UStringPiece(buf.data(), buf.size()));
+}
+
 static JSVal StringToStringValueOfImpl(const Arguments& args,
                                        Error* error,
                                        const char* msg) {

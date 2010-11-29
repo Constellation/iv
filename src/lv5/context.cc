@@ -253,6 +253,16 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
+    constructor->DefineOwnProperty(
+        this, Intern("fromCharCode"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_StringFromCharCode, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     {
       // section 15.5.4.2 String.prototype.toString()
       JSNativeFunction* const func =
