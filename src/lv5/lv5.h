@@ -1,6 +1,15 @@
 #ifndef _IV_LV5_LV5_H_
 #define _IV_LV5_LV5_H_
 #include "jsval.h"
+#define ERROR_VOID(error)\
+  error);\
+  if (*error) {\
+    return;\
+  }\
+  ((void)0
+#define DUMMY )  // to make indentation work
+#undef DUMMY
+
 #define ERROR_WITH(error, val)\
   error);\
   if (*error) {\

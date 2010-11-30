@@ -66,6 +66,9 @@ class JSObject : public gc {
   bool IsExtensible() const {
     return extensible_;
   }
+  void set_extensible(bool val) {
+    extensible_ = val;
+  }
   JSObject* prototype() const {
     return prototype_;
   }

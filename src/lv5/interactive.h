@@ -66,8 +66,15 @@ class Interactive {
           if (!ctx_.IsError()) {
             std::cout << *str << std::endl;
           } else {
-            std::cout << "FATAL ERROR" << std::endl;
-            break;
+            val = ctx_.ErrorVal();
+            ctx_.error()->Clear();
+            const JSString* const str = val.ToString(&ctx_, ctx_.error());
+            if (!ctx_.IsError()) {
+              std::cout << *str << std::endl;
+            } else {
+              ctx_.error()->Clear();
+              std::cout << "<STRING CONVERSION FAILED>" << std::endl;
+            }
           }
         }
       } else if (!recover) {

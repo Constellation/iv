@@ -52,6 +52,11 @@ class PropertyDescriptor {
       value_() {
   }
 
+  PropertyDescriptor(int attr)
+    : attrs_(attr | EMPTY),
+      value_() {
+  }
+
   PropertyDescriptor(const PropertyDescriptor& rhs)
     : attrs_(rhs.attrs_),
       value_(rhs.value_) {

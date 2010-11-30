@@ -23,6 +23,15 @@ JSVal Runtime_ObjectGetPrototypeOf(const Arguments& args, Error* error);
 JSVal Runtime_ObjectGetOwnPropertyDescriptor(const Arguments& args,
                                              Error* error);
 JSVal Runtime_ObjectGetOwnPropertyNames(const Arguments& args, Error* error);
+JSVal Runtime_ObjectCreate(const Arguments& args, Error* error);
+JSVal Runtime_ObjectDefineProperty(const Arguments& args, Error* error);
+JSVal Runtime_ObjectDefineProperties(const Arguments& args, Error* error);
+JSVal Runtime_ObjectSeal(const Arguments& args, Error* error);
+JSVal Runtime_ObjectFreeze(const Arguments& args, Error* error);
+JSVal Runtime_ObjectPreventExtensions(const Arguments& args, Error* error);
+JSVal Runtime_ObjectIsSealed(const Arguments& args, Error* error);
+JSVal Runtime_ObjectIsFrozen(const Arguments& args, Error* error);
+JSVal Runtime_ObjectIsExtensible(const Arguments& args, Error* error);
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
 

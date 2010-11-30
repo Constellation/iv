@@ -210,6 +210,87 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.2.3.5 Object.create(O[, Properties])
+    obj_constructor->DefineOwnProperty(
+        this, Intern("create"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectCreate, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("defineProperty"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectDefineProperty, 3),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.7 Object.defineProperties(O, Properties)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("defineProperties"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectDefineProperties, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.8 Object.seal(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("seal"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectSeal, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.9 Object.freeze(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("freeze"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectFreeze, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.10 Object.preventExtensions(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("preventExtensions"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectPreventExtensions, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.11 Object.isSealed(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("isSealed"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectIsSealed, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.12 Object.isFrozen(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("isFrozen"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectIsFrozen, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.3.13 Object.isExtensible(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("isExtensible"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectIsExtensible, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     {
       JSNativeFunction* const func =
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1);

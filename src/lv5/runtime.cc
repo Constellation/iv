@@ -301,6 +301,242 @@ JSVal Runtime_ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+void DefinePropertiesImpl(Context* ctx,
+                          JSObject* obj,
+                          JSObject* props, Error* error) {
+  typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
+  Descriptors descriptors;
+  for (JSObject::Properties::const_iterator it = props->table().begin(),
+       last = props->table().end(); it != last; ++it) {
+    if (it->second.IsEnumerable()) {
+      const JSVal desc_obj = props->Get(ctx, it->first,
+                                        ERROR_VOID(error));
+      const PropertyDescriptor desc =
+          ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
+      descriptors.push_back(std::make_pair(it->first,desc));
+    }
+  }
+  for (Descriptors::const_iterator it = descriptors.begin(),
+       last = descriptors.end(); it != last; ++it) {
+    obj->DefineOwnProperty(ctx, it->first, it->second, true, ERROR_VOID(error));
+  }
+}
+
+// section 15.2.3.5 Object.create(O[, Properties])
+JSVal Runtime_ObjectCreate(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.create", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const res = JSObject::New(args.ctx());
+      JSObject* const obj = first.object();
+      res->set_prototype(obj);
+      if (args.size() > 1 && !args[1].IsUndefined()) {
+        JSObject* const props = args[1].ToObject(args.ctx(), ERROR(error));
+        DefinePropertiesImpl(args.ctx(), res, props, ERROR(error));
+      }
+      return res;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.create requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.6 Object.defineProperty(O, P, Attributes)
+JSVal Runtime_ObjectDefineProperty(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.defineProperty", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      Symbol name;
+      if (args.size() > 1) {
+        const JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
+        name = args.ctx()->Intern(str->value());
+      } else {
+        name = args.ctx()->Intern("undefined");
+      }
+      JSVal attr = JSUndefined;
+      if (args.size() > 2) {
+        attr = args[2];
+      }
+      const PropertyDescriptor desc = ToPropertyDescriptor(args.ctx(),
+                                                           attr,
+                                                           ERROR(error));
+      obj->DefineOwnProperty(args.ctx(), name, desc, true, ERROR(error));
+      return obj;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.defineProperty requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.7 Object.defineProperties(O, Properties)
+JSVal Runtime_ObjectDefineProperties(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.defineProperties", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      if (args.size() > 1) {
+        JSObject* const props = args[1].ToObject(args.ctx(), ERROR(error));
+        DefinePropertiesImpl(args.ctx(), obj, props, ERROR(error));
+        return obj;
+      } else {
+        // raise TypeError
+        JSVal(JSUndefined).ToObject(args.ctx(), ERROR(error));
+        return JSUndefined;
+      }
+    }
+  }
+  error->Report(Error::Type,
+                "Object.defineProperties requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.8 Object.seal(O)
+JSVal Runtime_ObjectSeal(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.seal", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      // TODO(Constellation) Enumerate Iterator Interface
+      // (such as Arguments.length)
+      for (JSObject::Properties::const_iterator it = obj->table().begin(),
+           last = obj->table().end(); it != last; ++it) {
+        PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+        if (desc.IsConfigurable()) {
+          desc.SetConfigurable(false);
+        }
+        obj->DefineOwnProperty(
+            args.ctx(), it->first, desc, true, ERROR(error));
+      }
+      obj->set_extensible(false);
+      return obj;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.seal requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.9 Object.freeze(O)
+JSVal Runtime_ObjectFreeze(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.freeze", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      // TODO(Constellation) Enumerate Iterator Interface
+      // (such as Arguments.length)
+      for (JSObject::Properties::const_iterator it = obj->table().begin(),
+           last = obj->table().end(); it != last; ++it) {
+        PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+        if (desc.IsDataDescriptor()) {
+          desc.SetWritable(false);
+        }
+        if (desc.IsConfigurable()) {
+          desc.SetConfigurable(false);
+        }
+        obj->DefineOwnProperty(
+            args.ctx(), it->first, desc, true, ERROR(error));
+      }
+      obj->set_extensible(false);
+      return obj;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.freeze requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.10 Object.preventExtensions(O)
+JSVal Runtime_ObjectPreventExtensions(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.preventExtensions", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      obj->set_extensible(false);
+      return obj;
+    }
+  }
+  error->Report(Error::Type,
+                "Object.preventExtensions requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.11 Object.isSealed(O)
+JSVal Runtime_ObjectIsSealed(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.isSealed", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      // TODO(Constellation) Enumerate Iterator Interface
+      // (such as Arguments.length)
+      for (JSObject::Properties::const_iterator it = obj->table().begin(),
+           last = obj->table().end(); it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+        if (desc.IsConfigurable()) {
+          return JSFalse;
+        }
+      }
+      return JSVal::Bool(!obj->IsExtensible());
+    }
+  }
+  error->Report(Error::Type,
+                "Object.isSealed requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.12 Object.isFrozen(O)
+JSVal Runtime_ObjectIsFrozen(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.isFrozen", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      // TODO(Constellation) Enumerate Iterator Interface
+      // (such as Arguments.length)
+      for (JSObject::Properties::const_iterator it = obj->table().begin(),
+           last = obj->table().end(); it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+        if (desc.IsDataDescriptor()) {
+          if (desc.IsWritable()) {
+            return JSFalse;
+          }
+        }
+        if (desc.IsConfigurable()) {
+          return JSFalse;
+        }
+      }
+      return JSVal::Bool(!obj->IsExtensible());
+    }
+  }
+  error->Report(Error::Type,
+                "Object.isFrozen requires Object argument");
+  return JSUndefined;
+}
+
+// section 15.2.3.13 Object.isExtensible(O)
+JSVal Runtime_ObjectIsExtensible(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.isExtensible", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const obj = first.object();
+      return JSVal::Bool(obj->IsExtensible());
+    }
+  }
+  error->Report(Error::Type,
+                "Object.isExtensible requires Object argument");
+  return JSUndefined;
+}
+
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
                                    Error* error) {
   CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
