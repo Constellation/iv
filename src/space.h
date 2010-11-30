@@ -53,8 +53,6 @@ class SpaceAllocator {
     : space_(alloc.space()) {
   }
 
-  ~SpaceAllocator() throw() {}
-
   inline pointer address(reference x) const {
     return &x;
   }
