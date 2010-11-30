@@ -33,8 +33,12 @@ JSVal Runtime_ObjectIsSealed(const Arguments& args, Error* error);
 JSVal Runtime_ObjectIsFrozen(const Arguments& args, Error* error);
 JSVal Runtime_ObjectIsExtensible(const Arguments& args, Error* error);
 JSVal Runtime_ObjectKeys(const Arguments& args, Error* error);
-JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
+JSVal Runtime_ObjectToLocaleString(const Arguments& args, Error* error);
+JSVal Runtime_ObjectValueOf(const Arguments& args, Error* error);
+JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
+JSVal Runtime_ObjectIsPrototypeOf(const Arguments& args, Error* error);
+JSVal Runtime_ObjectPropertyIsEnumerable(const Arguments& args, Error* error);
 
 JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error);
 JSVal Runtime_FunctionToString(const Arguments& args, Error* error);

@@ -313,7 +313,7 @@ void DefinePropertiesImpl(Context* ctx,
                                         ERROR_VOID(error));
       const PropertyDescriptor desc =
           ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
-      descriptors.push_back(std::make_pair(it->first,desc));
+      descriptors.push_back(std::make_pair(it->first, desc));
     }
   }
   for (Descriptors::const_iterator it = descriptors.begin(),
@@ -554,8 +554,9 @@ JSVal Runtime_ObjectKeys(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       // TODO(Constellation) Enumerate Iterator Interface
       // (such as Arguments.length)
-      const std::size_t n =
-          std::count_if(obj->table().begin(), obj->table().end(), IsEnumerable());
+      const std::size_t n = std::count_if(obj->table().begin(),
+                                          obj->table().end(),
+                                          IsEnumerable());
       JSArray* const ary = JSArray::New(args.ctx(), n);
       std::size_t index = 0;
       for (JSObject::Properties::const_iterator it = obj->table().begin(),
@@ -563,10 +564,11 @@ JSVal Runtime_ObjectKeys(const Arguments& args, Error* error) {
         if (it->second.IsEnumerable()) {
           JSString* const str = JSVal(index).ToString(args.ctx(), ERROR(error));
           ary->DefineOwnProperty(args.ctx(), args.ctx()->Intern(str->value()),
-                                 DataDescriptor(args.ctx()->ToString(it->first),
-                                                PropertyDescriptor::WRITABLE |
-                                                PropertyDescriptor::ENUMERABLE |
-                                                PropertyDescriptor::CONFIGURABLE),
+                                 DataDescriptor(
+                                     args.ctx()->ToString(it->first),
+                                     PropertyDescriptor::WRITABLE |
+                                     PropertyDescriptor::ENUMERABLE |
+                                     PropertyDescriptor::CONFIGURABLE),
                                  false, ERROR(error));
         }
       }
@@ -578,8 +580,51 @@ JSVal Runtime_ObjectKeys(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
-JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
-                                   Error* error) {
+// section 15.2.4.2 Object.prototype.toString()
+JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
+  std::string ascii;
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+  JSString* const cls = obj->cls();
+  assert(cls);
+  std::string str("[object ");
+  str.append(cls->begin(), cls->end());
+  str.append("]");
+  return JSString::NewAsciiString(args.ctx(), str.c_str());
+}
+
+// section 15.2.4.3 Object.prototype.toLocaleString()
+JSVal Runtime_ObjectToLocaleString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, error);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+  const JSVal toString = obj->Get(args.ctx(),
+                                  args.ctx()->toString_symbol(), ERROR(error));
+  if (!toString.IsCallable()) {
+    error->Report(Error::Type,
+                  "toString is not callable");
+    return JSUndefined;
+  }
+  Arguments arguments(args.ctx(), 0);
+  arguments.set_this_binding(obj);
+  return toString.object()->AsCallable()->Call(arguments, error);
+}
+
+// section 15.2.4.4 Object.prototype.valueOf()
+JSVal Runtime_ObjectValueOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, error);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+  if (obj->IsNativeObject()) {
+    return obj;
+  } else {
+    // 15.2.2.1 step 1.a.ii
+    // 15.2.4.4 step 2.a
+    // implementation dependent host object behavior
+    return JSUndefined;
+  }
+}
+
+// section 15.2.4.5 Object.prototype.hasOwnProperty(V)
+JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
   if (args.size() > 0) {
     const JSVal& val = args[0];
@@ -596,16 +641,42 @@ JSVal Runtime_ObjectHasOwnProperty(const Arguments& args,
   }
 }
 
-JSVal Runtime_ObjectToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
-  std::string ascii;
+// section 15.2.4.6 Object.prototype.isPrototypeOf(V)
+JSVal Runtime_ObjectIsPrototypeOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.isPrototypeOf", args, error);
+  if (args.size() > 0) {
+    const JSVal& first = args[0];
+    if (first.IsObject()) {
+      JSObject* const v = first.object();
+      JSObject* const obj =
+          args.this_binding().ToObject(args.ctx(), ERROR(error));
+      JSObject* proto = v->prototype();
+      while (proto) {
+        if (obj == proto) {
+          return JSTrue;
+        }
+      }
+    }
+  }
+  return JSFalse;
+}
+
+// section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
+JSVal Runtime_ObjectPropertyIsEnumerable(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, error);
+  Symbol name;
+  if (args.size() > 0) {
+    const JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    name = args.ctx()->Intern(str->value());
+  } else {
+    name = args.ctx()->Intern("undefined");
+  }
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
-  JSString* const cls = obj->cls();
-  assert(cls);
-  std::string str("[object ");
-  str.append(cls->begin(), cls->end());
-  str.append("]");
-  return JSString::NewAsciiString(args.ctx(), str.c_str());
+  const PropertyDescriptor desc = obj->GetOwnProperty(name);
+  if (desc.IsEmpty()) {
+    return JSFalse;
+  }
+  return JSVal::Bool(desc.IsEnumerable());
 }
 
 JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error) {

@@ -304,26 +304,58 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    {
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1);
-      obj_proto->DefineOwnProperty(
-          this, Intern("hasOwnProperty"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ObjectToString, 0);
-      obj_proto->DefineOwnProperty(
-          this, toString_symbol_,
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
+    // section 15.2.4.2 Object.prototype.toString()
+    obj_proto->DefineOwnProperty(
+        this, toString_symbol_,
+        DataDescriptor(JSNativeFunction::New(this, &Runtime_ObjectToString, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.4.3 Object.prototype.toLocaleString()
+    obj_proto->DefineOwnProperty(
+        this, Intern("toLocaleString"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectToLocaleString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.4.4 Object.prototype.valueOf()
+    obj_proto->DefineOwnProperty(
+        this, Intern("valueOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectValueOf, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
+    obj_proto->DefineOwnProperty(
+        this, Intern("hasOwnProperty"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
+    obj_proto->DefineOwnProperty(
+        this, Intern("isPrototypeOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectIsPrototypeOf, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
+    obj_proto->DefineOwnProperty(
+        this, Intern("propertyIsEnumerable"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectPropertyIsEnumerable, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
 
     global_obj_.DefineOwnProperty(
         this, obj_name,
