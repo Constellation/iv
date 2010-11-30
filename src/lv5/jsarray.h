@@ -18,6 +18,7 @@ class JSArray : public JSObject {
                          Error* res);
 
   static JSArray* New(Context* ctx);
+  static JSArray* New(Context* ctx, std::size_t n);
 
  private:
   std::size_t length_;

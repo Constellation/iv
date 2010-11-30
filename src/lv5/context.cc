@@ -291,6 +291,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.2.3.14 Object.keys(O)
+    obj_constructor->DefineOwnProperty(
+        this, Intern("keys"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_ObjectKeys, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     {
       JSNativeFunction* const func =
           JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1);

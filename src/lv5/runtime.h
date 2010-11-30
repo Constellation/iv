@@ -32,6 +32,7 @@ JSVal Runtime_ObjectPreventExtensions(const Arguments& args, Error* error);
 JSVal Runtime_ObjectIsSealed(const Arguments& args, Error* error);
 JSVal Runtime_ObjectIsFrozen(const Arguments& args, Error* error);
 JSVal Runtime_ObjectIsExtensible(const Arguments& args, Error* error);
+JSVal Runtime_ObjectKeys(const Arguments& args, Error* error);
 JSVal Runtime_ObjectHasOwnProperty(const Arguments& args, Error* error);
 JSVal Runtime_ObjectToString(const Arguments& args, Error* error);
 

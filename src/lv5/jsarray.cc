@@ -156,4 +156,12 @@ JSArray* JSArray::New(Context* ctx) {
   return ary;
 }
 
+JSArray* JSArray::New(Context* ctx, std::size_t n) {
+  JSArray* const ary = new JSArray(ctx, n);
+  const Class& cls = ctx->Cls("Array");
+  ary->set_cls(cls.name);
+  ary->set_prototype(cls.prototype);
+  return ary;
+}
+
 } }  // namespace iv::lv5
