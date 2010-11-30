@@ -27,7 +27,7 @@ JSArguments* JSArguments::New(Context* ctx,
                          DataDescriptor(len,
                                         PropertyDescriptor::WRITABLE |
                                         PropertyDescriptor::CONFIGURABLE),
-                         false, NULL);
+                         false, ctx->error());
   std::size_t index = len - 1;
   std::tr1::array<char, std::numeric_limits<std::size_t>::digits10 + 1> buf;
   for (Arguments::const_reverse_iterator it = args.rbegin(),
@@ -41,7 +41,7 @@ JSArguments* JSArguments::New(Context* ctx,
                                           PropertyDescriptor::WRITABLE |
                                           PropertyDescriptor::ENUMERABLE |
                                           PropertyDescriptor::CONFIGURABLE),
-                           false, NULL);
+                           false, ctx->error());
     if (index < names_len) {
       if (!strict) {
         obj->map_.insert(
@@ -56,18 +56,18 @@ JSArguments* JSArguments::New(Context* ctx,
                            AccessorDescriptor(throw_type_error,
                                               throw_type_error,
                                               PropertyDescriptor::NONE),
-                           false, NULL);
+                           false, ctx->error());
     obj->DefineOwnProperty(ctx, ctx->callee_symbol(),
                            AccessorDescriptor(throw_type_error,
                                               throw_type_error,
                                               PropertyDescriptor::NONE),
-                           false, NULL);
+                           false, ctx->error());
   } else {
     obj->DefineOwnProperty(ctx, ctx->callee_symbol(),
                            DataDescriptor(code,
                                           PropertyDescriptor::WRITABLE |
                                           PropertyDescriptor::CONFIGURABLE),
-                           false, NULL);
+                           false, ctx->error());
   }
   return obj;
 }
@@ -112,7 +112,7 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
                                     bool th,
                                     Error* error) {
   const bool allowed = JSObject::DefineOwnProperty(ctx, name,
-                                                   desc, false, NULL);
+                                                   desc, false, ctx->error());
   if (!allowed) {
     if (th) {
       error->Report(Error::Type,

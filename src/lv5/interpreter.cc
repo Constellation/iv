@@ -1095,20 +1095,12 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         JSObject* const obj = ref->base()->ToObject(ctx_, CHECK);
         const bool result = obj->Delete(ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
-        if (result) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        ctx_->Return(JSVal::Bool(result));
       } else {
         assert(ref->base()->IsEnvironment());
         const bool res = ref->base()->environment()->DeleteBinding(
             ref->GetReferencedName());
-        if (res) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        ctx_->Return(JSVal::Bool(res));
       }
       return;
     }
@@ -1212,11 +1204,11 @@ void Interpreter::Visit(const PostfixExpression* postfix) {
   // so, this path is not used in interpreter.
   // (section 11.3.1 step2, 11.3.2 step2)
   const JSVal old = GetValue(lref, CHECK);
-  const double& value = old.ToNumber(ctx_, CHECK);
+  const double value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
       ((postfix->op() == core::Token::INC) ? 1 : -1);
   PutValue(lref, new_value, CHECK);
-  ctx_->Return(old);
+  ctx_->Return(value);
 }
 
 

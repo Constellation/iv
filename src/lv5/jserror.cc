@@ -10,7 +10,7 @@ JSError::JSError(Context* ctx, Error::Code code, JSString* str)
   DefineOwnProperty(ctx, ctx->Intern("message"),
                          DataDescriptor(str,
                                         PropertyDescriptor::WRITABLE),
-                                        false, NULL);
+                                        false, ctx->error());
 }
 
 JSError* JSError::New(Context* ctx, Error::Code code, JSString* str) {

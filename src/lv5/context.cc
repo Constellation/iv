@@ -27,8 +27,8 @@ const std::string constructor_string("constructor");
 class ScriptScope : private core::Noncopyable<ScriptScope>::type {
  public:
   ScriptScope(Context* ctx, JSScript* script)
-   : ctx_(ctx),
-     prev_(ctx->current_script()) {
+    : ctx_(ctx),
+      prev_(ctx->current_script()) {
     ctx_->set_current_script(script);
   }
   ~ScriptScope() {
@@ -69,10 +69,13 @@ Context::Context()
     prototype_symbol_(Intern(prototype_string)),
     constructor_symbol_(Intern(constructor_string)),
     current_script_(NULL) {
-  JSEnv* env = Interpreter::NewObjectEnvironment(this, &global_obj_, NULL);
+  JSObjectEnv* const env = Interpreter::NewObjectEnvironment(this,
+                                                             &global_obj_,
+                                                             NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
+  env->set_provide_this(true);
   interp_.set_context(this);
   // discard random
   for (std::size_t i = 0; i < 20; ++i) {
@@ -196,7 +199,8 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getOwnPropertyDescriptor"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectGetOwnPropertyDescriptor, 2),
+            JSNativeFunction::New(this,
+                                  &Runtime_ObjectGetOwnPropertyDescriptor, 2),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -774,7 +778,8 @@ void Context::Initialize() {
       // section 15.11.6.3 ReferenceError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_ReferenceErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this,
+                                     &Runtime_ReferenceErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1213,9 +1218,10 @@ void Context::Initialize() {
     // section 15.1.2.3 parseFloat(string)
     global_obj_.DefineOwnProperty(
         this, Intern("parseFloat"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.4 isNaN(number)
     global_obj_.DefineOwnProperty(

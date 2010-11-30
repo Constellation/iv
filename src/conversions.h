@@ -407,8 +407,8 @@ inline int32_t DoubleToInt32(double d) {
                               d - Conversions::DoubleToInt32_Two32 : d);
 }
 
-inline int32_t DoubleToUInt32(double d) {
-  return static_cast<uint32_t>(d);
+inline uint32_t DoubleToUInt32(double d) {
+  return static_cast<uint32_t>(DoubleToInt32(d));
 }
 
 inline double DoubleToInteger(double d) {

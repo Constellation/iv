@@ -21,7 +21,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
                               DataDescriptor(0.0,
                                              PropertyDescriptor::WRITABLE),
-                                             false, NULL);
+                                             false, ctx->error());
 }
 
 #define REJECT(str)\
