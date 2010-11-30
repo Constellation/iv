@@ -56,9 +56,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
-        if (th) {
-          res->Report(Error::Range, "out of range");
-        }
+        res->Report(Error::Range, "out of range");
         return false;
       }
       double old_len = len_value.ToNumber(ctx, res);
