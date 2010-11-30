@@ -710,6 +710,14 @@ JSVal Runtime_FunctionToString(const Arguments& args,
   return JSUndefined;
 }
 
+// section 15.4.1.1 Array([item0 [, item1 [, ...]]])
+// section 15.4.2.1 new Array([item0 [, item1 [, ...]]])
+// section 15.4.2.2 new Array(len)
+JSVal Runtime_ArrayConstructor(const Arguments& args, Error* error) {
+// TODO(Constellation) this is mock function
+  return JSArray::New(args.ctx());
+}
+
 JSVal Runtime_ErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = ErrorMessageString(args, ERROR(error));
   return JSError::New(args.ctx(), Error::User, message);

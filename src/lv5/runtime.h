@@ -43,6 +43,8 @@ JSVal Runtime_ObjectPropertyIsEnumerable(const Arguments& args, Error* error);
 JSVal Runtime_FunctionPrototype(const Arguments& args, Error* error);
 JSVal Runtime_FunctionToString(const Arguments& args, Error* error);
 
+JSVal Runtime_ArrayConstructor(const Arguments& args, Error* error);
+
 JSVal Runtime_ErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_NativeErrorConstructor(const Arguments& args, Error* error);
 JSVal Runtime_EvalErrorConstructor(const Arguments& args, Error* error);

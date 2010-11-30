@@ -367,16 +367,41 @@ void Context::Initialize() {
 
   {
     // Array
+    // TODO(Constellation) more
     JSObject* const proto = JSObject::NewPlain(this);
+    // section 15.4.2 The Array Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::NewPlain(this, &Runtime_ArrayConstructor, 1);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
+
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
       JSString::NewAsciiString(this, "Array"),
-      NULL,
+      constructor,
       proto
     };
     proto->set_cls(cls.name);
+
     const Symbol name = Intern("Array");
     builtins_[name] = cls;
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
