@@ -10,7 +10,7 @@ directory "ext/include/iv"
 
 HOE = Hoe.spec 'iv-phonic' do
   developer('Constellation', 'utatane.tea@gmail.com')
-  self.version = '0.0.5'
+  self.version = '0.0.6'
   self.readme_file = 'README.rdoc'
   self.history_file = 'ChangeLog'
   self.extra_rdoc_files = FileList['*.rdoc']
