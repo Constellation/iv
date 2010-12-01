@@ -655,6 +655,7 @@ JSVal Runtime_ObjectIsPrototypeOf(const Arguments& args, Error* error) {
         if (obj == proto) {
           return JSTrue;
         }
+        proto = proto->prototype();
       }
     }
   }
