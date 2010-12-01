@@ -1,8 +1,10 @@
 #ifndef _IV_PHONIC_ENCODING_H_
 #define _IV_PHONIC_ENCODING_H_
+extern "C" {
 #include <ruby.h>
 #include <ruby/encoding.h>
 #include <ruby/intern.h>
+}
 namespace iv {
 namespace phonic {
 

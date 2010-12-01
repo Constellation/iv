@@ -4,7 +4,6 @@
 #include <cassert>
 #include <string>
 #include <tr1/cstdint>
-#include <ruby.h>
 #include <iv/stringpiece.h>
 #include <iv/ustring.h>
 #include <iv/none.h>

@@ -1,6 +1,8 @@
 #ifndef _IV_PHONIC_CREATOR_H_
 #define _IV_PHONIC_CREATOR_H_
+extern "C" {
 #include <ruby.h>
+}
 #include <iv/ast-visitor.h>
 #include <iv/utils.h>
 #include "factory.h"

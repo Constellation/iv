@@ -1,8 +1,10 @@
 #ifndef _IV_PHONIC_FACTORY_H_
 #define _IV_PHONIC_FACTORY_H_
 #include <tr1/array>
+extern "C" {
 #include <ruby.h>
 #include <ruby/oniguruma.h>
+}
 #include <iv/alloc.h>
 #include <iv/ustringpiece.h>
 #include "encoding.h"
