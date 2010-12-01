@@ -146,8 +146,13 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     if (!extensible_) {
       REJECT("object not extensible");
     } else {
-      assert(desc.IsDataDescriptor() || desc.IsAccessorDescriptor());
-      table_[name] = desc.SetDefaultToAbsent();
+      if (!desc.IsAccessorDescriptor()) {
+        assert(desc.IsDataDescriptor() || desc.IsEmpty());
+        table_[name] = desc.SetDefaultToAbsent();
+      } else {
+        assert(desc.IsAccessorDescriptor());
+        table_[name] = desc.SetDefaultToAbsent();
+      }
       return true;
     }
   }

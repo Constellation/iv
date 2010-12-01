@@ -168,6 +168,10 @@ class PropertyDescriptor {
     if (IsWritableAbsent()) {
       result.SetWritable(false);
     }
+    if (IsEmpty()) {
+      result.SetData();
+      result.value_.data_ = JSVal(JSUndefined).Layout();
+    }
     return result;
   }
 
@@ -241,6 +245,14 @@ class PropertyDescriptor {
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
+  }
+
+  inline void SetData() {
+    attrs_ = (attrs_ & ~EMPTY) | DATA;
+  }
+
+  inline void SetAccessor() {
+    attrs_ = (attrs_ & ~EMPTY) | ACCESSOR;
   }
 
   int attrs_;
