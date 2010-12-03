@@ -14,6 +14,10 @@ namespace detail {
 
 static const double kMathInfinity = std::numeric_limits<double>::infinity();
 
+static inline bool IsInfinity(double val) {
+  return !std::isfinite(val) && !std::isnan(val);
+}
+
 }  // namespace iv::lv5::runtime::detail
 
 inline JSVal MathAbs(const Arguments& args, Error* error) {
@@ -142,7 +146,14 @@ inline JSVal MathPow(const Arguments& args, Error* error) {
   if (args.size() > 1) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
     const double y = args[1].ToNumber(args.ctx(), ERROR(error));
-    return std::pow(x, y);
+    if (y == 0) {
+      return 1.0;
+    } else if (std::isnan(y) ||
+               ((x == 1 || x == -1) && detail::IsInfinity(y))) {
+      return JSNaN;
+    } else {
+      return std::pow(x, y);
+    }
   }
   return JSNaN;
 }
