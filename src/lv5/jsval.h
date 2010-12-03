@@ -198,20 +198,65 @@ class JSVal {
   static const uint32_t kHighestTag     = kTrueTag;
   static const uint32_t kLowestTag      = kNumberTag;
 
-  JSVal();
+  JSVal()
+    : value_() {
+    set_undefined();
+  }
+
   JSVal(const JSVal& rhs)
     : value_(rhs.value_) {
   }
-  JSVal(const double& val);  // NOLINT
-  JSVal(JSObject* val);  // NOLINT
-  JSVal(JSString* val);  // NOLINT
-  JSVal(JSReference* val);  // NOLINT
-  JSVal(JSEnv* val);  // NOLINT
-  JSVal(JSTrueKeywordType val);  // NOLINT
-  JSVal(JSFalseKeywordType val);  // NOLINT
-  JSVal(JSNullKeywordType val);  // NOLINT
-  JSVal(JSUndefinedKeywordType val);  // NOLINT
-  JSVal(JSEmptyKeywordType val);  // NOLINT
+
+  JSVal(const double& val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSObject* val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSString* val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSReference* val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSEnv* val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSTrueKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSFalseKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSNullKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSUndefinedKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
+  JSVal(JSEmptyKeywordType val)  // NOLINT
+    : value_() {
+    set_value(val);
+  }
+
   JSVal(JSNaNKeywordType val)  // NOLINT
     : value_() {
     set_value(val);
