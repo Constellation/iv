@@ -106,16 +106,16 @@ class SpaceAllocator {
   Factory* space_;
 };
 
-template <typename Factory, typename T, typename U>
+template <typename Factory, typename T>
 bool operator==(const SpaceAllocator<Factory, T>& lhs,
-                const SpaceAllocator<Factory, U>& rhs) {
-  return lhs.space() == rhs.space();
+                const SpaceAllocator<Factory, T>& rhs) {
+  return true;
 }
 
-template <typename Factory, typename T, typename U>
+template <typename Factory, typename T>
 bool operator!=(const SpaceAllocator<Factory, T>& lhs,
-                const SpaceAllocator<Factory, U>& rhs) {
-  return lhs.space() != rhs.space();
+                const SpaceAllocator<Factory, T>& rhs) {
+  return false;
 }
 
 template<typename Factory, typename T>
