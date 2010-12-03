@@ -63,7 +63,7 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
 JSVal JSCodeFunction::Call(
     const Arguments& args,
     Error* error) {
-  Interpreter* const interp = args.interpreter();
+  Interpreter* const interp = args.ctx()->interp();
   Context* const ctx = args.ctx();
   interp->CallCode(this, args, error);
   if (ctx->mode() == Context::RETURN) {

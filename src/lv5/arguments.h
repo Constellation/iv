@@ -51,26 +51,51 @@ class Arguments : private core::Noncopyable<Arguments>::type {
   reference operator[](size_type n) { return args_[n]; }
   const_reference operator[](size_type n) const { return args_[n]; }
 
-  explicit Arguments(Context* ctx);
-  Arguments(Context* ctx, std::size_t n);
-  Arguments(Context* ctx, const JSVal& this_binding);
+  explicit Arguments(Context* ctx)
+    : ctx_(ctx),
+      this_binding_(),
+      args_(),
+      constructor_call_(false) {
+  }
+
+  Arguments(Context* ctx, const JSVal& this_binding)
+    : ctx_(ctx),
+      this_binding_(this_binding),
+      args_(),
+      constructor_call_(false) {
+  }
+
+  Arguments(Context* ctx, std::size_t n)
+    : ctx_(ctx),
+      this_binding_(),
+      args_(n),
+      constructor_call_(false) {
+  }
+
   inline const JSVals& args() const {
     return args_;
   }
+
   inline void push_back(const JSVal& val) {
     args_.push_back(val);
   }
-  Interpreter* interpreter() const;
-  Context* ctx() const;
+
+  Context* ctx() const {
+    return ctx_;
+  }
+
   inline JSVal this_binding() const {
     return this_binding_;
   }
+
   inline void set_this_binding(const JSVal& binding) {
     this_binding_ = binding;
   }
+
   inline void set_constructor_call(bool val) {
     constructor_call_ = val;
   }
+
   inline bool IsConstructorCalled() const {
     return constructor_call_;
   }
