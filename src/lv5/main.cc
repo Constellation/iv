@@ -15,7 +15,7 @@
 #include "cmdline.h"
 #include "ast.h"
 
-#include "ast-serializer.h"
+#include "ast_serializer.h"
 
 #include "parser.h"
 #include "factory.h"
