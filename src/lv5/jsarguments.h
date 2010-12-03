@@ -6,7 +6,6 @@
 #include "arguments.h"
 #include "gc-template.h"
 #include "jsfunction.h"
-#include "factory.h"
 namespace iv {
 namespace lv5 {
 
@@ -14,6 +13,7 @@ class Context;
 class JSObject;
 class Error;
 class JSDeclEnv;
+class AstFactory;
 class JSArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;

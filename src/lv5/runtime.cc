@@ -6,6 +6,7 @@
 #include "jserror.h"
 #include "jsarray.h"
 #include "runtime.h"
+#include "factory.h"
 #include "context.h"
 #include "eval-source.h"
 #include "parser.h"

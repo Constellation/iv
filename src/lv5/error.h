@@ -37,10 +37,31 @@ class Error {
       detail_(rhs.detail_) {
   }
 
-  void Report(Code code, const core::StringPiece& str);
-  void Report(const JSVal& val);
-  void Clear();
-  JSVal Detail(Context* ctx) const;
+  void Report(Code code, const core::StringPiece& str) {
+    code_ = code;
+    str.CopyToString(&detail_);
+  }
+
+  void Report(const JSVal& val) {
+    code_ = User;
+    value_ = val;
+  }
+
+  void Clear() {
+    code_ = Normal;
+  }
+
+  Code code() const {
+    return code_;
+  }
+
+  const std::string detail() const {
+    return detail_;
+  }
+
+  const JSVal& value() const {
+    return value_;
+  }
 
   operator bool_type() const {
     return code_ != Normal ?

@@ -21,6 +21,38 @@ JSError* JSError::New(Context* ctx, Error::Code code, JSString* str) {
   return error;
 }
 
+JSVal JSError::Detail(Context* ctx, const Error* error) {
+  assert(error && (error->code() != Error::Normal));
+  switch (error->code()) {
+    case Error::Native:
+      return JSError::NewNativeError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::Eval:
+      return JSError::NewEvalError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::Range:
+      return JSError::NewRangeError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::Reference:
+      return JSError::NewReferenceError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::Syntax:
+      return JSError::NewSyntaxError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::Type:
+      return JSError::NewTypeError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::URI:
+      return JSError::NewURIError(
+          ctx, JSString::NewAsciiString(ctx, error->detail()));
+    case Error::User:
+      return error->value();
+    default:
+      UNREACHABLE();
+      return JSUndefined;  // make compiler happy
+  };
+}
+
 JSError* JSError::NewNativeError(Context* ctx, JSString* str) {
   JSError* const error = new JSError(ctx, Error::Native, str);
   const Class& cls = ctx->Cls("NativeError");

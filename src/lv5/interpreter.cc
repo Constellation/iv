@@ -640,7 +640,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
   stmt->body()->Accept(this);  // evaluate with no error check
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
     if (stmt->catch_block()) {
-      const JSVal ex = ctx_->error()->Detail(ctx_);
+      const JSVal ex = ctx_->ErrorVal();
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();

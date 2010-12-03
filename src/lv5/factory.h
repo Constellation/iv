@@ -6,6 +6,7 @@
 #include "ast-factory.h"
 #include "location.h"
 #include "ustringpiece.h"
+#include "context.h"
 #include "jsast.h"
 
 namespace iv {
@@ -51,7 +52,9 @@ class AstFactory
     }
   }
  private:
-  Symbol Intern(const Identifier& ident);
+  Symbol Intern(const Identifier& ident) {
+    return ctx_->Intern(ident.value());
+  }
   Context* ctx_;
   DestReqs regexps_;
 };

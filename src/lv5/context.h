@@ -19,7 +19,6 @@
 #include "error.h"
 #include "jsast.h"
 #include "jsscript.h"
-#include "factory.h"
 #include "gc-template.h"
 
 namespace iv {

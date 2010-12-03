@@ -10,6 +10,7 @@
 #include "runtime.h"
 #include "jsast.h"
 #include "jsscript.h"
+#include "jserror.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -126,7 +127,7 @@ bool Context::Run(JSScript* script) {
 }
 
 JSVal Context::ErrorVal() {
-  return error_.Detail(this);
+  return JSError::Detail(this, &error_);
 }
 
 void Context::Initialize() {

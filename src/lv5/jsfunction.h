@@ -6,7 +6,6 @@
 #include "arguments.h"
 #include "ustringpiece.h"
 #include "jsast.h"
-#include "factory.h"
 namespace iv {
 namespace lv5 {
 
