@@ -8,7 +8,7 @@
 #include "context.h"
 #include "arguments.h"
 #include "jsscript.h"
-#include "runtime.h"
+
 namespace iv {
 namespace lv5 {
 

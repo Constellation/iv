@@ -8,7 +8,7 @@
 #include <tr1/type_traits>
 #include "static_assert.h"
 #include "ast.h"
-#include "ast-factory.h"
+#include "ast_factory.h"
 #include "lexer.h"
 #include "noncopyable.h"
 #include "utils.h"

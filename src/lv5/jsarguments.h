@@ -4,7 +4,7 @@
 #include "symbol.h"
 #include "property.h"
 #include "arguments.h"
-#include "gc-template.h"
+#include "gc_template.h"
 #include "jsfunction.h"
 namespace iv {
 namespace lv5 {

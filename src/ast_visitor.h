@@ -2,7 +2,7 @@
 #define _IV_AST_VISITOR_H_
 #include <tr1/type_traits>
 #include "noncopyable.h"
-#include "ast-fwd.h"
+#include "ast_fwd.h"
 
 namespace iv {
 namespace core {

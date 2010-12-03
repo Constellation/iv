@@ -3,7 +3,7 @@
 #include <vector>
 #include "symbol.h"
 #include "alloc.h"
-#include "ast-factory.h"
+#include "ast_factory.h"
 #include "location.h"
 #include "ustringpiece.h"
 #include "context.h"

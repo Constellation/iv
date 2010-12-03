@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_JSARRAY_H_
 #define _IV_LV5_JSARRAY_H_
-#include "gc-template.h"
+#include "gc_template.h"
 #include "jsobject.h"
 namespace iv {
 namespace lv5 {

@@ -19,7 +19,7 @@
 #include "error.h"
 #include "jsast.h"
 #include "jsscript.h"
-#include "gc-template.h"
+#include "gc_template.h"
 
 namespace iv {
 namespace lv5 {

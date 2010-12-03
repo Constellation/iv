@@ -1,6 +1,6 @@
 #ifndef IV_LV5_INTERPRETER_H_
 #define IV_LV5_INTERPRETER_H_
-#include "ast-visitor.h"
+#include "ast_visitor.h"
 #include "noncopyable.h"
 #include "ast.h"
 #include "utils.h"

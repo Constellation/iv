@@ -3,7 +3,7 @@
 #include "jsobject.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "jsregexp-impl.h"
+#include "jsregexp_impl.h"
 namespace iv {
 namespace lv5 {
 

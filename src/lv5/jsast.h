@@ -2,7 +2,7 @@
 #define _IV_LV5_JSAST_H_
 #include <vector>
 #include "uchar.h"
-#include "jsregexp-impl.h"
+#include "jsregexp_impl.h"
 #include "ast.h"
 #include "symbol.h"
 

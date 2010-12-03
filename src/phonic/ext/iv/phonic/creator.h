@@ -3,7 +3,7 @@
 extern "C" {
 #include <ruby.h>
 }
-#include <iv/ast-visitor.h>
+#include <iv/ast_visitor.h>
 #include <iv/utils.h>
 #include "factory.h"
 #include "encoding.h"

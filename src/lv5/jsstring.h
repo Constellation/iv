@@ -7,7 +7,7 @@
 #include "conversions.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "gc-template.h"
+#include "gc_template.h"
 #include "ustring.h"
 #include "icu/uconv.h"
 #include "icu/ustream.h"

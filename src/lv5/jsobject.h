@@ -5,7 +5,7 @@
 #include "property.h"
 #include "hint.h"
 #include "jsstring.h"
-#include "gc-template.h"
+#include "gc_template.h"
 #include "symbol.h"
 
 namespace iv {

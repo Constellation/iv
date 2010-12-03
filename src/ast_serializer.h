@@ -6,7 +6,7 @@
 #include <tr1/tuple>
 #include "uchar.h"
 #include "ast.h"
-#include "ast-visitor.h"
+#include "ast_visitor.h"
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"

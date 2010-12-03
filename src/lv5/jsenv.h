@@ -2,7 +2,7 @@
 #define _IV_LV5_JSENV_H_
 #include <cassert>
 #include <gc/gc_cpp.h>
-#include "gc-template.h"
+#include "gc_template.h"
 #include "jsval.h"
 #include "jsobject.h"
 #include "symbol.h"

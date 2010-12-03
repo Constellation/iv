@@ -8,7 +8,7 @@ extern "C" {
 #include <iv/alloc.h>
 #include <iv/ustringpiece.h>
 #include "encoding.h"
-#include "ast-fwd.h"
+#include "ast_fwd.h"
 namespace iv {
 namespace phonic {
 
