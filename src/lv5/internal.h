@@ -4,11 +4,13 @@
 #include "jsval.h"
 #include "jsobject.h"
 #include "context.h"
+#include "error.h"
 #include "lv5.h"
 namespace iv {
 namespace lv5 {
 
-JSVal FromPropertyDescriptor(Context* ctx, const PropertyDescriptor& desc) {
+inline JSVal FromPropertyDescriptor(Context* ctx,
+                                    const PropertyDescriptor& desc) {
   if (desc.IsEmpty()) {
     return JSUndefined;
   }
@@ -66,8 +68,9 @@ JSVal FromPropertyDescriptor(Context* ctx, const PropertyDescriptor& desc) {
   return obj;
 }
 
-PropertyDescriptor ToPropertyDescriptor(Context* ctx,
-                                        const JSVal& target, Error* error) {
+inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
+                                               const JSVal& target,
+                                               Error* error) {
   if (!target.IsObject()) {
     error->Report(Error::Type,
                   "ToPropertyDescriptor requires Object argument");
@@ -85,7 +88,8 @@ PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool enumerable = r.ToBoolean(ERROR(error));
       if (enumerable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) | PropertyDescriptor::ENUMERABLE;
+        attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
+            PropertyDescriptor::ENUMERABLE;
       }
     }
   }
@@ -96,7 +100,8 @@ PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool configurable = r.ToBoolean(ERROR(error));
       if (configurable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) | PropertyDescriptor::CONFIGURABLE;
+        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) |
+            PropertyDescriptor::CONFIGURABLE;
       }
     }
   }
@@ -115,7 +120,8 @@ PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool writable = r.ToBoolean(ERROR(error));
       if (writable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE) | PropertyDescriptor::WRITABLE;
+        attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE) |
+            PropertyDescriptor::WRITABLE;
       }
     }
   }

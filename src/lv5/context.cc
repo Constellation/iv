@@ -136,7 +136,7 @@ void Context::Initialize() {
 
   // Function
   JSNativeFunction* const func_proto =
-      JSNativeFunction::NewPlain(this, &Runtime_FunctionPrototype, 0);
+      JSNativeFunction::NewPlain(this, &runtime::FunctionPrototype, 0);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
     JSString::NewAsciiString(this, "Function"),
@@ -149,7 +149,7 @@ void Context::Initialize() {
 
   // section 15.2.2
   JSNativeFunction* const obj_constructor =
-      JSNativeFunction::NewPlain(this, &Runtime_ObjectConstructor, 1);
+      JSNativeFunction::NewPlain(this, &runtime::ObjectConstructor, 1);
 
   struct Class obj_cls = {
     JSString::NewAsciiString(this, "Object"),
@@ -175,7 +175,7 @@ void Context::Initialize() {
       false, NULL);
   {
     JSNativeFunction* const func =
-        JSNativeFunction::New(this, &Runtime_FunctionToString, 0);
+        JSNativeFunction::New(this, &runtime::FunctionToString, 0);
     func_proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(func,
@@ -191,7 +191,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getPrototypeOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectGetPrototypeOf, 1),
+            JSNativeFunction::New(this, &runtime::ObjectGetPrototypeOf, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -201,7 +201,7 @@ void Context::Initialize() {
         this, Intern("getOwnPropertyDescriptor"),
         DataDescriptor(
             JSNativeFunction::New(this,
-                                  &Runtime_ObjectGetOwnPropertyDescriptor, 2),
+                                  &runtime::ObjectGetOwnPropertyDescriptor, 2),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -210,7 +210,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getOwnPropertyNames"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectGetOwnPropertyNames, 1),
+            JSNativeFunction::New(this, &runtime::ObjectGetOwnPropertyNames, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -219,7 +219,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("create"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectCreate, 2),
+            JSNativeFunction::New(this, &runtime::ObjectCreate, 2),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -228,7 +228,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("defineProperty"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectDefineProperty, 3),
+            JSNativeFunction::New(this, &runtime::ObjectDefineProperty, 3),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -237,7 +237,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("defineProperties"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectDefineProperties, 2),
+            JSNativeFunction::New(this, &runtime::ObjectDefineProperties, 2),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -246,7 +246,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("seal"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectSeal, 1),
+            JSNativeFunction::New(this, &runtime::ObjectSeal, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -255,7 +255,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("freeze"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectFreeze, 1),
+            JSNativeFunction::New(this, &runtime::ObjectFreeze, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -264,7 +264,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("preventExtensions"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectPreventExtensions, 1),
+            JSNativeFunction::New(this, &runtime::ObjectPreventExtensions, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -273,7 +273,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isSealed"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectIsSealed, 1),
+            JSNativeFunction::New(this, &runtime::ObjectIsSealed, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -282,7 +282,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isFrozen"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectIsFrozen, 1),
+            JSNativeFunction::New(this, &runtime::ObjectIsFrozen, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -291,7 +291,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isExtensible"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectIsExtensible, 1),
+            JSNativeFunction::New(this, &runtime::ObjectIsExtensible, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -300,7 +300,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("keys"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectKeys, 1),
+            JSNativeFunction::New(this, &runtime::ObjectKeys, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -308,7 +308,7 @@ void Context::Initialize() {
     // section 15.2.4.2 Object.prototype.toString()
     obj_proto->DefineOwnProperty(
         this, toString_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_ObjectToString, 0),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::ObjectToString, 0),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -317,7 +317,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectToLocaleString, 0),
+            JSNativeFunction::New(this, &runtime::ObjectToLocaleString, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -326,7 +326,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("valueOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectValueOf, 0),
+            JSNativeFunction::New(this, &runtime::ObjectValueOf, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -335,7 +335,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("hasOwnProperty"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectHasOwnProperty, 1),
+            JSNativeFunction::New(this, &runtime::ObjectHasOwnProperty, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -344,7 +344,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("isPrototypeOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectIsPrototypeOf, 1),
+            JSNativeFunction::New(this, &runtime::ObjectIsPrototypeOf, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -353,7 +353,8 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("propertyIsEnumerable"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_ObjectPropertyIsEnumerable, 1),
+            JSNativeFunction::New(
+                this, &runtime::ObjectPropertyIsEnumerable, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -372,7 +373,7 @@ void Context::Initialize() {
     JSObject* const proto = JSObject::NewPlain(this);
     // section 15.4.2 The Array Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &Runtime_ArrayConstructor, 1);
+        JSNativeFunction::NewPlain(this, &runtime::ArrayConstructor, 1);
     constructor->set_cls(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -412,7 +413,7 @@ void Context::Initialize() {
 
     // section 15.5.2 The String Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &Runtime_StringConstructor, 1);
+        JSNativeFunction::NewPlain(this, &runtime::StringConstructor, 1);
     constructor->set_cls(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -448,7 +449,7 @@ void Context::Initialize() {
     constructor->DefineOwnProperty(
         this, Intern("fromCharCode"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_StringFromCharCode, 1),
+            JSNativeFunction::New(this, &runtime::StringFromCharCode, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -456,7 +457,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.2 String.prototype.toString()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringToString, 0);
+          JSNativeFunction::New(this, &runtime::StringToString, 0);
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -467,7 +468,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.3 String.prototype.valueOf()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringValueOf, 0);
+          JSNativeFunction::New(this, &runtime::StringValueOf, 0);
       proto->DefineOwnProperty(
           this, valueOf_symbol_,
           DataDescriptor(func,
@@ -478,7 +479,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.4 String.prototype.charAt(pos)
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringCharAt, 1);
+          JSNativeFunction::New(this, &runtime::StringCharAt, 1);
       proto->DefineOwnProperty(
           this, Intern("charAt"),
           DataDescriptor(func,
@@ -489,7 +490,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.5 String.prototype.charCodeAt(pos)
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringCharCodeAt, 1);
+          JSNativeFunction::New(this, &runtime::StringCharCodeAt, 1);
       proto->DefineOwnProperty(
           this, Intern("charCodeAt"),
           DataDescriptor(func,
@@ -500,7 +501,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringConcat, 1);
+          JSNativeFunction::New(this, &runtime::StringConcat, 1);
       proto->DefineOwnProperty(
           this, Intern("concat"),
           DataDescriptor(func,
@@ -511,7 +512,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.7 String.prototype.indexOf(searchString, position)
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringIndexOf, 1);
+          JSNativeFunction::New(this, &runtime::StringIndexOf, 1);
       proto->DefineOwnProperty(
           this, Intern("indexOf"),
           DataDescriptor(func,
@@ -522,7 +523,7 @@ void Context::Initialize() {
     {
       // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_StringLastIndexOf, 1);
+          JSNativeFunction::New(this, &runtime::StringLastIndexOf, 1);
       proto->DefineOwnProperty(
           this, Intern("lastIndexOf"),
           DataDescriptor(func,
@@ -538,7 +539,7 @@ void Context::Initialize() {
 
     // section 15.5.2 The Boolean Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &Runtime_BooleanConstructor, 1);
+        JSNativeFunction::NewPlain(this, &runtime::BooleanConstructor, 1);
     constructor->set_cls(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -572,7 +573,7 @@ void Context::Initialize() {
     {
       // section 15.6.4.2 Boolean.prototype.toString()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_BooleanToString, 0);
+          JSNativeFunction::New(this, &runtime::BooleanToString, 0);
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -583,7 +584,7 @@ void Context::Initialize() {
     {
       // section 15.6.4.3 Boolean.prototype.valueOf()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_BooleanValueOf, 0);
+          JSNativeFunction::New(this, &runtime::BooleanValueOf, 0);
       proto->DefineOwnProperty(
           this, valueOf_symbol_,
           DataDescriptor(func,
@@ -599,7 +600,7 @@ void Context::Initialize() {
 
     // section 15.7.3 The Number Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &Runtime_NumberConstructor, 1);
+        JSNativeFunction::NewPlain(this, &runtime::NumberConstructor, 1);
     constructor->set_cls(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -671,7 +672,7 @@ void Context::Initialize() {
     {
       // section 15.7.4.2 Number.prototype.toString([radix])
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_NumberToString, 1);
+          JSNativeFunction::New(this, &runtime::NumberToString, 1);
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -682,7 +683,7 @@ void Context::Initialize() {
     {
       // section 15.7.4.4 Number.prototype.toString([radix])
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_NumberValueOf, 0);
+          JSNativeFunction::New(this, &runtime::NumberValueOf, 0);
       proto->DefineOwnProperty(
           this, valueOf_symbol_,
           DataDescriptor(func,
@@ -697,7 +698,7 @@ void Context::Initialize() {
     JSObject* const proto = JSObject::NewPlain(this);
     // section 15.11.2 The Error Constructor
     JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &Runtime_ErrorConstructor, 1);
+        JSNativeFunction::NewPlain(this, &runtime::ErrorConstructor, 1);
     constructor->set_cls(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
     // set prototype
@@ -723,7 +724,7 @@ void Context::Initialize() {
     {
       // section 15.11.4.4 Error.prototype.toString()
       JSNativeFunction* const func =
-          JSNativeFunction::New(this, &Runtime_ErrorToString, 0);
+          JSNativeFunction::New(this, &runtime::ErrorToString, 0);
       proto->DefineOwnProperty(
           this, toString_symbol_,
           DataDescriptor(func,
@@ -756,7 +757,7 @@ void Context::Initialize() {
       // section 15.11.6.1 EvalError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_EvalErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &runtime::EvalErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -796,7 +797,7 @@ void Context::Initialize() {
       // section 15.11.6.2 RangeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_RangeErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &runtime::RangeErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -837,7 +838,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this,
-                                     &Runtime_ReferenceErrorConstructor, 1);
+                                     &runtime::ReferenceErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -877,7 +878,7 @@ void Context::Initialize() {
       // section 15.11.6.4 SyntaxError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_SyntaxErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &runtime::SyntaxErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -917,7 +918,7 @@ void Context::Initialize() {
       // section 15.11.6.5 TypeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_TypeErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &runtime::TypeErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -957,7 +958,7 @@ void Context::Initialize() {
       // section 15.11.6.6 URIError
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_URIErrorConstructor, 1);
+          JSNativeFunction::NewPlain(this, &runtime::URIErrorConstructor, 1);
       sub_constructor->set_cls(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -984,46 +985,6 @@ void Context::Initialize() {
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "URIError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.11.7.2 NativeError
-      JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &Runtime_NativeErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
-      struct Class sub_cls = {
-        JSString::NewAsciiString(this, "NativeError"),
-        sub_constructor,
-        sub_proto
-      };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("NativeError");
-      builtins_[sub_name] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sub_name,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-      sub_proto->DefineOwnProperty(
-          this, Intern("name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "NativeError"),
               PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->DefineOwnProperty(
@@ -1098,7 +1059,7 @@ void Context::Initialize() {
     // section 15.8.2.1 abs(x)
     math->DefineOwnProperty(
         this, Intern("abs"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAbs, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAbs, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1106,7 +1067,7 @@ void Context::Initialize() {
     // section 15.8.2.2 acos(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAcos, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAcos, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1114,7 +1075,7 @@ void Context::Initialize() {
     // section 15.8.2.3 asin(x)
     math->DefineOwnProperty(
         this, Intern("asin"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAsin, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAsin, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1122,7 +1083,7 @@ void Context::Initialize() {
     // section 15.8.2.4 atan(x)
     math->DefineOwnProperty(
         this, Intern("atan"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAtan, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1130,7 +1091,7 @@ void Context::Initialize() {
     // section 15.8.2.5 atan2(y, x)
     math->DefineOwnProperty(
         this, Intern("atan2"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathAtan2, 2),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAtan2, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1138,7 +1099,7 @@ void Context::Initialize() {
     // section 15.8.2.6 ceil(x)
     math->DefineOwnProperty(
         this, Intern("ceil"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCeil, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathCeil, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1146,7 +1107,7 @@ void Context::Initialize() {
     // section 15.8.2.7 cos(x)
     math->DefineOwnProperty(
         this, Intern("cos"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathCos, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathCos, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1154,7 +1115,7 @@ void Context::Initialize() {
     // section 15.8.2.8 exp(x)
     math->DefineOwnProperty(
         this, Intern("exp"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathExp, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathExp, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1162,7 +1123,7 @@ void Context::Initialize() {
     // section 15.8.2.9 floor(x)
     math->DefineOwnProperty(
         this, Intern("floor"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathFloor, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathFloor, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1170,7 +1131,7 @@ void Context::Initialize() {
     // section 15.8.2.10 log(x)
     math->DefineOwnProperty(
         this, Intern("log"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathLog, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathLog, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1178,7 +1139,7 @@ void Context::Initialize() {
     // section 15.8.2.11 max([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("max"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMax, 2),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathMax, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1186,7 +1147,7 @@ void Context::Initialize() {
     // section 15.8.2.12 min([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("min"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathMin, 2),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathMin, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1194,7 +1155,7 @@ void Context::Initialize() {
     // section 15.8.2.13 pow(x, y)
     math->DefineOwnProperty(
         this, Intern("pow"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathPow, 2),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathPow, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1202,7 +1163,7 @@ void Context::Initialize() {
     // section 15.8.2.14 random()
     math->DefineOwnProperty(
         this, Intern("random"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRandom, 0),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathRandom, 0),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1210,7 +1171,7 @@ void Context::Initialize() {
     // section 15.8.2.15 round(x)
     math->DefineOwnProperty(
         this, Intern("round"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathRound, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathRound, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1218,7 +1179,7 @@ void Context::Initialize() {
     // section 15.8.2.16 sin(x)
     math->DefineOwnProperty(
         this, Intern("sin"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSin, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathSin, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1226,7 +1187,7 @@ void Context::Initialize() {
     // section 15.8.2.17 sqrt(x)
     math->DefineOwnProperty(
         this, Intern("sqrt"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathSqrt, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathSqrt, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1234,7 +1195,7 @@ void Context::Initialize() {
     // section 15.8.2.18 tan(x)
     math->DefineOwnProperty(
         this, Intern("tan"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_MathTan, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::MathTan, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1262,14 +1223,14 @@ void Context::Initialize() {
     // section 15.1.2.1 eval(x)
     global_obj_.DefineOwnProperty(
         this, Intern("eval"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalEval, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalEval, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.3 parseIng(string, radix)
     global_obj_.DefineOwnProperty(
         this, Intern("parseInt"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalParseInt, 2),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalParseInt, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1277,21 +1238,21 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("parseFloat"),
         DataDescriptor(
-            JSNativeFunction::New(this, &Runtime_GlobalParseFloat, 1),
+            JSNativeFunction::New(this, &runtime::GlobalParseFloat, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.4 isNaN(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isNaN"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsNaN, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalIsNaN, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.5 isFinite(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isFinite"),
-        DataDescriptor(JSNativeFunction::New(this, &Runtime_GlobalIsFinite, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalIsFinite, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1309,7 +1270,7 @@ void Context::Initialize() {
     const Symbol name = Intern("Arguments");
     builtins_[name] = cls;
   }
-  throw_type_error_.Initialize(this, &Runtime_ThrowTypeError, 0);
+  throw_type_error_.Initialize(this, &runtime::ThrowTypeError, 0);
 }
 
 const Class& Context::Cls(Symbol name) {

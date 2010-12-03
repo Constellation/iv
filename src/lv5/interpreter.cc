@@ -20,7 +20,7 @@
 #include "jsarray.h"
 #include "context.h"
 #include "jsast.h"
-#include "runtime.h"
+#include "runtime_global.h"
 
 namespace iv {
 namespace lv5 {
@@ -1390,13 +1390,13 @@ void Interpreter::Visit(const FunctionCall* call) {
         const JSNativeFunction* const native =
             func.object()->AsCallable()->AsNativeFunction();
         if (native &&
-            native->function() == &Runtime_GlobalEval) {
+            native->function() == &runtime::GlobalEval) {
           // this function is eval function
           const Identifier* const maybe_eval = call->target()->AsIdentifier();
           if (maybe_eval &&
               maybe_eval->symbol() == ctx_->eval_symbol()) {
             // direct call to eval point
-            ctx_->ret() = Runtime_DirectCallToEval(args, CHECK);
+            ctx_->ret() = runtime::DirectCallToEval(args, CHECK);
             return;
           }
         }
