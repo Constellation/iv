@@ -92,31 +92,30 @@ class SpaceAllocator {
     return *this;
   }
 
-  Factory* space() const {
+  inline Factory* space() const {
     return space_;
   }
 
- protected:
+ private:
   void Swap(this_type& rhs) {
     using std::swap;
     swap(space_, rhs.space_);
   }
-  Factory* space_;
-
- private:
   void operator=(const SpaceAllocator&);
+
+  Factory* space_;
 };
 
-template <typename Factory, typename T>
+template <typename Factory, typename T, typename U>
 bool operator==(const SpaceAllocator<Factory, T>& lhs,
-                const SpaceAllocator<Factory, T>& rhs) {
-  return true;
+                const SpaceAllocator<Factory, U>& rhs) {
+  return lhs.space() == rhs.space();
 }
 
-template <typename Factory, typename T>
+template <typename Factory, typename T, typename U>
 bool operator!=(const SpaceAllocator<Factory, T>& lhs,
-                const SpaceAllocator<Factory, T>& rhs) {
-  return false;
+                const SpaceAllocator<Factory, U>& rhs) {
+  return lhs.space() != rhs.space();
 }
 
 template<typename Factory, typename T>
