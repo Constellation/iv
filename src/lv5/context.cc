@@ -1200,6 +1200,27 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
+  {
+    // TODO(Constellation) more
+    // section 15.9 Date
+    JSObject* const date = JSObject::NewPlain(this);
+    date->set_prototype(obj_proto);
+    date->set_cls(JSString::NewAsciiString(this, "Date"));
+    global_obj_.DefineOwnProperty(
+        this, Intern("Date"),
+        DataDescriptor(date,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.4.4 Date.now()
+    date->DefineOwnProperty(
+        this, Intern("now"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateNow, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+  }
 
   {
     // Builtins

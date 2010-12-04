@@ -11,6 +11,7 @@
 #include "runtime_boolean.h"
 #include "runtime_number.h"
 #include "runtime_math.h"
+#include "runtime_date.h"
 #include "runtime_error.h"
 
 #endif  // _IV_LV5_RUNTIME_H_
