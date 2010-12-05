@@ -136,6 +136,8 @@ class PropertyDescriptor {
 
   static bool Equals(const this_type& lhs, const this_type& rhs);
 
+  static bool IsAbsent(const PropertyDescriptor& desc);
+
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
   }
@@ -364,6 +366,14 @@ inline PropertyDescriptor PropertyDescriptor::Merge(
   }
   return result;
 }
+
+inline bool PropertyDescriptor::IsAbsent(const PropertyDescriptor& desc) {
+  return
+      desc.IsConfigurableAbsent() &&
+      desc.IsEnumerableAbsent() &&
+      desc.IsGenericDescriptor();
+}
+
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_PROPERTY_H_

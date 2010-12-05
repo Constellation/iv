@@ -158,7 +158,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   }
 
   // step 5
-  if (desc.IsEmpty()) {
+  if (PropertyDescriptor::IsAbsent(desc)) {
     return true;
   }
   // step 6
