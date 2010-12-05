@@ -2,6 +2,7 @@
 #define _IV_LV5_RUNTIME_DATE_H_
 #include <ctime>
 #include <cmath>
+#include <iostream>
 #include <tr1/cstdint>
 
 #ifdef _WIN32
@@ -13,6 +14,8 @@
 
 #include "utils.h"
 #include "conversions.h"
+#include "jsdate.h"
+#include "jsstring.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -36,7 +39,11 @@ inline double Day(double t) {
 }
 
 inline double TimeWithinDay(double t) {
-  return std::fmod(t, kMsPerDay);
+  const double res = std::fmod(t, kMsPerDay);
+  if (res < 0) {
+    return res + kMsPerDay;
+  }
+  return res;
 }
 
 inline int DaysInYear(int y) {
@@ -60,7 +67,7 @@ inline int YearFromTime(double t) {
   const double time = TimeFromYear(about);
   if (time > t) {
     return about - 1;
-  } else if (time + kMsPerDay * DaysInYear(about) <= t) {
+  } else if (TimeFromYear(about+1) <= t) {
     return about + 1;
   } else {
     return about;
@@ -85,6 +92,10 @@ static const int kMonthMap[2][12] = {
   {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
 };
 
+static const char* kMonths[12] = {
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
 inline int MonthFromTime(double t) {
   int within = DayWithinYear(t);
   const int leap = IsLeapYear(t);
@@ -96,6 +107,11 @@ inline int MonthFromTime(double t) {
   }
   UNREACHABLE();
   return 0;  // makes compiler happy
+}
+
+inline const char* MonthToString(double t) {
+  assert(0 <= MonthFromTime(t) && MonthFromTime(t) <= 11);
+  return kMonths[MonthFromTime(t)];
 }
 
 inline int DateFromTime(double t) {
@@ -115,8 +131,21 @@ inline int MonthToDaysInYear(int month, int is_leap) {
   return kMonthMap[is_leap][month];
 }
 
+static const char* kWeekDays[7] = {
+  "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
+
 inline int WeekDay(double t) {
-  return core::DoubleToInt32(std::fmod((Day(t) + 4), 7));
+  const int res = core::DoubleToInt32(std::fmod((Day(t) + 4), 7));
+  if (res < 0) {
+    return res + 7;
+  }
+  return res;
+}
+
+inline const char* WeekDayToString(double t) {
+  assert(0 <= WeekDay(t) && WeekDay(t) <= 6);
+  return kWeekDays[WeekDay(t)];
 }
 
 inline int32_t LocalTZA() {
@@ -149,23 +178,39 @@ inline double UTC(double t) {
 }
 
 inline int HourFromTime(double t) {
-  return core::DoubleToInt32(
+  const int res = core::DoubleToInt32(
       std::fmod(std::floor(t / kMsPerHour), kHoursPerDay));
+  if (res < 0) {
+    return res + kHoursPerDay;
+  }
+  return res;
 }
 
 inline int MinFromTime(double t) {
-  return core::DoubleToInt32(
+  const int res = core::DoubleToInt32(
       std::fmod(std::floor(t / kMsPerMinute), kMinutesPerHour));
+  if (res < 0) {
+    return res + kMinutesPerHour;
+  }
+  return res;
 }
 
 inline int SecFromTime(double t) {
-  return core::DoubleToInt32(
+  const int res = core::DoubleToInt32(
       std::fmod(std::floor(t / kMsPerSecond), kSecondsPerMinute));
+  if (res < 0) {
+    return res + kSecondsPerMinute;
+  }
+  return res;
 }
 
 inline int MsFromTime(double t) {
-  return core::DoubleToInt32(
+  const int res = core::DoubleToInt32(
       std::fmod(t, kMsPerSecond));
+  if (res < 0) {
+    return res + kMsPerSecond;
+  }
+  return res;
 }
 
 inline double MakeTime(double hour, double min, double sec, double ms) {
@@ -259,7 +304,9 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     if (args_size > 0) {
       y = args[0].ToNumber(ctx, ERROR(error));
     } else {
-      y = JSValData::kNaN;
+      // section 15.9.3.3 new Date()
+      return JSDate::New(
+          args.ctx(), detail::CurrentTime() * 1000.0);
     }
 
     double m;
@@ -311,11 +358,13 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
       }
     }
 
-    return detail::TimeClip(
-        detail::UTC(detail::MakeDate(detail::MakeDay(y, m, dt),
-                                     detail::MakeTime(h, min, s, milli))));
-    return JSUndefined;
+    return JSDate::New(
+        args.ctx(),
+        detail::TimeClip(
+            detail::UTC(detail::MakeDate(detail::MakeDay(y, m, dt),
+                                         detail::MakeTime(h, min, s, milli)))));
   } else {
+    // TODO(Constellation)
     return JSUndefined;
   }
 }
@@ -323,6 +372,205 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
 // section 15.9.4.4 Date.now()
 inline JSVal DateNow(const Arguments& args, Error* error) {
   return std::floor(detail::CurrentTime() * 1000.0);
+}
+
+// section 15.9.5.2 Date.prototype.toString()
+inline JSVal DateToString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.toString", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+    } else {
+      std::string buffer;
+      buffer.append(detail::WeekDayToString(time));
+      buffer.push_back(' ');
+      buffer.append(detail::MonthToString(time));
+      // buffer.push_back(' ');
+      // buffer.append(detail::DateToString(time));
+      // buffer.push_back(' ');
+      // buffer.append(detail::YearToString(time));
+      return JSString::New(args.ctx(), buffer);
+    }
+  }
+  error->Report(Error::Type,
+                "Date.prototype.toString is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.8 Date.prototype.valueOf()
+inline JSVal DateValueOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.valueOf", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    return static_cast<JSDate*>(obj.object())->value();
+  }
+  error->Report(Error::Type,
+                "Date.prototype.valueOf is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.9 Date.prototype.getTime()
+inline JSVal DateGetTime(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getTime", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    return static_cast<JSDate*>(obj.object())->value();
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getTime is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.11 Date.prototype.getUTCFullYear()
+inline JSVal DateGetUTCFullYear(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCFullYear", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::YearFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCFullYear is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.13 Date.prototype.getUTCMonth()
+inline JSVal DateGetUTCMonth(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCMonth", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::MonthFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCMonth is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.15 Date.prototype.getUTCDate()
+inline JSVal DateGetUTCDate(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCDate", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::DateFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCDate is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.17 Date.prototype.getUTCDay()
+inline JSVal DateGetUTCDay(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCDay", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::WeekDay(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCDay is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.19 Date.prototype.getUTCHours()
+inline JSVal DateGetUTCHours(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCHours", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::HourFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCHours is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.21 Date.prototype.getUTCMinutes()
+inline JSVal DateGetUTCMinutes(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCMinutes", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::MinFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCMinutes is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.23 Date.prototype.getUTCSeconds()
+inline JSVal DateGetUTCSeconds(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCSeconds", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::SecFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCSeconds is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.25 Date.prototype.getUTCMilliseconds()
+inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getUTCMilliseconds", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return detail::MsFromTime(time);
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getUTCMilliseconds is not generic function");
+  return JSUndefined;
 }
 
 } } }  // namespace iv::lv5::runtime

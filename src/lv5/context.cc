@@ -1201,22 +1201,130 @@ void Context::Initialize() {
         false, NULL);
   }
   {
-    // TODO(Constellation) more
     // section 15.9 Date
-    JSObject* const date = JSObject::NewPlain(this);
-    date->set_prototype(obj_proto);
-    date->set_cls(JSString::NewAsciiString(this, "Date"));
+    // TODO(Constellation) more
+    JSObject* const proto = JSObject::NewPlain(this);
+    // section 15.9.2.1 The Date Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::NewPlain(this, &runtime::DateConstructor, 7);
+    constructor->set_cls(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
+
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      JSString::NewAsciiString(this, "Date"),
+      constructor,
+      proto
+    };
+    proto->set_cls(cls.name);
+
+    const Symbol name = Intern("Date");
+    builtins_[name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, Intern("Date"),
-        DataDescriptor(date,
+        DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.4.4 Date.now()
-    date->DefineOwnProperty(
+    constructor->DefineOwnProperty(
         this, Intern("now"),
         DataDescriptor(JSNativeFunction::New(this, &runtime::DateNow, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.2 Date.prototype.toString()
+    proto->DefineOwnProperty(
+        this, toString_symbol_,
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateToString, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.8 Date.prototype.valueOf()
+    proto->DefineOwnProperty(
+        this, Intern("valueOf"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateValueOf, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.9 Date.prototype.getTime()
+    proto->DefineOwnProperty(
+        this, Intern("getTime"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetTime, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.11 Date.prototype.getUTCFullYear()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCFullYear"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCFullYear, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.13 Date.prototype.getUTCMonth()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCMonth"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCMonth, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.15 Date.prototype.getUTCDate()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCDate"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCDate, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.17 Date.prototype.getUTCDay()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCDay"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCDay, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.19 Date.prototype.getUTCHours()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCHours"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCHours, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.21 Date.prototype.getUTCMinutes()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCMinutes"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCMinutes, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.23 Date.prototype.getUTCSeconds()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCSeconds"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCSeconds, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.25 Date.prototype.getUTCMilliseconds()
+    proto->DefineOwnProperty(
+        this, Intern("getUTCMilliseconds"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCMilliseconds, 0),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
