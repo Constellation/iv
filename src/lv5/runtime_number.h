@@ -48,7 +48,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     double radix;
     if (first.IsUndefined()) {
-      radix = 0;
+      radix = 10;
     } else {
       radix = first.ToNumber(args.ctx(), ERROR(error));
       radix = core::DoubleToInteger(radix);
