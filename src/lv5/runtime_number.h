@@ -46,8 +46,13 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
   }
   if (args.size() > 0) {
     const JSVal& first = args[0];
-    double radix = first.ToNumber(args.ctx(), ERROR(error));
-    radix = core::DoubleToInteger(radix);
+    double radix;
+    if (first.IsUndefined()) {
+      radix = 0;
+    } else {
+      radix = first.ToNumber(args.ctx(), ERROR(error));
+      radix = core::DoubleToInteger(radix);
+    }
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
@@ -71,7 +76,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     } else {
       // TODO(Constellation) more details
       error->Report(Error::Range,
-                    "inllegal radix");
+                    "illegal radix");
       return JSUndefined;
     }
   }

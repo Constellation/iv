@@ -147,7 +147,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       REJECT("object not extensible");
     } else {
       if (!desc.IsAccessorDescriptor()) {
-        assert(desc.IsDataDescriptor() || desc.IsEmpty());
+        assert(desc.IsDataDescriptor() || desc.IsGenericDescriptor());
         table_[name] = PropertyDescriptor::SetDefault(desc);
       } else {
         assert(desc.IsAccessorDescriptor());
