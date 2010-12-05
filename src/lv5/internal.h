@@ -90,6 +90,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (enumerable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
             PropertyDescriptor::ENUMERABLE;
+      } else {
+        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE);
       }
     }
   }
@@ -102,6 +104,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (configurable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) |
             PropertyDescriptor::CONFIGURABLE;
+      } else {
+        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE);
       }
     }
   }
@@ -122,6 +126,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (writable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE) |
             PropertyDescriptor::WRITABLE;
+      } else {
+        attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE);
       }
     }
   }
@@ -160,7 +166,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   // step 9
   if (attr & PropertyDescriptor::ACCESSOR) {
     if ((attr & PropertyDescriptor::DATA) ||
-        (attr & PropertyDescriptor::WRITABLE)) {
+        (!(attr & PropertyDescriptor::UNDEF_WRITABLE))) {
       error->Report(Error::Type,
                     "invalid object for property descriptor");
       return JSUndefined;
