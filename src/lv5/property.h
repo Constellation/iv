@@ -26,11 +26,7 @@ class PropertyDescriptor {
     EMPTY = 256,
     UNDEF_VALUE = 512
   };
-  enum State {
-    kFALSE = 0,
-    kTRUE = 1,
-    kUNDEF = 2
-  };
+
   enum DataDescriptorTag {
     kDataDescripter = 0
   };
@@ -38,8 +34,8 @@ class PropertyDescriptor {
     kAccessorDescriptor = 0
   };
 
-  static const int kDefaultAttr = UNDEF_WRITABLE |
-      UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE;
+  static const int kDefaultAttr =
+      UNDEF_WRITABLE | UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE | UNDEF_VALUE;
   static const int kTypeMask = DATA | ACCESSOR;
   static const int kDataAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
 
@@ -187,8 +183,7 @@ class PropertyDescriptor {
 
 class AccessorDescriptor : public PropertyDescriptor {
  public:
-  AccessorDescriptor(JSObject* get, JSObject* set,
-                     int attrs = kDefaultAttr)
+  AccessorDescriptor(JSObject* get, JSObject* set, int attrs)
     : PropertyDescriptor(kAccessorDescriptor, get, set, attrs) {
   }
   int type() const {
@@ -210,8 +205,7 @@ class AccessorDescriptor : public PropertyDescriptor {
 
 class DataDescriptor: public PropertyDescriptor {
  public:
-  DataDescriptor(const JSVal& value,
-                 int attrs = kDefaultAttr)
+  DataDescriptor(const JSVal& value, int attrs)
      : PropertyDescriptor(kDataDescripter, value, attrs) {
   }
   int type() const {

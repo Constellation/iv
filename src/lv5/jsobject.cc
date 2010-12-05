@@ -237,7 +237,13 @@ void JSObject::Put(Context* ctx,
   }
   const PropertyDescriptor own_desc = GetOwnProperty(name);
   if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-    DefineOwnProperty(ctx, name, DataDescriptor(val), th, res);
+    DefineOwnProperty(ctx,
+                      name,
+                      DataDescriptor(
+                          val,
+                          PropertyDescriptor::UNDEF_ENUMERABLE |
+                          PropertyDescriptor::UNDEF_CONFIGURABLE |
+                          PropertyDescriptor::UNDEF_WRITABLE), th, res);
     return;
   }
   const PropertyDescriptor desc = GetProperty(name);

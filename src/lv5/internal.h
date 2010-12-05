@@ -115,6 +115,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (obj->HasProperty(sym)) {
       value = obj->Get(ctx, sym, ERROR(error));
       attr |= PropertyDescriptor::DATA;
+      attr &= ~PropertyDescriptor::UNDEF_VALUE;
     }
   }
   {
@@ -124,11 +125,9 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool writable = r.ToBoolean(ERROR(error));
       attr |= PropertyDescriptor::DATA;
+      attr &= ~PropertyDescriptor::UNDEF_WRITABLE;
       if (writable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE) |
-            PropertyDescriptor::WRITABLE;
-      } else {
-        attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE);
+        attr |= PropertyDescriptor::WRITABLE;
       }
     }
   }
