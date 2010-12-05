@@ -20,6 +20,10 @@ class JSDate : public JSObject {
     return value_;
   }
 
+  void set_value(double val) {
+    value_ = val;
+  }
+
  private:
   double value_;
 };

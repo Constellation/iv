@@ -1233,6 +1233,13 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.9.4.4 Date.now()
     constructor->DefineOwnProperty(
         this, Intern("now"),
@@ -1325,6 +1332,30 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCMilliseconds"),
         DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCMilliseconds, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.27 Date.prototype.setTime(time)
+    proto->DefineOwnProperty(
+        this, Intern("setTime"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetTime, 1),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.29 Date.prototype.setUTCMilliseconds(ms)
+    proto->DefineOwnProperty(
+        this, Intern("setUTCMilliseconds"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCMilliseconds, 1),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.31 Date.prototype.setUTCSeconds(sec[, ms])
+    proto->DefineOwnProperty(
+        this, Intern("setUTCSeconds"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCSeconds, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
