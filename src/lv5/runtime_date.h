@@ -306,7 +306,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     if (args_size == 0) {
       // section 15.9.3.3 new Date()
       return JSDate::New(
-          ctx, detail::CurrentTime() * 1000.0);
+          ctx, detail::TimeClip(detail::CurrentTime() * 1000.0));
     }
 
     if (args_size == 1) {
