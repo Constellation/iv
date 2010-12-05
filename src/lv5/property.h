@@ -33,6 +33,9 @@ class PropertyDescriptor {
   enum AccessorDescriptorTag {
     kAccessorDescriptor = 0
   };
+  enum GenericDescriptorTag {
+    kGenericDescriptor = 0
+  };
 
   static const int kDefaultAttr =
       UNDEF_WRITABLE | UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE | UNDEF_VALUE;
@@ -45,15 +48,11 @@ class PropertyDescriptor {
   }
 
   PropertyDescriptor()
-    : attrs_(kDefaultAttr),
+    : attrs_(kDefaultAttr | EMPTY),
       value_() {
   }
 
-  PropertyDescriptor(int attr)
-    : attrs_(attr),
-      value_() {
-  }
-
+  // copy
   PropertyDescriptor(const PropertyDescriptor& rhs)
     : attrs_(rhs.attrs_),
       value_(rhs.value_) {
@@ -61,10 +60,6 @@ class PropertyDescriptor {
 
   int attrs() const {
     return attrs_;
-  }
-
-  void set_attrs(int attr) {
-    attrs_ = attr;
   }
 
   int type() const {
@@ -165,10 +160,15 @@ class PropertyDescriptor {
   PropertyDescriptor(AccessorDescriptorTag tag,
                      JSObject* getter, JSObject* setter,
                      int attrs)
-    : attrs_(attrs | ACCESSOR),
+    : attrs_(attrs | ACCESSOR | UNDEF_VALUE),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
+  }
+
+  PropertyDescriptor(GenericDescriptorTag tag, int attrs)
+    : attrs_(attrs | UNDEF_VALUE),
+      value_() {
   }
 
   int attrs_;
@@ -236,6 +236,13 @@ class DataDescriptor: public PropertyDescriptor {
     } else {
       attrs_ = (attrs_ & ~UNDEF_WRITABLE) & ~WRITABLE;
     }
+  }
+};
+
+class GenericDescriptor : public PropertyDescriptor {
+ public:
+  GenericDescriptor(int attrs)
+     : PropertyDescriptor(kGenericDescriptor, attrs) {
   }
 };
 

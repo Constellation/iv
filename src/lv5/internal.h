@@ -176,7 +176,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   } else if (attr & PropertyDescriptor::DATA) {
     return DataDescriptor(value, attr);
   } else {
-    return PropertyDescriptor(attr);
+    return GenericDescriptor(attr);
   }
 }
 
