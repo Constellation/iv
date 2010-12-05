@@ -1468,7 +1468,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         return JSUndefined;
       }
       if (desc.IsDataDescriptor()) {
-        return desc.AsDataDescriptor()->data();
+        return desc.AsDataDescriptor()->value();
       } else {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();

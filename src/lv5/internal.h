@@ -19,7 +19,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     const DataDescriptor* const data = desc.AsDataDescriptor();
     obj->DefineOwnProperty(
         ctx, ctx->Intern("value"),
-        DataDescriptor(data->data(),
+        DataDescriptor(data->value(),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -78,7 +78,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   int attr = PropertyDescriptor::kDefaultAttr;
   JSObject* const obj = target.object();
-  JSVal value;
+  JSVal value = JSUndefined;
   JSObject* getter = NULL;
   JSObject* setter = NULL;
   {
@@ -123,6 +123,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (obj->HasProperty(sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool writable = r.ToBoolean(ERROR(error));
+      attr |= PropertyDescriptor::DATA;
       if (writable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_WRITABLE) |
             PropertyDescriptor::WRITABLE;
@@ -165,8 +166,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   // step 9
   if (attr & PropertyDescriptor::ACCESSOR) {
-    if ((attr & PropertyDescriptor::DATA) ||
-        (!(attr & PropertyDescriptor::UNDEF_WRITABLE))) {
+    if (attr & PropertyDescriptor::DATA) {
       error->Report(Error::Type,
                     "invalid object for property descriptor");
       return JSUndefined;

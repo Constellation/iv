@@ -44,12 +44,12 @@ bool JSArray::DefineOwnProperty(Context* ctx,
          old_len_desc_upper.IsDataDescriptor());
   DataDescriptor* const old_len_desc = old_len_desc_upper.AsDataDescriptor();
 
-  const JSVal& len_value = old_len_desc->data();
+  const JSVal& len_value = old_len_desc->value();
   const core::UString& name_string = ctx->GetContent(name);
 
   if (name == length_symbol) {
     if (desc.IsDataDescriptor()) {
-      const JSVal& new_len_value = desc.AsDataDescriptor()->data();
+      const JSVal& new_len_value = desc.AsDataDescriptor()->value();
       const double new_len_double = new_len_value.ToNumber(ctx, res);
       if (*res) {
         return false;
@@ -63,7 +63,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (*res) {
         return false;
       }
-      DataDescriptor new_len_desc(new_len, desc.attrs());
+      DataDescriptor new_len_desc(new_len, desc.attrs() & PropertyDescriptor::kDataAttrField);
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);
@@ -74,7 +74,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       const bool new_writable =
           new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
       if (!new_writable) {
-        new_len_desc.SetWritable(true);
+        new_len_desc.set_writable(true);
       }
       const bool succeeded = JSObject::DefineOwnProperty(ctx, length_symbol,
                                                          new_len_desc, th, res);
@@ -96,7 +96,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         if (!delete_succeeded) {
           new_len_desc.set_value(old_len + 1);
           if (!new_writable) {
-            new_len_desc.SetWritable(false);
+            new_len_desc.set_writable(false);
           }
           JSObject::DefineOwnProperty(ctx, length_symbol,
                                       new_len_desc, false, res);
@@ -107,7 +107,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         }
       }
       if (!new_writable) {
-        new_len_desc.SetWritable(false);
+        new_len_desc.set_writable(false);
         JSObject::DefineOwnProperty(ctx, length_symbol,
                                     new_len_desc, false, res);
       }

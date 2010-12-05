@@ -168,7 +168,10 @@ inline int32_t LocalTZA() {
 
 // TODO(Constellation) implement it
 inline double DaylightSavingTA(double t) {
-  return 0.0;
+  const std::time_t current = std::time(NULL);
+  std::tm local;
+  std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
+  return (local.tm_isdst) ? 0.0 : 0.0;
 }
 
 inline double LocalTime(double t) {

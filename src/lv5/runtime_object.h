@@ -251,7 +251,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
            last = obj->table().end(); it != last; ++it) {
         PropertyDescriptor desc = obj->GetOwnProperty(it->first);
         if (desc.IsConfigurable()) {
-          desc.SetConfigurable(false);
+          desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
             args.ctx(), it->first, desc, true, ERROR(error));
@@ -278,10 +278,10 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
            last = obj->table().end(); it != last; ++it) {
         PropertyDescriptor desc = obj->GetOwnProperty(it->first);
         if (desc.IsDataDescriptor()) {
-          desc.SetWritable(false);
+          desc.AsDataDescriptor()->set_writable(false);
         }
         if (desc.IsConfigurable()) {
-          desc.SetConfigurable(false);
+          desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
             args.ctx(), it->first, desc, true, ERROR(error));
@@ -348,7 +348,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
            last = obj->table().end(); it != last; ++it) {
         const PropertyDescriptor desc = obj->GetOwnProperty(it->first);
         if (desc.IsDataDescriptor()) {
-          if (desc.IsWritable()) {
+          if (desc.AsDataDescriptor()->IsWritable()) {
             return JSFalse;
           }
         }

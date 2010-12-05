@@ -101,7 +101,7 @@ PropertyDescriptor JSArguments::GetOwnProperty(Symbol name) const {
   const Index2Param::const_iterator it = map_.find(name);
   if (it != map_.end()) {
     const JSVal val = env_->GetBindingValue(it->second);
-    return DataDescriptor(val, desc.attrs() & PropertyDescriptor::kAttrField);
+    return DataDescriptor(val, desc.attrs() & PropertyDescriptor::kDataAttrField);
   }
   return desc;
 }
@@ -125,16 +125,19 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
     if (desc.IsAccessorDescriptor()) {
       map_.erase(it);
     } else {
-      if (!desc.IsEmpty()) {
-        env_->SetMutableBinding(ctx,
-                                it->second, desc.AsDataDescriptor()->data(),
-                                th, error);
-        if (*error) {
-          return false;
+      if (desc.IsDataDescriptor()) {
+        const DataDescriptor* const data = desc.AsDataDescriptor();
+        if (!data->IsValueAbsent()) {
+          env_->SetMutableBinding(ctx,
+                                  it->second, data->value(),
+                                  th, error);
+          if (*error) {
+            return false;
+          }
         }
-      }
-      if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
-        map_.erase(it);
+        if (!data->IsWritableAbsent() && !data->IsWritable()) {
+          map_.erase(it);
+        }
       }
     }
   }

@@ -67,7 +67,7 @@ JSVal JSObject::Get(Context* ctx,
     return JSUndefined;
   }
   if (desc.IsDataDescriptor()) {
-    return desc.AsDataDescriptor()->data();
+    return desc.AsDataDescriptor()->value();
   } else {
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
@@ -108,7 +108,7 @@ bool JSObject::CanPut(Symbol name) const {
       return desc.AsAccessorDescriptor()->set();
     } else {
       assert(desc.IsDataDescriptor());
-      return desc.IsWritable();
+      return desc.AsDataDescriptor()->IsWritable();
     }
   }
   if (!prototype_) {
@@ -122,7 +122,7 @@ bool JSObject::CanPut(Symbol name) const {
       return inherited.AsAccessorDescriptor()->set();
     } else {
       assert(inherited.IsDataDescriptor());
-      return inherited.IsWritable();
+      return inherited.AsDataDescriptor()->IsWritable();
     }
   }
 }
@@ -148,36 +148,41 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     } else {
       if (!desc.IsAccessorDescriptor()) {
         assert(desc.IsDataDescriptor() || desc.IsEmpty());
-        table_[name] = desc.SetDefaultToAbsent();
+        table_[name] = PropertyDescriptor::SetDefault(desc);
       } else {
         assert(desc.IsAccessorDescriptor());
-        table_[name] = desc.SetDefaultToAbsent();
+        table_[name] = PropertyDescriptor::SetDefault(desc);
       }
       return true;
     }
   }
 
-  // step 5 : this interpreter not allows absent descriptor
+  // step 5
+  if (desc.IsEmpty()) {
+    return true;
+  }
   // step 6
-  if (desc.Equals(current)) {
+  if (PropertyDescriptor::Equals(desc, current)) {
     return true;
   }
 
   // step 7
   if (!current.IsConfigurable()) {
-    if (desc.Configurable() == PropertyDescriptor::kTRUE) {
+    if (desc.IsConfigurable()) {
       REJECT(
           "changing [[Configurable]] of unconfigurable property not allowed");
     }
     if (!desc.IsEnumerableAbsent() &&
-        current.Enumerable() != desc.Enumerable()) {
+        current.IsEnumerable() != desc.IsEnumerable()) {
       REJECT("changing [[Enumerable]] of unconfigurable property not allowed");
     }
   }
 
   // step 9
-  if (current.type() != desc.type()) {
-    if (!current.Configurable()) {
+  if (desc.IsGenericDescriptor()) {
+    // no further validation
+  } else if (current.type() != desc.type()) {
+    if (!current.IsConfigurable()) {
       REJECT("changing descriptor type of unconfigurable property not allowed");
     }
     if (current.IsDataDescriptor()) {
@@ -190,13 +195,14 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     if (current.IsDataDescriptor()) {
       assert(desc.IsDataDescriptor());
       if (!current.IsConfigurable()) {
-        if (!current.IsWritable()) {
-          if (desc.Writable() == PropertyDescriptor::kTRUE) {
+        if (!current.AsDataDescriptor()->IsWritable()) {
+          const DataDescriptor* const data = desc.AsDataDescriptor();
+          if (data->IsWritable()) {
             REJECT(
                 "changing [[Writable]] of unconfigurable property not allowed");
           }
-          if (SameValue(current.AsDataDescriptor()->data(),
-                        desc.AsDataDescriptor()->data())) {
+          if (SameValue(current.AsDataDescriptor()->value(),
+                        data->value())) {
             REJECT("changing [[Value]] of readonly property not allowed");
           }
         }
@@ -204,7 +210,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     } else {
       // step 11
       assert(desc.IsAccessorDescriptor());
-      if (!current.Configurable()) {
+      if (!current.IsConfigurableAbsent() && !current.IsConfigurable()) {
         const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
         const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
         if (lhs->set() != rhs->set() || lhs->get() != rhs->get()) {
@@ -214,7 +220,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       }
     }
   }
-  table_[name] = desc.MergeAttrs(current.attrs());
+  table_[name] = PropertyDescriptor::Merge(desc, current);
   return true;
 }
 

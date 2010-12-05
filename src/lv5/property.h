@@ -23,7 +23,8 @@ class PropertyDescriptor {
     UNDEF_CONFIGURABLE = 32,
     DATA = 64,
     ACCESSOR = 128,
-    EMPTY = 256
+    EMPTY = 256,
+    UNDEF_VALUE = 512
   };
   enum State {
     kFALSE = 0,
@@ -40,7 +41,7 @@ class PropertyDescriptor {
   static const int kDefaultAttr = UNDEF_WRITABLE |
       UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE;
   static const int kTypeMask = DATA | ACCESSOR;
-  static const int kAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
+  static const int kDataAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
 
   PropertyDescriptor(JSUndefinedKeywordType val)  // NOLINT
     : attrs_(kDefaultAttr | EMPTY),
@@ -48,12 +49,12 @@ class PropertyDescriptor {
   }
 
   PropertyDescriptor()
-    : attrs_(kDefaultAttr | EMPTY),
+    : attrs_(kDefaultAttr),
       value_() {
   }
 
   PropertyDescriptor(int attr)
-    : attrs_(attr | EMPTY),
+    : attrs_(attr),
       value_() {
   }
 
@@ -82,6 +83,14 @@ class PropertyDescriptor {
     return attrs_ & ACCESSOR;
   }
 
+  inline bool IsGenericDescriptor() const {
+    return (!(attrs_ & DATA)) && (!(attrs_ & ACCESSOR)) && (!(attrs_ & EMPTY));
+  }
+
+  inline bool IsEmpty() const {
+    return attrs_ & EMPTY;
+  }
+
   inline const DataDescriptor* AsDataDescriptor() const;
 
   inline DataDescriptor* AsDataDescriptor();
@@ -90,41 +99,15 @@ class PropertyDescriptor {
 
   inline AccessorDescriptor* AsAccessorDescriptor();
 
-  inline bool IsWritable() const {
-    return attrs_ & WRITABLE;
-  }
-
-  inline State Writable() const {
-    return (attrs_ & WRITABLE) ?
-        kTRUE : (attrs_ & UNDEF_WRITABLE) ? kUNDEF : kFALSE;
-  }
-
-  inline bool IsWritableAbsent() const {
-    return attrs_ & UNDEF_WRITABLE;
-  }
-
-  inline void SetWritable(bool val) {
-    if (val) {
-      attrs_ = (attrs_ & ~UNDEF_WRITABLE) | WRITABLE;
-    } else {
-      attrs_ = (attrs_ & ~UNDEF_WRITABLE) & ~WRITABLE;
-    }
-  }
-
   inline bool IsEnumerable() const {
     return attrs_ & ENUMERABLE;
-  }
-
-  inline State Enumerable() const {
-    return (attrs_ & ENUMERABLE) ?
-        kTRUE : (attrs_ & UNDEF_ENUMERABLE) ? kUNDEF : kFALSE;
   }
 
   inline bool IsEnumerableAbsent() const {
     return attrs_ & UNDEF_ENUMERABLE;
   }
 
-  inline void SetEnumerable(bool val) {
+  inline void set_enumerable(bool val) {
     if (val) {
       attrs_ = (attrs_ & ~UNDEF_ENUMERABLE) | ENUMERABLE;
     } else {
@@ -136,16 +119,11 @@ class PropertyDescriptor {
     return attrs_ & CONFIGURABLE;
   }
 
-  inline State Configurable() const {
-    return (attrs_ & CONFIGURABLE) ?
-        kTRUE : (attrs_ & UNDEF_CONFIGURABLE) ? kUNDEF : kFALSE;
-  }
-
   inline bool IsConfigurableAbsent() const {
     return attrs_ & UNDEF_CONFIGURABLE;
   }
 
-  inline void SetConfigurable(bool val) {
+  inline void set_configurable(bool val) {
     if (val) {
       attrs_ = (attrs_ & ~UNDEF_CONFIGURABLE) | CONFIGURABLE;
     } else {
@@ -153,41 +131,10 @@ class PropertyDescriptor {
     }
   }
 
-  inline bool IsEmpty() const {
-    return attrs_ & EMPTY;
-  }
+  static this_type SetDefault(const PropertyDescriptor& prop);
 
-  inline this_type SetDefaultToAbsent() const {
-    this_type result(*this);
-    if (IsConfigurableAbsent()) {
-      result.SetConfigurable(false);
-    }
-    if (IsEnumerableAbsent()) {
-      result.SetEnumerable(false);
-    }
-    if (IsWritableAbsent()) {
-      result.SetWritable(false);
-    }
-    if (IsEmpty()) {
-      result.SetData();
-      result.value_.data_ = JSVal(JSUndefined).Layout();
-    }
-    return result;
-  }
-
-  inline this_type MergeAttrs(int attrs) const {
-    this_type result(*this);
-    if (IsConfigurableAbsent()) {
-      result.SetConfigurable(attrs & CONFIGURABLE);
-    }
-    if (IsEnumerableAbsent()) {
-      result.SetEnumerable(attrs & ENUMERABLE);
-    }
-    if (IsWritableAbsent()) {
-      result.SetWritable(attrs & WRITABLE);
-    }
-    return result;
-  }
+  inline void set_data_descriptor(const JSVal& value);
+  inline void set_accessor_descriptor(JSObject* get, JSObject* set);
 
   inline this_type& operator=(const this_type& rhs) {
     if (this != &rhs) {
@@ -196,29 +143,7 @@ class PropertyDescriptor {
     return *this;
   }
 
-  inline bool Equals(const this_type& rhs) const {
-    if (!IsConfigurableAbsent() && rhs.IsConfigurable() != IsConfigurable()) {
-      return false;
-    }
-    if (!IsEnumerableAbsent() && rhs.IsEnumerable() != IsEnumerable()) {
-      return false;
-    }
-    if (!IsWritableAbsent() && rhs.IsWritable() != IsWritable()) {
-      return false;
-    }
-    if (IsDataDescriptor()) {
-      if (rhs.IsDataDescriptor()) {
-        return SameValue(value_.data_, rhs.value_.data_);
-      }
-    } else {
-      assert(IsAccessorDescriptor());
-      if (rhs.IsAccessorDescriptor()) {
-        return value_.accessor_.getter_ == rhs.value_.accessor_.getter_ &&
-            value_.accessor_.setter_ == rhs.value_.accessor_.setter_;
-      }
-    }
-    return false;
-  }
+  static bool Equals(const this_type& lhs, const this_type& rhs);
 
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
@@ -229,6 +154,9 @@ class PropertyDescriptor {
     swap(attrs_, rhs.attrs_);
     swap(value_, rhs.value_);
   }
+
+  static this_type Merge(const PropertyDescriptor& desc,
+                         const PropertyDescriptor& current);
 
  protected:
   PropertyDescriptor(DataDescriptorTag tag,
@@ -245,14 +173,6 @@ class PropertyDescriptor {
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
-  }
-
-  inline void SetData() {
-    attrs_ = (attrs_ & ~EMPTY) | DATA;
-  }
-
-  inline void SetAccessor() {
-    attrs_ = (attrs_ & ~EMPTY) | ACCESSOR;
   }
 
   int attrs_;
@@ -280,6 +200,12 @@ class AccessorDescriptor : public PropertyDescriptor {
   JSObject* set() const {
     return value_.accessor_.setter_;
   }
+  void set_get(JSObject* getter) {
+    value_.accessor_.getter_ = getter;
+  }
+  void set_set(JSObject* setter) {
+    value_.accessor_.setter_ = setter;
+  }
 };
 
 class DataDescriptor: public PropertyDescriptor {
@@ -291,11 +217,31 @@ class DataDescriptor: public PropertyDescriptor {
   int type() const {
     return DATA;
   }
-  JSVal data() const {
+  JSVal value() const {
     return value_.data_;
   }
   void set_value(const JSVal& val) {
     value_.data_ = val.Layout();
+  }
+
+  inline bool IsValueAbsent() const {
+    return attrs_ & UNDEF_VALUE;
+  }
+
+  inline bool IsWritable() const {
+    return attrs_ & WRITABLE;
+  }
+
+  inline bool IsWritableAbsent() const {
+    return attrs_ & UNDEF_WRITABLE;
+  }
+
+  inline void set_writable(bool val) {
+    if (val) {
+      attrs_ = (attrs_ & ~UNDEF_WRITABLE) | WRITABLE;
+    } else {
+      attrs_ = (attrs_ & ~UNDEF_WRITABLE) & ~WRITABLE;
+    }
   }
 };
 
@@ -318,6 +264,104 @@ const AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() const {
 inline AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
   assert(IsAccessorDescriptor());
   return static_cast<AccessorDescriptor*>(this);
+}
+
+inline void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
+  attrs_ &= ~ACCESSOR;
+  attrs_ |= DATA;
+  value_.data_ = value.Layout();
+}
+
+inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {
+  attrs_ &= ~DATA;
+  attrs_ |= ACCESSOR;
+  value_.accessor_.getter_ = get;
+  value_.accessor_.setter_ = set;
+}
+
+inline PropertyDescriptor PropertyDescriptor::SetDefault(
+    const PropertyDescriptor& prop) {
+  this_type result(prop);
+  if (prop.IsConfigurableAbsent()) {
+    result.set_configurable(false);
+  }
+  if (prop.IsEnumerableAbsent()) {
+    result.set_enumerable(false);
+  }
+  if (prop.IsDataDescriptor()) {
+    const DataDescriptor* const data = prop.AsDataDescriptor();
+    result.set_data_descriptor(data->value());
+    if (data->IsWritableAbsent()) {
+      result.AsDataDescriptor()->set_writable(false);
+    }
+  } else if (prop.IsAccessorDescriptor()) {
+    const AccessorDescriptor* const accs = prop.AsAccessorDescriptor();
+    result.set_accessor_descriptor(accs->get(), accs->set());
+  } else {
+    assert(prop.IsGenericDescriptor());
+    result.set_data_descriptor(JSUndefined);
+    result.AsDataDescriptor()->set_writable(false);
+  }
+  return result;
+}
+
+
+inline bool PropertyDescriptor::Equals(const PropertyDescriptor& lhs,
+                                       const PropertyDescriptor& rhs) {
+  if (lhs.IsConfigurableAbsent() || lhs.IsConfigurable() != rhs.IsConfigurable()) {
+    return false;
+  }
+  if (!lhs.IsEnumerableAbsent() || lhs.IsEnumerable() != rhs.IsEnumerable()) {
+    return false;
+  }
+  if (lhs.type() != rhs.type()) {
+    return false;
+  }
+  if (lhs.IsDataDescriptor()) {
+    if (!lhs.AsDataDescriptor()->IsWritableAbsent() ||
+        lhs.AsDataDescriptor()->IsWritable() != rhs.AsDataDescriptor()->IsWritable()) {
+      return false;
+    }
+    return SameValue(lhs.value_.data_, rhs.value_.data_);
+  } else if (lhs.IsAccessorDescriptor()) {
+    return lhs.value_.accessor_.getter_ == rhs.value_.accessor_.getter_ &&
+        lhs.value_.accessor_.setter_ == rhs.value_.accessor_.setter_;
+  } else {
+    assert(lhs.IsGenericDescriptor());
+    return true;
+  }
+}
+
+inline PropertyDescriptor PropertyDescriptor::Merge(
+    const PropertyDescriptor& desc,
+    const PropertyDescriptor& current) {
+  PropertyDescriptor result(current);
+  if (!desc.IsConfigurableAbsent()) {
+    result.set_configurable(desc.IsConfigurable());
+  }
+  if (!desc.IsEnumerableAbsent()) {
+    result.set_enumerable(desc.IsEnumerable());
+  }
+  if (desc.IsDataDescriptor()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    DataDescriptor* const res = result.AsDataDescriptor();
+    if (!data->IsWritableAbsent()) {
+      res->set_writable(data->IsWritable());
+    }
+    if (!data->IsValueAbsent()) {
+      res->set_value(data->value());
+    }
+  } else if (desc.IsAccessorDescriptor()) {
+    const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
+    AccessorDescriptor* const res = result.AsAccessorDescriptor();
+    if (accs->get()) {
+      res->set_get(accs->get());
+    }
+    if (accs->set()) {
+      res->set_set(accs->set());
+    }
+  }
+  return result;
 }
 
 } }  // namespace iv::lv5
