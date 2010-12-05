@@ -2,7 +2,7 @@
 #define _IV_LV5_RUNTIME_DATE_H_
 #include <ctime>
 #include <cmath>
-#include <iostream>
+#include <cstring>
 #include <tr1/cstdint>
 
 #ifdef _WIN32
@@ -63,7 +63,8 @@ inline double TimeFromYear(int y) {
 
 // JSC's method
 inline int YearFromTime(double t) {
-  const int about = core::DoubleToInt32(std::floor(t / (kMsPerDay * 365.2425)) + 1970);
+  const int about = core::DoubleToInt32(
+      std::floor(t / (kMsPerDay * 365.2425)) + 1970);
   const double time = TimeFromYear(about);
   if (time > t) {
     return about - 1;
@@ -93,7 +94,8 @@ static const int kMonthMap[2][12] = {
 };
 
 static const char* kMonths[12] = {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
 inline int MonthFromTime(double t) {
@@ -150,17 +152,18 @@ inline const char* WeekDayToString(double t) {
 
 inline int32_t LocalTZA() {
   const std::time_t current = std::time(NULL);
-  std::tm* local = std::localtime(&current);
-  local->tm_sec = 0;
-  local->tm_min = 0;
-  local->tm_hour = 0;
-  local->tm_mday = 1;
-  local->tm_mon = 0;
-  local->tm_wday = 0;
-  local->tm_yday = 0;
-  local->tm_isdst = 0;
-  local->tm_year = 109;
-  return (1230768000 - std::mktime(local)) * 1000;
+  std::tm local;
+  std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
+  local.tm_sec = 0;
+  local.tm_min = 0;
+  local.tm_hour = 0;
+  local.tm_mday = 1;
+  local.tm_mon = 0;
+  local.tm_wday = 0;
+  local.tm_yday = 0;
+  local.tm_isdst = 0;
+  local.tm_year = 109;
+  return (1230768000 - std::mktime(&local)) * 1000;
 }
 
 // TODO(Constellation) implement it
@@ -300,21 +303,28 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     const std::size_t args_size = args.size();
     Context* const ctx = args.ctx();
 
-    double y;
-    if (args_size > 0) {
-      y = args[0].ToNumber(ctx, ERROR(error));
-    } else {
+    if (args_size == 0) {
       // section 15.9.3.3 new Date()
       return JSDate::New(
-          args.ctx(), detail::CurrentTime() * 1000.0);
+          ctx, detail::CurrentTime() * 1000.0);
     }
 
-    double m;
-    if (args_size > 1) {
-      m = args[1].ToNumber(ctx, ERROR(error));
-    } else {
-      m = JSValData::kNaN;
+    if (args_size == 1) {
+      // section 15.9.3.2 new Date(value)
+      const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, ERROR(error));
+      if (v.IsString()) {
+        // TODO(Constellation) parse implementation required
+        return JSUndefined;
+      } else {
+        const double V = v.ToNumber(ctx, ERROR(error));
+        return JSDate::New(
+            ctx, detail::TimeClip(V));
+      }
     }
+
+    // following case, args_size > 1
+    double y = args[0].ToNumber(ctx, ERROR(error));
+    const double m = args[1].ToNumber(ctx, ERROR(error));
 
     double dt;
     if (args_size > 2) {
@@ -359,7 +369,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     }
 
     return JSDate::New(
-        args.ctx(),
+        ctx,
         detail::TimeClip(
             detail::UTC(detail::MakeDate(detail::MakeDay(y, m, dt),
                                          detail::MakeTime(h, min, s, milli)))));
