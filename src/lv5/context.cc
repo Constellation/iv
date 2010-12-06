@@ -212,6 +212,13 @@ void Context::Initialize() {
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
+  func_proto->DefineOwnProperty(
+      this, Intern("apply"),
+      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionApply, 2),
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
+
   {
     // Object Define
 

@@ -82,5 +82,65 @@ inline JSVal FunctionCall(const Arguments& args,
   return JSUndefined;
 }
 
+inline JSVal FunctionApply(const Arguments& args,
+                          Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
+  const JSVal& obj = args.this_binding();
+  if (obj.IsCallable()) {
+    using std::copy;
+    JSFunction* const func = obj.object()->AsCallable();
+    Context* const ctx = args.ctx();
+    const std::size_t args_size = args.size();
+    if (args_size < 2) {
+      if (args_size == 0) {
+        return func->Call(Arguments(ctx, JSUndefined), error);
+      } else {
+        return func->Call(Arguments(ctx, args[0]), error);
+      }
+    }
+    const JSVal& second = args[1];
+    if (!second.IsObject()) {
+      error->Report(
+          Error::Type,
+          "Function.prototype.apply requires Arraylike as 2nd arguments");
+      return JSUndefined;
+    }
+    JSObject* const arg_array = second.object();
+    const JSVal len = arg_array->Get(ctx, ctx->length_symbol(), ERROR(error));
+    if (len.IsNull() || len.IsUndefined()) {
+      error->Report(
+          Error::Type,
+          "Function.prototype.apply requires Arraylike as 2nd arguments");
+      return JSUndefined;
+    }
+    const double temp = len.ToNumber(ctx, ERROR(error));
+    const uint32_t n = core::DoubleToUInt32(temp);
+    if (temp != n) {
+      error->Report(
+          Error::Type,
+          "Function.prototype.apply requires Arraylike as 2nd arguments");
+      return JSUndefined;
+    }
+
+    // TODO(Constellation) more faster way
+    Arguments args_list(ctx, n);
+    std::size_t index = 0;
+    std::tr1::array<char, 80> buffer;
+    while (index < n) {
+        const char* const str = core::DoubleToCString(index,
+                                                      buffer.data(),
+                                                      buffer.size());
+        args_list[index] = arg_array->Get(ctx,
+                                          ctx->Intern(str), ERROR(error));
+        ++index;
+    }
+    args_list.set_this_binding(args[0]);
+    return func->Call(args_list, error);
+  }
+  error->Report(Error::Type,
+                "Function.prototype.apply is not generic function");
+  return JSUndefined;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_FUNCTION_H_
