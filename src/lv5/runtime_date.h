@@ -671,5 +671,208 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+// section 15.9.5.33 Date.prototype.setUTCMinutes(min[, sec[, ms]])
+inline JSVal DateSetUTCMinutes(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.setUTCMinutes", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    const double t = static_cast<JSDate*>(obj.object())->value();
+    const std::size_t args_size = args.size();
+    double m;
+    double sec;
+    double ms;
+    if (args_size > 0) {
+      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      if (args_size > 1) {
+        sec = args[1].ToNumber(args.ctx(), ERROR(error));
+        if (args_size > 2) {
+          ms = args[2].ToNumber(args.ctx(), ERROR(error));
+        } else {
+          ms = detail::MsFromTime(t);
+        }
+      } else {
+        sec = detail::SecFromTime(t);
+        ms = detail::MsFromTime(t);
+      }
+    } else {
+      m = JSValData::kNaN;
+      sec = detail::SecFromTime(t);
+      ms = detail::MsFromTime(t);
+    }
+    const double v = detail::TimeClip(
+        detail::MakeDate(
+            detail::Day(t),
+            detail::MakeTime(detail::HourFromTime(t),
+                             m,
+                             sec,
+                             ms)));
+    static_cast<JSDate*>(obj.object())->set_value(v);
+    return v;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.setUTCMinutes is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.35 Date.prototype.setUTCHours(hour[, min[, sec[, ms]])
+inline JSVal DateSetUTCHours(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.setUTCHours", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    const double t = static_cast<JSDate*>(obj.object())->value();
+    const std::size_t args_size = args.size();
+    double h;
+    double m;
+    double sec;
+    double ms;
+    if (args_size > 0) {
+      h = args[0].ToNumber(args.ctx(), ERROR(error));
+      if (args_size > 1) {
+        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        if (args_size > 2) {
+          sec = args[2].ToNumber(args.ctx(), ERROR(error));
+          if (args_size > 3) {
+            ms = args[3].ToNumber(args.ctx(), ERROR(error));
+          } else {
+            ms = detail::MsFromTime(t);
+          }
+        } else {
+          sec = detail::MsFromTime(t);
+          ms = detail::MsFromTime(t);
+        }
+      } else {
+        m = detail::MinFromTime(t);
+        sec = detail::SecFromTime(t);
+        ms = detail::MsFromTime(t);
+      }
+    } else {
+      h = JSValData::kNaN;
+      m = detail::MinFromTime(t);
+      sec = detail::SecFromTime(t);
+      ms = detail::MsFromTime(t);
+    }
+    const double v = detail::TimeClip(
+        detail::MakeDate(
+            detail::Day(t),
+            detail::MakeTime(h, m, sec, ms)));
+    static_cast<JSDate*>(obj.object())->set_value(v);
+    return v;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.setUTCHours is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.37 Date.prototype.setUTCDate(date)
+inline JSVal DateSetUTCDate(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.setUTCDate", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    const double t = static_cast<JSDate*>(obj.object())->value();
+    const std::size_t args_size = args.size();
+    double dt;
+    if (args_size > 0) {
+      dt = args[0].ToNumber(args.ctx(), ERROR(error));
+    } else {
+      dt = JSValData::kNaN;
+    }
+    const double v = detail::TimeClip(
+        detail::MakeDate(
+            detail::MakeDay(detail::YearFromTime(t),
+                            detail::MonthFromTime(t),
+                            dt),
+            detail::TimeWithinDay(t)));
+    static_cast<JSDate*>(obj.object())->set_value(v);
+    return v;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.setUTCDate is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.39 Date.prototype.setUTCMonth(month[, date])
+inline JSVal DateSetUTCMonth(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.setUTCMonth", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    const double t = static_cast<JSDate*>(obj.object())->value();
+    const std::size_t args_size = args.size();
+    double m;
+    double dt;
+    if (args_size > 0) {
+      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      if (args_size > 1) {
+        dt = args[1].ToNumber(args.ctx(), ERROR(error));
+      } else {
+        dt = detail::DateFromTime(t);
+      }
+    } else {
+      m = JSValData::kNaN;
+      dt = detail::DateFromTime(t);
+    }
+    const double v = detail::TimeClip(
+        detail::MakeDate(
+            detail::MakeDay(detail::YearFromTime(t),
+                            m,
+                            dt),
+            detail::TimeWithinDay(t)));
+    static_cast<JSDate*>(obj.object())->set_value(v);
+    return v;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.setUTCMonth is not generic function");
+  return JSUndefined;
+}
+
+// section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
+inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.setUTCFullYear", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+    double t = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(t)) {
+      t = +0.0;
+    }
+    const std::size_t args_size = args.size();
+    double y;
+    double m;
+    double dt;
+    if (args_size > 0) {
+      y = args[0].ToNumber(args.ctx(), ERROR(error));
+      if (args_size > 1) {
+        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        if (args_size > 2) {
+          dt = args[2].ToNumber(args.ctx(), ERROR(error));
+        } else {
+          dt = detail::DateFromTime(t);
+        }
+      } else {
+        m = detail::MonthFromTime(t);
+        dt = detail::DateFromTime(t);
+      }
+    } else {
+      y = JSValData::kNaN;
+      m = detail::MonthFromTime(t);
+      dt = detail::DateFromTime(t);
+    }
+    const double v = detail::TimeClip(
+        detail::MakeDate(
+            detail::MakeDay(y,
+                            m,
+                            dt),
+            detail::TimeWithinDay(t)));
+    static_cast<JSDate*>(obj.object())->set_value(v);
+    return v;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.setUTCFullYear is not generic function");
+  return JSUndefined;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_STRING_H_

@@ -1387,6 +1387,46 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.9.5.33 Date.prototype.setUTCMinutes(min[, sec[, ms]])
+    proto->DefineOwnProperty(
+        this, Intern("setUTCMinutes"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCMinutes, 3),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.35 Date.prototype.setUTCHours(hour[, min[, sec[, ms]])
+    proto->DefineOwnProperty(
+        this, Intern("setUTCHours"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCHours, 4),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.37 Date.prototype.setUTCDate(date)
+    proto->DefineOwnProperty(
+        this, Intern("setUTCDate"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCDate, 1),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.39 Date.prototype.setUTCMonth(month[, date])
+    proto->DefineOwnProperty(
+        this, Intern("setUTCMonth"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCMonth, 2),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
+    proto->DefineOwnProperty(
+        this, Intern("setUTCFullYear"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCFullYear, 3),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
