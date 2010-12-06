@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <tr1/array>
 #include <cstdlib>
-#include <iostream>
 #include "conversions.h"
 #include "chars.h"
 #include "ustringpiece.h"
@@ -144,7 +143,6 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       return true;
     }
-    std::cout << "INDEX ***" << std::endl;
     return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
   }
 }
