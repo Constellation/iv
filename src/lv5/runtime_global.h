@@ -56,17 +56,17 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
                                                 true);
     ctx->Run(script);
   } else {
+    const Interpreter::ContextSwitcher switcher(ctx,
+                                                ctx->global_env(),
+                                                ctx->global_env(),
+                                                ctx->global_obj(),
+                                                false);
     ctx->Run(script);
   }
   if (ctx->IsShouldGC()) {
     GC_gcollect();
   }
   return ctx->ret();
-}
-
-inline JSVal GlobalEval(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("eval", args, error);
-  return InDirectCallToEval(args, error);
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
@@ -90,17 +90,17 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
                                                 true);
     ctx->Run(script);
   } else {
-    const Interpreter::ContextSwitcher switcher(ctx,
-                                                ctx->global_env(),
-                                                ctx->global_env(),
-                                                ctx->global_obj(),
-                                                false);
     ctx->Run(script);
   }
   if (ctx->IsShouldGC()) {
     GC_gcollect();
   }
   return ctx->ret();
+}
+
+inline JSVal GlobalEval(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("eval", args, error);
+  return InDirectCallToEval(args, error);
 }
 
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
