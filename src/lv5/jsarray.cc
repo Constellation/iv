@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <tr1/array>
 #include <cstdlib>
+#include <iostream>
 #include "conversions.h"
 #include "chars.h"
 #include "ustringpiece.h"
@@ -19,7 +20,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
     length_(len) {
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
-                              DataDescriptor(0.0,
+                              DataDescriptor(len,
                                              PropertyDescriptor::WRITABLE),
                                              false, ctx->error());
 }
@@ -39,31 +40,31 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 bool th,
                                 Error* res) {
   const Symbol length_symbol = ctx->length_symbol();
-  PropertyDescriptor old_len_desc_upper = GetOwnProperty(length_symbol);
-  assert(!old_len_desc_upper.IsEmpty() &&
-         old_len_desc_upper.IsDataDescriptor());
-  DataDescriptor* const old_len_desc = old_len_desc_upper.AsDataDescriptor();
+  DataDescriptor* const old_len_desc = GetOwnProperty(length_symbol).AsDataDescriptor();
 
   const JSVal& len_value = old_len_desc->value();
-  const core::UString& name_string = ctx->GetContent(name);
 
   if (name == length_symbol) {
     if (desc.IsDataDescriptor()) {
-      const JSVal& new_len_value = desc.AsDataDescriptor()->value();
-      const double new_len_double = new_len_value.ToNumber(ctx, res);
+      const DataDescriptor* const data = desc.AsDataDescriptor();
+      if (data->IsValueAbsent()) {
+        return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
+      }
+      DataDescriptor new_len_desc(*data);
+      const double new_len_double = new_len_desc.value().ToNumber(ctx, res);
       if (*res) {
         return false;
       }
-      uint32_t new_len = core::DoubleToUInt32(new_len_double);
+      const uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
         res->Report(Error::Range, "out of range");
         return false;
       }
+      new_len_desc.set_value(new_len);
       double old_len = len_value.ToNumber(ctx, res);
       if (*res) {
         return false;
       }
-      DataDescriptor new_len_desc(new_len, desc.attrs() & PropertyDescriptor::kDataAttrField);
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);
@@ -73,9 +74,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       const bool new_writable =
           new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
-      if (!new_writable) {
-        new_len_desc.set_writable(true);
-      }
+      new_len_desc.set_writable(true);
       const bool succeeded = JSObject::DefineOwnProperty(ctx, length_symbol,
                                                          new_len_desc, th, res);
       if (!succeeded) {
@@ -107,9 +106,12 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         }
       }
       if (!new_writable) {
-        new_len_desc.set_writable(false);
         JSObject::DefineOwnProperty(ctx, length_symbol,
-                                    new_len_desc, false, res);
+                                    DataDescriptor(
+                                        PropertyDescriptor::WRITABLE |
+                                        PropertyDescriptor::UNDEF_ENUMERABLE |
+                                        PropertyDescriptor::UNDEF_CONFIGURABLE),
+                                    false, res);
       }
       return true;
     } else {
@@ -118,7 +120,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
     }
   } else {
     uint32_t index;
-    if (core::ConvertToUInt32(name_string, &index)) {
+    if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
       // array index
       const double old_len = len_value.ToNumber(ctx, res);
       if (*res) {
@@ -142,6 +144,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       return true;
     }
+    std::cout << "INDEX ***" << std::endl;
     return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
   }
 }

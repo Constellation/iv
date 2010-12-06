@@ -210,6 +210,9 @@ class DataDescriptor: public PropertyDescriptor {
   DataDescriptor(const JSVal& value, int attrs)
      : PropertyDescriptor(kDataDescripter, value, attrs) {
   }
+  DataDescriptor(int attrs)
+     : PropertyDescriptor(kDataDescripter, JSUndefined, attrs | UNDEF_VALUE) {
+  }
   int type() const {
     return DATA;
   }

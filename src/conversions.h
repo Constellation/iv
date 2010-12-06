@@ -427,7 +427,15 @@ inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
   *value = 0;
   UStringPiece::const_iterator it = str.begin();
   const UStringPiece::const_iterator last = str.end();
-  if (it != last && *it != '0' && Chars::IsDecimalDigit(*it)) {
+  if (it != last && *it == '0') {
+    if (it + 1 != last) {
+      return false;
+    } else {
+      *value = 0;
+      return true;
+    }
+  }
+  if (it != last && Chars::IsDecimalDigit(*it)) {
     ch = *it - '0';
     *value = ch;
   } else {
