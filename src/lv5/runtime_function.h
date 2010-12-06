@@ -83,7 +83,7 @@ inline JSVal FunctionCall(const Arguments& args,
 }
 
 inline JSVal FunctionApply(const Arguments& args,
-                          Error* error) {
+                           Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
