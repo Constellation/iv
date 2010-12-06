@@ -137,15 +137,39 @@ void Context::Initialize() {
   // Function
   JSNativeFunction* const func_proto =
       JSNativeFunction::NewPlain(this, &runtime::FunctionPrototype, 0);
+  JSNativeFunction* const func_constructor =
+      JSNativeFunction::NewPlain(this, &runtime::FunctionConstructor, 1);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
     JSString::NewAsciiString(this, "Function"),
-    NULL,
+    func_constructor,
     func_proto
   };
   func_proto->set_cls(func_cls.name);
+  func_constructor->set_cls(func_cls.name);
+  func_constructor->set_prototype(func_cls.prototype);
+  // set prototype
+  func_constructor->DefineOwnProperty(
+      this, prototype_symbol_,
+      DataDescriptor(func_proto, PropertyDescriptor::NONE),
+      false, NULL);
+
   const Symbol func_name = Intern("Function");
   builtins_[func_name] = func_cls;
+
+  global_obj_.DefineOwnProperty(
+      this, func_name,
+      DataDescriptor(func_constructor,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
+
+  func_proto->DefineOwnProperty(
+      this, constructor_symbol_,
+      DataDescriptor(func_constructor,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
 
   // section 15.2.2
   JSNativeFunction* const obj_constructor =
@@ -173,16 +197,20 @@ void Context::Initialize() {
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
-  {
-    JSNativeFunction* const func =
-        JSNativeFunction::New(this, &runtime::FunctionToString, 0);
-    func_proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(func,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-  }
+
+  func_proto->DefineOwnProperty(
+      this, toString_symbol_,
+      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionToString, 0),
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
+
+  func_proto->DefineOwnProperty(
+      this, Intern("call"),
+      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionCall, 1),
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
 
   {
     // Object Define

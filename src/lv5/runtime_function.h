@@ -23,6 +23,11 @@ inline JSVal FunctionPrototype(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+// TODO(Constellation) implement it
+inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
+  return JSUndefined;
+}
+
 inline JSVal FunctionToString(const Arguments& args,
                               Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.toString", args, error);
@@ -46,6 +51,34 @@ inline JSVal FunctionToString(const Arguments& args,
   }
   error->Report(Error::Type,
                 "Function.prototype.toString is not generic function");
+  return JSUndefined;
+}
+
+inline JSVal FunctionCall(const Arguments& args,
+                          Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype.call", args, error);
+  const JSVal& obj = args.this_binding();
+  if (obj.IsCallable()) {
+    JSFunction* const func = obj.object()->AsCallable();
+    Context* const ctx = args.ctx();
+    const std::size_t args_size = args.size();
+
+    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0);
+
+    for (std::size_t n = 0, len = args_list.size();
+         n < len; ++n) {
+      args_list[n] = args[n+1];
+    }
+
+    if (args_size > 0) {
+      args_list.set_this_binding(args[0]);
+    } else {
+      args_list.set_this_binding(JSUndefined);
+    }
+    return func->Call(args_list, error);
+  }
+  error->Report(Error::Type,
+                "Function.prototype.call is not generic function");
   return JSUndefined;
 }
 

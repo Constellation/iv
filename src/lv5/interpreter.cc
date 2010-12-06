@@ -136,7 +136,7 @@ void Interpreter::CallCode(
   // step 1
   JSVal this_value = args.this_binding();
   if (!code->IsStrict()) {
-    if (this_value.IsUndefined()) {
+    if (this_value.IsUndefined() || this_value.IsNull()) {
       this_value.set_value(ctx_->global_obj());
     } else if (!this_value.IsObject()) {
       JSObject* const obj = this_value.ToObject(ctx_, CHECK_IN_STMT);
