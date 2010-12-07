@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
           0,   "print the copyright");
   cmd.set_footer("[program_file] [arguments]");
 
-  bool cmd_parse_success = cmd.Parse(argc, argv);
+  const bool cmd_parse_success = cmd.Parse(argc, argv);
   if (!cmd_parse_success) {
     std::cerr << cmd.error() << std::endl << cmd.usage();
     return EXIT_FAILURE;
@@ -86,9 +86,10 @@ int main(int argc, char **argv) {
     std::string str;
     if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
       std::tr1::array<char, 1024> buf;
-      while (std::size_t len = std::fread(buf.data(),
-                                          1,
-                                          buf.size(), fp)) {
+      while (const std::size_t len = std::fread(
+              buf.data(),
+              1,
+              buf.size(), fp)) {
         str.append(buf.data(), len);
       }
       std::fclose(fp);
