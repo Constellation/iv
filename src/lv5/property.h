@@ -125,6 +125,7 @@ class PropertyDescriptor {
   static this_type SetDefault(const PropertyDescriptor& prop);
 
   inline void set_data_descriptor(const JSVal& value);
+  inline void set_data_descriptor();
   inline void set_accessor_descriptor(JSObject* get, JSObject* set);
 
   inline this_type& operator=(const this_type& rhs) {
@@ -275,12 +276,20 @@ inline AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 inline void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
   attrs_ &= ~ACCESSOR;
   attrs_ |= DATA;
+  attrs_ &= ~UNDEF_VALUE;
   value_.data_ = value.Layout();
+}
+
+inline void PropertyDescriptor::set_data_descriptor() {
+  attrs_ &= ~ACCESSOR;
+  attrs_ |= DATA;
+  attrs_ |= UNDEF_VALUE;
 }
 
 inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {
   attrs_ &= ~DATA;
   attrs_ |= ACCESSOR;
+  attrs_ |= UNDEF_VALUE;
   value_.accessor_.getter_ = get;
   value_.accessor_.setter_ = set;
 }
@@ -296,7 +305,11 @@ inline PropertyDescriptor PropertyDescriptor::SetDefault(
   }
   if (prop.IsDataDescriptor()) {
     const DataDescriptor* const data = prop.AsDataDescriptor();
-    result.set_data_descriptor(data->value());
+    if (data->IsValueAbsent()) {
+      result.set_data_descriptor(JSUndefined);
+    } else {
+      result.set_data_descriptor(data->value());
+    }
     if (data->IsWritableAbsent()) {
       result.AsDataDescriptor()->set_writable(false);
     }
@@ -350,22 +363,17 @@ inline PropertyDescriptor PropertyDescriptor::Merge(
   }
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
-    DataDescriptor* const res = result.AsDataDescriptor();
-    if (!data->IsWritableAbsent()) {
-      res->set_writable(data->IsWritable());
+    if (data->IsValueAbsent()) {
+      result.set_data_descriptor();
+    } else {
+      result.set_data_descriptor(data->value());
     }
-    if (!data->IsValueAbsent()) {
-      res->set_value(data->value());
+    if (!data->IsWritableAbsent()) {
+      result.AsDataDescriptor()->set_writable(data->IsWritable());
     }
   } else if (desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
-    AccessorDescriptor* const res = result.AsAccessorDescriptor();
-    if (accs->get()) {
-      res->set_get(accs->get());
-    }
-    if (accs->set()) {
-      res->set_set(accs->set());
-    }
+    result.set_accessor_descriptor(accs->get(), accs->set());
   }
   return result;
 }
