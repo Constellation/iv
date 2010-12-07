@@ -250,7 +250,10 @@ void JSObject::Put(Context* ctx,
   if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
-    accs->set()->AsCallable()->Call(Arguments(ctx, this), res);
+    Arguments args(ctx, 1);
+    args.set_this_binding(this);
+    args[0] = val;
+    accs->set()->AsCallable()->Call(args, res);
   } else {
     DefineOwnProperty(ctx, name,
                       DataDescriptor(val,

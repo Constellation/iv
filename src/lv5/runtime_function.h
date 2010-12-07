@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_FUNCTION_H_
 #define _IV_LV5_RUNTIME_FUNCTION_H_
+#include <algorithm>
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "jsfunction.h"
@@ -87,7 +88,6 @@ inline JSVal FunctionApply(const Arguments& args,
   CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
-    using std::copy;
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
