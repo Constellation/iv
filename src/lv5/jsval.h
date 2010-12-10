@@ -58,10 +58,11 @@ template<>
 struct Layout<8, true> {
   union {
     struct {
-      uint32_t overhead_;
       double as_;
     } number_;
     struct {
+      uint32_t padding_;
+      uint32_t tag_;
       union {
         bool boolean_;
         JSObject* object_;
@@ -69,8 +70,6 @@ struct Layout<8, true> {
         JSReference* reference_;
         JSEnv* environment_;
       } payload_;
-      uint32_t tag_;
-      uint32_t tail_;
     } struct_;
   };
 
@@ -106,6 +105,7 @@ struct Layout<8, false> {
     } number_;
     struct {
       uint32_t tag_;
+      uint32_t padding_;
       union {
         bool boolean_;
         JSObject* object_;
@@ -113,7 +113,6 @@ struct Layout<8, false> {
         JSReference* reference_;
         JSEnv* environment_;
       } payload_;
-      uint32_t tail_;
     } struct_;
   };
 
