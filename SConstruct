@@ -89,7 +89,11 @@ def Build():
       conf.CheckLibWithHeader('iconv', 'iconv.h', 'c++')
       option_dict['%USE_ICU%'] = '0'
     else:
-      conf.env.ParseConfig('icu-config --cxxflags --cppflags --ldflags')
+      conf.env.ParseConfig('icu-config --cppflags --ldflags')
+      conf.env.Append(
+          CXXFLAGS=[
+            "-ansi", "-pedantic", "-Wpointer-arith",
+            "-Wwrite-strings", "-Wno-long-long"   ])
       option_dict['%USE_ICU%'] = '1'
     conf.CheckLibWithHeader('m', 'cmath', 'c++')
     env = conf.Finish()
