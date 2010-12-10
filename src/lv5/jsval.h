@@ -40,9 +40,6 @@ struct Layout<4, true> {
       double as_;
     } number_;
     struct {
-      uint64_t as_;
-    } bits_;
-    struct {
       union {
         bool boolean_;
         JSObject* object_;
@@ -65,10 +62,6 @@ struct Layout<8, true> {
       double as_;
     } number_;
     struct {
-      uint32_t overhead_;
-      uint64_t as_;
-    } bits_;
-    struct {
       union {
         bool boolean_;
         JSObject* object_;
@@ -77,10 +70,11 @@ struct Layout<8, true> {
         JSEnv* environment_;
       } payload_;
       uint32_t tag_;
+      uint32_t tail_;
     } struct_;
   };
 
-  static const std::size_t kExpectedSize = 12;
+  static const std::size_t kExpectedSize = 16;
 };
 
 template<>
@@ -89,9 +83,6 @@ struct Layout<4, false> {
     struct {
       double as_;
     } number_;
-    struct {
-      uint64_t as_;
-    } bits_;
     struct {
       uint32_t tag_;
       union {
@@ -114,9 +105,6 @@ struct Layout<8, false> {
       double as_;
     } number_;
     struct {
-      uint64_t as_;
-    } bits_;
-    struct {
       uint32_t tag_;
       union {
         bool boolean_;
@@ -125,10 +113,11 @@ struct Layout<8, false> {
         JSReference* reference_;
         JSEnv* environment_;
       } payload_;
+      uint32_t tail_;
     } struct_;
   };
 
-  static const std::size_t kExpectedSize = 12;
+  static const std::size_t kExpectedSize = 16;
 };
 
 struct JSTrueType { };

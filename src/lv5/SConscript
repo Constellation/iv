@@ -5,7 +5,7 @@ Import('context object_files root_dir')
 def Build():
   env = context.Clone()
   env.Append(
-      LIBS=['gc'],
+      LIBS=['gc', 'boost_thread'],
       CCFLAGS=["-fno-strict-aliasing"],
       )
   return env.Program('lv5',
