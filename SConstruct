@@ -76,9 +76,6 @@ def Build():
 
   if not env.GetOption('clean'):
     conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
-    if not conf.CheckFunc('strtod'):
-      print 'strtod must be provided'
-      Exit(1)
     if not conf.CheckFunc('snprintf'):
       print 'strtod must be provided'
       Exit(1)
