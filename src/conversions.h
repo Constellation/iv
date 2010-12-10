@@ -252,7 +252,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       return (parse_float && !is_found_zero) ? Conversions::kNaN : 0;
     } else {
       buffer[pos++] = '\0';
-      return std::strtod(buffer.data(), NULL);
+      return std::atof(buffer.data());
     }
   } else {
     return Conversions::kNaN;
@@ -421,12 +421,11 @@ inline double DoubleToInteger(double d) {
   return std::floor(std::abs(d)) * (std::signbit(d) ? -1 : 1);
 }
 
-inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
+template<typename Iter>
+inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
   static const uint32_t uint32_t_max = std::numeric_limits<uint32_t>::max();
   uint16_t ch;
   *value = 0;
-  UStringPiece::const_iterator it = str.begin();
-  const UStringPiece::const_iterator last = str.end();
   if (it != last && *it == '0') {
     if (it + 1 != last) {
       return false;
@@ -455,6 +454,14 @@ inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
   return (prev < (uint32_t_max / 10) ||
           ((prev == (uint32_t_max / 10)) &&
            (ch < (uint32_t_max % 10))));
+}
+
+inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
+  return ConvertToUInt32(str.begin(), str.end(), value);
+}
+
+inline bool ConvertToUInt32(const StringPiece& str, uint32_t* value) {
+  return ConvertToUInt32(str.begin(), str.end(), value);
 }
 
 template<typename T>

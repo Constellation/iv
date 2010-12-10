@@ -6,7 +6,7 @@ TEST(CmdLineCase, CmdLineTest) {
   iv::cmdline::Parser cmd;
   cmd.Add("help", "help", 'h', "print this message");
   cmd.Add("version", "version", 'v', "print the version");
-  cmd.Add("copyright", "copyright", NULL, "print the copyright");
+  cmd.Add("copyright", "copyright", '\0', "print the copyright");
   cmd.Add<std::string>("name", "name", 'n', "name", true, "");
   cmd.Add<int>("port", "port", 'p', "port number",
                false, 80, iv::cmdline::range(1, 65535));

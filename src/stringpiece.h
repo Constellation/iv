@@ -97,7 +97,7 @@ class BasicStringPiece {
     if (!empty()) {
       target->assign(data(), size());
     } else {
-      target->assign(NULL, 0);
+      target->assign(0UL, static_cast<CharT>('\0'));
     }
   }
 

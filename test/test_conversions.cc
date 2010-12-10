@@ -114,3 +114,20 @@ TEST(ConversionsCase, StringToIntegerWithRadix) {
   ASSERT_EQ(StringToIntegerWithRadix("go", 36, true), 600);
   ASSERT_TRUE(std::isnan(StringToIntegerWithRadix("20dddd", 2, true)));
 }
+
+TEST(ConversionsCase, ConvertToUInt32) {
+  using iv::core::ConvertToUInt32;
+  uint32_t target;
+  ASSERT_FALSE(ConvertToUInt32("0x0100", &target));
+  ASSERT_FALSE(ConvertToUInt32("d0100", &target));
+  ASSERT_FALSE(ConvertToUInt32("20e", &target));
+  ASSERT_TRUE(ConvertToUInt32("0", &target));
+  ASSERT_EQ(target, 0);
+  ASSERT_TRUE(ConvertToUInt32("1", &target));
+  ASSERT_EQ(target, 1);
+  ASSERT_TRUE(ConvertToUInt32("10", &target));
+  ASSERT_EQ(target, 10);
+  ASSERT_TRUE(ConvertToUInt32("1000", &target));
+  ASSERT_EQ(target, 1000);
+  ASSERT_FALSE(ConvertToUInt32("0100", &target));
+}

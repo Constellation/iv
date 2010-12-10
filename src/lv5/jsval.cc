@@ -88,7 +88,7 @@ double JSVal::ToNumber(Context* ctx, Error* res) const {
     assert(IsObject());
     JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER, res);
     if (*res) {
-      return NULL;
+      return 0.0;
     }
     return prim.ToNumber(ctx, res);
   }

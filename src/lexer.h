@@ -801,7 +801,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       }
       numeric_ = val;
     } else {
-      numeric_ = std::strtod(buffer8_.c_str(), NULL);
+      numeric_ = std::atof(buffer8_.c_str());
     }
     type_ = type;
     return Token::NUMBER;
