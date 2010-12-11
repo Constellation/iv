@@ -268,31 +268,36 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   bool ParseSourceElements(Token::Type end,
                            FunctionLiteral* function, bool *res) {
     Statement* stmt;
-    bool recognize_use_strict_directive = true;
+    bool recognize_directive = true;
     const StrictSwitcher switcher(this);
     while (token_ != end) {
       if (token_ == Token::FUNCTION) {
         // FunctionDeclaration
         stmt = ParseFunctionDeclaration(CHECK);
         function->AddStatement(stmt);
+        recognize_directive = false;
       } else {
         stmt = ParseStatement(CHECK);
-        // use strict directive check
-        if (recognize_use_strict_directive &&
-            !strict_ &&
-            stmt->AsExpressionStatement()) {
-          Expression* const expr = stmt->AsExpressionStatement()->expr();
-          if (expr->AsDirectivable()) {
-            if (expr->AsStringLiteral()->value().compare(
-                    ParserData::kUseStrict.data()) == 0) {
-              switcher.SwitchStrictMode();
-              function->set_strict(true);
+        // directive prologue
+        if (recognize_directive) {
+          if (stmt->AsExpressionStatement()) {
+            Expression* const expr = stmt->AsExpressionStatement()->expr();
+            if (expr->AsDirectivable()) {
+              // expression is directive
+              if (expr->AsStringLiteral()->value().compare(
+                      ParserData::kUseStrict.data()) == 0) {
+                switcher.SwitchStrictMode();
+                function->set_strict(true);
+              }
+            } else {
+              recognize_directive = false;
             }
+          } else {
+            recognize_directive = false;
           }
         }
         function->AddStatement(stmt);
       }
-      recognize_use_strict_directive = false;
     }
     return true;
   }
