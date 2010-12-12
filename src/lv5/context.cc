@@ -475,6 +475,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
+    proto->DefineOwnProperty(
+        this, Intern("push"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToPush, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

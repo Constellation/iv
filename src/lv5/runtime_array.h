@@ -226,5 +226,37 @@ inline JSVal ArrayToPop(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
+inline JSVal ArrayToPush(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.push", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  uint32_t n = core::DoubleToUInt32(val);
+  std::tr1::array<char, 20> buf;
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it, ++n) {
+    obj->Put(
+        ctx,
+        ctx->Intern(
+            core::StringPiece(
+                buf.data(),
+                std::snprintf(
+                    buf.data(), buf.size(), "%lu",
+                    static_cast<unsigned long>(n)))),  // NOLINT
+        *it,
+        true, ERROR(error));
+  }
+  obj->Put(
+      ctx,
+      ctx->length_symbol(),
+      n,
+      true, ERROR(error));
+  return n;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_ARRAY_H_
