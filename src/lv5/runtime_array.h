@@ -269,9 +269,8 @@ inline JSVal ArrayToReverse(const Arguments& args, Error* error) {
   const double val = length.ToNumber(ctx, ERROR(error));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t middle = len >> 1;
-  uint32_t lower = 0;
   std::tr1::array<char, 20> buf;
-  while (lower != middle) {
+  for (uint32_t lower = 0; lower != middle; ++lower) {
     const uint32_t upper = len - lower - 1;
     const Symbol lower_symbol = ctx->Intern(
         core::StringPiece(
@@ -307,9 +306,249 @@ inline JSVal ArrayToReverse(const Arguments& args, Error* error) {
     } else {
       // no action is required
     }
-    ++lower;
   }
   return obj;
+}
+
+// section 15.4.4.9 Array.prototype.shift()
+inline JSVal ArrayToShift(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.shift", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  if (len == 0) {
+    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(error));
+    return JSUndefined;
+  }
+  const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(error));
+  std::tr1::array<char, 20> buf;
+  Symbol to = ctx->Intern(
+      core::StringPiece(
+          buf.data(),
+          std::snprintf(
+              buf.data(), buf.size(), "%lu",
+              static_cast<unsigned long>(0))));  // NOLINT
+  Symbol from;
+  for (uint32_t k = 1; k < len; ++k, to = from) {
+    from = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(from)) {
+      const JSVal from_value = obj->Get(ctx, from, ERROR(error));
+      obj->Put(ctx, to, from_value, true, ERROR(error));
+    } else {
+      obj->Delete(to, true, ERROR(error));
+    }
+  }
+  obj->Delete(from, true, ERROR(error));
+  obj->Put(ctx, ctx->length_symbol(), len - 1, true, ERROR(error));
+  return first;
+}
+
+// section 15.4.4.10 Array.prototype.slice(start, end)
+inline JSVal ArrayToSlice(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.slice", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSArray* const ary = JSArray::New(ctx);
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  uint32_t k;
+  if (args.size() > 0) {
+    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    relative_start = core::DoubleToInteger(relative_start);
+    if (relative_start < 0) {
+      k = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
+    } else {
+      k = core::DoubleToUInt32(std::min<double>(relative_start, len));
+    }
+  } else {
+    k = 0;
+  }
+  uint32_t final;
+  if (args.size() > 1) {
+    if (args[1].IsUndefined()) {
+      final = len;
+    } else {
+      double relative_end = args[1].ToNumber(ctx, ERROR(error));
+      relative_end = core::DoubleToInteger(relative_end);
+      if (relative_end < 0) {
+        final = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
+      } else {
+        final = core::DoubleToUInt32(std::min<double>(relative_end , len));
+      }
+    }
+  } else {
+    final = len;
+  }
+  std::tr1::array<char, 20> buf;
+  for (uint32_t n = 0; k < final; ++k, ++n) {
+    const Symbol pk = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(pk)) {
+      const JSVal kval = obj->Get(ctx, pk, ERROR(error));
+      ary->DefineOwnProperty(
+          ctx,
+          ctx->Intern(
+              core::StringPiece(
+                  buf.data(),
+                  std::snprintf(
+                      buf.data(), buf.size(), "%lu",
+                      static_cast<unsigned long>(n)))),  // NOLINT
+          DataDescriptor(kval,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+    }
+  }
+  return ary;
+}
+
+// section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
+inline JSVal ArrayToSplice(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.splice", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSArray* const ary = JSArray::New(ctx);
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t args_size = args.size();
+  uint32_t actual_start;
+  if (args_size > 0) {
+    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    relative_start = core::DoubleToInteger(relative_start);
+    if (relative_start < 0) {
+      actual_start = core::DoubleToUInt32(
+          std::max<double>(relative_start + len, 0.0));
+    } else {
+      actual_start = core::DoubleToUInt32(
+          std::min<double>(relative_start, len));
+    }
+  } else {
+    actual_start = 0;
+  }
+  uint32_t actual_delete_count;
+  if (args_size > 1) {
+    double delete_count = args[1].ToNumber(ctx, ERROR(error));
+    delete_count = core::DoubleToInteger(delete_count);
+    actual_delete_count = core::DoubleToUInt32(
+        std::min<double>(
+            std::max<double>(delete_count, 0.0), len - actual_start));
+  } else {
+    actual_delete_count = std::min<uint32_t>(0, len - actual_start);
+  }
+  std::tr1::array<char, 20> buf;
+  for (uint32_t k = 0; k < actual_delete_count; ++k) {
+    const Symbol from = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(actual_start + k))));  // NOLINT
+    if (obj->HasProperty(from)) {
+      const JSVal from_val = obj->Get(ctx, from, ERROR(error));
+      ary->DefineOwnProperty(
+          ctx,
+          ctx->Intern(
+              core::StringPiece(
+                  buf.data(),
+                  std::snprintf(
+                      buf.data(), buf.size(), "%lu",
+                      static_cast<unsigned long>(k)))),  // NOLINT
+          DataDescriptor(from_val,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+    }
+  }
+
+  const uint32_t item_count = (args_size > 2)? args_size - 2 : 0;
+  if (item_count < actual_delete_count) {
+    for (uint32_t k = actual_start,
+         last = len - actual_delete_count; k < last; ++k) {
+      const Symbol from = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(
+                  buf.data(), buf.size(), "%lu",
+                  static_cast<unsigned long>(
+                      k + actual_delete_count))));  // NOLINT
+      const Symbol to = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(
+                  buf.data(), buf.size(), "%lu",
+                  static_cast<unsigned long>(
+                      k + item_count))));  // NOLINT
+      if (obj->HasProperty(from)) {
+        const JSVal from_value = obj->Get(ctx, from, ERROR(error));
+        obj->Put(ctx, to, from_value, true, ERROR(error));
+      } else {
+        obj->Delete(to, true, ERROR(error));
+      }
+    }
+  } else if (item_count > actual_delete_count) {
+    for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
+      const Symbol from = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(
+                  buf.data(), buf.size(), "%lu",
+                  static_cast<unsigned long>(
+                      k + actual_delete_count - 1))));  // NOLINT
+      const Symbol to = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(
+                  buf.data(), buf.size(), "%lu",
+                  static_cast<unsigned long>(
+                      k + item_count - 1))));  // NOLINT
+      if (obj->HasProperty(from)) {
+        const JSVal from_value = obj->Get(ctx, from, ERROR(error));
+        obj->Put(ctx, to, from_value, true, ERROR(error));
+      } else {
+        obj->Delete(to, true, ERROR(error));
+      }
+    }
+  }
+  Arguments::const_iterator it = args.begin();
+  std::advance(it, 2);
+  for (uint32_t k = 0; k < item_count ; ++k, ++it) {
+    obj->Put(
+        ctx,
+        ctx->Intern(
+            core::StringPiece(
+                buf.data(),
+                std::snprintf(
+                    buf.data(), buf.size(), "%lu",
+                    static_cast<unsigned long>(
+                        k + item_count - 1)))),  // NOLINT
+        *it, true, ERROR(error));
+  }
+  obj->Put(
+      ctx,
+      ctx->length_symbol(),
+      len - actual_delete_count + item_count, true, ERROR(error));
+  return ary;
 }
 
 } } }  // namespace iv::lv5::runtime

@@ -493,6 +493,33 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.9 Array.prototype.shift()
+    proto->DefineOwnProperty(
+        this, Intern("shift"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToShift, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.10 Array.prototype.slice(start, end)
+    proto->DefineOwnProperty(
+        this, Intern("slice"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToSlice, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
+    proto->DefineOwnProperty(
+        this, Intern("splice"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToSplice, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
