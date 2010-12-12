@@ -556,6 +556,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
+    proto->DefineOwnProperty(
+        this, Intern("some"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArraySome, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
