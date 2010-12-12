@@ -5,6 +5,7 @@
 #include <cassert>
 #include <gc/gc_cpp.h>
 #include "conversions.h"
+#include "noncopyable.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "gc_template.h"
@@ -16,8 +17,10 @@ namespace iv {
 namespace lv5 {
 
 class Context;
+class JSStringBuilder;
 class JSString : public gc {
  public:
+  friend class JSStringBuilder;
   typedef JSString this_type;
   typedef GCUString value_type;
   typedef value_type::iterator iterator;
@@ -230,6 +233,25 @@ class JSString : public gc {
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   return os << str.value();
 }
+
+class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
+ public:
+  JSStringBuilder(Context* ctx)
+    : target_(JSString::NewEmptyString(ctx)) {
+  }
+  void Append(const core::UStringPiece& piece) {
+    piece.AppendToString(&target_->string_);
+  }
+  void Append(const JSString& str) {
+    target_->string_.append(str.value());
+  }
+  JSString* Build() {
+    target_->ReCalcHash();
+    return target_;
+  }
+ private:
+  JSString* target_;
+};
 
 } }  // namespace iv::lv5
 

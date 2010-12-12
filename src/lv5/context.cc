@@ -439,6 +439,24 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.2 Array.prototype.toString()
+    proto->DefineOwnProperty(
+        this, toString_symbol_,
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.5 Array.prototype.join(separator)
+    proto->DefineOwnProperty(
+        this, Intern("join"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToJoin, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
