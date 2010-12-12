@@ -574,6 +574,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.19 Array.prototype.forEach(callbackfn[, thisArg])
+    proto->DefineOwnProperty(
+        this, Intern("map"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayMap, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

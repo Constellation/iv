@@ -902,5 +902,69 @@ inline JSVal ArrayForEach(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+// section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
+inline JSVal ArrayMap(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.map", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t arg_count = args.size();
+  const uint32_t len = core::DoubleToUInt32(val);
+
+  JSFunction* callbackfn;
+  if (arg_count > 0) {
+    const JSVal first = args[0];
+    if (!first.IsCallable()) {
+      error->Report(
+          Error::Type,
+          "Array.protoype.map requires callable object as 1st argument");
+      return JSUndefined;
+    }
+    callbackfn = first.object()->AsCallable();
+  } else {
+    error->Report(
+        Error::Type,
+        "Array.protoype.map requires callable object as 1st argument");
+    return JSUndefined;
+  }
+
+  JSArray* const ary = JSArray::New(ctx, len);
+
+  Arguments arg_list(ctx, 3);
+  if (arg_count > 1) {
+    arg_list.set_this_binding(args[1]);
+  } else {
+    arg_list.set_this_binding(JSUndefined);
+  }
+  arg_list[2] = obj;
+
+  std::tr1::array<char, 20> buf;
+  for (uint32_t k = 0; k < len; ++k) {
+    const Symbol sym = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(sym)) {
+      arg_list[0] = obj->Get(ctx, sym, ERROR(error));
+      arg_list[1] = k;
+      const JSVal mapped_value = callbackfn->Call(arg_list, ERROR(error));
+      ary->DefineOwnProperty(
+          ctx,
+          sym,
+          DataDescriptor(mapped_value,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+    }
+  }
+  return ary;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_ARRAY_H_
