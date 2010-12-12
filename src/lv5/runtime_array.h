@@ -1040,5 +1040,91 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
   return ary;
 }
 
+// section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
+inline JSVal ArrayReduce(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.reduce", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t arg_count = args.size();
+  const uint32_t len = core::DoubleToUInt32(val);
+
+  JSFunction* callbackfn;
+  if (arg_count > 0) {
+    const JSVal first = args[0];
+    if (!first.IsCallable()) {
+      error->Report(
+          Error::Type,
+          "Array.protoype.reduce requires callable object as 1st argument");
+      return JSUndefined;
+    }
+    callbackfn = first.object()->AsCallable();
+  } else {
+    error->Report(
+        Error::Type,
+        "Array.protoype.reduce requires callable object as 1st argument");
+    return JSUndefined;
+  }
+
+  if (len == 0 && arg_count > 1) {
+    error->Report(
+        Error::Type,
+        "Array.protoype.reduce with empty Array requires "
+        "initial value as 2nd argument");
+    return JSUndefined;
+  }
+
+  uint32_t k = 0;
+  JSVal accumulator;
+  std::tr1::array<char, 20> buf;
+  if (arg_count > 1) {
+    accumulator = args[1];
+  } else {
+    bool k_present = false;
+    for (; k < len; ++k) {
+      const Symbol sym = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(
+                  buf.data(), buf.size(), "%lu",
+                  static_cast<unsigned long>(k))));  // NOLINT
+      if (obj->HasProperty(sym)) {
+        k_present = true;
+        ++k;
+        accumulator = obj->Get(ctx, sym, ERROR(error));
+        break;
+      }
+    }
+    if (!k_present) {
+      error->Report(
+          Error::Type,
+          "Array.protoype.reduce with empty Array requires initial value");
+      return JSUndefined;
+    }
+  }
+
+  Arguments arg_list(ctx, JSUndefined, 4);
+  arg_list[3] = obj;
+
+  for (;k < len; ++k) {
+    const Symbol sym = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(sym)) {
+      arg_list[0] = accumulator;
+      arg_list[1] = obj->Get(ctx, sym, ERROR(error));
+      arg_list[2] = k;
+      accumulator = callbackfn->Call(arg_list, ERROR(error));
+    }
+  }
+  return accumulator;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_ARRAY_H_

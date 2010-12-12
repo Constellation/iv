@@ -592,6 +592,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
+    proto->DefineOwnProperty(
+        this, Intern("reduce"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayReduce, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
