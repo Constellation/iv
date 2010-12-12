@@ -583,6 +583,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
+    proto->DefineOwnProperty(
+        this, Intern("filter"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayFilter, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
