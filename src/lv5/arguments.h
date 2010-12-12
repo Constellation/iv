@@ -65,6 +65,13 @@ class Arguments : private core::Noncopyable<Arguments>::type {
       constructor_call_(false) {
   }
 
+  Arguments(Context* ctx, const JSVal& this_binding, std::size_t n)
+    : ctx_(ctx),
+      this_binding_(this_binding),
+      args_(n),
+      constructor_call_(false) {
+  }
+
   Arguments(Context* ctx, std::size_t n)
     : ctx_(ctx),
       this_binding_(),
