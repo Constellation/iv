@@ -575,7 +575,7 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.4.4.19 Array.prototype.forEach(callbackfn[, thisArg])
+    // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
     proto->DefineOwnProperty(
         this, Intern("map"),
         DataDescriptor(
@@ -598,6 +598,15 @@ void Context::Initialize() {
         this, Intern("reduce"),
         DataDescriptor(
             JSNativeFunction::New(this, &runtime::ArrayReduce, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
+    proto->DefineOwnProperty(
+        this, Intern("reduceRight"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayReduceRight, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
