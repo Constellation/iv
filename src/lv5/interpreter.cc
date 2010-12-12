@@ -21,6 +21,7 @@
 #include "context.h"
 #include "jsast.h"
 #include "runtime_global.h"
+#include "internal.h"
 
 namespace iv {
 namespace lv5 {
@@ -984,7 +985,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::EQ: {  // ==
-        const bool res = AbstractEqual(lhs, rhs, CHECK);
+        const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -994,7 +995,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::NE: {  // !=
-        const bool res = AbstractEqual(lhs, rhs, CHECK);
+        const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (!res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1574,108 +1575,6 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
 
 
 #undef ERRCHECK
-
-
-bool Interpreter::StrictEqual(const JSVal& lhs, const JSVal& rhs) {
-  if (lhs.type() != rhs.type()) {
-    return false;
-  }
-  if (lhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber()) {
-    const double& lhsv = lhs.number();
-    const double& rhsv = rhs.number();
-    if (std::isnan(lhsv) || std::isnan(rhsv)) {
-      return false;
-    }
-    return lhsv == rhsv;
-  }
-  if (lhs.IsString()) {
-    return *(lhs.string()) == *(rhs.string());
-  }
-  if (lhs.IsBoolean()) {
-    return lhs.boolean() == rhs.boolean();
-  }
-  if (lhs.IsObject()) {
-    return lhs.object() == rhs.object();
-  }
-  return false;
-}
-
-
-#define ABSTRACT_CHECK\
-  CHECK_TO_WITH(error, false)
-
-
-bool Interpreter::AbstractEqual(const JSVal& lhs, const JSVal& rhs,
-                                Error* error) {
-  if (lhs.type() == rhs.type()) {
-    if (lhs.IsUndefined()) {
-      return true;
-    }
-    if (lhs.IsNull()) {
-      return true;
-    }
-    if (lhs.IsNumber()) {
-      const double& lhsv = lhs.number();
-      const double& rhsv = rhs.number();
-      if (std::isnan(lhsv) || std::isnan(rhsv)) {
-        return false;
-      }
-      return lhsv == rhsv;
-    }
-    if (lhs.IsString()) {
-      return *(lhs.string()) == *(rhs.string());
-    }
-    if (lhs.IsBoolean()) {
-      return lhs.boolean() == rhs.boolean();
-    }
-    if (lhs.IsObject()) {
-      return lhs.object() == rhs.object();
-    }
-    return false;
-  }
-  if (lhs.IsNull() && rhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsUndefined() && rhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber() && rhs.IsString()) {
-    const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(lhs, num, error);
-  }
-  if (lhs.IsString() && rhs.IsNumber()) {
-    const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(num, rhs, error);
-  }
-  if (lhs.IsBoolean()) {
-    const double num = lhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(num, rhs, error);
-  }
-  if (rhs.IsBoolean()) {
-    const double num = rhs.ToNumber(ctx_, ABSTRACT_CHECK);
-    return AbstractEqual(lhs, num, error);
-  }
-  if ((lhs.IsString() || lhs.IsNumber()) &&
-      rhs.IsObject()) {
-    const JSVal prim = rhs.ToPrimitive(ctx_,
-                                       Hint::NONE, ABSTRACT_CHECK);
-    return AbstractEqual(lhs, prim, error);
-  }
-  if (lhs.IsObject() &&
-      (rhs.IsString() || rhs.IsNumber())) {
-    const JSVal prim = lhs.ToPrimitive(ctx_,
-                                       Hint::NONE, ABSTRACT_CHECK);
-    return AbstractEqual(prim, rhs, error);
-  }
-  return false;
-}
-#undef ABSTRACT_CHECK
 
 
 // section 11.8.5

@@ -6,6 +6,7 @@
 #include "jsarray.h"
 #include "jsstring.h"
 #include "conversions.h"
+#include "internal.h"
 #include "runtime_object.h"
 
 namespace iv {
@@ -35,7 +36,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
-inline JSVal ArrayToConcat(const Arguments& args, Error* error) {
+inline JSVal ArrayConcat(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.concat", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -151,7 +152,7 @@ inline JSVal ArrayToConcat(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.5 Array.prototype.join(separator)
-inline JSVal ArrayToJoin(const Arguments& args, Error* error) {
+inline JSVal ArrayJoin(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.join", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -197,7 +198,7 @@ inline JSVal ArrayToJoin(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.6 Array.prototype.pop()
-inline JSVal ArrayToPop(const Arguments& args, Error* error) {
+inline JSVal ArrayPop(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.pop", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -227,7 +228,7 @@ inline JSVal ArrayToPop(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
-inline JSVal ArrayToPush(const Arguments& args, Error* error) {
+inline JSVal ArrayPush(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.push", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -259,7 +260,7 @@ inline JSVal ArrayToPush(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.8 Array.prototype.reverse()
-inline JSVal ArrayToReverse(const Arguments& args, Error* error) {
+inline JSVal ArrayReverse(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.reverse", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -311,7 +312,7 @@ inline JSVal ArrayToReverse(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.9 Array.prototype.shift()
-inline JSVal ArrayToShift(const Arguments& args, Error* error) {
+inline JSVal ArrayShift(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.shift", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -353,7 +354,7 @@ inline JSVal ArrayToShift(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.10 Array.prototype.slice(start, end)
-inline JSVal ArrayToSlice(const Arguments& args, Error* error) {
+inline JSVal ArraySlice(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.slice", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -420,7 +421,7 @@ inline JSVal ArrayToSlice(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
-inline JSVal ArrayToSplice(const Arguments& args, Error* error) {
+inline JSVal ArraySplice(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.splice", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
@@ -549,6 +550,125 @@ inline JSVal ArrayToSplice(const Arguments& args, Error* error) {
       ctx->length_symbol(),
       len - actual_delete_count + item_count, true, ERROR(error));
   return ary;
+}
+
+// section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
+inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.unshift", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t arg_count = args.size();
+  const uint32_t len = core::DoubleToUInt32(val);
+
+  std::tr1::array<char, 20> buf;
+
+  for (uint32_t k = len; k > 0; --k) {
+    const Symbol from = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k - 1))));  // NOLINT
+    const Symbol to = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k + arg_count - 1))));  // NOLINT
+    if (obj->HasProperty(from)) {
+      const JSVal from_value = obj->Get(ctx, from, ERROR(error));
+      obj->Put(ctx, to, from_value, true, ERROR(error));
+    } else {
+      obj->Delete(to, true, ERROR(error));
+    }
+  }
+
+  uint32_t j = 0;
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it, ++j) {
+    obj->Put(
+        ctx,
+        ctx->Intern(
+            core::StringPiece(
+                buf.data(),
+                std::snprintf(
+                    buf.data(), buf.size(), "%lu",
+                    static_cast<unsigned long>(j)))),  // NOLINT
+        *it,
+        true, ERROR(error));
+  }
+  obj->Put(
+      ctx,
+      ctx->length_symbol(),
+      len + arg_count,
+      true, ERROR(error));
+  return len + arg_count;
+}
+
+// section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
+inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t arg_count = args.size();
+  const uint32_t len = core::DoubleToUInt32(val);
+
+  if (len == 0) {
+    return -1;
+  }
+
+  JSVal search_element;
+  if (arg_count > 0) {
+    search_element = args[0];
+  } else {
+    search_element = JSUndefined;
+  }
+
+  uint32_t k;
+  if (arg_count > 1) {
+    double fromIndex = args[1].ToNumber(ctx, ERROR(error));
+    fromIndex = core::DoubleToInteger(fromIndex);
+    if (fromIndex >= len) {
+      return -1;
+    }
+    if (fromIndex >= 0) {
+      k = core::DoubleToUInt32(fromIndex);
+    } else {
+      const uint32_t sub = core::DoubleToUInt32(-fromIndex);
+      if (len < sub) {
+        k = 0;
+      } else {
+        k = len - sub;
+      }
+    }
+  } else {
+    k = 0;
+  }
+
+  std::tr1::array<char, 20> buf;
+  for (; k < len; ++k) {
+    const Symbol sym = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(sym)) {
+      const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
+      if (StrictEqual(search_element, element_k)) {
+        return k;
+      }
+    }
+  }
+  return -1;
 }
 
 } } }  // namespace iv::lv5::runtime

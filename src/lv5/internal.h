@@ -180,5 +180,104 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
 }
 
+inline bool StrictEqual(const JSVal& lhs, const JSVal& rhs) {
+  if (lhs.type() != rhs.type()) {
+    return false;
+  }
+  if (lhs.IsUndefined()) {
+    return true;
+  }
+  if (lhs.IsNull()) {
+    return true;
+  }
+  if (lhs.IsNumber()) {
+    const double& lhsv = lhs.number();
+    const double& rhsv = rhs.number();
+    if (std::isnan(lhsv) || std::isnan(rhsv)) {
+      return false;
+    }
+    return lhsv == rhsv;
+  }
+  if (lhs.IsString()) {
+    return *(lhs.string()) == *(rhs.string());
+  }
+  if (lhs.IsBoolean()) {
+    return lhs.boolean() == rhs.boolean();
+  }
+  if (lhs.IsObject()) {
+    return lhs.object() == rhs.object();
+  }
+  return false;
+}
+
+#define ABSTRACT_CHECK\
+  ERROR_WITH(error, false)
+inline bool AbstractEqual(Context* ctx,
+                          const JSVal& lhs, const JSVal& rhs,
+                          Error* error) {
+  if (lhs.type() == rhs.type()) {
+    if (lhs.IsUndefined()) {
+      return true;
+    }
+    if (lhs.IsNull()) {
+      return true;
+    }
+    if (lhs.IsNumber()) {
+      const double& lhsv = lhs.number();
+      const double& rhsv = rhs.number();
+      if (std::isnan(lhsv) || std::isnan(rhsv)) {
+        return false;
+      }
+      return lhsv == rhsv;
+    }
+    if (lhs.IsString()) {
+      return *(lhs.string()) == *(rhs.string());
+    }
+    if (lhs.IsBoolean()) {
+      return lhs.boolean() == rhs.boolean();
+    }
+    if (lhs.IsObject()) {
+      return lhs.object() == rhs.object();
+    }
+    return false;
+  }
+  if (lhs.IsNull() && rhs.IsUndefined()) {
+    return true;
+  }
+  if (lhs.IsUndefined() && rhs.IsNull()) {
+    return true;
+  }
+  if (lhs.IsNumber() && rhs.IsString()) {
+    const double num = rhs.ToNumber(ctx, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, lhs, num, error);
+  }
+  if (lhs.IsString() && rhs.IsNumber()) {
+    const double num = lhs.ToNumber(ctx, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, num, rhs, error);
+  }
+  if (lhs.IsBoolean()) {
+    const double num = lhs.ToNumber(ctx, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, num, rhs, error);
+  }
+  if (rhs.IsBoolean()) {
+    const double num = rhs.ToNumber(ctx, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, lhs, num, error);
+  }
+  if ((lhs.IsString() || lhs.IsNumber()) &&
+      rhs.IsObject()) {
+    const JSVal prim = rhs.ToPrimitive(ctx,
+                                       Hint::NONE, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, lhs, prim, error);
+  }
+  if (lhs.IsObject() &&
+      (rhs.IsString() || rhs.IsNumber())) {
+    const JSVal prim = lhs.ToPrimitive(ctx,
+                                       Hint::NONE, ABSTRACT_CHECK);
+    return AbstractEqual(ctx, prim, rhs, error);
+  }
+  return false;
+}
+#undef ABSTRACT_CHECK
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_INTERNAL_H_

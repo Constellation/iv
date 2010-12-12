@@ -120,8 +120,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const ConstructorCall* call);
 
   bool InCurrentLabelSet(const BreakableStatement* stmt);
-  bool StrictEqual(const JSVal& lhs, const JSVal& rhs);
-  bool AbstractEqual(const JSVal& lhs, const JSVal& rhs, Error* error);
   CompareKind Compare(const JSVal& lhs, const JSVal& rhs, Error* error);
   JSVal GetValue(const JSVal& val, Error* error);
   void PutValue(const JSVal& val, const JSVal& w, Error* error);

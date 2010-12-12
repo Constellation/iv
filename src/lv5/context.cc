@@ -453,7 +453,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("concat"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToConcat, 1),
+            JSNativeFunction::New(this, &runtime::ArrayConcat, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -462,7 +462,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("join"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToJoin, 1),
+            JSNativeFunction::New(this, &runtime::ArrayJoin, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -471,7 +471,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("pop"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToPop, 0),
+            JSNativeFunction::New(this, &runtime::ArrayPop, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -480,7 +480,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("push"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToPush, 1),
+            JSNativeFunction::New(this, &runtime::ArrayPush, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -489,7 +489,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("reverse"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToReverse, 0),
+            JSNativeFunction::New(this, &runtime::ArrayReverse, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -498,7 +498,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("shift"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToShift, 0),
+            JSNativeFunction::New(this, &runtime::ArrayShift, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -507,7 +507,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("slice"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToSlice, 2),
+            JSNativeFunction::New(this, &runtime::ArraySlice, 2),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -516,7 +516,25 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("splice"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToSplice, 2),
+            JSNativeFunction::New(this, &runtime::ArraySplice, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
+    proto->DefineOwnProperty(
+        this, Intern("unshift"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayUnshift, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
+    proto->DefineOwnProperty(
+        this, Intern("indexOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayIndexOf, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
