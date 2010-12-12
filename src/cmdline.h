@@ -390,7 +390,6 @@ class Parser {
         def_(def) {
       description_ = full_description(desc);
     }
-    ~option_with_value() { }
 
     const T& get() const {
       return def_;
@@ -458,6 +457,81 @@ class Parser {
     std::string description_;
   };
 
+  template <class T>
+  class option_with_value_list : public option_base {
+   public:
+    option_with_value_list(const std::string& name,
+                           char short_name,
+                           const std::string& desc)
+      : name_(name),
+        short_name_(short_name),
+        has_(false),
+        def_() {
+      description_ = full_description(desc);
+    }
+
+    const std::vector<T>& get() const {
+      return def_;
+    }
+
+    bool has_value() const { return true; }
+
+    bool set() {
+      return false;
+    }
+
+    bool set(const std::string& value) {
+      try {
+        def_.push_back(read(value));
+        has_ = true;
+      } catch(const std::exception &e) {
+        return false;
+      }
+      return true;
+    }
+
+    bool has_set() const {
+      return has_;
+    }
+
+    bool valid() const {
+      return true;
+    }
+
+    bool must() const {
+      return false;
+    }
+
+    const std::string& name() const {
+      return name_;
+    }
+
+    char short_name() const {
+      return short_name_;
+    }
+
+    const std::string& description() const {
+      return description_;
+    }
+
+    std::string short_description() const {
+      return "--"+name_+"="+detail::readable_typename<T>();
+    }
+
+   protected:
+    std::string full_description(const std::string& desc) {
+      return desc;
+    }
+
+    virtual T read(const std::string& s) = 0;
+
+    std::string name_;
+    char short_name_;
+    bool has_;
+    std::vector<T> def_;
+    std::string description_;
+  };
+
   template <class T, class F>
   class option_with_value_with_reader : public option_with_value<T> {
    public:
@@ -477,6 +551,25 @@ class Parser {
     }
 
     F reader;
+  };
+
+  template <class T, class F>
+  class option_with_value_list_with_reader : public option_with_value_list<T> {
+   public:
+    option_with_value_list_with_reader(const std::string& name,
+                                       char short_name,
+                                       const std::string& desc,
+                                       F reader)
+      : option_with_value_list<T>(name, short_name, desc),
+        reader_(reader) {
+    }
+
+   private:
+    T read(const std::string& s) {
+      return reader_(s);
+    }
+
+    F reader_;
   };
 
  public:
@@ -534,6 +627,28 @@ class Parser {
     ordered_.push_back(ptr);
   }
 
+  template <class T>
+  void AddList(const std::string& key,
+               const std::string& name = "",
+               char short_name = 0,
+               const std::string& desc = "") {
+    AddList<T>(key, name, short_name, desc, default_reader<T>());
+  }
+
+  template <class T, class F>
+  void AddList(const std::string& key,
+               const std::string& name = "",
+               char short_name = 0,
+               const std::string& desc = "",
+               F reader = F()) {
+    assert(options_.count(key) == 0);
+    option_base* const ptr =
+        new option_with_value_list_with_reader<T, F>(
+            name, short_name, desc, reader);
+    options_[key] = ptr;
+    ordered_.push_back(ptr);
+  }
+
   void set_footer(const std::string& f) {
     footer_ = f;
   }
@@ -549,11 +664,21 @@ class Parser {
   }
 
   template <class T>
-  const T& get(const std::string& key) const {
+  const T& Get(const std::string& key) const {
     const OptionMap::const_iterator it = options_.find(key);
     assert(it != options_.end());
     const option_with_value<T> *p = dynamic_cast<  //NOLINT
         const option_with_value<T>*>(it->second);
+    assert(p != NULL);
+    return p->get();
+  }
+
+  template<typename T>
+  const std::vector<T>& GetList(const std::string& key) const {
+    const OptionMap::const_iterator it = options_.find(key);
+    assert(it != options_.end());
+    const option_with_value_list<T> *p = dynamic_cast<  //NOLINT
+        const option_with_value_list<T>*>(it->second);
     assert(p != NULL);
     return p->get();
   }

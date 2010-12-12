@@ -34,6 +34,31 @@
 
 #include "fpu.h"
 
+namespace {
+
+template<typename T>
+bool ReadFile(const std::string& filename, T* out) {
+  if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
+    std::tr1::array<char, 1024> buf;
+    while (const std::size_t len = std::fread(
+            buf.data(),
+            1,
+            buf.size(), fp)) {
+      out->append(buf.data(), len);
+    }
+    std::fclose(fp);
+    return true;
+  } else {
+    std::string err("lv5 can't open \"");
+    err.append(filename);
+    err.append("\"");
+    std::perror(err.c_str());
+    return false;
+  }
+}
+
+}  // namespace
+
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
   iv::lv5::FixFPU();
@@ -48,6 +73,10 @@ int main(int argc, char **argv) {
   cmd.Add("version",
           "version",
           'v', "print the version");
+  cmd.AddList<std::string>(
+      "file",
+      "file",
+      'f', "script file to load");
   cmd.Add("warning",
           "",
           'W', "set warning level 0 - 2", false, 0, iv::cmdline::range(0, 2));
@@ -81,24 +110,23 @@ int main(int argc, char **argv) {
   }
 
   const std::vector<std::string>& rest = cmd.rest();
-  const std::string& filename = rest.front();
-  if (!rest.empty()) {
+  if (!rest.empty() || cmd.Exist("file")) {
     std::string str;
-    if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
-      std::tr1::array<char, 1024> buf;
-      while (const std::size_t len = std::fread(
-              buf.data(),
-              1,
-              buf.size(), fp)) {
-        str.append(buf.data(), len);
+    std::string filename;
+    if (cmd.Exist("file")) {
+      const std::vector<std::string>& vec = cmd.GetList<std::string>("file");
+      for (std::vector<std::string>::const_iterator it = vec.begin(),
+           last = vec.end(); it != last; ++it, filename.push_back(' ')) {
+        filename.append(*it);
+        if (!ReadFile(*it, &str)) {
+          return EXIT_FAILURE;
+        }
       }
-      std::fclose(fp);
     } else {
-      std::string err("lv5 can't open \"");
-      err.append(filename);
-      err.append("\"");
-      std::perror(err.c_str());
-      return EXIT_FAILURE;
+      filename = rest.front();
+      if (!ReadFile(filename, &str)) {
+        return EXIT_FAILURE;
+      }
     }
 
     iv::icu::Source src(str, filename);
