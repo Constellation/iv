@@ -482,6 +482,17 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     Advance();
   }
 
+  void Initialize(const Source* src) {
+    using std::swap;
+    source_ = src;
+    pos_ = 0;
+    end_ = source_->size();
+    has_line_terminator_before_next_ = false;
+    has_shebang_ = false;
+    line_number_ = 1;
+    swap(location_, Location());
+  }
+
   inline void Advance() {
     if (pos_ == end_) {
       c_ = -1;
