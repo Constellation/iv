@@ -557,7 +557,7 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
+    // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
     proto->DefineOwnProperty(
         this, Intern("some"),
         DataDescriptor(
