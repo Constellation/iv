@@ -449,6 +449,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
+    proto->DefineOwnProperty(
+        this, Intern("concat"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToConcat, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.4.4.5 Array.prototype.join(separator)
     proto->DefineOwnProperty(
         this, Intern("join"),

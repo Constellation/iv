@@ -34,6 +34,122 @@ inline JSVal ArrayToString(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
+inline JSVal ArrayToConcat(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.concat", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSArray* const ary = JSArray::New(ctx);
+
+  uint32_t n = 0;
+  const Class& cls = ctx->Cls("Array");
+  std::tr1::array<char, 20> buf;
+
+  if (cls.name == obj->cls()) {
+    JSObject* const elm = obj;
+    uint32_t k = 0;
+    const JSVal length = elm->Get(
+        ctx,
+        ctx->length_symbol(), ERROR(error));
+    assert(length.IsNumber());  // Array always number
+    const uint32_t len = core::DoubleToUInt32(length.number());
+    while (k < len) {
+      const Symbol index = ctx->Intern(
+          core::StringPiece(
+              buf.data(),
+              std::snprintf(buf.data(), buf.size(), "%lu",
+                            static_cast<unsigned long>(k))));  // NOLINT
+      if (elm->HasProperty(index)) {
+        const JSVal subelm = elm->Get(ctx, index, ERROR(error));
+        ary->DefineOwnProperty(
+            ctx,
+            ctx->Intern(
+                core::StringPiece(
+                    buf.data(),
+                    std::snprintf(
+                        buf.data(), buf.size(), "%lu",
+                        static_cast<unsigned long>(n)))),  // NOLINT
+            DataDescriptor(subelm,
+                           PropertyDescriptor::WRITABLE |
+                           PropertyDescriptor::ENUMERABLE |
+                           PropertyDescriptor::CONFIGURABLE),
+            false, ERROR(error));
+      }
+      ++n;
+      ++k;
+    }
+  } else {
+    ary->DefineOwnProperty(
+        ctx,
+        ctx->Intern(
+            core::StringPiece(
+                buf.data(),
+                std::snprintf(
+                    buf.data(), buf.size(), "%lu",
+                    static_cast<unsigned long>(n)))),  // NOLINT
+        DataDescriptor(obj,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::ENUMERABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, ERROR(error));
+    ++n;
+  }
+
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it) {
+    if (it->IsObject() && cls.name == it->object()->cls()) {
+      JSObject* const elm = it->object();
+      uint32_t k = 0;
+      const JSVal length = elm->Get(
+          ctx,
+          ctx->length_symbol(), ERROR(error));
+      assert(length.IsNumber());  // Array always number
+      const uint32_t len = core::DoubleToUInt32(length.number());
+      while (k < len) {
+        const Symbol index = ctx->Intern(
+            core::StringPiece(
+                buf.data(),
+                std::snprintf(buf.data(), buf.size(), "%lu",
+                              static_cast<unsigned long>(k))));  // NOLINT
+        if (elm->HasProperty(index)) {
+          const JSVal subelm = elm->Get(ctx, index, ERROR(error));
+          ary->DefineOwnProperty(
+              ctx,
+              ctx->Intern(
+                  core::StringPiece(
+                      buf.data(),
+                      std::snprintf(
+                          buf.data(), buf.size(), "%lu",
+                          static_cast<unsigned long>(n)))),  // NOLINT
+              DataDescriptor(subelm,
+                             PropertyDescriptor::WRITABLE |
+                             PropertyDescriptor::ENUMERABLE |
+                             PropertyDescriptor::CONFIGURABLE),
+              false, ERROR(error));
+        }
+        ++n;
+        ++k;
+      }
+    } else {
+      ary->DefineOwnProperty(
+          ctx,
+          ctx->Intern(
+              core::StringPiece(
+                  buf.data(),
+                  std::snprintf(
+                      buf.data(), buf.size(), "%lu",
+                      static_cast<unsigned long>(n)))),  // NOLINT
+          DataDescriptor(*it,
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+      ++n;
+    }
+  }
+  return ary;
+}
+
 // section 15.4.4.5 Array.prototype.join(separator)
 inline JSVal ArrayToJoin(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.join", args, error);
@@ -62,7 +178,7 @@ inline JSVal ArrayToJoin(const Arguments& args, Error* error) {
     }
   }
   uint32_t k = 1;
-  std::tr1::array<char, 30> buf;
+  std::tr1::array<char, 20> buf;
   while (k < len) {
     builder.Append(*separator);
     const int num = std::snprintf(buf.data(), buf.size(), "%lu",
