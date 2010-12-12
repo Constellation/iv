@@ -417,8 +417,15 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
 // section 15.2.4.2 Object.prototype.toString()
 inline JSVal ObjectToString(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
+  const JSVal& this_binding = args.this_binding();
+  if (this_binding.IsUndefined()) {
+    return JSString::NewAsciiString(args.ctx(), "[object Undefined]");
+  }
+  if (this_binding.IsNull()) {
+    return JSString::NewAsciiString(args.ctx(), "[object Null]");
+  }
   std::string ascii;
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+  JSObject* const obj = this_binding.ToObject(args.ctx(), ERROR(error));
   JSString* const cls = obj->cls();
   assert(cls);
   std::string str("[object ");
