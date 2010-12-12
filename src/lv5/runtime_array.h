@@ -258,5 +258,59 @@ inline JSVal ArrayToPush(const Arguments& args, Error* error) {
   return n;
 }
 
+// section 15.4.4.8 Array.prototype.reverse()
+inline JSVal ArrayToReverse(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.reverse", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t middle = len >> 1;
+  uint32_t lower = 0;
+  std::tr1::array<char, 20> buf;
+  while (lower != middle) {
+    const uint32_t upper = len - lower - 1;
+    const Symbol lower_symbol = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(lower))));  // NOLINT
+    const Symbol upper_symbol = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(upper))));  // NOLINT
+    const JSVal lower_value = obj->Get(
+        ctx,
+        lower_symbol,
+        ERROR(error));
+    const JSVal upper_value = obj->Get(
+        ctx,
+        upper_symbol,
+        ERROR(error));
+    const bool lower_exists = obj->HasProperty(lower_symbol);
+    const bool upper_exists = obj->HasProperty(upper_symbol);
+    if (lower_exists && upper_exists) {
+      obj->Put(ctx, lower_symbol, upper_value, true, ERROR(error));
+      obj->Put(ctx, upper_symbol, lower_value, true, ERROR(error));
+    } else if (!lower_exists && upper_exists) {
+      obj->Put(ctx, lower_symbol, upper_value, true, ERROR(error));
+      obj->Delete(upper_symbol, true, ERROR(error));
+    } else if (lower_exists && !upper_exists) {
+      obj->Delete(lower_symbol, true, ERROR(error));
+      obj->Put(ctx, upper_symbol, lower_value, true, ERROR(error));
+    } else {
+      // no action is required
+    }
+    ++lower;
+  }
+  return obj;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_ARRAY_H_

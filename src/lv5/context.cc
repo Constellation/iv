@@ -484,6 +484,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.8 Array.prototype.reverse()
+    proto->DefineOwnProperty(
+        this, Intern("reverse"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToReverse, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
