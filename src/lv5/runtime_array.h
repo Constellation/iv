@@ -642,11 +642,10 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
     if (fromIndex >= 0) {
       k = core::DoubleToUInt32(fromIndex);
     } else {
-      const uint32_t sub = core::DoubleToUInt32(-fromIndex);
-      if (len < sub) {
+      if (len < -fromIndex) {
         k = 0;
       } else {
-        k = len - sub;
+        k = len - core::DoubleToUInt32(-fromIndex);
       }
     }
   } else {
@@ -655,6 +654,68 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
 
   std::tr1::array<char, 20> buf;
   for (; k < len; ++k) {
+    const Symbol sym = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(k))));  // NOLINT
+    if (obj->HasProperty(sym)) {
+      const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
+      if (StrictEqual(search_element, element_k)) {
+        return k;
+      }
+    }
+  }
+  return -1;
+}
+
+// section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
+inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t arg_count = args.size();
+  const uint32_t len = core::DoubleToUInt32(val);
+
+  if (len == 0) {
+    return -1;
+  }
+
+  JSVal search_element;
+  if (arg_count > 0) {
+    search_element = args[0];
+  } else {
+    search_element = JSUndefined;
+  }
+
+  uint32_t k;
+  if (arg_count > 1) {
+    double fromIndex = args[1].ToNumber(ctx, ERROR(error));
+    fromIndex = core::DoubleToInteger(fromIndex);
+    if (fromIndex >= 0) {
+      if (fromIndex > (len - 1)) {
+        k = len - 1;
+      } else {
+        k = core::DoubleToUInt32(fromIndex);
+      }
+    } else {
+      if (-fromIndex > len) {
+        return -1;
+      } else {
+        k = len - core::DoubleToUInt32(-fromIndex);
+      }
+    }
+  } else {
+    k = len;
+  }
+
+  std::tr1::array<char, 20> buf;
+  while (k--) {
     const Symbol sym = ctx->Intern(
         core::StringPiece(
             buf.data(),

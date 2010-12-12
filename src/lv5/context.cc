@@ -538,6 +538,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
+    proto->DefineOwnProperty(
+        this, Intern("lastIndexOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayLastIndexOf, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
