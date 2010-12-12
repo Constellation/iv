@@ -303,6 +303,10 @@ JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
   const Class& cls = ctx->Cls(name);
   obj->set_cls(cls.name);
   obj->set_prototype(cls.prototype);
+  obj->DefineOwnProperty(ctx, ctx->length_symbol(),
+                         DataDescriptor(str->size(),
+                                        PropertyDescriptor::NONE),
+                                        false, ctx->error());
   return obj;
 }
 
