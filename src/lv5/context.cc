@@ -466,6 +466,15 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.4.4.6 Array.prototype.pop()
+    proto->DefineOwnProperty(
+        this, Intern("pop"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToPop, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

@@ -196,5 +196,35 @@ inline JSVal ArrayToJoin(const Arguments& args, Error* error) {
   return builder.Build();
 }
 
+// section 15.4.4.6 Array.prototype.pop()
+inline JSVal ArrayToPop(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.pop", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  if (len == 0) {
+    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(error));
+    return JSUndefined;
+  } else {
+    std::tr1::array<char, 20> buf;
+    const uint32_t index = len - 1;
+    const Symbol indx = ctx->Intern(
+        core::StringPiece(
+            buf.data(),
+            std::snprintf(
+                buf.data(), buf.size(), "%lu",
+                static_cast<unsigned long>(index))));  // NOLINT
+    const JSVal element = obj->Get(ctx, indx, ERROR(error));
+    obj->Delete(indx, true, ERROR(error));
+    obj->Put(ctx, ctx->length_symbol(),
+             index, true, ERROR(error));
+    return element;
+  }
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_ARRAY_H_
