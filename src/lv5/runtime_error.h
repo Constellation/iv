@@ -24,10 +24,10 @@ static inline JSString* ErrorMessageString(const Arguments& args,
     if (!msg.IsUndefined()) {
       return msg.ToString(args.ctx(), ERROR_WITH(error, NULL));
     } else {
-      return JSString::NewEmptyString(args.ctx());
+      return NULL;
     }
   } else {
-    return JSString::NewEmptyString(args.ctx());
+    return NULL;
   }
 }
 
@@ -63,10 +63,19 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
                                              ctx->Intern("message"),
                                              ERROR(error));
       if (target.IsUndefined()) {
-        return JSUndefined;
+        msg = JSString::NewEmptyString(ctx);
       } else {
         msg = target.ToString(ctx, ERROR(error));
       }
+    }
+    if (name->empty() && msg->empty()) {
+      return JSString::NewAsciiString(ctx, "Error");
+    }
+    if (name->empty()) {
+      return msg;
+    }
+    if (msg->empty()) {
+      return name;
     }
     core::UString buffer;
     buffer.append(name->data(), name->size());

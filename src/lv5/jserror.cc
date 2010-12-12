@@ -7,12 +7,14 @@ namespace lv5 {
 
 JSError::JSError(Context* ctx, Error::Code code, JSString* str)
   : code_(code) {
-  DefineOwnProperty(ctx, ctx->Intern("message"),
-                         DataDescriptor(str,
-                                        PropertyDescriptor::CONFIGURABLE |
-                                        PropertyDescriptor::ENUMERABLE |
-                                        PropertyDescriptor::WRITABLE),
-                                        false, ctx->error());
+  if (str) {
+    DefineOwnProperty(ctx, ctx->Intern("message"),
+                           DataDescriptor(str,
+                                          PropertyDescriptor::CONFIGURABLE |
+                                          PropertyDescriptor::ENUMERABLE |
+                                          PropertyDescriptor::WRITABLE),
+                                          false, ctx->error());
+  }
 }
 
 JSError* JSError::New(Context* ctx, Error::Code code, JSString* str) {
