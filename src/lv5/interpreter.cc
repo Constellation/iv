@@ -185,6 +185,8 @@ void Interpreter::CallCode(
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
       env->CreateMutableBinding(ctx_, fn, configurable_bindings);
+    } else {
+      // 10.5 errata
     }
     env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK_IN_STMT);
   }
@@ -252,6 +254,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   const Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
+  const bool is_global_env = (env->AsJSObjectEnv() == ctx_->global_env());
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
     const Symbol fn = ctx_->Intern(*(f->name()));
@@ -259,6 +262,34 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
       env->CreateMutableBinding(ctx_, fn, configurable_bindings);
+    } else if (is_global_env) {
+      JSObject* const go = ctx_->global_obj();
+      const PropertyDescriptor existing_prop = go->GetProperty(fn);
+      if (existing_prop.IsConfigurable()) {
+        go->DefineOwnProperty(
+            ctx_,
+            fn,
+            DataDescriptor(
+                JSUndefined,
+                PropertyDescriptor::WRITABLE |
+                PropertyDescriptor::ENUMERABLE |
+                (configurable_bindings) ?
+                PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE),
+            true, CHECK_IN_STMT);
+      } else {
+        if (existing_prop.IsAccessorDescriptor()) {
+          ctx_->error()->Report(Error::Type,
+                                "create mutable function binding failed");
+          RETURN_STMT(Context::THROW, JSUndefined, NULL);
+        }
+        const DataDescriptor* const data = existing_prop.AsDataDescriptor();
+        if (!data->IsWritable() ||
+            !data->IsEnumerable()) {
+          ctx_->error()->Report(Error::Type,
+                                "create mutable function binding failed");
+          RETURN_STMT(Context::THROW, JSUndefined, NULL);
+        }
+      }
     }
     env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK_IN_STMT);
   }
