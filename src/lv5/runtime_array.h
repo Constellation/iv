@@ -424,7 +424,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   for (uint32_t k = 0; k < item_count ; ++k, ++it) {
     obj->Put(
         ctx,
-        ctx->InternIndex(k + item_count - 1),
+        ctx->InternIndex(k),
         *it, true, ERROR(error));
   }
   obj->Put(
