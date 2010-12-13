@@ -407,6 +407,10 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
         obj->Delete(to, true, ERROR(error));
       }
     }
+    for (uint32_t k = len, last = len + item_count - actual_delete_count;
+         k > last; --k) {
+        obj->Delete(ctx->InternIndex(k - 1), true, ERROR(error));
+    }
   } else if (item_count > actual_delete_count) {
     for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
       const Symbol from = ctx->InternIndex(k + actual_delete_count - 1);
@@ -424,7 +428,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   for (uint32_t k = 0; k < item_count ; ++k, ++it) {
     obj->Put(
         ctx,
-        ctx->InternIndex(k),
+        ctx->InternIndex(k + actual_start),
         *it, true, ERROR(error));
   }
   obj->Put(
