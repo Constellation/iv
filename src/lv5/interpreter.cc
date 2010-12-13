@@ -1298,15 +1298,11 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
   JSArray* const ary = JSArray::New(ctx_);
   std::size_t current = 0;
-  std::tr1::array<char, 30> buffer;
   BOOST_FOREACH(const Expression* const expr, literal->items()) {
     if (expr) {
       EVAL(expr);
       const JSVal value = GetValue(ctx_->ret(), CHECK);
-      std::snprintf(buffer.data(), buffer.size(),
-                    "%lu",
-                    static_cast<unsigned long>(current));  // NOLINT
-      const Symbol index = ctx_->Intern(buffer.data());
+      const Symbol index = ctx_->InternIndex(current);
       ary->DefineOwnProperty(
           ctx_, index,
           DataDescriptor(value, PropertyDescriptor::WRITABLE |

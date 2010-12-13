@@ -44,7 +44,6 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
 
   uint32_t n = 0;
   const Class& cls = ctx->Cls("Array");
-  std::tr1::array<char, 20> buf;
 
   if (cls.name == obj->cls()) {
     JSObject* const elm = obj;
@@ -55,21 +54,12 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
     assert(length.IsNumber());  // Array always number
     const uint32_t len = core::DoubleToUInt32(length.number());
     while (k < len) {
-      const Symbol index = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(buf.data(), buf.size(), "%lu",
-                            static_cast<unsigned long>(k))));  // NOLINT
+      const Symbol index = ctx->InternIndex(k);
       if (elm->HasProperty(index)) {
         const JSVal subelm = elm->Get(ctx, index, ERROR(error));
         ary->DefineOwnProperty(
             ctx,
-            ctx->Intern(
-                core::StringPiece(
-                    buf.data(),
-                    std::snprintf(
-                        buf.data(), buf.size(), "%lu",
-                        static_cast<unsigned long>(n)))),  // NOLINT
+            ctx->InternIndex(n),
             DataDescriptor(subelm,
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
@@ -82,12 +72,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
   } else {
     ary->DefineOwnProperty(
         ctx,
-        ctx->Intern(
-            core::StringPiece(
-                buf.data(),
-                std::snprintf(
-                    buf.data(), buf.size(), "%lu",
-                    static_cast<unsigned long>(n)))),  // NOLINT
+        ctx->InternIndex(n),
         DataDescriptor(obj,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -107,21 +92,12 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
       assert(length.IsNumber());  // Array always number
       const uint32_t len = core::DoubleToUInt32(length.number());
       while (k < len) {
-        const Symbol index = ctx->Intern(
-            core::StringPiece(
-                buf.data(),
-                std::snprintf(buf.data(), buf.size(), "%lu",
-                              static_cast<unsigned long>(k))));  // NOLINT
+        const Symbol index = ctx->InternIndex(k);
         if (elm->HasProperty(index)) {
           const JSVal subelm = elm->Get(ctx, index, ERROR(error));
           ary->DefineOwnProperty(
               ctx,
-              ctx->Intern(
-                  core::StringPiece(
-                      buf.data(),
-                      std::snprintf(
-                          buf.data(), buf.size(), "%lu",
-                          static_cast<unsigned long>(n)))),  // NOLINT
+              ctx->InternIndex(n),
               DataDescriptor(subelm,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
@@ -134,12 +110,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
     } else {
       ary->DefineOwnProperty(
           ctx,
-          ctx->Intern(
-              core::StringPiece(
-                  buf.data(),
-                  std::snprintf(
-                      buf.data(), buf.size(), "%lu",
-                      static_cast<unsigned long>(n)))),  // NOLINT
+          ctx->InternIndex(n),
           DataDescriptor(*it,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -179,14 +150,11 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
     }
   }
   uint32_t k = 1;
-  std::tr1::array<char, 20> buf;
   while (k < len) {
     builder.Append(*separator);
-    const int num = std::snprintf(buf.data(), buf.size(), "%lu",
-                                  static_cast<unsigned long>(k));  // NOLINT
     const JSVal element = obj->Get(
         ctx,
-        ctx->Intern(core::StringPiece(buf.data(), num)),
+        ctx->InternIndex(k),
         ERROR(error));
     if (!element.IsUndefined() && !element.IsNull()) {
       const JSString* const str = element.ToString(ctx, ERROR(error));
@@ -211,14 +179,8 @@ inline JSVal ArrayPop(const Arguments& args, Error* error) {
     obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(error));
     return JSUndefined;
   } else {
-    std::tr1::array<char, 20> buf;
     const uint32_t index = len - 1;
-    const Symbol indx = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(index))));  // NOLINT
+    const Symbol indx = ctx->InternIndex(index);
     const JSVal element = obj->Get(ctx, indx, ERROR(error));
     obj->Delete(indx, true, ERROR(error));
     obj->Put(ctx, ctx->length_symbol(),
@@ -237,17 +199,11 @@ inline JSVal ArrayPush(const Arguments& args, Error* error) {
       ctx->length_symbol(), ERROR(error));
   const double val = length.ToNumber(ctx, ERROR(error));
   uint32_t n = core::DoubleToUInt32(val);
-  std::tr1::array<char, 20> buf;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it, ++n) {
     obj->Put(
         ctx,
-        ctx->Intern(
-            core::StringPiece(
-                buf.data(),
-                std::snprintf(
-                    buf.data(), buf.size(), "%lu",
-                    static_cast<unsigned long>(n)))),  // NOLINT
+        ctx->InternIndex(n),
         *it,
         true, ERROR(error));
   }
@@ -270,21 +226,10 @@ inline JSVal ArrayReverse(const Arguments& args, Error* error) {
   const double val = length.ToNumber(ctx, ERROR(error));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t middle = len >> 1;
-  std::tr1::array<char, 20> buf;
   for (uint32_t lower = 0; lower != middle; ++lower) {
     const uint32_t upper = len - lower - 1;
-    const Symbol lower_symbol = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(lower))));  // NOLINT
-    const Symbol upper_symbol = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(upper))));  // NOLINT
+    const Symbol lower_symbol = ctx->InternIndex(lower);
+    const Symbol upper_symbol = ctx->InternIndex(upper);
     const JSVal lower_value = obj->Get(
         ctx,
         lower_symbol,
@@ -326,21 +271,10 @@ inline JSVal ArrayShift(const Arguments& args, Error* error) {
     return JSUndefined;
   }
   const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(error));
-  std::tr1::array<char, 20> buf;
-  Symbol to = ctx->Intern(
-      core::StringPiece(
-          buf.data(),
-          std::snprintf(
-              buf.data(), buf.size(), "%lu",
-              static_cast<unsigned long>(0))));  // NOLINT
+  Symbol to = ctx->InternIndex(0);
   Symbol from;
   for (uint32_t k = 1; k < len; ++k, to = from) {
-    from = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    from = ctx->InternIndex(k);
     if (obj->HasProperty(from)) {
       const JSVal from_value = obj->Get(ctx, from, ERROR(error));
       obj->Put(ctx, to, from_value, true, ERROR(error));
@@ -392,24 +326,13 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
   } else {
     final = len;
   }
-  std::tr1::array<char, 20> buf;
   for (uint32_t n = 0; k < final; ++k, ++n) {
-    const Symbol pk = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol pk = ctx->InternIndex(k);
     if (obj->HasProperty(pk)) {
       const JSVal kval = obj->Get(ctx, pk, ERROR(error));
       ary->DefineOwnProperty(
           ctx,
-          ctx->Intern(
-              core::StringPiece(
-                  buf.data(),
-                  std::snprintf(
-                      buf.data(), buf.size(), "%lu",
-                      static_cast<unsigned long>(n)))),  // NOLINT
+          ctx->InternIndex(n),
           DataDescriptor(kval,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -456,24 +379,13 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   } else {
     actual_delete_count = std::min<uint32_t>(0, len - actual_start);
   }
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0; k < actual_delete_count; ++k) {
-    const Symbol from = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(actual_start + k))));  // NOLINT
+    const Symbol from = ctx->InternIndex(actual_start + k);
     if (obj->HasProperty(from)) {
       const JSVal from_val = obj->Get(ctx, from, ERROR(error));
       ary->DefineOwnProperty(
           ctx,
-          ctx->Intern(
-              core::StringPiece(
-                  buf.data(),
-                  std::snprintf(
-                      buf.data(), buf.size(), "%lu",
-                      static_cast<unsigned long>(k)))),  // NOLINT
+          ctx->InternIndex(k),
           DataDescriptor(from_val,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -486,20 +398,8 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   if (item_count < actual_delete_count) {
     for (uint32_t k = actual_start,
          last = len - actual_delete_count; k < last; ++k) {
-      const Symbol from = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(  // NOLINT
-                      k + actual_delete_count))));
-      const Symbol to = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(  // NOLINT
-                      k + item_count))));
+      const Symbol from = ctx->InternIndex(k + actual_delete_count);
+      const Symbol to = ctx->InternIndex(k + item_count);
       if (obj->HasProperty(from)) {
         const JSVal from_value = obj->Get(ctx, from, ERROR(error));
         obj->Put(ctx, to, from_value, true, ERROR(error));
@@ -509,20 +409,8 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
     }
   } else if (item_count > actual_delete_count) {
     for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
-      const Symbol from = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(  // NOLINT
-                      k + actual_delete_count - 1))));
-      const Symbol to = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(  // NOLINT
-                      k + item_count - 1))));
+      const Symbol from = ctx->InternIndex(k + actual_delete_count - 1);
+      const Symbol to = ctx->InternIndex(k + item_count - 1);
       if (obj->HasProperty(from)) {
         const JSVal from_value = obj->Get(ctx, from, ERROR(error));
         obj->Put(ctx, to, from_value, true, ERROR(error));
@@ -536,13 +424,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   for (uint32_t k = 0; k < item_count ; ++k, ++it) {
     obj->Put(
         ctx,
-        ctx->Intern(
-            core::StringPiece(
-                buf.data(),
-                std::snprintf(
-                    buf.data(), buf.size(), "%lu",
-                    static_cast<unsigned long>(  // NOLINT
-                        k + item_count - 1)))),
+        ctx->InternIndex(k + item_count - 1),
         *it, true, ERROR(error));
   }
   obj->Put(
@@ -564,21 +446,9 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  std::tr1::array<char, 20> buf;
-
   for (uint32_t k = len; k > 0; --k) {
-    const Symbol from = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k - 1))));  // NOLINT
-    const Symbol to = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k + arg_count - 1))));  // NOLINT
+    const Symbol from = ctx->InternIndex(k - 1);
+    const Symbol to = ctx->InternIndex(k + arg_count - 1);
     if (obj->HasProperty(from)) {
       const JSVal from_value = obj->Get(ctx, from, ERROR(error));
       obj->Put(ctx, to, from_value, true, ERROR(error));
@@ -592,12 +462,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
        last = args.end(); it != last; ++it, ++j) {
     obj->Put(
         ctx,
-        ctx->Intern(
-            core::StringPiece(
-                buf.data(),
-                std::snprintf(
-                    buf.data(), buf.size(), "%lu",
-                    static_cast<unsigned long>(j)))),  // NOLINT
+        ctx->InternIndex(j),
         *it,
         true, ERROR(error));
   }
@@ -652,14 +517,8 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
     k = 0;
   }
 
-  std::tr1::array<char, 20> buf;
   for (; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
       if (StrictEqual(search_element, element_k)) {
@@ -714,15 +573,9 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
     k = len;
   }
 
-  std::tr1::array<char, 20> buf;
   ++k;
   while (k--) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
       if (StrictEqual(search_element, element_k)) {
@@ -770,14 +623,8 @@ inline JSVal ArrayEvery(const Arguments& args, Error* error) {
   }
   arg_list[2] = obj;
 
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
@@ -828,14 +675,8 @@ inline JSVal ArraySome(const Arguments& args, Error* error) {
   }
   arg_list[2] = obj;
 
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
@@ -886,14 +727,8 @@ inline JSVal ArrayForEach(const Arguments& args, Error* error) {
   }
   arg_list[2] = obj;
 
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
@@ -942,14 +777,8 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
   }
   arg_list[2] = obj;
 
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
@@ -1006,14 +835,8 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
   }
   arg_list[2] = obj;
 
-  std::tr1::array<char, 20> buf;
   for (uint32_t k = 0, to = 0; k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       const JSVal k_value = obj->Get(ctx, sym, ERROR(error));
       arg_list[0] = k_value;
@@ -1023,12 +846,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
       if (result) {
         ary->DefineOwnProperty(
             ctx,
-            ctx->Intern(
-                core::StringPiece(
-                    buf.data(),
-                    std::snprintf(
-                        buf.data(), buf.size(), "%lu",
-                        static_cast<unsigned long>(to)))),  // NOLINT
+            ctx->InternIndex(to),
             DataDescriptor(k_value,
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
@@ -1080,18 +898,12 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
 
   uint32_t k = 0;
   JSVal accumulator;
-  std::tr1::array<char, 20> buf;
   if (arg_count > 1) {
     accumulator = args[1];
   } else {
     bool k_present = false;
     for (; k < len; ++k) {
-      const Symbol sym = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(k))));  // NOLINT
+      const Symbol sym = ctx->InternIndex(k);
       if (obj->HasProperty(sym)) {
         k_present = true;
         ++k;
@@ -1111,12 +923,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
   arg_list[3] = obj;
 
   for (;k < len; ++k) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->Get(ctx, sym, ERROR(error));
@@ -1168,18 +975,12 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
 
   uint32_t k = len;
   JSVal accumulator;
-  std::tr1::array<char, 20> buf;
   if (arg_count > 1) {
     accumulator = args[1];
   } else {
     bool k_present = false;
     while (k--) {
-      const Symbol sym = ctx->Intern(
-          core::StringPiece(
-              buf.data(),
-              std::snprintf(
-                  buf.data(), buf.size(), "%lu",
-                  static_cast<unsigned long>(k))));  // NOLINT
+      const Symbol sym = ctx->InternIndex(k);
       if (obj->HasProperty(sym)) {
         k_present = true;
         accumulator = obj->Get(ctx, sym, ERROR(error));
@@ -1198,12 +999,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
   arg_list[3] = obj;
 
   while (k--) {
-    const Symbol sym = ctx->Intern(
-        core::StringPiece(
-            buf.data(),
-            std::snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(k))));  // NOLINT
+    const Symbol sym = ctx->InternIndex(k);
     if (obj->HasProperty(sym)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->Get(ctx, sym, ERROR(error));

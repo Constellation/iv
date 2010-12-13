@@ -141,15 +141,11 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       JSArray* const ary = JSArray::New(args.ctx());
-      std::size_t n = 0;
-      std::tr1::array<char, 80> buffer;
+      uint32_t n = 0;
       for (JSObject::Properties::const_iterator it = obj->table().begin(),
            last = obj->table().end(); it != last; ++it, ++n) {
-        const char* const str = core::DoubleToCString(n,
-                                                      buffer.data(),
-                                                      buffer.size());
         ary->DefineOwnProperty(
-            args.ctx(), args.ctx()->Intern(str),
+            args.ctx(), args.ctx()->InternIndex(n),
             DataDescriptor(args.ctx()->ToString(it->first),
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |

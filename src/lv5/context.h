@@ -145,6 +145,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol Intern(const core::StringPiece& str);
   Symbol Intern(const core::UStringPiece& str);
   Symbol Intern(const Identifier& ident);
+  Symbol InternIndex(uint32_t index);
   inline Symbol length_symbol() const {
     return length_symbol_;
   }

@@ -112,13 +112,10 @@ inline JSVal FunctionApply(const Arguments& args,
 
     Arguments args_list(ctx, n);
     uint32_t index = 0;
-    std::tr1::array<char, 80> buffer;
     while (index < n) {
-        int num = std::snprintf(buffer.data(), buffer.size(),
-                                "%u", index);
         args_list[index] = arg_array->Get(
             ctx,
-            ctx->Intern(core::StringPiece(buffer.data(), num)), ERROR(error));
+            ctx->InternIndex(index), ERROR(error));
         ++index;
     }
     args_list.set_this_binding(args[0]);

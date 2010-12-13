@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdio>
 #include "cstring"
 #include "ustring.h"
 #include "jsfunction.h"
@@ -95,6 +96,16 @@ Symbol Context::Intern(const core::UStringPiece& str) {
 
 Symbol Context::Intern(const Identifier& ident) {
   return ident.symbol();
+}
+
+Symbol Context::InternIndex(uint32_t index) {
+  std::tr1::array<char, 15> buf;
+  return table_.Lookup(
+      core::StringPiece(
+          buf.data(),
+          std::snprintf(
+              buf.data(), buf.size(), "%lu",
+              static_cast<unsigned long>(index))));  // NOLINT
 }
 
 double Context::Random() {

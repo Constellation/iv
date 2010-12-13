@@ -29,13 +29,9 @@ JSArguments* JSArguments::New(Context* ctx,
                                         PropertyDescriptor::CONFIGURABLE),
                          false, ctx->error());
   std::size_t index = len - 1;
-  std::tr1::array<char, std::numeric_limits<std::size_t>::digits10 + 1> buf;
   for (Arguments::const_reverse_iterator it = args.rbegin(),
        last = args.rend(); it != last; ++it) {
-    int len = std::snprintf(buf.data(), buf.size(),
-                            "%lu",
-                            static_cast<unsigned long>(index));  // NOLINT
-    const Symbol index_symbol = ctx->Intern(core::StringPiece(buf.data(), len));
+    const Symbol index_symbol = ctx->InternIndex(index);
     obj->DefineOwnProperty(ctx, index_symbol,
                            DataDescriptor(*it,
                                           PropertyDescriptor::WRITABLE |
