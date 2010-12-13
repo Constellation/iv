@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <tr1/array>
 #include "cstring"
 #include "ustring.h"
 #include "jsfunction.h"
