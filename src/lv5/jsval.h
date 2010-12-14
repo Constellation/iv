@@ -184,7 +184,9 @@ class JSVal {
             kLittleEndian> value_type;
 
   IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
+#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
   IV_STATIC_ASSERT(std::tr1::is_pod<value_type>::value);
+#endif
 
   JSVal()
     : value_() {

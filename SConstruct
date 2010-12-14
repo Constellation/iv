@@ -87,11 +87,16 @@ def Build():
       conf.env.ParseConfig('icu-config --cppflags --ldflags')
       conf.env.Append(
           CXXFLAGS=[
-            "-ansi", "-pedantic", "-Wpointer-arith",
+            "-pedantic", "-Wpointer-arith",
             "-Wwrite-strings", "-Wno-long-long"   ])
       option_dict['%USE_ICU%'] = '1'
     conf.CheckLibWithHeader('m', 'cmath', 'c++')
     env = conf.Finish()
+
+  if env["CXXVERSION"] != "4.4.2":
+    # MacOSX etc... tr1/cmath problem
+    env.Append(
+        CXXFLAGS=["-ansi"])
 
   if options.get('cache'):
     env.CacheDir('cache')
