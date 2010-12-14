@@ -38,7 +38,7 @@
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
   iv::lv5::FixFPU();
-  GC_init();
+  GC_INIT();
 
   iv::cmdline::Parser cmd("lv5");
 
