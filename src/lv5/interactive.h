@@ -14,7 +14,7 @@
 #include "jsscript.h"
 #include "jsval.h"
 #include "jsstring.h"
-#include "print.h"
+#include "command.h"
 #include "icu/source.h"
 namespace iv {
 namespace lv5 {
@@ -35,6 +35,7 @@ class Interactive {
   Interactive()
     : ctx_() {
     ctx_.DefineFunction(&lv5::Print, "print", 1);
+    ctx_.DefineFunction(&lv5::Quit, "quit", 1);
   }
   int Run() {
     std::string buffer;

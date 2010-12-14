@@ -1,14 +1,17 @@
-#ifndef _IV_LV5_PRINT_H_
-#define _IV_LV5_PRINT_H_
+#ifndef _IV_LV5_COMMAND_H_
+#define _IV_LV5_COMMAND_H_
 #include <iostream>  // NOLINT
+#include <cstdlib>
+#include "lv5.h"
 #include "jsval.h"
 #include "error.h"
 #include "arguments.h"
+#include "conversions.h"
 namespace iv {
 namespace lv5 {
 
 inline JSVal Print(const Arguments& args, Error* error) {
-  if (args.args().size() > 0) {
+  if (args.size() > 0) {
     const std::size_t last_index = args.size() - 1;
     std::size_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
@@ -25,5 +28,15 @@ inline JSVal Print(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+inline JSVal Quit(const Arguments& args, Error* error) {
+  int code = 0;
+  if (args.size() > 0) {
+    const double val = args[0].ToNumber(args.ctx(), ERROR(error));
+    code = core::DoubleToInt32(val);
+  }
+  std::exit(code);
+  return JSUndefined;
+}
+
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_PRINT_H_
+#endif  // _IV_LV5_COMMAND_H_

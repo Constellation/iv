@@ -27,7 +27,7 @@
 #include "jsval.h"
 #include "jsstring.h"
 #include "jsscript.h"
-#include "print.h"
+#include "command.h"
 #include "interactive.h"
 
 #include "icu/ustream.h"
@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
       std::cout << ser.out() << std::endl;
     } else {
       ctx.DefineFunction(&iv::lv5::Print, "print", 1);
+      ctx.DefineFunction(&iv::lv5::Quit, "quit", 1);
       iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
           &ctx, global, &factory, &src);
       if (ctx.Run(script)) {
