@@ -178,6 +178,42 @@ inline int32_t LocalTZA() {
 
 double DaylightSavingTA(double t);
 
+inline double DaylightSavingTAFallback(double utc) {
+  // fallback
+  // Daylight Saving Time
+  // from    2 AM the first Sunday in April
+  // through 2 AM the last Sunday in October
+  assert(!core::IsNaN(utc));
+  const int year = YearFromTime(utc);
+  const int leap = IsLeapYear(utc);
+
+  double start = TimeFromYear(year);
+  double end = start;
+
+
+  // goto April 1st
+  start += static_cast<double>(MonthToDaysInYear(3, leap)) * kMsPerDay;
+  // goto the first Sunday in April
+  while (WeekDay(start) != 0) {
+    start += kMsPerDay;
+  }
+
+  // goto Octobar 30th
+  end += static_cast<double>((MonthToDaysInYear(9, leap) + 30)) * kMsPerDay;
+  // goto the last Sunday in Octobar
+  while (WeekDay(end) != 0) {
+    end -= kMsPerDay;
+  }
+
+  const double target = utc - 2 * kMsPerHour;
+
+  if (start <= target && target <= end) {
+    return kMsPerHour;
+  }
+  return 0.0;
+}
+
+
 static const char* kNaNTimeZone = "";
 inline const char* LocalTimeZone(double t) {
   if (core::IsNaN(t)) {

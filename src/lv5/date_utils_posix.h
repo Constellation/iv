@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "platform_math.h"
+#include "canonicalized_nan.h"
 namespace iv {
 namespace lv5 {
 namespace date {
@@ -12,46 +13,20 @@ inline double DaylightSavingTA(double utc) {
   if (core::IsNaN(utc)) {
     return utc;
   }
-
-  const double local = utc + LocalTZA();
-  const std::time_t current = core::DoubleToInt64(local);
-  if (current == local) {
-    const std::tm* const tmp = std::localtime(&current);  // NOLINT
-    if (tmp->tm_isdst > 0) {
-      return kMsPerHour;
-    }
-  } else {
-    // Daylight Saving Time
-    // from    2 AM the first Sunday in April
-    // through 2 AM the last Sunday in October
-    const int year = YearFromTime(utc);
-    const int leap = IsLeapYear(utc);
-
-    double start = TimeFromYear(year);
-    double end = start;
-
-
-    // goto April 1st
-    start += static_cast<double>(MonthToDaysInYear(3, leap)) * kMsPerDay;
-    // goto the first Sunday in April
-    while (WeekDay(start) != 0) {
-      start += kMsPerDay;
-    }
-
-    // goto Octobar 30th
-    end += static_cast<double>((MonthToDaysInYear(9, leap) + 30)) * kMsPerDay;
-    // goto the last Sunday in Octobar
-    while (WeekDay(end) != 0) {
-      end -= kMsPerDay;
-    }
-
-    const double target = utc - 2 * kMsPerHour;
-
-    if (start <= target && target <= end) {
-      return kMsPerHour;
-    }
+  const std::time_t current =
+      static_cast<std::time_t>(std::floor(utc / kMsPerSecond));
+  const std::tm* const t = std::localtime(&current);  // NOLINT
+  if (t == NULL) {
+    return iv::core::kNaN;
   }
-  return 0.0;
+  if (t->tm_isdst > 0) {
+    return kMsPerHour;
+  } else if (t->tm_isdst == 0) {
+    return 0.0;
+  } else {
+    // fallback
+    return DaylightSavingTAFallback(utc);
+  }
 }
 
 inline double CurrentTime() {
