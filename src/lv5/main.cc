@@ -7,6 +7,7 @@
 #include <iostream>  // NOLINT
 #include <algorithm>
 #include <tr1/array>
+#include <gc.h>
 #include "config/config.h"
 
 #include "stringpiece.h"
@@ -37,8 +38,7 @@
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
   iv::lv5::FixFPU();
-
-  std::locale::global(std::locale(""));
+  GC_init();
 
   iv::cmdline::Parser cmd("lv5");
 
