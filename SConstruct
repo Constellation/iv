@@ -93,7 +93,7 @@ def Build():
     conf.CheckLibWithHeader('m', 'cmath', 'c++')
     env = conf.Finish()
 
-  if env["CXXVERSION"] != "4.4.2":
+  if env["CXXVERSION"] >= "4.4.3":
     # MacOSX etc... tr1/cmath problem
     env.Append(
         CXXFLAGS=["-ansi"])
