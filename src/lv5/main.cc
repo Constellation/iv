@@ -7,7 +7,7 @@
 #include <iostream>  // NOLINT
 #include <algorithm>
 #include <tr1/array>
-#include <gc.h>
+#include <gc/gc.h>
 #include "config/config.h"
 
 #include "stringpiece.h"
