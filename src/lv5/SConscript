@@ -3,9 +3,13 @@ from os.path import join, dirname, abspath
 Import('context object_files root_dir')
 
 def Build():
-  env = context.Clone()
+  conf = Configure(context.Clone())
+  if conf.CheckLib('boost_thread'):
+    conf.env.Append(
+        LIBS='boost_thread')
+  env = conf.Finish()
   env.Append(
-      LIBS=['gc', 'boost_thread'],
+      LIBS=['gc'],
       CCFLAGS=["-fno-strict-aliasing"],
       )
   return env.Program('lv5',
