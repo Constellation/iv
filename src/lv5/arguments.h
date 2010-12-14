@@ -11,7 +11,7 @@ namespace lv5 {
 class Interpreter;
 class Context;
 
-class Arguments : private core::Noncopyable<Arguments>::type {
+class Arguments {
  public:
   typedef std::vector<JSVal> JSVals;
   typedef Arguments this_type;
@@ -47,6 +47,7 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     args_.swap(rhs.args_);
     swap(ctx_, rhs.ctx_);
     swap(this_binding_, rhs.this_binding_);
+    swap(constructor_call_, rhs.constructor_call_);
   }
   reference operator[](size_type n) { return args_[n]; }
   const_reference operator[](size_type n) const { return args_[n]; }
@@ -77,6 +78,22 @@ class Arguments : private core::Noncopyable<Arguments>::type {
       this_binding_(),
       args_(n),
       constructor_call_(false) {
+  }
+
+  Arguments(const Arguments& rhs)
+    : ctx_(rhs.ctx_),
+      this_binding_(rhs.this_binding_),
+      args_(rhs.args_),
+      constructor_call_(rhs.constructor_call_) {
+  }
+
+  this_type& operator=(const this_type& rhs) {
+    this_type(rhs).swap(*this);
+    return *this;
+  }
+
+  inline friend void swap(this_type& lhs, this_type& rhs) {
+    return lhs.swap(rhs);
   }
 
   inline const JSVals& args() const {
