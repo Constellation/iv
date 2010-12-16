@@ -86,7 +86,9 @@ class JSDeclEnv : public JSEnv {
     if (it->second.first & MUTABLE) {
       record_[name] = std::make_pair(it->second.first, val);
     } else {
-      res->Report(Error::Type, "mutating immutable binding not allowed");
+      if (strict) {
+        res->Report(Error::Type, "mutating immutable binding not allowed");
+      }
     }
   }
 
