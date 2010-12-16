@@ -128,7 +128,10 @@ class Context : private core::Noncopyable<Context>::type {
                       std::size_t n) {
     JSFunction* const func = JSNativeFunction::New(this, f, n);
     const Symbol name = Intern(func_name);
-    variable_env_->CreateMutableBinding(this, name, false);
+    variable_env_->CreateMutableBinding(this, name, false, &error_);
+    if (error_) {
+      return;
+    }
     variable_env_->SetMutableBinding(this,
                                      name,
                                      func, strict_, &error_);

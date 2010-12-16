@@ -19,7 +19,7 @@ class JSEnv : public gc {
  public:
   virtual bool HasBinding(Symbol name) const = 0;
   virtual bool DeleteBinding(Symbol name) = 0;
-  virtual void CreateMutableBinding(Context* ctx, Symbol name, bool del) = 0;
+  virtual void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) = 0;
   virtual void SetMutableBinding(Context* ctx,
                                  Symbol name,
                                  const JSVal& val,
@@ -68,7 +68,7 @@ class JSDeclEnv : public JSEnv {
     }
   }
 
-  void CreateMutableBinding(Context* ctx, Symbol name, bool del) {
+  void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
     assert(record_.find(name) == record_.end());
     int flag = MUTABLE;
     if (del) {
@@ -165,7 +165,7 @@ class JSObjectEnv : public JSEnv {
     return record_->Delete(name, false, NULL);
   }
 
-  void CreateMutableBinding(Context* ctx, Symbol name, bool del) {
+  void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
     assert(!record_->HasProperty(name));
     int attr = PropertyDescriptor::WRITABLE |
                PropertyDescriptor::ENUMERABLE;
@@ -177,7 +177,7 @@ class JSObjectEnv : public JSEnv {
         name,
         DataDescriptor(JSUndefined, attr),
         true,
-        NULL);
+        err);
   }
 
   void SetMutableBinding(Context* ctx,

@@ -165,7 +165,8 @@ void Interpreter::CallCode(
       ++n;
       const Symbol arg_name = ctx_->Intern(*ident);
       if (!env->HasBinding(arg_name)) {
-        env->CreateMutableBinding(ctx_, arg_name, configurable_bindings);
+        env->CreateMutableBinding(ctx_, arg_name,
+                                  configurable_bindings, CHECK_IN_STMT);
       }
       if (n > arg_count) {
         env->SetMutableBinding(ctx_, arg_name,
@@ -184,7 +185,8 @@ void Interpreter::CallCode(
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
-      env->CreateMutableBinding(ctx_, fn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, fn,
+                                configurable_bindings, CHECK_IN_STMT);
     } else {
       // 10.5 errata
     }
@@ -206,7 +208,7 @@ void Interpreter::CallCode(
       env->InitializeImmutableBinding(arguments_symbol, args_obj);
     } else {
       env->CreateMutableBinding(ctx_, ctx_->arguments_symbol(),
-                                configurable_bindings);
+                                configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, arguments_symbol,
                              args_obj, false, CHECK_IN_STMT);
     }
@@ -216,7 +218,8 @@ void Interpreter::CallCode(
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
     if (!env->HasBinding(dn)) {
-      env->CreateMutableBinding(ctx_, dn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, dn,
+                                configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, dn,
                              JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
     }
@@ -261,7 +264,8 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(fn)) {
-      env->CreateMutableBinding(ctx_, fn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, fn,
+                                configurable_bindings, CHECK_IN_STMT);
     } else if (is_global_env) {
       JSObject* const go = ctx_->global_obj();
       const PropertyDescriptor existing_prop = go->GetProperty(fn);
@@ -297,7 +301,8 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
     if (!env->HasBinding(dn)) {
-      env->CreateMutableBinding(ctx_, dn, configurable_bindings);
+      env->CreateMutableBinding(ctx_, dn,
+                                configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, dn,
                              JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
     }
@@ -678,7 +683,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
       JSEnv* const old_env = ctx_->lexical_env();
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = ctx_->Intern(*(stmt->catch_name()));
-      catch_env->CreateMutableBinding(ctx_, name, false);
+      catch_env->CreateMutableBinding(ctx_, name, false, CHECK_IN_STMT);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);
