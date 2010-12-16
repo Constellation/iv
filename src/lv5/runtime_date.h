@@ -261,11 +261,11 @@ inline double MakeDay(double year, double month, double date) {
 }
 
 inline double MakeDate(double day, double time) {
-  if (!std::isfinite(day) || !std::isfinite(time)) {
+  double res = day * kMsPerDay + time;
+  if (std::abs(res) > kMaxTime) {
     return JSValData::kNaN;
-  } else {
-    return day * kMsPerDay + time;
   }
+  return res;
 }
 
 inline double TimeClip(double time) {
