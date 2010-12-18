@@ -242,6 +242,9 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
   void Append(const core::UStringPiece& piece) {
     piece.AppendToString(&target_->string_);
   }
+  void Append(const core::StringPiece& piece) {
+    target_->string_.append(piece.begin(), piece.end());
+  }
   void Append(const JSString& str) {
     target_->string_.append(str.value());
   }

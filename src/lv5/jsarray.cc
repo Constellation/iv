@@ -152,7 +152,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
 JSArray* JSArray::New(Context* ctx) {
   JSArray* const ary = new JSArray(ctx, 0);
   const Class& cls = ctx->Cls("Array");
-  ary->set_cls(cls.name);
+  ary->set_class_name(cls.name);
   ary->set_prototype(cls.prototype);
   return ary;
 }
@@ -160,7 +160,7 @@ JSArray* JSArray::New(Context* ctx) {
 JSArray* JSArray::New(Context* ctx, std::size_t n) {
   JSArray* const ary = new JSArray(ctx, n);
   const Class& cls = ctx->Cls("Array");
-  ary->set_cls(cls.name);
+  ary->set_class_name(cls.name);
   ary->set_prototype(cls.prototype);
   return ary;
 }

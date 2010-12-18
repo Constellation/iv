@@ -11,7 +11,7 @@ JSDate::JSDate(Context* ctx, double val)
 JSDate* JSDate::New(Context* ctx, double val) {
   JSDate* const date = new JSDate(ctx, val);
   const Class& cls = ctx->Cls("Date");
-  date->set_cls(cls.name);
+  date->set_class_name(cls.name);
   date->set_prototype(cls.prototype);
   return date;
 }

@@ -45,7 +45,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
   uint32_t n = 0;
   const Class& cls = ctx->Cls("Array");
 
-  if (cls.name == obj->cls()) {
+  if (cls.name == obj->class_name()) {
     JSObject* const elm = obj;
     uint32_t k = 0;
     const JSVal length = elm->Get(
@@ -83,7 +83,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
 
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    if (it->IsObject() && cls.name == it->object()->cls()) {
+    if (it->IsObject() && cls.name == it->object()->class_name()) {
       JSObject* const elm = it->object();
       uint32_t k = 0;
       const JSVal length = elm->Get(

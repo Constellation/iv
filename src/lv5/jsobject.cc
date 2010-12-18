@@ -12,16 +12,16 @@ namespace lv5 {
 
 JSObject::JSObject()
   : prototype_(NULL),
-    cls_(NULL),
+    class_name_(),
     extensible_(true),
     table_() {
 }
 
 JSObject::JSObject(JSObject* proto,
-                   JSString* cls,
+                   Symbol class_name,
                    bool extensible)
   : prototype_(proto),
-    cls_(cls),
+    class_name_(class_name_),
     extensible_(extensible),
     table_() {
 }
@@ -288,7 +288,7 @@ JSObject* JSObject::New(Context* ctx) {
   JSObject* const obj = NewPlain(ctx);
   const Symbol name = ctx->Intern("Object");
   const Class& cls = ctx->Cls(name);
-  obj->set_cls(cls.name);
+  obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }
@@ -301,7 +301,7 @@ JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
   JSStringObject* const obj = new JSStringObject(str);
   const Symbol name = ctx->Intern("String");
   const Class& cls = ctx->Cls(name);
-  obj->set_cls(cls.name);
+  obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   obj->DefineOwnProperty(ctx, ctx->length_symbol(),
                          DataDescriptor(str->size(),
@@ -317,7 +317,7 @@ JSStringObject* JSStringObject::NewPlain(Context* ctx) {
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
   JSNumberObject* const obj = new JSNumberObject(value);
   const Class& cls = ctx->Cls("Number");
-  obj->set_cls(cls.name);
+  obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }
@@ -338,7 +338,7 @@ JSBooleanObject* JSBooleanObject::NewPlain(Context* ctx, bool value) {
 JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
   JSBooleanObject* const obj = new JSBooleanObject(value);
   const Class& cls = ctx->Cls(ctx->Intern("Boolean"));
-  obj->set_cls(cls.name);
+  obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
 }

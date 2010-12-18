@@ -8,7 +8,8 @@ class JSFunction;
 class JSString;
 
 struct Class {
-  JSString* name;
+  Symbol name;
+  JSString* name_string;
   JSFunction* constructor;
   JSObject* prototype;
 };

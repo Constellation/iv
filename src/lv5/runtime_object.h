@@ -420,14 +420,12 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
   if (this_binding.IsNull()) {
     return JSString::NewAsciiString(args.ctx(), "[object Null]");
   }
-  std::string ascii;
   JSObject* const obj = this_binding.ToObject(args.ctx(), ERROR(error));
-  JSString* const cls = obj->cls();
-  assert(cls);
-  std::string str("[object ");
-  str.append(cls->begin(), cls->end());
-  str.append("]");
-  return JSString::NewAsciiString(args.ctx(), str.c_str());
+  JSStringBuilder builder(args.ctx());
+  builder.Append("[object ");
+  builder.Append(args.ctx()->GetContent(obj->class_name()));
+  builder.Append("]");
+  return builder.Build();
 }
 
 // section 15.2.4.3 Object.prototype.toLocaleString()

@@ -392,7 +392,7 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -419,7 +419,7 @@ inline JSVal DateValueOf(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     return static_cast<JSDate*>(obj.object())->value();
   }
@@ -433,7 +433,7 @@ inline JSVal DateGetTime(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getTime", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     return static_cast<JSDate*>(obj.object())->value();
   }
@@ -447,7 +447,7 @@ inline JSVal DateGetUTCFullYear(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCFullYear", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -465,7 +465,7 @@ inline JSVal DateGetUTCMonth(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCMonth", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -483,7 +483,7 @@ inline JSVal DateGetUTCDate(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCDate", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -501,7 +501,7 @@ inline JSVal DateGetUTCDay(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCDay", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -519,7 +519,7 @@ inline JSVal DateGetUTCHours(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCHours", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -537,7 +537,7 @@ inline JSVal DateGetUTCMinutes(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCMinutes", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -555,7 +555,7 @@ inline JSVal DateGetUTCSeconds(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCSeconds", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -573,7 +573,7 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.getUTCMilliseconds", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(time)) {
@@ -591,7 +591,7 @@ inline JSVal DateSetTime(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setTime", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     double v;
     if (args.size() > 0) {
       const double val = args[0].ToNumber(args.ctx(), ERROR(error));
@@ -612,7 +612,7 @@ inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCMilliseconds", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     double ms;
     if (args.size() > 0) {
@@ -640,7 +640,7 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCSeconds", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
     double sec;
@@ -676,7 +676,7 @@ inline JSVal DateSetUTCMinutes(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCMinutes", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
     double m;
@@ -720,7 +720,7 @@ inline JSVal DateSetUTCHours(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCHours", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
     double h;
@@ -770,7 +770,7 @@ inline JSVal DateSetUTCDate(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCDate", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
     double dt;
@@ -798,7 +798,7 @@ inline JSVal DateSetUTCMonth(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCMonth", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
     double m;
@@ -833,7 +833,7 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setUTCFullYear", args, error);
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
-  if (obj.IsObject() && cls.name == obj.object()->cls()) {
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     double t = static_cast<JSDate*>(obj.object())->value();
     if (std::isnan(t)) {
       t = +0.0;

@@ -153,12 +153,13 @@ void Context::Initialize() {
       JSNativeFunction::NewPlain(this, &runtime::FunctionConstructor, 1);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
+    Intern("Function"),
     JSString::NewAsciiString(this, "Function"),
     func_constructor,
     func_proto
   };
-  func_proto->set_cls(func_cls.name);
-  func_constructor->set_cls(func_cls.name);
+  func_proto->set_class_name(func_cls.name);
+  func_constructor->set_class_name(func_cls.name);
   func_constructor->set_prototype(func_cls.prototype);
   // set prototype
   func_constructor->DefineOwnProperty(
@@ -166,11 +167,10 @@ void Context::Initialize() {
       DataDescriptor(func_proto, PropertyDescriptor::NONE),
       false, NULL);
 
-  const Symbol func_name = Intern("Function");
-  builtins_[func_name] = func_cls;
+  builtins_[func_cls.name] = func_cls;
 
   global_obj_.DefineOwnProperty(
-      this, func_name,
+      this, func_cls.name,
       DataDescriptor(func_constructor,
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
@@ -188,16 +188,16 @@ void Context::Initialize() {
       JSNativeFunction::NewPlain(this, &runtime::ObjectConstructor, 1);
 
   struct Class obj_cls = {
+    Intern("Object"),
     JSString::NewAsciiString(this, "Object"),
     obj_constructor,
     obj_proto
   };
-  obj_proto->set_cls(obj_cls.name);
-  const Symbol obj_name = Intern("Object");
-  builtins_[obj_name] = obj_cls;
+  obj_proto->set_class_name(obj_cls.name);
+  builtins_[obj_cls.name] = obj_cls;
 
   // lazy initialization
-  obj_constructor->set_cls(func_cls.name);
+  obj_constructor->set_class_name(func_cls.name);
   obj_constructor->set_prototype(func_cls.prototype);
   obj_constructor->DefineOwnProperty(
       this, prototype_symbol_,
@@ -407,7 +407,7 @@ void Context::Initialize() {
         false, NULL);
 
     global_obj_.DefineOwnProperty(
-        this, obj_name,
+        this, obj_cls.name,
         DataDescriptor(obj_constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -421,7 +421,7 @@ void Context::Initialize() {
     // section 15.4.2 The Array Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::ArrayConstructor, 1);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
     // set prototype
@@ -431,16 +431,16 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("Array"),
       JSString::NewAsciiString(this, "Array"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
+    proto->set_class_name(cls.name);
 
-    const Symbol name = Intern("Array");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -632,7 +632,7 @@ void Context::Initialize() {
     // section 15.5.2 The String Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::StringConstructor, 1);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
     // set prototype
@@ -642,16 +642,16 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("String"),
       JSString::NewAsciiString(this, "String"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
+    proto->set_class_name(cls.name);
 
-    const Symbol name = Intern("String");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -758,7 +758,7 @@ void Context::Initialize() {
     // section 15.5.2 The Boolean Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::BooleanConstructor, 1);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
     // set prototype
@@ -768,16 +768,16 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("Boolean"),
       JSString::NewAsciiString(this, "Boolean"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
+    proto->set_class_name(cls.name);
 
-    const Symbol name = Intern("Boolean");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -819,7 +819,7 @@ void Context::Initialize() {
     // section 15.7.3 The Number Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::NumberConstructor, 1);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
     // set prototype
@@ -829,16 +829,16 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("Number"),
       JSString::NewAsciiString(this, "Number"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
+    proto->set_class_name(cls.name);
 
-    const Symbol name = Intern("Number");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -917,7 +917,7 @@ void Context::Initialize() {
     // section 15.11.2 The Error Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::ErrorConstructor, 1);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
     // set prototype
     constructor->DefineOwnProperty(
@@ -926,13 +926,13 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("Error"),
       JSString::NewAsciiString(this, "Error"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
-    const Symbol name = Intern("Error");
-    builtins_[name] = cls;
+    proto->set_class_name(cls.name);
+    builtins_[cls.name] = cls;
     proto->DefineOwnProperty(
         this, constructor_symbol_,
         DataDescriptor(constructor,
@@ -965,7 +965,7 @@ void Context::Initialize() {
             JSString::NewAsciiString(this, ""), PropertyDescriptor::NONE),
         false, NULL);
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -976,7 +976,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this, &runtime::EvalErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -985,15 +985,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("EvalError"),
         JSString::NewAsciiString(this, "EvalError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("EvalError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1016,7 +1016,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this, &runtime::RangeErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -1025,15 +1025,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("RangeError"),
         JSString::NewAsciiString(this, "RangeError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("RangeError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1057,7 +1057,7 @@ void Context::Initialize() {
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this,
                                      &runtime::ReferenceErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -1066,15 +1066,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("ReferenceError"),
         JSString::NewAsciiString(this, "ReferenceError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("ReferenceError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1097,7 +1097,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this, &runtime::SyntaxErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -1106,15 +1106,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("SyntaxError"),
         JSString::NewAsciiString(this, "SyntaxError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("SyntaxError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1137,7 +1137,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this, &runtime::TypeErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -1146,15 +1146,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("TypeError"),
         JSString::NewAsciiString(this, "TypeError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("TypeError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1177,7 +1177,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSNativeFunction* const sub_constructor =
           JSNativeFunction::NewPlain(this, &runtime::URIErrorConstructor, 1);
-      sub_constructor->set_cls(func_cls.name);
+      sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
@@ -1186,15 +1186,15 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
+        Intern("URIError"),
         JSString::NewAsciiString(this, "URIError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_cls(sub_cls.name);
-      const Symbol sub_name = Intern("URIError");
-      builtins_[sub_name] = sub_cls;
+      sub_proto->set_class_name(sub_cls.name);
+      builtins_[sub_cls.name] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_name,
+          this, sub_cls.name,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1218,9 +1218,10 @@ void Context::Initialize() {
     // section 15.8 Math
     JSObject* const math = JSObject::NewPlain(this);
     math->set_prototype(obj_proto);
-    math->set_cls(JSString::NewAsciiString(this, "Math"));
+    const Symbol name = Intern("Math");
+    math->set_class_name(name);
     global_obj_.DefineOwnProperty(
-        this, Intern("Math"),
+        this, name,
         DataDescriptor(math,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -1425,7 +1426,7 @@ void Context::Initialize() {
     // section 15.9.2.1 The Date Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::DateConstructor, 7);
-    constructor->set_cls(func_cls.name);
+    constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
     // set prototype
@@ -1435,17 +1436,17 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
+      Intern("Date"),
       JSString::NewAsciiString(this, "Date"),
       constructor,
       proto
     };
-    proto->set_cls(cls.name);
+    proto->set_class_name(cls.name);
 
-    const Symbol name = Intern("Date");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
 
     global_obj_.DefineOwnProperty(
-        this, Intern("Date"),
+        this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -1674,19 +1675,19 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-    global_obj_.set_cls(JSString::NewAsciiString(this, "global"));
+    global_obj_.set_class_name(Intern("global"));
     global_obj_.set_prototype(obj_proto);
   }
 
   {
     // Arguments
     struct Class cls = {
+      Intern("Arguments"),
       JSString::NewAsciiString(this, "Arguments"),
       NULL,
       obj_proto
     };
-    const Symbol name = Intern("Arguments");
-    builtins_[name] = cls;
+    builtins_[cls.name] = cls;
   }
   throw_type_error_.Initialize(this, &runtime::ThrowTypeError, 0);
 }

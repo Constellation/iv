@@ -21,7 +21,7 @@ JSArguments* JSArguments::New(Context* ctx,
   const std::size_t len = args.size();
   const std::size_t names_len = names.size();
   const Class& cls = ctx->Cls(ctx->Intern("Arguments"));
-  obj->set_cls(cls.name);
+  obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   obj->DefineOwnProperty(ctx, ctx->length_symbol(),
                          DataDescriptor(len,

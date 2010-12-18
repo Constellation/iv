@@ -26,7 +26,7 @@ class JSObject : public gc {
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   JSObject();
-  JSObject(JSObject* proto, JSString* cls, bool extensible);
+  JSObject(JSObject* proto, Symbol class_name, bool extensible);
 
   virtual JSVal DefaultValue(Context* context,
                              Hint::Object hint, Error* res);
@@ -75,11 +75,11 @@ class JSObject : public gc {
   void set_prototype(JSObject* obj) {
     prototype_ = obj;
   }
-  JSString* cls() const {
-    return cls_;
+  Symbol class_name() const {
+    return class_name_;
   }
-  void set_cls(JSString* str) {
-    cls_ = str;
+  void set_class_name(Symbol cls) {
+    class_name_ = cls;
   }
   const Properties& table() const {
     return table_;
@@ -90,7 +90,7 @@ class JSObject : public gc {
 
  protected:
   JSObject* prototype_;
-  JSString* cls_;
+  Symbol class_name_;
   bool extensible_;
   Properties table_;
 };
