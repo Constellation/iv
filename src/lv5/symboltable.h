@@ -15,7 +15,7 @@ class Context;
 class SymbolTable {
  public:
   typedef std::vector<core::UString> Strings;
-  typedef std::vector<std::size_t> Indexes;
+  typedef std::vector<Symbol> Indexes;
   typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
   SymbolTable()
     : sync_(),
@@ -37,19 +37,19 @@ class SymbolTable {
       boost::mutex::scoped_lock lock(sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
-        Symbol sym = strings_.size();
+        Symbol sym = { strings_.size() };
         strings_.push_back(target);
         Indexes vec(1, sym);
         table_.insert(it, make_pair(hash, vec));
         return sym;
       } else {
         Indexes& vec = it->second;
-        BOOST_FOREACH(const std::size_t& i, vec) {
-          if (strings_[i] == target) {
+        BOOST_FOREACH(const Symbol& i, vec) {
+          if (strings_[i.value] == target) {
             return i;
           }
         }
-        Symbol sym = strings_.size();
+        Symbol sym = { strings_.size() };
         strings_.push_back(target);
         vec.push_back(sym);
         return sym;
@@ -58,12 +58,12 @@ class SymbolTable {
   }
 
   inline JSString* ToString(Context* ctx, Symbol sym) const {
-    const core::UString& str = strings_[sym];
+    const core::UString& str = strings_[sym.value];
     return JSString::New(ctx, str);
   }
 
   inline const core::UString& GetContent(Symbol sym) const {
-    return strings_[sym];
+    return strings_[sym.value];
   }
 
  private:
