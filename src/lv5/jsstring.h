@@ -119,20 +119,8 @@ class JSString : public gc {
     return string_.data();
   }
 
-  void clear() {
-    string_.clear();
-  }
-
-  iterator begin() {
-    return string_.begin();
-  }
-
   const_iterator begin() const {
     return string_.begin();
-  }
-
-  iterator end() {
-    return string_.end();
   }
 
   const_iterator end() const {
@@ -141,17 +129,6 @@ class JSString : public gc {
 
   const GCUString& value() const {
     return string_;
-  }
-
-  template<typename Iter>
-  this_type& assign(Iter start, Iter end) {
-    string_.assign(start, end);
-    return *this;
-  }
-
-  this_type& assign(const this_type& str) {
-    string_.assign(str.string_);
-    return *this;
   }
 
   inline friend bool operator==(const this_type& lhs,
@@ -183,13 +160,9 @@ class JSString : public gc {
     return hash_value_;
   }
 
-  inline void ReCalcHash() {
-    hash_value_ = core::StringToHash(string_);
-  }
-
   static JSString* New(Context* ctx, const core::StringPiece& str) {
     JSString* const res = new JSString();
-    icu::ConvertToUTF16(str, res);
+    icu::ConvertToUTF16(str, &res->string_);
     res->ReCalcHash();
     return res;
   }
@@ -205,7 +178,7 @@ class JSString : public gc {
     using std::copy;
     JSString* const res = new JSString(lhs.size() + rhs.size());
     copy(rhs.begin(), rhs.end(),
-         copy(lhs.begin(), lhs.end(), res->begin()));
+         copy(lhs.begin(), lhs.end(), res->string_.begin()));
     res->ReCalcHash();
     return res;
   }
@@ -226,6 +199,10 @@ class JSString : public gc {
     string_.resize(n);
   }
 
+  inline void ReCalcHash() {
+    hash_value_ = core::StringToHash(string_);
+  }
+
   GCUString string_;
   std::size_t hash_value_;
 };
@@ -236,6 +213,7 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
 
 class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
  public:
+  typedef JSStringBuilder this_type;
   JSStringBuilder(Context* ctx)
     : target_(JSString::NewEmptyString(ctx)) {
   }
@@ -248,6 +226,24 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
   void Append(const JSString& str) {
     target_->string_.append(str.value());
   }
+
+  // for assignable object
+  void append(const core::UStringPiece& piece) {
+    piece.AppendToString(&target_->string_);
+  }
+  void append(const core::StringPiece& piece) {
+    target_->string_.append(piece.begin(), piece.end());
+  }
+  void append(const JSString& str) {
+    target_->string_.append(str.value());
+  }
+
+  template<typename Iter>
+  this_type& assign(Iter start, Iter end) {
+    target_->string_.assign(start, end);
+    return *this;
+  }
+
   JSString* Build() {
     target_->ReCalcHash();
     return target_;

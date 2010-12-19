@@ -66,13 +66,12 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
             return JSString::NewAsciiString(args.ctx(), "-Infinity");
           }
         }
-        JSString* const result = JSString::NewEmptyString(args.ctx());
+        JSStringBuilder builder(args.ctx());
         core::DoubleToStringWithRadix(
             num,
             static_cast<int>(radix),
-            result);
-        result->ReCalcHash();
-        return result;
+            &builder);
+        return builder.Build();
       }
     } else {
       // TODO(Constellation) more details
