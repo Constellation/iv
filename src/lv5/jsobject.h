@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_JSOBJECT_H_
 #define _IV_LV5_JSOBJECT_H_
+#include <vector>
 #include <gc/gc_cpp.h>
 #include "ast.h"
 #include "property.h"
@@ -44,6 +45,8 @@ class JSObject : public gc {
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* res);
+  virtual void GetPropertyNames(std::vector<Symbol>* vec) const;
+  virtual void GetOwnPropertyNames(std::vector<Symbol>* vec) const;
   virtual bool IsCallable() const {
     return false;
   }

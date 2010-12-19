@@ -1,4 +1,5 @@
 #include <cassert>
+#include <algorithm>
 #include "jsobject.h"
 #include "property.h"
 #include "jsfunction.h"
@@ -281,6 +282,38 @@ bool JSObject::Delete(Symbol name, bool th, Error* res) {
       res->Report(Error::Type, "delete failed");
     }
     return false;
+  }
+}
+
+void JSObject::GetPropertyNames(std::vector<Symbol>* vec) const {
+  using std::find;
+  if (vec->empty()) {
+    for (JSObject::Properties::const_iterator it = table_.begin(),
+         last = table_.end(); it != last; ++it) {
+      if (it->second.IsEnumerable()) {
+        vec->push_back(it->first);
+      }
+    }
+  } else {
+    for (JSObject::Properties::const_iterator it = table_.begin(),
+         last = table_.end(); it != last; ++it) {
+      if (it->second.IsEnumerable() &&
+          (find(vec->begin(), vec->end(), it->first) == vec->end())) {
+        vec->push_back(it->first);
+      }
+    }
+  }
+  if (prototype_) {
+    prototype_->GetPropertyNames(vec);
+  }
+}
+
+void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec) const {
+  for (JSObject::Properties::const_iterator it = table_.begin(),
+       last = table_.end(); it != last; ++it) {
+    if (it->second.IsEnumerable()) {
+      vec->push_back(it->first);
+    }
   }
 }
 

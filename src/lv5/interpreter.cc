@@ -509,39 +509,34 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value;
-  JSObject* current = obj;
-  do {
-    BOOST_FOREACH(const JSObject::Properties::value_type& set,
-                  current->table()) {
-      if (!set.second.IsEnumerable()) {
-        continue;
+  std::vector<Symbol> keys;
+  obj->GetPropertyNames(&keys);
+  for (std::vector<Symbol>::const_iterator it = keys.begin(),
+       last = keys.end(); it != last; ++it) {
+    JSVal rhs(ctx_->ToString(*it));
+    EVAL_IN_STMT(stmt->each());
+    if (stmt->each()->AsVariableStatement()) {
+      const Identifier* const ident =
+          stmt->each()->AsVariableStatement()->decls().front()->name();
+      EVAL_IN_STMT(ident);
+    }
+    JSVal lhs = ctx_->ret();
+    PutValue(lhs, rhs, CHECK_IN_STMT);
+    EVAL_IN_STMT(stmt->body());
+    if (!ctx_->ret().IsUndefined()) {
+      value = ctx_->ret();
+    }
+    if (!ctx_->IsMode<Context::CONTINUE>() ||
+        !ctx_->InCurrentLabelSet(stmt)) {
+      if (ctx_->IsMode<Context::BREAK>() &&
+          ctx_->InCurrentLabelSet(stmt)) {
+        RETURN_STMT(Context::NORMAL, value, NULL);
       }
-      JSVal rhs(ctx_->ToString(set.first));
-      EVAL_IN_STMT(stmt->each());
-      if (stmt->each()->AsVariableStatement()) {
-        const Identifier* const ident =
-            stmt->each()->AsVariableStatement()->decls().front()->name();
-        EVAL_IN_STMT(ident);
-      }
-      JSVal lhs = ctx_->ret();
-      PutValue(lhs, rhs, CHECK_IN_STMT);
-      EVAL_IN_STMT(stmt->body());
-      if (!ctx_->ret().IsUndefined()) {
-        value = ctx_->ret();
-      }
-      if (!ctx_->IsMode<Context::CONTINUE>() ||
-          !ctx_->InCurrentLabelSet(stmt)) {
-        if (ctx_->IsMode<Context::BREAK>() &&
-            ctx_->InCurrentLabelSet(stmt)) {
-          RETURN_STMT(Context::NORMAL, value, NULL);
-        }
-        if (!ctx_->IsMode<Context::NORMAL>()) {
-          ABRUPT();
-        }
+      if (!ctx_->IsMode<Context::NORMAL>()) {
+        ABRUPT();
       }
     }
-    current = current->prototype();
-  } while (current);
+  }
   RETURN_STMT(Context::NORMAL, value, NULL);
 }
 

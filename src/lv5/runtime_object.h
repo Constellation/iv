@@ -382,25 +382,19 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      // TODO(Constellation) Enumerate Iterator Interface
-      // (such as Arguments.length)
-      const std::size_t n = std::count_if(obj->table().begin(),
-                                          obj->table().end(),
-                                          detail::IsEnumerable());
-      JSArray* const ary = JSArray::New(args.ctx(), n);
-      std::size_t index = 0;
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it, ++index) {
-        if (it->second.IsEnumerable()) {
-          JSString* const str = JSVal(index).ToString(args.ctx(), ERROR(error));
-          ary->DefineOwnProperty(args.ctx(), args.ctx()->Intern(str->value()),
-                                 DataDescriptor(
-                                     args.ctx()->ToString(it->first),
-                                     PropertyDescriptor::WRITABLE |
-                                     PropertyDescriptor::ENUMERABLE |
-                                     PropertyDescriptor::CONFIGURABLE),
-                                 false, ERROR(error));
-        }
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys);
+      JSArray* const ary = JSArray::New(args.ctx(), keys.size());
+      uint32_t index = 0;
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it, ++index) {
+        ary->DefineOwnProperty(args.ctx(), args.ctx()->InternIndex(index),
+                               DataDescriptor(
+                                   args.ctx()->ToString(*it),
+                                   PropertyDescriptor::WRITABLE |
+                                   PropertyDescriptor::ENUMERABLE |
+                                   PropertyDescriptor::CONFIGURABLE),
+                               false, ERROR(error));
       }
       return ary;
     }
