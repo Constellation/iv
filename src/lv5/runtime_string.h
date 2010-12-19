@@ -19,8 +19,9 @@ static inline JSVal StringToStringValueOfImpl(const Arguments& args,
                                               const char* msg) {
   const JSVal& obj = args.this_binding();
   if (!obj.IsString()) {
-    if (obj.IsObject() && obj.object()->AsStringObject()) {
-      return obj.object()->AsStringObject()->value();
+    if (obj.IsObject() &&
+        args.ctx()->Cls("String").name == obj.object()->class_name()) {
+      return static_cast<JSStringObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type, msg);
       return JSUndefined;

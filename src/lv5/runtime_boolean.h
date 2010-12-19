@@ -38,8 +38,9 @@ inline JSVal BooleanToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
-    if (obj.IsObject() && obj.object()->AsBooleanObject()) {
-      b = obj.object()->AsBooleanObject()->value();
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Boolean").name == obj.object()->class_name()) {
+      b = static_cast<JSBooleanObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
                     "Boolean.prototype.toString is not generic function");
@@ -57,8 +58,9 @@ inline JSVal BooleanValueOf(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
-    if (obj.IsObject() && obj.object()->AsBooleanObject()) {
-      b = obj.object()->AsBooleanObject()->value();
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Boolean").name == obj.object()->class_name()) {
+      b = static_cast<JSBooleanObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
                     "Boolean.prototype.valueOf is not generic function");

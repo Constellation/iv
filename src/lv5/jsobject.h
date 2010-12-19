@@ -53,15 +53,6 @@ class JSObject : public gc {
   virtual JSFunction* AsCallable() {
     return NULL;
   }
-  virtual JSNumberObject* AsNumberObject() {
-    return NULL;
-  }
-  virtual JSBooleanObject* AsBooleanObject() {
-    return NULL;
-  }
-  virtual JSStringObject* AsStringObject() {
-    return NULL;
-  }
   virtual bool IsNativeObject() const {
     return true;
   }
@@ -103,9 +94,6 @@ class JSStringObject : public JSObject {
   explicit JSStringObject(JSString* value) : value_(value) { }
   static JSStringObject* New(Context* ctx, JSString* str);
   static JSStringObject* NewPlain(Context* ctx);
-  JSStringObject* AsStringObject() {
-    return this;
-  }
   JSString* value() const {
     return value_;
   }
@@ -118,9 +106,6 @@ class JSNumberObject : public JSObject {
   explicit JSNumberObject(const double& value) : value_(value) { }
   static JSNumberObject* New(Context* ctx, const double& value);
   static JSNumberObject* NewPlain(Context* ctx, const double& value);
-  JSNumberObject* AsNumberObject() {
-    return this;
-  }
   const double& value() const {
     return value_;
   }
@@ -133,9 +118,6 @@ class JSBooleanObject : public JSObject {
   explicit JSBooleanObject(bool value);
   static JSBooleanObject* NewPlain(Context* ctx, bool value);
   static JSBooleanObject* New(Context* ctx, bool value);
-  JSBooleanObject* AsBooleanObject() {
-    return this;
-  }
   bool value() const {
     return value_;
   }

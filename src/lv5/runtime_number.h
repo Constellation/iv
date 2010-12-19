@@ -34,8 +34,9 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() && obj.object()->AsNumberObject()) {
-      num = obj.object()->AsNumberObject()->value();
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      num = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
                     "Number.prototype.toString is not generic function");
@@ -93,8 +94,9 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   if (!obj.IsNumber()) {
-    if (obj.IsObject() && obj.object()->AsNumberObject()) {
-      return obj.object()->AsNumberObject()->value();
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      return static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
                     "Number.prototype.valueOf is not generic function");
