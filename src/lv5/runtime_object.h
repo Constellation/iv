@@ -146,8 +146,8 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
       obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++n) {
-        ary->DefineOwnProperty(
-            args.ctx(), args.ctx()->InternIndex(n),
+        ary->DefineOwnPropertyWithIndex(
+            args.ctx(), n,
             DataDescriptor(args.ctx()->ToString(*it),
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
@@ -394,13 +394,14 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
       uint32_t index = 0;
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++index) {
-        ary->DefineOwnProperty(args.ctx(), args.ctx()->InternIndex(index),
-                               DataDescriptor(
-                                   args.ctx()->ToString(*it),
-                                   PropertyDescriptor::WRITABLE |
-                                   PropertyDescriptor::ENUMERABLE |
-                                   PropertyDescriptor::CONFIGURABLE),
-                               false, ERROR(error));
+        ary->DefineOwnPropertyWithIndex(
+            args.ctx(), index,
+            DataDescriptor(
+                args.ctx()->ToString(*it),
+                PropertyDescriptor::WRITABLE |
+                PropertyDescriptor::ENUMERABLE |
+                PropertyDescriptor::CONFIGURABLE),
+            false, ERROR(error));
       }
       return ary;
     }

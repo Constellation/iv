@@ -33,20 +33,36 @@ class JSObject : public gc {
                              Hint::Object hint, Error* res);
   virtual JSVal Get(Context* context,
                     Symbol name, Error* res);
-  virtual JSVal Get(Context* context,
-                    uint32_t index, Error* res);
+  virtual JSVal GetWithIndex(
+      Context* context, uint32_t index, Error* res);
   virtual PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+  virtual PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
+                                                     uint32_t index) const;
   virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  virtual PropertyDescriptor GetPropertyWithIndex(Context* ctx,
+                                                  uint32_t index) const;
   virtual bool CanPut(Context* ctx, Symbol name) const;
+  virtual bool CanPutWithIndex(Context* ctx,
+                               uint32_t index) const;
   virtual void Put(Context* context, Symbol name,
                    const JSVal& val, bool th, Error* res);
+  virtual void PutWithIndex(Context* context, uint32_t index,
+                            const JSVal& val, bool th, Error* res);
   virtual bool HasProperty(Context* ctx, Symbol name) const;
+  virtual bool HasPropertyWithIndex(Context* ctx, uint32_t index) const;
   virtual bool Delete(Context* ctx, Symbol name, bool th, Error* res);
+  virtual bool DeleteWithIndex(Context* ctx, uint32_t index,
+                               bool th, Error* res);
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* res);
+  virtual bool DefineOwnPropertyWithIndex(Context* ctx,
+                                          uint32_t index,
+                                          const PropertyDescriptor& desc,
+                                          bool th,
+                                          Error* res);
   void GetPropertyNames(std::vector<Symbol>* vec, EnumerationMode mode) const;
   virtual void GetOwnPropertyNames(std::vector<Symbol>* vec,
                                    EnumerationMode mode) const;

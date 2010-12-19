@@ -113,9 +113,9 @@ inline JSVal FunctionApply(const Arguments& args,
     Arguments args_list(ctx, n);
     uint32_t index = 0;
     while (index < n) {
-        args_list[index] = arg_array->Get(
+        args_list[index] = arg_array->GetWithIndex(
             ctx,
-            ctx->InternIndex(index), ERROR(error));
+            index, ERROR(error));
         ++index;
     }
     args_list.set_this_binding(args[0]);

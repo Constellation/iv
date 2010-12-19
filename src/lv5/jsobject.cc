@@ -22,7 +22,7 @@ JSObject::JSObject(JSObject* proto,
                    Symbol class_name,
                    bool extensible)
   : prototype_(proto),
-    class_name_(class_name_),
+    class_name_(class_name),
     extensible_(extensible),
     table_() {
 }
@@ -80,8 +80,8 @@ JSVal JSObject::Get(Context* ctx,
   }
 }
 
-JSVal JSObject::Get(Context* ctx,
-                    uint32_t index, Error* res) {
+JSVal JSObject::GetWithIndex(Context* ctx,
+                             uint32_t index, Error* res) {
   return Get(ctx, ctx->InternIndex(index), res);
 }
 
@@ -98,6 +98,11 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   return JSUndefined;
 }
 
+PropertyDescriptor JSObject::GetPropertyWithIndex(Context* ctx,
+                                                  uint32_t index) const {
+  return GetProperty(ctx, ctx->InternIndex(index));
+}
+
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   const Properties::const_iterator it = table_.find(name);
   if (it == table_.end()) {
@@ -105,6 +110,11 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   } else {
     return it->second;
   }
+}
+
+PropertyDescriptor JSObject::GetOwnPropertyWithIndex(Context* ctx,
+                                                     uint32_t index) const {
+  return GetOwnProperty(ctx, ctx->InternIndex(index));
 }
 
 bool JSObject::CanPut(Context* ctx, Symbol name) const {
@@ -131,6 +141,10 @@ bool JSObject::CanPut(Context* ctx, Symbol name) const {
       return inherited.AsDataDescriptor()->IsWritable();
     }
   }
+}
+
+bool JSObject::CanPutWithIndex(Context* ctx, uint32_t index) const {
+  return CanPut(ctx, ctx->InternIndex(index));
 }
 
 #define REJECT(str)\
@@ -230,6 +244,16 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   return true;
 }
 
+bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,
+                                          uint32_t index,
+                                          const PropertyDescriptor& desc,
+                                          bool th,
+                                          Error* res) {
+  return DefineOwnProperty(ctx,
+                           ctx->InternIndex(index),
+                           desc, th, res);
+}
+
 #undef REJECT
 
 void JSObject::Put(Context* ctx,
@@ -270,8 +294,18 @@ void JSObject::Put(Context* ctx,
   }
 }
 
+void JSObject::PutWithIndex(Context* ctx,
+                            uint32_t index,
+                            const JSVal& val, bool th, Error* res) {
+  Put(ctx, ctx->InternIndex(index), val, th, res);
+}
+
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
   return !GetProperty(ctx, name).IsEmpty();
+}
+
+bool JSObject::HasPropertyWithIndex(Context* ctx, uint32_t index) const {
+  return HasProperty(ctx, ctx->InternIndex(index));
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
@@ -288,6 +322,11 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
     }
     return false;
   }
+}
+
+bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
+                               bool th, Error* res) {
+  return Delete(ctx, ctx->InternIndex(index), th, res);
 }
 
 void JSObject::GetPropertyNames(std::vector<Symbol>* vec,

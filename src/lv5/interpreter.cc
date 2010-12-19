@@ -1305,9 +1305,8 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     if (expr) {
       EVAL(expr);
       const JSVal value = GetValue(ctx_->ret(), CHECK);
-      const Symbol index = ctx_->InternIndex(current);
-      ary->DefineOwnProperty(
-          ctx_, index,
+      ary->DefineOwnPropertyWithIndex(
+          ctx_, current,
           DataDescriptor(value, PropertyDescriptor::WRITABLE |
                                 PropertyDescriptor::ENUMERABLE |
                                 PropertyDescriptor::CONFIGURABLE),
