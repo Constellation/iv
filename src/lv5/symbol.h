@@ -7,31 +7,31 @@ namespace iv {
 namespace lv5 {
 
 struct Symbol {
-  std::size_t value;
+  std::size_t value_as_index;
 };
 
 inline bool operator==(const Symbol& x, const Symbol& y) {
-  return x.value == y.value;
+  return x.value_as_index == y.value_as_index;
 }
 
 inline bool operator!=(const Symbol& x, const Symbol& y) {
-  return x.value != y.value;
+  return x.value_as_index != y.value_as_index;
 }
 
 inline bool operator<(const Symbol& x, const Symbol& y) {
-  return x.value < y.value;
+  return x.value_as_index < y.value_as_index;
 }
 
 inline bool operator>(const Symbol& x, const Symbol& y) {
-  return x.value > y.value;
+  return x.value_as_index > y.value_as_index;
 }
 
 inline bool operator<=(const Symbol& x, const Symbol& y) {
-  return x.value <= y.value;
+  return x.value_as_index <= y.value_as_index;
 }
 
 inline bool operator>=(const Symbol& x, const Symbol& y) {
-  return x.value <= y.value;
+  return x.value_as_index <= y.value_as_index;
 }
 
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
@@ -46,7 +46,7 @@ template<>
 struct hash<iv::lv5::Symbol>
   : public unary_function<iv::lv5::Symbol, std::size_t> {
   inline result_type operator()(const argument_type& x) const {
-    return hash<std::size_t>()(x.value);
+    return hash<std::size_t>()(x.value_as_index);
   }
 };
 } }  // namespace std::tr1

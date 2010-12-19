@@ -171,7 +171,6 @@ class JSString : public gc {
     return new JSString(str.data(), str.size());
   }
 
-  // TODO(Constellation) more clean static member function
   static JSString* New(Context* ctx,
                        const core::UStringPiece& lhs,
                        const core::UStringPiece& rhs) {

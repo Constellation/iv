@@ -32,7 +32,6 @@ JSArray::JSArray(Context* ctx, std::size_t len)
     return false;\
   } while (0)
 
-// TODO(Constellation) res => NULL safe
 bool JSArray::DefineOwnProperty(Context* ctx,
                                 Symbol name,
                                 const PropertyDescriptor& desc,

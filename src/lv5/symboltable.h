@@ -45,7 +45,7 @@ class SymbolTable {
       } else {
         Indexes& vec = it->second;
         BOOST_FOREACH(const Symbol& i, vec) {
-          if (strings_[i.value] == target) {
+          if (strings_[i.value_as_index] == target) {
             return i;
           }
         }
@@ -58,12 +58,12 @@ class SymbolTable {
   }
 
   inline JSString* ToString(Context* ctx, Symbol sym) const {
-    const core::UString& str = strings_[sym.value];
+    const core::UString& str = strings_[sym.value_as_index];
     return JSString::New(ctx, str);
   }
 
   inline const core::UString& GetContent(Symbol sym) const {
-    return strings_[sym.value];
+    return strings_[sym.value_as_index];
   }
 
  private:
