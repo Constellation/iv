@@ -1,22 +1,14 @@
-#ifndef IV_LV5_EVAL_SOURCE_H_
-#define IV_LV5_EVAL_SOURCE_H_
-#include "none.h"
-#include "jsstring.h"
+#ifndef _IV_LV5_EVAL_SOURCE_H_
+#define _IV_LV5_EVAL_SOURCE_H_
 #include "noncopyable.h"
+#include "jsstring.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
-template<typename T>
-class EvalSourceData {
- public:
-  static const std::string kEvalSource;
-};
 
-template<typename T>
-const std::string EvalSourceData<T>::kEvalSource = "(eval)";
+static const std::string kEvalSource = "(eval)";
+
 }  // namespace iv::lv5::detail
-
-typedef detail::EvalSourceData<core::None> EvalSourceData;
 
 class EvalSource : public core::Noncopyable<EvalSource>::type {
  public:
@@ -28,12 +20,15 @@ class EvalSource : public core::Noncopyable<EvalSource>::type {
     assert(pos < size());
     return (*source_)[pos];
   }
+
   inline std::size_t size() const {
     return source_->size();
   }
+
   inline const std::string& filename() const {
-    return EvalSourceData::kEvalSource;
+    return detail::kEvalSource;
   }
+
   inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
     if (len == std::string::npos) {
@@ -47,4 +42,4 @@ class EvalSource : public core::Noncopyable<EvalSource>::type {
 };
 
 } }  // namespace iv::lv5
-#endif  // IV_LV5_EVAL_SOURCE_H_
+#endif  // _IV_LV5_EVAL_SOURCE_H_

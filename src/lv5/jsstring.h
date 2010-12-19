@@ -27,41 +27,6 @@ class JSString : public gc {
   typedef value_type::const_iterator const_iterator;
   typedef value_type::size_type size_type;
 
-//  using GCUString::capacity;
-//  using GCUString::assign;
-//  using GCUString::begin;
-//  using GCUString::end;
-//  using GCUString::rbegin;
-//  using GCUString::rend;
-//  using GCUString::at;
-//  using GCUString::resize;
-//  using GCUString::push_back;
-//  using GCUString::insert;
-//  using GCUString::erase;
-//  using GCUString::swap;
-//  using GCUString::compare;
-//  using GCUString::append;
-//  using GCUString::c_str;
-//  using GCUString::copy;
-//  using GCUString::data;
-//  using GCUString::find;
-//  using GCUString::rfind;
-//  using GCUString::substr;
-//  using GCUString::find_first_of;
-//  using GCUString::find_first_not_of;
-//  using GCUString::find_last_of;
-//  using GCUString::find_last_not_of;
-//  using GCUString::replace;
-//  using GCUString::operator=;
-//  using GCUString::operator!=;
-//  using GCUString::operator<<;
-//  using GCUString::operator>>;
-//  using GCUString::pop_back;
-//  using GCUString::getline;
-//  using GCUString::reverse;
-//  using GCUString::front;
-//  using GCUString::back;
-
   JSString()
     : string_(),
       hash_value_(core::StringToHash(string_)) {

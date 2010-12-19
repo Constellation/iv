@@ -1,9 +1,8 @@
 #include <iostream>  // NOLINT
 #include "ast.h"
-#include "jsenv.h"
 #include "jsfunction.h"
+#include "jsenv.h"
 #include "jsval.h"
-#include "jsobject.h"
 #include "interpreter.h"
 #include "context.h"
 #include "arguments.h"

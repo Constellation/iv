@@ -1,10 +1,9 @@
 #ifndef _IV_LV5_ERROR_H_
 #define _IV_LV5_ERROR_H_
 #include <algorithm>
-#include <tr1/type_traits>
 #include "static_assert.h"
-#include "jsval.h"
 #include "stringpiece.h"
+#include "jsval.h"
 namespace iv {
 namespace lv5 {
 

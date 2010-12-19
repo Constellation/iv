@@ -31,13 +31,8 @@ class JSReference : public gc {
   bool IsPropertyReference() const {
     return base_.IsObject() || HasPrimitiveBase();
   }
-
-  inline JSVal* base() {
-    return &base_;
-  }
-
-  inline const JSVal* base() const {
-    return &base_;
+  inline const JSVal& base() const {
+    return base_;
   }
   static JSReference* New(Context* ctx,
                           JSVal base, Symbol name, bool is_strict) {

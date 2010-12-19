@@ -1,10 +1,9 @@
 #ifndef _IV_LV5_JSFUNCTION_H_
 #define _IV_LV5_JSFUNCTION_H_
 #include <tr1/functional>
-#include "jsobject.h"
-#include "jsenv.h"
-#include "arguments.h"
 #include "ustringpiece.h"
+#include "jsobject.h"
+#include "arguments.h"
 #include "jsast.h"
 namespace iv {
 namespace lv5 {
@@ -13,6 +12,7 @@ class Context;
 class JSCodeFunction;
 class JSNativeFunction;
 class Error;
+class JSEnv;
 class JSScript;
 
 class JSFunction : public JSObject {

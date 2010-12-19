@@ -3,10 +3,9 @@
 #include <vector>
 #include <gc/gc_cpp.h>
 #include "ast.h"
+#include "gc_template.h"
 #include "property.h"
 #include "hint.h"
-#include "jsstring.h"
-#include "gc_template.h"
 #include "symbol.h"
 
 namespace iv {
@@ -14,13 +13,10 @@ namespace lv5 {
 
 class JSVal;
 class JSFunction;
-class PropertyDescriptor;
 class Callable;
-class JSNumberObject;
-class JSStringObject;
-class JSBooleanObject;
 class Context;
 class Error;
+class JSString;
 
 class JSObject : public gc {
  public:

@@ -5,7 +5,6 @@
 #include <iostream>  // NOLINT
 #include <tr1/memory>
 #include <tr1/array>
-#include "none.h"
 #include "token.h"
 #include "parser.h"
 #include "context.h"
@@ -19,16 +18,11 @@
 namespace iv {
 namespace lv5 {
 namespace detail {
-template<typename T>
-class InteractiveData {
- public:
-  static const std::string kOrigin;
-};
-template<typename T>
-const std::string InteractiveData<T>::kOrigin = "(shell)";
-}
 
-typedef detail::InteractiveData<core::None> InteractiveData;
+static const std::string kInteractiveOrigin = "(shell)";
+
+}  // namespace iv::lv5::detail
+
 
 class Interactive {
  public:
@@ -87,7 +81,7 @@ class Interactive {
  private:
   JSEvalScript<icu::Source>* Parse(const std::string& text, bool* recover) {
     std::tr1::shared_ptr<icu::Source> src(
-        new icu::Source(text, InteractiveData::kOrigin));
+        new icu::Source(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
     core::Parser<AstFactory, icu::Source> parser(factory, src.get());
     parser.set_strict(ctx_.IsStrict());

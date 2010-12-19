@@ -1124,13 +1124,13 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         ctx_->Return(JSTrue);
         return;
       } else if (ref->IsPropertyReference()) {
-        JSObject* const obj = ref->base()->ToObject(ctx_, CHECK);
+        JSObject* const obj = ref->base().ToObject(ctx_, CHECK);
         const bool result = obj->Delete(ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
         ctx_->Return(JSVal::Bool(result));
       } else {
-        assert(ref->base()->IsEnvironment());
-        const bool res = ref->base()->environment()->DeleteBinding(
+        assert(ref->base().IsEnvironment());
+        const bool res = ref->base().environment()->DeleteBinding(
             ref->GetReferencedName());
         ctx_->Return(JSVal::Bool(res));
       }
@@ -1147,7 +1147,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::TYPEOF: {
       EVAL(unary->expr());
       if (ctx_->ret().IsReference()) {
-        if (ctx_->ret().reference()->base()->IsUndefined()) {
+        if (ctx_->ret().reference()->base().IsUndefined()) {
           ctx_->Return(
               JSString::NewAsciiString(ctx_, "undefined"));
           return;
@@ -1409,10 +1409,10 @@ void Interpreter::Visit(const FunctionCall* call) {
   if (target.IsReference()) {
     const JSReference* const ref = target.reference();
     if (ref->IsPropertyReference()) {
-      args.set_this_binding(*(ref->base()));
+      args.set_this_binding(ref->base());
     } else {
-      assert(ref->base()->IsEnvironment());
-      args.set_this_binding(ref->base()->environment()->ImplicitThisValue());
+      assert(ref->base().IsEnvironment());
+      args.set_this_binding(ref->base().environment()->ImplicitThisValue());
       // direct call to eval check
       {
         const JSNativeFunction* const native =
@@ -1478,7 +1478,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
     return val;
   }
   const JSReference* const ref = val.reference();
-  const JSVal* const base = ref->base();
+  const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
     // TODO(Constellation) add symbol name
     error->Report(Error::Reference, "not defined");
@@ -1487,7 +1487,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
   if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       // section 8.7.1 special [[Get]]
-      const JSObject* const o = base->ToObject(ctx_, error);
+      const JSObject* const o = base.ToObject(ctx_, error);
       if (*error) {
         return JSUndefined;
       }
@@ -1502,7 +1502,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
           const JSVal res = ac->get()->AsCallable()->Call(
-              Arguments(ctx_, *base), error);
+              Arguments(ctx_, base), error);
           if (*error) {
             return JSUndefined;
           }
@@ -1512,8 +1512,8 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         }
       }
     } else {
-      const JSVal res = base->object()->Get(ctx_,
-                                            ref->GetReferencedName(), error);
+      const JSVal res = base.object()->Get(ctx_,
+                                           ref->GetReferencedName(), error);
       if (*error) {
         return JSUndefined;
       }
@@ -1521,7 +1521,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
     }
     return JSUndefined;
   } else {
-    const JSVal res = base->environment()->GetBindingValue(
+    const JSVal res = base.environment()->GetBindingValue(
         ctx_, ref->GetReferencedName(), ref->IsStrictReference(), error);
     if (*error) {
       return JSUndefined;
@@ -1547,7 +1547,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
     return;
   }
   const JSReference* const ref = val.reference();
-  const JSVal* const base = ref->base();
+  const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
     if (ref->IsStrictReference()) {
       error->Report(Error::Reference,
@@ -1561,7 +1561,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
     if (ref->HasPrimitiveBase()) {
       const Symbol sym = ref->GetReferencedName();
       const bool th = ref->IsStrictReference();
-      JSObject* const o = base->ToObject(ctx_, ERRCHECK);
+      JSObject* const o = base.ToObject(ctx_, ERRCHECK);
       if (!o->CanPut(sym)) {
         if (th) {
           error->Report(Error::Type, "cannot put value to object");
@@ -1581,7 +1581,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(Arguments(ctx_, *base), ERRCHECK);
+        ac->set()->AsCallable()->Call(Arguments(ctx_, base), ERRCHECK);
       } else {
         if (th) {
           error->Report(Error::Type, "value to symbol in transient object");
@@ -1589,14 +1589,14 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       return;
     } else {
-      base->object()->Put(ctx_, ref->GetReferencedName(), w,
-                          ref->IsStrictReference(), ERRCHECK);
+      base.object()->Put(ctx_, ref->GetReferencedName(), w,
+                         ref->IsStrictReference(), ERRCHECK);
     }
   } else {
-    assert(base->environment());
-    base->environment()->SetMutableBinding(ctx_,
-                                           ref->GetReferencedName(), w,
-                                           ref->IsStrictReference(), ERRCHECK);
+    assert(base.environment());
+    base.environment()->SetMutableBinding(ctx_,
+                                          ref->GetReferencedName(), w,
+                                          ref->IsStrictReference(), ERRCHECK);
   }
 }
 

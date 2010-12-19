@@ -1,13 +1,12 @@
 #ifndef IV_LV5_INTERPRETER_H_
 #define IV_LV5_INTERPRETER_H_
+#include "ast.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
-#include "ast.h"
+#include "jsast.h"
+#include "arguments.h"
 #include "utils.h"
 #include "jsval.h"
-#include "jsenv.h"
-#include "jsstring.h"
-#include "jsfunction.h"
 #include "symbol.h"
 
 namespace iv {
@@ -15,6 +14,12 @@ namespace lv5 {
 
 class Context;
 class Error;
+class JSEnv;
+class JSDeclEnv;
+class JSObjectEnv;
+class JSCodeFunction;
+class JSReference;
+
 class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public AstVisitor {
  public:

@@ -15,6 +15,7 @@ namespace lv5 {
 class JSDeclEnv;
 class JSObjectEnv;
 class Context;
+
 class JSEnv : public gc {
  public:
   virtual bool HasBinding(Symbol name) const = 0;

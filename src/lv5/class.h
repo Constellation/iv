@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_CLASS_H_
 #define _IV_LV5_CLASS_H_
+#include "symbol.h"
 namespace iv {
 namespace lv5 {
 
