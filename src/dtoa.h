@@ -1,5 +1,5 @@
-#ifndef IV_LV5_DTOA_H_
-#define IV_LV5_DTOA_H_
+#ifndef _IV_DTOA_H_
+#define _IV_DTOA_H_
 // Double to String
 
 // David M Gay's algorithm and V8 fast-dtoa
@@ -16,5 +16,5 @@ namespace core {
 
 using v8::internal::DoubleToCString;
 
-} }  // namespace iv::lv5
-#endif  // IV_LV5_DTOA_H_
+} }  // namespace iv::core
+#endif  // _IV_DTOA_H_

@@ -1,5 +1,5 @@
-#ifndef IV_STRINGPIECE_H_
-#define IV_STRINGPIECE_H_
+#ifndef _IV_STRINGPIECE_H_
+#define _IV_STRINGPIECE_H_
 #pragma once
 
 #include <algorithm>
@@ -382,4 +382,4 @@ std::ostream& operator<<(std::ostream& o,
 typedef BasicStringPiece<char, std::char_traits<char> > StringPiece;
 
 } }  // namespace iv::core
-#endif  // IV_STRINGPIECE_H_
+#endif  // _IV_STRINGPIECE_H_
