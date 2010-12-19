@@ -33,13 +33,15 @@ class JSObject : public gc {
                              Hint::Object hint, Error* res);
   virtual JSVal Get(Context* context,
                     Symbol name, Error* res);
-  virtual PropertyDescriptor GetOwnProperty(Symbol name) const;
-  virtual PropertyDescriptor GetProperty(Symbol name) const;
-  virtual bool CanPut(Symbol name) const;
+  virtual JSVal Get(Context* context,
+                    uint32_t index, Error* res);
+  virtual PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+  virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  virtual bool CanPut(Context* ctx, Symbol name) const;
   virtual void Put(Context* context, Symbol name,
                    const JSVal& val, bool th, Error* res);
-  virtual bool HasProperty(Symbol name) const;
-  virtual bool Delete(Symbol name, bool th, Error* res);
+  virtual bool HasProperty(Context* ctx, Symbol name) const;
+  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* res);
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,

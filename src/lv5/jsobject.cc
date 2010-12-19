@@ -63,7 +63,7 @@ JSVal JSObject::DefaultValue(Context* ctx,
 
 JSVal JSObject::Get(Context* ctx,
                     Symbol name, Error* res) {
-  const PropertyDescriptor desc = GetProperty(name);
+  const PropertyDescriptor desc = GetProperty(ctx, name);
   if (desc.IsEmpty()) {
     return JSUndefined;
   }
@@ -80,11 +80,16 @@ JSVal JSObject::Get(Context* ctx,
   }
 }
 
+JSVal JSObject::Get(Context* ctx,
+                    uint32_t index, Error* res) {
+  return Get(ctx, ctx->InternIndex(index), res);
+}
+
 // not recursion
-PropertyDescriptor JSObject::GetProperty(Symbol name) const {
+PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   const JSObject* obj = this;
   do {
-    const PropertyDescriptor prop = obj->GetOwnProperty(name);
+    const PropertyDescriptor prop = obj->GetOwnProperty(ctx, name);
     if (!prop.IsEmpty()) {
       return prop;
     }
@@ -93,7 +98,7 @@ PropertyDescriptor JSObject::GetProperty(Symbol name) const {
   return JSUndefined;
 }
 
-PropertyDescriptor JSObject::GetOwnProperty(Symbol name) const {
+PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   const Properties::const_iterator it = table_.find(name);
   if (it == table_.end()) {
     return JSUndefined;
@@ -102,8 +107,8 @@ PropertyDescriptor JSObject::GetOwnProperty(Symbol name) const {
   }
 }
 
-bool JSObject::CanPut(Symbol name) const {
-  const PropertyDescriptor desc = GetOwnProperty(name);
+bool JSObject::CanPut(Context* ctx, Symbol name) const {
+  const PropertyDescriptor desc = GetOwnProperty(ctx, name);
   if (!desc.IsEmpty()) {
     if (desc.IsAccessorDescriptor()) {
       return desc.AsAccessorDescriptor()->set();
@@ -115,7 +120,7 @@ bool JSObject::CanPut(Symbol name) const {
   if (!prototype_) {
     return extensible_;
   }
-  const PropertyDescriptor inherited = prototype_->GetProperty(name);
+  const PropertyDescriptor inherited = prototype_->GetProperty(ctx, name);
   if (inherited.IsEmpty()) {
     return extensible_;
   } else {
@@ -142,7 +147,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  bool th,
                                  Error* res) {
   // section 8.12.9 [[DefineOwnProperty]]
-  const PropertyDescriptor current = GetOwnProperty(name);
+  const PropertyDescriptor current = GetOwnProperty(ctx, name);
   if (current.IsEmpty()) {
     if (!extensible_) {
       REJECT("object not extensible");
@@ -230,13 +235,13 @@ bool JSObject::DefineOwnProperty(Context* ctx,
 void JSObject::Put(Context* ctx,
                    Symbol name,
                    const JSVal& val, bool th, Error* res) {
-  if (!CanPut(name)) {
+  if (!CanPut(ctx, name)) {
     if (th) {
       res->Report(Error::Type, "put failed");
     }
     return;
   }
-  const PropertyDescriptor own_desc = GetOwnProperty(name);
+  const PropertyDescriptor own_desc = GetOwnProperty(ctx, name);
   if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
     DefineOwnProperty(ctx,
                       name,
@@ -247,7 +252,7 @@ void JSObject::Put(Context* ctx,
                           PropertyDescriptor::UNDEF_WRITABLE), th, res);
     return;
   }
-  const PropertyDescriptor desc = GetProperty(name);
+  const PropertyDescriptor desc = GetProperty(ctx, name);
   if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
@@ -265,12 +270,12 @@ void JSObject::Put(Context* ctx,
   }
 }
 
-bool JSObject::HasProperty(Symbol name) const {
-  return !GetProperty(name).IsEmpty();
+bool JSObject::HasProperty(Context* ctx, Symbol name) const {
+  return !GetProperty(ctx, name).IsEmpty();
 }
 
-bool JSObject::Delete(Symbol name, bool th, Error* res) {
-  const PropertyDescriptor desc = GetOwnProperty(name);
+bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
+  const PropertyDescriptor desc = GetOwnProperty(ctx, name);
   if (desc.IsEmpty()) {
     return true;
   }

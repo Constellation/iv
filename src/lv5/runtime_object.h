@@ -124,7 +124,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
       } else {
         name = args.ctx()->Intern("undefined");
       }
-      const PropertyDescriptor desc = obj->GetOwnProperty(name);
+      const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);
       return FromPropertyDescriptor(args.ctx(), desc);
     }
   }
@@ -244,15 +244,16 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
+      Context* const ctx = args.ctx();
       obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(*it);
+        PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsConfigurable()) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            args.ctx(), *it, desc, true, ERROR(error));
+            ctx, *it, desc, true, ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -271,10 +272,11 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
+      Context* const ctx = args.ctx();
       obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(*it);
+        PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsDataDescriptor()) {
           desc.AsDataDescriptor()->set_writable(false);
         }
@@ -282,7 +284,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            args.ctx(), *it, desc, true, ERROR(error));
+            ctx, *it, desc, true, ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -317,10 +319,11 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
+      Context* const ctx = args.ctx();
       obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(*it);
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsConfigurable()) {
           return JSFalse;
         }
@@ -341,10 +344,11 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
+      Context* const ctx = args.ctx();
       obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(*it);
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsDataDescriptor()) {
           if (desc.AsDataDescriptor()->IsWritable()) {
             return JSFalse;
@@ -459,10 +463,10 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
   if (args.size() > 0) {
     const JSVal& val = args[0];
-    Context* ctx = args.ctx();
+    Context* const ctx = args.ctx();
     JSString* const str = val.ToString(ctx, ERROR(error));
     JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-    if (!obj->GetOwnProperty(ctx->Intern(str->value())).IsEmpty()) {
+    if (!obj->GetOwnProperty(ctx, ctx->Intern(str->value())).IsEmpty()) {
       return JSTrue;
     } else {
       return JSFalse;
@@ -504,7 +508,7 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* error) {
     name = args.ctx()->Intern("undefined");
   }
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
-  const PropertyDescriptor desc = obj->GetOwnProperty(name);
+  const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);
   if (desc.IsEmpty()) {
     return JSFalse;
   }

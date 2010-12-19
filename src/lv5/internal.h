@@ -84,7 +84,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 3
     const Symbol sym = ctx->Intern("enumerable");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool enumerable = r.ToBoolean(ERROR(error));
       if (enumerable) {
@@ -98,7 +98,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 4
     const Symbol sym = ctx->Intern("configurable");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool configurable = r.ToBoolean(ERROR(error));
       if (configurable) {
@@ -112,7 +112,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 5
     const Symbol sym = ctx->Intern("value");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       value = obj->Get(ctx, sym, ERROR(error));
       attr |= PropertyDescriptor::DATA;
       attr &= ~PropertyDescriptor::UNDEF_VALUE;
@@ -121,7 +121,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 6
     const Symbol sym = ctx->Intern("writable");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool writable = r.ToBoolean(ERROR(error));
       attr |= PropertyDescriptor::DATA;
@@ -134,7 +134,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 7
     const Symbol sym = ctx->Intern("get");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,
@@ -150,7 +150,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   {
     // step 8
     const Symbol sym = ctx->Intern("set");
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,

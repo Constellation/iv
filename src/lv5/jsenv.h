@@ -18,8 +18,8 @@ class Context;
 
 class JSEnv : public gc {
  public:
-  virtual bool HasBinding(Symbol name) const = 0;
-  virtual bool DeleteBinding(Symbol name) = 0;
+  virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
+  virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
   virtual void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) = 0;
   virtual void SetMutableBinding(Context* ctx,
                                  Symbol name,
@@ -52,11 +52,11 @@ class JSDeclEnv : public JSEnv {
       record_() {
   }
 
-  bool HasBinding(Symbol name) const {
+  bool HasBinding(Context* ctx, Symbol name) const {
     return record_.find(name) != record_.end();
   }
 
-  bool DeleteBinding(Symbol name) {
+  bool DeleteBinding(Context* ctx, Symbol name) {
     const Record::const_iterator it(record_.find(name));
     if (it == record_.end()) {
       return true;
@@ -158,16 +158,16 @@ class JSObjectEnv : public JSEnv {
       provide_this_(false) {
   }
 
-  bool HasBinding(Symbol name) const {
-    return record_->HasProperty(name);
+  bool HasBinding(Context* ctx, Symbol name) const {
+    return record_->HasProperty(ctx, name);
   }
 
-  bool DeleteBinding(Symbol name) {
-    return record_->Delete(name, false, NULL);
+  bool DeleteBinding(Context* ctx, Symbol name) {
+    return record_->Delete(ctx, name, false, NULL);
   }
 
   void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
-    assert(!record_->HasProperty(name));
+    assert(!record_->HasProperty(ctx, name));
     int attr = PropertyDescriptor::WRITABLE |
                PropertyDescriptor::ENUMERABLE;
     if (del) {
@@ -190,7 +190,7 @@ class JSObjectEnv : public JSEnv {
 
   JSVal GetBindingValue(Context* ctx, Symbol name,
                         bool strict, Error* res) const {
-    const bool value = record_->HasProperty(name);
+    const bool value = record_->HasProperty(ctx, name);
     if (!value) {
       if (strict) {
         // TODO(Constellation) add name of reference

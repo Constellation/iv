@@ -55,7 +55,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
     const uint32_t len = core::DoubleToUInt32(length.number());
     while (k < len) {
       const Symbol index = ctx->InternIndex(k);
-      if (elm->HasProperty(index)) {
+      if (elm->HasProperty(ctx, index)) {
         const JSVal subelm = elm->Get(ctx, index, ERROR(error));
         ary->DefineOwnProperty(
             ctx,
@@ -93,7 +93,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
       const uint32_t len = core::DoubleToUInt32(length.number());
       while (k < len) {
         const Symbol index = ctx->InternIndex(k);
-        if (elm->HasProperty(index)) {
+        if (elm->HasProperty(ctx, index)) {
           const JSVal subelm = elm->Get(ctx, index, ERROR(error));
           ary->DefineOwnProperty(
               ctx,
@@ -182,7 +182,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* error) {
     const uint32_t index = len - 1;
     const Symbol indx = ctx->InternIndex(index);
     const JSVal element = obj->Get(ctx, indx, ERROR(error));
-    obj->Delete(indx, true, ERROR(error));
+    obj->Delete(ctx, indx, true, ERROR(error));
     obj->Put(ctx, ctx->length_symbol(),
              index, true, ERROR(error));
     return element;
@@ -238,16 +238,16 @@ inline JSVal ArrayReverse(const Arguments& args, Error* error) {
         ctx,
         upper_symbol,
         ERROR(error));
-    const bool lower_exists = obj->HasProperty(lower_symbol);
-    const bool upper_exists = obj->HasProperty(upper_symbol);
+    const bool lower_exists = obj->HasProperty(ctx, lower_symbol);
+    const bool upper_exists = obj->HasProperty(ctx, upper_symbol);
     if (lower_exists && upper_exists) {
       obj->Put(ctx, lower_symbol, upper_value, true, ERROR(error));
       obj->Put(ctx, upper_symbol, lower_value, true, ERROR(error));
     } else if (!lower_exists && upper_exists) {
       obj->Put(ctx, lower_symbol, upper_value, true, ERROR(error));
-      obj->Delete(upper_symbol, true, ERROR(error));
+      obj->Delete(ctx, upper_symbol, true, ERROR(error));
     } else if (lower_exists && !upper_exists) {
-      obj->Delete(lower_symbol, true, ERROR(error));
+      obj->Delete(ctx, lower_symbol, true, ERROR(error));
       obj->Put(ctx, upper_symbol, lower_value, true, ERROR(error));
     } else {
       // no action is required
@@ -275,14 +275,14 @@ inline JSVal ArrayShift(const Arguments& args, Error* error) {
   Symbol from;
   for (uint32_t k = 1; k < len; ++k, to = from) {
     from = ctx->InternIndex(k);
-    if (obj->HasProperty(from)) {
+    if (obj->HasProperty(ctx, from)) {
       const JSVal from_value = obj->Get(ctx, from, ERROR(error));
       obj->Put(ctx, to, from_value, true, ERROR(error));
     } else {
-      obj->Delete(to, true, ERROR(error));
+      obj->Delete(ctx, to, true, ERROR(error));
     }
   }
-  obj->Delete(from, true, ERROR(error));
+  obj->Delete(ctx, from, true, ERROR(error));
   obj->Put(ctx, ctx->length_symbol(), len - 1, true, ERROR(error));
   return first;
 }
@@ -328,7 +328,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
   }
   for (uint32_t n = 0; k < final; ++k, ++n) {
     const Symbol pk = ctx->InternIndex(k);
-    if (obj->HasProperty(pk)) {
+    if (obj->HasProperty(ctx, pk)) {
       const JSVal kval = obj->Get(ctx, pk, ERROR(error));
       ary->DefineOwnProperty(
           ctx,
@@ -381,7 +381,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   }
   for (uint32_t k = 0; k < actual_delete_count; ++k) {
     const Symbol from = ctx->InternIndex(actual_start + k);
-    if (obj->HasProperty(from)) {
+    if (obj->HasProperty(ctx, from)) {
       const JSVal from_val = obj->Get(ctx, from, ERROR(error));
       ary->DefineOwnProperty(
           ctx,
@@ -400,26 +400,26 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
          last = len - actual_delete_count; k < last; ++k) {
       const Symbol from = ctx->InternIndex(k + actual_delete_count);
       const Symbol to = ctx->InternIndex(k + item_count);
-      if (obj->HasProperty(from)) {
+      if (obj->HasProperty(ctx, from)) {
         const JSVal from_value = obj->Get(ctx, from, ERROR(error));
         obj->Put(ctx, to, from_value, true, ERROR(error));
       } else {
-        obj->Delete(to, true, ERROR(error));
+        obj->Delete(ctx, to, true, ERROR(error));
       }
     }
     for (uint32_t k = len, last = len + item_count - actual_delete_count;
          k > last; --k) {
-        obj->Delete(ctx->InternIndex(k - 1), true, ERROR(error));
+        obj->Delete(ctx, ctx->InternIndex(k - 1), true, ERROR(error));
     }
   } else if (item_count > actual_delete_count) {
     for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
       const Symbol from = ctx->InternIndex(k + actual_delete_count - 1);
       const Symbol to = ctx->InternIndex(k + item_count - 1);
-      if (obj->HasProperty(from)) {
+      if (obj->HasProperty(ctx, from)) {
         const JSVal from_value = obj->Get(ctx, from, ERROR(error));
         obj->Put(ctx, to, from_value, true, ERROR(error));
       } else {
-        obj->Delete(to, true, ERROR(error));
+        obj->Delete(ctx, to, true, ERROR(error));
       }
     }
   }
@@ -453,11 +453,11 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
   for (uint32_t k = len; k > 0; --k) {
     const Symbol from = ctx->InternIndex(k - 1);
     const Symbol to = ctx->InternIndex(k + arg_count - 1);
-    if (obj->HasProperty(from)) {
+    if (obj->HasProperty(ctx, from)) {
       const JSVal from_value = obj->Get(ctx, from, ERROR(error));
       obj->Put(ctx, to, from_value, true, ERROR(error));
     } else {
-      obj->Delete(to, true, ERROR(error));
+      obj->Delete(ctx, to, true, ERROR(error));
     }
   }
 
@@ -523,7 +523,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
 
   for (; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
       if (StrictEqual(search_element, element_k)) {
         return k;
@@ -580,7 +580,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
   ++k;
   while (k--) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal element_k = obj->Get(ctx, sym, ERROR(error));
       if (StrictEqual(search_element, element_k)) {
         return k;
@@ -629,7 +629,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* error) {
 
   for (uint32_t k = 0; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
       const JSVal test_result = callbackfn->Call(arg_list, ERROR(error));
@@ -681,7 +681,7 @@ inline JSVal ArraySome(const Arguments& args, Error* error) {
 
   for (uint32_t k = 0; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
       const JSVal test_result = callbackfn->Call(arg_list, ERROR(error));
@@ -733,7 +733,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* error) {
 
   for (uint32_t k = 0; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
       callbackfn->Call(arg_list, ERROR(error));
@@ -783,7 +783,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
 
   for (uint32_t k = 0; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = obj->Get(ctx, sym, ERROR(error));
       arg_list[1] = k;
       const JSVal mapped_value = callbackfn->Call(arg_list, ERROR(error));
@@ -841,7 +841,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
 
   for (uint32_t k = 0, to = 0; k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       const JSVal k_value = obj->Get(ctx, sym, ERROR(error));
       arg_list[0] = k_value;
       arg_list[1] = k;
@@ -908,7 +908,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
     bool k_present = false;
     for (; k < len; ++k) {
       const Symbol sym = ctx->InternIndex(k);
-      if (obj->HasProperty(sym)) {
+      if (obj->HasProperty(ctx, sym)) {
         k_present = true;
         ++k;
         accumulator = obj->Get(ctx, sym, ERROR(error));
@@ -928,7 +928,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
 
   for (;k < len; ++k) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->Get(ctx, sym, ERROR(error));
       arg_list[2] = k;
@@ -985,7 +985,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
     bool k_present = false;
     while (k--) {
       const Symbol sym = ctx->InternIndex(k);
-      if (obj->HasProperty(sym)) {
+      if (obj->HasProperty(ctx, sym)) {
         k_present = true;
         accumulator = obj->Get(ctx, sym, ERROR(error));
         break;
@@ -1004,7 +1004,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
 
   while (k--) {
     const Symbol sym = ctx->InternIndex(k);
-    if (obj->HasProperty(sym)) {
+    if (obj->HasProperty(ctx, sym)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->Get(ctx, sym, ERROR(error));
       arg_list[2] = k;

@@ -90,8 +90,9 @@ JSVal JSArguments::Get(Context* ctx,
   }
 }
 
-PropertyDescriptor JSArguments::GetOwnProperty(Symbol name) const {
-  const PropertyDescriptor desc = JSObject::GetOwnProperty(name);
+PropertyDescriptor JSArguments::GetOwnProperty(Context* ctx,
+                                               Symbol name) const {
+  const PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, name);
   if (desc.IsEmpty()) {
     return desc;
   }
@@ -141,8 +142,8 @@ bool JSArguments::DefineOwnProperty(Context* ctx,
   return true;
 }
 
-bool JSArguments::Delete(Symbol name, bool th, Error* error) {
-  const bool result = JSObject::Delete(name, th, error);
+bool JSArguments::Delete(Context* ctx, Symbol name, bool th, Error* error) {
+  const bool result = JSObject::Delete(ctx, name, th, error);
   if (*error) {
     return result;
   }

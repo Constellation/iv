@@ -38,7 +38,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 bool th,
                                 Error* res) {
   const Symbol length_symbol = ctx->length_symbol();
-  DataDescriptor* const old_len_desc = GetOwnProperty(length_symbol).AsDataDescriptor();
+  DataDescriptor* const old_len_desc =
+      GetOwnProperty(ctx, length_symbol).AsDataDescriptor();
 
   const JSVal& len_value = old_len_desc->value();
 
@@ -86,7 +87,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                                       buffer.size());
         const Symbol now_index = ctx->Intern(str);
         // see Eratta
-        const bool delete_succeeded = Delete(now_index, false, res);
+        const bool delete_succeeded = Delete(ctx, now_index, false, res);
         if (*res) {
           return false;
         }

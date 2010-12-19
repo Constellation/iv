@@ -30,13 +30,13 @@ class JSArguments : public JSObject {
                           bool strict);
   JSVal Get(Context* context,
             Symbol name, Error* error);
-  PropertyDescriptor GetOwnProperty(Symbol name) const;
+  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   bool DefineOwnProperty(Context* ctx,
                          Symbol name,
                          const PropertyDescriptor& desc,
                          bool th,
                          Error* error);
-  bool Delete(Symbol name, bool th, Error* error);
+  bool Delete(Context* ctx, Symbol name, bool th, Error* error);
  private:
   JSDeclEnv* env_;
   Index2Param map_;

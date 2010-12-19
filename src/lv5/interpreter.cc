@@ -164,7 +164,7 @@ void Interpreter::CallCode(
                   code->code()->params()) {
       ++n;
       const Symbol arg_name = ctx_->Intern(*ident);
-      if (!env->HasBinding(arg_name)) {
+      if (!env->HasBinding(ctx_, arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name,
                                   configurable_bindings, CHECK_IN_STMT);
       }
@@ -184,7 +184,7 @@ void Interpreter::CallCode(
     const Symbol fn = ctx_->Intern(*(f->name()));
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
-    if (!env->HasBinding(fn)) {
+    if (!env->HasBinding(ctx_, fn)) {
       env->CreateMutableBinding(ctx_, fn,
                                 configurable_bindings, CHECK_IN_STMT);
     } else {
@@ -196,7 +196,7 @@ void Interpreter::CallCode(
   // step 6, 7
   // TODO(Constellation) code check (function)
   const Symbol arguments_symbol = ctx_->arguments_symbol();
-  if (!env->HasBinding(arguments_symbol)) {
+  if (!env->HasBinding(ctx_, arguments_symbol)) {
     JSArguments* const args_obj = JSArguments::New(ctx_,
                                                    code,
                                                    code->code()->params(),
@@ -217,7 +217,7 @@ void Interpreter::CallCode(
   // step 8
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
-    if (!env->HasBinding(dn)) {
+    if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, dn,
@@ -230,7 +230,7 @@ void Interpreter::CallCode(
     if (type == FunctionLiteral::STATEMENT ||
         (type == FunctionLiteral::EXPRESSION && code->name())) {
       const Symbol name = ctx_->Intern(*(code->name()));
-      if (!env->HasBinding(name)) {
+      if (!env->HasBinding(ctx_, name)) {
         env->CreateImmutableBinding(name);
         env->InitializeImmutableBinding(name, code);
       }
@@ -263,12 +263,12 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     const Symbol fn = ctx_->Intern(*(f->name()));
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
-    if (!env->HasBinding(fn)) {
+    if (!env->HasBinding(ctx_, fn)) {
       env->CreateMutableBinding(ctx_, fn,
                                 configurable_bindings, CHECK_IN_STMT);
     } else if (is_global_env) {
       JSObject* const go = ctx_->global_obj();
-      const PropertyDescriptor existing_prop = go->GetProperty(fn);
+      const PropertyDescriptor existing_prop = go->GetProperty(ctx_, fn);
       if (existing_prop.IsConfigurable()) {
         go->DefineOwnProperty(
             ctx_,
@@ -300,7 +300,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
 
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
     const Symbol dn = ctx_->Intern(*(var.first));
-    if (!env->HasBinding(dn)) {
+    if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, dn,
@@ -1006,7 +1006,8 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           return;
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
-        const bool res = rhs.object()->HasProperty(ctx_->Intern(name->value()));
+        const bool res = rhs.object()->HasProperty(ctx_,
+                                                   ctx_->Intern(name->value()));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1125,12 +1126,14 @@ void Interpreter::Visit(const UnaryOperation* unary) {
         return;
       } else if (ref->IsPropertyReference()) {
         JSObject* const obj = ref->base().ToObject(ctx_, CHECK);
-        const bool result = obj->Delete(ref->GetReferencedName(),
+        const bool result = obj->Delete(ctx_,
+                                        ref->GetReferencedName(),
                                         ref->IsStrictReference(), CHECK);
         ctx_->Return(JSVal::Bool(result));
       } else {
         assert(ref->base().IsEnvironment());
         const bool res = ref->base().environment()->DeleteBinding(
+            ctx_,
             ref->GetReferencedName());
         ctx_->Return(JSVal::Bool(res));
       }
@@ -1491,7 +1494,8 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
       if (*error) {
         return JSUndefined;
       }
-      const PropertyDescriptor desc = o->GetProperty(ref->GetReferencedName());
+      const PropertyDescriptor desc = o->GetProperty(ctx_,
+                                                     ref->GetReferencedName());
       if (desc.IsEmpty()) {
         return JSUndefined;
       }
@@ -1562,13 +1566,13 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       const Symbol sym = ref->GetReferencedName();
       const bool th = ref->IsStrictReference();
       JSObject* const o = base.ToObject(ctx_, ERRCHECK);
-      if (!o->CanPut(sym)) {
+      if (!o->CanPut(ctx_, sym)) {
         if (th) {
           error->Report(Error::Type, "cannot put value to object");
         }
         return;
       }
-      const PropertyDescriptor own_desc = o->GetOwnProperty(sym);
+      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, sym);
       if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
         if (th) {
           // TODO(Constellation) add symbol name
@@ -1577,7 +1581,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
         }
         return;
       }
-      const PropertyDescriptor desc = o->GetProperty(sym);
+      const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
@@ -1663,7 +1667,7 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
                                                  Symbol name, bool strict) {
   JSEnv* env = lex;
   while (env) {
-    if (env->HasBinding(name)) {
+    if (env->HasBinding(ctx_, name)) {
       return JSReference::New(ctx_, env, name, strict);
     } else {
       env = env->outer();
