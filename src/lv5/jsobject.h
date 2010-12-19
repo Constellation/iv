@@ -45,7 +45,7 @@ class JSObject : public gc {
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* res);
-  virtual void GetPropertyNames(std::vector<Symbol>* vec) const;
+  void GetPropertyNames(std::vector<Symbol>* vec) const;
   virtual void GetOwnPropertyNames(std::vector<Symbol>* vec) const;
   virtual bool IsCallable() const {
     return false;

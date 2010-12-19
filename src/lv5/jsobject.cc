@@ -287,6 +287,16 @@ bool JSObject::Delete(Symbol name, bool th, Error* res) {
 
 void JSObject::GetPropertyNames(std::vector<Symbol>* vec) const {
   using std::find;
+  GetOwnPropertyNames(vec);
+  const JSObject* obj = prototype_;
+  while (obj) {
+    obj->GetOwnPropertyNames(vec);
+    obj = obj->prototype();
+  }
+}
+
+void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec) const {
+  using std::find;
   if (vec->empty()) {
     for (JSObject::Properties::const_iterator it = table_.begin(),
          last = table_.end(); it != last; ++it) {
@@ -301,18 +311,6 @@ void JSObject::GetPropertyNames(std::vector<Symbol>* vec) const {
           (find(vec->begin(), vec->end(), it->first) == vec->end())) {
         vec->push_back(it->first);
       }
-    }
-  }
-  if (prototype_) {
-    prototype_->GetPropertyNames(vec);
-  }
-}
-
-void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec) const {
-  for (JSObject::Properties::const_iterator it = table_.begin(),
-       last = table_.end(); it != last; ++it) {
-    if (it->second.IsEnumerable()) {
-      vec->push_back(it->first);
     }
   }
 }
