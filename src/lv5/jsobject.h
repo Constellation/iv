@@ -20,6 +20,10 @@ class JSString;
 
 class JSObject : public gc {
  public:
+  enum EnumerationMode {
+    kExcludeNotEnumerable,
+    kIncludeNotEnumerable
+  };
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   JSObject();
@@ -41,8 +45,9 @@ class JSObject : public gc {
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* res);
-  void GetPropertyNames(std::vector<Symbol>* vec) const;
-  virtual void GetOwnPropertyNames(std::vector<Symbol>* vec) const;
+  void GetPropertyNames(std::vector<Symbol>* vec, EnumerationMode mode) const;
+  virtual void GetOwnPropertyNames(std::vector<Symbol>* vec,
+                                   EnumerationMode mode) const;
   virtual bool IsCallable() const {
     return false;
   }
@@ -70,9 +75,6 @@ class JSObject : public gc {
   }
   void set_class_name(Symbol cls) {
     class_name_ = cls;
-  }
-  const Properties& table() const {
-    return table_;
   }
 
   static JSObject* New(Context* ctx);

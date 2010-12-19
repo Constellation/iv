@@ -510,7 +510,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value;
   std::vector<Symbol> keys;
-  obj->GetPropertyNames(&keys);
+  obj->GetPropertyNames(&keys, JSObject::kExcludeNotEnumerable);
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
     JSVal rhs(ctx_->ToString(*it));

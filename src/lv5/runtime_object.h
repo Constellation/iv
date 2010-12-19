@@ -34,15 +34,15 @@ inline void DefinePropertiesImpl(Context* ctx,
                                  JSObject* props, Error* error) {
   typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
   Descriptors descriptors;
-  for (JSObject::Properties::const_iterator it = props->table().begin(),
-       last = props->table().end(); it != last; ++it) {
-    if (it->second.IsEnumerable()) {
-      const JSVal desc_obj = props->Get(ctx, it->first,
-                                        ERROR_VOID(error));
-      const PropertyDescriptor desc =
-          ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
-      descriptors.push_back(std::make_pair(it->first, desc));
-    }
+  std::vector<Symbol> keys;
+  props->GetOwnPropertyNames(&keys, JSObject::kExcludeNotEnumerable);
+  for (std::vector<Symbol>::const_iterator it = keys.begin(),
+       last = keys.end(); it != last; ++it) {
+    const JSVal desc_obj = props->Get(ctx, *it,
+                                      ERROR_VOID(error));
+    const PropertyDescriptor desc =
+        ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
+    descriptors.push_back(std::make_pair(*it, desc));
   }
   for (Descriptors::const_iterator it = descriptors.begin(),
        last = descriptors.end(); it != last; ++it) {
@@ -142,11 +142,13 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       JSArray* const ary = JSArray::New(args.ctx());
       uint32_t n = 0;
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it, ++n) {
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it, ++n) {
         ary->DefineOwnProperty(
             args.ctx(), args.ctx()->InternIndex(n),
-            DataDescriptor(args.ctx()->ToString(it->first),
+            DataDescriptor(args.ctx()->ToString(*it),
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
@@ -241,16 +243,16 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      // TODO(Constellation) Enumerate Iterator Interface
-      // (such as Arguments.length)
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it) {
+        PropertyDescriptor desc = obj->GetOwnProperty(*it);
         if (desc.IsConfigurable()) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            args.ctx(), it->first, desc, true, ERROR(error));
+            args.ctx(), *it, desc, true, ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -268,11 +270,11 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      // TODO(Constellation) Enumerate Iterator Interface
-      // (such as Arguments.length)
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it) {
+        PropertyDescriptor desc = obj->GetOwnProperty(*it);
         if (desc.IsDataDescriptor()) {
           desc.AsDataDescriptor()->set_writable(false);
         }
@@ -280,7 +282,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            args.ctx(), it->first, desc, true, ERROR(error));
+            args.ctx(), *it, desc, true, ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -314,11 +316,11 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      // TODO(Constellation) Enumerate Iterator Interface
-      // (such as Arguments.length)
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(*it);
         if (desc.IsConfigurable()) {
           return JSFalse;
         }
@@ -338,11 +340,11 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      // TODO(Constellation) Enumerate Iterator Interface
-      // (such as Arguments.length)
-      for (JSObject::Properties::const_iterator it = obj->table().begin(),
-           last = obj->table().end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(it->first);
+      std::vector<Symbol> keys;
+      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      for (std::vector<Symbol>::const_iterator it = keys.begin(),
+           last = keys.end(); it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(*it);
         if (desc.IsDataDescriptor()) {
           if (desc.AsDataDescriptor()->IsWritable()) {
             return JSFalse;
@@ -383,7 +385,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(&keys);
+      obj->GetOwnPropertyNames(&keys, JSObject::kExcludeNotEnumerable);
       JSArray* const ary = JSArray::New(args.ctx(), keys.size());
       uint32_t index = 0;
       for (std::vector<Symbol>::const_iterator it = keys.begin(),

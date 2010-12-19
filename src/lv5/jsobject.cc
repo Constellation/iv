@@ -285,29 +285,31 @@ bool JSObject::Delete(Symbol name, bool th, Error* res) {
   }
 }
 
-void JSObject::GetPropertyNames(std::vector<Symbol>* vec) const {
+void JSObject::GetPropertyNames(std::vector<Symbol>* vec,
+                                EnumerationMode mode) const {
   using std::find;
-  GetOwnPropertyNames(vec);
+  GetOwnPropertyNames(vec, mode);
   const JSObject* obj = prototype_;
   while (obj) {
-    obj->GetOwnPropertyNames(vec);
+    obj->GetOwnPropertyNames(vec, mode);
     obj = obj->prototype();
   }
 }
 
-void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec) const {
+void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec,
+                                   EnumerationMode mode) const {
   using std::find;
   if (vec->empty()) {
     for (JSObject::Properties::const_iterator it = table_.begin(),
          last = table_.end(); it != last; ++it) {
-      if (it->second.IsEnumerable()) {
+      if (it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
         vec->push_back(it->first);
       }
     }
   } else {
     for (JSObject::Properties::const_iterator it = table_.begin(),
          last = table_.end(); it != last; ++it) {
-      if (it->second.IsEnumerable() &&
+      if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
           (find(vec->begin(), vec->end(), it->first) == vec->end())) {
         vec->push_back(it->first);
       }
