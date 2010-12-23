@@ -139,7 +139,6 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         return false;
       }
 
-      // TODO(Constellation) changing more fast way
       if (new_len < old_len) {
         if (dense_) {
           // dense array version
@@ -156,7 +155,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
               vector_.resize(new_len, JSEmpty);
             }
           }
-        } else {
+        } else if (old_len - new_len < (1 << 24)) {
           while (new_len < old_len) {
             old_len -= 1;
             // see Eratta
@@ -166,6 +165,41 @@ bool JSArray::DefineOwnProperty(Context* ctx,
             }
             if (!delete_succeeded) {
               new_len_desc.set_value(old_len + 1);
+              if (!new_writable) {
+                new_len_desc.set_writable(false);
+              }
+              JSObject::DefineOwnProperty(ctx, length_symbol,
+                                          new_len_desc, false, res);
+              if (*res) {
+                return false;
+              }
+              REJECT("shrink array failed");
+            }
+          }
+        } else {
+          using std::sort;
+          std::vector<Symbol> keys;
+          JSObject::GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
+          std::vector<uint32_t> ix;
+          for (std::vector<Symbol>::const_iterator it = keys.begin(),
+               last = keys.end(); it != last; ++it) {
+            uint32_t index;
+            if (core::ConvertToUInt32(ctx->GetContent(*it), &index)) {
+              ix.push_back(index);
+            }
+          }
+          sort(ix.begin(), ix.end());
+          for (std::vector<uint32_t>::const_reverse_iterator it = ix.rbegin(),
+               last = ix.rend(); it != last; --it) {
+            if (*it < new_len) {
+              break;
+            }
+            const bool delete_succeeded = DeleteWithIndex(ctx, *it, false, res);
+            if (*res) {
+              return false;
+            }
+            if (!delete_succeeded) {
+              new_len_desc.set_value((*it) + 1);
               if (!new_writable) {
                 new_len_desc.set_writable(false);
               }
