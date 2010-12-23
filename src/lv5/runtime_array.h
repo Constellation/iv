@@ -291,7 +291,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* error) {
   }
   const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(error));
   uint32_t to = 0;
-  uint32_t from;
+  uint32_t from = 0;
   for (uint32_t k = 1; k < len; ++k, to = from) {
     from = k;
     if (obj->HasPropertyWithIndex(ctx, from)) {
