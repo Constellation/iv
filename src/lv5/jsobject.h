@@ -29,9 +29,9 @@ class JSObject : public gc {
   JSObject();
   JSObject(JSObject* proto, Symbol class_name, bool extensible);
 
-  virtual JSVal DefaultValue(Context* context,
+  virtual JSVal DefaultValue(Context* ctx,
                              Hint::Object hint, Error* res);
-  virtual JSVal Get(Context* context,
+  virtual JSVal Get(Context* ctx,
                     Symbol name, Error* res);
   virtual JSVal GetWithIndex(
       Context* context, uint32_t index, Error* res);
@@ -63,8 +63,10 @@ class JSObject : public gc {
                                           const PropertyDescriptor& desc,
                                           bool th,
                                           Error* res);
-  void GetPropertyNames(std::vector<Symbol>* vec, EnumerationMode mode) const;
-  virtual void GetOwnPropertyNames(std::vector<Symbol>* vec,
+  void GetPropertyNames(Context* ctx,
+                        std::vector<Symbol>* vec, EnumerationMode mode) const;
+  virtual void GetOwnPropertyNames(Context* ctx,
+                                   std::vector<Symbol>* vec,
                                    EnumerationMode mode) const;
   virtual bool IsCallable() const {
     return false;

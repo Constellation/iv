@@ -117,6 +117,14 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
       ++n;
     }
   }
+  ary->DefineOwnProperty(
+      ctx,
+      ctx->length_symbol(),
+      DataDescriptor(n,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::ENUMERABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, ERROR(error));
   return ary;
 }
 

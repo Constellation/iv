@@ -329,18 +329,20 @@ bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
   return Delete(ctx, ctx->InternIndex(index), th, res);
 }
 
-void JSObject::GetPropertyNames(std::vector<Symbol>* vec,
+void JSObject::GetPropertyNames(Context* ctx,
+                                std::vector<Symbol>* vec,
                                 EnumerationMode mode) const {
   using std::find;
-  GetOwnPropertyNames(vec, mode);
+  GetOwnPropertyNames(ctx, vec, mode);
   const JSObject* obj = prototype_;
   while (obj) {
-    obj->GetOwnPropertyNames(vec, mode);
+    obj->GetOwnPropertyNames(ctx, vec, mode);
     obj = obj->prototype();
   }
 }
 
-void JSObject::GetOwnPropertyNames(std::vector<Symbol>* vec,
+void JSObject::GetOwnPropertyNames(Context* ctx,
+                                   std::vector<Symbol>* vec,
                                    EnumerationMode mode) const {
   using std::find;
   if (vec->empty()) {

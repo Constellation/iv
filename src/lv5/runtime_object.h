@@ -35,7 +35,7 @@ inline void DefinePropertiesImpl(Context* ctx,
   typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
   Descriptors descriptors;
   std::vector<Symbol> keys;
-  props->GetOwnPropertyNames(&keys, JSObject::kExcludeNotEnumerable);
+  props->GetOwnPropertyNames(ctx, &keys, JSObject::kExcludeNotEnumerable);
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
     const JSVal desc_obj = props->Get(ctx, *it,
@@ -141,14 +141,15 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       JSArray* const ary = JSArray::New(args.ctx());
+      Context* const ctx = args.ctx();
       uint32_t n = 0;
       std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++n) {
         ary->DefineOwnPropertyWithIndex(
             args.ctx(), n,
-            DataDescriptor(args.ctx()->ToString(*it),
+            DataDescriptor(ctx->ToString(*it),
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
@@ -245,7 +246,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
       Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
         PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
@@ -273,7 +274,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
       Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
         PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
@@ -320,7 +321,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
       Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
         const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
@@ -345,7 +346,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       std::vector<Symbol> keys;
       Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(&keys, JSObject::kIncludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
         const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
@@ -388,14 +389,15 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
+      Context* const ctx = args.ctx();
       std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(&keys, JSObject::kExcludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kExcludeNotEnumerable);
       JSArray* const ary = JSArray::New(args.ctx(), keys.size());
       uint32_t index = 0;
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++index) {
         ary->DefineOwnPropertyWithIndex(
-            args.ctx(), index,
+            ctx, index,
             DataDescriptor(
                 args.ctx()->ToString(*it),
                 PropertyDescriptor::WRITABLE |

@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_SYMBOL_H_
 #define _IV_LV5_SYMBOL_H_
 #include <cstddef>
+#include <utility>
 #include <tr1/type_traits>
 #include "static_assert.h"
 namespace iv {

@@ -17,11 +17,62 @@ namespace lv5 {
 
 JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
+    vector_((len < detail::kMaxVectorSize) ? len : 4, JSEmpty),
+    map_(NULL),
+    dense_(true),
     length_(len) {
   JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
                               DataDescriptor(len,
                                              PropertyDescriptor::WRITABLE),
                                              false, ctx->error());
+}
+
+PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {
+  uint32_t index;
+  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+    return GetOwnPropertyWithIndex(ctx, index);
+  }
+  return JSObject::GetOwnProperty(ctx, name);
+}
+
+PropertyDescriptor JSArray::GetOwnPropertyWithIndex(Context* ctx,
+                                                    uint32_t index) const {
+  if (detail::kMaxVectorSize > index) {
+    // this target included in vector (if dense array)
+    if (vector_.size() > index) {
+      const JSVal& val = vector_[index];
+      if (!val.IsEmpty()) {
+        // current is target
+        return DataDescriptor(val,
+                              PropertyDescriptor::ENUMERABLE |
+                              PropertyDescriptor::CONFIGURABLE |
+                              PropertyDescriptor::WRITABLE);
+      } else if (dense_) {
+        // if dense array, target is undefined
+        return JSUndefined;
+      }
+    }
+  } else {
+    // target is index and included in map
+    if (map_) {
+      const Map::const_iterator it = map_->find(index);
+      if (it != map_->end()) {
+        // target is found
+        return DataDescriptor(it->second,
+                              PropertyDescriptor::ENUMERABLE |
+                              PropertyDescriptor::CONFIGURABLE |
+                              PropertyDescriptor::WRITABLE);
+      } else if (dense_) {
+        // if target is not found and dense array,
+        // target is undefined
+        return JSUndefined;
+      }
+    } else if (dense_) {
+      // if map is none and dense array, target is undefined
+      return JSUndefined;
+    }
+  }
+  return JSObject::GetOwnProperty(ctx, ctx->InternIndex(index));
 }
 
 #define REJECT(str)\
@@ -37,16 +88,23 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 const PropertyDescriptor& desc,
                                 bool th,
                                 Error* res) {
-  const Symbol length_symbol = ctx->length_symbol();
-  DataDescriptor* const old_len_desc =
-      GetOwnProperty(ctx, length_symbol).AsDataDescriptor();
+  uint32_t index;
+  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+    return DefineOwnPropertyWithIndex(ctx, index, desc, th, res);
+  }
 
+  const Symbol length_symbol = ctx->length_symbol();
+  PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, length_symbol);
+  DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
   const JSVal& len_value = old_len_desc->value();
+  assert(len_value.IsNumber());
 
   if (name == length_symbol) {
     if (desc.IsDataDescriptor()) {
       const DataDescriptor* const data = desc.AsDataDescriptor();
       if (data->IsValueAbsent()) {
+        // changing attribute [[Writable]] or TypeError.
+        // [[Value]] not changed.
         return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
       }
       DataDescriptor new_len_desc(*data);
@@ -54,13 +112,14 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (*res) {
         return false;
       }
+      // length must be uint32_t
       const uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
         res->Report(Error::Range, "out of range");
         return false;
       }
       new_len_desc.set_value(new_len);
-      double old_len = len_value.ToNumber(ctx, res);
+      uint32_t old_len = core::DoubleToUInt32(len_value.number());
       if (*res) {
         return false;
       }
@@ -79,15 +138,12 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (!succeeded) {
         return false;
       }
-      std::tr1::array<char, 80> buffer;
+
+      // TODO(Constellation) changing more fast way
       while (new_len < old_len) {
         old_len -= 1;
-        const char* const str = core::DoubleToCString(old_len,
-                                                      buffer.data(),
-                                                      buffer.size());
-        const Symbol now_index = ctx->Intern(str);
         // see Eratta
-        const bool delete_succeeded = Delete(ctx, now_index, false, res);
+        const bool delete_succeeded = DeleteWithIndex(ctx, old_len, false, res);
         if (*res) {
           return false;
         }
@@ -114,40 +170,171 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
       return true;
     } else {
-      UNREACHABLE();
-      return true;
+      // length is not configurable
+      // so length is not changed
+      return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
     }
   } else {
-    uint32_t index;
-    if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
-      // array index
-      const double old_len = len_value.ToNumber(ctx, res);
-      if (*res) {
-        return false;
-      }
-      if (index >= old_len && !old_len_desc->IsWritable()) {
-        return false;
-      }
-      const bool succeeded = JSObject::DefineOwnProperty(ctx, name,
-                                                         desc, false, res);
-      if (*res) {
-        return false;
-      }
-      if (!succeeded) {
-        REJECT("define own property failed");
-      }
-      if (index >= old_len) {
-        old_len_desc->set_value(index+1);
-        JSObject::DefineOwnProperty(ctx, length_symbol,
-                                    *old_len_desc, false, res);
-      }
-      return true;
-    }
     return JSObject::DefineOwnProperty(ctx, name, desc, th, res);
   }
 }
 
+bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
+                                         uint32_t index,
+                                         const PropertyDescriptor& desc,
+                                         bool th,
+                                         Error* res) {
+  // array index
+  PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx,
+                                                        ctx->length_symbol());
+  DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
+  const double old_len = old_len_desc->value().ToNumber(ctx, res);
+  if (*res) {
+    return false;
+  }
+  if (index >= old_len && !old_len_desc->IsWritable()) {
+    return false;
+  }
+
+  // define step
+  const bool descriptor_is_default_property = IsDefaultDescriptor(desc);
+  if (descriptor_is_default_property &&
+      (dense_ || JSObject::GetOwnProperty(ctx, ctx->InternIndex(index)).IsEmpty())) {
+    JSVal target;
+    if (desc.IsDataDescriptor()) {
+      target = desc.AsDataDescriptor()->value();
+    } else {
+      target = JSUndefined;
+    }
+    if (detail::kMaxVectorSize > index) {
+      if (vector_.size() > index) {
+        vector_[index] = target;
+      } else {
+        vector_.resize(index + 1, JSEmpty);
+        vector_[index] = target;
+      }
+    } else {
+      if (!map_) {
+        map_ = new (GC) Map();
+      }
+      (*map_)[index] = target;
+    }
+  } else {
+    const bool succeeded = JSObject::DefineOwnProperty(
+        ctx, ctx->InternIndex(index), desc, false, res);
+    if (*res) {
+      return false;
+    }
+
+    if (succeeded) {
+      dense_ = false;
+      if (detail::kMaxVectorSize > index) {
+        if (vector_.size() > index) {
+          vector_[index] = JSEmpty;
+        }
+      } else {
+        if (map_) {
+          const Map::iterator it = map_->find(index);
+          if (it != map_->end()) {
+            map_->erase(it);
+          }
+        }
+      }
+    } else {
+      REJECT("define own property failed");
+    }
+  }
+  if (index >= old_len) {
+    old_len_desc->set_value(index+1);
+    JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
+                                *old_len_desc, false, res);
+  }
+  return true;
+}
+
 #undef REJECT
+
+
+bool JSArray::Delete(Context* ctx, Symbol name, bool th, Error* res) {
+  uint32_t index;
+  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+    return DeleteWithIndex(ctx, index, th, res);
+  }
+  return JSObject::Delete(ctx, name, th, res);
+}
+
+bool JSArray::DeleteWithIndex(Context* ctx, uint32_t index, bool th, Error* res) {
+  if (detail::kMaxVectorSize > index) {
+    if (vector_.size() > index) {
+      JSVal& val = vector_[index];
+      if (!val.IsEmpty()) {
+        val = JSEmpty;
+        return true;
+      } else if (dense_) {
+        return true;
+      }
+    }
+  } else {
+    if (map_) {
+      const Map::iterator it = map_->find(index);
+      if (it != map_->end()) {
+        map_->erase(it);
+        return true;
+      } else if (dense_) {
+        return true;
+      }
+    } else if (dense_) {
+      return true;
+    }
+  }
+  return JSObject::Delete(ctx, ctx->InternIndex(index), th, res);
+}
+
+void JSArray::GetOwnPropertyNames(Context* ctx,
+                                  std::vector<Symbol>* vec,
+                                  EnumerationMode mode) const {
+  using std::find;
+  if (vec->empty()) {
+    uint32_t index = 0;
+    for (Vector::const_iterator it = vector_.begin(),
+         last = vector_.end(); it != last; ++it, ++index) {
+      if (!it->IsEmpty()) {
+        vec->push_back(ctx->InternIndex(index));
+      }
+    }
+    if (map_) {
+      for (Map::const_iterator it = map_->begin(),
+           last = map_->end(); it != last; ++it) {
+        if (!it->second.IsEmpty()) {
+          vec->push_back(ctx->InternIndex(it->first));
+        }
+      }
+    }
+  } else {
+    uint32_t index = 0;
+    for (Vector::const_iterator it = vector_.begin(),
+         last = vector_.end(); it != last; ++it, ++index) {
+      if (!it->IsEmpty()) {
+        const Symbol sym = ctx->InternIndex(index);
+        if (find(vec->begin(), vec->end(), sym) == vec->end()) {
+          vec->push_back(sym);
+        }
+      }
+    }
+    if (map_) {
+      for (Map::const_iterator it = map_->begin(),
+           last = map_->end(); it != last; ++it) {
+        if (!it->second.IsEmpty()) {
+          const Symbol sym = ctx->InternIndex(it->first);
+          if (find(vec->begin(), vec->end(), sym) == vec->end()) {
+            vec->push_back(sym);
+          }
+        }
+      }
+    }
+  }
+  JSObject::GetOwnPropertyNames(ctx, vec, mode);
+}
 
 JSArray* JSArray::New(Context* ctx) {
   JSArray* const ary = new JSArray(ctx, 0);
@@ -163,6 +350,23 @@ JSArray* JSArray::New(Context* ctx, std::size_t n) {
   ary->set_class_name(cls.name);
   ary->set_prototype(cls.prototype);
   return ary;
+}
+
+bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {
+  if (!(desc.IsEnumerable() || desc.IsEnumerableAbsent())) {
+    return false;
+  }
+  if (!(desc.IsConfigurable() || desc.IsConfigurableAbsent())) {
+    return false;
+  }
+  if (desc.IsAccessorDescriptor()) {
+    return false;
+  }
+  if (desc.IsDataDescriptor()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    return data->IsWritable() || data->IsWritableAbsent();
+  }
+  return true;
 }
 
 } }  // namespace iv::lv5
