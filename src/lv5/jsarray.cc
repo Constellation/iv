@@ -140,24 +140,43 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       }
 
       // TODO(Constellation) changing more fast way
-      while (new_len < old_len) {
-        old_len -= 1;
-        // see Eratta
-        const bool delete_succeeded = DeleteWithIndex(ctx, old_len, false, res);
-        if (*res) {
-          return false;
-        }
-        if (!delete_succeeded) {
-          new_len_desc.set_value(old_len + 1);
-          if (!new_writable) {
-            new_len_desc.set_writable(false);
+      if (new_len < old_len) {
+        if (dense_) {
+          // dense array version
+          if (new_len > detail::kMaxVectorSize) {
+            if (map_) {
+              map_->erase(
+                  map_->upper_bound(new_len - 1), map_->end());
+            }
+          } else {
+            if (map_) {
+              map_->clear();
+            }
+            if (vector_.size() > new_len) {
+              vector_.resize(new_len, JSEmpty);
+            }
           }
-          JSObject::DefineOwnProperty(ctx, length_symbol,
-                                      new_len_desc, false, res);
-          if (*res) {
-            return false;
+        } else {
+          while (new_len < old_len) {
+            old_len -= 1;
+            // see Eratta
+            const bool delete_succeeded = DeleteWithIndex(ctx, old_len, false, res);
+            if (*res) {
+              return false;
+            }
+            if (!delete_succeeded) {
+              new_len_desc.set_value(old_len + 1);
+              if (!new_writable) {
+                new_len_desc.set_writable(false);
+              }
+              JSObject::DefineOwnProperty(ctx, length_symbol,
+                                          new_len_desc, false, res);
+              if (*res) {
+                return false;
+              }
+              REJECT("shrink array failed");
+            }
           }
-          REJECT("shrink array failed");
         }
       }
       if (!new_writable) {
