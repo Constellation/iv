@@ -109,6 +109,14 @@ Symbol Context::InternIndex(uint32_t index) {
               static_cast<unsigned long>(index))));  // NOLINT
 }
 
+Symbol Context::InternDouble(double number) {
+  std::tr1::array<char, 80> buffer;
+  const char* const str = core::DoubleToCString(number,
+                                                buffer.data(),
+                                                buffer.size());
+  return table_.Lookup(core::StringPiece(str));
+}
+
 double Context::Random() {
   return random_engine_();
 }

@@ -204,20 +204,36 @@ inline JSVal ArrayPush(const Arguments& args, Error* error) {
       ctx->length_symbol(), ERROR(error));
   const double val = length.ToNumber(ctx, ERROR(error));
   uint32_t n = core::DoubleToUInt32(val);
-  for (Arguments::const_iterator it = args.begin(),
-       last = args.end(); it != last; ++it, ++n) {
+  bool index_over = false;
+  Arguments::const_iterator it = args.begin();
+  const Arguments::const_iterator last = args.end();
+  for (; it != last; ++it, ++n) {
     obj->PutWithIndex(
         ctx,
         n,
         *it,
         true, ERROR(error));
+    if (n == UINT32_MAX) {
+      index_over = true;
+      break;
+    }
+  }
+  double len = static_cast<double>(n);
+  if (index_over) {
+    for (++len, ++it; it != last; ++it, ++len) {
+      obj->Put(
+          ctx,
+          ctx->InternDouble(len),
+          *it,
+          true, ERROR(error));
+    }
   }
   obj->Put(
       ctx,
       ctx->length_symbol(),
-      n,
+      len,
       true, ERROR(error));
-  return n;
+  return len;
 }
 
 // section 15.4.4.8 Array.prototype.reverse()
