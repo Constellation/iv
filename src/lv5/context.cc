@@ -425,7 +425,7 @@ void Context::Initialize() {
   {
     // Array
     // TODO(Constellation) more
-    JSObject* const proto = JSObject::NewPlain(this);
+    JSObject* const proto = JSArray::NewPlain(this);
     // section 15.4.2 The Array Constructor
     JSNativeFunction* const constructor =
         JSNativeFunction::NewPlain(this, &runtime::ArrayConstructor, 1);

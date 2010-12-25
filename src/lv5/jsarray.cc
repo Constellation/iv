@@ -405,6 +405,10 @@ JSArray* JSArray::New(Context* ctx, std::size_t n) {
   return ary;
 }
 
+JSArray* JSArray::NewPlain(Context* ctx) {
+  return new JSArray(ctx, 0);
+}
+
 bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {
   if (!(desc.IsEnumerable() || desc.IsEnumerableAbsent())) {
     return false;

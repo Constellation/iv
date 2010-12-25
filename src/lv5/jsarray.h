@@ -38,6 +38,7 @@ class JSArray : public JSObject {
 
   static JSArray* New(Context* ctx);
   static JSArray* New(Context* ctx, std::size_t n);
+  static JSArray* NewPlain(Context* ctx);
 
  private:
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
