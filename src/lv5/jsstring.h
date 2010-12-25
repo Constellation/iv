@@ -190,6 +190,12 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
   void Append(const JSString& str) {
     target_->string_.append(str.value());
   }
+  void Append(char ch) {
+    target_->string_.push_back(ch);
+  }
+  void Append(uc16 ch) {
+    target_->string_.push_back(ch);
+  }
 
   // for assignable object
   void append(const core::UStringPiece& piece) {

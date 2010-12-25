@@ -29,12 +29,12 @@ JSObject::JSObject(JSObject* proto,
 
 #define TRY(context, sym, arg, error)\
   do {\
-    JSVal method = Get(context, sym, error);\
+    const JSVal method = Get(context, sym, error);\
     if (*error) {\
       return JSUndefined;\
     }\
     if (method.IsCallable()) {\
-      JSVal val = method.object()->AsCallable()->Call(arg, error);\
+      const JSVal val = method.object()->AsCallable()->Call(arg, error);\
       if (*error) {\
         return JSUndefined;\
       }\

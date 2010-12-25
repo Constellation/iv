@@ -469,6 +469,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.4.4.3 Array.prototype.toLocaleString()
+    proto->DefineOwnProperty(
+        this, Intern("toLocaleString"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayToLocaleString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
     proto->DefineOwnProperty(
         this, Intern("concat"),

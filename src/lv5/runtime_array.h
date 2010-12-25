@@ -35,6 +35,65 @@ inline JSVal ArrayToString(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.4.4.3 Array.prototype.toLocaleString()
+inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, error);
+  Context* const ctx = args.ctx();
+  JSObject* const array = args.this_binding().ToObject(ctx, ERROR(error));
+  const JSVal length = array->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(error));
+  const double val = length.ToNumber(ctx, ERROR(error));
+  const uint32_t len = core::DoubleToUInt32(val);
+  if (len == 0) {
+    return JSString::NewEmptyString(ctx);
+  }
+
+  // implementation depended locale based separator
+  const char separator = ',';
+  const Symbol toLocaleString = ctx->Intern("toLocaleString");
+  Arguments args_list(ctx);
+  JSStringBuilder builder(ctx);
+  {
+    const JSVal first = array->GetWithIndex(ctx, 0, ERROR(error));
+    if (!first.IsUndefined() && !first.IsNull()) {
+      JSObject* const elm_obj = first.ToObject(ctx, ERROR(error));
+      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(error));
+      if (!method.IsCallable()) {
+        error->Report(Error::Type, "toLocaleString is not function");
+        return JSUndefined;
+      }
+      args_list.set_this_binding(elm_obj);
+      const JSVal R = method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSString* const str = R.ToString(ctx, ERROR(error));
+      builder.Append(*str);
+    }
+  }
+
+  uint32_t k = 1;
+  while (k < len) {
+    builder.Append(separator);
+    const JSVal element = array->GetWithIndex(
+        ctx,
+        k,
+        ERROR(error));
+    if (!element.IsUndefined() && !element.IsNull()) {
+      JSObject* const elm_obj = element.ToObject(ctx, ERROR(error));
+      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(error));
+      if (!method.IsCallable()) {
+        error->Report(Error::Type, "toLocaleString is not function");
+        return JSUndefined;
+      }
+      args_list.set_this_binding(elm_obj);
+      const JSVal R = method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSString* const str = R.ToString(ctx, ERROR(error));
+      builder.Append(*str);
+    }
+    ++k;
+  }
+  return builder.Build();
+}
+
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
 inline JSVal ArrayConcat(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Array.prototype.concat", args, error);
@@ -149,7 +208,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
   }
   JSStringBuilder builder(ctx);
   {
-    const JSVal element0 = obj->Get(ctx, ctx->Intern("0"), ERROR(error));
+    const JSVal element0 = obj->GetWithIndex(ctx, 0, ERROR(error));
     if (!element0.IsUndefined() && !element0.IsNull()) {
       const JSString* const str = element0.ToString(ctx, ERROR(error));
       builder.Append(*str);
