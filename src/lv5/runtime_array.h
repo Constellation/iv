@@ -17,8 +17,60 @@ namespace runtime {
 // section 15.4.2.1 new Array([item0 [, item1 [, ...]]])
 // section 15.4.2.2 new Array(len)
 inline JSVal ArrayConstructor(const Arguments& args, Error* error) {
-// TODO(Constellation) this is mock function
-  return JSArray::New(args.ctx());
+  const std::size_t args_size = args.size();
+  Context* ctx = args.ctx();
+  if (args_size == 0) {
+    return JSArray::New(ctx);
+  }
+  if (args_size == 1) {
+    const JSVal& first = args[0];
+    if (first.IsNumber()) {
+      const double val = first.ToNumber(ctx, ERROR(error));
+      const uint32_t len = core::DoubleToUInt32(val);
+      if (val == len) {
+        return JSArray::New(ctx, len);
+      } else {
+        error->Report(Error::Range,
+                      "len of `new Array(len)` is number, but out of range");
+        return JSUndefined;
+      }
+    } else {
+      JSArray* const ary = JSArray::New(ctx, 1);
+      ary->DefineOwnPropertyWithIndex(
+          ctx, 0,
+          DataDescriptor(first, PropertyDescriptor::WRITABLE |
+                                PropertyDescriptor::ENUMERABLE |
+                                PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+      return ary;
+    }
+  } else {
+    JSArray* const ary =JSArray::New(ctx, args.size());
+    uint32_t index = 0;
+    for (Arguments::const_iterator it = args.begin(),
+         last = args.end(); it != last; ++it, ++index) {
+      ary->DefineOwnPropertyWithIndex(
+          ctx, index,
+          DataDescriptor(*it, PropertyDescriptor::WRITABLE |
+                              PropertyDescriptor::ENUMERABLE |
+                              PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(error));
+    }
+    return ary;
+  }
+}
+
+// section 15.4.3.2 Array.isArray(arg)
+inline JSVal ArrayIsArray(const Arguments& args, Error* error) {
+  if (args.size() == 0) {
+    return JSFalse;
+  }
+  const JSVal& val = args[0];
+  if (!val.IsObject()) {
+    return JSFalse;
+  }
+  return JSVal::Bool(
+      args.ctx()->Cls("Array").name == val.object()->class_name());
 }
 
 // section 15.4.4.2 Array.prototype.toString()
@@ -64,7 +116,8 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
         return JSUndefined;
       }
       args_list.set_this_binding(elm_obj);
-      const JSVal R = method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSVal R =
+          method.object()->AsCallable()->Call(args_list, ERROR(error));
       const JSString* const str = R.ToString(ctx, ERROR(error));
       builder.Append(*str);
     }
@@ -85,7 +138,8 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
         return JSUndefined;
       }
       args_list.set_this_binding(elm_obj);
-      const JSVal R = method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSVal R =
+          method.object()->AsCallable()->Call(args_list, ERROR(error));
       const JSString* const str = R.ToString(ctx, ERROR(error));
       builder.Append(*str);
     }

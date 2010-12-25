@@ -460,6 +460,15 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.4.3.2 Array.isArray(arg)
+    constructor->DefineOwnProperty(
+        this, Intern("isArray"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::ArrayIsArray, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.4.4.2 Array.prototype.toString()
     proto->DefineOwnProperty(
         this, toString_symbol_,
