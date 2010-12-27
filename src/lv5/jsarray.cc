@@ -142,19 +142,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       if (new_len < old_len) {
         if (dense_) {
           // dense array version
-          if (new_len > detail::kMaxVectorSize) {
-            if (map_) {
-              map_->erase(
-                  map_->upper_bound(new_len - 1), map_->end());
-            }
-          } else {
-            if (map_) {
-              map_->clear();
-            }
-            if (vector_.size() > new_len) {
-              vector_.resize(new_len, JSEmpty);
-            }
-          }
+          CompactionToLength(new_len);
         } else if (old_len - new_len < (1 << 24)) {
           while (new_len < old_len) {
             old_len -= 1;
@@ -195,11 +183,10 @@ bool JSArray::DefineOwnProperty(Context* ctx,
               break;
             }
             const bool delete_succeeded = DeleteWithIndex(ctx, *it, false, res);
-            if (*res) {
-              return false;
-            }
             if (!delete_succeeded) {
-              new_len_desc.set_value((*it) + 1);
+              const uint32_t result_len = *it + 1;
+              CompactionToLength(result_len);
+              new_len_desc.set_value(result_len);
               if (!new_writable) {
                 new_len_desc.set_writable(false);
               }
@@ -211,6 +198,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
               REJECT("shrink array failed");
             }
           }
+          CompactionToLength(new_len);
         }
       }
       if (!new_writable) {
@@ -424,6 +412,22 @@ bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {
     return data->IsWritable() || data->IsWritableAbsent();
   }
   return true;
+}
+
+void JSArray::CompactionToLength(uint32_t length) {
+  if (length > detail::kMaxVectorSize) {
+    if (map_) {
+      map_->erase(
+          map_->upper_bound(length - 1), map_->end());
+    }
+  } else {
+    if (map_) {
+      map_->clear();
+    }
+    if (vector_.size() > length) {
+      vector_.resize(length, JSEmpty);
+    }
+  }
 }
 
 } }  // namespace iv::lv5

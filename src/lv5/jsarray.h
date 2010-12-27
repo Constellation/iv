@@ -41,6 +41,7 @@ class JSArray : public JSObject {
   static JSArray* NewPlain(Context* ctx);
 
  private:
+  void CompactionToLength(uint32_t length);
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
 
   Vector vector_;
