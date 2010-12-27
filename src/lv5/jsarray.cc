@@ -1,4 +1,6 @@
 #include <limits>
+#include <vector>
+#include <set>
 #include <algorithm>
 #include <tr1/array>
 #include <cstdlib>
@@ -165,19 +167,17 @@ bool JSArray::DefineOwnProperty(Context* ctx,
             }
           }
         } else {
-          using std::sort;
           std::vector<Symbol> keys;
           JSObject::GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
-          std::vector<uint32_t> ix;
+          std::set<uint32_t> ix;
           for (std::vector<Symbol>::const_iterator it = keys.begin(),
                last = keys.end(); it != last; ++it) {
             uint32_t index;
             if (core::ConvertToUInt32(ctx->GetContent(*it), &index)) {
-              ix.push_back(index);
+              ix.insert(index);
             }
           }
-          sort(ix.begin(), ix.end());
-          for (std::vector<uint32_t>::const_reverse_iterator it = ix.rbegin(),
+          for (std::set<uint32_t>::const_reverse_iterator it = ix.rbegin(),
                last = ix.rend(); it != last; --it) {
             if (*it < new_len) {
               break;
