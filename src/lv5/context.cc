@@ -225,6 +225,15 @@ void Context::Initialize() {
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
+  // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
+  func_proto->DefineOwnProperty(
+      this, Intern("apply"),
+      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionApply, 2),
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::CONFIGURABLE),
+      false, NULL);
+
+  // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
       this, Intern("call"),
       DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionCall, 1),
@@ -232,9 +241,10 @@ void Context::Initialize() {
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
+  // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
-      this, Intern("apply"),
-      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionApply, 2),
+      this, Intern("bind"),
+      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionBind, 1),
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);

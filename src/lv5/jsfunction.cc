@@ -151,4 +151,77 @@ void JSNativeFunction::Initialize(Context* ctx,
   JSFunction::Initialize(ctx);
 }
 
+JSBindedFunction::JSBindedFunction(Context* ctx,
+                                   JSFunction* target,
+                                   const JSVal& this_binding,
+                                   const Arguments& args)
+  : target_(target),
+    this_binding_(this_binding),
+    arguments_(args.size() == 0 ? 0 : args.size() - 1) {
+  using std::copy;
+  if (args.size() > 0) {
+    copy(args.begin() + 1, args.end(), arguments_.begin());
+  }
+  const uint32_t binded_args_size = arguments_.size();
+  const Class& cls = ctx->Cls("Function");
+  set_class_name(cls.name);
+  set_prototype(cls.prototype);
+  // step 15
+  if (target_->class_name() == cls.name) {
+    // target [[Class]] is "Function"
+    const JSVal length = target_->Get(ctx, ctx->length_symbol(), ctx->error());
+    assert(length.IsNumber());
+    const uint32_t target_param_size = core::DoubleToUInt32(length.number());
+    assert(target_param_size == length.number());
+    const uint32_t len = (target_param_size >= binded_args_size) ?
+        target_param_size - binded_args_size : 0;
+    DefineOwnProperty(
+        ctx, ctx->length_symbol(),
+        DataDescriptor(len,
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+  } else {
+    DefineOwnProperty(
+        ctx, ctx->length_symbol(),
+        DataDescriptor(0.0,
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+  }
+  JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+  DefineOwnProperty(ctx, ctx->caller_symbol(),
+                    AccessorDescriptor(throw_type_error,
+                                       throw_type_error,
+                                       PropertyDescriptor::NONE),
+                    false, ctx->error());
+  DefineOwnProperty(ctx, ctx->callee_symbol(),
+                    AccessorDescriptor(throw_type_error,
+                                       throw_type_error,
+                                       PropertyDescriptor::NONE),
+                    false, ctx->error());
+}
+
+JSVal JSBindedFunction::Call(const Arguments& args,
+                             Error* error) {
+  using std::copy;
+  Arguments args_list(args.ctx(), args.size() + arguments_.size());
+  copy(args.begin(), args.end(),
+       copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+  args_list.set_this_binding(this_binding_);
+  return target_->Call(args_list, error);
+}
+
+bool JSBindedFunction::HasInstance(Context* ctx,
+                                   const JSVal& val, Error* error) {
+  return target_->HasInstance(ctx, val, error);
+}
+
+JSBindedFunction* JSBindedFunction::New(Context* ctx,
+                                        JSFunction* target,
+                                        const JSVal& this_binding,
+                                        const Arguments& args) {
+  JSBindedFunction* const binded =
+      new JSBindedFunction(ctx, target, this_binding, args);
+  return binded;
+}
+
 } }  // namespace iv::lv5

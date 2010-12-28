@@ -55,34 +55,7 @@ inline JSVal FunctionToString(const Arguments& args,
   return JSUndefined;
 }
 
-inline JSVal FunctionCall(const Arguments& args,
-                          Error* error) {
-  CONSTRUCTOR_CHECK("Function.prototype.call", args, error);
-  const JSVal& obj = args.this_binding();
-  if (obj.IsCallable()) {
-    using std::copy;
-    JSFunction* const func = obj.object()->AsCallable();
-    Context* const ctx = args.ctx();
-    const std::size_t args_size = args.size();
-
-    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0);
-
-    if (args_size > 1) {
-      copy(args.begin() + 1, args.end(), args_list.begin());
-    }
-
-    if (args_size > 0) {
-      args_list.set_this_binding(args[0]);
-    } else {
-      args_list.set_this_binding(JSUndefined);
-    }
-    return func->Call(args_list, error);
-  }
-  error->Report(Error::Type,
-                "Function.prototype.call is not generic function");
-  return JSUndefined;
-}
-
+// section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
 inline JSVal FunctionApply(const Arguments& args,
                            Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
@@ -123,6 +96,54 @@ inline JSVal FunctionApply(const Arguments& args,
   }
   error->Report(Error::Type,
                 "Function.prototype.apply is not generic function");
+  return JSUndefined;
+}
+
+// section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
+inline JSVal FunctionCall(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype.call", args, error);
+  const JSVal& obj = args.this_binding();
+  if (obj.IsCallable()) {
+    using std::copy;
+    JSFunction* const func = obj.object()->AsCallable();
+    Context* const ctx = args.ctx();
+    const std::size_t args_size = args.size();
+
+    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0);
+
+    if (args_size > 1) {
+      copy(args.begin() + 1, args.end(), args_list.begin());
+    }
+
+    if (args_size > 0) {
+      args_list.set_this_binding(args[0]);
+    } else {
+      args_list.set_this_binding(JSUndefined);
+    }
+    return func->Call(args_list, error);
+  }
+  error->Report(Error::Type,
+                "Function.prototype.call is not generic function");
+  return JSUndefined;
+}
+
+// section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
+inline JSVal FunctionBind(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Function.prototype.bind", args, error);
+  const JSVal& obj = args.this_binding();
+  if (obj.IsCallable()) {
+    const std::size_t args_size = args.size();
+    JSFunction* const target = obj.object()->AsCallable();
+    JSVal this_binding;
+    if (args_size == 0) {
+      this_binding = JSUndefined;
+    } else {
+      this_binding = args[0];
+    }
+    return JSBindedFunction::New(args.ctx(), target, this_binding, args);
+  }
+  error->Report(Error::Type,
+                "Function.prototype.bind is not generic function");
   return JSUndefined;
 }
 

@@ -1457,15 +1457,31 @@ void Interpreter::Visit(const ConstructorCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
-  JSFunction* const constructor = func.object()->AsCallable();
   JSObject* const obj = JSObject::New(ctx_);
-  const JSVal proto = constructor->Get(
-      ctx_, ctx_->Intern("prototype"), CHECK);
-  if (proto.IsObject()) {
-    obj->set_prototype(proto.object());
+  JSFunction* const constructor = func.object()->AsCallable();
+  JSVal result;
+  if (constructor->AsBindedFunction()) {
+    JSBindedFunction* const binded  = constructor->AsBindedFunction();
+    JSFunction* const target = binded->target();
+    const JSVal proto = target->Get(
+        ctx_, ctx_->prototype_symbol(), CHECK);
+    if (proto.IsObject()) {
+      obj->set_prototype(proto.object());
+    }
+    Arguments sub(ctx_, args.size() + binded->arguments().size());
+    copy(args.begin(), args.end(),
+         copy(binded->arguments().begin(), binded->arguments().end(), sub.begin()));
+    sub.set_this_binding(obj);
+    result = target->Call(sub, CHECK);
+  } else {
+    const JSVal proto = constructor->Get(
+        ctx_, ctx_->prototype_symbol(), CHECK);
+    if (proto.IsObject()) {
+      obj->set_prototype(proto.object());
+    }
+    args.set_this_binding(obj);
+    result = constructor->Call(args, CHECK);
   }
-  args.set_this_binding(obj);
-  const JSVal result = constructor->Call(args, CHECK);
   if (result.IsObject()) {
     ctx_->ret() = result;
   } else {

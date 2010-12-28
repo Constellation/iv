@@ -11,6 +11,7 @@ namespace lv5 {
 class Context;
 class JSCodeFunction;
 class JSNativeFunction;
+class JSBindedFunction;
 class Error;
 class JSEnv;
 class JSScript;
@@ -24,14 +25,14 @@ class JSFunction : public JSObject {
   JSFunction* AsCallable() {
     return this;
   }
-  virtual JSVal Call(const Arguments& args,
-                     Error* error) = 0;
-  bool HasInstance(Context* ctx,
-                   const JSVal& val, Error* error);
+  virtual JSVal Call(const Arguments& args, Error* error) = 0;
+  virtual bool HasInstance(Context* ctx,
+                           const JSVal& val, Error* error);
   JSVal Get(Context* ctx,
             Symbol name, Error* error);
   virtual JSNativeFunction* AsNativeFunction() = 0;
   virtual JSCodeFunction* AsCodeFunction() = 0;
+  virtual JSBindedFunction* AsBindedFunction() = 0;
   virtual bool IsStrict() const = 0;
   void Initialize(Context* ctx);
 };
@@ -66,6 +67,9 @@ class JSCodeFunction : public JSFunction {
   JSNativeFunction* AsNativeFunction() {
     return NULL;
   }
+  JSBindedFunction* AsBindedFunction() {
+    return NULL;
+  }
   core::UStringPiece GetSource() const;
   const Identifier* name() const {
     return function_->name();
@@ -91,6 +95,9 @@ class JSNativeFunction : public JSFunction {
   }
   JSNativeFunction* AsNativeFunction() {
     return this;
+  }
+  JSBindedFunction* AsBindedFunction() {
+    return NULL;
   }
   bool IsStrict() const {
     return false;
@@ -122,5 +129,45 @@ class JSNativeFunction : public JSFunction {
  private:
   value_type func_;
 };
+
+class JSBindedFunction : public JSFunction {
+ public:
+  JSBindedFunction(Context* ctx,
+                   JSFunction* target,
+                   const JSVal& this_binding,
+                   const Arguments& args);
+  bool IsStrict() const {
+    return false;
+  }
+  JSCodeFunction* AsCodeFunction() {
+    return NULL;
+  }
+  JSNativeFunction* AsNativeFunction() {
+    return NULL;
+  }
+  JSBindedFunction* AsBindedFunction() {
+    return this;
+  }
+  JSFunction* target() const {
+    return target_;
+  }
+  const JSVal& this_binding() const {
+    return this_binding_;
+  }
+  const GCVector<JSVal>::type& arguments() const {
+    return arguments_;
+  }
+  JSVal Call(const Arguments& args, Error* error);
+  bool HasInstance(Context* ctx,
+                   const JSVal& val, Error* error);
+  static JSBindedFunction* New(Context* ctx, JSFunction* target,
+                               const JSVal& this_binding,
+                               const Arguments& args);
+ private:
+  JSFunction* target_;
+  JSVal this_binding_;
+  GCVector<JSVal>::type arguments_;
+};
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSFUNCTION_H_
