@@ -24,18 +24,45 @@ inline JSVal FunctionPrototype(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
-// TODO(Constellation) implement it
 inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
-  return JSUndefined;
+  const std::size_t arg_count = args.size();
+  Context* const ctx = args.ctx();
+  JSStringBuilder builder(ctx);
+  if (arg_count == 0) {
+    builder.Append("(function() { \n})");
+  } else if (arg_count == 1) {
+    builder.Append("(function() { ");
+    JSString* const str = args[0].ToString(ctx, ERROR(error));
+    builder.Append(*str);
+    builder.Append("\n})");
+  } else {
+    builder.Append("(function(");
+    for (Arguments::const_iterator it = args.begin(),
+         last = args.end() - 1; it != last; ++it, builder.Append(',')) {
+      JSString* const str = it->ToString(ctx, ERROR(error));
+      builder.Append(*str);
+    }
+    builder.Append(") { ");
+    JSString* const prog = (args.end() - 1)->ToString(ctx, ERROR(error));
+    builder.Append(*prog);
+    builder.Append("\n})");
+  }
+  JSString* const source = builder.Build();
+  JSScript* const script = CompileScript(args.ctx(), source,
+                                         false, ERROR(error));
+  ctx->Run(script);
+  if (ctx->IsShouldGC()) {
+    GC_gcollect();
+  }
+  return ctx->ret();
 }
 
-inline JSVal FunctionToString(const Arguments& args,
-                              Error* error) {
+inline JSVal FunctionToString(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (func->AsNativeFunction()) {
+    if (func->AsNativeFunction() || func->AsBindedFunction()) {
       return JSString::NewAsciiString(args.ctx(),
                                       "function () { [native code] }");
     } else {
@@ -56,8 +83,7 @@ inline JSVal FunctionToString(const Arguments& args,
 }
 
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
-inline JSVal FunctionApply(const Arguments& args,
-                           Error* error) {
+inline JSVal FunctionApply(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {

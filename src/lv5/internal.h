@@ -1,6 +1,12 @@
 #ifndef _IV_LV5_INTERNAL_H_
 #define _IV_LV5_INTERNAL_H_
+#include <tr1/memory>
+#include "eval_source.h"
+#include "factory.h"
+#include "parser.h"
 #include "property.h"
+#include "jsscript.h"
+#include "jsstring.h"
 #include "jsval.h"
 #include "jsobject.h"
 #include "context.h"
@@ -8,6 +14,23 @@
 #include "lv5.h"
 namespace iv {
 namespace lv5 {
+
+inline JSScript* CompileScript(Context* ctx, JSString* str,
+                               bool is_strict, Error* error) {
+  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(str));
+  AstFactory* const factory = new AstFactory(ctx);
+  core::Parser<AstFactory, EvalSource> parser(factory, src.get());
+  parser.set_strict(is_strict);
+  const FunctionLiteral* const eval = parser.ParseProgram();
+  if (!eval) {
+    delete factory;
+    error->Report(Error::Syntax,
+                  parser.error());
+    return NULL;
+  } else {
+    return JSEvalScript<EvalSource>::New(ctx, eval, factory, src);
+  }
+}
 
 inline JSVal FromPropertyDescriptor(Context* ctx,
                                     const PropertyDescriptor& desc) {

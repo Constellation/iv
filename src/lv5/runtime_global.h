@@ -1,39 +1,18 @@
 #ifndef _IV_LV5_RUNTIME_GLOBAL_H_
 #define _IV_LV5_RUNTIME_GLOBAL_H_
 #include <cmath>
-#include <tr1/memory>
 #include "arguments.h"
 #include "jsval.h"
 #include "jsstring.h"
+#include "jsscript.h"
 #include "error.h"
 #include "context.h"
-#include "factory.h"
-#include "eval_source.h"
-#include "parser.h"
 #include "lv5.h"
+#include "internal.h"
 
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace detail {
-
-inline JSScript* CompileScript(Context* ctx, JSString* str, Error* error) {
-  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(str));
-  AstFactory* const factory = new AstFactory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(factory, src.get());
-  parser.set_strict(ctx->IsStrict());
-  const iv::lv5::FunctionLiteral* const eval = parser.ParseProgram();
-  if (!eval) {
-    delete factory;
-    error->Report(Error::Syntax,
-                  parser.error());
-    return NULL;
-  } else {
-    return iv::lv5::JSEvalScript<EvalSource>::New(ctx, eval, factory, src);
-  }
-}
-
-}  // namespace iv::lv5::runtime::detail
 
 inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
   if (!args.size()) {
@@ -44,8 +23,8 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = detail::CompileScript(args.ctx(),
-                                                 first.string(), ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(), first.string(),
+                                         ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
@@ -78,8 +57,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = detail::CompileScript(args.ctx(),
-                                                 first.string(), ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(), first.string(),
+                                         ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
