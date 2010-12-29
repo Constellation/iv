@@ -6,6 +6,7 @@
 #include <limits>
 #include <tr1/array>
 #include <tr1/cstdint>
+#include <tr1/cmath>
 #include "chars.h"
 #include "dtoa.h"
 #include "ustringpiece.h"
@@ -409,6 +410,26 @@ inline int32_t DoubleToInt32(double d) {
 
 inline uint32_t DoubleToUInt32(double d) {
   return static_cast<uint32_t>(DoubleToInt32(d));
+}
+
+inline int64_t DoubleToInt64(double d) {
+  int64_t i = static_cast<int64_t>(d);
+  if (static_cast<double>(i) == d) {
+    return i;
+  }
+  if (!std::isfinite(d) || d == 0) {
+    return 0;
+  }
+  if (Conversions::DoubleToInt32_Two32 >= d) {
+    return static_cast<int64_t>(DoubleToInt32(d));
+  }
+  const int32_t lo = DoubleToInt32(std::fmod(d, Conversions::DoubleToInt32_Two32));
+  const int32_t hi = DoubleToInt32(d / Conversions::DoubleToInt32_Two32);
+  return hi * 4294967296ULL + lo;
+}
+
+inline uint64_t DoubleToUInt64(double d) {
+  return static_cast<uint64_t>(DoubleToInt64(d));
 }
 
 inline double DoubleToInteger(double d) {

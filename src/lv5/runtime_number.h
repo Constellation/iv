@@ -2,6 +2,8 @@
 #define _IV_LV5_RUNTIME_NUMBER_H_
 #include <tr1/array>
 #include <tr1/cmath>
+#include <tr1/cstdio>
+#include <tr1/cinttypes>
 #include "conversions.h"
 #include "arguments.h"
 #include "jsval.h"
@@ -182,37 +184,53 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
       builder.Append('-');
       x = -x;
     }
-    double integer = std::floor(x);
-    const double power = std::pow(10, f);
-    const double decimal_with_power = (x - integer) * power;
-    const double rounded_decimal = std::tr1::round(decimal_with_power);
-    double decimal;
-    if (rounded_decimal == power) {
-      integer += 1;
-      decimal = 0;
-    } else {
-      decimal = rounded_decimal;
-    }
+
     std::tr1::array<char, 80> buf;
-    const char* const integer_string =
-        core::DoubleToCString(integer,
-                              buf.data(),
-                              buf.size());
-    uint32_t num = std::strlen(integer_string);
+    const double integer_temp = std::floor(x);
+    double decimal;
+    uint32_t num;
+    if (integer_temp > ((1ULL << 63) - 1)) {
+      double integer = integer_temp;
+      const double power = std::pow(10, f);
+      const double decimal_with_power = (x - integer_temp) * power;
+      const double rounded_decimal = std::tr1::round(decimal_with_power);
+      if (rounded_decimal == power) {
+        integer += 1;
+        decimal = 0.0;
+      } else {
+        decimal = rounded_decimal;
+      }
+      const char* const str = core::DoubleToCString(integer,
+                                                    buf.data(),
+                                                    buf.size());
+      num = std::strlen(str);
+    } else {
+      // more precise in uint64_t
+      uint64_t integer = core::DoubleToUInt64(integer_temp);
+      const double power = std::pow(10, f);
+      const double decimal_with_power = (x - integer_temp) * power;
+      const double rounded_decimal = std::tr1::round(decimal_with_power);
+      if (rounded_decimal == power) {
+        integer += 1;
+        decimal = 0.0;
+      } else {
+        decimal = rounded_decimal;
+      }
+      num = std::tr1::snprintf(buf.data(), buf.size(),
+                               "%"PRIu64, integer);
+    }
+    builder.Append(core::StringPiece(buf.data(), num));
     if (f != 0) {
-      builder.Append(core::StringPiece(integer_string, num));
       builder.Append('.');
       const char* const str = core::DoubleToCString(decimal,
                                                     buf.data(),
                                                     buf.size());
-      uint32_t num = std::strlen(str);
+      num = std::strlen(str);
       if (num <= f) {
         using std::fill_n;
-        fill_n(buf.data()+num, f + 1 - num, '0');
+        fill_n(buf.data() + num, f + 1 - num, '0');
       }
       builder.Append(core::StringPiece(buf.data(), f));
-    } else {
-      builder.Append(core::StringPiece(integer_string, num));
     }
     return builder.Build();
   }
