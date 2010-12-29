@@ -933,10 +933,18 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.7.4.4 Number.prototype.toString([radix])
+    // section 15.7.4.4 Number.prototype.valueOf()
     proto->DefineOwnProperty(
         this, valueOf_symbol_,
         DataDescriptor(JSNativeFunction::New(this, &runtime::NumberValueOf, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
+    proto->DefineOwnProperty(
+        this, Intern("toFixed"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberToFixed, 1),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);

@@ -11,6 +11,7 @@ def Build():
   env.Append(
       LIBS=['gc'],
       CCFLAGS=["-fno-strict-aliasing"],
+      CPPDEFINES=["__STDC_FORMAT_MACROS"]
       )
   return env.Program('lv5',
       [Glob('*.cc'), Glob('*.c'), object_files])

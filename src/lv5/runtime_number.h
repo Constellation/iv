@@ -1,5 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_NUMBER_H_
 #define _IV_LV5_RUNTIME_NUMBER_H_
+#include <tr1/array>
+#include <tr1/cmath>
 #include "conversions.h"
 #include "arguments.h"
 #include "jsval.h"
@@ -127,6 +129,92 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
     }
   } else {
     return obj.number();
+  }
+}
+
+// section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
+inline JSVal NumberToFixed(const Arguments& args, Error* error) {
+  const std::size_t arg_count = args.size();
+  Context* const ctx = args.ctx();
+  double fd;
+  if (arg_count == 0) {
+    fd = 0.0;
+  } else {
+    const JSVal& first = args[0];
+    if (first.IsUndefined()) {
+      fd = 0.0;
+    } else {
+      fd = first.ToNumber(ctx, ERROR(error));
+      fd = core::DoubleToInteger(fd);
+    }
+  }
+  if (fd < 0 || fd > 20) {
+    error->Report(Error::Range,
+                  "fractionDigits is in range between 0 to 20");
+    return JSUndefined;
+  }
+  uint32_t f = core::DoubleToUInt32(fd);
+  const JSVal& obj = args.this_binding();
+  double x;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      x = static_cast<JSNumberObject*>(obj.object())->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.toFixed is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    x = obj.number();
+  }
+  if (!(std::fabs(x) < 1e+21)) {
+    // included NaN and Infinity
+    std::tr1::array<char, 80> buffer;
+    const char* const str = core::DoubleToCString(x,
+                                                  buffer.data(),
+                                                  buffer.size());
+    return JSString::NewAsciiString(args.ctx(), str);
+  } else {
+    // TODO(Constellation) more fast way
+    JSStringBuilder builder(ctx);
+    if (x < 0) {
+      builder.Append('-');
+      x = -x;
+    }
+    double integer = std::floor(x);
+    const double power = std::pow(10, f);
+    const double decimal_with_power = (x - integer) * power;
+    const double rounded_decimal = std::tr1::round(decimal_with_power);
+    double decimal;
+    if (rounded_decimal == power) {
+      integer += 1;
+      decimal = 0;
+    } else {
+      decimal = rounded_decimal;
+    }
+    std::tr1::array<char, 80> buf;
+    const char* const integer_string =
+        core::DoubleToCString(integer,
+                              buf.data(),
+                              buf.size());
+    uint32_t num = std::strlen(integer_string);
+    if (f != 0) {
+      builder.Append(core::StringPiece(integer_string, num));
+      builder.Append('.');
+      const char* const str = core::DoubleToCString(decimal,
+                                                    buf.data(),
+                                                    buf.size());
+      uint32_t num = std::strlen(str);
+      if (num <= f) {
+        using std::fill_n;
+        fill_n(buf.data()+num, f + 1 - num, '0');
+      }
+      builder.Append(core::StringPiece(buf.data(), f));
+    } else {
+      builder.Append(core::StringPiece(integer_string, num));
+    }
+    return builder.Build();
   }
 }
 
