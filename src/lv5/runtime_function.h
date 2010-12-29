@@ -37,13 +37,20 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
     builder.Append("\n})");
   } else {
     builder.Append("(function(");
-    for (Arguments::const_iterator it = args.begin(),
-         last = args.end() - 1; it != last; ++it, builder.Append(',')) {
+    Arguments::const_iterator it = args.begin();
+    const Arguments::const_iterator last = args.end() - 1;
+    do {
       JSString* const str = it->ToString(ctx, ERROR(error));
       builder.Append(*str);
-    }
+      ++it;
+      if (it != last) {
+        builder.Append(',');
+      } else {
+        break;
+      }
+    } while (true);
     builder.Append(") { ");
-    JSString* const prog = (args.end() - 1)->ToString(ctx, ERROR(error));
+    JSString* const prog = last->ToString(ctx, ERROR(error));
     builder.Append(*prog);
     builder.Append("\n})");
   }
