@@ -27,8 +27,7 @@ void JSFunction::Initialize(Context* ctx) {
   DefineOwnProperty(
       ctx, ctx->prototype_symbol(),
       DataDescriptor(proto,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+                     PropertyDescriptor::WRITABLE),
                      false, NULL);
   if (ctx->IsStrict()) {
     JSNativeFunction* const throw_type_error = ctx->throw_type_error();
@@ -37,7 +36,7 @@ void JSFunction::Initialize(Context* ctx) {
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
                       false, NULL);
-    DefineOwnProperty(ctx, ctx->callee_symbol(),
+    DefineOwnProperty(ctx, ctx->arguments_symbol(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
