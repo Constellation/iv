@@ -1001,7 +1001,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
@@ -1041,7 +1041,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
@@ -1082,7 +1082,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
@@ -1122,7 +1122,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
@@ -1162,7 +1162,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
@@ -1202,7 +1202,7 @@ void Context::Initialize() {
       // set prototype
       sub_constructor->DefineOwnProperty(
           this, prototype_symbol_,
-          DataDescriptor(proto, PropertyDescriptor::NONE),
+          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
