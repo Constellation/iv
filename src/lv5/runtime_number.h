@@ -186,14 +186,14 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     }
 
     std::tr1::array<char, 80> buf;
-    const double integer_temp = std::floor(x);
+    double integer_temp;
+    const double r = std::modf(x, &integer_temp);
     double decimal;
     uint32_t num;
     if (integer_temp > ((1ULL << 63) - 1)) {
       double integer = integer_temp;
       const double power = std::pow(10, f);
-      const double decimal_with_power = (x - integer_temp) * power;
-      const double rounded_decimal = std::tr1::round(decimal_with_power);
+      const double rounded_decimal = std::tr1::round(r * power);
       if (rounded_decimal == power) {
         integer += 1;
         decimal = 0.0;
@@ -208,8 +208,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
       // more precise in uint64_t
       uint64_t integer = core::DoubleToUInt64(integer_temp);
       const double power = std::pow(10, f);
-      const double decimal_with_power = (x - integer_temp) * power;
-      const double rounded_decimal = std::tr1::round(decimal_with_power);
+      const double rounded_decimal = std::tr1::round(r * power);
       if (rounded_decimal == power) {
         integer += 1;
         decimal = 0.0;
