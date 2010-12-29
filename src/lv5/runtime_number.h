@@ -88,6 +88,30 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
   return JSString::NewAsciiString(args.ctx(), str);
 }
 
+// section 15.7.4.2 Number.prototype.toLocaleString()
+inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, error);
+  const JSVal& obj = args.this_binding();
+  double num;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      num = static_cast<JSNumberObject*>(obj.object())->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.toLocaleString is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    num = obj.number();
+  }
+  std::tr1::array<char, 80> buffer;
+  const char* const str = core::DoubleToCString(num,
+                                                buffer.data(),
+                                                buffer.size());
+  return JSString::NewAsciiString(args.ctx(), str);
+}
+
 // section 15.7.4.4 Number.prototype.valueOf()
 inline JSVal NumberValueOf(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);

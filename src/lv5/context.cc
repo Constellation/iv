@@ -925,6 +925,14 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.7.4.3 Number.prototype.toLocaleString()
+    proto->DefineOwnProperty(
+        this, Intern("toLocaleString"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberToLocaleString, 0),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.7.4.4 Number.prototype.toString([radix])
     proto->DefineOwnProperty(
         this, valueOf_symbol_,
