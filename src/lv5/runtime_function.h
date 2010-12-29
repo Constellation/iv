@@ -71,17 +71,17 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
     JSFunction* const func = obj.object()->AsCallable();
     if (func->AsNativeFunction() || func->AsBindedFunction()) {
       return JSString::NewAsciiString(args.ctx(),
-                                      "function () { [native code] }");
+                                      "function native() { [native code] }");
     } else {
-      core::UString buffer(detail::kFunctionPrefix.begin(),
-                           detail::kFunctionPrefix.end());
+      JSStringBuilder builder(args.ctx());
+      builder.Append(detail::kFunctionPrefix);
       if (func->AsCodeFunction()->name()) {
-        const core::UStringPiece name = func->AsCodeFunction()->name()->value();
-        buffer.append(name.data(), name.size());
+        builder.Append(func->AsCodeFunction()->name()->value());
+      } else {
+        builder.Append("anonymous");
       }
-      const core::UStringPiece src = func->AsCodeFunction()->GetSource();
-      buffer.append(src.data(), src.size());
-      return JSString::New(args.ctx(), buffer);
+      builder.Append(func->AsCodeFunction()->GetSource());
+      return builder.Build();
     }
   }
   error->Report(Error::Type,
