@@ -785,6 +785,16 @@ void Context::Initialize() {
           false, NULL);
     }
 
+    // section 15.5.4.9 String.prototype.localeCompare(that)
+    proto->DefineOwnProperty(
+        this, Intern("localeCompare"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringLocaleCompare, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+
     // section 15.5.4.16 String.prototype.toLowerCase()
     proto->DefineOwnProperty(
         this, Intern("toLowerCase"),

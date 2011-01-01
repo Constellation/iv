@@ -191,6 +191,21 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
   return (loc == GCUString::npos) ? -1.0 : loc;
 }
 
+// section 15.5.4.9 String.prototype.localeCompare(that)
+inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  const JSString* that;
+  if (args.size() > 0) {
+    that = args[0].ToString(args.ctx(), ERROR(error));
+  } else {
+    that = JSString::NewAsciiString(args.ctx(), "undefined");
+  }
+  return str->value().compare(that->value());
+}
+
 // section 15.5.4.16 String.prototype.toLowerCase()
 inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
