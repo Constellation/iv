@@ -109,7 +109,7 @@ class JSObject : public gc {
 
 class JSStringObject : public JSObject {
  public:
-  explicit JSStringObject(JSString* value) : value_(value) { }
+  JSStringObject(Context* ctx, JSString* value);
   static JSStringObject* New(Context* ctx, JSString* str);
   static JSStringObject* NewPlain(Context* ctx);
   JSString* value() const {
@@ -133,7 +133,7 @@ class JSNumberObject : public JSObject {
 
 class JSBooleanObject : public JSObject {
  public:
-  explicit JSBooleanObject(bool value);
+  explicit JSBooleanObject(bool value) : value_(value) { }
   static JSBooleanObject* NewPlain(Context* ctx, bool value);
   static JSBooleanObject* New(Context* ctx, bool value);
   bool value() const {
