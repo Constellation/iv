@@ -192,7 +192,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     uint32_t num;
     if (integer_temp > ((1ULL << 63) - 1)) {
       double integer = integer_temp;
-      const double power = std::pow(10, f);
+      const double power = std::pow(10.0, static_cast<double>(f));
       const double rounded_decimal = std::tr1::round(r * power);
       if (rounded_decimal == power) {
         integer += 1;
@@ -207,7 +207,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     } else {
       // more precise in uint64_t
       uint64_t integer = core::DoubleToUInt64(integer_temp);
-      const double power = std::pow(10, f);
+      const double power = std::pow(10.0, static_cast<double>(f));
       const double rounded_decimal = std::tr1::round(r * power);
       if (rounded_decimal == power) {
         integer += 1;
