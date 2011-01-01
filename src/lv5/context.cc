@@ -784,6 +784,42 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
     }
+
+    // section 15.5.4.16 String.prototype.toLowerCase()
+    proto->DefineOwnProperty(
+        this, Intern("toLowerCase"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToLowerCase, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.17 String.prototype.toLocaleLowerCase()
+    proto->DefineOwnProperty(
+        this, Intern("toLocaleLowerCase"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToLocaleLowerCase, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.19 String.prototype.toLocaleUpperCase()
+    proto->DefineOwnProperty(
+        this, Intern("toLocaleUpperCase"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToLocaleUpperCase, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.18 String.prototype.toUpperCase()
+    proto->DefineOwnProperty(
+        this, Intern("toUpperCase"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToUpperCase, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {
@@ -928,9 +964,10 @@ void Context::Initialize() {
     // section 15.7.4.3 Number.prototype.toLocaleString()
     proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberToLocaleString, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::NumberToLocaleString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.7.4.4 Number.prototype.valueOf()

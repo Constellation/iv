@@ -3,6 +3,7 @@
 #include <vector>
 #include "ustring.h"
 #include "ustringpiece.h"
+#include "character.h"
 #include "conversions.h"
 #include "arguments.h"
 #include "jsval.h"
@@ -188,6 +189,62 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
   const GCUString::size_type loc =
       str->value().rfind(search_str->value(), std::min(pos, str->size()));
   return (loc == GCUString::npos) ? -1.0 : loc;
+}
+
+// section 15.5.4.16 String.prototype.toLowerCase()
+inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  JSStringBuilder builder(args.ctx());
+  for (JSString::const_iterator it = str->begin(),
+       last = str->end(); it != last; ++it) {
+    builder.Append(core::character::ToLowerCase(*it));
+  }
+  return builder.Build();
+}
+
+// section 15.5.4.17 String.prototype.toLocaleLowerCase()
+inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  JSStringBuilder builder(args.ctx());
+  for (JSString::const_iterator it = str->begin(),
+       last = str->end(); it != last; ++it) {
+    builder.Append(core::character::ToLowerCase(*it));
+  }
+  return builder.Build();
+}
+
+// section 15.5.4.18 String.prototype.toUpperCase()
+inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  JSStringBuilder builder(args.ctx());
+  for (JSString::const_iterator it = str->begin(),
+       last = str->end(); it != last; ++it) {
+    builder.Append(core::character::ToUpperCase(*it));
+  }
+  return builder.Build();
+}
+
+// section 15.5.4.19 String.prototype.toLocaleUpperCase()
+inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  JSStringBuilder builder(args.ctx());
+  for (JSString::const_iterator it = str->begin(),
+       last = str->end(); it != last; ++it) {
+    builder.Append(core::character::ToUpperCase(*it));
+  }
+  return builder.Build();
 }
 
 } } }  // namespace iv::lv5::runtime
