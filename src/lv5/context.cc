@@ -789,7 +789,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("localeCompare"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringLocaleCompare, 0),
+            JSNativeFunction::New(this, &runtime::StringLocaleCompare, 1),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
