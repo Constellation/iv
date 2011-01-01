@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <tr1/array>
 #include <gc/gc.h>
-#include <signal.h>
 #include "config/config.h"
 
 #include "stringpiece.h"
@@ -36,23 +35,10 @@
 
 #include "fpu.h"
 
-static void SegvHandler(int sn, siginfo_t* si,
-                        void* sc) {
-  std::cout << "SIG SEGV!!" << std::endl;
-  std::cerr << "SIG SEGV!!" << std::endl;
-  std::exit(EXIT_FAILURE);
-}
-
-
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
   iv::lv5::FixFPU();
   GC_INIT();
-
-  struct sigaction sig;
-  sig.sa_flags = SA_SIGINFO;
-  sig.sa_sigaction = &SegvHandler;
-  sigaction(SIGSEGV, &sig, reinterpret_cast<struct sigaction*>(NULL));
 
   iv::cmdline::Parser cmd("lv5");
 
