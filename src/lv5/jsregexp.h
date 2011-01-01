@@ -24,10 +24,6 @@ class JSRegExp : public JSObject {
     return status_ == U_ZERO_ERROR;
   }
 
-  bool IsCallable() const {
-    return true;
-  }
-
   static JSRegExp* New(const JSRegExpImpl& reg) {
     return new JSRegExp(reg);
   }
