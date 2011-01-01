@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cassert>
 #include <string>
+#include "chars.h"
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
@@ -90,7 +91,7 @@ class Source {
     while (ch >= 0) {
       if (core::Chars::IsLineTerminator(ch)) {
         ch = Next(current, end);
-        if (core::Chars::IsLineTerminator(ch)) {
+        if (ch >= 0 && core::Chars::IsLineTerminator(ch)) {
           ++current;
         }
         return current;

@@ -7,7 +7,7 @@
 #include <tr1/array>
 #include <tr1/cstdint>
 #include <tr1/cmath>
-#include "chars.h"
+#include "character.h"
 #include "dtoa.h"
 #include "ustringpiece.h"
 #include "none.h"
@@ -61,7 +61,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   }
 
   while (it != last &&
-         (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
+         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
     ++it;
   }
 
@@ -84,7 +84,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     return Conversions::kNaN;
   }
 
-  if (Chars::IsDecimalDigit(*it)) {
+  if (character::IsDecimalDigit(*it)) {
     if (*it == '0') {
       is_found_zero = true;
       ++it;
@@ -100,14 +100,14 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         buffer[pos++] = *it;
         ++it;
         ++significant_digits;
-        if (it == last || !Chars::IsHexDigit(*it)) {
+        if (it == last || !character::IsHexDigit(*it)) {
           return Conversions::kNaN;
         }
         // waste leading zero
         while (it != last && *it == '0') {
           ++it;
         }
-        while (it != last && Chars::IsHexDigit(*it)) {
+        while (it != last && character::IsHexDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
             buffer[pos++] = *it;
             ++it;
@@ -125,7 +125,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     }
     if (is_decimal) {
       while (it != last &&
-             Chars::IsDecimalDigit(*it)) {
+             character::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
           buffer[pos++] = *it;
           ++significant_digits;
@@ -138,7 +138,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         buffer[pos++] = '.';
         ++it;
         while (it != last &&
-               Chars::IsDecimalDigit(*it)) {
+               character::IsDecimalDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
             buffer[pos++] = *it;
             ++significant_digits;
@@ -153,7 +153,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       ++it;
       const Iter start = it;
       while (it != last &&
-             Chars::IsDecimalDigit(*it)) {
+             character::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
           buffer[pos++] = *it;
           ++significant_digits;
@@ -174,7 +174,8 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       }
       // infinity
       while (it != last &&
-             (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
+             (character::IsWhiteSpace(*it) ||
+              character::IsLineTerminator(*it))) {
         ++it;
       }
       if (it == last || parse_float) {
@@ -210,7 +211,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       ++it;
       is_signed_exp = true;
     }
-    if (it == last || !Chars::IsDecimalDigit(*it)) {
+    if (it == last || !character::IsDecimalDigit(*it)) {
       if (parse_float) {
         --it;
         --pos;
@@ -230,7 +231,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         exponent = exponent * 10 + (*it - '0');
       }
       ++it;
-    } while (it != last && Chars::IsDecimalDigit(*it));
+    } while (it != last && character::IsDecimalDigit(*it));
     exponent+=insignificant_digits;
     if (exponent > 9999) {
       exponent = 9999;
@@ -243,7 +244,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   exponent_pasing_done:
 
   while (it != last &&
-         (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
+         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
     ++it;
   }
 
@@ -306,7 +307,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
                                        int radix, bool strip_prefix) {
   // remove leading white space
   while (it != last &&
-         (Chars::IsWhiteSpace(*it) || Chars::IsLineTerminator(*it))) {
+         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
     ++it;
   }
 
@@ -423,7 +424,8 @@ inline int64_t DoubleToInt64(double d) {
   if (Conversions::DoubleToInt32_Two32 >= d) {
     return static_cast<int64_t>(DoubleToInt32(d));
   }
-  const int32_t lo = DoubleToInt32(std::fmod(d, Conversions::DoubleToInt32_Two32));
+  const int32_t lo = DoubleToInt32(
+      std::fmod(d, Conversions::DoubleToInt32_Two32));
   const int32_t hi = DoubleToInt32(d / Conversions::DoubleToInt32_Two32);
   return hi * 4294967296ULL + lo;
 }
@@ -455,7 +457,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
       return true;
     }
   }
-  if (it != last && Chars::IsDecimalDigit(*it)) {
+  if (it != last && character::IsDecimalDigit(*it)) {
     ch = *it - '0';
     *value = ch;
   } else {
@@ -465,7 +467,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
   uint32_t prev = *value;
   for (;it != last; ++it) {
     prev = *value;
-    if (Chars::IsDecimalDigit(*it)) {
+    if (character::IsDecimalDigit(*it)) {
       ch = *it - '0';
       *value = ch + (prev * 10);
     } else {

@@ -111,11 +111,6 @@ def Build():
       join(root_dir, 'src', 'config', 'config.h.in'),
       SUBST_DICT=option_dict)
 
-  uc = env.Command(
-      join(root_dir, 'src', 'ucdata.h'),
-      join(root_dir, 'tools', 'UnicodeData.txt'),
-      ('python %s $SOURCE $TARGET' % join(root_dir, 'tools', 'ucdata.py')))
-
   if env['gprof']:
     env.Append(
       CCFLAGS=["-pg"],
@@ -154,7 +149,7 @@ def Build():
   Help(var.GenerateHelpText(env))
   # env.ParseConfig('llvm-config all --ldflags --libs')
 
-  (object_files, main_prog) = Main(env, [header, uc])
+  (object_files, main_prog) = Main(env, [header])
   test_prog = Test(env, object_files)
   env.Alias('main', [main_prog])
   test_alias = env.Alias('test', test_prog, test_prog[0].abspath)
