@@ -25,6 +25,8 @@ class JSString : public gc {
   typedef GCUString value_type;
   typedef value_type::iterator iterator;
   typedef value_type::const_iterator const_iterator;
+  typedef value_type::reverse_iterator reverse_iterator;
+  typedef value_type::const_reverse_iterator const_reverse_iterator;
   typedef value_type::size_type size_type;
 
   JSString()
@@ -92,6 +94,14 @@ class JSString : public gc {
     return string_.end();
   }
 
+  const_reverse_iterator rbegin() const {
+    return string_.rbegin();
+  }
+
+  const_reverse_iterator rend() const {
+    return string_.rend();
+  }
+
   const GCUString& value() const {
     return string_;
   }
@@ -136,20 +146,14 @@ class JSString : public gc {
     return new JSString(str.data(), str.size());
   }
 
-  static JSString* New(Context* ctx,
-                       const core::UStringPiece& lhs,
-                       const core::UStringPiece& rhs) {
-    using std::copy;
-    JSString* const res = new JSString(lhs.size() + rhs.size());
-    copy(rhs.begin(), rhs.end(),
-         copy(lhs.begin(), lhs.end(), res->string_.begin()));
-    res->ReCalcHash();
-    return res;
-  }
-
   static JSString* NewAsciiString(Context* ctx,
                                   const core::StringPiece& str) {
     return new JSString(str.begin(), str.end());
+  }
+
+  template<typename Iter>
+  static JSString* New(Context* ctx, Iter it, Iter last) {
+    return new JSString(it, last);
   }
 
   static JSString* NewEmptyString(Context* ctx) {

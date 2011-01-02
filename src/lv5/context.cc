@@ -707,83 +707,68 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    {
-      // section 15.5.4.2 String.prototype.toString()
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringToString, 0);
-      proto->DefineOwnProperty(
-          this, toString_symbol_,
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.3 String.prototype.valueOf()
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringValueOf, 0);
-      proto->DefineOwnProperty(
-          this, valueOf_symbol_,
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.4 String.prototype.charAt(pos)
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringCharAt, 1);
-      proto->DefineOwnProperty(
-          this, Intern("charAt"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.5 String.prototype.charCodeAt(pos)
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringCharCodeAt, 1);
-      proto->DefineOwnProperty(
-          this, Intern("charCodeAt"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringConcat, 1);
-      proto->DefineOwnProperty(
-          this, Intern("concat"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.7 String.prototype.indexOf(searchString, position)
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringIndexOf, 1);
-      proto->DefineOwnProperty(
-          this, Intern("indexOf"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
-    {
-      // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
-      JSNativeFunction* const func =
-          JSNativeFunction::New(this, &runtime::StringLastIndexOf, 1);
-      proto->DefineOwnProperty(
-          this, Intern("lastIndexOf"),
-          DataDescriptor(func,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
-    }
+    // section 15.5.4.2 String.prototype.toString()
+    proto->DefineOwnProperty(
+        this, toString_symbol_,
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.3 String.prototype.valueOf()
+    proto->DefineOwnProperty(
+        this, valueOf_symbol_,
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringValueOf, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.4 String.prototype.charAt(pos)
+    proto->DefineOwnProperty(
+        this, Intern("charAt"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringCharAt, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.5 String.prototype.charCodeAt(pos)
+    proto->DefineOwnProperty(
+        this, Intern("charCodeAt"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringCharCodeAt, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
+    proto->DefineOwnProperty(
+        this, Intern("concat"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringConcat, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.7 String.prototype.indexOf(searchString, position)
+    proto->DefineOwnProperty(
+        this, Intern("indexOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringIndexOf, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
+    proto->DefineOwnProperty(
+        this, Intern("lastIndexOf"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringLastIndexOf, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
 
     // section 15.5.4.9 String.prototype.localeCompare(that)
     proto->DefineOwnProperty(
@@ -793,7 +778,6 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-
 
     // section 15.5.4.16 String.prototype.toLowerCase()
     proto->DefineOwnProperty(
@@ -813,6 +797,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.5.4.18 String.prototype.toUpperCase()
+    proto->DefineOwnProperty(
+        this, Intern("toUpperCase"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringToUpperCase, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.5.4.19 String.prototype.toLocaleUpperCase()
     proto->DefineOwnProperty(
         this, Intern("toLocaleUpperCase"),
@@ -822,11 +815,11 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.5.4.18 String.prototype.toUpperCase()
+    // section 15.5.4.20 String.prototype.trim()
     proto->DefineOwnProperty(
-        this, Intern("toUpperCase"),
+        this, Intern("trim"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToUpperCase, 0),
+            JSNativeFunction::New(this, &runtime::StringTrim, 0),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);

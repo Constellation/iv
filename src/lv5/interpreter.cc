@@ -738,9 +738,12 @@ void Interpreter::Visit(const Assignment* assign) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
+          JSStringBuilder builder(ctx_);
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          result.set_value(JSString::New(ctx_, lstr->value(), rstr->value()));
+          builder.Append(lstr->value());
+          builder.Append(rstr->value());
+          result.set_value(builder.Build());
           break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -897,10 +900,12 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
+          JSStringBuilder builder(ctx_);
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          ctx_->Return(JSString::New(ctx_,
-                                     lstr->value(), rstr->value()));
+          builder.Append(lstr->value());
+          builder.Append(rstr->value());
+          ctx_->Return(builder.Build());
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);

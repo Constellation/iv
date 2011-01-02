@@ -32,6 +32,11 @@ static inline JSVal StringToStringValueOfImpl(const Arguments& args,
   }
 }
 
+static inline bool IsTrimmed(uint16_t c) {
+  return core::character::IsWhiteSpace(c) ||
+         core::character::IsLineTerminator(c);
+}
+
 }  // namespace iv::lv5::runtime::detail
 
 // section 15.5.1
@@ -260,6 +265,35 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build();
+}
+
+// section 15.5.4.20 String.prototype.trim()
+inline JSVal StringTrim(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  JSString::const_iterator lit = str->begin();
+  const JSString::const_iterator last = str->end();
+  // trim leading space
+  bool empty = true;
+  for (; lit != last; ++lit) {
+    if (!detail::IsTrimmed(*lit)) {
+      empty = false;
+      break;
+    }
+  }
+  if (empty) {
+    return JSString::NewEmptyString(args.ctx());
+  }
+  // trim tailing space
+  JSString::const_iterator rit = str->end() - 1;
+  for (; rit != lit; --rit) {
+    if (!detail::IsTrimmed(*rit)) {
+      break;
+    }
+  }
+  return JSString::New(args.ctx(), lit, rit + 1);
 }
 
 } } }  // namespace iv::lv5::runtime
