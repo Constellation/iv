@@ -852,8 +852,21 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 
     EXPECT(Token::LBRACE);
 
+    bool default_found = false;
     while (token_ != Token::RBRACE) {
-      case_clause = ParseCaseClause(CHECK);
+      if (token_ == Token::CASE ||
+          token_ == Token::DEFAULT) {
+        case_clause = ParseCaseClause(CHECK);
+      } else {
+        UNEXPECT(token_);
+      }
+      if (case_clause->IsDefault()) {
+        if (default_found) {
+          RAISE("duplicate default clause in switch");
+        } else {
+          default_found = true;
+        }
+      }
       switch_stmt->AddCaseClause(case_clause);
     }
     Next();
@@ -931,6 +944,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 
     Next();
 
+    IS(Token::LBRACE);
     Block* const try_block = ParseBlock(CHECK);
 
     if (token_ == Token::CATCH) {
@@ -955,6 +969,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         }
       }
       EXPECT(Token::RPAREN);
+      IS(Token::LBRACE);
       catch_block = ParseBlock(CHECK);
     }
 
@@ -962,6 +977,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
       // Finally
       has_catch_or_finally= true;
       Next();
+      IS(Token::LBRACE);
       finally_block = ParseBlock(CHECK);
     }
 
