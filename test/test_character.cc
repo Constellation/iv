@@ -4,7 +4,7 @@
 TEST(CharacterCase, CategoryTest) {
   using iv::core::character::GetCategory;
   for (uint16_t i = 0; i < 0xffff; ++i) {
-    iv::core::character::GetCategory(i);
+    GetCategory(i);
   }
   ASSERT_EQ(0, GetCategory(0x037F));
 }
