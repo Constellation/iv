@@ -147,7 +147,7 @@ void JSNativeFunction::Initialize(Context* ctx,
       DataDescriptor(n,
                      PropertyDescriptor::NONE),
                      false, NULL);
-  JSFunction::Initialize(ctx);
+  InitializeSimple(ctx);
 }
 
 JSBindedFunction::JSBindedFunction(Context* ctx,

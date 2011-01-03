@@ -336,7 +336,6 @@ void Interpreter::Visit(const Block* block) {
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
-      // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
     }
     if (!ctx_->ret().IsUndefined()) {
@@ -348,7 +347,7 @@ void Interpreter::Visit(const Block* block) {
       RETURN_STMT(Context::NORMAL, value, NULL);
     }
     if (!ctx_->IsMode<Context::NORMAL>()) {
-      ABRUPT();
+      RETURN_STMT(ctx_->mode(), value, ctx_->target());
     }
   }
   ctx_->Return(value);
@@ -514,11 +513,13 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
     JSVal rhs(ctx_->ToString(*it));
-    EVAL_IN_STMT(stmt->each());
     if (stmt->each()->AsVariableStatement()) {
       const Identifier* const ident =
           stmt->each()->AsVariableStatement()->decls().front()->name();
       EVAL_IN_STMT(ident);
+    } else {
+      assert(stmt->each()->AsExpressionStatement());
+      EVAL_IN_STMT(stmt->each()->AsExpressionStatement()->expr());
     }
     JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
@@ -688,9 +689,13 @@ void Interpreter::Visit(const TryStatement* stmt) {
     }
   }
 
+  // TODO(Constellation) fix error + THROW mode
   if (stmt->finally_block()) {
     const Context::Mode mode = ctx_->mode();
-    const JSVal value = ctx_->ret();
+    JSVal value = ctx_->ret();
+    if (ctx_->IsError()) {
+      value = ctx_->ErrorVal();
+    }
     const BreakableStatement* const target = ctx_->target();
 
     ctx_->error()->Clear();

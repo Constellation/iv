@@ -121,9 +121,6 @@ class JSNativeFunction : public JSFunction {
 
   void InitializeSimple(Context* ctx);
 
-  void Initialize(Context* ctx) {
-    JSFunction::Initialize(ctx);
-  }
   void Initialize(Context* ctx, value_type func, std::size_t n);
 
  private:
