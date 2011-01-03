@@ -16,6 +16,10 @@ class JSDate : public JSObject {
 
   static JSDate* New(Context* ctx, double val);
 
+  static JSDate* NewPlain(Context* ctx, double val) {
+    return new JSDate(ctx, val);
+  }
+
   const double& value() const {
     return value_;
   }
