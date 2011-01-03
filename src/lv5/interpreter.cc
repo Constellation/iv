@@ -656,6 +656,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
   if (ctx_->IsMode<Context::BREAK>() && ctx_->InCurrentLabelSet(stmt)) {
     RETURN_STMT(Context::NORMAL, value, NULL);
   }
+  RETURN_STMT(ctx_->mode(), value, ctx_->target());
 }
 
 
