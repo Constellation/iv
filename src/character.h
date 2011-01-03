@@ -122,7 +122,7 @@ static const int kMaxCodePoint = 0x10FFFF;
 
 static const int kSize = 16;
 
-static const std::tr1::array<int, 1000> kCategoryCache = { {
+static const std::tr1::array<uint8_t, 1000> kCategoryCache = { {
   15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
   15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
   12, 24, 24, 24, 26, 24, 24, 24, 21, 22, 24, 25, 24, 20, 24, 24,

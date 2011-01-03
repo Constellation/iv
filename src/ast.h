@@ -70,10 +70,11 @@ class Scope : private Noncopyable<Scope<Factory> >::type {
             FunctionLiteral<Factory>*>::type FunctionLiterals;
   typedef Scope<Factory> this_type;
 
-  explicit Scope(Factory* factory)
+  explicit Scope(Factory* factory, bool is_global)
     : up_(NULL),
       vars_(typename Variables::allocator_type(factory)),
-      funcs_(typename FunctionLiterals::allocator_type(factory)) {
+      funcs_(typename FunctionLiterals::allocator_type(factory)),
+      is_global_(is_global) {
   }
   void AddUnresolved(Identifier<Factory>* name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
@@ -90,6 +91,9 @@ class Scope : private Noncopyable<Scope<Factory> >::type {
   inline const Variables& variables() const {
     return vars_;
   }
+  inline bool IsGlobal() const {
+    return is_global_;
+  }
   this_type* GetUpperScope() {
     return up_;
   }
@@ -97,6 +101,7 @@ class Scope : private Noncopyable<Scope<Factory> >::type {
   this_type* up_;
   Variables vars_;
   FunctionLiterals funcs_;
+  bool is_global_;
 };
 
 template<typename Factory>
@@ -1255,7 +1260,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
       type_(type),
       params_(typename Identifiers::allocator_type(factory)),
       body_(typename Statements::allocator_type(factory)),
-      scope_(factory),
+      scope_(factory, type == GLOBAL),
       strict_(false) {
   }
 

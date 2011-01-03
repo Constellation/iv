@@ -266,7 +266,8 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 //   : Statements
 //   | FunctionDeclaration
   bool ParseSourceElements(Token::Type end,
-                           FunctionLiteral* function, bool *res) {
+                           FunctionLiteral* function,
+                           bool *res) {
     Statement* stmt;
     bool recognize_directive = true;
     const StrictSwitcher switcher(this);
@@ -789,6 +790,13 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   Statement* ParseReturnStatement(bool *res) {
     assert(token_ == Token::RETURN);
     Next();
+
+    if (scope_->IsGlobal()) {
+      // return statement found in global
+      // SyntaxError
+      RAISE("\"return\" not in function");
+    }
+
     if (lexer_.has_line_terminator_before_next() ||
         token_ == Token::SEMICOLON ||
         token_ == Token::RBRACE ||
@@ -1619,14 +1627,16 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
   template<typename Callable>
   Callable* ParseArguments(Callable* func, bool *res) {
     Next();
-    while (token_ != Token::RPAREN) {
-      Expression* const expr = ParseAssignmentExpression(true, CHECK);
-      func->AddArgument(expr);
-      if (token_ != Token::RPAREN) {
-        EXPECT(Token::COMMA);
+    if (token_ != Token::RPAREN) {
+      Expression* const first = ParseAssignmentExpression(true, CHECK);
+      func->AddArgument(first);
+      while (token_ == Token::COMMA) {
+        Next();
+        Expression* const expr = ParseAssignmentExpression(true, CHECK);
+        func->AddArgument(expr);
       }
+      EXPECT(Token::RPAREN);
     }
-    Next();
     return func;
   }
 
@@ -1876,29 +1886,33 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
       literal->AddParameter(ident);
       EXPECT(Token::RPAREN);
     } else {
-      while (token_ != Token::RPAREN) {
-        IS(Token::IDENTIFIER);
-        Identifier* const ident = ParseIdentifier(lexer_.Buffer());
-        if (!throw_error_if_strict_code) {
-          const EvalOrArguments val = IsEvalOrArguments(ident);
-          if (val) {
-            throw_error_if_strict_code = (val == kEval) ?
-                kDetectEvalParameter : kDetectArgumentsParameter;
-            throw_error_if_strict_code_line = lexer_.line_number();
+      if (token_ != Token::RPAREN) {
+        do {
+          IS(Token::IDENTIFIER);
+          Identifier* const ident = ParseIdentifier(lexer_.Buffer());
+          if (!throw_error_if_strict_code) {
+            const EvalOrArguments val = IsEvalOrArguments(ident);
+            if (val) {
+              throw_error_if_strict_code = (val == kEval) ?
+                  kDetectEvalParameter : kDetectArgumentsParameter;
+              throw_error_if_strict_code_line = lexer_.line_number();
+            }
+            if ((!throw_error_if_strict_code) &&
+                (param_set.find(ident) != param_set.end())) {
+              throw_error_if_strict_code = kDetectDuplicateParameter;
+              throw_error_if_strict_code_line = lexer_.line_number();
+            }
           }
-          if ((!throw_error_if_strict_code) &&
-              (param_set.find(ident) != param_set.end())) {
-            throw_error_if_strict_code = kDetectDuplicateParameter;
-            throw_error_if_strict_code_line = lexer_.line_number();
+          literal->AddParameter(ident);
+          param_set.insert(ident);
+          if (token_ == Token::COMMA) {
+            Next();
+          } else {
+            break;
           }
-        }
-        literal->AddParameter(ident);
-        param_set.insert(ident);
-        if (token_ != Token::RPAREN) {
-          EXPECT(Token::COMMA);
-        }
+        } while (true);
       }
-      Next();
+      EXPECT(Token::RPAREN);
     }
 
     //  '{' FunctionBody '}'
