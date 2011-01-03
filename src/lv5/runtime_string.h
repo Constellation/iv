@@ -213,6 +213,44 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
   return str->value().compare(that->value());
 }
 
+// section 15.5.4.15 String.prototype.substring(start, end)
+inline JSVal StringSubString(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  Context* ctx = args.ctx();
+  const JSString* const str = val.ToString(ctx, ERROR(error));
+  const uint32_t len = str->size();
+  uint32_t start;
+  if (args.size() > 0) {
+    double integer = args[0].ToNumber(ctx, ERROR(error));
+    integer = core::DoubleToInteger(integer);
+    start = core::DoubleToUInt32(
+        std::min<double>(std::max<double>(integer, 0.0), len));
+  } else {
+    start = 0;
+  }
+
+  uint32_t end;
+  if (args.size() > 1) {
+    if (args[1].IsUndefined()) {
+      end = len;
+    } else {
+      double integer = args[1].ToNumber(ctx, ERROR(error));
+      integer = core::DoubleToInteger(integer);
+      end = core::DoubleToUInt32(
+          std::min<double>(std::max<double>(integer, 0.0), len));
+    }
+  } else {
+    end = len;
+  }
+  const uint32_t from = std::min<uint32_t>(start, end);
+  const uint32_t to = std::max<uint32_t>(start, end);
+  return JSString::New(ctx,
+                       str->begin() + from,
+                       str->begin() + to);
+}
+
 // section 15.5.4.16 String.prototype.toLowerCase()
 inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);

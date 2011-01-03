@@ -779,6 +779,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.5.4.15 String.prototype.substring(start, end)
+    proto->DefineOwnProperty(
+        this, Intern("substring"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringSubString, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.5.4.16 String.prototype.toLowerCase()
     proto->DefineOwnProperty(
         this, Intern("toLowerCase"),
