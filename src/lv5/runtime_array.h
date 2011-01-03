@@ -446,7 +446,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
       if (relative_end < 0) {
         final = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
       } else {
-        final = core::DoubleToUInt32(std::min<double>(relative_end , len));
+        final = core::DoubleToUInt32(std::min<double>(relative_end, len));
       }
     }
   } else {

@@ -779,6 +779,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.5.4.13 String.prototype.slice(start, end)
+    proto->DefineOwnProperty(
+        this, Intern("slice"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringSlice, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.5.4.15 String.prototype.substring(start, end)
     proto->DefineOwnProperty(
         this, Intern("substring"),

@@ -213,12 +213,54 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
   return str->value().compare(that->value());
 }
 
+// section 15.5.4.13 String.prototype.slice(start, end)
+inline JSVal StringSlice(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(error));
+  Context* const ctx = args.ctx();
+  const JSString* const str = val.ToString(ctx, ERROR(error));
+  const uint32_t len = str->size();
+  uint32_t start;
+  if (args.size() > 0) {
+    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    relative_start = core::DoubleToInteger(relative_start);
+    if (relative_start < 0) {
+      start = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
+    } else {
+      start = core::DoubleToUInt32(std::min<double>(relative_start, len));
+    }
+  } else {
+    start = 0;
+  }
+  uint32_t end;
+  if (args.size() > 1) {
+    if (args[1].IsUndefined()) {
+      end = len;
+    } else {
+      double relative_end = args[1].ToNumber(ctx, ERROR(error));
+      relative_end = core::DoubleToInteger(relative_end);
+      if (relative_end < 0) {
+        end = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
+      } else {
+        end = core::DoubleToUInt32(std::min<double>(relative_end, len));
+      }
+    }
+  } else {
+    end = len;
+  }
+  const uint32_t span = (end < start) ? 0 : end - start;
+  return JSString::New(ctx,
+                       str->begin() + start,
+                       str->begin() + start + span);
+}
+
 // section 15.5.4.15 String.prototype.substring(start, end)
 inline JSVal StringSubString(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
-  Context* ctx = args.ctx();
+  Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, ERROR(error));
   const uint32_t len = str->size();
   uint32_t start;
