@@ -1777,6 +1777,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.9.5.26 Date.prototype.getTimezoneOffset()
+    proto->DefineOwnProperty(
+        this, Intern("getTimezoneOffset"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::DateGetTimezoneOffset, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.9.5.27 Date.prototype.setTime(time)
     proto->DefineOwnProperty(
         this, Intern("setTime"),

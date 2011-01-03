@@ -1138,6 +1138,24 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
+// section 15.9.5.26 Date.prototype.getTimezoneOffset()
+inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.prototype.getTimezoneOffset", args, error);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return (time - detail::LocalTime(time)) / detail::kMsPerMinute;
+  }
+  error->Report(Error::Type,
+                "Date.prototype.getTimezoneOffset is not generic function");
+  return JSUndefined;
+}
+
 // section 15.9.5.27 Date.prototype.setTime(time)
 inline JSVal DateSetTime(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.prototype.setTime", args, error);
