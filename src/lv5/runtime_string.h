@@ -185,7 +185,9 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
     search_str = args[0].ToString(args.ctx(), ERROR(error));
     if (args.size() > 1) {
       const double position = args[1].ToNumber(args.ctx(), ERROR(error));
-      pos = core::DoubleToUInt32(core::DoubleToInteger(position));
+      if (!std::isnan(position)) {
+        pos = core::DoubleToUInt32(core::DoubleToInteger(position));
+      }
     }
   } else {
     // undefined -> "undefined"
