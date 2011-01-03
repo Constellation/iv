@@ -150,7 +150,7 @@ inline const char* WeekDayToString(double t) {
   return kWeekDays[WeekDay(t)];
 }
 
-inline int32_t LocalTZA() {
+inline int32_t GetLocalTZA() {
   const std::time_t current = std::time(NULL);
   std::tm local;
   std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
@@ -166,13 +166,102 @@ inline int32_t LocalTZA() {
   return (1230768000 - std::mktime(&local)) * 1000;
 }
 
-// TODO(Constellation) implement it
-inline double DaylightSavingTA(double t) {
-  const std::time_t current = std::time(NULL);
-  std::tm local;
-  std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
-  return (local.tm_isdst) ? 0.0 : 0.0;
+inline int32_t LocalTZA() {
+  static const int32_t local_tza = GetLocalTZA();
+  return local_tza;
 }
+
+#ifdef _WIN32
+inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
+  LARGE_INTEGER i;
+  i.LowPart = ft.dwLowDateTime;
+  i.HighPart = ft.dwHighDateTime;
+  return (i.QuadPart - kEpochTime) / 10 / 1000000;
+}
+
+inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
+  FILETIME ft;
+  ::SystemTimeToFileTime(&st, &ft);
+  return FileTimeToUnixTime(ft);
+}
+
+// FIXME(Constellation) implement it
+inline double DaylightSavingTA(double t) {
+  // http://msdn.microsoft.com/en-us/library/ms724421
+  if (std::isnan(t)) {
+    return t;
+  }
+  TIME_ZONE_INFORMATION tzi;
+  const DWORD r = ::GetTimeZoneInformation(&tzi);
+  switch (r) {
+    case TIME_ZONE_ID_STANDARD:
+    case TIME_ZONE_ID_DAYLIGHT: {
+      if (tzi.StandardDate.wMonth == 0 ||
+          tzi.DaylightDate.wMonth == 0) {
+        break;
+      }
+
+      const std::time_t ts = SystemTimeToUnixTime(tzi.StandardDate);
+      const std::time_t td = SystemTimeToUnixTime(tzi.DaylightDate);
+
+      if (td <= t && t <= ts) {
+        return - tzi.DaylightBias * (60 * kMsPerSecond);
+      } else {
+        return 0.0;
+      }
+    }
+    case TIME_ZONE_ID_UNKNOWN: {
+      // Daylight Saving Time not used in this time zone
+      return 0.0;
+    }
+  }
+  return 0.0;
+}
+#else
+inline double DaylightSavingTA(double t) {
+  if (std::isnan(t)) {
+    return t;
+  }
+  const std::time_t current = core::DoubleToInt64(t);
+  if (current == t) {
+    const tm* const tmp = std::localtime(&current);  // NOLINT
+    if (tmp->tm_isdst > 0) {
+      return kMsPerHour;
+    }
+  } else {
+    // Daylight Saving Time
+    // from    2 AM the first Sunday in April
+    // through 2 AM the last Sunday in October
+    std::time_t target = current - LocalTZA();
+    const int year = YearFromTime(target);
+    const int leap = IsLeapYear(target);
+
+    double start = TimeFromYear(year);
+    double end = start;
+
+    // goto April 1st
+    start += MonthToDaysInYear(3, leap) * kMsPerDay;
+    // goto the first Sunday in April
+    while (WeekDay(start) != 0) {
+      start += kMsPerDay;
+    }
+
+    // goto Octobar 30th
+    end += (MonthToDaysInYear(9, leap) + 30) * kMsPerDay;
+    // goto the last Sunday in Octobar
+    while (WeekDay(end) != 0) {
+      end -= kMsPerDay;
+    }
+
+    target -= 2 * kMsPerHour;
+
+    if (start <= target && target <= end) {
+      return kMsPerHour;
+    }
+  }
+  return 0.0;
+}
+#endif
 
 inline double LocalTime(double t) {
   return t + LocalTZA() + DaylightSavingTA(t);
@@ -281,11 +370,8 @@ inline double TimeClip(double time) {
 #ifdef _WIN32
 inline double CurrentTime() {
   FILETIME ft;
-  LARGE_INTEGER i;
-  GetSystemTimeAsFileTime(&ft);
-  i.LowPart = ft.dwLowDateTime;
-  i.HighPart = ft.dwHighDateTime;
-  return (i.QuadPart - kEpochTime) / 10 / 1000000;
+  ::GetSystemTimeAsFileTime(&ft);
+  return FileTimeToUnixTime(ft);
 }
 #else
 inline double CurrentTime() {
