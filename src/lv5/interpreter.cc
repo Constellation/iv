@@ -953,7 +953,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LT: {  // <
-        const CompareKind res = Compare(lhs, rhs, CHECK);
+        const CompareKind res = Compare<true>(lhs, rhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -963,7 +963,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GT: {  // >
-        const CompareKind res = Compare(rhs, lhs, CHECK);
+        const CompareKind res = Compare<false>(rhs, lhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -973,7 +973,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LTE: {  // <=
-        const CompareKind res = Compare(rhs, lhs, CHECK);
+        const CompareKind res = Compare<false>(rhs, lhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {
@@ -983,7 +983,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GTE: {  // >=
-        const CompareKind res = Compare(lhs, rhs, CHECK);
+        const CompareKind res = Compare<true>(lhs, rhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {
@@ -1632,50 +1632,6 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
 
 
 #undef ERRCHECK
-
-
-// section 11.8.5
-#define LT_CHECK\
-  CHECK_TO_WITH(error, CMP_ERROR)
-
-
-Interpreter::CompareKind Interpreter::Compare(const JSVal& lhs,
-                                              const JSVal& rhs,
-                                              Error* error) {
-  const JSVal px = lhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-  const JSVal py = rhs.ToPrimitive(ctx_, Hint::NUMBER, LT_CHECK);
-  if (px.IsString() && py.IsString()) {
-    // step 4
-    return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
-  } else {
-    const double nx = px.ToNumber(ctx_, LT_CHECK);
-    const double ny = py.ToNumber(ctx_, LT_CHECK);
-    if (std::isnan(nx) || std::isnan(ny)) {
-      return CMP_UNDEFINED;
-    }
-    if (nx == ny) {
-      if (std::signbit(nx) != std::signbit(ny)) {
-        return CMP_FALSE;
-      }
-      return CMP_FALSE;
-    }
-    if (nx == std::numeric_limits<double>::infinity()) {
-      return CMP_FALSE;
-    }
-    if (ny == std::numeric_limits<double>::infinity()) {
-      return CMP_TRUE;
-    }
-    if (ny == (-std::numeric_limits<double>::infinity())) {
-      return CMP_FALSE;
-    }
-    if (nx == (-std::numeric_limits<double>::infinity())) {
-      return CMP_TRUE;
-    }
-    return (nx < ny) ? CMP_TRUE : CMP_FALSE;
-  }
-}
-#undef LT_CHECK
-
 
 JSDeclEnv* Interpreter::NewDeclarativeEnvironment(Context* ctx, JSEnv* env) {
   return JSDeclEnv::New(ctx, env);

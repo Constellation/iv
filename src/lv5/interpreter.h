@@ -125,7 +125,68 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const ConstructorCall* call);
 
   bool InCurrentLabelSet(const BreakableStatement* stmt);
-  CompareKind Compare(const JSVal& lhs, const JSVal& rhs, Error* error);
+
+  // section 11.8.5
+  template<bool LeftFirst>
+  CompareKind Compare(const JSVal& lhs, const JSVal& rhs, Error* error) {
+    JSVal px;
+    JSVal py;
+    if (LeftFirst) {
+      px = lhs.ToPrimitive(ctx_, Hint::NUMBER, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+      py = rhs.ToPrimitive(ctx_, Hint::NUMBER, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+    } else {
+      py = rhs.ToPrimitive(ctx_, Hint::NUMBER, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+      px = lhs.ToPrimitive(ctx_, Hint::NUMBER, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+    }
+    if (px.IsString() && py.IsString()) {
+      // step 4
+      return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
+    } else {
+      const double nx = px.ToNumber(ctx_, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+      const double ny = py.ToNumber(ctx_, error);
+      if (*error) {
+        return CMP_ERROR;
+      }
+      if (std::isnan(nx) || std::isnan(ny)) {
+        return CMP_UNDEFINED;
+      }
+      if (nx == ny) {
+        if (std::signbit(nx) != std::signbit(ny)) {
+          return CMP_FALSE;
+        }
+        return CMP_FALSE;
+      }
+      if (nx == std::numeric_limits<double>::infinity()) {
+        return CMP_FALSE;
+      }
+      if (ny == std::numeric_limits<double>::infinity()) {
+        return CMP_TRUE;
+      }
+      if (ny == (-std::numeric_limits<double>::infinity())) {
+        return CMP_FALSE;
+      }
+      if (nx == (-std::numeric_limits<double>::infinity())) {
+        return CMP_TRUE;
+      }
+      return (nx < ny) ? CMP_TRUE : CMP_FALSE;
+    }
+  }
+
   JSVal GetValue(const JSVal& val, Error* error);
   void PutValue(const JSVal& val, const JSVal& w, Error* error);
   JSReference* GetIdentifierReference(JSEnv* lex, Symbol name, bool strict);
