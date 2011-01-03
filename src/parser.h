@@ -1635,8 +1635,8 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
         func->AddArgument(expr);
       }
-      EXPECT(Token::RPAREN);
     }
+    EXPECT(Token::RPAREN);
     return func;
   }
 
