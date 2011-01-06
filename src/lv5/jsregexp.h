@@ -11,17 +11,15 @@ class JSRegExp : public JSObject {
  public:
   JSRegExp(const core::UStringPiece& value,
            const core::UStringPiece& flags)
-    : status_(U_ZERO_ERROR),
-      impl_(new JSRegExpImpl(value, flags, &status_)) {
+    : impl_(new JSRegExpImpl(value, flags)) {
   }
 
   explicit JSRegExp(const JSRegExpImpl& reg)
-    : status_(U_ZERO_ERROR),
-      impl_(&reg) {
+    : impl_(&reg) {
   }
 
   inline bool IsValid() const {
-    return status_ == U_ZERO_ERROR;
+    return impl_->IsValid();
   }
 
   static JSRegExp* New(const JSRegExpImpl& reg) {
@@ -34,7 +32,6 @@ class JSRegExp : public JSObject {
   }
 
  private:
-  UErrorCode status_;
   const JSRegExpImpl* impl_;
 };
 

@@ -32,23 +32,20 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   : public Inherit<iv::lv5::AstFactory, kRegExpLiteral> {
  public:
   void Initialize() {
-    status_ = U_ZERO_ERROR;
     regexp_.Initialize(
         Derived()->value(),
-        Derived()->flags(),
-        &status_);
+        Derived()->flags());
   }
   const iv::lv5::JSRegExpImpl& regexp() const {
     return regexp_;
   }
   bool IsValid() const {
-    return status_ == U_ZERO_ERROR;
+    return regexp_.IsValid();
   }
  private:
   RegExpLiteral<iv::lv5::AstFactory>* Derived() {
     return static_cast<RegExpLiteral<iv::lv5::AstFactory>*>(this);
   }
-  UErrorCode status_;
   iv::lv5::JSRegExpImpl regexp_;
 };
 

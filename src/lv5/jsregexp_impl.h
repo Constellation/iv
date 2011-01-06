@@ -1,76 +1,101 @@
 #ifndef _IV_LV5_JSREGEXP_IMPL_H_
 #define _IV_LV5_JSREGEXP_IMPL_H_
-#include <unicode/regex.h>
+#include <cstdlib>
 #include <gc/gc_cpp.h>
 #include "ustring.h"
 #include "ustringpiece.h"
+
+#ifdef DEBUG
+#include "third_party/jscre/pcre.h"
+#define DEBUG
+#else
+#include "third_party/jscre/pcre.h"
+#endif
 
 namespace iv {
 namespace lv5 {
 class JSRegExpImpl : public gc_cleanup {
  public:
   JSRegExpImpl(const core::UStringPiece& value,
-               const core::UStringPiece& flags,
-               UErrorCode* status)
-    : regexp_(NULL),
-      global_(false) {
-    Initialize(value, flags, status);
+               const core::UStringPiece& flags)
+    : reg_(NULL),
+      number_of_captures_(0),
+      global_(false),
+      error_(NULL) {
+    Initialize(value, flags);
   }
 
   JSRegExpImpl()
-    : regexp_(NULL),
-      global_(false) {
+    : reg_(NULL),
+      number_of_captures_(0),
+      global_(false),
+      error_(NULL) {
   }
 
   void Initialize(const core::UStringPiece& value,
-                  const core::UStringPiece& flags,
-                  UErrorCode* status) {
-    uint32_t flagbits = 0;
+                  const core::UStringPiece& flags) {
+    bool state = false;
+    jscre::JSRegExpIgnoreCaseOption ignore = jscre::JSRegExpDoNotIgnoreCase;
+    jscre::JSRegExpMultilineOption multi = jscre::JSRegExpSingleLine;
     for (core::UStringPiece::const_iterator it = flags.begin(),
          last = flags.end(); it != last; ++it) {
       const uc16 c = *it;
       if (c == 'g') {
         if (global_) {
-          *status = U_REGEX_RULE_SYNTAX;
+          state = true;
           break;
         } else {
           global_ = true;
         }
       } else if (c == 'm') {
-        if (flagbits & UREGEX_MULTILINE) {
-          *status = U_REGEX_RULE_SYNTAX;
+        if (multi == jscre::JSRegExpMultiline) {
+          state = true;
           break;
         } else {
-          flagbits |= UREGEX_MULTILINE;
+          multi = jscre::JSRegExpMultiline;
         }
       } else if (c == 'i') {
-        if (flagbits & UREGEX_CASE_INSENSITIVE) {
-          *status = U_REGEX_RULE_SYNTAX;
+        if (ignore == jscre::JSRegExpIgnoreCase) {
+          state = true;
           break;
         } else {
-          flagbits |= UREGEX_CASE_INSENSITIVE;
+          ignore = jscre::JSRegExpIgnoreCase;
         }
       } else {
-        *status = U_REGEX_RULE_SYNTAX;
+        state = true;
         break;
       }
     }
-    if (*status == U_ZERO_ERROR) {
-      UParseError pstatus;
-      regexp_ = uregex_open(value.data(),
-                            value.size(), flagbits, &pstatus, status);
+    if (!state) {
+      reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
+                                    ignore,
+                                    multi,
+                                    &number_of_captures_,
+                                    &error_,
+                                    std::malloc,
+                                    std::free);
     }
   }
 
   ~JSRegExpImpl() {
-    if (regexp_) {
-      uregex_close(regexp_);
+    if (reg_) {
+      jscre::jsRegExpFree(reg_, std::free);
     }
   }
 
+  bool IsValid() const {
+    return reg_;
+  }
+
+  const char* Error() const {
+    return error_;
+  }
+
  private:
-  URegularExpression* regexp_;
+  jscre::JSRegExp* reg_;
+  uint32_t number_of_captures_;
   bool global_;
+  const char* error_;
 };
 
 } }  // namespace iv::lv5

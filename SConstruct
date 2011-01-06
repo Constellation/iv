@@ -150,11 +150,11 @@ def Build():
   # env.ParseConfig('llvm-config all --ldflags --libs')
 
   (object_files, main_prog) = Main(env, [header])
-  test_prog = Test(env, object_files)
   env.Alias('main', [main_prog])
-  test_alias = env.Alias('test', test_prog, test_prog[0].abspath)
   lv5_prog = Lv5(env, object_files)
   env.Alias('lv5', [lv5_prog])
+  test_prog = Test(env, object_files)
+  test_alias = env.Alias('test', test_prog, test_prog[0].abspath)
   env.Default('lv5')
 
 Build()
