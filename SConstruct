@@ -86,7 +86,7 @@ def Build():
     else:
       conf.env.ParseConfig('icu-config --cppflags --ldflags')
       conf.env.Append(
-          CXXFLAGS=[
+          CCFLAGS=[
             "-pedantic", "-Wpointer-arith",
             "-Wwrite-strings", "-Wno-long-long"   ])
       option_dict['%USE_ICU%'] = '1'

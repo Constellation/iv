@@ -3,6 +3,12 @@ from os.path import join, dirname, abspath
 Import('context object_files root_dir')
 
 def Build():
+  jscre = context.SConscript(
+    'third_party/jscre/SConscript',
+    variant_dir=join(root_dir, 'obj', 'third_party', 'jscre'),
+    duplicate=False,
+    exports="context"
+  )
   conf = Configure(context.Clone())
   if conf.CheckLib('boost_thread'):
     conf.env.Append(
@@ -13,12 +19,6 @@ def Build():
       CCFLAGS=["-fno-strict-aliasing"],
       CPPDEFINES=["__STDC_FORMAT_MACROS"]
       )
-  jscre = context.SConscript(
-    'third_party/jscre/SConscript',
-    variant_dir=join(root_dir, 'obj', 'third_party', 'jscre'),
-    duplicate=False,
-    exports="context"
-  )
   return env.Program('lv5',
       [Glob('*.cc'), Glob('*.c'), object_files, jscre])
 
