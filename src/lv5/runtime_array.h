@@ -948,7 +948,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
     return JSUndefined;
   }
 
-  JSArray* const ary = JSArray::New(ctx, len);
+  JSArray* const ary = JSArray::New(ctx);
 
   Arguments arg_list(ctx, 3);
   if (arg_count > 1) {
