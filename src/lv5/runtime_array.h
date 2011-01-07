@@ -1060,7 +1060,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
 
 // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
 inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.reduce", args, error);
+  CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, error);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
   const JSVal length = obj->Get(
@@ -1089,7 +1089,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
     return JSUndefined;
   }
 
-  if (len == 0 && arg_count > 1) {
+  if (len == 0 && arg_count <= 1) {
     error->Report(
         Error::Type,
         "Array.protoype.reduceRight with empty Array requires "
