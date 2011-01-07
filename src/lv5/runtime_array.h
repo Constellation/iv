@@ -1014,7 +1014,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
     return JSUndefined;
   }
 
-  if (len == 0 && arg_count > 1) {
+  if (len == 0 && arg_count <= 1) {
     error->Report(
         Error::Type,
         "Array.protoype.reduce with empty Array requires "
