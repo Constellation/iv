@@ -698,16 +698,20 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
       }
     }
   } else {
-    k = len;
+    k = len - 1;
   }
 
-  ++k;
-  while (k--) {
+  while (true) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(error));
       if (StrictEqual(search_element, element_k)) {
         return k;
       }
+    }
+    if (k == 0) {
+      break;
+    } else {
+      k--;
     }
   }
   return -1;
@@ -1027,8 +1031,8 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
     for (; k < len; ++k) {
       if (obj->HasPropertyWithIndex(ctx, k)) {
         k_present = true;
-        ++k;
         accumulator = obj->GetWithIndex(ctx, k, ERROR(error));
+        ++k;
         break;
       }
     }
