@@ -1947,6 +1947,44 @@ void Context::Initialize() {
   }
 
   {
+    // RegExp
+    JSObject* const proto = JSRegExp::NewPlain(this);
+    // section 15.10.4 The RegExp Constructor
+    JSNativeFunction* const constructor =
+        JSNativeFunction::NewPlain(this, &runtime::RegExpConstructor, 2);
+    constructor->set_class_name(func_cls.name);
+    constructor->set_prototype(func_cls.prototype);
+
+    // set prototype
+    constructor->DefineOwnProperty(
+        this, prototype_symbol_,
+        DataDescriptor(proto, PropertyDescriptor::NONE),
+        false, NULL);
+    proto->set_prototype(obj_proto);
+    struct Class cls = {
+      Intern("RegExp"),
+      JSString::NewAsciiString(this, "RegExp"),
+      constructor,
+      proto
+    };
+    proto->set_class_name(cls.name);
+
+    builtins_[cls.name] = cls;
+    global_obj_.DefineOwnProperty(
+        this, cls.name,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+    proto->DefineOwnProperty(
+        this, constructor_symbol_,
+        DataDescriptor(constructor,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+  }
+
+  {
     // Builtins
     // section 15.1.1.1 NaN
     global_obj_.DefineOwnProperty(

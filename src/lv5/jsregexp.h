@@ -6,30 +6,36 @@
 #include "jsregexp_impl.h"
 namespace iv {
 namespace lv5 {
-
+class Context;
 class JSRegExp : public JSObject {
  public:
-  JSRegExp(const core::UStringPiece& value,
-           const core::UStringPiece& flags)
-    : impl_(new JSRegExpImpl(value, flags)) {
-  }
+  JSRegExp(Context* ctx,
+           const core::UStringPiece& value,
+           const core::UStringPiece& flags);
 
-  explicit JSRegExp(const JSRegExpImpl* reg)
-    : impl_(reg) {
-  }
+  JSRegExp(Context* ctx,
+           const core::UStringPiece& value,
+           const core::UStringPiece& flags,
+           const JSRegExpImpl* reg);
+
+  explicit JSRegExp(Context* ctx);
 
   inline bool IsValid() const {
     return impl_->IsValid();
   }
 
-  static JSRegExp* New(const JSRegExpImpl* reg) {
-    return new JSRegExp(reg);
-  }
+  static JSRegExp* New(Context* ctx);
 
-  static JSRegExp* New(const core::UStringPiece& value,
-                       const core::UStringPiece& flags) {
-    return new JSRegExp(value, flags);
-  }
+  static JSRegExp* New(Context* ctx,
+                       const core::UStringPiece& value,
+                       const core::UStringPiece& flags,
+                       const JSRegExpImpl* reg);
+
+  static JSRegExp* New(Context* ctx,
+                       const core::UStringPiece& value,
+                       const core::UStringPiece& flags);
+
+  static JSRegExp* NewPlain(Context* ctx);
 
  private:
   const JSRegExpImpl* impl_;
