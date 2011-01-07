@@ -41,9 +41,8 @@ class AstFactory
   inline RegExpLiteral* NewRegExpLiteral(
       const std::vector<uc16>& content,
       const std::vector<uc16>& flags) {
-
     RegExpLiteral* expr = new (this) RegExpLiteral(content, flags, this);
-    expr->Initialize();
+    expr->Initialize(ctx_);
     if (expr->IsValid()) {
       regexps_.push_back(expr);
       return expr;

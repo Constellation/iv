@@ -19,17 +19,11 @@ class JSRegExpImpl : public gc_cleanup {
   JSRegExpImpl(const core::UStringPiece& value,
                const core::UStringPiece& flags)
     : reg_(NULL),
+      str_(value),
       number_of_captures_(0),
       global_(false),
       error_(NULL) {
     Initialize(value, flags);
-  }
-
-  JSRegExpImpl()
-    : reg_(NULL),
-      number_of_captures_(0),
-      global_(false),
-      error_(NULL) {
   }
 
   void Initialize(const core::UStringPiece& value,
@@ -93,6 +87,7 @@ class JSRegExpImpl : public gc_cleanup {
 
  private:
   jscre::JSRegExp* reg_;
+  core::UStringPiece str_;
   uint32_t number_of_captures_;
   bool global_;
   const char* error_;

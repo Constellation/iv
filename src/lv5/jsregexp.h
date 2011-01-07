@@ -14,15 +14,15 @@ class JSRegExp : public JSObject {
     : impl_(new JSRegExpImpl(value, flags)) {
   }
 
-  explicit JSRegExp(const JSRegExpImpl& reg)
-    : impl_(&reg) {
+  explicit JSRegExp(const JSRegExpImpl* reg)
+    : impl_(reg) {
   }
 
   inline bool IsValid() const {
     return impl_->IsValid();
   }
 
-  static JSRegExp* New(const JSRegExpImpl& reg) {
+  static JSRegExp* New(const JSRegExpImpl* reg) {
     return new JSRegExp(reg);
   }
 

@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_JSAST_H_
 #define _IV_LV5_JSAST_H_
 #include <vector>
+#include <cassert>
 #include "uchar.h"
 #include "jsregexp_impl.h"
 #include "ast.h"
@@ -9,6 +10,7 @@
 namespace iv {
 namespace lv5 {
 class AstFactory;
+class Context;
 }  // namespace iv::lv5
 namespace core {
 namespace ast {
@@ -31,22 +33,23 @@ template<>
 class RegExpLiteralBase<iv::lv5::AstFactory>
   : public Inherit<iv::lv5::AstFactory, kRegExpLiteral> {
  public:
-  void Initialize() {
-    regexp_.Initialize(
+  void Initialize(iv::lv5::Context* ctx) {
+    regexp_ = new iv::lv5::JSRegExpImpl(
         Derived()->value(),
         Derived()->flags());
   }
-  const iv::lv5::JSRegExpImpl& regexp() const {
+  const iv::lv5::JSRegExpImpl* regexp() const {
     return regexp_;
   }
   bool IsValid() const {
-    return regexp_.IsValid();
+    assert(regexp_);
+    return regexp_->IsValid();
   }
  private:
   RegExpLiteral<iv::lv5::AstFactory>* Derived() {
     return static_cast<RegExpLiteral<iv::lv5::AstFactory>*>(this);
   }
-  iv::lv5::JSRegExpImpl regexp_;
+  iv::lv5::JSRegExpImpl* regexp_;
 };
 
 } }  // namespace iv::core::ast
