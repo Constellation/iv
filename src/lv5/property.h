@@ -290,8 +290,12 @@ inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject*
   attrs_ &= ~DATA;
   attrs_ |= ACCESSOR;
   attrs_ |= UNDEF_VALUE;
-  value_.accessor_.getter_ = get;
-  value_.accessor_.setter_ = set;
+  if (get) {
+    value_.accessor_.getter_ = get;
+  }
+  if (set) {
+    value_.accessor_.setter_ = set;
+  }
 }
 
 inline PropertyDescriptor PropertyDescriptor::SetDefault(
