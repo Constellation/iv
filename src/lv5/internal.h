@@ -168,6 +168,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (!r.IsUndefined()) {
         getter = r.object();
       }
+      attr &= ~PropertyDescriptor::UNDEF_GETTER;
     }
   }
   {
@@ -184,6 +185,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (!r.IsUndefined()) {
         setter = r.object();
       }
+      attr &= ~PropertyDescriptor::UNDEF_SETTER;
     }
   }
   // step 9

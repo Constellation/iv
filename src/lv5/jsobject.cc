@@ -233,8 +233,8 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       if (!current.IsConfigurableAbsent() && !current.IsConfigurable()) {
         const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
         const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
-        if ((rhs->set() && (lhs->set() != rhs->set())) ||
-            (rhs->get() && (lhs->get() != rhs->get()))) {
+        if ((!rhs->IsSetterAbsent() && (lhs->set() != rhs->set())) ||
+            (!rhs->IsGetterAbsent() && (lhs->get() != rhs->get()))) {
           REJECT("changing [[Set]] or [[Get]] "
                  "of unconfigurable property not allowed");
         }

@@ -1357,11 +1357,13 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
       if (type == ObjectLiteral::GET) {
         desc = AccessorDescriptor(ctx_->ret().object(), NULL,
                                   PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE);
+                                  PropertyDescriptor::CONFIGURABLE |
+                                  PropertyDescriptor::UNDEF_SETTER);
       } else {
         desc = AccessorDescriptor(NULL, ctx_->ret().object(),
                                   PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE);
+                                  PropertyDescriptor::CONFIGURABLE|
+                                  PropertyDescriptor::UNDEF_GETTER);
       }
     }
     // section 11.1.5 step 4

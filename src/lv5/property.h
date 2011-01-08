@@ -5,6 +5,8 @@
 
 namespace iv {
 namespace lv5 {
+namespace detail {
+}  // namespace iv::lv5::detail
 
 class JSObject;
 class DataDescriptor;
@@ -24,7 +26,9 @@ class PropertyDescriptor {
     DATA = 64,
     ACCESSOR = 128,
     EMPTY = 256,
-    UNDEF_VALUE = 512
+    UNDEF_VALUE = 512,
+    UNDEF_GETTER = 1024,
+    UNDEF_SETTER = 2048
   };
 
   enum DataDescriptorTag {
@@ -36,9 +40,16 @@ class PropertyDescriptor {
   enum GenericDescriptorTag {
     kGenericDescriptor = 0
   };
+  enum AccessorDescriptorGetterTag {
+    kAccessorDescriptorGetter = 0
+  };
+  enum AccessorDescriptorSetterTag {
+    kAccessorDescriptorSetter = 0
+  };
 
   static const int kDefaultAttr =
-      UNDEF_WRITABLE | UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE | UNDEF_VALUE;
+      UNDEF_WRITABLE | UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE |
+      UNDEF_VALUE | UNDEF_GETTER | UNDEF_SETTER;
   static const int kTypeMask = DATA | ACCESSOR;
   static const int kDataAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
 
@@ -127,6 +138,8 @@ class PropertyDescriptor {
   inline void set_data_descriptor(const JSVal& value);
   inline void set_data_descriptor();
   inline void set_accessor_descriptor(JSObject* get, JSObject* set);
+  inline void set_accessor_descriptor_getter(JSObject* set);
+  inline void set_accessor_descriptor_setter(JSObject* set);
 
   inline this_type& operator=(const this_type& rhs) {
     if (this != &rhs) {
@@ -155,7 +168,7 @@ class PropertyDescriptor {
  protected:
   PropertyDescriptor(DataDescriptorTag tag,
                      const JSVal& val, int attrs)
-    : attrs_(attrs | DATA),
+    : attrs_(attrs | DATA | UNDEF_GETTER | UNDEF_SETTER),
       value_() {
     value_.data_ = val.Layout();
   }
@@ -169,8 +182,24 @@ class PropertyDescriptor {
     value_.accessor_.setter_ = setter;
   }
 
+  PropertyDescriptor(AccessorDescriptorGetterTag tag,
+                     JSObject* getter, int attrs)
+    : attrs_(attrs | ACCESSOR | UNDEF_VALUE | UNDEF_SETTER),
+      value_() {
+    value_.accessor_.getter_ = getter;
+    value_.accessor_.setter_ = NULL;
+  }
+
+  PropertyDescriptor(AccessorDescriptorSetterTag tag,
+                     JSObject* setter, int attrs)
+    : attrs_(attrs | ACCESSOR | UNDEF_VALUE | UNDEF_GETTER),
+      value_() {
+    value_.accessor_.getter_ = NULL;
+    value_.accessor_.setter_ = setter;
+  }
+
   PropertyDescriptor(GenericDescriptorTag tag, int attrs)
-    : attrs_(attrs | UNDEF_VALUE),
+    : attrs_(attrs | UNDEF_VALUE | UNDEF_GETTER | UNDEF_SETTER),
       value_() {
   }
 
@@ -197,6 +226,12 @@ class AccessorDescriptor : public PropertyDescriptor {
   }
   JSObject* set() const {
     return value_.accessor_.setter_;
+  }
+  inline bool IsGetterAbsent() const {
+    return attrs_ & UNDEF_GETTER;
+  }
+  inline bool IsSetterAbsent() const {
+    return attrs_ & UNDEF_SETTER;
   }
   void set_get(JSObject* getter) {
     value_.accessor_.getter_ = getter;
@@ -274,28 +309,40 @@ inline AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 }
 
 inline void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
-  attrs_ &= ~ACCESSOR;
   attrs_ |= DATA;
+  attrs_ &= ~ACCESSOR;
   attrs_ &= ~UNDEF_VALUE;
+  attrs_ |= UNDEF_GETTER;
+  attrs_ |= UNDEF_SETTER;
   value_.data_ = value.Layout();
-}
-
-inline void PropertyDescriptor::set_data_descriptor() {
-  attrs_ &= ~ACCESSOR;
-  attrs_ |= DATA;
-  attrs_ |= UNDEF_VALUE;
 }
 
 inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {
   attrs_ &= ~DATA;
   attrs_ |= ACCESSOR;
   attrs_ |= UNDEF_VALUE;
-  if (get) {
-    value_.accessor_.getter_ = get;
-  }
-  if (set) {
-    value_.accessor_.setter_ = set;
-  }
+  attrs_ &= ~UNDEF_GETTER;
+  attrs_ &= ~UNDEF_SETTER;
+  value_.accessor_.getter_ = get;
+  value_.accessor_.setter_ = set;
+}
+
+inline void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
+  attrs_ &= ~DATA;
+  attrs_ |= ACCESSOR;
+  attrs_ |= UNDEF_VALUE;
+  attrs_ &= ~UNDEF_GETTER;
+  attrs_ &= ~UNDEF_SETTER;
+  value_.accessor_.getter_ = get;
+}
+
+inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
+  attrs_ &= ~DATA;
+  attrs_ |= ACCESSOR;
+  attrs_ |= UNDEF_VALUE;
+  attrs_ &= ~UNDEF_GETTER;
+  attrs_ &= ~UNDEF_SETTER;
+  value_.accessor_.setter_ = set;
 }
 
 inline PropertyDescriptor PropertyDescriptor::SetDefault(
@@ -367,9 +414,7 @@ inline PropertyDescriptor PropertyDescriptor::Merge(
   }
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
-    if (data->IsValueAbsent()) {
-      result.set_data_descriptor();
-    } else {
+    if (!data->IsValueAbsent()) {
       result.set_data_descriptor(data->value());
     }
     if (!data->IsWritableAbsent()) {
@@ -377,7 +422,13 @@ inline PropertyDescriptor PropertyDescriptor::Merge(
     }
   } else if (desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
-    result.set_accessor_descriptor(accs->get(), accs->set());
+    if (accs->IsGetterAbsent()) {
+      result.set_accessor_descriptor_setter(accs->set());
+    } else if (accs->IsSetterAbsent()) {
+      result.set_accessor_descriptor_getter(accs->get());
+    } else {
+      result.set_accessor_descriptor(accs->get(), accs->set());
+    }
   }
   return result;
 }
