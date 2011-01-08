@@ -781,11 +781,12 @@ inline bool IsSeparatorSpace(uint16_t c) {
 
 inline bool IsWhiteSpace(uint16_t c) {
   return IsASCII(c) ?
-      (c == ' ' || c == '\t' || c == 0xB || c == 0xC) : IsSeparatorSpace(c);
+      (c == ' ' || c == '\t' || c == 0xB || c == 0xC) :
+      c == 0x00A0 || c == 0xFEFF || IsSeparatorSpace(c);
 }
 
 inline bool IsLineTerminator(uint16_t c) {
-  return c == '\r' || c == '\n' || (c & ~1) == 0x2028;
+  return c == '\r' || c == '\n' || (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
 inline bool IsIdentifierStart(uint16_t c) {

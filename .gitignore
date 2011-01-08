@@ -11,3 +11,4 @@ config.log
 tools/*.pyc
 src/phonic/ext/include/
 src/phonic/Manifest.txt
+tools/UnicodeData.txt
