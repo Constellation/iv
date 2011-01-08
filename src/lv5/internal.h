@@ -114,7 +114,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
         attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
             PropertyDescriptor::ENUMERABLE;
       } else {
-        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE);
+        attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE);
       }
     }
   }
