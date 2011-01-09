@@ -38,20 +38,27 @@ inline bool IsURIReserved(uint16_t ch) {
 
 class URIComponent : core::Noncopyable<URIComponent>::type {
  public:
-  static bool Contains(uint16_t ch) {
+  static bool ContainsInEncode(uint16_t ch) {
     return core::character::IsASCII(ch) &&
         (core::character::IsASCIIAlphanumeric(ch) || IsURIMark(ch));
+  }
+  static bool ContainsInDecode(uint16_t ch) {
+    // Empty String
+    return false;
   }
 };
 
 class URI : core::Noncopyable<URI>::type {
  public:
-  static bool Contains(uint16_t ch) {
+  static bool ContainsInEncode(uint16_t ch) {
     return core::character::IsASCII(ch) &&
         (core::character::IsASCIIAlphanumeric(ch) ||
          IsURIMark(ch) ||
          ch == '#' ||
          IsURIReserved(ch));
+  }
+  static bool ContainsInDecode(uint16_t ch) {
+    return IsURIReserved(ch) || ch == '#';
   }
 };
 
@@ -113,7 +120,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   for (JSString::const_iterator it = str.begin(),
        last = str.end(); it != last; ++it) {
     const uint16_t ch = *it;
-    if (URITraits::Contains(ch)) {
+    if (URITraits::ContainsInEncode(ch)) {
       builder.Append(ch);
     } else {
       uint32_t v;
@@ -174,7 +181,8 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
       }
       const uint8_t b0 = core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
       if (!(b0 & 0x80)) {
-        if (URITraits::Contains(b0)) {
+        if (URITraits::ContainsInDecode(b0)) {
+          std::cout << "IN!!" << std::endl;
           builder.Append(buf.begin(), 3);
         } else {
           builder.Append(static_cast<uint16_t>(b0));
@@ -218,8 +226,8 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
         uint32_t v = UC8ToUCS4(octets.begin(), n);
         if (v < 0x100000) {
           const uint16_t code = static_cast<uint16_t>(v);
-          if (URITraits::Contains(code)) {
-            builder.Append(str.begin() + start, str.begin() + (k - start + 1));
+          if (URITraits::ContainsInDecode(code)) {
+            builder.Append(str.begin() + start, (k - start + 1));
           } else {
             builder.Append(code);
           }
