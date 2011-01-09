@@ -83,7 +83,7 @@ class Interactive {
     std::tr1::shared_ptr<icu::Source> src(
         new icu::Source(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
-    core::Parser<AstFactory, icu::Source, false> parser(factory, src.get());
+    core::Parser<AstFactory, icu::Source, true> parser(factory, src.get());
     parser.set_strict(ctx_.IsStrict());
     const FunctionLiteral* const eval = parser.ParseProgram();
     if (!eval) {
