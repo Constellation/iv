@@ -13,6 +13,7 @@
 #include "noncopyable.h"
 #include "utils.h"
 #include "ustring.h"
+#include "enable_if.h"
 #include "none.h"
 
 #define IS(token)\
@@ -409,7 +410,7 @@ class Parser
       case Token::FUNCTION:
         // FunctionStatement (not in ECMA-262 5th)
         // FunctionExpression
-        result = ParseFunctionStatement(CHECK);
+        result = ParseFunctionStatement<UseFunctionStatement>(CHECK);
         break;
 
       case Token::IDENTIFIER:
@@ -1038,14 +1039,10 @@ class Parser
     return factory_->NewExpressionStatement(expr);
   }
 
-  Statement* ParseFunctionStatement(bool *res) {
+  template<bool Use>
+  Statement* ParseFunctionStatement(bool *res,
+                                    typename enable_if_c<Use>::type* = 0) {
     assert(token_ == Token::FUNCTION);
-    if (!UseFunctionStatement) {
-      // FunctionStatement is not Standard
-      // so, if template parameter UseFunctionStatement is false,
-      // this parser reject FunctionStatement
-      RAISE("function statement is not Standard");
-    }
     if (strict_) {
       RAISE("function statement not allowed in strict code");
     }
@@ -1056,6 +1053,15 @@ class Parser
     // define named function as variable declaration
     scope_->AddUnresolved(expr->name(), false);
     return factory_->NewFunctionStatement(expr);
+  }
+
+  template<bool Use>
+  Statement* ParseFunctionStatement(bool *res,
+                                    typename enable_if_c<!Use>::type* = 0) {
+    // FunctionStatement is not Standard
+    // so, if template parameter UseFunctionStatement is false,
+    // this parser reject FunctionStatement
+    RAISE("function statement is not Standard");
   }
 
 //  Expression
