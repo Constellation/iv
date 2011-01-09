@@ -230,10 +230,10 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           }
         } else {
           v -= 0x10000;
-          const uint16_t l = (v & 0x3FF) + 0xDC00;
-          const uint16_t h = ((v >> 10) & 0x3FF) + 0xD800;
-          builder.Append(l);
-          builder.Append(h);
+          const uint16_t L = (v & 0x3FF) + 0xDC00;
+          const uint16_t H = ((v >> 10) & 0x3FF) + 0xD800;
+          builder.Append(H);
+          builder.Append(L);
         }
       }
     }
