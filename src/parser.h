@@ -134,11 +134,12 @@ const UString ParserData<T>::kSet(
 
 typedef detail::ParserData<None> ParserData;
 
-template<typename Factory, typename Source>
-class Parser : private Noncopyable<Parser<Factory, Source> >::type {
+template<typename Factory, typename Source, bool UseFunctionStatement>
+class Parser
+  : private Noncopyable<Parser<Factory, Source, UseFunctionStatement> >::type {
  public:
-  typedef Parser<Factory, Source> this_type;
-  typedef Parser<Factory, Source> parser_type;
+  typedef Parser<Factory, Source, UseFunctionStatement> this_type;
+  typedef this_type parser_type;
   typedef Lexer<Source> lexer_type;
 #define V(AST) typedef typename ast::AST<Factory> AST;
   AST_NODE_LIST(V)
@@ -213,7 +214,7 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 
   class TargetScope : private Noncopyable<Target>::type {
    public:
-    TargetScope(parser_type* parser)
+    explicit TargetScope(parser_type* parser)
       : parser_(parser),
         target_(parser->target()),
         labels_(parser->labels()) {
@@ -1039,6 +1040,12 @@ class Parser : private Noncopyable<Parser<Factory, Source> >::type {
 
   Statement* ParseFunctionStatement(bool *res) {
     assert(token_ == Token::FUNCTION);
+    if (!UseFunctionStatement) {
+      // FunctionStatement is not Standard
+      // so, if template parameter UseFunctionStatement is false,
+      // this parser reject FunctionStatement
+      RAISE("function statement is not Standard");
+    }
     if (strict_) {
       RAISE("function statement not allowed in strict code");
     }
