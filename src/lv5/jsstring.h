@@ -200,6 +200,15 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
   void Append(uc16 ch) {
     target_->string_.push_back(ch);
   }
+  template<typename Iter>
+  void Append(Iter it, typename JSString::size_type size) {
+    target_->string_.append(it, it + size);
+  }
+  template<typename Iter>
+  void Append(Iter start, Iter last) {
+    target_->string_.append(start, last);
+  }
+
 
   // for assignable object
   void append(const core::UStringPiece& piece) {

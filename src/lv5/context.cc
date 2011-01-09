@@ -2039,6 +2039,43 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // 15.1.3.1 decodeURI(encodedURI)
+    global_obj_.DefineOwnProperty(
+        this, Intern("decodeURI"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::GlobalDecodeURI, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // 15.1.3.2 decodeURIComponent(encodedURIComponent)
+    global_obj_.DefineOwnProperty(
+        this, Intern("decodeURIComponent"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::GlobalDecodeURIComponent, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.1.3.3 encodeURI(uri)
+    global_obj_.DefineOwnProperty(
+        this, Intern("encodeURI"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::GlobalEncodeURI, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.1.3.4 encodeURIComponent(uriComponent)
+    global_obj_.DefineOwnProperty(
+        this, Intern("encodeURIComponent"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::GlobalEncodeURIComponent, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     global_obj_.set_class_name(Intern("global"));
     global_obj_.set_prototype(obj_proto);
   }
