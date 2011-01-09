@@ -79,9 +79,9 @@ inline int UCS4ToUC8(uint32_t uc, uint8_t* buf) {
 }
 
 inline uint32_t UC8ToUCS4(const uint8_t* buf, uint32_t size) {
-  static const std::tr1::array<uint32_t, 3> kMinTable = {{
+  static const std::tr1::array<uint32_t, 3> kMinTable = { {
     0x00000080, 0x00000800, 0x00010000
-  }};
+  } };
   assert(size >= 1 && size <= 4);
   if (size == 1) {
     assert(!(*buf & 0x80));
@@ -117,14 +117,15 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
       builder.Append(ch);
     } else {
       uint32_t v;
-      if (!(ch < 0xDC00) && !(0xDFFF < ch)) {
+      if ((ch >= 0xDC00) && (ch <= 0xDFFF)) {
         e->Report(Error::URI, "invalid uri char");
         return JSUndefined;
-      } else if (ch < 0xD800 || 0xDBFF < ch) {
+      }
+      if (ch < 0xD800 || 0xDBFF < ch) {
         v = ch;
       } else {
         ++it;
-        if (it != last) {
+        if (it == last) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
@@ -206,7 +207,8 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
             e->Report(Error::URI, "invalid uri char");
             return JSUndefined;
           }
-          const uint8_t b1 = core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
+          const uint8_t b1 =
+              core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
           if ((b1 & 0xC0) != 0x80) {
             e->Report(Error::URI, "invalid uri char");
             return JSUndefined;
@@ -223,12 +225,8 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           }
         } else {
           v -= 0x100000;
-          if (v > 0xFFFFF) {
-            e->Report(Error::URI, "invalid uri char");
-            return JSUndefined;
-          }
           const uint16_t l = (v & 0x3FF) + 0xDC00;
-          const uint16_t h = (v >> 10) + 0xD800;
+          const uint16_t h = ((v >> 10) & 0x3FF) + 0xD800;
           builder.Append(l);
           builder.Append(h);
         }
@@ -237,7 +235,6 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
   }
   return builder.Build();
 }
-
 }  // iv::lv5::runtime::detail
 
 inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
@@ -377,6 +374,7 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
 // 15.1.3 URI Handling Function Properties
 // 15.1.3.1 decodeURI(encodedURI)
 inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("decodeURI", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -388,17 +386,20 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
 
 // 15.1.3.2 decodeURIComponent(encodedURIComponent)
 inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), ERROR(error));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  return detail::Decode<detail::URIComponent>(args.ctx(), *component_string, error);
+  return detail::Decode<detail::URIComponent>(args.ctx(),
+                                              *component_string, error);
 }
 
 // 15.1.3.3 encodeURI(uri)
 inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -410,13 +411,15 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
 
 // 15.1.3.4 encodeURIComponent(uriComponent)
 inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("encodeURI", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), ERROR(error));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  return detail::Encode<detail::URIComponent>(args.ctx(), *component_string, error);
+  return detail::Encode<detail::URIComponent>(args.ctx(),
+                                              *component_string, error);
 }
 
 inline JSVal ThrowTypeError(const Arguments& args, Error* error) {
