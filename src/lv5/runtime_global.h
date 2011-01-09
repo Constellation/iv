@@ -103,8 +103,6 @@ inline uint32_t UC8ToUCS4(const uint8_t* buf, uint32_t size) {
     }
     if (uc < min) {
       uc = UINT32_MAX;
-    } else if (uc == 0xFFFE || uc == 0xFFFF) {
-      uc = 0xFFFD;
     }
     return uc;
   }
@@ -182,7 +180,6 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
       const uint8_t b0 = core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
       if (!(b0 & 0x80)) {
         if (URITraits::ContainsInDecode(b0)) {
-          std::cout << "IN!!" << std::endl;
           builder.Append(buf.begin(), 3);
         } else {
           builder.Append(static_cast<uint16_t>(b0));
@@ -224,7 +221,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           octets[j] = b1;
         }
         uint32_t v = UC8ToUCS4(octets.begin(), n);
-        if (v < 0x100000) {
+        if (v < 0x10000) {
           const uint16_t code = static_cast<uint16_t>(v);
           if (URITraits::ContainsInDecode(code)) {
             builder.Append(str.begin() + start, (k - start + 1));
@@ -232,7 +229,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
             builder.Append(code);
           }
         } else {
-          v -= 0x100000;
+          v -= 0x10000;
           const uint16_t l = (v & 0x3FF) + 0xDC00;
           const uint16_t h = ((v >> 10) & 0x3FF) + 0xD800;
           builder.Append(l);
