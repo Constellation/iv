@@ -364,7 +364,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return buffer16_;
   }
 
-  inline const std::string& Buffer8() const {
+  inline const std::vector<char>& Buffer8() const {
     return buffer8_;
   }
 
@@ -806,13 +806,14 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
     if (type == OCTAL) {
       double val = 0;
-      for (std::string::const_iterator it = buffer8_.begin(),
+      for (typename std::vector<char>::const_iterator it = buffer8_.begin(),
            last = buffer8_.end(); it != last; ++it) {
         val = val * 8 + (*it - '0');
       }
       numeric_ = val;
     } else {
-      numeric_ = std::atof(buffer8_.c_str());
+      const std::string buf(buffer8_.begin(), buffer8_.end());
+      numeric_ = std::atof(buf.c_str());
     }
     type_ = type;
     return Token::NUMBER;
@@ -868,7 +869,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   }
 
   const Source* source_;
-  std::string buffer8_;
+  std::vector<char> buffer8_;
   std::vector<uc16> buffer16_;
   double numeric_;
   State type_;

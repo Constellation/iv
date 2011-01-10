@@ -83,14 +83,14 @@ int main(int argc, char **argv) {
   const std::vector<std::string>& rest = cmd.rest();
   const std::string& filename = rest.front();
   if (!rest.empty()) {
-    std::string str;
+    std::vector<char> vec;
     if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
       std::tr1::array<char, 1024> buf;
       while (const std::size_t len = std::fread(
               buf.data(),
               1,
               buf.size(), fp)) {
-        str.append(buf.data(), len);
+        vec.insert(vec.end(), buf.begin(), buf.end());
       }
       std::fclose(fp);
     } else {
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    iv::icu::Source src(str, filename);
+    iv::icu::Source src(iv::core::StringPiece(vec.data(), vec.size()), filename);
     iv::lv5::Context ctx;
     iv::lv5::AstFactory factory(&ctx);
     iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true>
