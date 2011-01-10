@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
               buf.data(),
               1,
               buf.size(), fp)) {
-        vec.insert(vec.end(), buf.begin(), buf.end());
+        vec.insert(vec.end(), buf.begin(), buf.begin() + len);
       }
       std::fclose(fp);
     } else {
