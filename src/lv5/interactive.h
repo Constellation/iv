@@ -32,7 +32,7 @@ class Interactive {
     ctx_.DefineFunction(&lv5::Quit, "quit", 1);
   }
   int Run() {
-    std::string buffer;
+    std::vector<char> buffer;
     while (true) {
       std::tr1::array<char, 1024> line;
       bool recover = false;
@@ -45,8 +45,9 @@ class Interactive {
       if (!str) {
         break;
       }
-      buffer.append(line.data());
-      JSEvalScript<icu::Source>* script = Parse(buffer, &recover);
+      buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
+      JSEvalScript<icu::Source>* script =
+          Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (script) {
         buffer.clear();
         JSVal val;
@@ -79,7 +80,7 @@ class Interactive {
     return EXIT_SUCCESS;
   }
  private:
-  JSEvalScript<icu::Source>* Parse(const std::string& text, bool* recover) {
+  JSEvalScript<icu::Source>* Parse(const core::StringPiece& text, bool* recover) {
     std::tr1::shared_ptr<icu::Source> src(
         new icu::Source(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
