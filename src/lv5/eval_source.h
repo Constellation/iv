@@ -12,17 +12,17 @@ static const std::string kEvalSource = "(eval)";
 
 class EvalSource : public core::Noncopyable<EvalSource>::type {
  public:
-  EvalSource(JSString* str)
+  EvalSource(const JSString& str)
     : source_(str) {
   }
 
   inline uc16 Get(std::size_t pos) const {
     assert(pos < size());
-    return (*source_)[pos];
+    return source_[pos];
   }
 
   inline std::size_t size() const {
-    return source_->size();
+    return source_.size();
   }
 
   inline const std::string& filename() const {
@@ -32,13 +32,13 @@ class EvalSource : public core::Noncopyable<EvalSource>::type {
   inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
     if (len == std::string::npos) {
-      return core::UStringPiece((source_->data() + n), (source_->size() - n));
+      return core::UStringPiece((source_.data() + n), (source_.size() - n));
     } else {
-      return core::UStringPiece((source_->data() + n), len);
+      return core::UStringPiece((source_.data() + n), len);
     }
   }
  private:
-  JSString* source_;
+  const JSString& source_;
 };
 
 } }  // namespace iv::lv5

@@ -15,9 +15,9 @@
 namespace iv {
 namespace lv5 {
 
-inline JSScript* CompileScript(Context* ctx, JSString* str,
+inline JSScript* CompileScript(Context* ctx, const JSString* str,
                                bool is_strict, Error* error) {
-  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(str));
+  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory* const factory = new AstFactory(ctx);
   core::Parser<AstFactory, EvalSource, true> parser(factory, src.get());
   parser.set_strict(is_strict);

@@ -1985,6 +1985,28 @@ void Context::Initialize() {
   }
 
   {
+    // section 15.12 JSON
+    JSObject* const json = JSObject::NewPlain(this);
+    json->set_prototype(obj_proto);
+    const Symbol name = Intern("JSON");
+    json->set_class_name(name);
+    global_obj_.DefineOwnProperty(
+        this, name,
+        DataDescriptor(json,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.12.2 parse(text[, reviver])
+    json->DefineOwnProperty(
+        this, Intern("parse"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONParse, 1),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+  }
+
+  {
     // Builtins
     // section 15.1.1.1 NaN
     global_obj_.DefineOwnProperty(
