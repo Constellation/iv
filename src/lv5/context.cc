@@ -2000,7 +2000,7 @@ void Context::Initialize() {
     // section 15.12.2 parse(text[, reviver])
     json->DefineOwnProperty(
         this, Intern("parse"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONParse, 1),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONParse, 2),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
