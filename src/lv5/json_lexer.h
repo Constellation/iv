@@ -69,6 +69,10 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
         Advance();
         return core::Token::RBRACE;
 
+      case '-':
+        Advance();
+        return ScanNumber<true>();
+
       case 'n': {  // null literal
         static const char* literal = "ull";
         Advance();
@@ -92,7 +96,7 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
           // EOS
           return core::Token::EOS;
         } else if (core::character::IsDecimalDigit(c_)) {
-          return ScanNumber();
+          return ScanNumber<false>();
         } else {
           return core::Token::ILLEGAL;
         }
@@ -185,8 +189,12 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
     return core::Token::STRING;
   }
 
-  core::Token::Type ScanNumber() {
+  template<bool find_sign>
+  typename core::Token::Type ScanNumber() {
     buffer8_.clear();
+    if (find_sign) {
+      Record8('-');
+    }
     if (c_ == '0') {
       Record8Advance();
     } else {
