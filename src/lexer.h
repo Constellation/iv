@@ -760,24 +760,18 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           type = OCTAL;
           Record8Advance();
           while (true) {
-            if (c_ == '8' || c_ == '9') {
-              // not octal digits
-              type = DECIMAL;
-              break;
-            }
             if (c_ < '0' || '7' < c_) {
               break;
             }
             Record8Advance();
           }
         }
-      }
-      if (type == DECIMAL) {
+      } else {
         ScanDecimalDigits();
-        if (c_ == '.') {
-          Record8Advance();
-          ScanDecimalDigits();
-        }
+      }
+      if (type == DECIMAL && c_ == '.') {
+        Record8Advance();
+        ScanDecimalDigits();
       }
     }
 
