@@ -729,22 +729,13 @@ inline JSVal ArrayEvery(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.every requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.every requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
   if (arg_count > 1) {
@@ -780,22 +771,13 @@ inline JSVal ArraySome(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.some requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.some requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
   if (arg_count > 1) {
@@ -831,22 +813,13 @@ inline JSVal ArrayForEach(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.forEach requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.forEach requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
   if (arg_count > 1) {
@@ -878,22 +851,13 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.map requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.map requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   JSArray* const ary = JSArray::New(ctx, len);
 
@@ -935,22 +899,13 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.filter requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.filter requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   JSArray* const ary = JSArray::New(ctx);
 
@@ -997,22 +952,13 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.reduce requires callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.reduce requires callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   if (len == 0 && arg_count <= 1) {
     error->Report(
@@ -1070,24 +1016,14 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
-  JSFunction* callbackfn;
-  if (arg_count > 0) {
-    const JSVal first = args[0];
-    if (!first.IsCallable()) {
-      error->Report(
-          Error::Type,
-          "Array.protoype.reduceRight requires "
-          "callable object as 1st argument");
-      return JSUndefined;
-    }
-    callbackfn = first.object()->AsCallable();
-  } else {
+  if (arg_count == 0 || !args[0].IsCallable()) {
     error->Report(
         Error::Type,
         "Array.protoype.reduceRight requires "
         "callable object as 1st argument");
     return JSUndefined;
   }
+  JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   if (len == 0 && arg_count <= 1) {
     error->Report(
