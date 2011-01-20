@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <vector>
+#include <algorithm>
 #include "uchar.h"
 #include "noncopyable.h"
 #include "conversions.h"
@@ -33,7 +34,8 @@ class JSONStackScope : private core::Noncopyable<JSONStackScope>::type {
 };
 
 static const char* kJSONNullStringPtr = "null";
-static const core::UString kJSONNullString(kJSONNullStringPtr, kJSONNullStringPtr+4);
+static const core::UString kJSONNullString(kJSONNullStringPtr,
+                                           kJSONNullStringPtr+4);
 
 }  // namespace iv::lv5::detail
 
@@ -123,12 +125,15 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     return builder.Build();
   }
 
-  JSVal JO(JSObject* value, Error* e) {
-    using std::find_if;
+  void CyclicCheck(JSObject* value, Error* e) {
+    using std::find;
     if (find(stack_.begin(), stack_.end(), value) != stack_.end()) {
       e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
-      return JSUndefined;
     }
+  }
+
+  JSVal JO(JSObject* value, Error* e) {
+    CyclicCheck(value, ERROR(e));
     detail::JSONStackScope scope(&stack_, value);
     const core::UString stepback = indent_;
     indent_.append(gap_);
@@ -215,11 +220,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
   }
 
   JSVal JA(JSArray* value, Error* e) {
-    using std::find_if;
-    if (find(stack_.begin(), stack_.end(), value) != stack_.end()) {
-      e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
-      return JSUndefined;
-    }
+    CyclicCheck(value, e);
     detail::JSONStackScope scope(&stack_, value);
     const core::UString stepback = indent_;
     indent_.append(gap_);
