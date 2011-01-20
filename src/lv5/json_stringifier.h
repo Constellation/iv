@@ -164,7 +164,6 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
         member.append(ret->begin(), ret->end());
         member.push_back(':');
         if (!gap_.empty()) {
-          // FIXME(Constellation) ...
           member.push_back(' ');
         }
         assert(result.IsString());
