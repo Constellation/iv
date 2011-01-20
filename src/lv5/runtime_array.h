@@ -69,8 +69,7 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* error) {
   if (!val.IsObject()) {
     return JSFalse;
   }
-  return JSVal::Bool(
-      args.ctx()->Cls("Array").name == val.object()->class_name());
+  return JSVal::Bool(args.ctx()->IsArray(*val.object()));
 }
 
 // section 15.4.4.2 Array.prototype.toString()
@@ -156,9 +155,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
   JSArray* const ary = JSArray::New(ctx);
 
   uint32_t n = 0;
-  const Class& cls = ctx->Cls("Array");
-
-  if (cls.name == obj->class_name()) {
+  if (ctx->IsArray(*obj)) {
     JSObject* const elm = obj;
     uint32_t k = 0;
     const JSVal length = elm->Get(
@@ -195,7 +192,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
 
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    if (it->IsObject() && cls.name == it->object()->class_name()) {
+    if (it->IsObject() && ctx->IsArray(*it->object())) {
       JSObject* const elm = it->object();
       uint32_t k = 0;
       const JSVal length = elm->Get(

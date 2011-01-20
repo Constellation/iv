@@ -17,15 +17,16 @@ namespace iv {
 namespace lv5 {
 namespace {
 
-const std::string length_string("length");
-const std::string eval_string("eval");
-const std::string arguments_string("arguments");
-const std::string caller_string("caller");
-const std::string callee_string("callee");
-const std::string toString_string("toString");
-const std::string valueOf_string("valueOf");
-const std::string prototype_string("prototype");
-const std::string constructor_string("constructor");
+static const std::string length_string("length");
+static const std::string eval_string("eval");
+static const std::string arguments_string("arguments");
+static const std::string caller_string("caller");
+static const std::string callee_string("callee");
+static const std::string toString_string("toString");
+static const std::string valueOf_string("valueOf");
+static const std::string prototype_string("prototype");
+static const std::string constructor_string("constructor");
+static const std::string Array_string("Array");
 
 class ScriptScope : private core::Noncopyable<ScriptScope>::type {
  public:
@@ -71,6 +72,7 @@ Context::Context()
     valueOf_symbol_(Intern(valueOf_string)),
     prototype_symbol_(Intern(prototype_string)),
     constructor_symbol_(Intern(constructor_string)),
+    Array_symbol_(Intern(Array_string)),
     current_script_(NULL) {
   JSObjectEnv* const env = Interpreter::NewObjectEnvironment(this,
                                                              &global_obj_,
@@ -448,7 +450,7 @@ void Context::Initialize() {
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
-      Intern("Array"),
+      Array_symbol_,
       JSString::NewAsciiString(this, "Array"),
       constructor,
       proto
@@ -2001,6 +2003,14 @@ void Context::Initialize() {
     json->DefineOwnProperty(
         this, Intern("parse"),
         DataDescriptor(JSNativeFunction::New(this, &runtime::JSONParse, 2),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.12.3 stringify(value[, replacer[, space]])
+    json->DefineOwnProperty(
+        this, Intern("stringify"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONStringify, 3),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);

@@ -177,6 +177,9 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol constructor_symbol() const {
     return constructor_symbol_;
   }
+  inline Symbol Array_symbol() const {
+    return Array_symbol_;
+  }
   JSNativeFunction* throw_type_error() {
     return &throw_type_error_;
   }
@@ -194,6 +197,9 @@ class Context : private core::Noncopyable<Context>::type {
     } else {
       return false;
     }
+  }
+  bool IsArray(const JSObject& obj) {
+    return obj.class_name() == Array_symbol_;
   }
   double Random();
   JSString* ToString(Symbol sym);
@@ -226,6 +232,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol valueOf_symbol_;
   Symbol prototype_symbol_;
   Symbol constructor_symbol_;
+  Symbol Array_symbol_;
   JSScript* current_script_;
 };
 } }  // namespace iv::lv5

@@ -15,9 +15,6 @@
 #include "context.h"
 namespace iv {
 namespace lv5 {
-namespace detail {
-
-}  // namespace iv::lv5::detail
 
 #define CHECK  e);\
   if (*e) {\
@@ -51,7 +48,7 @@ namespace detail {
   } while (0)
 
 template<typename Source>
-class JSONParser : private core::Noncopyable<Source>::type {
+class JSONParser : private core::Noncopyable<JSONParser<Source> >::type {
  public:
   typedef JSONLexer<Source> lexer_type;
   typedef core::Token Token;
