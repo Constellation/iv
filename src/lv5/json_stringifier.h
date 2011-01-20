@@ -44,15 +44,13 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
   JSONStringifier(Context* ctx,
                   JSFunction* replacer,
                   const core::UString& gap,
-                  const std::vector<JSString*>* property_list,  // Maybe NULL
-                  const JSVal& space)
+                  const std::vector<JSString*>* property_list)  // Maybe NULL
     : ctx_(ctx),
       replacer_(replacer),
       stack_(),
       indent_(),
       gap_(gap),
-      property_list_(property_list),
-      space_(space) {
+      property_list_(property_list) {
   }
 
   JSVal Stringify(Symbol key, JSObject* holder, Error* e) {
@@ -351,7 +349,6 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
   core::UString indent_;
   core::UString gap_;
   const std::vector<JSString*>* property_list_;
-  JSVal space_;
 };
 
 } }  // namespace iv::lv5

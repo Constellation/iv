@@ -211,7 +211,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::ENUMERABLE |
                      PropertyDescriptor::CONFIGURABLE), false, ERROR(e));
-  JSONStringifier stringifier(ctx, replacer_function, gap, maybe, space);
+  JSONStringifier stringifier(ctx, replacer_function, gap, maybe);
   return stringifier.Stringify(empty, wrapper, e);
 }
 
