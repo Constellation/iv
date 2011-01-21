@@ -217,7 +217,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
   }
 
   JSVal JA(JSArray* value, Error* e) {
-    CyclicCheck(value, e);
+    CyclicCheck(value, ERROR(e));
     detail::JSONStackScope scope(&stack_, value);
     const core::UString stepback = indent_;
     indent_.append(gap_);
