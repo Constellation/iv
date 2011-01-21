@@ -5,12 +5,14 @@ require 'rake/extensiontask'
 require 'hoe'
 require 'pp'
 $root = File.dirname(__FILE__)
+$name = 'iv-phonic'
+$version = '0.0.9'
 
 directory "ext/include/iv"
 
-HOE = Hoe.spec 'iv-phonic' do
+HOE = Hoe.spec $name do
   developer('Constellation', 'utatane.tea@gmail.com')
-  self.version = '0.0.8'
+  self.version = $version
   self.readme_file = 'README.rdoc'
   self.history_file = 'ChangeLog'
   self.extra_rdoc_files = FileList['*.rdoc']
@@ -49,6 +51,10 @@ task :checkout => ["ext/include/iv"] do |t|
   File.open("Manifest.txt", "w") do |f|
     f.write(list.join("\n"))
   end
+end
+
+task :push => :gem do |f|
+  system("gem push pkg/#{$name}-#{$version}.gem")
 end
 
 # vim: syntax=ruby
