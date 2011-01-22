@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_NUMBER_H_
 #define _IV_LV5_RUNTIME_NUMBER_H_
+#include <cstdlib>
 #include <tr1/array>
 #include <tr1/cmath>
 #include <tr1/cstdio>
@@ -8,8 +9,10 @@
 #include "arguments.h"
 #include "jsval.h"
 #include "error.h"
+#include "math.h"
 #include "jsobject.h"
 #include "jsstring.h"
+#include "jsdtoa.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -136,6 +139,7 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
 
 // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
 inline JSVal NumberToFixed(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.toFixed", args, error);
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
   double fd;
@@ -155,7 +159,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
                   "fractionDigits is in range between 0 to 20");
     return JSUndefined;
   }
-  uint32_t f = core::DoubleToUInt32(fd);
+  const int f = core::DoubleToInt32(fd);
   const JSVal& obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
@@ -178,61 +182,124 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
                                                   buffer.size());
     return JSString::NewAsciiString(args.ctx(), str);
   } else {
-    // TODO(Constellation) more fast way
-    JSStringBuilder builder(ctx);
-    if (x < 0) {
-      builder.Append('-');
-      x = -x;
-    }
-
-    std::tr1::array<char, 80> buf;
-    double integer_temp;
-    const double r = std::modf(x, &integer_temp);
-    double decimal;
-    uint32_t num;
-    if (integer_temp > ((1ULL << 63) - 1)) {
-      double integer = integer_temp;
-      const double power = std::pow(10.0, static_cast<double>(f));
-      const double rounded_decimal = std::tr1::round(r * power);
-      if (rounded_decimal == power) {
-        integer += 1;
-        decimal = 0.0;
-      } else {
-        decimal = rounded_decimal;
-      }
-      const char* const str = core::DoubleToCString(integer,
-                                                    buf.data(),
-                                                    buf.size());
-      num = std::strlen(str);
-    } else {
-      // more precise in uint64_t
-      uint64_t integer = core::DoubleToUInt64(integer_temp);
-      const double power = std::pow(10.0, static_cast<double>(f));
-      const double rounded_decimal = std::tr1::round(r * power);
-      if (rounded_decimal == power) {
-        integer += 1;
-        decimal = 0.0;
-      } else {
-        decimal = rounded_decimal;
-      }
-      num = std::tr1::snprintf(buf.data(), buf.size(),
-                               "%"PRIu64, integer);
-    }
-    builder.Append(core::StringPiece(buf.data(), num));
-    if (f != 0) {
-      builder.Append('.');
-      const char* const str = core::DoubleToCString(decimal,
-                                                    buf.data(),
-                                                    buf.size());
-      num = std::strlen(str);
-      if (num <= f) {
-        using std::fill_n;
-        fill_n(buf.data() + num, f + 1 - num, '0');
-      }
-      builder.Append(core::StringPiece(buf.data(), f));
-    }
-    return builder.Build();
+    return DoubleToJSString<DTOA_FIXED>(ctx, x, f, 0);
   }
+}
+
+// section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
+inline JSVal NumberToExponential(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, error);
+  const std::size_t arg_count = args.size();
+  Context* const ctx = args.ctx();
+
+  const JSVal& obj = args.this_binding();
+  double x;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      x = static_cast<JSNumberObject*>(obj.object())->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.toExponential is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    x = obj.number();
+  }
+
+  if (!std::isfinite(x)) {
+    if (std::isnan(x)) {
+      return JSString::NewAsciiString(ctx, "NaN");
+    } else {
+      if (x < 0) {
+        return JSString::NewAsciiString(ctx, "-Infinity");
+      } else {
+        return JSString::NewAsciiString(ctx, "Infinity");
+      }
+    }
+  }
+
+  JSVal fractionDigits;
+  double fd;
+  if (arg_count == 0) {
+    fd = 0.0;
+  } else {
+    fractionDigits = args[0];
+    if (fractionDigits.IsUndefined()) {
+      fd = 0.0;
+    } else {
+      fd = fractionDigits.ToNumber(ctx, ERROR(error));
+      fd = core::DoubleToInteger(fd);
+    }
+  }
+  if (!fractionDigits.IsUndefined() &&
+      (fd < 0 || fd > 20)) {
+    error->Report(Error::Range,
+                  "fractionDigits is in range between 0 to 20");
+    return JSUndefined;
+  }
+  const int f = core::DoubleToInt32(fd);
+
+  if (fractionDigits.IsUndefined()) {
+    return DoubleToJSString<DTOA_STD_EXPONENTIAL>(ctx, x, f, 1);
+  } else {
+    return DoubleToJSString<DTOA_EXPONENTIAL>(ctx, x, f, 1);
+  }
+}
+
+// section 15.7.4.7 Number.prototype.toPrecision(precision)
+inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, error);
+  const std::size_t arg_count = args.size();
+  Context* const ctx = args.ctx();
+
+  const JSVal& obj = args.this_binding();
+  double x;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() &&
+        args.ctx()->Cls("Number").name == obj.object()->class_name()) {
+      x = static_cast<JSNumberObject*>(obj.object())->value();
+    } else {
+      error->Report(Error::Type,
+                    "Number.prototype.toPrecision is not generic function");
+      return JSUndefined;
+    }
+  } else {
+    x = obj.number();
+  }
+
+  double p;
+  if (arg_count == 0) {
+    return obj.ToString(ctx, error);
+  } else {
+    const JSVal& precision = args[0];
+    if (precision.IsUndefined()) {
+      return obj.ToString(ctx, error);
+    } else {
+      p = precision.ToNumber(ctx, ERROR(error));
+      p = core::DoubleToInteger(p);
+    }
+  }
+
+  if (!std::isfinite(x)) {
+    if (std::isnan(x)) {
+      return JSString::NewAsciiString(ctx, "NaN");
+    } else {
+      if (x < 0) {
+        return JSString::NewAsciiString(ctx, "-Infinity");
+      } else {
+        return JSString::NewAsciiString(ctx, "Infinity");
+      }
+    }
+  }
+
+  if (p < 1 || p > 21) {
+    error->Report(Error::Range,
+                  "precision is in range between 1 to 21");
+    return JSUndefined;
+  }
+
+  return DoubleToJSString<DTOA_PRECISION>(ctx, x, core::DoubleToInt32(p), 0);
 }
 
 } } }  // namespace iv::lv5::runtime

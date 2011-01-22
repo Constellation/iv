@@ -5,6 +5,7 @@
 #include "jsval.h"
 #include "context.h"
 #include "error.h"
+#include "math.h"
 #include "lv5.h"
 
 namespace iv {
@@ -13,10 +14,6 @@ namespace runtime {
 namespace detail {
 
 static const double kMathInfinity = std::numeric_limits<double>::infinity();
-
-static inline bool IsInfinity(double val) {
-  return !std::isfinite(val) && !std::isnan(val);
-}
 
 }  // namespace iv::lv5::runtime::detail
 
@@ -149,7 +146,7 @@ inline JSVal MathPow(const Arguments& args, Error* error) {
     if (y == 0) {
       return 1.0;
     } else if (std::isnan(y) ||
-               ((x == 1 || x == -1) && detail::IsInfinity(y))) {
+               ((x == 1 || x == -1) && IsInfinity(y))) {
       return JSNaN;
     } else {
       return std::pow(x, y);

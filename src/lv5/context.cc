@@ -1004,9 +1004,28 @@ void Context::Initialize() {
     // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
     proto->DefineOwnProperty(
         this, Intern("toFixed"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberToFixed, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+          JSNativeFunction::New(this, &runtime::NumberToFixed, 1),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
+    proto->DefineOwnProperty(
+        this, Intern("toExponential"),
+        DataDescriptor(
+          JSNativeFunction::New(this, &runtime::NumberToExponential, 1),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.7.4.7 Number.prototype.toPrecision(precision)
+    proto->DefineOwnProperty(
+        this, Intern("toPrecision"),
+        DataDescriptor(
+          JSNativeFunction::New(this, &runtime::NumberToPrecision, 1),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
 
