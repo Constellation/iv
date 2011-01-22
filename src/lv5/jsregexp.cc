@@ -11,6 +11,7 @@ JSRegExp::JSRegExp(Context* ctx,
                     DataDescriptor(JSString::New(ctx, value),
                                    PropertyDescriptor::NONE),
                                    false, ctx->error());
+  InitializeProperty(ctx);
 }
 
 JSRegExp::JSRegExp(Context* ctx,
@@ -22,6 +23,7 @@ JSRegExp::JSRegExp(Context* ctx,
                     DataDescriptor(JSString::New(ctx, value),
                                    PropertyDescriptor::NONE),
                                    false, ctx->error());
+  InitializeProperty(ctx);
 }
 
 JSRegExp::JSRegExp(Context* ctx)
@@ -29,6 +31,29 @@ JSRegExp::JSRegExp(Context* ctx)
   DefineOwnProperty(ctx, ctx->Intern("source"),
                     DataDescriptor(JSString::New(ctx, detail::kEmptyPattern),
                                    PropertyDescriptor::NONE),
+                                   false, ctx->error());
+  InitializeProperty(ctx);
+}
+
+void JSRegExp::InitializeProperty(Context* ctx) {
+  DefineOwnProperty(ctx, ctx->Intern("global"),
+                    DataDescriptor(JSVal::Bool(impl_->global()),
+                                   PropertyDescriptor::NONE),
+                                   false, ctx->error());
+
+  DefineOwnProperty(ctx, ctx->Intern("ignoreCase"),
+                    DataDescriptor(JSVal::Bool(impl_->ignore()),
+                                   PropertyDescriptor::NONE),
+                                   false, ctx->error());
+
+  DefineOwnProperty(ctx, ctx->Intern("multiline"),
+                    DataDescriptor(JSVal::Bool(impl_->multiline()),
+                                   PropertyDescriptor::NONE),
+                                   false, ctx->error());
+
+  DefineOwnProperty(ctx, ctx->Intern("lastIndex"),
+                    DataDescriptor(0.0,
+                                   PropertyDescriptor::WRITABLE),
                                    false, ctx->error());
 }
 

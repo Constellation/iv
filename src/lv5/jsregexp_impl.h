@@ -22,11 +22,17 @@ static const core::UString kEmptyPattern(kEmptyPatternASCII,
 } // namespace iv::lv5::detail
 class JSRegExpImpl : public gc_cleanup {
  public:
+  enum Flags {
+    NONE = 0,
+    GLOBAL = 1,
+    IGNORECASE = 2,
+    MULTILINE = 4
+  };
   JSRegExpImpl(const core::UStringPiece& value,
                const core::UStringPiece& flags)
     : reg_(NULL),
       number_of_captures_(0),
-      global_(false),
+      flags_(NONE),
       error_(NULL) {
     Initialize(value, flags);
   }
@@ -34,7 +40,7 @@ class JSRegExpImpl : public gc_cleanup {
   JSRegExpImpl()
     : reg_(NULL),
       number_of_captures_(0),
-      global_(false),
+      flags_(NONE),
       error_(NULL) {
     Initialize(detail::kEmptyPattern, core::UStringPiece());
   }
@@ -48,11 +54,11 @@ class JSRegExpImpl : public gc_cleanup {
          last = flags.end(); it != last; ++it) {
       const uc16 c = *it;
       if (c == 'g') {
-        if (global_) {
+        if (global()) {
           state = true;
           break;
         } else {
-          global_ = true;
+          flags_ |= GLOBAL;
         }
       } else if (c == 'm') {
         if (multi == jscre::JSRegExpMultiline) {
@@ -60,6 +66,7 @@ class JSRegExpImpl : public gc_cleanup {
           break;
         } else {
           multi = jscre::JSRegExpMultiline;
+          flags_ |= MULTILINE;
         }
       } else if (c == 'i') {
         if (ignore == jscre::JSRegExpIgnoreCase) {
@@ -67,6 +74,7 @@ class JSRegExpImpl : public gc_cleanup {
           break;
         } else {
           ignore = jscre::JSRegExpIgnoreCase;
+          flags_ |= IGNORECASE;
         }
       } else {
         state = true;
@@ -98,10 +106,22 @@ class JSRegExpImpl : public gc_cleanup {
     return error_;
   }
 
+  bool global() const {
+    return flags_ & GLOBAL;
+  }
+
+  bool ignore() const {
+    return flags_ & IGNORECASE;
+  }
+
+  bool multiline() const {
+    return flags_ & MULTILINE;
+  }
+
  private:
   jscre::JSRegExp* reg_;
   uint32_t number_of_captures_;
-  bool global_;
+  int flags_;
   const char* error_;
 };
 

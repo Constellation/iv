@@ -38,6 +38,8 @@ class JSRegExp : public JSObject {
   static JSRegExp* NewPlain(Context* ctx);
 
  private:
+  void InitializeProperty(Context* ctx);
+
   const JSRegExpImpl* impl_;
 };
 
