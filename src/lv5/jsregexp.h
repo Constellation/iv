@@ -15,7 +15,6 @@ class JSRegExp : public JSObject {
 
   JSRegExp(Context* ctx,
            const core::UStringPiece& value,
-           const core::UStringPiece& flags,
            const JSRegExpImpl* reg);
 
   explicit JSRegExp(Context* ctx);
@@ -30,12 +29,13 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx,
                        const core::UStringPiece& value,
-                       const core::UStringPiece& flags,
                        const JSRegExpImpl* reg);
 
   static JSRegExp* New(Context* ctx,
                        const core::UStringPiece& value,
                        const core::UStringPiece& flags);
+
+  static JSRegExp* New(Context* ctx, JSRegExp* reg);
 
   static JSRegExp* NewPlain(Context* ctx);
 
@@ -52,6 +52,10 @@ class JSRegExp : public JSObject {
   }
  private:
   void InitializeProperty(Context* ctx);
+
+  const JSRegExpImpl* impl() const {
+    return impl_;
+  }
 
   const JSRegExpImpl* impl_;
 };

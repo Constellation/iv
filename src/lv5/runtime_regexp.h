@@ -14,8 +14,30 @@ namespace detail {
 
 }  // namespace iv::lv5::runtime::detail
 
-inline JSVal RegExpConstructor(const Arguments& args, Error* error) {
-  return JSRegExp::New(args.ctx());
+inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
+  const uint32_t args_count = args.size();
+  Context* const ctx = args.ctx();
+  JSString* pattern;
+  if (args_count == 0) {
+    return JSRegExp::New(ctx);
+  } else {
+    const JSVal& first = args[0];
+    if (first.IsObject() &&
+        ctx->Intern("RegExp") == first.object()->class_name()) {
+      if (args_count > 1 && !args[1].IsUndefined()) {
+        e->Report(Error::Type,
+                  "RegExp Constructor with RegExp object and unknown flags");
+        return JSUndefined;
+      }
+      return JSRegExp::New(ctx, static_cast<JSRegExp*>(first.object()));
+    }
+    pattern = args[0].ToString(ctx, ERROR(e));
+  }
+  if (args_count == 1 || args[1].IsUndefined()) {
+    return JSRegExp::New(ctx, pattern->piece(), core::UStringPiece());
+  }
+  JSString* flags = args[1].ToString(ctx, ERROR(e));
+  return JSRegExp::New(ctx, pattern->piece(), flags->piece());
 }
 
 // section 15.10.6.4 RegExp.prototype.toString()
@@ -24,7 +46,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* error) {
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() &&
-      args.ctx()->Intern("RegExp") == obj.object()->class_name()) {
+      ctx->Intern("RegExp") == obj.object()->class_name()) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     JSStringBuilder builder(ctx);
     builder.Append('/');

@@ -106,6 +106,10 @@ class JSString : public gc {
     return string_;
   }
 
+  core::UStringPiece piece() const {
+    return core::UStringPiece(data(), size());
+  }
+
   inline friend bool operator==(const this_type& lhs,
                                 const this_type& rhs) {
     return lhs.string_ == rhs.string_;

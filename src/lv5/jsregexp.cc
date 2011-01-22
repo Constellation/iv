@@ -17,7 +17,6 @@ JSRegExp::JSRegExp(Context* ctx,
 
 JSRegExp::JSRegExp(Context* ctx,
                    const core::UStringPiece& value,
-                   const core::UStringPiece& flags,
                    const JSRegExpImpl* reg)
   : impl_(reg) {
   DefineOwnProperty(ctx, ctx->Intern("source"),
@@ -76,9 +75,8 @@ JSRegExp* JSRegExp::New(Context* ctx) {
 
 JSRegExp* JSRegExp::New(Context* ctx,
                         const core::UStringPiece& value,
-                        const core::UStringPiece& flags,
                         const JSRegExpImpl* impl) {
-  JSRegExp* const reg = new JSRegExp(ctx, value, flags, impl);
+  JSRegExp* const reg = new JSRegExp(ctx, value, impl);
   const Class& cls = ctx->Cls("RegExp");
   reg->set_class_name(cls.name);
   reg->set_prototype(cls.prototype);
@@ -89,6 +87,15 @@ JSRegExp* JSRegExp::New(Context* ctx,
                         const core::UStringPiece& value,
                         const core::UStringPiece& flags) {
   JSRegExp* const reg = new JSRegExp(ctx, value, flags);
+  const Class& cls = ctx->Cls("RegExp");
+  reg->set_class_name(cls.name);
+  reg->set_prototype(cls.prototype);
+  return reg;
+}
+
+JSRegExp* JSRegExp::New(Context* ctx, JSRegExp* r) {
+  const JSString* const source = r->source(ctx);
+  JSRegExp* const reg = new JSRegExp(ctx, source->piece(), r->impl());
   const Class& cls = ctx->Cls("RegExp");
   reg->set_class_name(cls.name);
   reg->set_prototype(cls.prototype);

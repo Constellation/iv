@@ -1307,7 +1307,6 @@ void Interpreter::Visit(const RegExpLiteral* regexp) {
   ctx_->Return(
       JSRegExp::New(ctx_,
                     regexp->value(),
-                    regexp->flags(),
                     regexp->regexp()));
 }
 
