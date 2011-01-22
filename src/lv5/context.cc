@@ -2003,6 +2003,15 @@ void Context::Initialize() {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section 15.10.6.4 RegExp.prototype.toString()
+    proto->DefineOwnProperty(
+        this, toString_symbol_,
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::RegExpToString, 0),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

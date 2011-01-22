@@ -1,4 +1,5 @@
 #include "jsregexp.h"
+#include "jsstring.h"
 #include "context.h"
 namespace iv {
 namespace lv5 {
@@ -55,6 +56,14 @@ void JSRegExp::InitializeProperty(Context* ctx) {
                     DataDescriptor(0.0,
                                    PropertyDescriptor::WRITABLE),
                                    false, ctx->error());
+}
+
+JSString* JSRegExp::source(Context* ctx) {
+  Error e;
+  const JSVal source = Get(ctx, ctx->Intern("source"), &e);
+  assert(!e);
+  assert(source.IsString());
+  return source.string();
 }
 
 JSRegExp* JSRegExp::New(Context* ctx) {

@@ -24,6 +24,8 @@ class JSRegExp : public JSObject {
     return impl_->IsValid();
   }
 
+  JSString* source(Context* ctx);
+
   static JSRegExp* New(Context* ctx);
 
   static JSRegExp* New(Context* ctx,
@@ -37,6 +39,17 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* NewPlain(Context* ctx);
 
+  bool global() const {
+    return impl_->global();
+  }
+
+  bool ignore() const {
+    return impl_->ignore();
+  }
+
+  bool multiline() const {
+    return impl_->multiline();
+  }
  private:
   void InitializeProperty(Context* ctx);
 
