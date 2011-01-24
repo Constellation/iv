@@ -1,6 +1,8 @@
 #include "jsregexp.h"
+#include "jsarray.h"
 #include "jsstring.h"
 #include "context.h"
+#include "lv5.h"
 namespace iv {
 namespace lv5 {
 
@@ -29,7 +31,7 @@ JSRegExp::JSRegExp(Context* ctx,
 JSRegExp::JSRegExp(Context* ctx)
   : impl_(new JSRegExpImpl()) {
   DefineOwnProperty(ctx, ctx->Intern("source"),
-                    DataDescriptor(JSString::New(ctx, detail::kEmptyPattern),
+                    DataDescriptor(JSString::NewEmptyString(ctx),
                                    PropertyDescriptor::NONE),
                                    false, ctx->error());
   InitializeProperty(ctx);
@@ -63,6 +65,203 @@ JSString* JSRegExp::source(Context* ctx) {
   assert(!e);
   assert(source.IsString());
   return source.string();
+}
+
+int JSRegExp::LastIndex(Context* ctx, Error* e) {
+  const JSVal index = Get(ctx, ctx->Intern("lastIndex"), ERROR_WITH(e, 0));
+  const double val = index.ToNumber(ctx, ERROR_WITH(e, 0));
+  return core::DoubleToInt32(val);
+}
+
+void JSRegExp::SetLastIndex(Context* ctx, int i, Error* e) {
+  Put(ctx, ctx->Intern("lastIndex"),
+      static_cast<double>(i), true, ERROR_VOID(e));
+}
+
+JSVal JSRegExp::ExecuteOnce(Context* ctx,
+                            const core::UStringPiece& piece,
+                            int previous_index,
+                            std::vector<int>* offset_vector,
+                            Error* e) {
+  const uint32_t num_of_captures = impl_->number_of_captures();
+  const int rc = impl_->ExecuteOnce(piece, previous_index, offset_vector);
+  if (rc == jscre::JSRegExpErrorNoMatch ||
+      rc == jscre::JSRegExpErrorHitLimit) {
+    return JSNull;
+  }
+
+  if (rc < 0) {
+    e->Report(Error::Type, "RegExp execute failed");
+    return JSUndefined;
+  }
+
+  JSArray* ary = JSArray::New(ctx, 2 * (num_of_captures + 1));
+  for (int i = 0, len = 2 * (num_of_captures + 1); i < len; i += 2) {
+    ary->DefineOwnPropertyWithIndex(
+        ctx,
+        i,
+        DataDescriptor((*offset_vector)[i],
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::ENUMERABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, ERROR(e));
+    ary->DefineOwnPropertyWithIndex(
+        ctx,
+        i + 1,
+        DataDescriptor((*offset_vector)[i+1],
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::ENUMERABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, ERROR(e));
+  }
+  return ary;
+}
+
+JSVal JSRegExp::Execute(Context* ctx,
+                        const core::UStringPiece& piece,
+                        Error* e) {
+  const uint32_t num_of_captures = impl_->number_of_captures();
+  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  int previous_index = LastIndex(ctx, ERROR(e));
+  return ExecuteOnce(ctx, piece, previous_index, &offset_vector, e);
+}
+
+JSVal JSRegExp::Exec(Context* ctx, JSString* str, Error* e) {
+  const uint32_t num_of_captures = impl_->number_of_captures();
+  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  const int start = LastIndex(ctx, ERROR(e));  // for step 4
+  int previous_index = start;
+  if (!global()) {
+    previous_index = 0;
+  }
+  const int size = str->size();
+  if (previous_index > size || previous_index < 0) {
+    SetLastIndex(ctx, 0, e);
+    return JSNull;
+  }
+  const int rc = impl_->ExecuteOnce(str->piece(),
+                                    previous_index, &offset_vector);
+  if (rc == jscre::JSRegExpErrorNoMatch ||
+      rc == jscre::JSRegExpErrorHitLimit) {
+    SetLastIndex(ctx, 0, e);
+    return JSNull;
+  }
+
+  if (rc < 0) {
+    e->Report(Error::Type, "RegExp execute failed");
+    return JSUndefined;
+  }
+
+  previous_index = offset_vector[1];
+  if (offset_vector[0] == offset_vector[1]) {
+    ++previous_index;
+  }
+
+  if (global()) {
+    SetLastIndex(ctx, previous_index, ERROR(e));
+  }
+
+  JSArray* ary = JSArray::New(ctx, (num_of_captures + 1));
+  ary->DefineOwnProperty(
+      ctx,
+      ctx->Intern("index"),
+      DataDescriptor(
+          offset_vector[0],
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      true, ERROR(e));
+  ary->DefineOwnProperty(
+      ctx,
+      ctx->Intern("input"),
+      DataDescriptor(
+          str,
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      true, ERROR(e));
+  for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
+    ary->DefineOwnPropertyWithIndex(
+        ctx,
+        i,
+        DataDescriptor(
+            JSString::New(ctx,
+                          str->begin() + offset_vector[i*2],
+                          str->begin() + offset_vector[i*2+1]),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::ENUMERABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        true, ERROR(e));
+  }
+  return ary;
+}
+
+JSVal JSRegExp::ExecGlobal(Context* ctx,
+                           JSString* str,
+                           Error* e) {
+  const uint32_t num_of_captures = impl_->number_of_captures();
+  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  std::vector<std::vector<int> > stack;
+  int previous_index = LastIndex(ctx, ERROR(e));
+  const int start = previous_index;
+  const int size = str->size();
+  int i = 0;
+  do {
+    if (previous_index > size || previous_index < 0) {
+      break;
+    } else {
+      const int rc = impl_->ExecuteOnce(str->piece(),
+                                        previous_index, &offset_vector);
+      if (rc == jscre::JSRegExpErrorNoMatch ||
+          rc == jscre::JSRegExpErrorHitLimit) {
+        break;
+      }
+      if (rc < 0) {
+        e->Report(Error::Type, "RegExp execute failed");
+        return JSUndefined;
+      }
+      stack.push_back(offset_vector);
+      ++i;
+      previous_index = offset_vector[1];
+      if (offset_vector[0] == offset_vector[1]) {
+        ++previous_index;
+      }
+    }
+  } while (true);
+  SetLastIndex(ctx, previous_index, ERROR(e));
+  JSArray* ary = JSArray::New(ctx, (num_of_captures + 1));
+  ary->DefineOwnProperty(
+      ctx,
+      ctx->Intern("index"),
+      DataDescriptor(
+          start,
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      true, ERROR(e));
+  ary->DefineOwnProperty(
+      ctx,
+      ctx->Intern("input"),
+      DataDescriptor(
+          str,
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      true, ERROR(e));
+  for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
+    ary->DefineOwnPropertyWithIndex(
+        ctx,
+        i,
+        DataDescriptor(
+            JSString::New(ctx,
+                          str->begin() + offset_vector[i*2],
+                          str->begin() + offset_vector[i*2+1]),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::ENUMERABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        true, ERROR(e));
+  }
+  return ary;
 }
 
 JSRegExp* JSRegExp::New(Context* ctx) {

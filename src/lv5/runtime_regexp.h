@@ -29,20 +29,80 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
                   "RegExp Constructor with RegExp object and unknown flags");
         return JSUndefined;
       }
-      return JSRegExp::New(ctx, static_cast<JSRegExp*>(first.object()));
+      if (args.IsConstructorCalled()) {
+        return JSRegExp::New(ctx, static_cast<JSRegExp*>(first.object()));
+      } else {
+        return first;
+      }
     }
-    pattern = args[0].ToString(ctx, ERROR(e));
+    if (first.IsUndefined()) {
+      pattern = JSString::NewEmptyString(ctx);
+    } else {
+      pattern = args[0].ToString(ctx, ERROR(e));
+    }
   }
+  JSRegExp* reg;
   if (args_count == 1 || args[1].IsUndefined()) {
-    return JSRegExp::New(ctx, pattern->piece(), core::UStringPiece());
+    reg = JSRegExp::New(ctx, pattern->piece(), core::UStringPiece());
+  } else {
+    JSString* flags = args[1].ToString(ctx, ERROR(e));
+    reg = JSRegExp::New(ctx, pattern->piece(), flags->piece());
   }
-  JSString* flags = args[1].ToString(ctx, ERROR(e));
-  return JSRegExp::New(ctx, pattern->piece(), flags->piece());
+  if (reg->IsValid()) {
+    return reg;
+  } else {
+    e->Report(Error::Syntax,
+              "RegExp Constructor with invalid pattern");
+    return JSUndefined;
+  }
+}
+
+// section 15.10.6.2 RegExp.prototype.exec(string)
+inline JSVal RegExpExec(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
+  Context* const ctx = args.ctx();
+  const JSVal& obj = args.this_binding();
+  if (obj.IsObject() &&
+      ctx->Intern("RegExp") == obj.object()->class_name()) {
+    JSString* string;
+    if (args.size() == 0) {
+      string = JSString::NewAsciiString(ctx, "undefined");
+    } else {
+      string = args[0].ToString(ctx, ERROR(e));
+    }
+    JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
+    return reg->Exec(ctx, string, e);
+  }
+  e->Report(Error::Type,
+            "RegExp.prototype.exec is not generic function");
+  return JSUndefined;
+}
+
+// section 15.10.6.3 RegExp.prototype.test(string)
+inline JSVal RegExpTest(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
+  Context* const ctx = args.ctx();
+  const JSVal& obj = args.this_binding();
+  if (obj.IsObject() &&
+      ctx->Intern("RegExp") == obj.object()->class_name()) {
+    JSString* string;
+    if (args.size() == 0) {
+      string = JSString::NewAsciiString(ctx, "undefined");
+    } else {
+      string = args[0].ToString(ctx, ERROR(e));
+    }
+    JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
+    const JSVal result = reg->Exec(ctx, string, ERROR(e));
+    return JSVal::Bool(!result.IsNull());
+  }
+  e->Report(Error::Type,
+            "RegExp.prototype.test is not generic function");
+  return JSUndefined;
 }
 
 // section 15.10.6.4 RegExp.prototype.toString()
-inline JSVal RegExpToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, error);
+inline JSVal RegExpToString(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() &&
@@ -63,8 +123,8 @@ inline JSVal RegExpToString(const Arguments& args, Error* error) {
     }
     return builder.Build();
   }
-  error->Report(Error::Type,
-                "RegExp.prototype.toString is not generic function");
+  e->Report(Error::Type,
+            "RegExp.prototype.toString is not generic function");
   return JSUndefined;
 }
 

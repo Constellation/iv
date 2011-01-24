@@ -118,6 +118,21 @@ class JSRegExpImpl : public gc_cleanup {
     return flags_ & MULTILINE;
   }
 
+  uint32_t number_of_captures() const {
+    return number_of_captures_;
+  }
+
+  template<typename T>
+  int ExecuteOnce(const core::UStringPiece& subject,
+                  int offset,
+                  T* offset_vector) const {
+    return jscre::jsRegExpExecute(reg_,
+                                  subject.data(), subject.size(),
+                                  offset,
+                                  offset_vector->data(),
+                                  offset_vector->size());
+  }
+
  private:
   jscre::JSRegExp* reg_;
   uint32_t number_of_captures_;

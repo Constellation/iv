@@ -2004,6 +2004,24 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.10.6.2 RegExp.prototype.exec(string)
+    proto->DefineOwnProperty(
+        this, Intern("exec"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::RegExpExec, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section 15.10.6.3 RegExp.prototype.test(string)
+    proto->DefineOwnProperty(
+        this, Intern("test"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::RegExpTest, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.10.6.4 RegExp.prototype.toString()
     proto->DefineOwnProperty(
         this, toString_symbol_,

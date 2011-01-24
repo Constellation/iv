@@ -50,6 +50,27 @@ class JSRegExp : public JSObject {
   bool multiline() const {
     return impl_->multiline();
   }
+
+  int LastIndex(Context* ctx, Error* e);
+  void SetLastIndex(Context* ctx, int i, Error* e);
+
+  JSVal ExecuteOnce(Context* ctx,
+                    const core::UStringPiece& piece,
+                    int previous_index,
+                    std::vector<int>* offset_vector,
+                    Error* e);
+
+  JSVal Execute(Context* ctx,
+                const core::UStringPiece& piece,
+                Error* e);
+
+  JSVal ExecuteGlobal(Context* ctx,
+                      const core::UStringPiece& piece,
+                      Error* e);
+
+  JSVal ExecGlobal(Context* ctx, JSString* str, Error* e);
+  JSVal Exec(Context* ctx, JSString* str, Error* e);
+
  private:
   void InitializeProperty(Context* ctx);
 
