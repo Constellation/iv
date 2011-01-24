@@ -180,11 +180,10 @@ JSVal JSRegExp::Exec(Context* ctx, JSString* str, Error* e) {
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
       true, ERROR(e));
-  std::cout << num_of_captures << std::endl;
   for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
     const int begin = offset_vector[i*2];
     const int end = offset_vector[i*2+1];
-    std::cout << begin << " => " << end << std::endl;
+    // std::cout << begin << " => " << end << std::endl;
     if (begin != -1 && end != -1) {
       ary->DefineOwnPropertyWithIndex(
           ctx,
