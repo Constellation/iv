@@ -121,14 +121,14 @@ JSVal JSRegExp::Execute(Context* ctx,
                         const core::UStringPiece& piece,
                         Error* e) {
   const uint32_t num_of_captures = impl_->number_of_captures();
-  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
   int previous_index = LastIndex(ctx, ERROR(e));
   return ExecuteOnce(ctx, piece, previous_index, &offset_vector, e);
 }
 
 JSVal JSRegExp::Exec(Context* ctx, JSString* str, Error* e) {
   const uint32_t num_of_captures = impl_->number_of_captures();
-  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
   const int start = LastIndex(ctx, ERROR(e));  // for step 4
   int previous_index = start;
   if (!global()) {
@@ -180,18 +180,33 @@ JSVal JSRegExp::Exec(Context* ctx, JSString* str, Error* e) {
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
       true, ERROR(e));
+  std::cout << num_of_captures << std::endl;
   for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
-    ary->DefineOwnPropertyWithIndex(
-        ctx,
-        i,
-        DataDescriptor(
-            JSString::New(ctx,
-                          str->begin() + offset_vector[i*2],
-                          str->begin() + offset_vector[i*2+1]),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        true, ERROR(e));
+    const int begin = offset_vector[i*2];
+    const int end = offset_vector[i*2+1];
+    std::cout << begin << " => " << end << std::endl;
+    if (begin != -1 && end != -1) {
+      ary->DefineOwnPropertyWithIndex(
+          ctx,
+          i,
+          DataDescriptor(
+              JSString::New(ctx,
+                            str->begin() + offset_vector[i*2],
+                            str->begin() + offset_vector[i*2+1]),
+              PropertyDescriptor::WRITABLE |
+              PropertyDescriptor::ENUMERABLE |
+              PropertyDescriptor::CONFIGURABLE),
+          true, ERROR(e));
+    } else {
+      ary->DefineOwnPropertyWithIndex(
+          ctx,
+          i,
+          DataDescriptor(JSUndefined,
+              PropertyDescriptor::WRITABLE |
+              PropertyDescriptor::ENUMERABLE |
+              PropertyDescriptor::CONFIGURABLE),
+          true, ERROR(e));
+    }
   }
   return ary;
 }
@@ -200,7 +215,7 @@ JSVal JSRegExp::ExecGlobal(Context* ctx,
                            JSString* str,
                            Error* e) {
   const uint32_t num_of_captures = impl_->number_of_captures();
-  std::vector<int> offset_vector((num_of_captures + 1) * 3);
+  std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
   std::vector<std::vector<int> > stack;
   int previous_index = LastIndex(ctx, ERROR(e));
   const int start = previous_index;
