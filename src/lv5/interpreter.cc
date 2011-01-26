@@ -308,7 +308,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     }
   }
 
-  JSVal value = JSEmpty;
+  JSVal value = JSUndefined;
   // section 14 Program
   BOOST_FOREACH(const Statement* const stmt, global->body()) {
     EVAL_IN_STMT(stmt);
@@ -324,7 +324,8 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
       ABRUPT();
     }
   }
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  assert(ctx_->IsMode<Context::NORMAL>());
+  RETURN_STMT(Context::NORMAL, value, NULL);
 }
 
 
