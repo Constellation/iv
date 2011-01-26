@@ -57,6 +57,11 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
   JSString* const source = builder.Build();
   JSScript* const script = CompileScript(args.ctx(), source,
                                          false, ERROR(error));
+  const Interpreter::ContextSwitcher switcher(ctx,
+                                              ctx->global_env(),
+                                              ctx->global_env(),
+                                              ctx->global_obj(),
+                                              false);
   ctx->Run(script);
   if (ctx->IsShouldGC()) {
     GC_gcollect();
