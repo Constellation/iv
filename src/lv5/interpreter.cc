@@ -36,7 +36,7 @@ namespace lv5 {
 
 #define CHECK_IN_STMT  ctx_->error());\
   if (ctx_->IsError()) {\
-    RETURN_STMT(Context::THROW, JSUndefined, NULL);\
+    RETURN_STMT(Context::THROW, JSEmpty, NULL);\
   }\
   ((void)0
 #define DUMMY )  // to make indentation work
@@ -73,7 +73,7 @@ namespace lv5 {
 #define EVAL_IN_STMT(node)\
   node->Accept(this);\
   if (ctx_->IsError()) {\
-    RETURN_STMT(Context::THROW, JSUndefined, NULL);\
+    RETURN_STMT(Context::THROW, JSEmpty, NULL);\
   }
 
 Interpreter::ContextSwitcher::ContextSwitcher(Context* ctx,
@@ -284,14 +284,14 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
         if (existing_prop.IsAccessorDescriptor()) {
           ctx_->error()->Report(Error::Type,
                                 "create mutable function binding failed");
-          RETURN_STMT(Context::THROW, JSUndefined, NULL);
+          RETURN_STMT(Context::THROW, JSEmpty, NULL);
         }
         const DataDescriptor* const data = existing_prop.AsDataDescriptor();
         if (!data->IsWritable() ||
             !data->IsEnumerable()) {
           ctx_->error()->Report(Error::Type,
                                 "create mutable function binding failed");
-          RETURN_STMT(Context::THROW, JSUndefined, NULL);
+          RETURN_STMT(Context::THROW, JSEmpty, NULL);
         }
       }
     }
@@ -308,7 +308,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     }
   }
 
-  JSVal value;
+  JSVal value = JSEmpty;
   // section 14 Program
   BOOST_FOREACH(const Statement* const stmt, global->body()) {
     EVAL_IN_STMT(stmt);
@@ -317,7 +317,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
       // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
     }
-    if (!ctx_->ret().IsUndefined()) {
+    if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
     }
     if (!ctx_->IsMode<Context::NORMAL>()) {
@@ -331,14 +331,14 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
 void Interpreter::Visit(const Block* block) {
   // section 12.1 Block
   ctx_->set_mode(Context::NORMAL);
-  JSVal value;
+  JSVal value = JSEmpty;
   BOOST_FOREACH(const Statement* const stmt, block->body()) {
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
       RETURN_STMT(Context::THROW, value, NULL);
     }
-    if (!ctx_->ret().IsUndefined()) {
+    if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
     }
 
@@ -375,17 +375,17 @@ void Interpreter::Visit(const VariableStatement* var) {
       PutValue(lhs, val, CHECK_IN_STMT);
     }
   }
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
 }
 
 
 void Interpreter::Visit(const FunctionDeclaration* func) {
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
 }
 
 
 void Interpreter::Visit(const EmptyStatement* empty) {
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
 }
 
 
@@ -402,18 +402,18 @@ void Interpreter::Visit(const IfStatement* stmt) {
       EVAL_IN_STMT(else_stmt);
       // through else statement's result
     } else {
-      RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+      RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
     }
   }
 }
 
 
 void Interpreter::Visit(const DoWhileStatement* stmt) {
-  JSVal value;
+  JSVal value = JSEmpty;
   bool iterating = true;
   while (iterating) {
     EVAL_IN_STMT(stmt->body());
-    if (!ctx_->ret().IsUndefined()) {
+    if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
     }
     if (!ctx_->IsMode<Context::CONTINUE>() ||
@@ -436,14 +436,14 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
 
 
 void Interpreter::Visit(const WhileStatement* stmt) {
-  JSVal value;
+  JSVal value = JSEmpty;
   while (true) {
     EVAL_IN_STMT(stmt->cond());
     const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
     const bool val = expr.ToBoolean(CHECK_IN_STMT);
     if (val) {
       EVAL_IN_STMT(stmt->body());
-      if (!ctx_->ret().IsUndefined()) {
+      if (!ctx_->ret().IsEmpty()) {
         value = ctx_->ret();
       }
       if (!ctx_->IsMode<Context::CONTINUE>() ||
@@ -468,7 +468,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
     EVAL_IN_STMT(stmt->init());
     GetValue(ctx_->ret(), CHECK_IN_STMT);
   }
-  JSVal value;
+  JSVal value = JSEmpty;
   while (true) {
     if (stmt->cond()) {
       EVAL_IN_STMT(stmt->cond());
@@ -479,7 +479,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
       }
     }
     EVAL_IN_STMT(stmt->body());
-    if (!ctx_->ret().IsUndefined()) {
+    if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
     }
     if (!ctx_->IsMode<Context::CONTINUE>() ||
@@ -504,10 +504,10 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   EVAL_IN_STMT(stmt->enumerable());
   const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
   if (expr.IsNull() || expr.IsUndefined()) {
-    RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+    RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
-  JSVal value;
+  JSVal value = JSEmpty;
   std::vector<Symbol> keys;
   obj->GetPropertyNames(ctx_, &keys, JSObject::kExcludeNotEnumerable);
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
@@ -524,7 +524,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
     JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
     EVAL_IN_STMT(stmt->body());
-    if (!ctx_->ret().IsUndefined()) {
+    if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
     }
     if (!ctx_->IsMode<Context::CONTINUE>() ||
@@ -543,16 +543,16 @@ void Interpreter::Visit(const ForInStatement* stmt) {
 
 
 void Interpreter::Visit(const ContinueStatement* stmt) {
-  RETURN_STMT(Context::CONTINUE, JSUndefined, stmt->target());
+  RETURN_STMT(Context::CONTINUE, JSEmpty, stmt->target());
 }
 
 
 void Interpreter::Visit(const BreakStatement* stmt) {
   if (!stmt->target() && stmt->label()) {
     // interpret as EmptyStatement
-    RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+    RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
   }
-  RETURN_STMT(Context::BREAK, JSUndefined, stmt->target());
+  RETURN_STMT(Context::BREAK, JSEmpty, stmt->target());
 }
 
 
@@ -591,7 +591,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
   EVAL_IN_STMT(stmt->expr());
   const JSVal cond = GetValue(ctx_->ret(), CHECK_IN_STMT);
   // Case Block
-  JSVal value;
+  JSVal value = JSEmpty;
   {
     typedef SwitchStatement::CaseClauses CaseClauses;
     bool found = false;
@@ -618,7 +618,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
       if (found) {
         BOOST_FOREACH(const Statement* const st, clause->body()) {
           EVAL_IN_STMT(st);
-          if (!ctx_->ret().IsUndefined()) {
+          if (!ctx_->ret().IsEmpty()) {
             value = ctx_->ret();
           }
           if (!ctx_->IsMode<Context::NORMAL>()) {
@@ -637,7 +637,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
            last = clauses.end(); it != last; ++it) {
         BOOST_FOREACH(const Statement* const st, (*it)->body()) {
           EVAL_IN_STMT(st);
-          if (!ctx_->ret().IsUndefined()) {
+          if (!ctx_->ret().IsEmpty()) {
             value = ctx_->ret();
           }
           if (!ctx_->IsMode<Context::NORMAL>()) {
@@ -700,7 +700,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
     const BreakableStatement* const target = ctx_->target();
 
     ctx_->error()->Clear();
-    ctx_->SetStatement(Context::Context::NORMAL, JSUndefined, NULL);
+    ctx_->SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
     stmt->finally_block()->Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
       if (mode == Context::THROW) {
@@ -715,7 +715,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
 void Interpreter::Visit(const DebuggerStatement* stmt) {
   // section 12.15 debugger statement
   // implementation define debugging facility is not available
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
 }
 
 

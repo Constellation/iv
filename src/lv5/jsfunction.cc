@@ -67,6 +67,7 @@ JSVal JSCodeFunction::Call(
   if (ctx->mode() == Context::RETURN) {
     ctx->set_mode(Context::NORMAL);
   }
+  assert(!ctx->ret().IsEmpty() || *error);
   return ctx->ret();
 }
 
