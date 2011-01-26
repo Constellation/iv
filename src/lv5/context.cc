@@ -145,6 +145,7 @@ bool Context::InCurrentLabelSet(
 bool Context::Run(JSScript* script) {
   const ScriptScope scope(this, script);
   interp_.Run(script->function(), script->type() == JSScript::kEval);
+  assert(!ret_.IsEmpty() || error_);
   return error_;
 }
 

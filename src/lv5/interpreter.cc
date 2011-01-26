@@ -324,7 +324,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
       ABRUPT();
     }
   }
-  return;
+  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
 }
 
 
