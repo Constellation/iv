@@ -12,6 +12,7 @@
 #include "error.h"
 #include "jsstring.h"
 #include "jsregexp.h"
+#include "runtime_regexp.h"
 
 namespace iv {
 namespace lv5 {
@@ -291,6 +292,44 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
   return str->value().compare(that->value());
 }
 
+
+// section 15.5.4.12 String.prototype.search(regexp)
+inline JSVal StringSearch(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("String.prototype.search", args, e);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(e));
+  Context* const ctx = args.ctx();
+  JSString* const str = val.ToString(ctx, ERROR(e));
+  const uint32_t args_count = args.size();
+  JSRegExp* regexp;
+  if (args_count == 0) {
+    regexp = JSRegExp::New(ctx);
+  } else if (args[0].IsObject() &&
+             (args[0].object()->class_name() == ctx->Intern("RegExp"))) {
+    regexp = static_cast<JSRegExp*>(args[0].object());
+  } else {
+    Arguments a(ctx, 1);
+    a[0] = args[0];
+    JSVal res = RegExpConstructor(a, ERROR(e));
+    assert(res.IsObject());
+    regexp = static_cast<JSRegExp*>(res.object());
+  }
+  // TODO(Constellation) using raw regexp
+  const int last_index = regexp->LastIndex(ctx, ERROR(e));
+  regexp->SetLastIndex(ctx, 0, ERROR(e));
+  const JSVal result = regexp->Exec(ctx, str, e);
+  regexp->SetLastIndex(ctx, last_index, ERROR(e));
+  if (!e) {
+    return JSUndefined;
+  }
+  if (result.IsNull()) {
+    return static_cast<double>(-1);
+  } else {
+    assert(result.IsObject());
+    return result.object()->Get(ctx, ctx->Intern("index"), e);
+  }
+}
+
 // section 15.5.4.13 String.prototype.slice(start, end)
 inline JSVal StringSlice(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
@@ -341,7 +380,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, ERROR(e));
-  uint32_t args_count = args.size();
+  const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
     lim = 4294967295UL;  // (1 << 32) - 1

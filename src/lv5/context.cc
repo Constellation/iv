@@ -781,6 +781,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.5.4.12 String.prototype.search(regexp)
+    proto->DefineOwnProperty(
+        this, Intern("search"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringSearch, 1),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.5.4.13 String.prototype.slice(start, end)
     proto->DefineOwnProperty(
         this, Intern("slice"),
