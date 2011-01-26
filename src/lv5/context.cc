@@ -790,6 +790,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.5.4.14 String.prototype.split(separator, limit)
+    proto->DefineOwnProperty(
+        this, Intern("split"),
+        DataDescriptor(
+            JSNativeFunction::New(this, &runtime::StringSplit, 2),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.5.4.15 String.prototype.substring(start, end)
     proto->DefineOwnProperty(
         this, Intern("substring"),

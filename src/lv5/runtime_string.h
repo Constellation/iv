@@ -1,6 +1,8 @@
 #ifndef _IV_LV5_RUNTIME_STRING_H_
 #define _IV_LV5_RUNTIME_STRING_H_
 #include <vector>
+#include <utility>
+#include <tr1/tuple>
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "character.h"
@@ -9,12 +11,14 @@
 #include "jsval.h"
 #include "error.h"
 #include "jsstring.h"
+#include "jsregexp.h"
 
 namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail {
 
+typedef std::vector<std::pair<int, int> > PairVector;
 static inline JSVal StringToStringValueOfImpl(const Arguments& args,
                                               Error* error,
                                               const char* msg) {
@@ -35,6 +39,80 @@ static inline JSVal StringToStringValueOfImpl(const Arguments& args,
 static inline bool IsTrimmed(uint16_t c) {
   return core::character::IsWhiteSpace(c) ||
          core::character::IsLineTerminator(c);
+}
+
+inline int64_t SplitMatch(const JSString& str,
+                          uint32_t q, const JSString& rstr) {
+  const std::size_t rs = rstr.size();
+  const std::size_t s = str.size();
+  if (q + rs > s) {
+    return -1;
+  }
+  if (rstr.value().compare(0, rs, str.value().data() + q, rs) != 0) {
+    return -1;
+  }
+  return q + rs;
+}
+
+inline JSVal StringSplit(Context* ctx, const JSString& str,
+                         const JSString& rstr, uint32_t lim) {
+  Error e;
+  uint32_t length = 0;
+  uint32_t p = 0;
+  uint32_t q = p;
+  const uint32_t size = str.size();
+  JSArray* const ary = JSArray::New(ctx);
+  if (size == 0) {
+    if (detail::SplitMatch(str, q, rstr) != -1) {
+      return ary;
+    }
+  }
+  while (q != size) {
+    const int64_t rs = detail::SplitMatch(str, q, rstr);
+    if (rs == -1) {
+      ++q;
+    } else {
+      const uint32_t end = static_cast<uint32_t>(rs);
+      if (end == p) {
+        ++q;
+      } else {
+        ary->DefineOwnPropertyWithIndex(
+            ctx, length,
+            DataDescriptor(
+                JSString::New(ctx, str.begin() + p, str.begin() + q),
+                PropertyDescriptor::WRITABLE |
+                PropertyDescriptor::ENUMERABLE |
+                PropertyDescriptor::CONFIGURABLE),
+            false, &e);
+        ++length;
+        if (length == lim) {
+          assert(!e);
+          return ary;
+        }
+        q = p = end;
+      }
+    }
+  }
+  ary->DefineOwnPropertyWithIndex(
+      ctx, length,
+      DataDescriptor(
+          JSString::New(ctx,
+                        str.begin() + p,
+                        str.begin() + size),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      false, &e);
+  assert(!e);
+  return ary;
+}
+
+inline std::tr1::tuple<uint32_t, uint32_t, bool> RegExpMatch(const JSString& str,
+                                                             uint32_t q,
+                                                             JSRegExp* reg,
+                                                             PairVector* vec) {
+  vec->clear();
+  return reg->Match(str.value(), q, vec);
 }
 
 }  // namespace iv::lv5::runtime::detail
@@ -253,6 +331,150 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   return JSString::New(ctx,
                        str->begin() + start,
                        str->begin() + start + span);
+}
+
+// section 15.5.4.14 String.prototype.split(separator, limit)
+inline JSVal StringSplit(const Arguments& args, Error* e) {
+  using std::tr1::get;
+  CONSTRUCTOR_CHECK("String.prototype.split", args, e);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(e));
+  Context* const ctx = args.ctx();
+  JSString* const str = val.ToString(ctx, ERROR(e));
+  uint32_t args_count = args.size();
+  uint32_t lim;
+  if (args_count < 2 || args[1].IsUndefined()) {
+    lim = 4294967295UL;  // (1 << 32) - 1
+  } else {
+    const double temp = args[1].ToNumber(ctx, ERROR(e));
+    lim = core::DoubleToUInt32(temp);
+  }
+
+  bool regexp = false;
+  JSVal target;
+  JSVal separator;
+  if (args_count > 0) {
+    separator = args[0];
+    if (separator.IsObject() &&
+        (ctx->Intern("RegExp") == separator.object()->class_name())) {
+      target = separator;
+      regexp = true;
+    } else {
+      target = separator.ToString(ctx, ERROR(e));
+    }
+  } else {
+    separator = JSUndefined;
+  }
+
+  if (lim == 0) {
+    return JSArray::New(ctx);
+  }
+
+  if (separator.IsUndefined()) {
+    JSArray* const a = JSArray::New(ctx);
+    a->DefineOwnPropertyWithIndex(
+      ctx, 0, DataDescriptor(str,
+                             PropertyDescriptor::WRITABLE |
+                             PropertyDescriptor::ENUMERABLE |
+                             PropertyDescriptor::CONFIGURABLE),
+      false, ERROR(e));
+    return a;
+  }
+
+  if (!regexp) {
+    return detail::StringSplit(ctx, *str, *target.string(), lim);
+  }
+
+  JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
+  JSArray* const ary = JSArray::New(ctx);
+  detail::PairVector cap;
+  const uint32_t size = str->size();
+  if (size == 0) {
+    if (get<2>(detail::RegExpMatch(*str, 0, reg, &cap))) {
+      return ary;
+    }
+    ary->DefineOwnPropertyWithIndex(
+        ctx, 0,
+        DataDescriptor(str,
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::ENUMERABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, ERROR(e));
+    return ary;
+  }
+
+  uint32_t p = 0;
+  uint32_t q = p;
+  uint32_t start_match = 0;
+  uint32_t length = 0;
+  while (q != size) {
+    const std::tr1::tuple<uint32_t, uint32_t, bool> rs =
+        detail::RegExpMatch(*str, q, reg, &cap);
+    if (!get<2>(rs) ||
+        size == (start_match = get<0>(rs))) {
+        break;
+    }
+    const uint32_t end = get<1>(rs);
+    if (q == end && end == p) {
+      ++q;
+    } else {
+      ary->DefineOwnPropertyWithIndex(
+          ctx, length,
+          DataDescriptor(JSString::New(ctx,
+                                       str->begin() + p,
+                                       str->begin() + start_match),
+                         PropertyDescriptor::WRITABLE |
+                         PropertyDescriptor::ENUMERABLE |
+                         PropertyDescriptor::CONFIGURABLE),
+          false, ERROR(e));
+      ++length;
+      if (length == lim) {
+        return ary;
+      }
+
+      uint32_t i = 0;
+      for (detail::PairVector::const_iterator it = cap.begin(),
+           last = cap.end(); it != last; ++it) {
+        ++i;
+        if (it->first != -1 && it->second != -1) {
+          ary->DefineOwnPropertyWithIndex(
+              ctx, length,
+              DataDescriptor(
+                  JSString::New(ctx,
+                                str->begin() + it->first,
+                                str->begin() + it->second),
+                             PropertyDescriptor::WRITABLE |
+                             PropertyDescriptor::ENUMERABLE |
+                             PropertyDescriptor::CONFIGURABLE),
+              false, ERROR(e));
+        } else {
+          ary->DefineOwnPropertyWithIndex(
+              ctx, length,
+              DataDescriptor(JSUndefined,
+                             PropertyDescriptor::WRITABLE |
+                             PropertyDescriptor::ENUMERABLE |
+                             PropertyDescriptor::CONFIGURABLE),
+              false, ERROR(e));
+        }
+        ++length;
+        if (length == lim) {
+          return ary;
+        }
+      }
+      q = p = end;
+    }
+  }
+  ary->DefineOwnPropertyWithIndex(
+      ctx, length,
+      DataDescriptor(
+          JSString::New(ctx,
+                        str->begin() + p,
+                        str->begin() + size),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::ENUMERABLE |
+          PropertyDescriptor::CONFIGURABLE),
+      false, ERROR(e));
+  return ary;
 }
 
 // section 15.5.4.15 String.prototype.substring(start, end)

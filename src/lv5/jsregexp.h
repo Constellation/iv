@@ -1,5 +1,8 @@
 #ifndef _IV_LV5_JSREGEXP_H_
 #define _IV_LV5_JSREGEXP_H_
+#include <vector>
+#include <utility>
+#include <tr1/tuple>
 #include "jsobject.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
@@ -70,6 +73,11 @@ class JSRegExp : public JSObject {
 
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e);
   JSVal Exec(Context* ctx, JSString* str, Error* e);
+
+  std::tr1::tuple<uint32_t, uint32_t, bool>
+      Match(const core::UStringPiece& str,
+            int index,
+            std::vector<std::pair<int, int> >* result);
 
  private:
   void InitializeProperty(Context* ctx);
