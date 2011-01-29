@@ -1881,14 +1881,17 @@ class Parser
           Token::IsAddedFutureReservedWordInStrictCode(current)) {
         Identifier* const name = ParseIdentifier(lexer_.Buffer());
         literal->SetName(name);
-        const EvalOrArguments val = IsEvalOrArguments(name);
-        if (val) {
-          throw_error_if_strict_code = (val == kEval) ?
-              kDetectEvalName : kDetectArgumentsName;
-          throw_error_if_strict_code_line = lexer_.line_number();
-        } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+        if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
+        } else {
+          assert(current == Token::IDENTIFIER);
+          const EvalOrArguments val = IsEvalOrArguments(name);
+          if (val) {
+            throw_error_if_strict_code = (val == kEval) ?
+                kDetectEvalName : kDetectArgumentsName;
+            throw_error_if_strict_code_line = lexer_.line_number();
+          }
         }
       } else if (decl_type == FunctionLiteral::DECLARATION ||
                  decl_type == FunctionLiteral::STATEMENT) {
@@ -1916,14 +1919,17 @@ class Parser
       }
       Identifier* const ident = ParseIdentifier(lexer_.Buffer());
       if (!throw_error_if_strict_code) {
-        const EvalOrArguments val = IsEvalOrArguments(ident);
-        if (val) {
-          throw_error_if_strict_code = (val == kEval) ?
-              kDetectEvalParameter : kDetectArgumentsParameter;
-          throw_error_if_strict_code_line = lexer_.line_number();
-        } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+        if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
+        } else {
+          assert(current == Token::IDENTIFIER);
+          const EvalOrArguments val = IsEvalOrArguments(ident);
+          if (val) {
+            throw_error_if_strict_code = (val == kEval) ?
+                kDetectEvalName : kDetectArgumentsName;
+            throw_error_if_strict_code_line = lexer_.line_number();
+          }
         }
       }
       literal->AddParameter(ident);
@@ -1938,14 +1944,17 @@ class Parser
           }
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           if (!throw_error_if_strict_code) {
-            const EvalOrArguments val = IsEvalOrArguments(ident);
-            if (val) {
-              throw_error_if_strict_code = (val == kEval) ?
-                  kDetectEvalParameter : kDetectArgumentsParameter;
-              throw_error_if_strict_code_line = lexer_.line_number();
-            } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+            if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
               throw_error_if_strict_code = kDetectFutureReservedWords;
               throw_error_if_strict_code_line = lexer_.line_number();
+            } else {
+              assert(current == Token::IDENTIFIER);
+              const EvalOrArguments val = IsEvalOrArguments(ident);
+              if (val) {
+                throw_error_if_strict_code = (val == kEval) ?
+                    kDetectEvalName : kDetectArgumentsName;
+                throw_error_if_strict_code_line = lexer_.line_number();
+              }
             }
             if ((!throw_error_if_strict_code) &&
                 (param_set.find(ident) != param_set.end())) {
