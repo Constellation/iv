@@ -125,28 +125,31 @@ class Token {
     FINAL,           // final
     FLOAT,           // float
     GOTO,            // goto
-    IMPLEMENTS,      // implements
     IMPORT,          // import
     INT,             // int
-    INTERFACE,       // interface
     LONG,            // long
     NATIVE,          // native
-    PACKAGE,         // package
-    PRIVATE,         // private
-    PROTECTED,       // protected
-    PUBLIC,          // public
     SHORT,           // short
-    STATIC,          // static
     SUPER,           // super
     SYNCHRONIZED,    // synchronized
     THROWS,          // throws
     TRANSIENT,       // transient
     VOLATILE,        // volatile
-    LET,             // let
-    YIELD,           // yield
 
     GET,             // get
     SET,             // set
+
+    STRICT_FIRST,    // STRICT FIRST
+    IMPLEMENTS,      // implements
+    LET,             // let
+    PRIVATE,         // private
+    PUBLIC,          // public
+    YIELD,           // yield
+    INTERFACE,       // interface
+    PACKAGE,         // package
+    PROTECTED,       // protected
+    STATIC,          // static
+    STRICT_LAST,     // STRICT LAST
 
     NULL_LITERAL,    // NULL   LITERAL
     FALSE_LITERAL,   // FALSE  LITERAL
@@ -165,12 +168,19 @@ class Token {
   static inline bool IsAssignOp(Token::Type type) {
     return Token::ASSIGN_FIRST < type && type < Token::ASSIGN_LAST;
   }
+
+  static inline bool IsAddedFutureReservedWordInStrictCode(Token::Type type) {
+    return Token::STRICT_FIRST < type && type < Token::STRICT_LAST;
+  }
+
   static inline const char* ToString(Token::Type type) {
     assert(0 <= type && type < NUM_TOKENS);
     assert(type != Token::ASSIGN_FIRST &&
            type != Token::ASSIGN_LAST &&
            type != Token::REL_FIRST &&
            type != Token::REL_LAST &&
+           type != Token::STRICT_FIRST &&
+           type != Token::STRICT_LAST &&
            type != Token::STRING &&
            type != Token::NUMBER &&
            type != Token::IDENTIFIER &&
@@ -278,27 +288,29 @@ const char* TokenContents<T>::kContents[Token::NUM_TOKENS] = {
   "final",
   "float",
   "goto",
-  "implements",
   "import",
   "int",
-  "interface",
   "long",
   "native",
-  "package",
-  "private",
-  "protected",
-  "public",
   "short",
-  "static",
   "super",
   "synchronized",
   "throws",
   "transient",
   "volatile",
-  "let",
-  "yield",
   "get",
   "set",
+  NULL,
+  "implements",
+  "let",
+  "private",
+  "public",
+  "yield",
+  "interface",
+  "package",
+  "protected",
+  "static",
+  NULL,
   "null",
   "false",
   "true",

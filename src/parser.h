@@ -1866,7 +1866,8 @@ class Parser
       kDetectArgumentsName,
       kDetectEvalParameter,
       kDetectArgumentsParameter,
-      kDetectDuplicateParameter
+      kDetectDuplicateParameter,
+      kDetectFutureReservedWords
     } throw_error_if_strict_code = kDetectNone;
 
     FunctionLiteral* const literal = factory_->NewFunctionLiteral(decl_type);
@@ -1874,14 +1875,19 @@ class Parser
 
     if (arg_type == FunctionLiteral::GENERAL) {
       assert(token_ == Token::FUNCTION);
-      Next();
-      if (token_ == Token::IDENTIFIER) {
+      Next(true);  // preparing for strict directive
+      const Token::Type current = token_;
+      if (current == Token::IDENTIFIER ||
+          Token::IsAddedFutureReservedWordInStrictCode(current)) {
         Identifier* const name = ParseIdentifier(lexer_.Buffer());
         literal->SetName(name);
         const EvalOrArguments val = IsEvalOrArguments(name);
         if (val) {
           throw_error_if_strict_code = (val == kEval) ?
               kDetectEvalName : kDetectArgumentsName;
+          throw_error_if_strict_code_line = lexer_.line_number();
+        } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+          throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         }
       } else if (decl_type == FunctionLiteral::DECLARATION ||
@@ -1895,20 +1901,28 @@ class Parser
     literal->set_start_position(lexer_.begin_position());
 
     //  '(' FormalParameterList_opt ')'
-    EXPECT(Token::LPAREN);
+    IS(Token::LPAREN);
+    Next(true);  // preparing for strict directive
 
     if (arg_type == FunctionLiteral::GETTER) {
       // if getter, parameter count is 0
       EXPECT(Token::RPAREN);
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
-      IS(Token::IDENTIFIER);
+      const Token::Type current = token_;
+      if (current != Token::IDENTIFIER &&
+          !Token::IsAddedFutureReservedWordInStrictCode(current)) {
+        IS(Token::IDENTIFIER);
+      }
       Identifier* const ident = ParseIdentifier(lexer_.Buffer());
       if (!throw_error_if_strict_code) {
         const EvalOrArguments val = IsEvalOrArguments(ident);
         if (val) {
           throw_error_if_strict_code = (val == kEval) ?
               kDetectEvalParameter : kDetectArgumentsParameter;
+          throw_error_if_strict_code_line = lexer_.line_number();
+        } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+          throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         }
       }
@@ -1917,13 +1931,20 @@ class Parser
     } else {
       if (token_ != Token::RPAREN) {
         do {
-          IS(Token::IDENTIFIER);
+          const Token::Type current = token_;
+          if (current != Token::IDENTIFIER &&
+              !Token::IsAddedFutureReservedWordInStrictCode(current)) {
+            IS(Token::IDENTIFIER);
+          }
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           if (!throw_error_if_strict_code) {
             const EvalOrArguments val = IsEvalOrArguments(ident);
             if (val) {
               throw_error_if_strict_code = (val == kEval) ?
                   kDetectEvalParameter : kDetectArgumentsParameter;
+              throw_error_if_strict_code_line = lexer_.line_number();
+            } else if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
+              throw_error_if_strict_code = kDetectFutureReservedWords;
               throw_error_if_strict_code_line = lexer_.line_number();
             }
             if ((!throw_error_if_strict_code) &&
@@ -1935,7 +1956,7 @@ class Parser
           literal->AddParameter(ident);
           param_set.insert(ident);
           if (token_ == Token::COMMA) {
-            Next();
+            Next(true);
           } else {
             break;
           }
@@ -1981,6 +2002,11 @@ class Parser
         case kDetectDuplicateParameter:
           RAISE_WITH_NUMBER(
               "duplicate parameter not allowed in strict code",
+              throw_error_if_strict_code_line);
+          break;
+        case kDetectFutureReservedWords:
+          RAISE_WITH_NUMBER(
+              "FutureReservedWords is found in strict code",
               throw_error_if_strict_code_line);
           break;
       }
@@ -2135,6 +2161,9 @@ class Parser
   }
   inline Token::Type Next() {
     return token_ = lexer_.Next<IdentifyReservedWords>(strict_);
+  }
+  inline Token::Type Next(bool strict) {
+    return token_ = lexer_.Next<IdentifyReservedWords>(strict);
   }
   inline Token::Type Peek() const {
     return token_;
