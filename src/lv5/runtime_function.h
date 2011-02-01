@@ -17,6 +17,20 @@ namespace detail {
 
 static const std::string kFunctionPrefix("function ");
 
+inline void CheckFunctionExpressionIsOne(const FunctionLiteral& func, Error* e) {
+  const FunctionLiteral::Statements& stmts = func.body();
+  if (stmts.size() == 1) {
+    const Statement& stmt = *stmts[0];
+    if (stmt.AsExpressionStatement()) {
+      if (stmt.AsExpressionStatement()->expr()->AsFunctionLiteral()) {
+        return;
+      }
+    }
+  }
+  e->Report(Error::Syntax,
+            "Function Constructor with invalid arguments");
+}
+
 }  // namespace iv::lv5::runtime::detail
 
 inline JSVal FunctionPrototype(const Arguments& args, Error* error) {
@@ -57,6 +71,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
   JSString* const source = builder.Build();
   JSScript* const script = CompileScript(args.ctx(), source,
                                          false, ERROR(error));
+  detail::CheckFunctionExpressionIsOne(*script->function(), ERROR(error));
   const Interpreter::ContextSwitcher switcher(ctx,
                                               ctx->global_env(),
                                               ctx->global_env(),
