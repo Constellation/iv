@@ -74,7 +74,13 @@ PropertyDescriptor JSArray::GetOwnPropertyWithIndex(Context* ctx,
       return JSUndefined;
     }
   }
-  return JSObject::GetOwnProperty(ctx, ctx->InternIndex(index));
+  const SymbolChecker check(ctx, index);
+  if (check.Found()) {
+    return JSObject::GetOwnProperty(ctx, check.symbol());
+  } else {
+    // property not defined
+    return JSUndefined;
+  }
 }
 
 #define REJECT(str)\
