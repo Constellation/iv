@@ -82,19 +82,25 @@ class JSRegExpImpl : public gc_cleanup {
       }
     }
     if (!state) {
+//      reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
+//                                    ignore,
+//                                    multi,
+//                                    &number_of_captures_,
+//                                    &error_,
+//                                    std::malloc,
+//                                    std::free);
       reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
                                     ignore,
                                     multi,
                                     &number_of_captures_,
-                                    &error_,
-                                    std::malloc,
-                                    std::free);
+                                    &error_);
     }
   }
 
   ~JSRegExpImpl() {
     if (reg_) {
-      jscre::jsRegExpFree(reg_, std::free);
+//      jscre::jsRegExpFree(reg_, std::free);
+      jscre::jsRegExpFree(reg_);
     }
   }
 

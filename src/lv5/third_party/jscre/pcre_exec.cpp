@@ -6,7 +6,7 @@ needed by JavaScriptCore and the rest of WebKit.
 
                  Originally written by Philip Hazel
            Copyright (c) 1997-2006 University of Cambridge
-    Copyright (C) 2002, 2004, 2006, 2007 Apple Inc. All rights reserved.
+    Copyright (C) 2002, 2004, 2006, 2007, 2008, 2009 Apple Inc. All rights reserved.
     Copyright (C) 2007 Eric Seidel <eric@webkit.org>
 
 -----------------------------------------------------------------------------
@@ -43,14 +43,17 @@ that does pattern matching using an NFA algorithm, following the rules from
 the JavaScript specification. There are also some supporting functions. */
 
 #include "config.h"
-
 #include "pcre_internal.h"
 
 #include "ASCIICType.h"
 
-#include <ctype.h>
 #include <limits.h>
-#include <string.h> /* for memcpy */
+#include <string.h>
+
+#if REGEXP_HISTOGRAM
+#include <wtf/DateMath.h>
+#include <runtime/UString.h>
+#endif
 
 #ifdef __GNUC__
 #define USE_COMPUTED_GOTO_FOR_MATCH_RECURSION
@@ -63,10 +66,44 @@ the JavaScript specification. There are also some supporting functions. */
 
 namespace iv { namespace lv5 { namespace jscre {
 
+
 #ifndef USE_COMPUTED_GOTO_FOR_MATCH_RECURSION
 typedef int ReturnLocation;
 #else
 typedef void* ReturnLocation;
+#endif
+
+#if !REGEXP_HISTOGRAM
+
+class HistogramTimeLogger {
+public:
+    HistogramTimeLogger(const JSRegExp*) { }
+};
+
+#else
+
+using namespace JSC;
+
+class Histogram {
+public:
+    ~Histogram();
+    void add(const JSRegExp*, double);
+
+private:
+    typedef HashMap<RefPtr<StringImpl>, double> Map;
+    Map times;
+};
+
+class HistogramTimeLogger {
+public:
+    HistogramTimeLogger(const JSRegExp*);
+    ~HistogramTimeLogger();
+
+private:
+    const JSRegExp* m_re;
+    double m_startTime;
+};
+
 #endif
 
 /* Structure for building a chain of data for holding the values of
@@ -133,14 +170,14 @@ struct MatchData {
 };
 
 /* The maximum remaining length of subject we are prepared to search for a
-req_byte match. */
+reqByte match. */
 
 #define REQ_BYTE_MAX 1000
 
 /* The below limit restricts the number of "recursive" match calls in order to
 avoid spending exponential time on complex regular expressions. */
 
-static const unsigned matchLimit = 100000;
+static const unsigned matchLimit = 1000000;
 
 #ifdef DEBUG
 /*************************************************
@@ -163,7 +200,7 @@ static void pchars(const UChar* p, int length, bool isSubject, const MatchData& 
         length = md.endSubject - p;
     while (length-- > 0) {
         int c;
-        if (isprint(c = *(p++)))
+        if (isASCIIPrintable(c = *(p++)))
             printf("%c", c);
         else if (c < 256)
             printf("\\x%02x", c);
@@ -215,7 +252,7 @@ static bool matchRef(int offset, const UChar* subjectPtr, int length, const Matc
     if (md.ignoreCase) {
         while (length-- > 0) {
             UChar c = *p++;
-            int othercase = kjs_pcre_ucp_othercase(c);
+            int othercase = jsc_pcre_ucp_othercase(c);
             UChar d = *subjectPtr++;
             if (c != d && othercase != d)
                 return false;
@@ -262,7 +299,7 @@ a bit more code and notice if we use conflicting numbers.*/
         RECURSIVE_MATCH_COMMON(num) \
     } while (0)
 
-#define RECURSIVE_MATCH_STARTNG_NEW_GROUP(num, ra, rb) \
+#define RECURSIVE_MATCH_NEW_GROUP(num, ra, rb) \
     do { \
         stack.pushNewFrame((ra), (rb), RMATCH_WHERE(num)); \
         startNewGroup(stack.currentFrame); \
@@ -296,25 +333,25 @@ Returns:       1 if matched          )  these values are >= 0
                  (e.g. stopped by repeated call or recursion limit)
 */
 
-static const unsigned FRAMES_ON_STACK = 16;
+static const unsigned numFramesOnStack = 16;
 
 struct MatchStack {
     MatchStack()
-        : framesEnd(frames + FRAMES_ON_STACK)
+        : framesEnd(frames + numFramesOnStack)
         , currentFrame(frames)
         , size(1) // match() creates accesses the first frame w/o calling pushNewFrame
     {
-        ASSERT((sizeof(frames) / sizeof(frames[0])) == FRAMES_ON_STACK);
+        ASSERT((sizeof(frames) / sizeof(frames[0])) == numFramesOnStack);
     }
     
-    MatchFrame frames[FRAMES_ON_STACK];
+    MatchFrame frames[numFramesOnStack];
     MatchFrame* framesEnd;
     MatchFrame* currentFrame;
     unsigned size;
     
     inline bool canUseStackBufferForNextFrame()
     {
-        return size < FRAMES_ON_STACK;
+        return size < numFramesOnStack;
     }
     
     inline MatchFrame* allocateNextFrame()
@@ -343,7 +380,7 @@ struct MatchStack {
     {
         MatchFrame* oldFrame = currentFrame;
         currentFrame = currentFrame->previousFrame;
-        if (size > FRAMES_ON_STACK)
+        if (size > numFramesOnStack)
             delete oldFrame;
         size--;
     }
@@ -368,9 +405,9 @@ static inline void getUTF8CharAndIncrementLength(int& c, const unsigned char* su
 {
     c = *subjectPtr;
     if ((c & 0xc0) == 0xc0) {
-        int gcaa = kjs_pcre_utf8_table4[c & 0x3f];  /* Number of additional bytes */
+        int gcaa = jsc_pcre_utf8_table4[c & 0x3f];  /* Number of additional bytes */
         int gcss = 6 * gcaa;
-        c = (c & kjs_pcre_utf8_table3[gcaa]) << gcss;
+        c = (c & jsc_pcre_utf8_table3[gcaa]) << gcss;
         for (int gcii = 1; gcii <= gcaa; gcii++) {
             gcss -= 6;
             c |= (subjectPtr[gcii] & 0x3f) << gcss;
@@ -411,7 +448,8 @@ static int match(const UChar* subjectPtr, const unsigned char* instructionPtr, i
     bool isMatch = false;
     int min;
     bool minimize = false; /* Initialization not really needed, but some compilers think so. */
-    unsigned matchCount = 0;
+    unsigned remainingMatchCount = matchLimit;
+    int othercase; /* Declare here to avoid errors during jumps */
     
     MatchStack stack;
 
@@ -444,7 +482,7 @@ static int match(const UChar* subjectPtr, const unsigned char* instructionPtr, i
     /* This is where control jumps back to to effect "recursion" */
     
 RECURSE:
-    if (++matchCount > matchLimit)
+    if (!--remainingMatchCount)
         return matchError(JSRegExpErrorHitLimit, stack);
 
     /* Now start processing the operations. */
@@ -474,7 +512,7 @@ RECURSE:
             NON_CAPTURING_BRACKET:
                 DPRINTF(("start bracket 0\n"));
                 do {
-                    RECURSIVE_MATCH_STARTNG_NEW_GROUP(2, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
+                    RECURSIVE_MATCH_NEW_GROUP(2, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
                     if (isMatch)
                         RRETURN;
                     stack.currentFrame->args.instructionPtr += getLinkValue(stack.currentFrame->args.instructionPtr + 1);
@@ -504,7 +542,7 @@ RECURSE:
                 
             BEGIN_OPCODE(ASSERT):
                 do {
-                    RECURSIVE_MATCH_STARTNG_NEW_GROUP(6, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, NULL);
+                    RECURSIVE_MATCH_NEW_GROUP(6, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, NULL);
                     if (isMatch)
                         break;
                     stack.currentFrame->args.instructionPtr += getLinkValue(stack.currentFrame->args.instructionPtr + 1);
@@ -524,7 +562,7 @@ RECURSE:
                 
             BEGIN_OPCODE(ASSERT_NOT):
                 do {
-                    RECURSIVE_MATCH_STARTNG_NEW_GROUP(7, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, NULL);
+                    RECURSIVE_MATCH_NEW_GROUP(7, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, NULL);
                     if (isMatch)
                         RRETURN_NO_MATCH;
                     stack.currentFrame->args.instructionPtr += getLinkValue(stack.currentFrame->args.instructionPtr + 1);
@@ -548,7 +586,7 @@ RECURSE:
                 
             BEGIN_OPCODE(BRAZERO): {
                 stack.currentFrame->locals.startOfRepeatingBracket = stack.currentFrame->args.instructionPtr + 1;
-                RECURSIVE_MATCH_STARTNG_NEW_GROUP(14, stack.currentFrame->locals.startOfRepeatingBracket, stack.currentFrame->args.bracketChain);
+                RECURSIVE_MATCH_NEW_GROUP(14, stack.currentFrame->locals.startOfRepeatingBracket, stack.currentFrame->args.bracketChain);
                 if (isMatch)
                     RRETURN;
                 advanceToEndOfBracket(stack.currentFrame->locals.startOfRepeatingBracket);
@@ -559,7 +597,7 @@ RECURSE:
             BEGIN_OPCODE(BRAMINZERO): {
                 stack.currentFrame->locals.startOfRepeatingBracket = stack.currentFrame->args.instructionPtr + 1;
                 advanceToEndOfBracket(stack.currentFrame->locals.startOfRepeatingBracket);
-                RECURSIVE_MATCH_STARTNG_NEW_GROUP(15, stack.currentFrame->locals.startOfRepeatingBracket + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
+                RECURSIVE_MATCH_NEW_GROUP(15, stack.currentFrame->locals.startOfRepeatingBracket + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
                 if (isMatch)
                     RRETURN;
                 stack.currentFrame->args.instructionPtr++;
@@ -640,11 +678,11 @@ RECURSE:
                     RECURSIVE_MATCH(16, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
                     if (isMatch)
                         RRETURN;
-                    RECURSIVE_MATCH_STARTNG_NEW_GROUP(17, stack.currentFrame->locals.instructionPtrAtStartOfOnce, stack.currentFrame->args.bracketChain);
+                    RECURSIVE_MATCH_NEW_GROUP(17, stack.currentFrame->locals.instructionPtrAtStartOfOnce, stack.currentFrame->args.bracketChain);
                     if (isMatch)
                         RRETURN;
                 } else { /* OP_KETRMAX */
-                    RECURSIVE_MATCH_STARTNG_NEW_GROUP(18, stack.currentFrame->locals.instructionPtrAtStartOfOnce, stack.currentFrame->args.bracketChain);
+                    RECURSIVE_MATCH_NEW_GROUP(18, stack.currentFrame->locals.instructionPtrAtStartOfOnce, stack.currentFrame->args.bracketChain);
                     if (isMatch)
                         RRETURN;
                     RECURSIVE_MATCH(19, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
@@ -1013,7 +1051,7 @@ RECURSE:
                     if (stack.currentFrame->args.subjectPtr >= md.endSubject)
                         RRETURN_NO_MATCH;
                     int c = *stack.currentFrame->args.subjectPtr++;
-                    if (!kjs_pcre_xclass(c, stack.currentFrame->locals.data))
+                    if (!jsc_pcre_xclass(c, stack.currentFrame->locals.data))
                         RRETURN_NO_MATCH;
                 }
                 
@@ -1034,7 +1072,7 @@ RECURSE:
                         if (stack.currentFrame->locals.fi >= stack.currentFrame->locals.max || stack.currentFrame->args.subjectPtr >= md.endSubject)
                             RRETURN;
                         int c = *stack.currentFrame->args.subjectPtr++;
-                        if (!kjs_pcre_xclass(c, stack.currentFrame->locals.data))
+                        if (!jsc_pcre_xclass(c, stack.currentFrame->locals.data))
                             RRETURN;
                     }
                     /* Control never reaches here */
@@ -1048,7 +1086,7 @@ RECURSE:
                         if (stack.currentFrame->args.subjectPtr >= md.endSubject)
                             break;
                         int c = *stack.currentFrame->args.subjectPtr;
-                        if (!kjs_pcre_xclass(c, stack.currentFrame->locals.data))
+                        if (!jsc_pcre_xclass(c, stack.currentFrame->locals.data))
                             break;
                         ++stack.currentFrame->args.subjectPtr;
                     }
@@ -1087,7 +1125,7 @@ RECURSE:
                 if (stack.currentFrame->args.subjectPtr >= md.endSubject)
                     RRETURN_NO_MATCH;
                 int dc = *stack.currentFrame->args.subjectPtr++;
-                if (stack.currentFrame->locals.fc != dc && kjs_pcre_ucp_othercase(stack.currentFrame->locals.fc) != dc)
+                if (stack.currentFrame->locals.fc != dc && jsc_pcre_ucp_othercase(stack.currentFrame->locals.fc) != dc)
                     RRETURN_NO_MATCH;
                 NEXT_OPCODE;
             }
@@ -1151,7 +1189,7 @@ RECURSE:
                 stack.currentFrame->args.instructionPtr += stack.currentFrame->locals.length;
                 
                 if (stack.currentFrame->locals.fc <= 0xFFFF) {
-                    int othercase = md.ignoreCase ? kjs_pcre_ucp_othercase(stack.currentFrame->locals.fc) : -1;
+                    othercase = md.ignoreCase ? jsc_pcre_ucp_othercase(stack.currentFrame->locals.fc) : -1;
                     
                     for (int i = 1; i <= min; i++) {
                         if (*stack.currentFrame->args.subjectPtr != stack.currentFrame->locals.fc && *stack.currentFrame->args.subjectPtr != othercase)
@@ -1243,15 +1281,16 @@ RECURSE:
             BEGIN_OPCODE(NOT): {
                 if (stack.currentFrame->args.subjectPtr >= md.endSubject)
                     RRETURN_NO_MATCH;
-                stack.currentFrame->args.instructionPtr++;
+                int b = stack.currentFrame->args.instructionPtr[1];
                 int c = *stack.currentFrame->args.subjectPtr++;
+                stack.currentFrame->args.instructionPtr += 2;
                 if (md.ignoreCase) {
                     if (c < 128)
                         c = toLowerCase(c);
-                    if (toLowerCase(*stack.currentFrame->args.instructionPtr++) == c)
+                    if (toLowerCase(b) == c)
                         RRETURN_NO_MATCH;
                 } else {
-                    if (*stack.currentFrame->args.instructionPtr++ == c)
+                    if (b == c)
                         RRETURN_NO_MATCH;
                 }
                 NEXT_OPCODE;
@@ -1735,7 +1774,7 @@ RECURSE:
                     md.offsetVector[md.offsetEnd - stack.currentFrame->locals.number] = stack.currentFrame->args.subjectPtr - md.startSubject;
                     
                     do {
-                        RECURSIVE_MATCH_STARTNG_NEW_GROUP(1, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
+                        RECURSIVE_MATCH_NEW_GROUP(1, stack.currentFrame->args.instructionPtr + 1 + LINK_SIZE, stack.currentFrame->args.bracketChain);
                         if (isMatch)
                             RRETURN;
                         stack.currentFrame->args.instructionPtr += getLinkValue(stack.currentFrame->args.instructionPtr + 1);
@@ -1822,7 +1861,7 @@ Arguments:
   start_offset    where to start in the subject string
   options         option bits
   offsets         points to a vector of ints to be filled in with offsets
-  offsetcount     the number of elements in the vector
+  offsetCount     the number of elements in the vector
 
 Returns:          > 0 => success; value is the number of elements filled in
                   = 0 => success, but offsets is not big enough
@@ -1830,23 +1869,23 @@ Returns:          > 0 => success; value is the number of elements filled in
                  < -1 => some kind of unexpected problem
 */
 
-static void tryFirstByteOptimization(const UChar*& subjectPtr, const UChar* endSubject, int first_byte, bool first_byte_caseless, bool useMultiLineFirstCharOptimization, const UChar* originalSubjectStart)
+static void tryFirstByteOptimization(const UChar*& subjectPtr, const UChar* endSubject, int firstByte, bool firstByteIsCaseless, bool useMultiLineFirstCharOptimization, const UChar* originalSubjectStart)
 {
-    // If first_byte is set, try scanning to the first instance of that byte
+    // If firstByte is set, try scanning to the first instance of that byte
     // no need to try and match against any earlier part of the subject string.
-    if (first_byte >= 0) {
-        UChar first_char = first_byte;
-        if (first_byte_caseless)
+    if (firstByte >= 0) {
+        UChar firstChar = firstByte;
+        if (firstByteIsCaseless)
             while (subjectPtr < endSubject) {
                 int c = *subjectPtr;
                 if (c > 127)
                     break;
-                if (toLowerCase(c) == first_char)
+                if (toLowerCase(c) == firstChar)
                     break;
                 subjectPtr++;
             }
         else {
-            while (subjectPtr < endSubject && *subjectPtr != first_char)
+            while (subjectPtr < endSubject && *subjectPtr != firstChar)
                 subjectPtr++;
         }
     } else if (useMultiLineFirstCharOptimization) {
@@ -1859,10 +1898,10 @@ static void tryFirstByteOptimization(const UChar*& subjectPtr, const UChar* endS
     }
 }
 
-static bool tryRequiredByteOptimization(const UChar*& subjectPtr, const UChar* endSubject, int req_byte, int req_byte2, bool req_byte_caseless, bool hasFirstByte, const UChar*& reqBytePtr)
+static bool tryRequiredByteOptimization(const UChar*& subjectPtr, const UChar* endSubject, int reqByte, int reqByte2, bool reqByteIsCaseless, bool hasFirstByte, const UChar*& reqBytePtr)
 {
-    /* If req_byte is set, we know that that character must appear in the subject
-     for the match to succeed. If the first character is set, req_byte must be
+    /* If reqByte is set, we know that that character must appear in the subject
+     for the match to succeed. If the first character is set, reqByte must be
      later in the subject; otherwise the test starts at the match point. This
      optimization can save a huge amount of backtracking in patterns with nested
      unlimited repeats that aren't going to match. Writing separate code for
@@ -1875,24 +1914,24 @@ static bool tryRequiredByteOptimization(const UChar*& subjectPtr, const UChar* e
      don't do this when the string is sufficiently long.
     */
 
-    if (req_byte >= 0 && endSubject - subjectPtr < REQ_BYTE_MAX) {
+    if (reqByte >= 0 && endSubject - subjectPtr < REQ_BYTE_MAX) {
         const UChar* p = subjectPtr + (hasFirstByte ? 1 : 0);
 
         /* We don't need to repeat the search if we haven't yet reached the
          place we found it at last time. */
 
         if (p > reqBytePtr) {
-            if (req_byte_caseless) {
+            if (reqByteIsCaseless) {
                 while (p < endSubject) {
                     int pp = *p++;
-                    if (pp == req_byte || pp == req_byte2) {
+                    if (pp == reqByte || pp == reqByte2) {
                         p--;
                         break;
                     }
                 }
             } else {
                 while (p < endSubject) {
-                    if (*p++ == req_byte) {
+                    if (*p++ == reqByte) {
                         p--;
                         break;
                     }
@@ -1916,13 +1955,15 @@ static bool tryRequiredByteOptimization(const UChar*& subjectPtr, const UChar* e
 
 int jsRegExpExecute(const JSRegExp* re,
                     const UChar* subject, int length, int start_offset, int* offsets,
-                    int offsetcount)
+                    int offsetCount)
 {
     ASSERT(re);
-    ASSERT(subject);
-    ASSERT(offsetcount >= 0);
-    ASSERT(offsets || offsetcount == 0);
-    
+    ASSERT(subject || !length);
+    ASSERT(offsetCount >= 0);
+    ASSERT(offsets || offsetCount == 0);
+
+    HistogramTimeLogger logger(re);
+
     MatchData matchBlock;
     matchBlock.startSubject = subject;
     matchBlock.endSubject = matchBlock.startSubject + length;
@@ -1936,18 +1977,18 @@ int jsRegExpExecute(const JSRegExp* re,
      Otherwise, we can use the vector supplied, rounding down its size to a multiple
      of 3. */
     
-    int ocount = offsetcount - (offsetcount % 3);
+    int ocount = offsetCount - (offsetCount % 3);
     
     // FIXME: This is lame that we have to second-guess our caller here.
     // The API should change to either fail-hard when we don't have enough offset space
     // or that we shouldn't ask our callers to pre-allocate in the first place.
-    bool using_temporary_offsets = false;
-    if (re->top_backref > 0 && re->top_backref >= ocount/3) {
-        ocount = re->top_backref * 3 + 3;
+    bool usingTemporaryOffsets = false;
+    if (re->topBackref > 0 && re->topBackref >= ocount/3) {
+        ocount = re->topBackref * 3 + 3;
         matchBlock.offsetVector = new int[ocount];
         if (!matchBlock.offsetVector)
             return JSRegExpErrorNoMemory;
-        using_temporary_offsets = true;
+        usingTemporaryOffsets = true;
     } else
         matchBlock.offsetVector = offsets;
     
@@ -1959,9 +2000,9 @@ int jsRegExpExecute(const JSRegExp* re,
      this makes a huge difference to execution time when there aren't many brackets
      in the pattern. */
     
-    int resetcount = 2 + re->top_bracket * 2;
-    if (resetcount > offsetcount)
-        resetcount = ocount;
+    int resetCount = 2 + re->topBracket * 2;
+    if (resetCount > offsetCount)
+        resetCount = ocount;
     
     /* Reset the working variable associated with each extraction. These should
      never be used unless previously set, but they get saved and restored, and so we
@@ -1969,35 +2010,35 @@ int jsRegExpExecute(const JSRegExp* re,
     
     if (matchBlock.offsetVector) {
         int* iptr = matchBlock.offsetVector + ocount;
-        int* iend = iptr - resetcount/2 + 1;
+        int* iend = iptr - resetCount/2 + 1;
         while (--iptr >= iend)
             *iptr = -1;
     }
     
-    /* Set up the first character to match, if available. The first_byte value is
+    /* Set up the first character to match, if available. The firstByte value is
      never set for an anchored regular expression, but the anchoring may be forced
      at run time, so we have to test for anchoring. The first char may be unset for
      an unanchored pattern, of course. If there's no first char and the pattern was
      studied, there may be a bitmap of possible first characters. */
     
-    bool first_byte_caseless = false;
-    int first_byte = -1;
+    bool firstByteIsCaseless = false;
+    int firstByte = -1;
     if (re->options & UseFirstByteOptimizationOption) {
-        first_byte = re->first_byte & 255;
-        if ((first_byte_caseless = (re->first_byte & REQ_IGNORE_CASE)))
-            first_byte = toLowerCase(first_byte);
+        firstByte = re->firstByte & 255;
+        if ((firstByteIsCaseless = (re->firstByte & REQ_IGNORE_CASE)))
+            firstByte = toLowerCase(firstByte);
     }
     
     /* For anchored or unanchored matches, there may be a "last known required
      character" set. */
     
-    bool req_byte_caseless = false;
-    int req_byte = -1;
-    int req_byte2 = -1;
+    bool reqByteIsCaseless = false;
+    int reqByte = -1;
+    int reqByte2 = -1;
     if (re->options & UseRequiredByteOptimizationOption) {
-        req_byte = re->req_byte & 255; // FIXME: This optimization could be made to work for UTF16 chars as well...
-        req_byte_caseless = (re->req_byte & REQ_IGNORE_CASE);
-        req_byte2 = flipCase(req_byte);
+        reqByte = re->reqByte & 255; // FIXME: This optimization could be made to work for UTF16 chars as well...
+        reqByteIsCaseless = (re->reqByte & REQ_IGNORE_CASE);
+        reqByte2 = flipCase(reqByte);
     }
     
     /* Loop for handling unanchored repeated matching attempts; for anchored regexs
@@ -2011,13 +2052,13 @@ int jsRegExpExecute(const JSRegExp* re,
         /* Reset the maximum number of extractions we might see. */
         if (matchBlock.offsetVector) {
             int* iptr = matchBlock.offsetVector;
-            int* iend = iptr + resetcount;
+            int* iend = iptr + resetCount;
             while (iptr < iend)
                 *iptr++ = -1;
         }
         
-        tryFirstByteOptimization(startMatch, endSubject, first_byte, first_byte_caseless, useMultiLineFirstCharOptimization, matchBlock.startSubject + start_offset);
-        if (tryRequiredByteOptimization(startMatch, endSubject, req_byte, req_byte2, req_byte_caseless, first_byte >= 0, reqBytePtr))
+        tryFirstByteOptimization(startMatch, endSubject, firstByte, firstByteIsCaseless, useMultiLineFirstCharOptimization, matchBlock.startSubject + start_offset);
+        if (tryRequiredByteOptimization(startMatch, endSubject, reqByte, reqByte2, reqByteIsCaseless, firstByte >= 0, reqBytePtr))
             break;
                 
         /* When a match occurs, substrings will be set for all internal extractions;
@@ -2048,12 +2089,12 @@ int jsRegExpExecute(const JSRegExp* re,
         /* We have a match! Copy the offset information from temporary store if
          necessary */
         
-        if (using_temporary_offsets) {
-            if (offsetcount >= 4) {
-                memcpy(offsets + 2, matchBlock.offsetVector + 2, (offsetcount - 2) * sizeof(int));
+        if (usingTemporaryOffsets) {
+            if (offsetCount >= 4) {
+                memcpy(offsets + 2, matchBlock.offsetVector + 2, (offsetCount - 2) * sizeof(int));
                 DPRINTF(("Copied offsets from temporary memory\n"));
             }
-            if (matchBlock.endOffsetTop > offsetcount)
+            if (matchBlock.endOffsetTop > offsetCount)
                 matchBlock.offsetOverflow = true;
             
             DPRINTF(("Freeing temporary memory\n"));
@@ -2062,7 +2103,7 @@ int jsRegExpExecute(const JSRegExp* re,
         
         returnCode = matchBlock.offsetOverflow ? 0 : matchBlock.endOffsetTop / 2;
         
-        if (offsetcount < 2)
+        if (offsetCount < 2)
             returnCode = 0;
         else {
             offsets[0] = startMatch - matchBlock.startSubject;
@@ -2073,7 +2114,7 @@ int jsRegExpExecute(const JSRegExp* re,
         return returnCode;
     } while (!(re->options & IsAnchoredOption) && startMatch <= endSubject);
     
-    if (using_temporary_offsets) {
+    if (usingTemporaryOffsets) {
         DPRINTF(("Freeing temporary memory\n"));
         delete [] matchBlock.offsetVector;
     }
@@ -2082,4 +2123,58 @@ int jsRegExpExecute(const JSRegExp* re,
     return JSRegExpErrorNoMatch;
 }
 
+#if REGEXP_HISTOGRAM
+
+class CompareHistogramEntries {
+public:
+    bool operator()(const pair<UString, double>& a, const pair<UString, double>& b)
+    {
+        if (a.second == b.second)
+            return a.first < b.first;
+        return a.second < b.second;
+    }
+};
+
+Histogram::~Histogram()
+{
+    Vector<pair<UString, double> > values;
+    Map::iterator end = times.end();
+    for (Map::iterator it = times.begin(); it != end; ++it)
+        values.append(*it);
+    sort(values.begin(), values.end(), CompareHistogramEntries());
+    size_t size = values.size();
+    printf("Regular Expressions, sorted by time spent evaluating them:\n");
+    for (size_t i = 0; i < size; ++i)
+        printf("    %f - %s\n", values[size - i - 1].second, values[size - i - 1].first.utf8().c_str());
+}
+
+void Histogram::add(const JSRegExp* re, double elapsedTime)
+{
+    UString string(reinterpret_cast<const UChar*>(reinterpret_cast<const char*>(re) + re->stringOffset), re->stringLength);
+    if (re->options & IgnoreCaseOption && re->options & MatchAcrossMultipleLinesOption)
+        string += " (multi-line, ignore case)";
+    else {
+        if (re->options & IgnoreCaseOption)
+            string += " (ignore case)";
+        if (re->options & MatchAcrossMultipleLinesOption)
+            string += " (multi-line)";
+    }
+    pair<Map::iterator, bool> result = times.add(string.impl(), elapsedTime);
+    if (!result.second)
+        result.first->second += elapsedTime;
+}
+
+HistogramTimeLogger::HistogramTimeLogger(const JSRegExp* re)
+    : m_re(re)
+    , m_startTime(currentTimeMS())
+{
+}
+
+HistogramTimeLogger::~HistogramTimeLogger()
+{
+    static Histogram histogram;
+    histogram.add(m_re, currentTimeMS() - m_startTime);
+}
+
+#endif
 } } }  // namespace iv::lv5::jscre

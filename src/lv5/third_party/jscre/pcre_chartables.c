@@ -10,7 +10,7 @@ This file contains the default tables for characters with codes less than
 128 (ASCII characters). These tables are used when no external tables are
 passed to PCRE. */
 
-const unsigned char kjs_pcre_default_tables[480] = {
+const unsigned char jsc_pcre_default_tables[480] = {
 
 /* This table is a lower casing table. */
 

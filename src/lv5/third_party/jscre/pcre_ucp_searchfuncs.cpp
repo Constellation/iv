@@ -6,7 +6,7 @@ needed by JavaScriptCore and the rest of WebKit.
 
                  Originally written by Philip Hazel
            Copyright (c) 1997-2006 University of Cambridge
-    Copyright (C) 2002, 2004, 2006, 2007 Apple Inc. All rights reserved.
+    Copyright (C) 2002, 2004, 2006, 2007, 2008, 2009 Apple Inc. All rights reserved.
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ Arguments:
 Returns:      the other case or -1 if none
 */
 
-int kjs_pcre_ucp_othercase(unsigned c)
+int jsc_pcre_ucp_othercase(unsigned c)
 {
     int bot = 0;
     int top = sizeof(ucp_table) / sizeof(cnode);
@@ -96,7 +96,7 @@ int kjs_pcre_ucp_othercase(unsigned c)
     int offset = ucp_table[mid].f1 & f1_casemask;
     if (offset & f1_caseneg)
         offset |= f1_caseneg;
-    return !offset ? -1 : c + offset;
+    return !offset ? -1 : static_cast<int>(c + offset);
 }
 
-} } }  // namespace iv::lv5::jscre
+} } }  // namespace iv::v5::jscre

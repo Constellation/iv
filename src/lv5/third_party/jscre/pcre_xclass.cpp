@@ -6,7 +6,7 @@ needed by JavaScriptCore and the rest of WebKit.
 
                  Originally written by Philip Hazel
            Copyright (c) 1997-2006 University of Cambridge
-    Copyright (C) 2002, 2004, 2006, 2007 Apple Inc. All rights reserved.
+    Copyright (C) 2002, 2004, 2006, 2007, 2008, 2009 Apple Inc. All rights reserved.
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -65,9 +65,9 @@ static inline void getUTF8CharAndAdvancePointer(int& c, const unsigned char*& su
 {
     c = *subjectPtr++;
     if ((c & 0xc0) == 0xc0) {
-        int gcaa = kjs_pcre_utf8_table4[c & 0x3f];  /* Number of additional bytes */
+        int gcaa = jsc_pcre_utf8_table4[c & 0x3f];  /* Number of additional bytes */
         int gcss = 6 * gcaa;
-        c = (c & kjs_pcre_utf8_table3[gcaa]) << gcss;
+        c = (c & jsc_pcre_utf8_table3[gcaa]) << gcss;
         while (gcaa-- > 0) {
             gcss -= 6;
             c |= (*subjectPtr++ & 0x3f) << gcss;
@@ -75,7 +75,7 @@ static inline void getUTF8CharAndAdvancePointer(int& c, const unsigned char*& su
     }
 }
 
-bool kjs_pcre_xclass(int c, const unsigned char* data)
+bool jsc_pcre_xclass(int c, const unsigned char* data)
 {
     bool negated = (*data & XCL_NOT);
     
@@ -114,5 +114,6 @@ bool kjs_pcre_xclass(int c, const unsigned char* data)
     
     return negated;   /* char did not match */
 }
+
 
 } } }  // namespace iv::lv5::jscre

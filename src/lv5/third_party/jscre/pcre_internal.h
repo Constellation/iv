@@ -6,7 +6,7 @@ needed by JavaScriptCore and the rest of WebKit.
 
                  Originally written by Philip Hazel
            Copyright (c) 1997-2006 University of Cambridge
-    Copyright (C) 2002, 2004, 2006, 2007 Apple Inc. All rights reserved.
+    Copyright (C) 2002, 2004, 2006, 2007, 2008, 2009 Apple Inc. All rights reserved.
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,11 @@ total length. */
 
 #ifndef DFTABLES
 
-// TODO: Hook this up to something that checks assertions.
-#define ASSERT(x) do { } while(0)
-#define ASSERT_NOT_REACHED() do {} while(0)
+// Change the following to 1 to dump used regular expressions at process exit time.
+#define REGEXP_HISTOGRAM 0
+
+#define ASSERT(x) do { } while (0)
+#define ASSERT_NOT_REACHED(x) do { } while (0)
 
 #ifdef WIN32
 #pragma warning(disable: 4232)
@@ -84,7 +86,7 @@ total length. */
 offsets within the compiled regex. The default is 2, which allows for compiled
 patterns up to 64K long. */
 
-#define LINK_SIZE   2
+#define LINK_SIZE   3
 
 /* Define DEBUG to get debugging output on stdout. */
 
@@ -125,9 +127,22 @@ static inline void put2ByteValue(unsigned char* opcodePtr, int value)
     opcodePtr[1] = value;
 }
 
+static inline void put3ByteValue(unsigned char* opcodePtr, int value)
+{
+    ASSERT(value >= 0 && value <= 0xFFFFFF);
+    opcodePtr[0] = value >> 16;
+    opcodePtr[1] = value >> 8;
+    opcodePtr[2] = value;
+}
+
 static inline int get2ByteValue(const unsigned char* opcodePtr)
 {
     return (opcodePtr[0] << 8) | opcodePtr[1];
+}
+
+static inline int get3ByteValue(const unsigned char* opcodePtr)
+{
+    return (opcodePtr[0] << 16) | (opcodePtr[1] << 8) | opcodePtr[2];
 }
 
 static inline void put2ByteValueAndAdvance(unsigned char*& opcodePtr, int value)
@@ -136,17 +151,35 @@ static inline void put2ByteValueAndAdvance(unsigned char*& opcodePtr, int value)
     opcodePtr += 2;
 }
 
+static inline void put3ByteValueAndAdvance(unsigned char*& opcodePtr, int value)
+{
+    put3ByteValue(opcodePtr, value);
+    opcodePtr += 3;
+}
+
 static inline void putLinkValueAllowZero(unsigned char* opcodePtr, int value)
 {
+#if LINK_SIZE == 3
+    put3ByteValue(opcodePtr, value);
+#elif LINK_SIZE == 2
     put2ByteValue(opcodePtr, value);
+#else
+#   error LINK_SIZE not supported.
+#endif
 }
 
 static inline int getLinkValueAllowZero(const unsigned char* opcodePtr)
 {
+#if LINK_SIZE == 3
+    return get3ByteValue(opcodePtr);
+#elif LINK_SIZE == 2
     return get2ByteValue(opcodePtr);
+#else
+#   error LINK_SIZE not supported.
+#endif
 }
 
-#define MAX_PATTERN_SIZE (1 << 16)
+#define MAX_PATTERN_SIZE 1024 * 1024 // Derived by empirical testing of compile time in PCRE and WREC.
 
 static inline void putLinkValue(unsigned char* opcodePtr, int value)
 {
@@ -175,19 +208,19 @@ static inline void putLinkValueAllowZeroAndAdvance(unsigned char*& opcodePtr, in
 
 // FIXME: These are really more of a "compiled regexp state" than "regexp options"
 enum RegExpOptions {
-    UseFirstByteOptimizationOption = 0x40000000,  /* first_byte is set */
-    UseRequiredByteOptimizationOption = 0x20000000,  /* req_byte is set */
+    UseFirstByteOptimizationOption = 0x40000000,  /* firstByte is set */
+    UseRequiredByteOptimizationOption = 0x20000000,  /* reqByte is set */
     UseMultiLineFirstByteOptimizationOption = 0x10000000,  /* start after \n for multiline */
     IsAnchoredOption = 0x02000000,  /* can't use partial with this regex */
     IgnoreCaseOption = 0x00000001,
     MatchAcrossMultipleLinesOption = 0x00000002
 };
 
-/* Flags added to firstbyte or reqbyte; a "non-literal" item is either a
+/* Flags added to firstByte or reqByte; a "non-literal" item is either a
 variable-length repeat, or a anything other than literal characters. */
 
 #define REQ_IGNORE_CASE 0x0100    /* indicates should ignore case */
-#define REQ_VARY     0x0200    /* reqbyte followed non-literal item */
+#define REQ_VARY     0x0200    /* reqByte followed non-literal item */
 
 /* Miscellaneous definitions */
 
@@ -299,8 +332,7 @@ must also be updated to match. */
     macro(BRAZERO) \
     macro(BRAMINZERO) \
     macro(BRANUMBER) \
-    macro(BRA)\
-    __LAST_IS_NOT_USED__
+    macro(BRA)
 
 #define OPCODE_ENUM_VALUE(opcode) OP_##opcode,
 enum { FOR_EACH_OPCODE(OPCODE_ENUM_VALUE) };
@@ -320,22 +352,21 @@ are in conflict! */
 
 #define EXTRACT_BASIC_MAX  100
 
-/* The index of names and the
-code vector run on as long as necessary after the end. We store an explicit
-offset to the name table so that if a regex is compiled on one host, saved, and
-then run on another where the size of pointers is different, all might still
-be well. For the case of compiled-on-4 and run-on-8, we include an extra
-pointer that is always NULL.
-*/
+/* The code vector runs on as long as necessary after the end. */
 
 struct JSRegExp {
     unsigned options;
 
-    unsigned short top_bracket;
-    unsigned short top_backref;
+    unsigned short topBracket;
+    unsigned short topBackref;
     
-    unsigned short first_byte;
-    unsigned short req_byte;
+    unsigned short firstByte;
+    unsigned short reqByte;
+
+#if REGEXP_HISTOGRAM
+    size_t stringOffset;
+    size_t stringLength;
+#endif
 };
 
 /* Internal shared data tables. These are tables that are used by more than one
@@ -343,36 +374,36 @@ struct JSRegExp {
  but are not part of the PCRE public API. The data for these tables is in the
  pcre_tables.c module. */
 
-#define kjs_pcre_utf8_table1_size 6
+#define jsc_pcre_utf8_table1_size 6
 
-extern const int    kjs_pcre_utf8_table1[6];
-extern const int    kjs_pcre_utf8_table2[6];
-extern const int    kjs_pcre_utf8_table3[6];
-extern const unsigned char kjs_pcre_utf8_table4[0x40];
+extern const int    jsc_pcre_utf8_table1[6];
+extern const int    jsc_pcre_utf8_table2[6];
+extern const int    jsc_pcre_utf8_table3[6];
+extern const unsigned char jsc_pcre_utf8_table4[0x40];
 
-extern const unsigned char kjs_pcre_default_tables[tables_length];
+extern const unsigned char jsc_pcre_default_tables[tables_length];
 
 static inline unsigned char toLowerCase(unsigned char c)
 {
-    static const unsigned char* lowerCaseChars = kjs_pcre_default_tables + lcc_offset;
+    static const unsigned char* lowerCaseChars = jsc_pcre_default_tables + lcc_offset;
     return lowerCaseChars[c];
 }
 
 static inline unsigned char flipCase(unsigned char c)
 {
-    static const unsigned char* flippedCaseChars = kjs_pcre_default_tables + fcc_offset;
+    static const unsigned char* flippedCaseChars = jsc_pcre_default_tables + fcc_offset;
     return flippedCaseChars[c];
 }
 
 static inline unsigned char classBitmapForChar(unsigned char c)
 {
-    static const unsigned char* charClassBitmaps = kjs_pcre_default_tables + cbits_offset;
+    static const unsigned char* charClassBitmaps = jsc_pcre_default_tables + cbits_offset;
     return charClassBitmaps[c];
 }
 
 static inline unsigned char charTypeForChar(unsigned char c)
 {
-    const unsigned char* charTypeMap = kjs_pcre_default_tables + ctypes_offset;
+    const unsigned char* charTypeMap = jsc_pcre_default_tables + ctypes_offset;
     return charTypeMap[c];
 }
 
@@ -383,7 +414,7 @@ static inline bool isWordChar(UChar c)
 
 static inline bool isSpaceChar(UChar c)
 {
-    return (c < 128 && (charTypeForChar(c) & ctype_space));
+    return (c < 128 && (charTypeForChar(c) & ctype_space)) || c == 0x00A0;
 }
 
 static inline bool isNewline(UChar nl)
@@ -416,8 +447,8 @@ static inline void advanceToEndOfBracket(const unsigned char*& opcodePtr)
 that one of the source files. They have to have external linkage, but
 but are not part of the public API and so not exported from the library. */
 
-extern int kjs_pcre_ucp_othercase(unsigned);
-extern bool kjs_pcre_xclass(int, const unsigned char*);
+extern int jsc_pcre_ucp_othercase(unsigned);
+extern bool jsc_pcre_xclass(int, const unsigned char*);
 
 } } }  // namespace iv::lv5::jscre
 #endif

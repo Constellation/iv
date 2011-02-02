@@ -43,18 +43,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #define JSRegExp_h
 #include <tr1/cstdint>
 #include <cstddef>
-// JSCRE is very chatty in debug mode, so in order to keep it slient
-// we allow DEBUG to be set and undef it manually.
+
 #undef DEBUG
 
-namespace iv {
-namespace lv5 {
-namespace jscre {
+namespace iv { namespace lv5 { namespace jscre {
 
 typedef std::tr1::uint16_t UChar;
 
 struct JSRegExp;
-typedef struct JSRegExp JscreRegExp;
 
 enum JSRegExpIgnoreCaseOption { JSRegExpDoNotIgnoreCase, JSRegExpIgnoreCase };
 enum JSRegExpMultilineOption { JSRegExpSingleLine, JSRegExpMultiline };
@@ -65,20 +61,15 @@ const int JSRegExpErrorHitLimit = -2;
 const int JSRegExpErrorNoMemory = -3;
 const int JSRegExpErrorInternal = -4;
 
-typedef void* malloc_t(size_t size);
-typedef void free_t(void* address);
-
 JSRegExp* jsRegExpCompile(const UChar* pattern, int patternLength,
     JSRegExpIgnoreCaseOption, JSRegExpMultilineOption,
-    unsigned* numSubpatterns, const char** errorMessage,
-    malloc_t* allocate_function, free_t* free_function);
+    unsigned* numSubpatterns, const char** errorMessage);
 
 int jsRegExpExecute(const JSRegExp*,
     const UChar* subject, int subjectLength, int startOffset,
     int* offsetsVector, int offsetsVectorLength);
 
-void jsRegExpFree(JSRegExp* re, free_t* free_function);
+void jsRegExpFree(JSRegExp*);
 
 } } }  // namespace iv::lv5::jscre
-
 #endif
