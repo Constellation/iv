@@ -151,7 +151,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         if (dense_) {
           // dense array version
           CompactionToLength(new_len);
-        } else if (old_len - new_len < (1 << 22)) {
+        } else if (old_len - new_len < (1 << 24)) {
           while (new_len < old_len) {
             old_len -= 1;
             // see Eratta
