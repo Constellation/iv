@@ -328,7 +328,12 @@ bool JSArray::DeleteWithIndex(Context* ctx, uint32_t index, bool th, Error* res)
       return true;
     }
   }
-  return JSObject::Delete(ctx, ctx->InternIndex(index), th, res);
+  const SymbolChecker check(ctx, index);
+  if (check.Found()) {
+    return JSObject::Delete(ctx, check.symbol(), th, res);
+  } else {
+    return true;
+  }
 }
 
 void JSArray::GetOwnPropertyNames(Context* ctx,

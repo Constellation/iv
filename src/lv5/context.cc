@@ -119,6 +119,34 @@ Symbol Context::InternDouble(double number) {
   return table_.Lookup(core::StringPiece(str));
 }
 
+Symbol Context::CheckIntern(const core::StringPiece& str,
+                            bool* found) {
+  return table_.LookupAndCheck(str, found);
+}
+
+Symbol Context::CheckIntern(const core::UStringPiece& str,
+                            bool* found) {
+  return table_.LookupAndCheck(str, found);
+}
+
+Symbol Context::CheckIntern(uint32_t index, bool* found) {
+  std::tr1::array<char, 15> buf;
+  return table_.LookupAndCheck(
+      core::StringPiece(
+          buf.data(),
+          std::snprintf(
+              buf.data(), buf.size(), "%lu",
+              static_cast<unsigned long>(index))), found);  // NOLINT
+}
+
+Symbol Context::CheckIntern(double number, bool* found) {
+  std::tr1::array<char, 80> buffer;
+  const char* const str = core::DoubleToCString(number,
+                                                buffer.data(),
+                                                buffer.size());
+  return table_.LookupAndCheck(core::StringPiece(str), found);
+}
+
 double Context::Random() {
   return random_engine_();
 }

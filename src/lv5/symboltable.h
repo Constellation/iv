@@ -37,7 +37,7 @@ class SymbolTable {
       boost::mutex::scoped_lock lock(sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
-        Symbol sym = { strings_.size() };
+        const Symbol sym = { strings_.size() };
         strings_.push_back(target);
         Indexes vec(1, sym);
         table_.insert(it, make_pair(hash, vec));
@@ -49,10 +49,35 @@ class SymbolTable {
             return i;
           }
         }
-        Symbol sym = { strings_.size() };
+        const Symbol sym = { strings_.size() };
         strings_.push_back(target);
         vec.push_back(sym);
         return sym;
+      }
+    }
+  }
+
+  template<class String>
+  inline Symbol LookupAndCheck(const String& str, bool* found) {
+    static const Symbol dummy = {0};
+    *found = true;
+    std::size_t hash = StringToHash(str);
+    core::UString target(str.begin(), str.end());
+    {
+      boost::mutex::scoped_lock lock(sync_);
+      Table::iterator it = table_.find(hash);
+      if (it == table_.end()) {
+        *found = false;
+        return dummy;
+      } else {
+        Indexes& vec = it->second;
+        BOOST_FOREACH(const Symbol& i, vec) {
+          if (strings_[i.value_as_index] == target) {
+            return i;
+          }
+        }
+        *found = false;
+        return dummy;
       }
     }
   }

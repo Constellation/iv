@@ -23,8 +23,12 @@
 
 namespace iv {
 namespace lv5 {
+
+class SymbolChecker;
+
 class Context : private core::Noncopyable<Context>::type {
  public:
+  friend class SymbolChecker;
   typedef iv::core::Xor128 random_engine_type;
   typedef std::tr1::uniform_real<double> random_distribution_type;
   typedef std::tr1::variate_generator<
@@ -150,6 +154,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol Intern(const Identifier& ident);
   Symbol InternIndex(uint32_t index);
   Symbol InternDouble(double number);
+
   inline Symbol length_symbol() const {
     return length_symbol_;
   }
@@ -206,7 +211,14 @@ class Context : private core::Noncopyable<Context>::type {
   const core::UString& GetContent(Symbol sym) const;
   bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const;
+
  private:
+
+  Symbol CheckIntern(const core::StringPiece& str, bool* found);
+  Symbol CheckIntern(const core::UStringPiece& str, bool* found);
+  Symbol CheckIntern(uint32_t index, bool* found);
+  Symbol CheckIntern(double number, bool* found);
+
   JSObject global_obj_;
   JSNativeFunction throw_type_error_;
   JSEnv* lexical_env_;
@@ -235,5 +247,41 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol Array_symbol_;
   JSScript* current_script_;
 };
+
+class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {
+ public:
+  SymbolChecker(Context* ctx, const core::StringPiece& str)
+    : found_(false),
+      sym_(ctx->CheckIntern(str, &found_)) {
+  }
+
+  SymbolChecker(Context* ctx, const core::UStringPiece& str)
+    : found_(false),
+      sym_(ctx->CheckIntern(str, &found_)) {
+  }
+
+  SymbolChecker(Context* ctx, uint32_t index)
+    : found_(false),
+      sym_(ctx->CheckIntern(index, &found_)) {
+  }
+
+  SymbolChecker(Context* ctx, double number)
+    : found_(false),
+      sym_(ctx->CheckIntern(number, &found_)) {
+  }
+
+  bool Found() const {
+    return found_;
+  }
+
+  Symbol symbol() const {
+    return sym_;
+  }
+
+ private:
+  bool found_;
+  Symbol sym_;
+};
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_CONTEXT_H_
