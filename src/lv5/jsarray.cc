@@ -145,7 +145,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         if (dense_) {
           // dense array version
           CompactionToLength(new_len);
-        } else if (old_len - new_len < (1 << 24)) {
+        } else if (old_len - new_len < (1 << 22)) {
           while (new_len < old_len) {
             old_len -= 1;
             // see Eratta
@@ -398,10 +398,10 @@ JSArray* JSArray::NewPlain(Context* ctx) {
 }
 
 bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {
-  if (!(desc.IsEnumerable() || desc.IsEnumerableAbsent())) {
+  if (!desc.IsEnumerable()) {
     return false;
   }
-  if (!(desc.IsConfigurable() || desc.IsConfigurableAbsent())) {
+  if (!desc.IsConfigurable()) {
     return false;
   }
   if (desc.IsAccessorDescriptor()) {
@@ -409,7 +409,7 @@ bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {
   }
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
-    return data->IsWritable() || data->IsWritableAbsent();
+    return data->IsWritable();
   }
   return true;
 }
