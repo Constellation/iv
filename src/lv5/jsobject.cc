@@ -327,7 +327,12 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
 
 bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
                                bool th, Error* res) {
-  return Delete(ctx, ctx->InternIndex(index), th, res);
+  SymbolChecker checker(ctx, index);
+  if (checker.Found()) {
+    return Delete(ctx, checker.symbol(), th, res);
+  } else {
+    return true;
+  }
 }
 
 void JSObject::GetPropertyNames(Context* ctx,
