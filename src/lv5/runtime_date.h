@@ -6,7 +6,7 @@
 #include <tr1/cstdint>
 #include <tr1/array>
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <windows.h>
 #else
 #include <sys/time.h>
@@ -53,10 +53,21 @@ inline int DaysInYear(int y) {
 }
 
 inline double DaysFromYear(int y) {
-  return 365 * (y - 1970) +
-      ((y - 1969) / 4) -
-      ((y - 1901) / 100) +
-      ((y - 1601) / 400);
+  static const int kLeapDaysBefore1971By4Rule = 1970 / 4;
+  static const int kExcludeLeapDaysBefore1971By100Rule = 1970 / 100;
+  static const int kLeapDaysBefore1971By400Rule = 1970 / 400;
+
+  const double year_minus_one = y - 1;
+  const double years_to_add_by_4 =
+      std::floor(year_minus_one / 4.0) - kLeapDaysBefore1971By4Rule;
+  const double years_to_exclude_by_100 =
+      std::floor(year_minus_one / 100.0) - kExcludeLeapDaysBefore1971By100Rule;
+  const double years_to_add_by_400 =
+      std::floor(year_minus_one / 400.0) - kLeapDaysBefore1971By400Rule;
+  return 365.0 * (y - 1970) +
+      years_to_add_by_4 -
+      years_to_exclude_by_100 +
+      years_to_add_by_400;
 }
 
 inline double TimeFromYear(int y) {
@@ -65,8 +76,7 @@ inline double TimeFromYear(int y) {
 
 // JSC's method
 inline int YearFromTime(double t) {
-  const int about = core::DoubleToInt32(
-      std::floor(t / (kMsPerDay * 365.2425)) + 1970);
+  const int about = static_cast<int>(std::floor(t / (kMsPerDay * 365.2425)) + 1970);
   const double time = TimeFromYear(about);
   if (time > t) {
     return about - 1;
@@ -173,7 +183,7 @@ inline int32_t LocalTZA() {
   return local_tza;
 }
 
-#ifdef _WIN32
+#ifdef WIN32
 inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
   LARGE_INTEGER i;
   i.LowPart = ft.dwLowDateTime;
@@ -187,7 +197,6 @@ inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
   return FileTimeToUnixTime(ft);
 }
 
-// FIXME(Constellation) implement it
 inline double DaylightSavingTA(double t) {
   // http://msdn.microsoft.com/en-us/library/ms724421
   if (std::isnan(t)) {
@@ -234,7 +243,7 @@ inline double DaylightSavingTA(double t) {
     // Daylight Saving Time
     // from    2 AM the first Sunday in April
     // through 2 AM the last Sunday in October
-    std::time_t target = current - LocalTZA();
+    double target = t - LocalTZA();
     const int year = YearFromTime(target);
     const int leap = IsLeapYear(target);
 
@@ -382,7 +391,7 @@ inline double TimeClip(double time) {
   return core::DoubleToInteger(time);
 }
 
-#ifdef _WIN32
+#ifdef WIN32
 inline double CurrentTime() {
   FILETIME ft;
   ::GetSystemTimeAsFileTime(&ft);
@@ -1733,10 +1742,10 @@ inline JSVal DateToUTCString(const Arguments& args, Error* error) {
       std::tr1::array<char, 32> buf;
       int num = std::snprintf(
           buf.data(), buf.size(),
-          "%3s %3s %02d %4d %02d:%02d:%02d GMT",
+          "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
           detail::WeekDayToString(time),
-          detail::MonthToString(time),
           detail::DateFromTime(time),
+          detail::MonthToString(time),
           detail::YearFromTime(time),
           detail::HourFromTime(time),
           detail::MinFromTime(time),
