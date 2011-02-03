@@ -1202,12 +1202,13 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* error) {
       ms = JSValData::kNaN;
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             detail::MinFromTime(t),
-                             detail::SecFromTime(t),
-                             ms)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::Day(t),
+                detail::MakeTime(detail::HourFromTime(t),
+                                 detail::MinFromTime(t),
+                                 detail::SecFromTime(t),
+                                 ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1267,12 +1268,13 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* error) {
       ms = detail::MsFromTime(t);
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             detail::MinFromTime(t),
-                             sec,
-                             ms)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::Day(t),
+                detail::MakeTime(detail::HourFromTime(t),
+                                 detail::MinFromTime(t),
+                                 sec,
+                                 ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1348,12 +1350,13 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* error) {
       ms = detail::MsFromTime(t);
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             m,
-                             sec,
-                             ms)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::Day(t),
+                detail::MakeTime(detail::HourFromTime(t),
+                                 m,
+                                 sec,
+                                 ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1446,9 +1449,10 @@ inline JSVal DateSetHours(const Arguments& args, Error* error) {
       ms = detail::MsFromTime(t);
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(h, m, sec, ms)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::Day(t),
+                detail::MakeTime(h, m, sec, ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1523,11 +1527,12 @@ inline JSVal DateSetDate(const Arguments& args, Error* error) {
       dt = JSValData::kNaN;
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(detail::YearFromTime(t),
-                            detail::MonthFromTime(t),
-                            dt),
-            detail::TimeWithinDay(t)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::MakeDay(detail::YearFromTime(t),
+                                detail::MonthFromTime(t),
+                                dt),
+                detail::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1587,11 +1592,12 @@ inline JSVal DateSetMonth(const Arguments& args, Error* error) {
       dt = detail::DateFromTime(t);
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(detail::YearFromTime(t),
-                            m,
-                            dt),
-            detail::TimeWithinDay(t)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::MakeDay(detail::YearFromTime(t),
+                                m,
+                                dt),
+                detail::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1669,11 +1675,12 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
       dt = detail::DateFromTime(t);
     }
     const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(y,
-                            m,
-                            dt),
-            detail::TimeWithinDay(t)));
+        detail::UTC(
+            detail::MakeDate(
+                detail::MakeDay(y,
+                                m,
+                                dt),
+                detail::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
