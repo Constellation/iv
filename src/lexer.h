@@ -262,7 +262,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           Advance();
           if (Chars::IsDecimalDigit(c_)) {
             // float number parse
-            token = ScanNumber(true);
+            token = ScanNumber<true>();
           } else {
             token = Token::PERIOD;
           }
@@ -342,7 +342,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           if (Chars::IsIdentifierStart(c_)) {
             token = ScanIdentifier<LexType>(strict);
           } else if (Chars::IsDecimalDigit(c_)) {
-            token = ScanNumber(false);
+            token = ScanNumber<false>();
           } else if (Chars::IsLineTerminator(c_)) {
             SkipLineTerminator();
             has_line_terminator_before_next_ = true;
@@ -733,7 +733,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return true;
   }
 
-  Token::Type ScanNumber(const bool period) {
+  template<bool period>
+  Token::Type ScanNumber() {
     buffer8_.clear();
     State type = DECIMAL;
     if (period) {
