@@ -353,7 +353,7 @@ inline double DateToDays(int year, int month, int date) {
     --year;
   }
   const double yearday = std::floor(DaysFromYear(year));
-  const int monthday = MonthToDaysInYear(month, IsLeapYear(year));
+  const int monthday = MonthToDaysInYear(month, (DaysInYear(year) == 366 ? 1 : 0));
   assert((year >= 1970 && yearday >= 0) || (year < 1970 && yearday < 0));
   return yearday + monthday + date - 1;
 }
