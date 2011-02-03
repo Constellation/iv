@@ -265,7 +265,12 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
     if (args.size() > 1) {
       const double position = args[1].ToNumber(args.ctx(), ERROR(error));
       if (!std::isnan(position)) {
-        pos = core::DoubleToUInt32(core::DoubleToInteger(position));
+        const double integer = core::DoubleToInteger(position);
+        if (integer < 0) {
+          pos = 0;
+        } else {
+          pos = core::DoubleToUInt32(integer);
+        }
       }
     }
   } else {
