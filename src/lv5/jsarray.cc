@@ -32,7 +32,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
 PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {
   uint32_t index;
   if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
-    return GetOwnPropertyWithIndex(ctx, index);
+    return JSArray::GetOwnPropertyWithIndex(ctx, index);
   }
   return JSObject::GetOwnProperty(ctx, name);
 }
@@ -98,7 +98,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 Error* res) {
   uint32_t index;
   if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
-    return DefineOwnPropertyWithIndex(ctx, index, desc, th, res);
+    return JSArray::DefineOwnPropertyWithIndex(ctx, index, desc, th, res);
   }
 
   const Symbol length_symbol = ctx->length_symbol();
@@ -155,7 +155,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           while (new_len < old_len) {
             old_len -= 1;
             // see Eratta
-            const bool delete_succeeded = DeleteWithIndex(ctx, old_len, false, res);
+            const bool delete_succeeded =
+                JSArray::DeleteWithIndex(ctx, old_len, false, res);
             if (*res) {
               return false;
             }
@@ -174,7 +175,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           }
         } else {
           std::vector<Symbol> keys;
-          JSObject::GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
+          JSObject::GetOwnPropertyNames(ctx, &keys,
+                                        JSObject::kIncludeNotEnumerable);
           std::set<uint32_t> ix;
           for (std::vector<Symbol>::const_iterator it = keys.begin(),
                last = keys.end(); it != last; ++it) {
@@ -232,8 +234,8 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
                                          bool th,
                                          Error* res) {
   // array index
-  PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx,
-                                                        ctx->length_symbol());
+  PropertyDescriptor old_len_desc_prop =
+      JSArray::GetOwnProperty(ctx, ctx->length_symbol());
   DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
   const double old_len = old_len_desc->value().ToNumber(ctx, res);
   if (*res) {
@@ -246,7 +248,8 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
   // define step
   const bool descriptor_is_default_property = IsDefaultDescriptor(desc);
   if (descriptor_is_default_property &&
-      (dense_ || JSObject::GetOwnProperty(ctx, ctx->InternIndex(index)).IsEmpty())) {
+      (dense_ ||
+       JSObject::GetOwnProperty(ctx, ctx->InternIndex(index)).IsEmpty())) {
     JSVal target;
     if (desc.IsDataDescriptor()) {
       target = desc.AsDataDescriptor()->value();
@@ -262,13 +265,14 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
       }
     } else {
       if (!map_) {
-        map_ = new (GC) Map();
+        map_ = new(GC)Map();
       }
       (*map_)[index] = target;
     }
   } else {
-    const bool succeeded = JSObject::DefineOwnProperty(
-        ctx, ctx->InternIndex(index), desc, false, res);
+    const bool succeeded = JSObject::DefineOwnProperty(ctx,
+                                                       ctx->InternIndex(index),
+                                                       desc, false, res);
     if (*res) {
       return false;
     }
@@ -305,12 +309,13 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
 bool JSArray::Delete(Context* ctx, Symbol name, bool th, Error* res) {
   uint32_t index;
   if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
-    return DeleteWithIndex(ctx, index, th, res);
+    return JSArray::DeleteWithIndex(ctx, index, th, res);
   }
   return JSObject::Delete(ctx, name, th, res);
 }
 
-bool JSArray::DeleteWithIndex(Context* ctx, uint32_t index, bool th, Error* res) {
+bool JSArray::DeleteWithIndex(Context* ctx,
+                              uint32_t index, bool th, Error* res) {
   if (detail::kMaxVectorSize > index) {
     if (vector_.size() > index) {
       JSVal& val = vector_[index];
