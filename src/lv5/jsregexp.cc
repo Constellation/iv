@@ -293,14 +293,10 @@ std::tr1::tuple<uint32_t, uint32_t, bool> JSRegExp::Match(
   if (rc < 0) {
     return std::tr1::make_tuple(0, 0, false);
   }
-  int next = offset_vector[1];
-  if (offset_vector[0] == offset_vector[1]) {
-    ++next;
-  }
   for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
     result->push_back(std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
   }
-  return std::tr1::make_tuple(offset_vector[0], next, true);
+  return std::tr1::make_tuple(offset_vector[0], offset_vector[1], true);
 }
 
 JSRegExp* JSRegExp::New(Context* ctx) {
