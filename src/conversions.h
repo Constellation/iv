@@ -350,7 +350,8 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
     return Conversions::kNaN;
   }
 
-  double result = 0;
+  // TODO(Constellation) precision version
+  double result = 0.0;
   const Iter start = it;
   for (; it != last; ++it) {
     const int val = Radix36Value(*it);
