@@ -18,6 +18,7 @@ template<typename T>
 class Conversions {
  public:
   static const double kNaN;
+  static const double kInf;
   static const int kMaxSignificantDigits = 772;
   static const std::string kInfinity;
   static const double DoubleToInt32_Two32;
@@ -27,6 +28,9 @@ class Conversions {
 };
 template<typename T>
 const double Conversions<T>::kNaN = std::numeric_limits<double>::quiet_NaN();
+
+template<typename T>
+const double Conversions<T>::kInf = std::numeric_limits<double>::infinity();
 
 template<typename T>
 const std::string Conversions<T>::kInfinity = "Infinity";
@@ -369,6 +373,25 @@ inline double StringToIntegerWithRadix(const UStringPiece& range,
                                        int radix, bool strip_prefix) {
   return StringToIntegerWithRadix(range.begin(), range.end(),
                                   radix, strip_prefix);
+}
+
+template<typename Iter>
+inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
+  double number = 0.0;
+  double multiplier = 1.0;
+  for (--it, --last; last != it; --last) {
+    if (multiplier == Conversions::kInf) {
+      if (*last != '0') {
+        number = Conversions::kInf;
+        break;
+      }
+    } else {
+      const int digit = Radix36Value(*last);
+      number += digit * multiplier;
+    }
+    multiplier *= radix;
+  }
+  return number;
 }
 
 inline std::size_t StringToHash(const UStringPiece& x) {

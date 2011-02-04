@@ -799,16 +799,21 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       return Token::ILLEGAL;
     }
 
-    if (type == OCTAL) {
-      double val = 0;
-      for (typename std::vector<char>::const_iterator it = buffer8_.begin(),
-           last = buffer8_.end(); it != last; ++it) {
-        val = val * 8 + (*it - '0');
-      }
-      numeric_ = val;
-    } else {
+
+    if (type == DECIMAL) {
       const std::string buf(buffer8_.begin(), buffer8_.end());
       numeric_ = std::atof(buf.c_str());
+    } else if (type == HEX) {
+      assert(buffer8_.size() > 2);  // first 0x
+      numeric_ = ParseIntegerOverflow(buffer8_.begin() + 2,
+                                      buffer8_.end(),
+                                      16);
+    } else {
+      assert(type == OCTAL);
+      assert(buffer8_.size() > 1);  // first 0
+      numeric_ = ParseIntegerOverflow(buffer8_.begin() + 1,
+                                      buffer8_.end(),
+                                      8);
     }
     type_ = type;
     return Token::NUMBER;
