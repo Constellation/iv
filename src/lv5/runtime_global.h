@@ -366,13 +366,9 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), ERROR(error));
-    if (std::isfinite(number)) {
-      return JSTrue;
-    } else {
-      return JSFalse;
-    }
+    return JSVal::Bool(std::isfinite(number));
   } else {
-    return JSTrue;
+    return JSFalse;
   }
 }
 
