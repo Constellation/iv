@@ -21,7 +21,7 @@ struct GCMap {
   typedef std::map<T1,
                    T2,
                    std::less<T1>,
-                   gc_allocator<std::pair<const T1, T2> > > type;
+                   traceable_allocator<std::pair<const T1, T2> > > type;
 };
 
 template<typename T1, typename T2>
@@ -30,7 +30,7 @@ struct GCHashMap {
                                   T2,
                                   std::tr1::hash<T1>,
                                   std::equal_to<T1>,
-                                  gc_allocator<
+                                  traceable_allocator<
                                     std::pair<const T1, T2> > > type;
 };
 
@@ -39,7 +39,7 @@ struct GCHashSet {
   typedef std::tr1::unordered_set<T,
                                   std::tr1::hash<T>,
                                   std::equal_to<T>,
-                                  gc_allocator<T> > type;
+                                  traceable_allocator<T> > type;
 };
 
 typedef std::basic_string<uc16,
