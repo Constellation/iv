@@ -748,8 +748,8 @@ void Interpreter::Visit(const Assignment* assign) {
           JSStringBuilder builder(ctx_);
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          builder.Append(lstr->value());
-          builder.Append(rstr->value());
+          builder.Append(*lstr);
+          builder.Append(*rstr);
           result.set_value(builder.Build());
           break;
         }
@@ -910,8 +910,8 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           JSStringBuilder builder(ctx_);
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          builder.Append(lstr->value());
-          builder.Append(rstr->value());
+          builder.Append(*lstr);
+          builder.Append(*rstr);
           ctx_->Return(builder.Build());
           return;
         }
