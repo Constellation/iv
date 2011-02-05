@@ -258,18 +258,16 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
   const JSString* search_str;
-  // undefined -> NaN -> 0
-  std::size_t pos = std::numeric_limits<std::size_t>::max();
+  std::size_t target = str->size();
   if (args.size() > 0) {
     search_str = args[0].ToString(args.ctx(), ERROR(error));
+    // undefined -> NaN
     if (args.size() > 1) {
       const double position = args[1].ToNumber(args.ctx(), ERROR(error));
       if (!std::isnan(position)) {
         const double integer = core::DoubleToInteger(position);
-        if (integer < 0) {
-          pos = 0;
-        } else {
-          pos = core::DoubleToUInt32(integer);
+        if (0 < integer && integer < target) {
+          target = static_cast<std::size_t>(integer);
         }
       }
     }
@@ -278,7 +276,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
     search_str = JSString::NewAsciiString(args.ctx(), "undefined");
   }
   const GCUString::size_type loc =
-      str->value().rfind(search_str->value(), std::min(pos, str->size()));
+      str->value().rfind(search_str->value(), target);
   return (loc == GCUString::npos) ? -1.0 : loc;
 }
 
