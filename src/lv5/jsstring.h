@@ -18,7 +18,7 @@ namespace lv5 {
 
 class Context;
 class JSStringBuilder;
-class JSString : public gc {
+class JSString : public gc_cleanup {
  public:
   friend class JSStringBuilder;
   typedef JSString this_type;
