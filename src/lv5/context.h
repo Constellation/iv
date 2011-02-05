@@ -244,7 +244,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSVal ret_;
   const BreakableStatement* target_;
   Error error_;
-  GCHashMap<Symbol, Class>::type builtins_;
+  trace::HashMap<Symbol, Class>::type builtins_;
   bool strict_;
   std::size_t generate_script_counter_;
   random_generator random_engine_;
