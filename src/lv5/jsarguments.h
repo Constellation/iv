@@ -18,7 +18,7 @@ class JSCodeFunction;
 class JSArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
-  typedef GCHashMap<Symbol, Symbol>::type Index2Param;
+  typedef GCHashMapNoTrace<Symbol, Symbol>::type Index2Param;
   JSArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),
       map_() { }

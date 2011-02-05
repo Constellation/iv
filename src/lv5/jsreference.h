@@ -6,7 +6,7 @@
 namespace iv {
 namespace lv5 {
 
-class JSReference : public gc {
+class JSReference : public gc_cleanup {
  public:
   JSReference(JSVal base, Symbol name, bool is_strict)
     : base_(base),

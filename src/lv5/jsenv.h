@@ -17,7 +17,7 @@ class JSDeclEnv;
 class JSObjectEnv;
 class Context;
 
-class JSEnv : public gc {
+class JSEnv : public gc_cleanup {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
