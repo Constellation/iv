@@ -20,6 +20,7 @@
 #include "jsast.h"
 #include "jsscript.h"
 #include "gc_template.h"
+#include "context_utils.h"
 
 namespace iv {
 namespace lv5 {
@@ -29,6 +30,17 @@ class SymbolChecker;
 class Context : private core::Noncopyable<Context>::type {
  public:
   friend class SymbolChecker;
+  friend const core::UString& context::GetSymbolString(const Context* ctx,
+                                                       const Symbol& sym);
+  friend const Class& context::Cls(Context* ctx, const Symbol& name);
+  friend const Class& context::Cls(Context* ctx,
+                                   const core::StringPiece& str);
+  friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
+  friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
+  friend Symbol context::Intern(Context* ctx, const Identifier& ident);
+  friend Symbol context::Intern(Context* ctx, uint32_t index);
+  friend Symbol context::Intern(Context* ctx, double number);
+
   typedef iv::core::Xor128 random_engine_type;
   typedef std::tr1::uniform_real<double> random_distribution_type;
   typedef std::tr1::variate_generator<
@@ -146,9 +158,6 @@ class Context : private core::Noncopyable<Context>::type {
 
   JSVal ErrorVal();
 
-  const Class& Cls(Symbol name);
-  const Class& Cls(const core::StringPiece& str);
-
   Symbol Intern(const core::StringPiece& str);
   Symbol Intern(const core::UStringPiece& str);
   Symbol Intern(const Identifier& ident);
@@ -208,9 +217,11 @@ class Context : private core::Noncopyable<Context>::type {
   }
   double Random();
   JSString* ToString(Symbol sym);
-  const core::UString& GetContent(Symbol sym) const;
   bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const;
+
+  const Class& Cls(Symbol name);
+  const Class& Cls(const core::StringPiece& str);
 
  private:
 
@@ -218,6 +229,8 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol CheckIntern(const core::UStringPiece& str, bool* found);
   Symbol CheckIntern(uint32_t index, bool* found);
   Symbol CheckIntern(double number, bool* found);
+
+  const core::UString& GetSymbolString(Symbol sym) const;
 
   JSObject global_obj_;
   JSNativeFunction throw_type_error_;

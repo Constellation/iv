@@ -6,6 +6,7 @@
 #include "jsfunction.h"
 #include "arguments.h"
 #include "context.h"
+#include "context_utils.h"
 #include "interpreter.h"
 #include "property.h"
 #include "class.h"
@@ -44,6 +45,42 @@ class ScriptScope : private core::Noncopyable<ScriptScope>::type {
 };
 
 }  // namespace
+
+namespace context {
+
+const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
+  return ctx->GetSymbolString(sym);
+}
+
+const Class& Cls(Context* ctx, const Symbol& name) {
+  return ctx->Cls(name);
+}
+
+const Class& Cls(Context* ctx, const core::StringPiece& str) {
+  return ctx->Cls(ctx->Intern(str));
+}
+
+Symbol Intern(Context* ctx, const core::StringPiece& str) {
+  return ctx->Intern(str);
+}
+
+Symbol Intern(Context* ctx, const core::UStringPiece& str) {
+  return ctx->Intern(str);
+}
+
+Symbol Intern(Context* ctx, const Identifier& ident) {
+  return ctx->Intern(ident);
+}
+
+Symbol Intern(Context* ctx, uint32_t index) {
+  return ctx->InternIndex(index);
+}
+
+Symbol Intern(Context* ctx, double number) {
+  return ctx->InternDouble(number);
+}
+
+}  // namespace iv::lv5::context
 
 Context::Context()
   : global_obj_(),
@@ -155,8 +192,8 @@ JSString* Context::ToString(Symbol sym) {
   return table_.ToString(this, sym);
 }
 
-const core::UString& Context::GetContent(Symbol sym) const {
-  return table_.GetContent(sym);
+const core::UString& Context::GetSymbolString(Symbol sym) const {
+  return table_.GetSymbolString(sym);
 }
 
 bool Context::InCurrentLabelSet(

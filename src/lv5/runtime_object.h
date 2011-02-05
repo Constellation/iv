@@ -426,7 +426,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
   JSObject* const obj = this_binding.ToObject(args.ctx(), ERROR(error));
   JSStringBuilder builder(args.ctx());
   builder.Append("[object ");
-  builder.Append(args.ctx()->GetContent(obj->class_name()));
+  builder.Append(context::GetSymbolString(args.ctx(), obj->class_name()));
   builder.Append("]");
   return builder.Build();
 }

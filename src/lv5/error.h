@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_ERROR_H_
 #define _IV_LV5_ERROR_H_
 #include <algorithm>
+#include "ustring.h"
 #include "static_assert.h"
 #include "stringpiece.h"
 #include "jsval.h"
@@ -38,7 +39,12 @@ class Error {
 
   void Report(Code code, const core::StringPiece& str) {
     code_ = code;
-    str.CopyToString(&detail_);
+    detail_.assign(str.begin(), str.end());
+  }
+
+  void Report(Code code, const core::UStringPiece& str) {
+    code_ = code;
+    detail_.assign(str.begin(), str.end());
   }
 
   void Report(const JSVal& val) {
@@ -54,7 +60,7 @@ class Error {
     return code_;
   }
 
-  const std::string detail() const {
+  const core::UString detail() const {
     return detail_;
   }
 
@@ -90,7 +96,7 @@ class Error {
 
   Code code_;
   JSVal value_;
-  std::string detail_;
+  core::UString detail_;
 };
 
 } }  // namespace iv::lv5

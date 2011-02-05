@@ -1515,8 +1515,14 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
   const JSReference* const ref = val.reference();
   const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
-    // TODO(Constellation) add symbol name
-    error->Report(Error::Reference, "not defined");
+    // TODO(Constellation) clean up code
+    std::vector<uc16> vec;
+    vec.push_back('"');
+    const core::UString& sym = context::GetSymbolString(ctx_, ref->GetReferencedName());
+    vec.insert(vec.end(), sym.begin(), sym.end());
+    const core::StringPiece piece("\" not defined");
+    vec.insert(vec.end(), piece.begin(), piece.end());
+    error->Report(Error::Reference, core::UStringPiece(vec.data(), vec.size()));
     return JSUndefined;
   }
   if (ref->IsPropertyReference()) {

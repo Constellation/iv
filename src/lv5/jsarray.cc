@@ -11,6 +11,7 @@
 #include "jsobject.h"
 #include "property.h"
 #include "jsstring.h"
+#include "context_utils.h"
 #include "context.h"
 #include "class.h"
 
@@ -31,7 +32,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
 
 PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {
   uint32_t index;
-  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+  if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
     return JSArray::GetOwnPropertyWithIndex(ctx, index);
   }
   return JSObject::GetOwnProperty(ctx, name);
@@ -97,7 +98,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
                                 bool th,
                                 Error* res) {
   uint32_t index;
-  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+  if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
     return JSArray::DefineOwnPropertyWithIndex(ctx, index, desc, th, res);
   }
 
@@ -181,7 +182,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
           for (std::vector<Symbol>::const_iterator it = keys.begin(),
                last = keys.end(); it != last; ++it) {
             uint32_t index;
-            if (core::ConvertToUInt32(ctx->GetContent(*it), &index)) {
+            if (core::ConvertToUInt32(context::GetSymbolString(ctx, *it),
+                                      &index)) {
               ix.insert(index);
             }
           }
@@ -308,7 +310,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
 
 bool JSArray::Delete(Context* ctx, Symbol name, bool th, Error* res) {
   uint32_t index;
-  if (core::ConvertToUInt32(ctx->GetContent(name), &index)) {
+  if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
     return JSArray::DeleteWithIndex(ctx, index, th, res);
   }
   return JSObject::Delete(ctx, name, th, res);

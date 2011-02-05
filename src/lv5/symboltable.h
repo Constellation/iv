@@ -87,7 +87,7 @@ class SymbolTable {
     return JSString::New(ctx, str);
   }
 
-  inline const core::UString& GetContent(Symbol sym) const {
+  inline const core::UString& GetSymbolString(Symbol sym) const {
     return strings_[sym.value_as_index];
   }
 
