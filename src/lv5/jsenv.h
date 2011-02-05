@@ -17,11 +17,12 @@ class JSDeclEnv;
 class JSObjectEnv;
 class Context;
 
-class JSEnv : public gc_cleanup {
+class JSEnv : public gc {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
-  virtual void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) = 0;
+  virtual void CreateMutableBinding(Context* ctx, Symbol name,
+                                    bool del, Error* err) = 0;
   virtual void SetMutableBinding(Context* ctx,
                                  Symbol name,
                                  const JSVal& val,
@@ -201,7 +202,8 @@ class JSObjectEnv : public JSEnv {
         vec.insert(vec.end(), sym.begin(), sym.end());
         const core::StringPiece piece("\" not defined");
         vec.insert(vec.end(), piece.begin(), piece.end());
-        res->Report(Error::Reference, core::UStringPiece(vec.data(), vec.size()));
+        res->Report(Error::Reference,
+                    core::UStringPiece(vec.data(), vec.size()));
       }
       return JSUndefined;
     }

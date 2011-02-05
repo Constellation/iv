@@ -21,7 +21,7 @@ namespace lv5 {
 class Context;
 class JSStringBuilder;
 
-class JSString : public gc_cleanup {
+class JSString : public gc {
  public:
   friend class JSStringBuilder;
   typedef JSString this_type;
@@ -33,14 +33,14 @@ class JSString : public gc_cleanup {
   typedef value_type::size_type size_type;
 
   JSString()
-    : string_(new(GC)GCUString()),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   template<class String>
   explicit JSString(const String& rhs)
-    : string_(new(GC)GCUString(rhs.begin(), rhs.end())),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(rhs.begin(), rhs.end()),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   JSString(const JSString& str)
@@ -49,18 +49,18 @@ class JSString : public gc_cleanup {
   }
 
   JSString(size_type len, uc16 ch)
-    : string_(new(GC)GCUString(len, ch)),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(len, ch),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   JSString(const uc16* s, size_type len)
-    : string_(new(GC)GCUString(s, len)),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(s, len),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   JSString(const GCUString& s, size_type index, size_type len)
-    : string_(new(GC)GCUString(s, index, len)),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(s, index, len),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   core::UStringPiece ToPiece() const {
@@ -69,44 +69,44 @@ class JSString : public gc_cleanup {
 
   template<typename Iter>
   JSString(Iter start, Iter last)
-    : string_(new(GC)GCUString(start, last)),
-      hash_value_(core::StringToHash(*string_)) {
+    : string_(start, last),
+      hash_value_(core::StringToHash(string_)) {
   }
 
   const uc16& operator[](size_type n) const {
-    return (*string_)[n];
+    return string_[n];
   }
 
   bool empty() const {
-    return string_->empty();
+    return string_.empty();
   }
 
   size_type size() const {
-    return string_->size();
+    return string_.size();
   }
 
   const uc16* data() const {
-    return string_->data();
+    return string_.data();
   }
 
   const_iterator begin() const {
-    return string_->begin();
+    return string_.begin();
   }
 
   const_iterator end() const {
-    return string_->end();
+    return string_.end();
   }
 
   const_reverse_iterator rbegin() const {
-    return string_->rbegin();
+    return string_.rbegin();
   }
 
   const_reverse_iterator rend() const {
-    return string_->rend();
+    return string_.rend();
   }
 
   const GCUString& value() const {
-    return *string_;
+    return string_;
   }
 
   core::UStringPiece piece() const {
@@ -115,27 +115,27 @@ class JSString : public gc_cleanup {
 
   inline friend bool operator==(const this_type& lhs,
                                 const this_type& rhs) {
-    return *lhs.string_ == *rhs.string_;
+    return lhs.string_ == rhs.string_;
   }
 
   inline friend bool operator<(const this_type& lhs,
                                const this_type& rhs) {
-    return *lhs.string_ < *rhs.string_;
+    return lhs.string_ < rhs.string_;
   }
 
   inline friend bool operator>(const this_type& lhs,
                                const this_type& rhs) {
-    return *lhs.string_ > *rhs.string_;
+    return lhs.string_ > rhs.string_;
   }
 
   inline friend bool operator<=(const this_type& lhs,
                                 const this_type& rhs) {
-    return *lhs.string_ <= *rhs.string_;
+    return lhs.string_ <= rhs.string_;
   }
 
   inline friend bool operator>=(const this_type& lhs,
                                 const this_type& rhs) {
-    return *lhs.string_ >= *rhs.string_;
+    return lhs.string_ >= rhs.string_;
   }
 
   inline std::size_t hash_value() const {
@@ -144,7 +144,7 @@ class JSString : public gc_cleanup {
 
   static JSString* New(Context* ctx, const core::StringPiece& str) {
     JSString* const res = new JSString();
-    icu::ConvertToUTF16(str, res->string_);
+    icu::ConvertToUTF16(str, &res->string_);
     res->ReCalcHash();
     return res;
   }
@@ -170,15 +170,15 @@ class JSString : public gc_cleanup {
  private:
   // ready to create
   explicit JSString(size_type n)
-    : string_(new(GC)GCUString()) {
-    string_->resize(n);
+    : string_() {
+    string_.resize(n);
   }
 
   inline void ReCalcHash() {
-    hash_value_ = core::StringToHash(*string_);
+    hash_value_ = core::StringToHash(string_);
   }
 
-  GCUString* string_;
+  GCUString string_;
   std::size_t hash_value_;
 };
 

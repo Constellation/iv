@@ -11,7 +11,6 @@ namespace detail {
 class Context;
 class JSArray : public JSObject {
  public:
-  typedef GCVector<JSVal>::type Vector;
   typedef GCMap<uint32_t, JSVal>::type Map;
 
   JSArray(Context* ctx, std::size_t len);
@@ -44,7 +43,7 @@ class JSArray : public JSObject {
   void CompactionToLength(uint32_t length);
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
 
-  Vector vector_;
+  JSVals vector_;
   Map* map_;
   bool dense_;
   uint32_t length_;

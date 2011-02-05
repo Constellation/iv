@@ -508,5 +508,7 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
   return false;
 }
 
+typedef GCVector<JSVal>::type JSVals;
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSVAL_H_

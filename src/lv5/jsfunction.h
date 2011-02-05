@@ -25,6 +25,7 @@ class JSFunction : public JSObject {
   JSFunction* AsCallable() {
     return this;
   }
+  virtual ~JSFunction() { }
   virtual JSVal Call(const Arguments& args, Error* error) = 0;
   virtual bool HasInstance(Context* ctx,
                            const JSVal& val, Error* error);
@@ -151,7 +152,7 @@ class JSBindedFunction : public JSFunction {
   const JSVal& this_binding() const {
     return this_binding_;
   }
-  const GCVector<JSVal>::type& arguments() const {
+  const JSVals& arguments() const {
     return arguments_;
   }
   JSVal Call(const Arguments& args, Error* error);
@@ -163,7 +164,7 @@ class JSBindedFunction : public JSFunction {
  private:
   JSFunction* target_;
   JSVal this_binding_;
-  GCVector<JSVal>::type arguments_;
+  JSVals arguments_;
 };
 
 } }  // namespace iv::lv5

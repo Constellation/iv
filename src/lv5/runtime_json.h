@@ -8,6 +8,7 @@
 #include "jsstring.h"
 #include "conversions.h"
 #include "internal.h"
+#include "gc_template.h"
 #include "json_lexer.h"
 #include "json_parser.h"
 #include "json_stringifier.h"
@@ -121,8 +122,8 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
   JSVal value, replacer, space;
-  std::vector<JSString*> property_list;
-  std::vector<JSString*>* maybe = NULL;
+  trace::Vector<JSString*>::type property_list;
+  trace::Vector<JSString*>::type* maybe = NULL;
   JSFunction* replacer_function = NULL;
   if (args_size > 0) {
     value = args[0];

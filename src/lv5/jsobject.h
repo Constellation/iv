@@ -18,7 +18,7 @@ class Context;
 class Error;
 class JSString;
 
-class JSObject : public gc_cleanup {
+class JSObject : public gc {
  public:
   enum EnumerationMode {
     kExcludeNotEnumerable,

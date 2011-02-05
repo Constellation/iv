@@ -13,7 +13,7 @@ class Context;
 
 class Arguments {
  public:
-  typedef std::vector<JSVal> JSVals;
+  typedef trace::Vector<JSVal>::type JSVals;
   typedef Arguments this_type;
 
   typedef JSVals::value_type value_type;
@@ -127,7 +127,7 @@ class Arguments {
  private:
   Context* ctx_;
   JSVal this_binding_;
-  std::vector<JSVal> args_;
+  JSVals args_;
   bool constructor_call_;
 };
 

@@ -18,10 +18,14 @@ class JSCodeFunction;
 class JSArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
-  typedef GCHashMapNoTrace<Symbol, Symbol>::type Index2Param;
+  typedef GCHashMap<Symbol, Symbol>::type Index2Param;
   JSArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),
       map_() { }
+
+  virtual ~JSArguments() {
+    std::cout << "JS ARGUMENTS" << std::endl;
+  }
   static JSArguments* New(Context* ctx,
                           JSCodeFunction* code,
                           const Identifiers& names,

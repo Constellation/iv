@@ -355,7 +355,7 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
   using std::find;
   if (vec->empty()) {
     uint32_t index = 0;
-    for (Vector::const_iterator it = vector_.begin(),
+    for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
         vec->push_back(ctx->InternIndex(index));
@@ -371,7 +371,7 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
     }
   } else {
     uint32_t index = 0;
-    for (Vector::const_iterator it = vector_.begin(),
+    for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
         const Symbol sym = ctx->InternIndex(index);

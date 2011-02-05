@@ -14,6 +14,7 @@
 #include "jsstring.h"
 #include "jsobject.h"
 #include "jsfunction.h"
+#include "gc_template.h"
 #include "context.h"
 #include "lv5.h"
 namespace iv {
@@ -22,7 +23,7 @@ namespace detail {
 
 class JSONStackScope : private core::Noncopyable<JSONStackScope>::type {
  public:
-  JSONStackScope(std::vector<JSObject*>* stack, JSObject* obj)
+  JSONStackScope(trace::Vector<JSObject*>::type* stack, JSObject* obj)
     : stack_(stack) {
     stack_->push_back(obj);
   }
@@ -30,7 +31,7 @@ class JSONStackScope : private core::Noncopyable<JSONStackScope>::type {
     stack_->pop_back();
   }
  private:
-  std::vector<JSObject*>* stack_;
+  trace::Vector<JSObject*>::type* stack_;
 };
 
 static const char* kJSONNullStringPtr = "null";
@@ -44,7 +45,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
   JSONStringifier(Context* ctx,
                   JSFunction* replacer,
                   const core::UString& gap,
-                  const std::vector<JSString*>* property_list)  // Maybe NULL
+                  const trace::Vector<JSString*>::type* property_list)
     : ctx_(ctx),
       replacer_(replacer),
       stack_(),
@@ -136,8 +137,8 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     const core::UString stepback = indent_;
     indent_.append(gap_);
 
-    std::vector<JSString*> prop;
-    const std::vector<JSString*>* k;
+    trace::Vector<JSString*>::type prop;
+    const trace::Vector<JSString*>::type* k;
     if (property_list_) {
       k = property_list_;
     } else {
@@ -151,7 +152,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
 
     std::vector<core::UString> partial;
 
-    for (std::vector<JSString*>::const_iterator it = k->begin(),
+    for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
       const JSVal result = Str(
           ctx_->Intern(core::UStringPiece((*it)->data(), (*it)->size())),
@@ -345,10 +346,10 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
 
   Context* ctx_;
   JSFunction* replacer_;
-  std::vector<JSObject*> stack_;
+  trace::Vector<JSObject*>::type stack_;
   core::UString indent_;
   core::UString gap_;
-  const std::vector<JSString*>* property_list_;
+  const trace::Vector<JSString*>::type* property_list_;
 };
 
 } }  // namespace iv::lv5
