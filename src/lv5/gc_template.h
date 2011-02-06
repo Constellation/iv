@@ -14,7 +14,7 @@ namespace trace {
 
 template<typename T>
 struct Vector {
-  typedef std::vector<T, gc_allocator<T> > type;
+  typedef std::vector<T, traceable_allocator<T> > type;
 };
 
 template<typename T1, typename T2>
