@@ -83,14 +83,14 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) ArrayLiteral(items);
   }
 
-  ObjectLiteral* NewObjectLiteral() {
-    return new (static_cast<Factory*>(this))
-        ObjectLiteral(static_cast<Factory*>(this));
+  ObjectLiteral*
+      NewObjectLiteral(typename ObjectLiteral::Properties* properties) {
+    return new (static_cast<Factory*>(this)) ObjectLiteral(properties);
   }
 
   template<typename T>
   T** NewPtr() {
-    return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(NULL);
+    return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(NULL);  // NOLINT
   }
 
   template<typename T>
@@ -140,7 +140,8 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) Block(body);
   }
 
-  VariableStatement* NewVariableStatement(Token::Type token, Declarations* decls) {
+  VariableStatement* NewVariableStatement(Token::Type token,
+                                          Declarations* decls) {
     return new (static_cast<Factory*>(this))
         VariableStatement(token, decls);
   }
@@ -210,7 +211,8 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) SwitchStatement(expr, clauses);
   }
 
-  CaseClause* NewCaseClause(bool is_default, Expression* expr, Statements* body) {
+  CaseClause* NewCaseClause(bool is_default,
+                            Expression* expr, Statements* body) {
     return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
   }
 

@@ -214,7 +214,8 @@ class Inherit<Factory, kNamedOnlyBreakableStatement>
 INHERIT(NamedOnlyBreakableStatement);
 
 template<typename Factory>
-class NamedOnlyBreakableStatement : public NamedOnlyBreakableStatementBase<Factory> {
+class NamedOnlyBreakableStatement
+  : public NamedOnlyBreakableStatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(NamedOnlyBreakableStatement)
 };
@@ -227,7 +228,8 @@ class Inherit<Factory, kAnonymousBreakableStatement>
 INHERIT(AnonymousBreakableStatement);
 
 template<typename Factory>
-class AnonymousBreakableStatement : public AnonymousBreakableStatementBase<Factory> {
+class AnonymousBreakableStatement
+  : public AnonymousBreakableStatementBase<Factory> {
  public:
   DECLARE_NODE_TYPE(AnonymousBreakableStatement)
 };
@@ -902,8 +904,7 @@ class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
   StringLiteral(const std::vector<uc16>& buffer,
-                Factory* factory)
-  {
+                Factory* factory) {
     InitializeStringLiteral(buffer, factory);
   }
 
@@ -1158,30 +1159,30 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
                           Identifier<Factory>*,
                           Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
-  explicit ObjectLiteral(Factory* factory)
-    : properties_(typename Properties::allocator_type(factory)) {
+  explicit ObjectLiteral(Properties* properties)
+    : properties_(properties) {
   }
 
-  inline void AddDataProperty(Identifier<Factory>* key,
-                              Expression<Factory>* val) {
-    AddPropertyDescriptor(DATA, key, val);
+  static inline void AddDataProperty(Properties* prop,
+                                     Identifier<Factory>* key,
+                                     Expression<Factory>* val) {
+    prop->push_back(std::tr1::make_tuple(DATA, key, val));
   }
-  inline void AddAccessor(PropertyDescriptorType type,
-                          Identifier<Factory>* key,
-                          Expression<Factory>* val) {
-    AddPropertyDescriptor(type, key, val);
+
+  static inline void AddAccessor(Properties* prop,
+                                 PropertyDescriptorType type,
+                                 Identifier<Factory>* key,
+                                 Expression<Factory>* val) {
+    prop->push_back(std::tr1::make_tuple(type, key, val));
   }
+
   inline const Properties& properties() const {
-    return properties_;
+    return *properties_;
   }
   DECLARE_DERIVED_NODE_TYPE(ObjectLiteral)
+
  private:
-  inline void AddPropertyDescriptor(PropertyDescriptorType type,
-                                    Identifier<Factory>* key,
-                                    Expression<Factory>* val) {
-    properties_.push_back(std::tr1::make_tuple(type, key, val));
-  }
-  Properties properties_;
+  Properties* properties_;
 };
 
 // FunctionLiteral

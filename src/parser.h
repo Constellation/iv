@@ -143,7 +143,8 @@ class Parser
   : private Noncopyable<
     Parser<Factory, Source, UseFunctionStatement, ReduceExpressions> >::type {
  public:
-  typedef Parser<Factory, Source, UseFunctionStatement, ReduceExpressions> this_type;
+  typedef Parser<Factory, Source,
+                 UseFunctionStatement, ReduceExpressions> this_type;
   typedef this_type parser_type;
   typedef Lexer<Source> lexer_type;
 #define V(AST) typedef typename ast::AST<Factory> AST;
@@ -655,9 +656,11 @@ class Parser
 
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
-        Declarations* const decls = factory_->template NewVector<Declaration*>();
+        Declarations* const decls =
+            factory_->template NewVector<Declaration*>();
         ParseVariableDeclarations(decls, token_ == Token::CONST, false, CHECK);
-        VariableStatement* const var = factory_->NewVariableStatement(token_, decls);
+        VariableStatement* const var =
+            factory_->NewVariableStatement(token_, decls);
         init = var;
         if (token_ == Token::IN) {
           // for in loop
@@ -880,7 +883,8 @@ class Parser
     }
     Next();
 
-    SwitchStatement* const switch_stmt = factory_->NewSwitchStatement(expr, clauses);
+    SwitchStatement* const switch_stmt =
+        factory_->NewSwitchStatement(expr, clauses);
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -1553,7 +1557,8 @@ class Parser
 
         case Token::LPAREN:
           if (allow_call) {
-            Expressions* const args = factory_->template NewVector<Expression*>();
+            Expressions* const args =
+                factory_->template NewVector<Expression*>();
             ParseArguments(args, CHECK);
             expr = factory_->NewFunctionCall(expr, args);
           } else {
@@ -1761,7 +1766,9 @@ class Parser
 //    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
     typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
-    ObjectLiteral* const object = factory_->NewObjectLiteral();
+    typedef typename ObjectLiteral::Property Property;
+    typedef typename ObjectLiteral::Properties Properties;
+    Properties* const prop = factory_->template NewVector<Property>();
     ObjectMap map;
     Expression* expr;
     Identifier* ident;
@@ -1778,7 +1785,7 @@ class Parser
           ident = ParseIdentifier(
               is_get ? ParserData::kGet : ParserData::kSet);
           expr = ParseAssignmentExpression(true, CHECK);
-          object->AddDataProperty(ident, expr);
+          ObjectLiteral::AddDataProperty(prop, ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
             map.insert(std::make_pair(ident, ObjectLiteral::DATA));
@@ -1809,7 +1816,7 @@ class Parser
                 FunctionLiteral::EXPRESSION,
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
                 CHECK);
-            object->AddAccessor(type, ident, expr);
+            ObjectLiteral::AddAccessor(prop, type, ident, expr);
             typename ObjectMap::iterator it = map.find(ident);
             if (it == map.end()) {
               map.insert(std::make_pair(ident, type));
@@ -1838,7 +1845,7 @@ class Parser
         }
         EXPECT(Token::COLON);
         expr = ParseAssignmentExpression(true, CHECK);
-        object->AddDataProperty(ident, expr);
+        ObjectLiteral::AddDataProperty(prop, ident, expr);
         typename ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
           map.insert(std::make_pair(ident, ObjectLiteral::DATA));
@@ -1864,7 +1871,7 @@ class Parser
       }
     }
     Next();
-    return object;
+    return factory_->NewObjectLiteral(prop);
   }
 
   FunctionLiteral* ParseFunctionLiteral(
