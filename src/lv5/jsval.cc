@@ -3,6 +3,7 @@
 #include "jsval.h"
 #include "error.h"
 #include "jsobject.h"
+#include "dtoa.h"
 #include "conversions.h"
 namespace iv {
 namespace lv5 {

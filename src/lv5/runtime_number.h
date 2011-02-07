@@ -5,6 +5,7 @@
 #include <tr1/cmath>
 #include <tr1/cstdio>
 #include <tr1/cinttypes>
+#include "dtoa.h"
 #include "conversions.h"
 #include "arguments.h"
 #include "jsval.h"

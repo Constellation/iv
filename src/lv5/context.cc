@@ -6,6 +6,7 @@
 #include "jsfunction.h"
 #include "arguments.h"
 #include "context.h"
+#include "dtoa.h"
 #include "context_utils.h"
 #include "interpreter.h"
 #include "property.h"
