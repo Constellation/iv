@@ -465,16 +465,17 @@ class Parser
 //    | StatementList Statement
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::LBRACE);
-    Block* const block = factory_->NewBlock();
+    Statements* const body = factory_->template NewVector<Statement*>();
     Statement* stmt;
     Target target(this, Target::kNamedOnlyStatement);
 
     Next();
     while (token_ != Token::RBRACE) {
       stmt = ParseStatement(CHECK);
-      block->AddStatement(stmt);
+      body->push_back(stmt);
     }
     Next();
+    Block* const block = factory_->NewBlock(body);
     target.set_node(block);
     return block;
   }
@@ -484,10 +485,10 @@ class Parser
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
-    VariableStatement* const stmt = factory_->NewVariableStatement(token_);
-    ParseVariableDeclarations(stmt, true, CHECK);
+    Declarations* const decls = factory_->template NewVector<Declaration*>();
+    ParseVariableDeclarations(decls, token_ == Token::CONST, true, CHECK);
     ExpectSemicolon(CHECK);
-    return stmt;
+    return factory_->NewVariableStatement(token_, decls);
   }
 
 //  VariableDeclarationList
@@ -503,9 +504,10 @@ class Parser
 //
 //  Initialiser
 //    : '=' AssignmentExpression
-  Statement* ParseVariableDeclarations(VariableStatement* stmt,
-                                       bool contains_in,
-                                       bool *res) {
+  Declarations* ParseVariableDeclarations(Declarations* decls,
+                                          bool is_const,
+                                          bool contains_in,
+                                          bool *res) {
     Identifier* name;
     Expression* expr;
     Declaration* decl;
@@ -537,11 +539,11 @@ class Parser
         // Undefined Expression
         decl = factory_->NewDeclaration(name, factory_->NewUndefined());
       }
-      stmt->AddDeclaration(decl);
-      scope_->AddUnresolved(name, stmt->IsConst());
+      decls->push_back(decl);
+      scope_->AddUnresolved(name, is_const);
     } while (token_ == Token::COMMA);
 
-    return stmt;
+    return decls;
   }
 
 //  EmptyStatement
@@ -653,8 +655,9 @@ class Parser
 
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
-        VariableStatement* const var = factory_->NewVariableStatement(token_);
-        ParseVariableDeclarations(var, false, CHECK);
+        Declarations* const decls = factory_->template NewVector<Declaration*>();
+        ParseVariableDeclarations(decls, token_ == Token::CONST, false, CHECK);
+        VariableStatement* const var = factory_->NewVariableStatement(token_, decls);
         init = var;
         if (token_ == Token::IN) {
           // for in loop
@@ -845,13 +848,13 @@ class Parser
 //    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
   Statement* ParseSwitchStatement(bool *res) {
     assert(token_ == Token::SWITCH);
-    CaseClause *case_clause;
+    CaseClause* case_clause;
     Next();
 
     EXPECT(Token::LPAREN);
 
-    Expression *expr = ParseExpression(true, CHECK);
-    SwitchStatement *switch_stmt = factory_->NewSwitchStatement(expr);
+    Expression* expr = ParseExpression(true, CHECK);
+    CaseClauses* clauses = factory_->template NewVector<CaseClause*>();
     Target target(this, Target::kSwitchStatement);
 
     EXPECT(Token::RPAREN);
@@ -873,10 +876,11 @@ class Parser
           default_found = true;
         }
       }
-      switch_stmt->AddCaseClause(case_clause);
+      clauses->push_back(case_clause);
     }
     Next();
 
+    SwitchStatement* const switch_stmt = factory_->NewSwitchStatement(expr, clauses);
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -892,16 +896,14 @@ class Parser
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
-    CaseClause* clause;
-    Statement* stmt;
+    Expression* expr = NULL;
+    Statements* const body = factory_->template NewVector<Statement*>();
 
     if (token_ == Token::CASE) {
       Next();
-      Expression* const expr = ParseExpression(true, CHECK);
-      clause = factory_->NewCaseClause(false, expr);
+      expr = ParseExpression(true, CHECK);
     } else  {
       EXPECT(Token::DEFAULT);
-      clause = factory_->NewCaseClause(true, NULL);
     }
 
     EXPECT(Token::COLON);
@@ -909,11 +911,11 @@ class Parser
     while (token_ != Token::RBRACE &&
            token_ != Token::CASE   &&
            token_ != Token::DEFAULT) {
-      stmt = ParseStatement(CHECK);
-      clause->AddStatement(stmt);
+      Statement* const stmt = ParseStatement(CHECK);
+      body->push_back(stmt);
     }
 
-    return clause;
+    return factory_->NewCaseClause(expr == NULL, expr, body);
   }
 
 //  ThrowStatement
@@ -1027,7 +1029,7 @@ class Parser
       Identifier* const label = expr->AsIdentifier();
       const bool exist_labels = labels;
       if (!exist_labels) {
-        labels = factory_->NewLabels();
+        labels = factory_->template NewVector<Identifier*>();
       }
       if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
         // duplicate label
@@ -1525,11 +1527,11 @@ class Parser
     } else {
       Next();
       Expression* const target = ParseMemberExpression(false, CHECK);
-      ConstructorCall* const con = factory_->NewConstructorCall(target);
+      Expressions* const args = factory_->template NewVector<Expression*>();
       if (token_ == Token::LPAREN) {
-        ParseArguments(con, CHECK);
+        ParseArguments(args, CHECK);
       }
-      expr = con;
+      expr = factory_->NewConstructorCall(target, args);
     }
     while (true) {
       switch (token_) {
@@ -1551,9 +1553,9 @@ class Parser
 
         case Token::LPAREN:
           if (allow_call) {
-            FunctionCall* const funcall = factory_->NewFunctionCall(expr);
-            ParseArguments(funcall, CHECK);
-            expr = funcall;
+            Expressions* const args = factory_->template NewVector<Expression*>();
+            ParseArguments(args, CHECK);
+            expr = factory_->NewFunctionCall(expr, args);
           } else {
             return expr;
           }
@@ -1667,20 +1669,20 @@ class Parser
 //  ArgumentList
 //    : AssignmentExpression
 //    | ArgumentList ',' AssignmentExpression
-  template<typename Callable>
-  Callable* ParseArguments(Callable* func, bool *res) {
+  template<typename Container>
+  Container* ParseArguments(Container* container, bool *res) {
     Next();
     if (token_ != Token::RPAREN) {
       Expression* const first = ParseAssignmentExpression(true, CHECK);
-      func->AddArgument(first);
+      container->push_back(first);
       while (token_ == Token::COMMA) {
         Next();
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
-        func->AddArgument(expr);
+        container->push_back(expr);
       }
     }
     EXPECT(Token::RPAREN);
-    return func;
+    return container;
   }
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
@@ -1714,23 +1716,22 @@ class Parser
 //    : ','
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
-    ArrayLiteral* const array = factory_->NewArrayLiteral();
-    Expression* expr;
+    Expressions* const items = factory_->template NewVector<Expression*>();
     Next();
     while (token_ != Token::RBRACK) {
       if (token_ == Token::COMMA) {
         // when Token::COMMA, only increment length
-        array->AddItem(NULL);
+        items->push_back(NULL);
       } else {
-        expr = ParseAssignmentExpression(true, CHECK);
-        array->AddItem(expr);
+        Expression* const expr = ParseAssignmentExpression(true, CHECK);
+        items->push_back(expr);
       }
       if (token_ != Token::RBRACK) {
         EXPECT(Token::COMMA);
       }
     }
     Next();
-    return array;
+    return factory_->NewArrayLiteral(items);
   }
 
 

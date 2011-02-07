@@ -116,6 +116,10 @@ class AstNode : public AstNodeBase<Factory> {
  public:
   virtual ~AstNode() = 0;
 
+  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
+  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
+  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+
   STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
   EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
 
@@ -238,20 +242,15 @@ INHERIT(Block);
 template<typename Factory>
 class Block : public BlockBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  explicit Block(Factory* factory)
-     : body_(typename Statements::allocator_type(factory)) { }
-
-  void AddStatement(Statement<Factory>* stmt) {
-    body_.push_back(stmt);
-  }
-
+  typedef typename AstNode<Factory>::Statements Statements;
+  explicit Block(Statements* body)
+     : body_(body) { }
   inline const Statements& body() const {
-    return body_;
+    return *body_;
   }
   DECLARE_DERIVED_NODE_TYPE(Block)
  private:
-  Statements body_;
+  Statements* body_;
 };
 
 // FunctionStatement
@@ -309,16 +308,11 @@ class VariableStatement : public VariableStatementBase<Factory> {
   typedef typename SpaceVector<
             Factory,
             Declaration<Factory>*>::type Declarations;
-  VariableStatement(Token::Type type, Factory* factory)
+  VariableStatement(Token::Type type, Declarations* decls)
     : is_const_(type == Token::CONST),
-      decls_(typename Declarations::allocator_type(factory)) { }
-
-  void AddDeclaration(Declaration<Factory>* decl) {
-    decls_.push_back(decl);
-  }
-
+      decls_(decls) { }
   inline const Declarations& decls() const {
-    return decls_;
+    return *decls_;
   }
   inline bool IsConst() const {
     return is_const_;
@@ -326,7 +320,7 @@ class VariableStatement : public VariableStatementBase<Factory> {
   DECLARE_DERIVED_NODE_TYPE(VariableStatement)
  private:
   const bool is_const_;
-  Declarations decls_;
+  Declarations* decls_;
 };
 
 // Declaration
@@ -649,15 +643,13 @@ INHERIT(CaseClause);
 template<typename Factory>
 class CaseClause : public CaseClauseBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
+  typedef typename AstNode<Factory>::Statements Statements;
   explicit CaseClause(bool is_default,
-                      Expression<Factory>* expr, Factory* factory)
+                      Expression<Factory>* expr,
+                      Statements* body)
     : expr_(expr),
-      body_(typename Statements::allocator_type(factory)),
+      body_(body),
       default_(is_default) {
-  }
-  void AddStatement(Statement<Factory>* stmt) {
-    body_.push_back(stmt);
   }
   inline bool IsDefault() const {
     return default_;
@@ -666,11 +658,11 @@ class CaseClause : public CaseClauseBase<Factory> {
     return expr_;
   }
   inline const Statements& body() const {
-    return body_;
+    return *body_;
   }
  private:
   Expression<Factory>* expr_;
-  Statements body_;
+  Statements* body_;
   bool default_;
 };
 
@@ -686,20 +678,16 @@ class SwitchStatement : public SwitchStatementBase<Factory> {
  public:
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
   SwitchStatement(Expression<Factory>* expr,
-                  Factory* factory)
+                  CaseClauses* clauses)
     : expr_(expr),
-      clauses_(typename CaseClauses::allocator_type(factory)) {
-  }
-
-  void AddCaseClause(CaseClause<Factory>* clause) {
-    clauses_.push_back(clause);
+      clauses_(clauses) {
   }
   inline Expression<Factory>* expr() const { return expr_; }
-  inline const CaseClauses& clauses() const { return clauses_; }
+  inline const CaseClauses& clauses() const { return *clauses_; }
   DECLARE_DERIVED_NODE_TYPE(SwitchStatement)
  private:
   Expression<Factory>* expr_;
-  CaseClauses clauses_;
+  CaseClauses* clauses_;
 };
 
 // ThrowStatement
@@ -1133,23 +1121,22 @@ class Inherit<Factory, kArrayLiteral>
 };
 INHERIT(ArrayLiteral);
 
+
+// items is NULL able
 template<typename Factory>
 class ArrayLiteral : public ArrayLiteralBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+  typedef typename AstNode<Factory>::Expressions Expressions;
 
-  explicit ArrayLiteral(Factory* factory)
-    : items_(typename Expressions::allocator_type(factory)) {
-  }
-  inline void AddItem(Expression<Factory>* expr) {
-    items_.push_back(expr);
+  explicit ArrayLiteral(Expressions* items)
+    : items_(items) {
   }
   inline const Expressions& items() const {
-    return items_;
+    return *items_;
   }
   DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
  private:
-  Expressions items_;
+  Expressions* items_;
 };
 
 // ObjectLiteral
@@ -1207,8 +1194,8 @@ INHERIT(FunctionLiteral);
 template<typename Factory>
 class FunctionLiteral : public FunctionLiteralBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
+  typedef typename AstNode<Factory>::Statements Statements;
+  typedef typename AstNode<Factory>::Identifiers Identifiers;
   enum DeclType {
     DECLARATION,
     STATEMENT,
@@ -1369,19 +1356,18 @@ INHERIT(FunctionCall);
 template<typename Factory>
 class FunctionCall : public FunctionCallBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+  typedef typename AstNode<Factory>::Expressions Expressions;
   FunctionCall(Expression<Factory>* target,
-               Factory* factory)
+               Expressions* args)
     : target_(target),
-      args_(typename Expressions::allocator_type(factory)) {
+      args_(args) {
   }
-  void AddArgument(Expression<Factory>* expr) { args_.push_back(expr); }
   inline Expression<Factory>* target() const { return target_; }
-  inline const Expressions& args() const { return args_; }
+  inline const Expressions& args() const { return *args_; }
   DECLARE_DERIVED_NODE_TYPE(FunctionCall)
  private:
   Expression<Factory>* target_;
-  Expressions args_;
+  Expressions* args_;
 };
 
 // ConstructorCall
@@ -1394,19 +1380,18 @@ INHERIT(ConstructorCall);
 template<typename Factory>
 class ConstructorCall : public ConstructorCallBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+  typedef typename AstNode<Factory>::Expressions Expressions;
   ConstructorCall(Expression<Factory>* target,
-                  Factory* factory)
+                  Expressions* args)
     : target_(target),
-      args_(typename Expressions::allocator_type(factory)) {
+      args_(args) {
   }
-  void AddArgument(Expression<Factory>* expr) { args_.push_back(expr); }
   inline Expression<Factory>* target() const { return target_; }
-  inline const Expressions& args() const { return args_; }
+  inline const Expressions& args() const { return *args_; }
   DECLARE_DERIVED_NODE_TYPE(ConstructorCall)
  private:
   Expression<Factory>* target_;
-  Expressions args_;
+  Expressions* args_;
 };
 
 } } }  // namespace iv::core::ast

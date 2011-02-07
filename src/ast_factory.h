@@ -79,9 +79,8 @@ class BasicAstFactory {
         FunctionLiteral(type, static_cast<Factory*>(this));
   }
 
-  ArrayLiteral* NewArrayLiteral() {
-    return new (static_cast<Factory*>(this))
-        ArrayLiteral(static_cast<Factory*>(this));
+  ArrayLiteral* NewArrayLiteral(Expressions* items) {
+    return new (static_cast<Factory*>(this)) ArrayLiteral(items);
   }
 
   ObjectLiteral* NewObjectLiteral() {
@@ -94,11 +93,11 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(NULL);
   }
 
-  Identifiers* NewLabels() {
-    void* place = static_cast<Factory*>(this)->New(sizeof(Identifiers));
-    return new (place)
-        Identifiers(
-            typename Identifiers::allocator_type(static_cast<Factory*>(this)));
+  template<typename T>
+  typename SpaceVector<Factory, T>::type* NewVector() {
+    typedef typename SpaceVector<Factory, T>::type Vector;
+    return new (static_cast<Factory*>(this)->New(sizeof(Vector)))
+        Vector(typename Vector::allocator_type(static_cast<Factory*>(this)));
   }
 
   NullLiteral* NewNullLiteral() {
@@ -137,13 +136,13 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) FunctionDeclaration(func);
   }
 
-  Block* NewBlock() {
-    return new (static_cast<Factory*>(this)) Block(static_cast<Factory*>(this));
+  Block* NewBlock(Statements* body) {
+    return new (static_cast<Factory*>(this)) Block(body);
   }
 
-  VariableStatement* NewVariableStatement(Token::Type token) {
+  VariableStatement* NewVariableStatement(Token::Type token, Declarations* decls) {
     return new (static_cast<Factory*>(this))
-        VariableStatement(token, static_cast<Factory*>(this));
+        VariableStatement(token, decls);
   }
 
   Declaration* NewDeclaration(Identifier* name, Expression* expr) {
@@ -207,14 +206,12 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) WithStatement(expr, stmt);
   }
 
-  SwitchStatement* NewSwitchStatement(Expression* expr) {
-    return new (static_cast<Factory*>(this))
-        SwitchStatement(expr, static_cast<Factory*>(this));
+  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses) {
+    return new (static_cast<Factory*>(this)) SwitchStatement(expr, clauses);
   }
 
-  CaseClause* NewCaseClause(bool is_default, Expression* expr) {
-    return new (static_cast<Factory*>(this))
-        CaseClause(is_default, expr, static_cast<Factory*>(this));
+  CaseClause* NewCaseClause(bool is_default, Expression* expr, Statements* body) {
+    return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
   }
 
   ThrowStatement*  NewThrowStatement(Expression* expr) {
@@ -264,14 +261,12 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) PostfixExpression(op, expr);
   }
 
-  FunctionCall* NewFunctionCall(Expression* expr) {
-    return new (static_cast<Factory*>(this))
-        FunctionCall(expr, static_cast<Factory*>(this));
+  FunctionCall* NewFunctionCall(Expression* expr, Expressions* args) {
+    return new (static_cast<Factory*>(this)) FunctionCall(expr, args);
   }
 
-  ConstructorCall* NewConstructorCall(Expression* target) {
-    return new (static_cast<Factory*>(this))
-        ConstructorCall(target, static_cast<Factory*>(this));
+  ConstructorCall* NewConstructorCall(Expression* target, Expressions* args) {
+    return new (static_cast<Factory*>(this)) ConstructorCall(target, args);
   }
 
   IndexAccess* NewIndexAccess(Expression* expr,
