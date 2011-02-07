@@ -135,11 +135,15 @@ const UString ParserData<T>::kSet(
 
 typedef detail::ParserData<None> ParserData;
 
-template<typename Factory, typename Source, bool UseFunctionStatement>
+template<typename Factory,
+         typename Source,
+         bool UseFunctionStatement,
+         bool ReduceExpressions>
 class Parser
-  : private Noncopyable<Parser<Factory, Source, UseFunctionStatement> >::type {
+  : private Noncopyable<
+    Parser<Factory, Source, UseFunctionStatement, ReduceExpressions> >::type {
  public:
-  typedef Parser<Factory, Source, UseFunctionStatement> this_type;
+  typedef Parser<Factory, Source, UseFunctionStatement, ReduceExpressions> this_type;
   typedef this_type parser_type;
   typedef Lexer<Source> lexer_type;
 #define V(AST) typedef typename ast::AST<Factory> AST;
@@ -1188,7 +1192,7 @@ class Parser
       op = token_;
       Next();
       right = ParseUnaryExpression(CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 1) return left;
 
@@ -1198,7 +1202,7 @@ class Parser
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 0, CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 2) return left;
 
@@ -1209,7 +1213,7 @@ class Parser
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 1, CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 3) return left;
 
@@ -1241,7 +1245,7 @@ class Parser
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 4, CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 6) return left;
 
@@ -1250,7 +1254,7 @@ class Parser
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 5, CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 7) return left;
 
@@ -1259,7 +1263,7 @@ class Parser
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 6, CHECK);
-      left = ReduceBinaryOperation(op, left, right);
+      left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 8) return left;
 
@@ -1282,9 +1286,11 @@ class Parser
     return left;
   }
 
+  template<bool Reduce>
   Expression* ReduceBinaryOperation(Token::Type op,
                                     Expression* left,
-                                    Expression* right) {
+                                    Expression* right,
+                                    typename enable_if_c<Reduce>::type* = 0) {
     if (left->AsNumberLiteral() &&
         right->AsNumberLiteral()) {
       const double l_val = left->AsNumberLiteral()->value();
@@ -1352,6 +1358,14 @@ class Parser
     } else {
       return factory_->NewBinaryOperation(op, left, right);
     }
+  }
+
+  template<bool Reduce>
+  Expression* ReduceBinaryOperation(Token::Type op,
+                                    Expression* left,
+                                    Expression* right,
+                                    typename enable_if_c<!Reduce>::type* = 0) {
+    return factory_->NewBinaryOperation(op, left, right);
   }
 
 //  UnaryExpression
