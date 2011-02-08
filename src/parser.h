@@ -483,9 +483,10 @@ class Parser
       Statement* const stmt = ParseStatement(CHECK);
       body->push_back(stmt);
     }
-    const std::size_t end = lexer_.end_position();
     Next();
-    Block* const block = factory_->NewBlock(body, begin, end);
+    Block* const block = factory_->NewBlock(body,
+                                            begin,
+                                            lexer_.previous_end_position());
     target.set_node(block);
     return block;
   }
@@ -495,11 +496,15 @@ class Parser
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
+    const Token::Type op = token_;
     const std::size_t begin = lexer_.begin_position();
     Declarations* const decls = factory_->template NewVector<Declaration*>();
     ParseVariableDeclarations(decls, token_ == Token::CONST, true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewVariableStatement(token_, decls, begin);
+    return factory_->NewVariableStatement(op,
+                                          decls,
+                                          begin,
+                                          lexer_.previous_end_position());
   }
 
 //  VariableDeclarationList
@@ -560,11 +565,10 @@ class Parser
 //  EmptyStatement
 //    : ';'
   Statement* ParseEmptyStatement() {
-    const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.end_position();
     assert(token_ == Token::SEMICOLON);
     Next();
-    return factory_->NewEmptyStatement(begin, end);
+    return factory_->NewEmptyStatement(lexer_.previous_begin_position(),
+                                       lexer_.previous_end_position());
   }
 
 //  IfStatement
@@ -619,7 +623,6 @@ class Parser
 
     Expression* const expr = ParseExpression(true, CHECK);
 
-    const std::size_t end = lexer_.end_position();
     EXPECT(Token::RPAREN);
 
     // ex:
@@ -630,7 +633,8 @@ class Parser
     if (token_ == Token::SEMICOLON) {
       Next();
     }
-    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(stmt, expr, begin, end);
+    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(
+        stmt, expr, begin, lexer_.previous_end_position());
     target.set_node(dowhile);
     return dowhile;
   }
@@ -649,7 +653,8 @@ class Parser
     EXPECT(Token::RPAREN);
 
     Statement* const stmt = ParseStatement(CHECK);
-    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt, expr, begin);
+    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt,
+                                                                  expr, begin);
 
     target.set_node(whilestmt);
     return whilestmt;
@@ -675,12 +680,16 @@ class Parser
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
         const std::size_t begin = lexer_.begin_position();
+        const Token::Type op = token_;
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
         ParseVariableDeclarations(decls, token_ == Token::CONST, false, CHECK);
         if (token_ == Token::IN) {
           VariableStatement* const var =
-              factory_->NewVariableStatement(token_, decls, begin);
+              factory_->NewVariableStatement(op,
+                                             decls,
+                                             begin,
+                                             lexer_.previous_end_position());
           init = var;
           // for in loop
           Next();
@@ -700,13 +709,16 @@ class Parser
           target.set_node(forstmt);
           return forstmt;
         } else {
-          init = factory_->NewVariableStatement(token_, decls, begin);
+          init = factory_->NewVariableStatement(op, decls,
+                                                begin,
+                                                lexer_.end_position());
         }
       } else {
         Expression* const init_expr = ParseExpression(false, CHECK);
-        init = factory_->NewExpressionStatement(init_expr);
         if (token_ == Token::IN) {
           // for in loop
+          init = factory_->NewExpressionStatement(init_expr,
+                                                  lexer_.previous_end_position());
           if (!init_expr->IsValidLeftHandSide()) {
             RAISE("invalid for-in left-hand-side");
           }
@@ -720,6 +732,9 @@ class Parser
                                           for_stmt_begin);
           target.set_node(forstmt);
           return forstmt;
+        } else {
+          init = factory_->NewExpressionStatement(init_expr,
+                                                  lexer_.end_position());
         }
       }
     }
@@ -740,8 +755,9 @@ class Parser
     if (token_ == Token::RPAREN) {
       Next();
     } else {
-      Expression *next_expr = ParseExpression(true, CHECK);
-      next = factory_->NewExpressionStatement(next_expr);
+      Expression* next_expr = ParseExpression(true, CHECK);
+      next = factory_->NewExpressionStatement(next_expr,
+                                              lexer_.previous_end_position());
       EXPECT(Token::RPAREN);
     }
 
@@ -758,7 +774,6 @@ class Parser
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
     const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.end_position();
     Identifier* label = NULL;
     IterationStatement** target;
     Next();
@@ -779,7 +794,8 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewContinueStatement(label, target, begin, end);
+    return factory_->NewContinueStatement(label, target, begin,
+                                          lexer_.previous_end_position());
   }
 
 //  BreakStatement
@@ -787,7 +803,6 @@ class Parser
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
     const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.end_position();
     Identifier* label = NULL;
     BreakableStatement** target = NULL;
     Next();
@@ -821,7 +836,8 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewBreakStatement(label, target, begin, end);
+    return factory_->NewBreakStatement(label, target, begin,
+                                       lexer_.previous_end_position());
   }
 
 //  ReturnStatement
@@ -830,7 +846,6 @@ class Parser
     // TODO(Constellation) NewUndefined -> NULL
     assert(token_ == Token::RETURN);
     const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.begin_position();
     Next();
 
     if (scope_->IsGlobal()) {
@@ -844,11 +859,14 @@ class Parser
         token_ == Token::RBRACE ||
         token_ == Token::EOS) {
       ExpectSemicolon(CHECK);
-      return factory_->NewReturnStatement(factory_->NewUndefined(), begin, end);
+      return factory_->NewReturnStatement(factory_->NewUndefined(),
+                                          begin,
+                                          lexer_.previous_end_position());
     }
     Expression *expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewReturnStatement(expr, begin, end);
+    return factory_->NewReturnStatement(expr, begin,
+                                        lexer_.previous_end_position());
   }
 
 //  WithStatement
@@ -913,11 +931,11 @@ class Parser
       }
       clauses->push_back(case_clause);
     }
+    Next();
     SwitchStatement* const switch_stmt =
         factory_->NewSwitchStatement(expr, clauses,
-                                     begin, lexer_.end_position());
-    Next();
-
+                                     begin,
+                                     lexer_.previous_end_position());
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -944,7 +962,6 @@ class Parser
       EXPECT(Token::DEFAULT);
     }
 
-    const std::size_t end = lexer_.end_position();
     EXPECT(Token::COLON);
 
     while (token_ != Token::RBRACE &&
@@ -954,7 +971,9 @@ class Parser
       body->push_back(stmt);
     }
 
-    return factory_->NewCaseClause(expr == NULL, expr, body, begin, end);
+    return factory_->NewCaseClause(expr == NULL,
+                                   expr, body,
+                                   begin, lexer_.previous_end_position());
   }
 
 //  ThrowStatement
@@ -969,7 +988,8 @@ class Parser
     }
     Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewThrowStatement(expr, begin);
+    return factory_->NewThrowStatement(expr,
+                                       begin, lexer_.previous_end_position());
   }
 
 // TryStatement
@@ -1043,16 +1063,17 @@ class Parser
   Statement* ParseDebuggerStatement(bool *res) {
     assert(token_ == Token::DEBUGGER);
     const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.end_position();
     Next();
     ExpectSemicolon(CHECK);
-    return factory_->NewDebuggerStatement(begin, end);
+    return factory_->NewDebuggerStatement(begin,
+                                          lexer_.previous_end_position());
   }
 
   Statement* ParseExpressionStatement(bool *res) {
     Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewExpressionStatement(expr);
+    return factory_->NewExpressionStatement(expr,
+                                            lexer_.previous_end_position());
   }
 
 //  LabelledStatement
@@ -1085,7 +1106,8 @@ class Parser
       return factory_->NewLabelledStatement(expr, stmt);
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewExpressionStatement(expr);
+    return factory_->NewExpressionStatement(expr,
+                                            lexer_.previous_end_position());
   }
 
   template<bool Use>
@@ -1522,7 +1544,6 @@ class Parser
     Expression* expr = ParseMemberExpression(true, CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
         (token_ == Token::INC || token_ == Token::DEC)) {
-      const std::size_t end = lexer_.end_position();
       if (!expr->IsValidLeftHandSide()) {
         RAISE("invalid left-hand-side in postfix expression");
       }
@@ -1540,7 +1561,8 @@ class Parser
           }
         }
       }
-      expr = factory_->NewPostfixExpression(token_, expr, end);
+      expr = factory_->NewPostfixExpression(token_, expr,
+                                            lexer_.end_position());
       Next();
     }
     return expr;
@@ -1573,11 +1595,10 @@ class Parser
       Next();
       Expression* const target = ParseMemberExpression(false, CHECK);
       Expressions* const args = factory_->template NewVector<Expression*>();
-      std::size_t end = 0;
       if (token_ == Token::LPAREN) {
-        end = ParseArguments(args, CHECK);
+        ParseArguments(args, CHECK);
       }
-      expr = factory_->NewConstructorCall(target, args, end);
+      expr = factory_->NewConstructorCall(target, args, lexer_.previous_end_position());
     }
     while (true) {
       switch (token_) {
@@ -1601,8 +1622,9 @@ class Parser
           if (allow_call) {
             Expressions* const args =
                 factory_->template NewVector<Expression*>();
-            const std::size_t end = ParseArguments(args, CHECK);
-            expr = factory_->NewFunctionCall(expr, args, end);
+            ParseArguments(args, CHECK);
+            expr = factory_->NewFunctionCall(expr, args,
+                                             lexer_.previous_end_position());
           } else {
             return expr;
           }
@@ -1727,7 +1749,7 @@ class Parser
 //    : AssignmentExpression
 //    | ArgumentList ',' AssignmentExpression
   template<typename Container>
-  std::size_t ParseArguments(Container* container, bool *res) {
+  Container* ParseArguments(Container* container, bool *res) {
     Next();
     if (token_ != Token::RPAREN) {
       Expression* const first = ParseAssignmentExpression(true, CHECK);
@@ -1738,9 +1760,8 @@ class Parser
         container->push_back(expr);
       }
     }
-    const std::size_t end = lexer_.end_position();
     EXPECT(Token::RPAREN);
-    return end;
+    return container;
   }
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
@@ -1749,10 +1770,10 @@ class Parser
       if (!lexer_.ScanRegExpFlags()) {
         RAISE("invalid regular expression flag");
       }
-      RegExpLiteral* const expr =
-          factory_->NewRegExpLiteral(content, lexer_.Buffer(),
-                                     lexer_.begin_position(),
-                                     lexer_.end_position());
+      RegExpLiteral* const expr = factory_->NewRegExpLiteral(
+          content, lexer_.Buffer(),
+          lexer_.begin_position(),
+          lexer_.end_position());
       if (!expr) {
         RAISE("invalid regular expression");
       }
@@ -1791,9 +1812,9 @@ class Parser
         EXPECT(Token::COMMA);
       }
     }
-    const std::size_t end = lexer_.end_position();
     Next();
-    return factory_->NewArrayLiteral(items, begin, end);
+    return factory_->NewArrayLiteral(items,
+                                     begin, lexer_.previous_end_position());
   }
 
 
@@ -1835,8 +1856,6 @@ class Parser
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
     while (token_ != Token::RBRACE) {
       if (token_ == Token::GET || token_ == Token::SET) {
-        const std::size_t begin = lexer_.begin_position();
-        const std::size_t end = lexer_.end_position();
         const bool is_get = token_ == Token::GET;
         // this is getter or setter or usual prop
         Next<IgnoreReservedWords>();  // IDENTIFIERNAME
@@ -1844,7 +1863,8 @@ class Parser
           // property
           ident = ParseIdentifierWithPosition(
               is_get ? ParserData::kGet : ParserData::kSet,
-              begin, end);
+              lexer_.previous_begin_position(),
+              lexer_.previous_end_position());
           expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
@@ -2107,8 +2127,8 @@ class Parser
           break;
       }
     }
-    const std::size_t end_block_position = lexer_.end_position();
     Next();
+    const std::size_t end_block_position = lexer_.previous_end_position();
     return factory_->NewFunctionLiteral(decl_type,
                                         name,
                                         params,

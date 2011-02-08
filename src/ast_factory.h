@@ -181,11 +181,10 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) Block(body);
   }
 
-  // if you want end position,
-  // set position to Declaration in NewDeclaration and use it
   VariableStatement* NewVariableStatement(Token::Type token,
                                           Declarations* decls,
-                                          std::size_t begin) {
+                                          std::size_t begin,
+                                          std::size_t end) {
     return new (static_cast<Factory*>(this))
         VariableStatement(token, decls);
   }
@@ -243,9 +242,7 @@ class BasicAstFactory {
                                                           cond, next);
   }
 
-  // if you want begin / end position,
-  // set position to Expression and use it
-  ExpressionStatement* NewExpressionStatement(Expression* expr) {
+  ExpressionStatement* NewExpressionStatement(Expression* expr, std::size_t end) {
     return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 
@@ -289,9 +286,8 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
   }
 
-  // if you want end position,
-  // set position to Expression and use it
-  ThrowStatement*  NewThrowStatement(Expression* expr, std::size_t begin) {
+  ThrowStatement*  NewThrowStatement(Expression* expr,
+                                     std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) ThrowStatement(expr);
   }
 

@@ -38,6 +38,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         has_line_terminator_before_next_(false),
         has_shebang_(false),
         line_number_(1),
+        previous_location_(),
         location_() {
     Initialize();
   }
@@ -46,6 +47,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   typename Token::Type Next(bool strict) {
     typename Token::Type token;
     has_line_terminator_before_next_ = false;
+    StorePreviousLocation();
     do {
       while (Chars::IsWhiteSpace(c_)) {
         // white space
@@ -356,7 +358,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           break;
       }
     } while (token == Token::NOT_FOUND);
-    if (pos_ == end_) {
+    if (c_ == -1) {
       location_.set_end_position(pos());
     } else {
       location_.set_end_position(pos() - 1);
@@ -422,6 +424,14 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     return location_.end_position();
   }
 
+  inline std::size_t previous_begin_position() const {
+    return previous_location_.begin_position();
+  }
+
+  inline std::size_t previous_end_position() const {
+    return previous_location_.end_position();
+  }
+
   bool ScanRegExpLiteral(bool contains_eq) {
     // location begin_position is the same with DIV
     // so, no need to set
@@ -475,7 +485,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16Advance();
       }
     }
-    if (pos_ == end_) {
+    if (c_ == -1) {
       location_.set_end_position(pos());
     } else {
       location_.set_end_position(pos() - 1);
@@ -501,6 +511,10 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     swap(location_, Location());
   }
 
+  inline void StorePreviousLocation() {
+    previous_location_ = location_;
+  }
+
   inline void Advance() {
     if (pos_ == end_) {
       c_ = -1;
@@ -508,18 +522,28 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       c_ = source_->Get(pos_++);
     }
   }
+
   inline void Record8() {
     buffer8_.push_back(static_cast<char>(c_));
   }
+
   inline void Record8(const int ch) {
     buffer8_.push_back(static_cast<char>(ch));
   }
-  inline void Record16() { buffer16_.push_back(c_); }
-  inline void Record16(const int ch) { buffer16_.push_back(ch); }
+
+  inline void Record16() {
+    buffer16_.push_back(c_);
+  }
+
+  inline void Record16(const int ch) {
+    buffer16_.push_back(ch);
+  }
+
   inline void Record8Advance() {
     Record8();
     Advance();
   }
+
   inline void Record16Advance() {
     Record16();
     Advance();
@@ -887,6 +911,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   bool has_shebang_;
   int c_;
   std::size_t line_number_;
+  Location previous_location_;
   Location location_;
 };
 
