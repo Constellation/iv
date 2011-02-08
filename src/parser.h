@@ -260,6 +260,7 @@ class Parser
     const ScopeSwitcher scope_switcher(this, scope);
     Next();
     const bool strict = ParseSourceElements(Token::EOS, body, CHECK);
+    const std::size_t end_position = lexer_.end_position();
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
                                      NULL,
@@ -268,7 +269,9 @@ class Parser
                                      scope,
                                      strict,
                                      0,
-                                     0) : NULL;
+                                     end_position,
+                                     0,
+                                     end_position) : NULL;
   }
 
 // SourceElements
@@ -471,17 +474,18 @@ class Parser
 //    | StatementList Statement
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::LBRACE);
+    const std::size_t begin = lexer_.begin_position();
     Statements* const body = factory_->template NewVector<Statement*>();
-    Statement* stmt;
     Target target(this, Target::kNamedOnlyStatement);
 
     Next();
     while (token_ != Token::RBRACE) {
-      stmt = ParseStatement(CHECK);
+      Statement* const stmt = ParseStatement(CHECK);
       body->push_back(stmt);
     }
+    const std::size_t end = lexer_.end_position();
     Next();
-    Block* const block = factory_->NewBlock(body);
+    Block* const block = factory_->NewBlock(body, begin, end);
     target.set_node(block);
     return block;
   }
@@ -491,10 +495,11 @@ class Parser
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
     assert(token_ == Token::VAR || token_ == Token::CONST);
+    const std::size_t begin = lexer_.begin_position();
     Declarations* const decls = factory_->template NewVector<Declaration*>();
     ParseVariableDeclarations(decls, token_ == Token::CONST, true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewVariableStatement(token_, decls);
+    return factory_->NewVariableStatement(token_, decls, begin);
   }
 
 //  VariableDeclarationList
@@ -555,9 +560,11 @@ class Parser
 //  EmptyStatement
 //    : ';'
   Statement* ParseEmptyStatement() {
+    const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.end_position();
     assert(token_ == Token::SEMICOLON);
     Next();
-    return factory_->NewEmptyStatement();
+    return factory_->NewEmptyStatement(begin, end);
   }
 
 //  IfStatement
@@ -565,6 +572,7 @@ class Parser
 //    | IF '(' Expression ')' Statement
   Statement* ParseIfStatement(bool *res) {
     assert(token_ == Token::IF);
+    const std::size_t begin = lexer_.begin_position();
     Statement* else_statement = NULL;
     Next();
 
@@ -581,7 +589,8 @@ class Parser
     }
     return factory_->NewIfStatement(expr,
                                     then_statement,
-                                    else_statement);
+                                    else_statement,
+                                    begin);
   }
 
 //  IterationStatement
@@ -598,6 +607,7 @@ class Parser
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::DO);
+    const std::size_t begin = lexer_.begin_position();
     Target target(this, Target::kIterationStatement);
     Next();
 
@@ -609,6 +619,7 @@ class Parser
 
     Expression* const expr = ParseExpression(true, CHECK);
 
+    const std::size_t end = lexer_.end_position();
     EXPECT(Token::RPAREN);
 
     // ex:
@@ -619,7 +630,7 @@ class Parser
     if (token_ == Token::SEMICOLON) {
       Next();
     }
-    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(stmt, expr);
+    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(stmt, expr, begin, end);
     target.set_node(dowhile);
     return dowhile;
   }
@@ -627,6 +638,7 @@ class Parser
 //  WHILE '(' Expression ')' Statement
   Statement* ParseWhileStatement(bool *res) {
     assert(token_ == Token::WHILE);
+    const std::size_t begin = lexer_.begin_position();
     Next();
 
     EXPECT(Token::LPAREN);
@@ -637,7 +649,7 @@ class Parser
     EXPECT(Token::RPAREN);
 
     Statement* const stmt = ParseStatement(CHECK);
-    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt, expr);
+    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt, expr, begin);
 
     target.set_node(whilestmt);
     return whilestmt;
@@ -653,6 +665,7 @@ class Parser
 //  FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
   Statement* ParseForStatement(bool *res) {
     assert(token_ == Token::FOR);
+    const std::size_t for_stmt_begin = lexer_.begin_position();
     Next();
 
     EXPECT(Token::LPAREN);
@@ -661,13 +674,14 @@ class Parser
 
     if (token_ != Token::SEMICOLON) {
       if (token_ == Token::VAR || token_ == Token::CONST) {
+        const std::size_t begin = lexer_.begin_position();
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
         ParseVariableDeclarations(decls, token_ == Token::CONST, false, CHECK);
-        VariableStatement* const var =
-            factory_->NewVariableStatement(token_, decls);
-        init = var;
         if (token_ == Token::IN) {
+          VariableStatement* const var =
+              factory_->NewVariableStatement(token_, decls, begin);
+          init = var;
           // for in loop
           Next();
           const Declarations& decls = var->decls();
@@ -681,9 +695,12 @@ class Parser
           Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
           ForInStatement* const forstmt =
-              factory_->NewForInStatement(body, init, enumerable);
+              factory_->NewForInStatement(body, init, enumerable,
+                                          for_stmt_begin);
           target.set_node(forstmt);
           return forstmt;
+        } else {
+          init = factory_->NewVariableStatement(token_, decls, begin);
         }
       } else {
         Expression* const init_expr = ParseExpression(false, CHECK);
@@ -699,7 +716,8 @@ class Parser
           Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
           ForInStatement* const forstmt =
-              factory_->NewForInStatement(body, init, enumerable);
+              factory_->NewForInStatement(body, init, enumerable,
+                                          for_stmt_begin);
           target.set_node(forstmt);
           return forstmt;
         }
@@ -730,7 +748,7 @@ class Parser
     Target target(this, Target::kIterationStatement);
     Statement* const body = ParseStatement(CHECK);
     ForStatement* const forstmt =
-        factory_->NewForStatement(body, init, cond, next);
+        factory_->NewForStatement(body, init, cond, next, for_stmt_begin);
     target.set_node(forstmt);
     return forstmt;
   }
@@ -739,6 +757,7 @@ class Parser
 //    : CONTINUE Identifier_opt ';'
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
+    const std::size_t begin = lexer_.begin_position();
     Identifier* label = NULL;
     IterationStatement** target;
     Next();
@@ -759,13 +778,14 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewContinueStatement(label, target);
+    return factory_->NewContinueStatement(label, target, begin);
   }
 
 //  BreakStatement
 //    : BREAK Identifier_opt ';'
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
+    const std::size_t begin = lexer_.begin_position();
     Identifier* label = NULL;
     BreakableStatement** target = NULL;
     Next();
@@ -799,13 +819,14 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewBreakStatement(label, target);
+    return factory_->NewBreakStatement(label, target, begin);
   }
 
 //  ReturnStatement
 //    : RETURN Expression_opt ';'
   Statement* ParseReturnStatement(bool *res) {
     assert(token_ == Token::RETURN);
+    const std::size_t begin = lexer_.begin_position();
     Next();
 
     if (scope_->IsGlobal()) {
@@ -819,17 +840,18 @@ class Parser
         token_ == Token::RBRACE ||
         token_ == Token::EOS) {
       ExpectSemicolon(CHECK);
-      return factory_->NewReturnStatement(factory_->NewUndefined());
+      return factory_->NewReturnStatement(factory_->NewUndefined(), begin);
     }
     Expression *expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewReturnStatement(expr);
+    return factory_->NewReturnStatement(expr, begin);
   }
 
 //  WithStatement
 //    : WITH '(' Expression ')' Statement
   Statement* ParseWithStatement(bool *res) {
     assert(token_ == Token::WITH);
+    const std::size_t begin = lexer_.begin_position();
     Next();
 
     // section 12.10.1
@@ -845,7 +867,7 @@ class Parser
     EXPECT(Token::RPAREN);
 
     Statement *stmt = ParseStatement(CHECK);
-    return factory_->NewWithStatement(expr, stmt);
+    return factory_->NewWithStatement(expr, stmt, begin);
   }
 
 //  SwitchStatement
@@ -856,6 +878,7 @@ class Parser
 //    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
   Statement* ParseSwitchStatement(bool *res) {
     assert(token_ == Token::SWITCH);
+    const std::size_t begin = lexer_.begin_position();
     CaseClause* case_clause;
     Next();
 
@@ -886,10 +909,11 @@ class Parser
       }
       clauses->push_back(case_clause);
     }
+    SwitchStatement* const switch_stmt =
+        factory_->NewSwitchStatement(expr, clauses,
+                                     begin, lexer_.end_position());
     Next();
 
-    SwitchStatement* const switch_stmt =
-        factory_->NewSwitchStatement(expr, clauses);
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -905,6 +929,7 @@ class Parser
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::CASE || token_ == Token::DEFAULT);
+    const std::size_t begin = lexer_.begin_position();
     Expression* expr = NULL;
     Statements* const body = factory_->template NewVector<Statement*>();
 
@@ -924,13 +949,14 @@ class Parser
       body->push_back(stmt);
     }
 
-    return factory_->NewCaseClause(expr == NULL, expr, body);
+    return factory_->NewCaseClause(expr == NULL, expr, body, begin);
   }
 
 //  ThrowStatement
 //    : THROW Expression ';'
   Statement* ParseThrowStatement(bool *res) {
     assert(token_ == Token::THROW);
+    const std::size_t begin = lexer_.begin_position();
     Next();
     // Throw requires Expression
     if (lexer_.has_line_terminator_before_next()) {
@@ -939,7 +965,7 @@ class Parser
     }
     Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewThrowStatement(expr);
+    return factory_->NewThrowStatement(expr, begin);
   }
 
 // TryStatement
@@ -954,6 +980,7 @@ class Parser
 //    : FINALLY Block
   Statement* ParseTryStatement(bool *res) {
     assert(token_ == Token::TRY);
+    const std::size_t begin = lexer_.begin_position();
     Identifier* name = NULL;
     Block* catch_block = NULL;
     Block* finally_block = NULL;
@@ -1003,16 +1030,19 @@ class Parser
     }
 
     return factory_->NewTryStatement(try_block,
-                                     name, catch_block, finally_block);
+                                     name, catch_block,
+                                     finally_block, begin);
   }
 
 //  DebuggerStatement
 //    : DEBUGGER ';'
   Statement* ParseDebuggerStatement(bool *res) {
     assert(token_ == Token::DEBUGGER);
+    const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.end_position();
     Next();
     ExpectSemicolon(CHECK);
-    return factory_->NewDebuggerStatement();
+    return factory_->NewDebuggerStatement(begin, end);
   }
 
   Statement* ParseExpressionStatement(bool *res) {
@@ -1309,33 +1339,33 @@ class Parser
       Expression* res;
       switch (op) {
         case Token::ADD:
-          res = factory_->NewNumberLiteral(l_val + r_val);
+          res = factory_->NewReducedNumberLiteral(l_val + r_val);
           break;
 
         case Token::SUB:
-          res = factory_->NewNumberLiteral(l_val - r_val);
+          res = factory_->NewReducedNumberLiteral(l_val - r_val);
           break;
 
         case Token::MUL:
-          res = factory_->NewNumberLiteral(l_val * r_val);
+          res = factory_->NewReducedNumberLiteral(l_val * r_val);
           break;
 
         case Token::DIV:
-          res = factory_->NewNumberLiteral(l_val / r_val);
+          res = factory_->NewReducedNumberLiteral(l_val / r_val);
           break;
 
         case Token::BIT_OR:
-          res = factory_->NewNumberLiteral(
+          res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) | DoubleToInt32(r_val));
           break;
 
         case Token::BIT_AND:
-          res = factory_->NewNumberLiteral(
+          res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) & DoubleToInt32(r_val));
           break;
 
         case Token::BIT_XOR:
-          res = factory_->NewNumberLiteral(
+          res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
           break;
 
@@ -1343,21 +1373,21 @@ class Parser
         case Token::SHL: {
           const int32_t value = DoubleToInt32(l_val)
               << (DoubleToInt32(r_val) & 0x1f);
-          res = factory_->NewNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value);
           break;
         }
 
         case Token::SHR: {
           const uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           const uint32_t value = DoubleToUInt32(l_val) >> shift;
-          res = factory_->NewNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value);
           break;
         }
 
         case Token::SAR: {
           uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           int32_t value = DoubleToInt32(l_val) >> shift;
-          res = factory_->NewNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value);
           break;
         }
 
@@ -1393,13 +1423,14 @@ class Parser
   Expression* ParseUnaryExpression(bool *res) {
     Expression *result, *expr;
     const Token::Type op = token_;
+    const std::size_t begin = lexer_.begin_position();
     switch (token_) {
       case Token::VOID:
       case Token::NOT:
       case Token::TYPEOF:
         Next();
         expr = ParseUnaryExpression(CHECK);
-        result = factory_->NewUnaryOperation(op, expr);
+        result = factory_->NewUnaryOperation(op, expr, begin);
         break;
 
       case Token::DELETE:
@@ -1412,17 +1443,17 @@ class Parser
             expr->AsIdentifier()) {
           RAISE("delete to direct identifier not allowed in strict code");
         }
-        result = factory_->NewUnaryOperation(op, expr);
+        result = factory_->NewUnaryOperation(op, expr, begin);
         break;
 
       case Token::BIT_NOT:
         Next();
         expr = ParseUnaryExpression(CHECK);
-        if (expr->AsNumberLiteral()) {
-          result = factory_->NewNumberLiteral(
+        if (ReduceExpressions && expr->AsNumberLiteral()) {
+          result = factory_->NewReducedNumberLiteral(
               ~DoubleToInt32(expr->AsNumberLiteral()->value()));
         } else {
-          result = factory_->NewUnaryOperation(op, expr);
+          result = factory_->NewUnaryOperation(op, expr, begin);
         }
         break;
 
@@ -1432,18 +1463,18 @@ class Parser
         if (expr->AsNumberLiteral()) {
           result = expr;
         } else {
-          result = factory_->NewUnaryOperation(op, expr);
+          result = factory_->NewUnaryOperation(op, expr, begin);
         }
         break;
 
       case Token::SUB:
         Next();
         expr = ParseUnaryExpression(CHECK);
-        if (expr->AsNumberLiteral()) {
-          result = factory_->NewNumberLiteral(
+        if (ReduceExpressions && expr->AsNumberLiteral()) {
+          result = factory_->NewReducedNumberLiteral(
               -(expr->AsNumberLiteral()->value()));
         } else {
-          result = factory_->NewUnaryOperation(op, expr);
+          result = factory_->NewUnaryOperation(op, expr, begin);
         }
         break;
 
@@ -1469,7 +1500,7 @@ class Parser
             }
           }
         }
-        result = factory_->NewUnaryOperation(op, expr);
+        result = factory_->NewUnaryOperation(op, expr, begin);
         break;
 
       default:
@@ -1487,6 +1518,7 @@ class Parser
     Expression* expr = ParseMemberExpression(true, CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
         (token_ == Token::INC || token_ == Token::DEC)) {
+      const std::size_t end = lexer_.end_position();
       if (!expr->IsValidLeftHandSide()) {
         RAISE("invalid left-hand-side in postfix expression");
       }
@@ -1504,7 +1536,7 @@ class Parser
           }
         }
       }
-      expr = factory_->NewPostfixExpression(token_, expr);
+      expr = factory_->NewPostfixExpression(token_, expr, end);
       Next();
     }
     return expr;
@@ -1537,10 +1569,11 @@ class Parser
       Next();
       Expression* const target = ParseMemberExpression(false, CHECK);
       Expressions* const args = factory_->template NewVector<Expression*>();
+      std::size_t end = 0;
       if (token_ == Token::LPAREN) {
-        ParseArguments(args, CHECK);
+        end = ParseArguments(args, CHECK);
       }
-      expr = factory_->NewConstructorCall(target, args);
+      expr = factory_->NewConstructorCall(target, args, end);
     }
     while (true) {
       switch (token_) {
@@ -1564,8 +1597,8 @@ class Parser
           if (allow_call) {
             Expressions* const args =
                 factory_->template NewVector<Expression*>();
-            ParseArguments(args, CHECK);
-            expr = factory_->NewFunctionCall(expr, args);
+            const std::size_t end = ParseArguments(args, CHECK);
+            expr = factory_->NewFunctionCall(expr, args, end);
           } else {
             return expr;
           }
@@ -1596,7 +1629,8 @@ class Parser
     Expression* result = NULL;
     switch (token_) {
       case Token::THIS:
-        result = factory_->NewThisLiteral();
+        result = factory_->NewThisLiteral(lexer_.begin_position(),
+                                          lexer_.end_position());
         Next();
         break;
 
@@ -1605,17 +1639,20 @@ class Parser
         break;
 
       case Token::NULL_LITERAL:
-        result = factory_->NewNullLiteral();
+        result = factory_->NewNullLiteral(lexer_.begin_position(),
+                                          lexer_.end_position());
         Next();
         break;
 
       case Token::TRUE_LITERAL:
-        result = factory_->NewTrueLiteral();
+        result = factory_->NewTrueLiteral(lexer_.begin_position(),
+                                          lexer_.end_position());
         Next();
         break;
 
       case Token::FALSE_LITERAL:
-        result = factory_->NewFalseLiteral();
+        result = factory_->NewFalseLiteral(lexer_.begin_position(),
+                                           lexer_.end_position());
         Next();
         break;
 
@@ -1625,7 +1662,9 @@ class Parser
         if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
           RAISE("octal integer literal not allowed in strict code");
         }
-        result = factory_->NewNumberLiteral(lexer_.Numeric());
+        result = factory_->NewNumberLiteral(lexer_.Numeric(),
+                                            lexer_.begin_position(),
+                                            lexer_.end_position());
         Next();
         break;
 
@@ -1635,9 +1674,13 @@ class Parser
           RAISE("octal excape sequence not allowed in strict code");
         }
         if (state == lexer_type::NONE) {
-          result = factory_->NewDirectivable(lexer_.Buffer());
+          result = factory_->NewDirectivable(lexer_.Buffer(),
+                                             lexer_.begin_position(),
+                                             lexer_.end_position());
         } else {
-          result = factory_->NewStringLiteral(lexer_.Buffer());
+          result = factory_->NewStringLiteral(lexer_.Buffer(),
+                                              lexer_.begin_position(),
+                                              lexer_.end_position());
         }
         Next();
         break;
@@ -1680,7 +1723,7 @@ class Parser
 //    : AssignmentExpression
 //    | ArgumentList ',' AssignmentExpression
   template<typename Container>
-  Container* ParseArguments(Container* container, bool *res) {
+  std::size_t ParseArguments(Container* container, bool *res) {
     Next();
     if (token_ != Token::RPAREN) {
       Expression* const first = ParseAssignmentExpression(true, CHECK);
@@ -1691,8 +1734,9 @@ class Parser
         container->push_back(expr);
       }
     }
+    const std::size_t end = lexer_.end_position();
     EXPECT(Token::RPAREN);
-    return container;
+    return end;
   }
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
@@ -1702,7 +1746,9 @@ class Parser
         RAISE("invalid regular expression flag");
       }
       RegExpLiteral* const expr =
-          factory_->NewRegExpLiteral(content, lexer_.Buffer());
+          factory_->NewRegExpLiteral(content, lexer_.Buffer(),
+                                     lexer_.begin_position(),
+                                     lexer_.end_position());
       if (!expr) {
         RAISE("invalid regular expression");
       }
@@ -1726,6 +1772,7 @@ class Parser
 //    : ','
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
+    const std::size_t begin = lexer_.begin_position();
     Expressions* const items = factory_->template NewVector<Expression*>();
     Next();
     while (token_ != Token::RBRACK) {
@@ -1740,8 +1787,9 @@ class Parser
         EXPECT(Token::COMMA);
       }
     }
+    const std::size_t end = lexer_.end_position();
     Next();
-    return factory_->NewArrayLiteral(items);
+    return factory_->NewArrayLiteral(items, begin, end);
   }
 
 
@@ -1773,6 +1821,7 @@ class Parser
     typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
     typedef typename ObjectLiteral::Property Property;
     typedef typename ObjectLiteral::Properties Properties;
+    const std::size_t begin = lexer_.begin_position();
     Properties* const prop = factory_->template NewVector<Property>();
     ObjectMap map;
     Expression* expr;
@@ -1875,8 +1924,9 @@ class Parser
         Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
       }
     }
+    const std::size_t end = lexer_.begin_position();
     Next();
-    return factory_->NewObjectLiteral(prop);
+    return factory_->NewObjectLiteral(prop, begin, end);
   }
 
   FunctionLiteral* ParseFunctionLiteral(
@@ -1887,6 +1937,7 @@ class Parser
     // IDENTIFIER_opt
     std::tr1::unordered_set<IdentifierKey> param_set;
     std::size_t throw_error_if_strict_code_line = 0;
+    const std::size_t begin_position = lexer_.begin_position();
     enum {
       kDetectNone = 0,
       kDetectEvalName,
@@ -1925,7 +1976,7 @@ class Parser
       }
     }
 
-    const std::size_t start_position = lexer_.begin_position();
+    const std::size_t begin_block_position = lexer_.begin_position();
 
     //  '(' FormalParameterList_opt ')'
     IS(Token::LPAREN);
@@ -2049,7 +2100,7 @@ class Parser
           break;
       }
     }
-    const std::size_t end_position = lexer_.end_position();
+    const std::size_t end_block_position = lexer_.end_position();
     Next();
     return factory_->NewFunctionLiteral(decl_type,
                                         name,
@@ -2057,13 +2108,17 @@ class Parser
                                         body,
                                         scope,
                                         function_is_strict,
-                                        start_position,
-                                        end_position);
+                                        begin_block_position,
+                                        end_block_position,
+                                        begin_position,
+                                        end_block_position);
   }
 
   template<typename Range>
   Identifier* ParseIdentifier(const Range& range) {
-    Identifier* const ident = factory_->NewIdentifier(range);
+    Identifier* const ident = factory_->NewIdentifier(range,
+                                                      lexer_.begin_position(),
+                                                      lexer_.end_position());
     Next();
     return ident;
   }

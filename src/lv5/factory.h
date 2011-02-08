@@ -6,7 +6,7 @@
 #include "ast_factory.h"
 #include "location.h"
 #include "ustringpiece.h"
-#include "context.h"
+#include "context_utils.h"
 #include "jsast.h"
 
 namespace iv {
@@ -32,15 +32,17 @@ class AstFactory
   }
 
   template<typename Range>
-  Identifier* NewIdentifier(const Range& range) {
+  Identifier* NewIdentifier(const Range& range, std::size_t begin, std::size_t end) {
     Identifier* ident = new (this) Identifier(range, this);
-    ident->set_symbol(Intern(*ident));
+    ident->set_symbol(context::Intern(ctx_, ident->value()));
     return ident;
   }
 
   inline RegExpLiteral* NewRegExpLiteral(
       const std::vector<uc16>& content,
-      const std::vector<uc16>& flags) {
+      const std::vector<uc16>& flags,
+      std::size_t begin,
+      std::size_t end) {
     RegExpLiteral* expr = new (this) RegExpLiteral(content, flags, this);
     expr->Initialize(ctx_);
     if (expr->IsValid()) {
@@ -51,9 +53,6 @@ class AstFactory
     }
   }
  private:
-  Symbol Intern(const Identifier& ident) {
-    return ctx_->Intern(ident.value());
-  }
   Context* ctx_;
   DestReqs regexps_;
 };

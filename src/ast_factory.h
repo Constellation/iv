@@ -49,27 +49,39 @@ class BasicAstFactory {
   }
 
   template<typename Range>
-  Identifier* NewIdentifier(const Range& range) {
+  Identifier* NewIdentifier(const Range& range,
+                            std::size_t begin,
+                            std::size_t end) {
     return new (static_cast<Factory*>(this))
         Identifier(range, static_cast<Factory*>(this));
   }
 
-  NumberLiteral* NewNumberLiteral(const double& val) {
+  NumberLiteral* NewReducedNumberLiteral(const double& val) {
     return new (static_cast<Factory*>(this)) NumberLiteral(val);
   }
 
-  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer) {
+  NumberLiteral* NewNumberLiteral(const double& val,
+                                  std::size_t begin, std::size_t end) {
+    return new (static_cast<Factory*>(this)) NumberLiteral(val);
+  }
+
+
+  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer,
+                                  std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this))
         StringLiteral(buffer, static_cast<Factory*>(this));
   }
 
-  Directivable* NewDirectivable(const std::vector<uc16>& buffer) {
+  Directivable* NewDirectivable(const std::vector<uc16>& buffer,
+                                std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this))
         Directivable(buffer, static_cast<Factory*>(this));
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
-                                  const std::vector<uc16>& flags) {
+                                  const std::vector<uc16>& flags,
+                                  std::size_t begin,
+                                  std::size_t end) {
     return new (static_cast<Factory*>(this))
         RegExpLiteral(content, flags, static_cast<Factory*>(this));
   }
@@ -80,8 +92,10 @@ class BasicAstFactory {
                                       Statements* body,
                                       Scope* scope,
                                       bool strict,
-                                      std::size_t start_position,
-                                      std::size_t end_position) {
+                                      std::size_t begin_block_position,
+                                      std::size_t end_block_position,
+                                      std::size_t begin,
+                                      std::size_t end) {
     return new (static_cast<Factory*>(this))
         FunctionLiteral(type,
                         name,
@@ -89,16 +103,18 @@ class BasicAstFactory {
                         body,
                         scope,
                         strict,
-                        start_position,
-                        end_position);
+                        begin_block_position,
+                        end_block_position);
   }
 
-  ArrayLiteral* NewArrayLiteral(Expressions* items) {
+  ArrayLiteral* NewArrayLiteral(Expressions* items, std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) ArrayLiteral(items);
   }
 
   ObjectLiteral*
-      NewObjectLiteral(typename ObjectLiteral::Properties* properties) {
+      NewObjectLiteral(typename ObjectLiteral::Properties* properties,
+                       std::size_t begin,
+                       std::size_t end) {
     return new (static_cast<Factory*>(this)) ObjectLiteral(properties);
   }
 
@@ -119,19 +135,12 @@ class BasicAstFactory {
         Scope(static_cast<Factory*>(this), type == FunctionLiteral::GLOBAL);
   }
 
-  NullLiteral* NewNullLiteral() {
+  NullLiteral* NewNullLiteral(std::size_t begin,
+                              std::size_t end) {
     return null_instance_;
   }
 
-  EmptyStatement* NewEmptyStatement() {
-    return empty_statement_instance_;
-  }
-
-  DebuggerStatement* NewDebuggerStatement() {
-    return debugger_statement_instance_;
-  }
-
-  ThisLiteral* NewThisLiteral() {
+  ThisLiteral* NewThisLiteral(std::size_t begin, std::size_t end) {
     return this_instance_;
   }
 
@@ -139,14 +148,24 @@ class BasicAstFactory {
     return undefined_instance_;
   }
 
-  TrueLiteral* NewTrueLiteral() {
+  TrueLiteral* NewTrueLiteral(std::size_t begin, std::size_t end) {
     return true_instance_;
   }
 
-  FalseLiteral* NewFalseLiteral() {
+  FalseLiteral* NewFalseLiteral(std::size_t begin, std::size_t end) {
     return false_instance_;
   }
 
+  EmptyStatement* NewEmptyStatement(std::size_t begin, std::size_t end) {
+    return empty_statement_instance_;
+  }
+
+  DebuggerStatement* NewDebuggerStatement(std::size_t begin, std::size_t end) {
+    return debugger_statement_instance_;
+  }
+
+  // if you want begin / end position,
+  // set position to FunctionLiteral in NewFunctionLiteral and use it
   FunctionStatement* NewFunctionStatement(FunctionLiteral* func) {
     return new (static_cast<Factory*>(this)) FunctionStatement(func);
   }
@@ -155,117 +174,164 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) FunctionDeclaration(func);
   }
 
-  Block* NewBlock(Statements* body) {
+  Block* NewBlock(Statements* body, std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) Block(body);
   }
 
+  // if you want end position,
+  // set position to Declaration in NewDeclaration and use it
   VariableStatement* NewVariableStatement(Token::Type token,
-                                          Declarations* decls) {
+                                          Declarations* decls,
+                                          std::size_t begin) {
     return new (static_cast<Factory*>(this))
         VariableStatement(token, decls);
   }
 
+  // if you want begin / end position,
+  // set position to Identifier / Expression and use it
   Declaration* NewDeclaration(Identifier* name, Expression* expr) {
     return new (static_cast<Factory*>(this)) Declaration(name, expr);
   }
 
+  // if you want end position,
+  // set position to Statement and use it
   IfStatement* NewIfStatement(Expression* cond,
                               Statement* then_statement,
-                              Statement* else_statement) {
+                              Statement* else_statement,
+                              std::size_t begin) {
     return new (static_cast<Factory*>(this)) IfStatement(cond,
                                                          then_statement,
                                                          else_statement);
   }
 
   DoWhileStatement* NewDoWhileStatement(Statement* body,
-                                        Expression* cond) {
+                                        Expression* cond,
+                                        std::size_t begin,
+                                        std::size_t end) {
     return new (static_cast<Factory*>(this)) DoWhileStatement(body, cond);
   }
 
+  // if you want end position,
+  // set position to Statement and use it
   WhileStatement* NewWhileStatement(Statement* body,
-                                    Expression* cond) {
+                                    Expression* cond,
+                                    std::size_t begin) {
     return new (static_cast<Factory*>(this)) WhileStatement(body, cond);
   }
 
+  // if you want end position,
+  // set position to Statement and use it
   ForInStatement* NewForInStatement(Statement* body,
                                     Statement* each,
-                                    Expression* enumerable) {
+                                    Expression* enumerable,
+                                    std::size_t begin) {
     return new (static_cast<Factory*>(this)) ForInStatement(body,
                                                             each, enumerable);
   }
 
-  ExpressionStatement* NewExpressionStatement(Expression* expr) {
-    return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
-  }
-
+  // if you want end position,
+  // set position to Statement and use it
   ForStatement* NewForStatement(Statement* body,
                                 Statement* init,
                                 Expression* cond,
-                                Statement* next) {
+                                Statement* next,
+                                std::size_t begin) {
     return new (static_cast<Factory*>(this)) ForStatement(body, init,
                                                           cond, next);
   }
 
+  // if you want begin / end position,
+  // set position to Expression and use it
+  ExpressionStatement* NewExpressionStatement(Expression* expr) {
+    return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
+  }
+
+  // if you want end position,
+  // set position to Identifier and use it
   ContinueStatement* NewContinueStatement(Identifier* label,
-                                          IterationStatement** target) {
+                                          IterationStatement** target,
+                                          std::size_t begin) {
     return new (static_cast<Factory*>(this)) ContinueStatement(label, target);
   }
 
+  // if you want end position,
+  // set position to Identifier and use it
   BreakStatement* NewBreakStatement(Identifier* label,
-                                    BreakableStatement** target) {
+                                    BreakableStatement** target,
+                                    std::size_t begin) {
     return new (static_cast<Factory*>(this)) BreakStatement(label, target);
   }
 
-  ReturnStatement* NewReturnStatement(
-      Expression* expr) {
+  // if you want end position,
+  // set position to Expression and use it
+  ReturnStatement* NewReturnStatement(Expression* expr, std::size_t begin) {
     return new (static_cast<Factory*>(this)) ReturnStatement(expr);
   }
 
-  WithStatement* NewWithStatement(
-      Expression* expr, Statement* stmt) {
+  // if you want end position,
+  // set position to Expression and use it
+  WithStatement* NewWithStatement(Expression* expr,
+                                  Statement* stmt, std::size_t begin) {
     return new (static_cast<Factory*>(this)) WithStatement(expr, stmt);
   }
 
-  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses) {
+  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses,
+                                      std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) SwitchStatement(expr, clauses);
   }
 
+  // if you want end position,
+  // set position to Statement and use it
   CaseClause* NewCaseClause(bool is_default,
-                            Expression* expr, Statements* body) {
+                            Expression* expr, Statements* body,
+                            std::size_t begin) {
     return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
   }
 
-  ThrowStatement*  NewThrowStatement(Expression* expr) {
+  // if you want end position,
+  // set position to Expression and use it
+  ThrowStatement*  NewThrowStatement(Expression* expr, std::size_t begin) {
     return new (static_cast<Factory*>(this)) ThrowStatement(expr);
   }
 
+  // if you want end position,
+  // set position to Block and use it
   TryStatement* NewTryStatement(Block* try_block,
                                 Identifier* catch_name,
                                 Block* catch_block,
-                                Block* finally_block) {
+                                Block* finally_block,
+                                std::size_t begin) {
     return new (static_cast<Factory*>(this)) TryStatement(try_block,
                                                           catch_name,
                                                           catch_block,
                                                           finally_block);
   }
 
+  // if you want begin / end position,
+  // set position to Expression and use it
   LabelledStatement* NewLabelledStatement(
       Expression* expr,
       Statement* stmt) {
     return new (static_cast<Factory*>(this)) LabelledStatement(expr, stmt);
   }
 
+  // if you want begin / end position,
+  // set position to Expression and use it
   BinaryOperation* NewBinaryOperation(Token::Type op,
                                       Expression* result, Expression* right) {
     return new (static_cast<Factory*>(this)) BinaryOperation(op, result, right);
   }
 
+  // if you want begin / end position,
+  // set position to Expression and use it
   Assignment* NewAssignment(Token::Type op,
                             Expression* left,
                             Expression* right) {
     return new (static_cast<Factory*>(this)) Assignment(op, left, right);
   }
 
+  // if you want begin / end position,
+  // set position to Expression and use it
   ConditionalExpression* NewConditionalExpression(Expression* cond,
                                                   Expression* left,
                                                   Expression* right) {
@@ -273,28 +339,45 @@ class BasicAstFactory {
         ConditionalExpression(cond, left, right);
   }
 
-  UnaryOperation* NewUnaryOperation(Token::Type op, Expression* expr) {
+  // if you want end position,
+  // set position to Expression and use it
+  UnaryOperation* NewUnaryOperation(Token::Type op,
+                                    Expression* expr, std::size_t begin) {
     return new (static_cast<Factory*>(this)) UnaryOperation(op, expr);
   }
 
-  PostfixExpression* NewPostfixExpression(
-      Token::Type op, Expression* expr) {
+  // if you want begin position,
+  // set position to Expression and use it
+  PostfixExpression* NewPostfixExpression(Token::Type op,
+                                          Expression* expr, std::size_t end) {
     return new (static_cast<Factory*>(this)) PostfixExpression(op, expr);
   }
 
-  FunctionCall* NewFunctionCall(Expression* expr, Expressions* args) {
+  // if you want begin position,
+  // set position to Expression and use it
+  FunctionCall* NewFunctionCall(Expression* expr,
+                                Expressions* args, std::size_t end) {
     return new (static_cast<Factory*>(this)) FunctionCall(expr, args);
   }
 
-  ConstructorCall* NewConstructorCall(Expression* target, Expressions* args) {
+  // if you want begin position,
+  // set position to Expression and use it
+  // !!! CAUTION !!!
+  // if not right paren (like new Array), end is 0
+  ConstructorCall* NewConstructorCall(Expression* target,
+                                      Expressions* args, std::size_t end) {
     return new (static_cast<Factory*>(this)) ConstructorCall(target, args);
   }
 
+  // if you want begin / end position,
+  // set position to Expression / Identifier and use it
   IndexAccess* NewIndexAccess(Expression* expr,
                               Expression* index) {
     return new (static_cast<Factory*>(this)) IndexAccess(expr, index);
   }
 
+  // if you want begin / end position,
+  // set position to Expression / Identifier and use it
   IdentifierAccess* NewIdentifierAccess(Expression* expr,
                                         Identifier* ident) {
     return new (static_cast<Factory*>(this)) IdentifierAccess(expr, ident);
