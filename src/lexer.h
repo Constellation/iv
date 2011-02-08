@@ -356,7 +356,11 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           break;
       }
     } while (token == Token::NOT_FOUND);
-    location_.set_end_position(pos() - 1);
+    if (pos_ == end_) {
+      location_.set_end_position(pos());
+    } else {
+      location_.set_end_position(pos() - 1);
+    }
     return token;
   }
 
@@ -471,7 +475,11 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16Advance();
       }
     }
-    location_.set_end_position(pos() - 1);
+    if (pos_ == end_) {
+      location_.set_end_position(pos());
+    } else {
+      location_.set_end_position(pos() - 1);
+    }
     return true;
   }
 

@@ -124,6 +124,9 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const FunctionCall* call);
   void Visit(const ConstructorCall* call);
 
+  void Visit(const Declaration* dummy);
+  void Visit(const CaseClause* dummy);
+
   bool InCurrentLabelSet(const BreakableStatement* stmt);
 
   // section 11.8.5

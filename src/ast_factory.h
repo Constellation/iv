@@ -107,7 +107,8 @@ class BasicAstFactory {
                         end_block_position);
   }
 
-  ArrayLiteral* NewArrayLiteral(Expressions* items, std::size_t begin, std::size_t end) {
+  ArrayLiteral* NewArrayLiteral(Expressions* items,
+                                std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) ArrayLiteral(items);
   }
 
@@ -170,6 +171,8 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) FunctionStatement(func);
   }
 
+  // if you want begin / end position,
+  // set position to FunctionLiteral in NewFunctionLiteral and use it
   FunctionDeclaration* NewFunctionDeclaration(FunctionLiteral* func) {
     return new (static_cast<Factory*>(this)) FunctionDeclaration(func);
   }
@@ -246,25 +249,23 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 
-  // if you want end position,
-  // set position to Identifier and use it
   ContinueStatement* NewContinueStatement(Identifier* label,
                                           IterationStatement** target,
-                                          std::size_t begin) {
+                                          std::size_t begin,
+                                          std::size_t end) {
     return new (static_cast<Factory*>(this)) ContinueStatement(label, target);
   }
 
-  // if you want end position,
-  // set position to Identifier and use it
   BreakStatement* NewBreakStatement(Identifier* label,
                                     BreakableStatement** target,
-                                    std::size_t begin) {
+                                    std::size_t begin,
+                                    std::size_t end) {
     return new (static_cast<Factory*>(this)) BreakStatement(label, target);
   }
 
-  // if you want end position,
-  // set position to Expression and use it
-  ReturnStatement* NewReturnStatement(Expression* expr, std::size_t begin) {
+  ReturnStatement* NewReturnStatement(Expression* expr,
+                                      std::size_t begin,
+                                      std::size_t end) {
     return new (static_cast<Factory*>(this)) ReturnStatement(expr);
   }
 
@@ -280,11 +281,11 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) SwitchStatement(expr, clauses);
   }
 
-  // if you want end position,
-  // set position to Statement and use it
+  // !!! if body is empty, end_position is end.
   CaseClause* NewCaseClause(bool is_default,
                             Expression* expr, Statements* body,
-                            std::size_t begin) {
+                            std::size_t begin,
+                            std::size_t end) {
     return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
   }
 
@@ -309,9 +310,7 @@ class BasicAstFactory {
 
   // if you want begin / end position,
   // set position to Expression and use it
-  LabelledStatement* NewLabelledStatement(
-      Expression* expr,
-      Statement* stmt) {
+  LabelledStatement* NewLabelledStatement(Expression* expr, Statement* stmt) {
     return new (static_cast<Factory*>(this)) LabelledStatement(expr, stmt);
   }
 

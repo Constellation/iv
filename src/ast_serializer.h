@@ -501,6 +501,15 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     Append("]}");
   }
 
+
+  void Visit(const CaseClause* dummy) {
+    UNREACHABLE();
+  }
+
+  void Visit(const Declaration* dummy) {
+    UNREACHABLE();
+  }
+
  private:
   template <class Iter>
   void DecodeString(Iter it, const Iter last) {

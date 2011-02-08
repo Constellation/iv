@@ -1506,6 +1506,15 @@ void Interpreter::Visit(const ConstructorCall* call) {
   }
 }
 
+void Interpreter::Visit(const Declaration* dummy) {
+  UNREACHABLE();
+}
+
+
+void Interpreter::Visit(const CaseClause* dummy) {
+  UNREACHABLE();
+}
+
 
 // section 8.7.1 GetValue
 JSVal Interpreter::GetValue(const JSVal& val, Error* error) {

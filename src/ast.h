@@ -329,8 +329,7 @@ class VariableStatement : public VariableStatementBase<Factory> {
 // Declaration
 template<typename Factory>
 class Inherit<Factory, kDeclaration>
-  : public SpaceObject,
-    private Noncopyable<Inherit<Factory, kDeclaration> >::type {
+  : public AstNode<Factory> {
 };
 INHERIT(Declaration);
 
@@ -347,6 +346,7 @@ class Declaration : public DeclarationBase<Factory> {
   inline Expression<Factory>* expr() const {
     return expr_;
   }
+  DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
   Identifier<Factory>* name_;
   Expression<Factory>* expr_;
@@ -637,9 +637,7 @@ class LabelledStatement : public LabelledStatementBase<Factory> {
 
 // CaseClause
 template<typename Factory>
-class Inherit<Factory, kCaseClause>
-  : public SpaceObject,
-    private Noncopyable<Inherit<Factory, kCaseClause> >::type {
+class Inherit<Factory, kCaseClause> : public AstNode<Factory> {
 };
 INHERIT(CaseClause);
 
@@ -663,6 +661,7 @@ class CaseClause : public CaseClauseBase<Factory> {
   inline const Statements& body() const {
     return *body_;
   }
+  DECLARE_DERIVED_NODE_TYPE(CaseClause)
  private:
   Expression<Factory>* expr_;
   Statements* body_;

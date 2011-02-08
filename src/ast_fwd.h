@@ -68,17 +68,21 @@ V(PropertyAccess)\
 V(Call)\
 EXPRESSION_DERIVED_NODE_LIST(V)
 
+#define OTHER_DERIVED_NODE_LIST(V)\
+V(Declaration)\
+V(CaseClause)
+
 #define OTHER_NODE_LIST(V)\
 V(AstNode)\
-V(Declaration)\
 V(Scope)\
-V(CaseClause)\
 V(Variable)\
-V(IdentifierKey)
+V(IdentifierKey)\
+OTHER_DERIVED_NODE_LIST(V)
 
 #define AST_DERIVED_NODE_LIST(V)\
 STATEMENT_DERIVED_NODE_LIST(V)\
-EXPRESSION_DERIVED_NODE_LIST(V)
+EXPRESSION_DERIVED_NODE_LIST(V)\
+OTHER_DERIVED_NODE_LIST(V)
 
 #define AST_NODE_LIST(V)\
 OTHER_NODE_LIST(V)\

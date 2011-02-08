@@ -81,6 +81,9 @@ class BasicAstVisitor
   virtual void Visit(typename add<IndexAccess<Factory> >::type prop) = 0;  //NOLINT
   virtual void Visit(typename add<FunctionCall<Factory> >::type call) = 0;  //NOLINT
   virtual void Visit(typename add<ConstructorCall<Factory> >::type call) = 0;  //NOLINT
+
+  virtual void Visit(typename add<Declaration<Factory> >::type func) = 0;  //NOLINT
+  virtual void Visit(typename add<CaseClause<Factory> >::type func) = 0;  //NOLINT
  protected:
   template<typename T>
   class Acceptor {

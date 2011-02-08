@@ -758,6 +758,7 @@ class Parser
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::CONTINUE);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.end_position();
     Identifier* label = NULL;
     IterationStatement** target;
     Next();
@@ -778,7 +779,7 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewContinueStatement(label, target, begin);
+    return factory_->NewContinueStatement(label, target, begin, end);
   }
 
 //  BreakStatement
@@ -786,6 +787,7 @@ class Parser
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::BREAK);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.end_position();
     Identifier* label = NULL;
     BreakableStatement** target = NULL;
     Next();
@@ -819,14 +821,16 @@ class Parser
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewBreakStatement(label, target, begin);
+    return factory_->NewBreakStatement(label, target, begin, end);
   }
 
 //  ReturnStatement
 //    : RETURN Expression_opt ';'
   Statement* ParseReturnStatement(bool *res) {
+    // TODO(Constellation) NewUndefined -> NULL
     assert(token_ == Token::RETURN);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.begin_position();
     Next();
 
     if (scope_->IsGlobal()) {
@@ -840,11 +844,11 @@ class Parser
         token_ == Token::RBRACE ||
         token_ == Token::EOS) {
       ExpectSemicolon(CHECK);
-      return factory_->NewReturnStatement(factory_->NewUndefined(), begin);
+      return factory_->NewReturnStatement(factory_->NewUndefined(), begin, end);
     }
     Expression *expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
-    return factory_->NewReturnStatement(expr, begin);
+    return factory_->NewReturnStatement(expr, begin, end);
   }
 
 //  WithStatement
@@ -940,6 +944,7 @@ class Parser
       EXPECT(Token::DEFAULT);
     }
 
+    const std::size_t end = lexer_.end_position();
     EXPECT(Token::COLON);
 
     while (token_ != Token::RBRACE &&
@@ -949,7 +954,7 @@ class Parser
       body->push_back(stmt);
     }
 
-    return factory_->NewCaseClause(expr == NULL, expr, body, begin);
+    return factory_->NewCaseClause(expr == NULL, expr, body, begin, end);
   }
 
 //  ThrowStatement
@@ -960,7 +965,6 @@ class Parser
     Next();
     // Throw requires Expression
     if (lexer_.has_line_terminator_before_next()) {
-      // TODO(Constellation) more refined parse error system
       RAISE("missing expression between throw and newline");
     }
     Expression* const expr = ParseExpression(true, CHECK);
@@ -1831,13 +1835,16 @@ class Parser
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
     while (token_ != Token::RBRACE) {
       if (token_ == Token::GET || token_ == Token::SET) {
+        const std::size_t begin = lexer_.begin_position();
+        const std::size_t end = lexer_.end_position();
         const bool is_get = token_ == Token::GET;
         // this is getter or setter or usual prop
         Next<IgnoreReservedWords>();  // IDENTIFIERNAME
         if (token_ == Token::COLON) {
           // property
-          ident = ParseIdentifier(
-              is_get ? ParserData::kGet : ParserData::kSet);
+          ident = ParseIdentifierWithPosition(
+              is_get ? ParserData::kGet : ParserData::kSet,
+              begin, end);
           expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
@@ -2119,6 +2126,17 @@ class Parser
     Identifier* const ident = factory_->NewIdentifier(range,
                                                       lexer_.begin_position(),
                                                       lexer_.end_position());
+    Next();
+    return ident;
+  }
+
+  template<typename Range>
+  Identifier* ParseIdentifierWithPosition(const Range& range,
+                                          std::size_t begin,
+                                          std::size_t end) {
+    Identifier* const ident = factory_->NewIdentifier(range,
+                                                      begin,
+                                                      end);
     Next();
     return ident;
   }
