@@ -724,8 +724,8 @@ inline Category GetCategory(uint16_t c) {
     return static_cast<Category>(kCategoryCache[c]);
   }
   const int result =
-      upper_bound(kCategoryKeys.begin(),
-                  kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1;
+      static_cast<int>(upper_bound(kCategoryKeys.begin(),
+                                   kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1);
   assert(result < static_cast<int>(kCategoryKeys.size()));
   const int high = kCategoryValues[result * 2];
   if (c <= high) {
@@ -816,7 +816,7 @@ inline uint16_t ToLowerCase(uint16_t c) {
   std::tr1::array<uint16_t, 101>::const_iterator it =
       upper_bound(kLowerCaseKeys.begin(),
                   kLowerCaseKeys.end(), c) - 1;
-  const int result = it - kLowerCaseKeys.begin();
+  const int result = static_cast<int>(it - kLowerCaseKeys.begin());
   assert(result < 101);
   if (result >= 0) {
     bool by2 = false;
@@ -852,7 +852,7 @@ inline uint16_t ToUpperCase(uint16_t c) {
   std::tr1::array<uint16_t, 113>::const_iterator it =
       upper_bound(kUpperCaseKeys.begin(),
                   kUpperCaseKeys.end(), c) - 1;
-  const int result = it - kUpperCaseKeys.begin();
+  const int result = static_cast<int>(it - kUpperCaseKeys.begin());
   assert(result < 113);
   if (result >= 0) {
     bool by2 = false;

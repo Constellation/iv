@@ -6,7 +6,7 @@
 namespace iv {
 namespace phonic {
 
-typedef core::Parser<AstFactory, UTF16Source, true> Parser;
+typedef core::Parser<AstFactory, UTF16Source, true, false> Parser;
 
 } }  // namespace iv::phonic
 #endif  // _IV_PHONIC_PARSER_H_

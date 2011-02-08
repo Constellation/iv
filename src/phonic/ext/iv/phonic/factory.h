@@ -7,6 +7,7 @@ extern "C" {
 }
 #include <iv/alloc.h>
 #include <iv/ustringpiece.h>
+#include <iv/space.h>
 #include "encoding.h"
 #include "ast_fwd.h"
 namespace iv {
@@ -66,22 +67,23 @@ class AstFactory : public core::Space<2> {
     return new (this) FunctionLiteral(type, this);
   }
 
-  ArrayLiteral* NewArrayLiteral() {
-    return new (this) ArrayLiteral(this);
+  ArrayLiteral* NewArrayLiteral(Expressions* items) {
+    return new (this) ArrayLiteral(items);
   }
 
-  ObjectLiteral* NewObjectLiteral() {
-    return new (this) ObjectLiteral(this);
-  }
-
-  Identifiers* NewLabels() {
-    return new (New(sizeof(Identifiers)))
-        Identifiers(Identifiers::allocator_type(this));
+  ObjectLiteral* NewObjectLiteral(ObjectLiteral::Properties* properties) {
+    return new (this) ObjectLiteral(properties);
   }
 
   template<typename T>
   T** NewPtr() {
-    return new (New(sizeof(T*))) T*;
+    return new (New(sizeof(T*))) T*(NULL);  // NOLINT
+  }
+
+  template<typename T>
+  typename core::SpaceVector<AstFactory, T>::type* NewVector() {
+    typedef typename core::SpaceVector<AstFactory, T>::type Vector;
+    return new (New(sizeof(Vector))) Vector(typename Vector::allocator_type(this));
   }
 
   NullLiteral* NewNullLiteral() {
@@ -120,12 +122,13 @@ class AstFactory : public core::Space<2> {
     return new (this) FunctionDeclaration(func);
   }
 
-  Block* NewBlock() {
-    return new (this) Block(this);
+  Block* NewBlock(Statements* body) {
+    return new (this) Block(body);
   }
 
-  VariableStatement* NewVariableStatement(core::Token::Type token) {
-    return new (this) VariableStatement(token, this);
+  VariableStatement* NewVariableStatement(core::Token::Type token,
+                                          Declarations* decls) {
+    return new (this) VariableStatement(token, decls);
   }
 
   Declaration* NewDeclaration(Identifier* name, Expression* expr) {
@@ -186,13 +189,15 @@ class AstFactory : public core::Space<2> {
     return new (this) WithStatement(expr, stmt);
   }
 
-  SwitchStatement* NewSwitchStatement(Expression* expr) {
-    return new (this) SwitchStatement(expr, this);
+  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses) {
+    return new (this) SwitchStatement(expr, clauses);
   }
 
-  CaseClause* NewCaseClause(bool is_default, Expression* expr) {
-    return new (this) CaseClause(is_default, expr, this);
+  CaseClause* NewCaseClause(bool is_default,
+                            Expression* expr, Statements* body) {
+    return new (this) CaseClause(is_default, expr, body);
   }
+
 
   ThrowStatement*  NewThrowStatement(Expression* expr) {
     return new (this) ThrowStatement(expr);
@@ -240,12 +245,12 @@ class AstFactory : public core::Space<2> {
     return new (this) PostfixExpression(op, expr);
   }
 
-  FunctionCall* NewFunctionCall(Expression* expr) {
-    return new (this) FunctionCall(expr, this);
+  FunctionCall* NewFunctionCall(Expression* expr, Expressions* args) {
+    return new (this) FunctionCall(expr, args);
   }
 
-  ConstructorCall* NewConstructorCall(Expression* target) {
-    return new (this) ConstructorCall(target, this);
+  ConstructorCall* NewConstructorCall(Expression* target, Expressions* args) {
+    return new (this) ConstructorCall(target, args);
   }
 
   IndexAccess* NewIndexAccess(Expression* expr, Expression* index) {
