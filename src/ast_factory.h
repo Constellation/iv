@@ -74,9 +74,23 @@ class BasicAstFactory {
         RegExpLiteral(content, flags, static_cast<Factory*>(this));
   }
 
-  FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type) {
+  FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
+                                      Identifier* name,
+                                      Identifiers* params,
+                                      Statements* body,
+                                      Scope* scope,
+                                      bool strict,
+                                      std::size_t start_position,
+                                      std::size_t end_position) {
     return new (static_cast<Factory*>(this))
-        FunctionLiteral(type, static_cast<Factory*>(this));
+        FunctionLiteral(type,
+                        name,
+                        params,
+                        body,
+                        scope,
+                        strict,
+                        start_position,
+                        end_position);
   }
 
   ArrayLiteral* NewArrayLiteral(Expressions* items) {
@@ -98,6 +112,11 @@ class BasicAstFactory {
     typedef typename SpaceVector<Factory, T>::type Vector;
     return new (static_cast<Factory*>(this)->New(sizeof(Vector)))
         Vector(typename Vector::allocator_type(static_cast<Factory*>(this)));
+  }
+
+  Scope* NewScope(typename FunctionLiteral::DeclType type) {
+    return new (static_cast<Factory*>(this))
+        Scope(static_cast<Factory*>(this), type == FunctionLiteral::GLOBAL);
   }
 
   NullLiteral* NewNullLiteral() {

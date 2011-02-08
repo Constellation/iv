@@ -218,16 +218,16 @@ class Parser
     int type_;
   };
 
-  class TargetScope : private Noncopyable<Target>::type {
+  class TargetSwitcher : private Noncopyable<TargetSwitcher>::type {
    public:
-    explicit TargetScope(parser_type* parser)
+    explicit TargetSwitcher(parser_type* parser)
       : parser_(parser),
         target_(parser->target()),
         labels_(parser->labels()) {
       parser_->set_target(NULL);
       parser_->set_labels(NULL);
     }
-    ~TargetScope() {
+    ~TargetSwitcher() {
       parser_->set_target(target_);
       parser_->set_labels(labels_);
     }
@@ -237,12 +237,12 @@ class Parser
     Identifiers* labels_;
   };
 
-  Parser(Factory* space, const Source* source)
+  Parser(Factory* factory, const Source* source)
     : lexer_(source),
       error_(),
       strict_(false),
       error_state_(0),
-      factory_(space),
+      factory_(factory),
       scope_(NULL),
       target_(NULL),
       labels_(NULL) {
@@ -251,18 +251,24 @@ class Parser
 // Program
 //   : SourceElements
   FunctionLiteral* ParseProgram() {
-    FunctionLiteral* const global = factory_->NewFunctionLiteral(
-        FunctionLiteral::GLOBAL);
-    global->set_strict(strict_);
+    Identifiers* params = factory_->template NewVector<Identifier*>();
+    Statements* body = factory_->template NewVector<Statement*>();
+    Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
     bool error_flag = true;
     bool *res = &error_flag;
-    {
-      const ScopeSwitcher switcher(this, global->scope());
-      Next();
-      ParseSourceElements(Token::EOS, global, CHECK);
-    }
-    return (error_flag) ? global : NULL;
+    const ScopeSwitcher scope_switcher(this, scope);
+    Next();
+    const bool strict = ParseSourceElements(Token::EOS, body, CHECK);
+    return (error_flag) ?
+        factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
+                                     NULL,
+                                     params,
+                                     body,
+                                     scope,
+                                     strict,
+                                     0,
+                                     0) : NULL;
   }
 
 // SourceElements
@@ -273,16 +279,16 @@ class Parser
 //   : Statements
 //   | FunctionDeclaration
   bool ParseSourceElements(Token::Type end,
-                           FunctionLiteral* function,
+                           Statements* body,
                            bool *res) {
     Statement* stmt;
     bool recognize_directive = true;
-    const StrictSwitcher switcher(this);
+    const StrictSwitcher strict_switcher(this);
     while (token_ != end) {
       if (token_ == Token::FUNCTION) {
         // FunctionDeclaration
         stmt = ParseFunctionDeclaration(CHECK);
-        function->AddStatement(stmt);
+        body->push_back(stmt);
         recognize_directive = false;
       } else {
         stmt = ParseStatement(CHECK);
@@ -294,8 +300,7 @@ class Parser
               // expression is directive
               if (expr->AsStringLiteral()->value().compare(
                       ParserData::kUseStrict.data()) == 0) {
-                switcher.SwitchStrictMode();
-                function->set_strict(true);
+                strict_switcher.SwitchStrictMode();
               }
             } else {
               recognize_directive = false;
@@ -304,10 +309,10 @@ class Parser
             recognize_directive = false;
           }
         }
-        function->AddStatement(stmt);
+        body->push_back(stmt);
       }
     }
-    return true;
+    return strict_switcher.IsStrict();
   }
 
 //  Statement
@@ -1040,7 +1045,7 @@ class Parser
         RAISE("duplicate label");
       }
       labels->push_back(label);
-      const LabelScope scope(this, labels, exist_labels);
+      const LabelSwitcher label_switcher(this, labels, exist_labels);
 
       Statement* const stmt = ParseStatement(CHECK);
       return factory_->NewLabelledStatement(expr, stmt);
@@ -1892,8 +1897,8 @@ class Parser
       kDetectFutureReservedWords
     } throw_error_if_strict_code = kDetectNone;
 
-    FunctionLiteral* const literal = factory_->NewFunctionLiteral(decl_type);
-    literal->set_strict(strict_);
+    Identifiers* const params = factory_->template NewVector<Identifier*>();
+    Identifier* name = NULL;
 
     if (arg_type == FunctionLiteral::GENERAL) {
       assert(token_ == Token::FUNCTION);
@@ -1901,8 +1906,7 @@ class Parser
       const Token::Type current = token_;
       if (current == Token::IDENTIFIER ||
           Token::IsAddedFutureReservedWordInStrictCode(current)) {
-        Identifier* const name = ParseIdentifier(lexer_.Buffer());
-        literal->SetName(name);
+        name = ParseIdentifier(lexer_.Buffer());
         if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
@@ -1921,9 +1925,7 @@ class Parser
       }
     }
 
-    const ScopeSwitcher switcher(this, literal->scope());
-    const TargetScope scope(this);
-    literal->set_start_position(lexer_.begin_position());
+    const std::size_t start_position = lexer_.begin_position();
 
     //  '(' FormalParameterList_opt ')'
     IS(Token::LPAREN);
@@ -1954,7 +1956,7 @@ class Parser
           }
         }
       }
-      literal->AddParameter(ident);
+      params->push_back(ident);
       EXPECT(Token::RPAREN);
     } else {
       if (token_ != Token::RPAREN) {
@@ -1984,7 +1986,7 @@ class Parser
               throw_error_if_strict_code_line = lexer_.line_number();
             }
           }
-          literal->AddParameter(ident);
+          params->push_back(ident);
           param_set.insert(ident);
           if (token_ == Token::COMMA) {
             Next(true);
@@ -2003,8 +2005,13 @@ class Parser
     //    | SourceElements
     EXPECT(Token::LBRACE);
 
-    ParseSourceElements(Token::RBRACE, literal, CHECK);
-    if (strict_ || literal->strict()) {
+    Statements* const body = factory_->template NewVector<Statement*>();
+    Scope* const scope = factory_->NewScope(decl_type);
+    const ScopeSwitcher scope_switcher(this, scope);
+    const TargetSwitcher target_switcher(this);
+    const bool function_is_strict =
+        ParseSourceElements(Token::RBRACE, body, CHECK);
+    if (strict_ || function_is_strict) {
       // section 13.1
       // Strict Mode Restrictions
       switch (throw_error_if_strict_code) {
@@ -2042,9 +2049,16 @@ class Parser
           break;
       }
     }
-    literal->set_end_position(lexer_.end_position());
+    const std::size_t end_position = lexer_.end_position();
     Next();
-    return literal;
+    return factory_->NewFunctionLiteral(decl_type,
+                                        name,
+                                        params,
+                                        body,
+                                        scope,
+                                        function_is_strict,
+                                        start_position,
+                                        end_position);
   }
 
   template<typename Range>
@@ -2183,8 +2197,8 @@ class Parser
     UNEXPECT(token_);
   }
 
-  inline lexer_type& lexer() {
-    return lexer_;
+  inline lexer_type* lexer() const {
+    return &lexer_;
   }
   template<typename LexType>
   inline Token::Type Next() {
@@ -2249,15 +2263,15 @@ class Parser
     parser_type* parser_;
   };
 
-  class LabelScope : private Noncopyable<LabelScope>::type {
+  class LabelSwitcher : private Noncopyable<LabelSwitcher>::type {
    public:
-    LabelScope(parser_type* parser,
-               Identifiers* labels, bool exist_labels)
+    LabelSwitcher(parser_type* parser,
+                  Identifiers* labels, bool exist_labels)
       : parser_(parser),
         exist_labels_(exist_labels) {
       parser_->set_labels(labels);
     }
-    ~LabelScope() {
+    ~LabelSwitcher() {
       if (!exist_labels_) {
         parser_->set_labels(NULL);
       }
@@ -2278,6 +2292,9 @@ class Parser
     }
     inline void SwitchStrictMode() const {
       parser_->set_strict(true);
+    }
+    inline bool IsStrict() const {
+      return parser_->strict();
     }
    private:
     parser_type* parser_;

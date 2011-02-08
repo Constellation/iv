@@ -61,7 +61,8 @@ class type##Base\
 }
 
 template<typename Factory>
-class Scope : private Noncopyable<Scope<Factory> >::type {
+class Scope : public SpaceObject,
+              private Noncopyable<Scope<Factory> >::type {
  public:
   typedef std::pair<Identifier<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
@@ -1208,28 +1209,18 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
     SETTER,
     GETTER
   };
-  inline void SetName(Identifier<Factory>* name) { name_ = name; }
   inline Identifier<Factory>* name() const {
     return name_;
   }
   inline DeclType type() const { return type_; }
   inline const Identifiers& params() const {
-    return params_;
+    return *params_;
   }
   inline const Statements& body() const {
-    return body_;
-  }
-  inline Scope<Factory>* scope() {
-    return &scope_;
+    return *body_;
   }
   inline const Scope<Factory>& scope() const {
-    return scope_;
-  }
-  inline void set_start_position(std::size_t start) {
-    start_position_ = start;
-  }
-  inline void set_end_position(std::size_t end) {
-    end_position_ = end;
+    return *scope_;
   }
   inline std::size_t start_position() const {
     return start_position_;
@@ -1240,32 +1231,30 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline bool strict() const {
     return strict_;
   }
-  inline void set_strict(bool strict) {
-    strict_ = strict;
-  }
-  FunctionLiteral(DeclType type, Factory* factory)
-    : name_(NULL),
+  FunctionLiteral(DeclType type,
+                  Identifier<Factory>* name,
+                  Identifiers* params,
+                  Statements* body,
+                  Scope<Factory>* scope,
+                  bool strict,
+                  std::size_t start_position,
+                  std::size_t end_position)
+    : name_(name),
       type_(type),
-      params_(typename Identifiers::allocator_type(factory)),
-      body_(typename Statements::allocator_type(factory)),
-      scope_(factory, type == GLOBAL),
-      strict_(false) {
-  }
-
-  void AddParameter(Identifier<Factory>* param) {
-    params_.push_back(param);
-  }
-
-  void AddStatement(Statement<Factory>* stmt) {
-    body_.push_back(stmt);
+      params_(params),
+      body_(body),
+      scope_(scope),
+      strict_(strict),
+      start_position_(start_position),
+      end_position_(end_position) {
   }
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
  private:
   Identifier<Factory>* name_;
   DeclType type_;
-  Identifiers params_;
-  Statements body_;
-  Scope<Factory> scope_;
+  Identifiers* params_;
+  Statements* body_;
+  Scope<Factory>* scope_;
   bool strict_;
   std::size_t start_position_;
   std::size_t end_position_;
