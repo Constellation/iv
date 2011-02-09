@@ -6,7 +6,7 @@ require 'hoe'
 require 'pp'
 $root = File.dirname(__FILE__)
 $name = 'iv-phonic'
-$version = '0.1.4'
+$version = '0.1.5'
 
 directory "ext/include/iv"
 
@@ -28,7 +28,21 @@ Rake::ExtensionTask.new('phonic', HOE.spec) do |ext|
   ext.lib_dir = File.join('lib', 'iv')
   ext.ext_dir = File.join('ext', 'iv', 'phonic')
   ext.config_options << "--with-iv-include=#{File.join($root, 'ext', 'include')}"
+  ext.config_options << "--with-netlib-include=#{File.join($root, 'ext', 'iv', 'phonic', 'third_party', 'netlib_dtoa')}"
+  ext.config_options << "--with-v8-include=#{File.join($root, 'ext', 'iv', 'phonic', 'third_party', 'v8_dtoa')}"
 end
+
+#Rake::ExtensionTask.new('v8_dtoa', HOE.spec) do |ext|
+#  ext.lib_dir = File.join('lib', 'iv', 'phonic', 'third_party')
+#  ext.ext_dir = File.join('ext', 'iv', 'phonic', 'third_party', 'v8_dtoa')
+#  ext.config_options << "--with-iv-include=#{File.join($root, 'ext', 'include')}"
+#end
+#
+#Rake::ExtensionTask.new('netlib_dtoa', HOE.spec) do |ext|
+#  ext.lib_dir = File.join('lib', 'iv', 'phonic', 'third_party')
+#  ext.ext_dir = File.join('ext', 'iv', 'phonic', 'third_party', 'netlib_dtoa')
+#  ext.config_options << "--with-iv-include=#{File.join($root, 'ext', 'include')}"
+#end
 
 Rake::Task[:test].prerequisites << :compile
 
@@ -46,12 +60,12 @@ task :checkout => ["ext/include/iv"] do |t|
     cp f, File.expand_path(path)
   end
   Dir.glob("../third_party/netlib_dtoa/*") do |f|
-    path = File.join("ext", "iv", "phonic", File.basename(f))
+    path = File.join("ext", "iv", "phonic", "third_party", "netlib_dtoa", File.basename(f))
     list << path
     cp f, File.expand_path(path)
   end
   Dir.glob("../third_party/v8_dtoa/*") do |f|
-    path = File.join("ext", "iv", "phonic", File.basename(f))
+    path = File.join("ext", "iv", "phonic", "third_party", "v8_dtoa", File.basename(f))
     list << path
     cp f, File.expand_path(path)
   end
@@ -65,6 +79,10 @@ end
 
 task :push => :gem do |f|
   system("gem push pkg/#{$name}-#{$version}.gem")
+end
+
+task :install => :gem do |f|
+  sh "gem install --local pkg/#{$name}-#{$version}.gem"
 end
 
 # vim: syntax=ruby
