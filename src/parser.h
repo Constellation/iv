@@ -1887,7 +1887,9 @@ class Parser
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = ParseIdentifier(lexer_.Buffer8());
+              ident = ParseIdentifierNumber(lexer_.Buffer8());
+            } else if (token_ == Token::STRING) {
+              ident = ParseIdentifierString(lexer_.Buffer());
             } else {
               ident = ParseIdentifier(lexer_.Buffer());
             }
@@ -1920,7 +1922,9 @@ class Parser
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
         if (token_ == Token::NUMBER) {
-          ident = ParseIdentifier(lexer_.Buffer8());
+          ident = ParseIdentifierNumber(lexer_.Buffer8());
+        } else if (token_ == Token::STRING) {
+          ident = ParseIdentifierString(lexer_.Buffer());
         } else {
           ident = ParseIdentifier(lexer_.Buffer());
         }
@@ -2142,8 +2146,30 @@ class Parser
   }
 
   template<typename Range>
+  Identifier* ParseIdentifierNumber(const Range& range) {
+    Identifier* const ident = factory_->NewIdentifier(Token::NUMBER,
+                                                      range,
+                                                      lexer_.begin_position(),
+                                                      lexer_.end_position());
+    Next();
+    return ident;
+  }
+
+
+  template<typename Range>
+  Identifier* ParseIdentifierString(const Range& range) {
+    Identifier* const ident = factory_->NewIdentifier(Token::STRING,
+                                                      range,
+                                                      lexer_.begin_position(),
+                                                      lexer_.end_position());
+    Next();
+    return ident;
+  }
+
+  template<typename Range>
   Identifier* ParseIdentifier(const Range& range) {
-    Identifier* const ident = factory_->NewIdentifier(range,
+    Identifier* const ident = factory_->NewIdentifier(Token::IDENTIFIER,
+                                                      range,
                                                       lexer_.begin_position(),
                                                       lexer_.end_position());
     Next();
@@ -2154,7 +2180,8 @@ class Parser
   Identifier* ParseIdentifierWithPosition(const Range& range,
                                           std::size_t begin,
                                           std::size_t end) {
-    Identifier* const ident = factory_->NewIdentifier(range,
+    Identifier* const ident = factory_->NewIdentifier(Token::IDENTIFIER,
+                                                      range,
                                                       begin,
                                                       end);
     Next();

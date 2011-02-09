@@ -512,7 +512,7 @@ BCinfo { int dp0, dp1, dplen, dsign, e0, inexact, nd, nd0, rounding, scale, uflc
 #define Kmax 7
 
 #ifdef __cplusplus
-extern "C" double strtod(const char *s00, char **se);
+// extern "C" double strtod(const char *s00, char **se);
 extern "C" char *dtoa(double d, int mode, int ndigits,
 			int *decpt, int *sign, char **rve);
 #endif
@@ -1527,7 +1527,7 @@ match
 #ifdef KR_headers
 	(sp, t) char **sp, *t;
 #else
-	(CONST char **sp, char *t)
+	(CONST char **sp, const char *t)
 #endif
 {
 	int c, d;
@@ -1725,7 +1725,7 @@ increment(Bigint *b)
 	return b;
 	}
 
- void
+inline void
 #ifdef KR_headers
 gethex(sp, rvp, rounding, sign)
 	CONST char **sp; U *rvp; int rounding, sign;
@@ -2455,7 +2455,7 @@ retlow1:
 	}
 #endif /* NO_STRTOD_BIGCOMP */
 
- double
+inline double
 strtod
 #ifdef KR_headers
 	(s00, se) CONST char *s00; char **se;
@@ -3539,7 +3539,7 @@ rv_alloc(int i)
 
 	j = sizeof(ULong);
 	for(k = 0;
-		sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j <= i;
+		(int)(sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j) <= i;
 		j <<= 1)
 			k++;
 	r = (int*)Balloc(k);
@@ -3555,7 +3555,7 @@ rv_alloc(int i)
 #ifdef KR_headers
 nrv_alloc(s, rve, n) char *s, **rve; int n;
 #else
-nrv_alloc(char *s, char **rve, int n)
+nrv_alloc(const char *s, char **rve, int n)
 #endif
 {
 	char *rv, *t;
@@ -3573,7 +3573,7 @@ nrv_alloc(char *s, char **rve, int n)
  * when MULTIPLE_THREADS is not defined.
  */
 
- void
+inline void
 #ifdef KR_headers
 freedtoa(s) char *s;
 #else
@@ -3623,7 +3623,7 @@ freedtoa(char *s)
  *	   calculation.
  */
 
- char *
+inline char *
 dtoa
 #ifdef KR_headers
 	(dd, mode, ndigits, decpt, sign, rve)

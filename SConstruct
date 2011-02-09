@@ -77,7 +77,7 @@ def Build():
   if not env.GetOption('clean'):
     conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
     if not conf.CheckFunc('snprintf'):
-      print 'strtod must be provided'
+      print 'snprintf must be provided'
       Exit(1)
     if options.get('noicu'):
       # use iconv
@@ -100,11 +100,6 @@ def Build():
 
   if options.get('cache'):
     env.CacheDir('cache')
-
-  if sys.byteorder == 'little':
-    option_dict['%IS_LITTLE_ENDIAN%'] = '1'
-  else:
-    option_dict['%IS_LITTLE_ENDIAN%'] = '0'
 
   header = env.SubstInFile(
       join(root_dir, 'src', 'config', 'config.h'),

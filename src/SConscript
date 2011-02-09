@@ -18,14 +18,7 @@ def Build():
     duplicate=False,
     exports="context"
   )
-  netlib_dtoa = context.SConscript(
-    'src/third_party/netlib-dtoa/SConscript',
-    variant_dir=join(root_dir, 'obj', 'third_party', 'netlib-dtoa'),
-    duplicate=False,
-    exports="context"
-  )
   object_files.append(v8_dtoa)
-  object_files.append(netlib_dtoa)
 
 program = Build()
 Return("object_files program")

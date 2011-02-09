@@ -32,8 +32,10 @@ class AstFactory
   }
 
   template<typename Range>
-  Identifier* NewIdentifier(const Range& range, std::size_t begin, std::size_t end) {
-    Identifier* ident = new (this) Identifier(range, this);
+  Identifier* NewIdentifier(core::Token::Type token,
+                            const Range& range,
+                            std::size_t begin, std::size_t end) {
+    Identifier* ident = new (this) Identifier(token, range, this);
     ident->set_symbol(context::Intern(ctx_, ident->value()));
     return ident;
   }

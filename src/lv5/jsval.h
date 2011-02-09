@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <tr1/cstdint>
 #include <tr1/type_traits>
-#include "config/config.h"
+#include "byteorder.h"
 #include "enable_if.h"
 #include "static_assert.h"
 #include "none.h"
@@ -14,7 +14,7 @@
 
 namespace iv {
 namespace lv5 {
-#if IS_LITTLE_ENDIAN == 1
+#ifdef IV_IS_LITTLE_ENDIAN
 static const bool kLittleEndian = true;
 #else
 static const bool kLittleEndian = false;
