@@ -36,6 +36,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       rb_ary_push(array, ret_);
     }
     rb_hash_aset(hash, SYM("body"), array);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -44,6 +45,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("FunctionStatement"));
     Visit(stmt->function());
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -52,6 +54,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("FunctionDeclaration"));
     Visit(decl->function());
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, decl);
     ret_ = hash;
   }
 
@@ -62,23 +65,31 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     VALUE array = rb_ary_new();
     for (Declarations::const_iterator it = stmt->decls().begin(),
          last = stmt->decls().end(); it != last; ++it) {
-      VALUE decl = rb_hash_new();
-      rb_hash_aset(decl, SYM("type"), rb_str_new_cstr("Declaration"));
-      Visit((*it)->name());
-      rb_hash_aset(decl, SYM("name"), ret_);
-      if ((*it)->expr()) {
-        (*it)->expr()->Accept(this);
-        rb_hash_aset(decl, SYM("expr"), ret_);
-      }
-      rb_ary_push(array, decl);
+      Visit(*it);
+      rb_ary_push(array, ret_);
     }
     rb_hash_aset(hash, SYM("body"), array);
+    SetLocation(hash, stmt);
+    ret_ = hash;
+  }
+
+  void Visit(const Declaration* decl) {
+    VALUE hash = rb_hash_new();
+    rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("Declaration"));
+    Visit(decl->name());
+    rb_hash_aset(hash, SYM("name"), ret_);
+    if (decl->expr()) {
+      decl->expr()->Accept(this);
+      rb_hash_aset(hash, SYM("expr"), ret_);
+    }
+    SetLocation(hash, decl);
     ret_ = hash;
   }
 
   void Visit(const EmptyStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("EmptyStatement"));
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -93,6 +104,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       stmt->else_statement()->Accept(this);
       rb_hash_aset(hash, SYM("else"), ret_);
     }
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -103,6 +115,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("cond"), ret_);
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -113,6 +126,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("cond"), ret_);
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -133,6 +147,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     }
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -145,6 +160,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("enum"), ret_);
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -155,6 +171,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       stmt->label()->Accept(this);
       rb_hash_aset(hash, SYM("label"), ret_);
     }
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -165,6 +182,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       stmt->label()->Accept(this);
       rb_hash_aset(hash, SYM("label"), ret_);
     }
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -173,6 +191,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("ReturnStatement"));
     stmt->expr()->Accept(this);
     rb_hash_aset(hash, SYM("expr"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -183,6 +202,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("context"), ret_);
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -193,6 +213,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("label"), ret_);
     stmt->body()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -204,42 +225,52 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     VALUE array = rb_ary_new();
     for (CaseClauses::const_iterator it = stmt->clauses().begin(),
          last = stmt->clauses().end(); it != last; ++it) {
-      VALUE clause = rb_hash_new();
-      if ((*it)->IsDefault()) {
-        rb_hash_aset(clause, SYM("type"), rb_str_new_cstr("Default"));
-      } else {
-        rb_hash_aset(clause, SYM("type"), rb_str_new_cstr("Case"));
-        (*it)->expr()->Accept(this);
-        rb_hash_aset(clause, SYM("expr"), ret_);
-      }
-      VALUE stmts = rb_ary_new();
-      for (Statements::const_iterator st = (*it)->body().begin(),
-           stlast = (*it)->body().end(); st != stlast; ++st) {
-        (*st)->Accept(this);
-        rb_ary_push(stmts, ret_);
-      }
-      rb_hash_aset(clause, SYM("body"), stmts);
+      Visit(*it);
       rb_ary_push(array, ret_);
     }
     rb_hash_aset(hash, SYM("clauses"), array);
+    SetLocation(hash, stmt);
+    ret_ = hash;
+  }
+
+  void Visit(const CaseClause* cl) {
+    VALUE hash = rb_hash_new();
+    if (cl->IsDefault()) {
+      rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("Default"));
+    } else {
+      rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("Case"));
+      cl->expr()->Accept(this);
+      rb_hash_aset(hash, SYM("expr"), ret_);
+    }
+    VALUE stmts = rb_ary_new();
+    for (Statements::const_iterator st = cl->body().begin(),
+         stlast = cl->body().end(); st != stlast; ++st) {
+      (*st)->Accept(this);
+      rb_ary_push(stmts, ret_);
+    }
+    rb_hash_aset(hash, SYM("body"), stmts);
+    SetLocation(hash, cl);
     ret_ = hash;
   }
 
   void Visit(const ThrowStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("ThrowStatement"));
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
   void Visit(const TryStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("TryStatement"));
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
   void Visit(const DebuggerStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("DebuggerStatement"));
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -248,6 +279,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("ExpressionStatement"));
     stmt->expr()->Accept(this);
     rb_hash_aset(hash, SYM("body"), ret_);
+    SetLocation(hash, stmt);
     ret_ = hash;
   }
 
@@ -260,6 +292,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("left"), ret_);
     expr->right()->Accept(this);
     rb_hash_aset(hash, SYM("right"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -272,6 +305,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("left"), ret_);
     expr->right()->Accept(this);
     rb_hash_aset(hash, SYM("right"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -284,6 +318,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("left"), ret_);
     expr->right()->Accept(this);
     rb_hash_aset(hash, SYM("right"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -294,6 +329,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
                  rb_str_new_cstr(core::Token::ToString(expr->op())));
     expr->expr()->Accept(this);
     rb_hash_aset(hash, SYM("expr"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -304,6 +340,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
                  rb_str_new_cstr(core::Token::ToString(expr->op())));
     expr->expr()->Accept(this);
     rb_hash_aset(hash, SYM("expr"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -317,6 +354,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
                          reinterpret_cast<const char*>(str.data()),
                          str.size()*2,
                          rb_to_encoding(Encoding::UTF16Encoding()))));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -324,6 +362,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("NumberLiteral"));
     rb_hash_aset(hash, SYM("value"), rb_float_new(literal->value()));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -337,34 +376,40 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
                          reinterpret_cast<const char*>(str.data()),
                          str.size()*2,
                          rb_to_encoding(Encoding::UTF16Encoding()))));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
   void Visit(const ThisLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("ThisLiteral"));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
   void Visit(const NullLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("NullLiteral"));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
   void Visit(const TrueLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("TrueLiteral"));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
   void Visit(const FalseLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("FalseLiteral"));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
   void Visit(const Undefined* literal) {
+    // Undefined has no location
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), rb_str_new_cstr("Undefined"));
     ret_ = hash;
@@ -387,6 +432,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
                          reinterpret_cast<const char*>(flags.data()),
                          flags.size()*2,
                          rb_to_encoding(Encoding::UTF16Encoding()))));
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -400,6 +446,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       rb_ary_push(array, ret_);
     }
     rb_hash_aset(hash, SYM("value"), array);
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -441,6 +488,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       rb_ary_push(array, item);
     }
     rb_hash_aset(hash, SYM("value"), array);
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -469,6 +517,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       }
       rb_hash_aset(hash, SYM("body"), array);
     }
+    SetLocation(hash, literal);
     ret_ = hash;
   }
 
@@ -479,6 +528,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("target"), ret_);
     expr->key()->Accept(this);
     rb_hash_aset(hash, SYM("key"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -489,6 +539,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("target"), ret_);
     Visit(expr->key());
     rb_hash_aset(hash, SYM("key"), ret_);
+    SetLocation(hash, expr);
     ret_ = hash;
   }
 
@@ -504,6 +555,7 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       rb_ary_push(args, ret_);
     }
     rb_hash_aset(hash, SYM("args"), args);
+    SetLocation(hash, call);
     ret_ = hash;
   }
 
@@ -519,10 +571,17 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
       rb_ary_push(args, ret_);
     }
     rb_hash_aset(hash, SYM("args"), args);
+    SetLocation(hash, call);
     ret_ = hash;
   }
 
  private:
+
+  static void SetLocation(VALUE hash, const AstNode* node) {
+    rb_hash_aset(hash, SYM("begin"), INT2NUM(node->begin_position()));
+    rb_hash_aset(hash, SYM("end"), INT2NUM(node->end_position()));
+  }
+
   VALUE ret_;
 };
 

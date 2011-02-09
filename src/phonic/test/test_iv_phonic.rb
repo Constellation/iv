@@ -23,10 +23,17 @@ class TestPhonic < Test::Unit::TestCase
     assert(IV::Phonic::parse("T"))
     assert(IV::Phonic::parse("var test = \"おはようございます\";"))
     assert_raise(IV::Phonic::ParseError) {
-      IV::Phonic::parse("var test = var;")
+      IV::Phonic::parse("var test =var;")
     }
     assert_nothing_raised {
       IV::Phonic::parse("var test = /test/;")
     }
+    pp IV::Phonic::parse("var i = 20;")
+#    assert_nothing_raised {
+#      IV::Phonic::parse(File.read('tmp/jquery.js'))
+#    }
+#    assert_nothing_raised {
+#      IV::Phonic::parse(File.read('tmp/dojo.js'))
+#    }
   end
 end

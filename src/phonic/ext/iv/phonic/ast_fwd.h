@@ -20,6 +20,12 @@ class AstNodeBase<iv::phonic::AstFactory>
     begin_ = begin;
     end_ = end;
   }
+  std::size_t begin_position() const {
+    return begin_;
+  }
+  std::size_t end_position() const {
+    return end_;
+  }
  private:
   std::size_t begin_;
   std::size_t end_;

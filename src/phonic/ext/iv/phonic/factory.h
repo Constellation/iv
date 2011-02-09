@@ -17,35 +17,55 @@ class AstFactory : public core::Space<2> {
  public:
   AstFactory()
     : core::Space<2>(),
-      undefined_instance_(new(this)Undefined()),
-      empty_statement_instance_(new(this)EmptyStatement()),
-      debugger_statement_instance_(new(this)DebuggerStatement()),
-      this_instance_(new(this)ThisLiteral()),
-      null_instance_(new(this)NullLiteral()),
-      true_instance_(new(this)TrueLiteral()),
-      false_instance_(new(this)FalseLiteral()) {
+      undefined_instance_(new(this)Undefined()) {
+  }
+
+  Scope* NewScope(FunctionLiteral::DeclType type) {
+    return new (this) Scope(this, type == FunctionLiteral::GLOBAL);
   }
 
   template<typename Range>
-  Identifier* NewIdentifier(const Range& range) {
+  Identifier* NewIdentifier(const Range& range,
+                            std::size_t begin,
+                            std::size_t end) {
     Identifier* ident = new(this)Identifier(range, this);
+    ident->Location(begin, end);
     return ident;
   }
 
-  NumberLiteral* NewNumberLiteral(const double& val) {
-    return new (this) NumberLiteral(val);
+  NumberLiteral* NewNumberLiteral(const double& val,
+                                  std::size_t begin,
+                                  std::size_t end) {
+    NumberLiteral* num = new (this) NumberLiteral(val);
+    num->Location(begin, end);
+    return num;
   }
 
-  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer) {
-    return new (this) StringLiteral(buffer, this);
+  NumberLiteral* NewReducedNumberLiteral(const double& val) {
+    UNREACHABLE();
+    return NULL;
   }
 
-  Directivable* NewDirectivable(const std::vector<uc16>& buffer) {
-    return new (this) Directivable(buffer, this);
+  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer,
+                                  std::size_t begin,
+                                  std::size_t end) {
+    StringLiteral* str = new (this) StringLiteral(buffer, this);
+    str->Location(begin, end);
+    return str;
+  }
+
+  Directivable* NewDirectivable(const std::vector<uc16>& buffer,
+                                std::size_t begin,
+                                std::size_t end) {
+    Directivable* directive = new (this) Directivable(buffer, this);
+    directive->Location(begin, end);
+    return directive;
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
-                                  const std::vector<uc16>& flags) {
+                                  const std::vector<uc16>& flags,
+                                  std::size_t begin,
+                                  std::size_t end) {
 //    OnigErrorInfo einfo;
 //    regex_t* reg;
 //    // TODO(Constellation) Little Endian?
@@ -60,19 +80,49 @@ class AstFactory : public core::Space<2> {
 //      return NULL;
 //    }
 //    onig_free(reg);
-    return new (this) RegExpLiteral(content, flags, this);
+    RegExpLiteral* reg = new (this) RegExpLiteral(content, flags, this);
+    reg->Location(begin, end);
+    return reg;
   }
 
-  FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type) {
-    return new (this) FunctionLiteral(type, this);
+  FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type,
+                                      Identifier* name,
+                                      Identifiers* params,
+                                      Statements* body,
+                                      Scope* scope,
+                                      bool strict,
+                                      std::size_t begin_block_position,
+                                      std::size_t end_block_position,
+                                      std::size_t begin,
+                                      std::size_t end) {
+    FunctionLiteral* func = new (this)
+        FunctionLiteral(type,
+                        name,
+                        params,
+                        body,
+                        scope,
+                        strict,
+                        begin_block_position,
+                        end_block_position);
+    func->Location(begin, end);
+    return func;
   }
 
-  ArrayLiteral* NewArrayLiteral(Expressions* items) {
-    return new (this) ArrayLiteral(items);
+  ArrayLiteral* NewArrayLiteral(Expressions* items,
+                                std::size_t begin, std::size_t end) {
+    ArrayLiteral* ary = new (this) ArrayLiteral(items);
+    ary->Location(begin, end);
+    return ary;
   }
 
-  ObjectLiteral* NewObjectLiteral(ObjectLiteral::Properties* properties) {
-    return new (this) ObjectLiteral(properties);
+
+  ObjectLiteral*
+      NewObjectLiteral(ObjectLiteral::Properties* properties,
+                       std::size_t begin,
+                       std::size_t end) {
+    ObjectLiteral* obj = new (this) ObjectLiteral(properties);
+    obj->Location(begin, end);
+    return obj;
   }
 
   template<typename T>
@@ -86,189 +136,293 @@ class AstFactory : public core::Space<2> {
     return new (New(sizeof(Vector))) Vector(typename Vector::allocator_type(this));
   }
 
-  NullLiteral* NewNullLiteral() {
-    return null_instance_;
+  NullLiteral* NewNullLiteral(std::size_t begin,
+                              std::size_t end) {
+    NullLiteral* null = new (this) NullLiteral();
+    null->Location(begin, end);
+    return null;
   }
 
-  EmptyStatement* NewEmptyStatement() {
-    return empty_statement_instance_;
-  }
-
-  DebuggerStatement* NewDebuggerStatement() {
-    return debugger_statement_instance_;
-  }
-
-  ThisLiteral* NewThisLiteral() {
-    return this_instance_;
+  ThisLiteral* NewThisLiteral(std::size_t begin, std::size_t end) {
+    ThisLiteral* th = new (this) ThisLiteral();
+    th->Location(begin, end);
+    return th;
   }
 
   Undefined* NewUndefined() {
     return undefined_instance_;
   }
 
-  TrueLiteral* NewTrueLiteral() {
-    return true_instance_;
+  TrueLiteral* NewTrueLiteral(std::size_t begin, std::size_t end) {
+    TrueLiteral* tr = new (this) TrueLiteral();
+    tr->Location(begin, end);
+    return tr;
   }
 
-  FalseLiteral* NewFalseLiteral() {
-    return false_instance_;
+  FalseLiteral* NewFalseLiteral(std::size_t begin, std::size_t end) {
+    FalseLiteral* fal = new (this) FalseLiteral();
+    fal->Location(begin, end);
+    return fal;
+  }
+
+  EmptyStatement* NewEmptyStatement(std::size_t begin, std::size_t end) {
+    EmptyStatement* empty = new (this) EmptyStatement();
+    empty->Location(begin, end);
+    return empty;
+  }
+
+  DebuggerStatement* NewDebuggerStatement(std::size_t begin, std::size_t end) {
+    DebuggerStatement* debug = new (this) DebuggerStatement();
+    debug->Location(begin, end);
+    return debug;
   }
 
   FunctionStatement* NewFunctionStatement(FunctionLiteral* func) {
-    return new (this) FunctionStatement(func);
+    FunctionStatement* stmt = new (this) FunctionStatement(func);
+    stmt->Location(func->begin_position(), func->end_position());
+    return stmt;
   }
 
   FunctionDeclaration* NewFunctionDeclaration(FunctionLiteral* func) {
-    return new (this) FunctionDeclaration(func);
+    FunctionDeclaration* decl = new (this) FunctionDeclaration(func);
+    decl->Location(func->begin_position(), func->end_position());
+    return decl;
   }
 
-  Block* NewBlock(Statements* body) {
-    return new (this) Block(body);
+  Block* NewBlock(Statements* body, std::size_t begin, std::size_t end) {
+    Block* block = new (this) Block(body);
+    block->Location(begin, end);
+    return block;
   }
 
   VariableStatement* NewVariableStatement(core::Token::Type token,
-                                          Declarations* decls) {
-    return new (this) VariableStatement(token, decls);
+                                          Declarations* decls,
+                                          std::size_t begin,
+                                          std::size_t end) {
+    VariableStatement* var = new (this) VariableStatement(token, decls);
+    assert(!decls->empty());
+    var->Location(begin, end);
+    return var;
   }
 
   Declaration* NewDeclaration(Identifier* name, Expression* expr) {
-    return new (this) Declaration(name, expr);
+    assert(name && expr);
+    Declaration* decl = new (this) Declaration(name, expr);
+    const std::size_t end = (expr->AsUndefined()) ?
+        name->end_position() : expr->end_position();
+    decl->Location(name->begin_position(), end);
+    return decl;
   }
 
   IfStatement* NewIfStatement(Expression* cond,
                               Statement* then_statement,
-                              Statement* else_statement) {
-    return new (this) IfStatement(cond,
-                                  then_statement,
-                                  else_statement);
+                              Statement* else_statement,
+                              std::size_t begin) {
+    IfStatement* stmt = new (this) IfStatement(cond,
+                                               then_statement, else_statement);
+    assert(then_statement);
+    const std::size_t end = (else_statement) ?
+        else_statement->end_position() : then_statement->end_position();
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   DoWhileStatement* NewDoWhileStatement(Statement* body,
-                                        Expression* cond) {
-    return new (this) DoWhileStatement(body, cond);
+                                        Expression* cond,
+                                        std::size_t begin,
+                                        std::size_t end) {
+    DoWhileStatement* stmt = new (this) DoWhileStatement(body, cond);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   WhileStatement* NewWhileStatement(Statement* body,
-                                    Expression* cond) {
-    return new (this) WhileStatement(body, cond);
+                                    Expression* cond,
+                                    std::size_t begin) {
+    assert(body && cond);
+    WhileStatement* stmt = new (this) WhileStatement(body, cond);
+    stmt->Location(begin, body->end_position());
+    return stmt;
   }
 
   ForInStatement* NewForInStatement(Statement* body,
                                     Statement* each,
-                                    Expression* enumerable) {
-    return new (this) ForInStatement(body, each, enumerable);
-  }
-
-  ExpressionStatement* NewExpressionStatement(Expression* expr) {
-    return new (this) ExpressionStatement(expr);
+                                    Expression* enumerable,
+                                    std::size_t begin) {
+    assert(body);
+    ForInStatement* stmt = new (this) ForInStatement(body, each, enumerable);
+    stmt->Location(begin, body->end_position());
+    return stmt;
   }
 
   ForStatement* NewForStatement(Statement* body,
                                 Statement* init,
                                 Expression* cond,
-                                Statement* next) {
-    return new (this) ForStatement(body, init, cond, next);
+                                Statement* next,
+                                std::size_t begin) {
+    assert(body);
+    ForStatement* stmt = new (this) ForStatement(body, init, cond, next);
+    stmt->Location(begin, body->end_position());
+    return stmt;
   }
 
+  ExpressionStatement* NewExpressionStatement(Expression* expr, std::size_t end) {
+    ExpressionStatement* stmt = new (this) ExpressionStatement(expr);
+    stmt->Location(expr->begin_position(), end);
+    return stmt;
+  }
 
   ContinueStatement* NewContinueStatement(Identifier* label,
-                                          IterationStatement** target) {
-    return new (this) ContinueStatement(label, target);
+                                          IterationStatement** target,
+                                          std::size_t begin,
+                                          std::size_t end) {
+    ContinueStatement* stmt = new (this) ContinueStatement(label, target);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   BreakStatement* NewBreakStatement(Identifier* label,
-                                    BreakableStatement** target) {
-    return new (this) BreakStatement(label, target);
+                                    BreakableStatement** target,
+                                    std::size_t begin,
+                                    std::size_t end) {
+    BreakStatement* stmt = new (this) BreakStatement(label, target);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
-  ReturnStatement* NewReturnStatement(Expression* expr) {
-    return new (this) ReturnStatement(expr);
+  ReturnStatement* NewReturnStatement(Expression* expr,
+                                      std::size_t begin,
+                                      std::size_t end) {
+    assert(expr);
+    ReturnStatement* stmt = new (this) ReturnStatement(expr);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
-  WithStatement* NewWithStatement(Expression* expr, Statement* stmt) {
-    return new (this) WithStatement(expr, stmt);
+  WithStatement* NewWithStatement(Expression* expr,
+                                  Statement* body, std::size_t begin) {
+    assert(body);
+    WithStatement* stmt = new (this) WithStatement(expr, body);
+    stmt->Location(begin, body->end_position());
+    return stmt;
   }
 
-  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses) {
-    return new (this) SwitchStatement(expr, clauses);
+  SwitchStatement* NewSwitchStatement(Expression* expr, CaseClauses* clauses,
+                                      std::size_t begin, std::size_t end) {
+    SwitchStatement* stmt = new (this) SwitchStatement(expr, clauses);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   CaseClause* NewCaseClause(bool is_default,
-                            Expression* expr, Statements* body) {
-    return new (this) CaseClause(is_default, expr, body);
+                            Expression* expr, Statements* body,
+                            std::size_t begin,
+                            std::size_t end) {
+    CaseClause* clause = new (this) CaseClause(is_default, expr, body);
+    clause->Location(begin, end);
+    return clause;
   }
 
 
-  ThrowStatement*  NewThrowStatement(Expression* expr) {
-    return new (this) ThrowStatement(expr);
+  ThrowStatement*  NewThrowStatement(Expression* expr,
+                                     std::size_t begin,
+                                     std::size_t end) {
+    assert(expr);
+    ThrowStatement* stmt = new (this) ThrowStatement(expr);
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   TryStatement* NewTryStatement(Block* try_block,
                                 Identifier* catch_name,
                                 Block* catch_block,
-                                Block* finally_block) {
-    return new (this) TryStatement(try_block,
-                                   catch_name,
-                                   catch_block,
-                                   finally_block);
+                                Block* finally_block,
+                                std::size_t begin) {
+    TryStatement* stmt = new (this) TryStatement(try_block,
+                                                 catch_name,
+                                                 catch_block,
+                                                 finally_block);
+    assert(catch_block || finally_block);
+    const std::size_t end = (finally_block) ?
+        finally_block->end_position() : catch_block->end_position();
+    stmt->Location(begin, end);
+    return stmt;
   }
 
   LabelledStatement* NewLabelledStatement(Expression* expr, Statement* stmt) {
-    return new (this) LabelledStatement(expr, stmt);
+    LabelledStatement* label = new (this) LabelledStatement(expr, stmt);
+    label->Location(expr->begin_position(), stmt->end_position());
+    return label;
   }
 
   BinaryOperation* NewBinaryOperation(core::Token::Type op,
                                       Expression* result,
                                       Expression* right) {
-    return new (this) BinaryOperation(op, result, right);
+    BinaryOperation* expr = new (this) BinaryOperation(op, result, right);
+    expr->Location(result->begin_position(), right->end_position());
+    return expr;
   }
 
   Assignment* NewAssignment(core::Token::Type op,
                             Expression* left,
                             Expression* right) {
-    return new (this) Assignment(op, left, right);
+    Assignment* expr = new (this) Assignment(op, left, right);
+    expr->Location(left->begin_position(), right->end_position());
+    return expr;
   }
 
   ConditionalExpression* NewConditionalExpression(Expression* cond,
                                                   Expression* left,
                                                   Expression* right) {
-    return new (this) ConditionalExpression(cond, left, right);
+    ConditionalExpression* expr = new (this) ConditionalExpression(cond, left, right);
+    expr->Location(cond->begin_position(), right->end_position());
+    return expr;
   }
 
   UnaryOperation* NewUnaryOperation(core::Token::Type op,
-                                    Expression* expr) {
-    return new (this) UnaryOperation(op, expr);
+                                    Expression* expr, std::size_t begin) {
+    assert(expr);
+    UnaryOperation* unary = new (this) UnaryOperation(op, expr);
+    unary->Location(begin, expr->end_position());
+    return unary;
   }
 
   PostfixExpression* NewPostfixExpression(core::Token::Type op,
-                                          Expression* expr) {
-    return new (this) PostfixExpression(op, expr);
+                                          Expression* expr, std::size_t end) {
+    assert(expr);
+    PostfixExpression* post = new (this) PostfixExpression(op, expr);
+    post->Location(expr->begin_position(), end);
+    return post;
   }
 
-  FunctionCall* NewFunctionCall(Expression* expr, Expressions* args) {
-    return new (this) FunctionCall(expr, args);
+  FunctionCall* NewFunctionCall(Expression* expr,
+                                Expressions* args, std::size_t end) {
+    FunctionCall* call = new (this) FunctionCall(expr, args);
+    call->Location(expr->begin_position(), end);
+    return call;
   }
 
-  ConstructorCall* NewConstructorCall(Expression* target, Expressions* args) {
-    return new (this) ConstructorCall(target, args);
+  ConstructorCall* NewConstructorCall(Expression* target,
+                                      Expressions* args, std::size_t end) {
+    ConstructorCall* call = new (this) ConstructorCall(target, args);
+    call->Location(target->begin_position(), end);
+    return call;
   }
 
   IndexAccess* NewIndexAccess(Expression* expr, Expression* index) {
-    return new (this) IndexAccess(expr, index);
+    IndexAccess* access = new (this) IndexAccess(expr, index);
+    access->Location(expr->begin_position(), index->end_position());
+    return access;
   }
 
   IdentifierAccess* NewIdentifierAccess(Expression* expr, Identifier* ident) {
-    return new (this) IdentifierAccess(expr, ident);
+    IdentifierAccess* access = new (this) IdentifierAccess(expr, ident);
+    access->Location(expr->begin_position(), ident->end_position());
+    return access;
   }
 
  private:
   Undefined* undefined_instance_;
-  EmptyStatement* empty_statement_instance_;
-  DebuggerStatement* debugger_statement_instance_;
-  ThisLiteral* this_instance_;
-  NullLiteral* null_instance_;
-  TrueLiteral* true_instance_;
-  FalseLiteral* false_instance_;
 };
 
 
