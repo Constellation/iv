@@ -25,10 +25,12 @@ class AstFactory : public core::Space<2> {
   }
 
   template<typename Range>
-  Identifier* NewIdentifier(const Range& range,
+  Identifier* NewIdentifier(core::Token::Type type,
+                            const Range& range,
                             std::size_t begin,
                             std::size_t end) {
     Identifier* ident = new(this)Identifier(range, this);
+    ident->set_type(type);
     ident->Location(begin, end);
     return ident;
   }

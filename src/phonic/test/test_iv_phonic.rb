@@ -28,7 +28,7 @@ class TestPhonic < Test::Unit::TestCase
     assert_nothing_raised {
       IV::Phonic::parse("var test = /test/;")
     }
-    pp IV::Phonic::parse("var i = 20;")
+    pp IV::Phonic::parse("var i = {1e1: 'OK'};")
 #    assert_nothing_raised {
 #      IV::Phonic::parse(File.read('tmp/jquery.js'))
 #    }

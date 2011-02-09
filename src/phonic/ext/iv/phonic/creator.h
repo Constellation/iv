@@ -371,6 +371,13 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("Identifier"));
     const Identifier::value_type& str = literal->value();
+    if (literal->type() == core::Token::IDENTIFIER) {
+      rb_hash_aset(hash, SYM("kind"), SYM("Identifier"));
+    } else if (literal->type() == core::Token::NUMBER) {
+      rb_hash_aset(hash, SYM("kind"), SYM("Number"));
+    } else {
+      rb_hash_aset(hash, SYM("kind"), SYM("String"));
+    }
     rb_hash_aset(hash, SYM("value"),
                  Encoding::ConvertToDefaultInternal(
                      rb_enc_str_new(

@@ -54,7 +54,7 @@ class BasicAstFactory {
                             std::size_t begin,
                             std::size_t end) {
     return new (static_cast<Factory*>(this))
-        Identifier(token, range, static_cast<Factory*>(this));
+        Identifier(range, static_cast<Factory*>(this));
   }
 
   NumberLiteral* NewReducedNumberLiteral(const double& val) {

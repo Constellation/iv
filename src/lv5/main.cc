@@ -8,10 +8,10 @@
 #include <algorithm>
 #include <tr1/array>
 #include <gc/gc.h>
-#include "config/config.h"
 
 #include "stringpiece.h"
 #include "ustringpiece.h"
+#include "about.h"
 
 #include "cmdline.h"
 #include "ast.h"

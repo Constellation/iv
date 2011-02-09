@@ -13,8 +13,8 @@ namespace core {
 namespace ast {
 
 template<>
-class AstNodeBase<iv::phonic::AstFactory>
-  : public Inherit<iv::phonic::AstFactory, kAstNode> {
+class AstNodeBase<phonic::AstFactory>
+  : public Inherit<phonic::AstFactory, kAstNode> {
  public:
   void Location(std::size_t begin, std::size_t end) {
     begin_ = begin;
@@ -29,6 +29,20 @@ class AstNodeBase<iv::phonic::AstFactory>
  private:
   std::size_t begin_;
   std::size_t end_;
+};
+
+template<>
+class IdentifierBase<phonic::AstFactory>
+  : public Inherit<phonic::AstFactory, kIdentifier> {
+ public:
+  void set_type(core::Token::Type type) {
+    type_ = type;
+  }
+  core::Token::Type type() const {
+    return type_;
+  }
+ private:
+  core::Token::Type type_;
 };
 
 } }  // namespace iv::core::ast

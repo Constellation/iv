@@ -10,6 +10,7 @@
 #include "ast.h"
 #include "ast_factory.h"
 #include "lexer.h"
+#include "dtoa.h"
 #include "noncopyable.h"
 #include "utils.h"
 #include "ustring.h"
@@ -1887,7 +1888,7 @@ class Parser
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = ParseIdentifierNumber(lexer_.Buffer8());
+              ident = ParseIdentifierNumber();
             } else if (token_ == Token::STRING) {
               ident = ParseIdentifierString(lexer_.Buffer());
             } else {
@@ -1922,7 +1923,7 @@ class Parser
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
         if (token_ == Token::NUMBER) {
-          ident = ParseIdentifierNumber(lexer_.Buffer8());
+          ident = ParseIdentifierNumber();
         } else if (token_ == Token::STRING) {
           ident = ParseIdentifierString(lexer_.Buffer());
         } else {
@@ -2145,12 +2146,15 @@ class Parser
                                         end_block_position);
   }
 
-  template<typename Range>
-  Identifier* ParseIdentifierNumber(const Range& range) {
-    Identifier* const ident = factory_->NewIdentifier(Token::NUMBER,
-                                                      range,
-                                                      lexer_.begin_position(),
-                                                      lexer_.end_position());
+  Identifier* ParseIdentifierNumber() {
+    const double val = lexer_.Numeric();
+    std::tr1::array<char, 80> buf;
+    DoubleToCString(val, buf.data(), buf.size());
+    Identifier* const ident = factory_->NewIdentifier(
+        Token::NUMBER,
+        core::StringPiece(buf.data(), std::strlen(buf.data())),
+        lexer_.begin_position(),
+        lexer_.end_position());
     Next();
     return ident;
   }

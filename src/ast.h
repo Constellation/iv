@@ -973,7 +973,7 @@ class Identifier : public IdentifierBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
   template<typename Range>
-  Identifier(Token::Type token, const Range& range, Factory* factory)
+  Identifier(const Range& range, Factory* factory)
     : value_(range.begin(),
              range.end(),
              typename value_type::allocator_type(factory)) {
