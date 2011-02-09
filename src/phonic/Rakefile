@@ -6,7 +6,7 @@ require 'hoe'
 require 'pp'
 $root = File.dirname(__FILE__)
 $name = 'iv-phonic'
-$version = '0.1.6'
+$version = '0.1.7'
 
 directory "ext/include/iv"
 
@@ -52,6 +52,7 @@ task :checkout => ["ext/include/iv"] do |t|
     "Manifest.txt",
     "README.rdoc",
     "Rakefile",
+    "lib/iv/phonic/ast.rb",
     "test/test_iv_phonic.rb"
   ]
   Dir.glob("../*.h") do |f|
