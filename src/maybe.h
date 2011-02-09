@@ -22,7 +22,7 @@ class Maybe {
   template<class U>
   Maybe(const Maybe<U>& rhs,
         typename enable_if<std::tr1::is_convertible<U*, T*> >::type* = 0)
-    : ptr_(rhs.Address()) {
+    : ptr_(rhs.get_address_maybe_null()) {
   }
 
   T& operator*() const {
@@ -55,6 +55,10 @@ class Maybe {
 
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
+  }
+
+  inline T* get_address_maybe_null() const {
+    return ptr_;
   }
 
  private:
