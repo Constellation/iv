@@ -8,6 +8,7 @@
 #include "noncopyable.h"
 #include "utils.h"
 #include "space.h"
+#include "maybe.h"
 #include "functor.h"
 #include "token.h"
 #include "ast_fwd.h"
@@ -120,6 +121,11 @@ class AstNode : public AstNodeBase<Factory> {
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
+  typedef typename SpaceVector<Factory,
+                               Maybe<Expression<Factory> > >::type MaybeExpressions;
+  typedef typename SpaceVector<Factory,
+                               Declaration<Factory>*>::type Declarations;
+  typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
 
   STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
   EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
@@ -308,9 +314,7 @@ INHERIT(VariableStatement);
 template<typename Factory>
 class VariableStatement : public VariableStatementBase<Factory> {
  public:
-  typedef typename SpaceVector<
-            Factory,
-            Declaration<Factory>*>::type Declarations;
+  typedef typename AstNode<Factory>::Declarations Declarations;
   VariableStatement(Token::Type type, Declarations* decls)
     : is_const_(type == Token::CONST),
       decls_(decls) { }
@@ -336,20 +340,21 @@ INHERIT(Declaration);
 template<typename Factory>
 class Declaration : public DeclarationBase<Factory> {
  public:
-  Declaration(Identifier<Factory>* name, Expression<Factory>* expr)
+  Declaration(Identifier<Factory>* name,
+              Expression<Factory>* expr)
     : name_(name),
       expr_(expr) {
   }
   inline Identifier<Factory>* name() const {
     return name_;
   }
-  inline Expression<Factory>* expr() const {
+  inline Maybe<Expression<Factory> > expr() const {
     return expr_;
   }
   DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
   Identifier<Factory>* name_;
-  Expression<Factory>* expr_;
+  Maybe<Expression<Factory> > expr_;
 };
 
 // EmptyStatement
@@ -381,16 +386,15 @@ class IfStatement : public IfStatementBase<Factory> {
     : cond_(cond),
       then_(then),
       else_(elses) {
-    // else maybe NULL
   }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Statement<Factory>* then_statement() const { return then_; }
-  inline Statement<Factory>* else_statement() const { return else_; }
+  inline Maybe<Statement<Factory> > else_statement() const { return else_; }
   DECLARE_DERIVED_NODE_TYPE(IfStatement)
  private:
   Expression<Factory>* cond_;
   Statement<Factory>* then_;
-  Statement<Factory>* else_;
+  Maybe<Statement<Factory> > else_;
 };
 
 // IterationStatement
@@ -470,15 +474,15 @@ class ForStatement : public ForStatementBase<Factory> {
       next_(next) {
   }
   inline Statement<Factory>* body() const { return body_; }
-  inline Statement<Factory>* init() const { return init_; }
-  inline Expression<Factory>* cond() const { return cond_; }
-  inline Statement<Factory>* next() const { return next_; }
+  inline Maybe<Statement<Factory> > init() const { return init_; }
+  inline Maybe<Expression<Factory> > cond() const { return cond_; }
+  inline Maybe<Statement<Factory> > next() const { return next_; }
   DECLARE_DERIVED_NODE_TYPE(ForStatement)
  private:
   Statement<Factory>* body_;
-  Statement<Factory>* init_;
-  Expression<Factory>* cond_;
-  Statement<Factory>* next_;
+  Maybe<Statement<Factory> > init_;
+  Maybe<Expression<Factory> > cond_;
+  Maybe<Statement<Factory> > next_;
 };
 
 // ForInStatement
@@ -524,14 +528,14 @@ class ContinueStatement : public ContinueStatementBase<Factory> {
       target_(target) {
     assert(target_);
   }
-  inline Identifier<Factory>* label() const { return label_; }
+  inline Maybe<Identifier<Factory> > label() const { return label_; }
   inline IterationStatement<Factory>* target() const {
     assert(target_ && *target_);
     return *target_;
   }
   DECLARE_DERIVED_NODE_TYPE(ContinueStatement)
  private:
-  Identifier<Factory>* label_;
+  Maybe<Identifier<Factory> > label_;
   IterationStatement<Factory>** target_;
 };
 
@@ -556,7 +560,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
     // if above example, target is NULL
     assert(target_ || label_);
   }
-  inline Identifier<Factory>* label() const { return label_; }
+  inline Maybe<Identifier<Factory> > label() const { return label_; }
   inline BreakableStatement<Factory>* target() const {
     if (target_) {
       assert(*target_);
@@ -567,7 +571,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
   }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:
-  Identifier<Factory>* label_;
+  Maybe<Identifier<Factory> > label_;
   BreakableStatement<Factory>** target_;
 };
 
@@ -584,10 +588,10 @@ class ReturnStatement : public ReturnStatementBase<Factory> {
   explicit ReturnStatement(Expression<Factory>* expr)
     : expr_(expr) {
   }
-  inline Expression<Factory>* expr() const { return expr_; }
+  inline Maybe<Expression<Factory> > expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(ReturnStatement)
  private:
-  Expression<Factory>* expr_;
+  Maybe<Expression<Factory> > expr_;
 };
 
 // WithStatement
@@ -653,9 +657,9 @@ class CaseClause : public CaseClauseBase<Factory> {
       default_(is_default) {
   }
   inline bool IsDefault() const {
-    return default_;
+    return !expr_;
   }
-  inline Expression<Factory>* expr() const {
+  inline Maybe<Expression<Factory> > expr() const {
     return expr_;
   }
   inline const Statements& body() const {
@@ -663,7 +667,7 @@ class CaseClause : public CaseClauseBase<Factory> {
   }
   DECLARE_DERIVED_NODE_TYPE(CaseClause)
  private:
-  Expression<Factory>* expr_;
+  Maybe<Expression<Factory> > expr_;
   Statements* body_;
   bool default_;
 };
@@ -678,7 +682,7 @@ INHERIT(SwitchStatement);
 template<typename Factory>
 class SwitchStatement : public SwitchStatementBase<Factory> {
  public:
-  typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
+  typedef typename AstNode<Factory>::CaseClauses CaseClauses;
   SwitchStatement(Expression<Factory>* expr,
                   CaseClauses* clauses)
     : expr_(expr),
@@ -731,15 +735,15 @@ class TryStatement : public TryStatementBase<Factory> {
       finally_block_(finally_block) {
   }
   inline Block<Factory>* body() const { return body_; }
-  inline Identifier<Factory>* catch_name() const { return catch_name_; }
-  inline Block<Factory>* catch_block() const { return catch_block_; }
-  inline Block<Factory>* finally_block() const { return finally_block_; }
+  inline Maybe<Identifier<Factory> > catch_name() const { return catch_name_; }
+  inline Maybe<Block<Factory> > catch_block() const { return catch_block_; }
+  inline Maybe<Block<Factory> > finally_block() const { return finally_block_; }
   DECLARE_DERIVED_NODE_TYPE(TryStatement)
  private:
   Block<Factory>* body_;
-  Identifier<Factory>* catch_name_;
-  Block<Factory>* catch_block_;
-  Block<Factory>* finally_block_;
+  Maybe<Identifier<Factory> > catch_name_;
+  Maybe<Block<Factory> > catch_block_;
+  Maybe<Block<Factory> > finally_block_;
 };
 
 // DebuggerStatement
@@ -1074,19 +1078,6 @@ class FalseLiteral : public FalseLiteralBase<Factory> {
   DECLARE_DERIVED_NODE_TYPE(FalseLiteral)
 };
 
-// Undefined
-template<typename Factory>
-class Inherit<Factory, kUndefined>
-  : public Literal<Factory> {
-};
-INHERIT(Undefined);
-
-template<typename Factory>
-class Undefined : public UndefinedBase<Factory> {
- public:
-  DECLARE_DERIVED_NODE_TYPE(Undefined)
-};
-
 // RegExpLiteral
 template<typename Factory>
 class Inherit<Factory, kRegExpLiteral>
@@ -1127,17 +1118,17 @@ INHERIT(ArrayLiteral);
 template<typename Factory>
 class ArrayLiteral : public ArrayLiteralBase<Factory> {
  public:
-  typedef typename AstNode<Factory>::Expressions Expressions;
+  typedef typename AstNode<Factory>::MaybeExpressions MaybeExpressions;
 
-  explicit ArrayLiteral(Expressions* items)
+  explicit ArrayLiteral(MaybeExpressions* items)
     : items_(items) {
   }
-  inline const Expressions& items() const {
+  inline const MaybeExpressions& items() const {
     return *items_;
   }
   DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
  private:
-  Expressions* items_;
+  MaybeExpressions* items_;
 };
 
 // ObjectLiteral
@@ -1208,7 +1199,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
     SETTER,
     GETTER
   };
-  inline Identifier<Factory>* name() const {
+  inline Maybe<Identifier<Factory> > name() const {
     return name_;
   }
   inline DeclType type() const { return type_; }
@@ -1249,7 +1240,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   }
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
  private:
-  Identifier<Factory>* name_;
+  Maybe<Identifier<Factory> > name_;
   DeclType type_;
   Identifiers* params_;
   Statements* body_;

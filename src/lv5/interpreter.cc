@@ -7,6 +7,7 @@
 #include <boost/foreach.hpp>
 #include "token.h"
 #include "hint.h"
+#include "maybe.h"
 #include "interpreter.h"
 #include "jsreference.h"
 #include "jsobject.h"
@@ -357,7 +358,8 @@ void Interpreter::Visit(const Block* block) {
 
 void Interpreter::Visit(const FunctionStatement* stmt) {
   const FunctionLiteral* const func = stmt->function();
-  Visit(func->name());
+  assert(func->name());  // FunctionStatement must have name
+  Visit(func->name().Address());
   const JSVal lhs = ctx_->ret();
   Visit(func);
   const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
@@ -370,8 +372,8 @@ void Interpreter::Visit(const VariableStatement* var) {
   BOOST_FOREACH(const Declaration* const decl, var->decls()) {
     Visit(decl->name());
     const JSVal lhs = ctx_->ret();
-    if (decl->expr()) {
-      EVAL_IN_STMT(decl->expr());
+    if (const core::Maybe<const Expression> expr = decl->expr()) {
+      EVAL_IN_STMT(expr.Address());
       const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
       PutValue(lhs, val, CHECK_IN_STMT);
     }
@@ -398,9 +400,8 @@ void Interpreter::Visit(const IfStatement* stmt) {
     EVAL_IN_STMT(stmt->then_statement());
     // through then statement's result
   } else {
-    const Statement* const else_stmt = stmt->else_statement();
-    if (else_stmt) {
-      EVAL_IN_STMT(else_stmt);
+    if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
+      EVAL_IN_STMT(else_stmt.Address());
       // through else statement's result
     } else {
       RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
@@ -465,14 +466,14 @@ void Interpreter::Visit(const WhileStatement* stmt) {
 
 
 void Interpreter::Visit(const ForStatement* stmt) {
-  if (stmt->init()) {
-    EVAL_IN_STMT(stmt->init());
+  if (const core::Maybe<const Statement> init = stmt->init()) {
+    EVAL_IN_STMT(init.Address());
     GetValue(ctx_->ret(), CHECK_IN_STMT);
   }
   JSVal value = JSEmpty;
   while (true) {
-    if (stmt->cond()) {
-      EVAL_IN_STMT(stmt->cond());
+    if (const core::Maybe<const Expression> cond = stmt->cond()) {
+      EVAL_IN_STMT(cond.Address());
       const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
       const bool val = expr.ToBoolean(CHECK_IN_STMT);
       if (!val) {
@@ -493,8 +494,8 @@ void Interpreter::Visit(const ForStatement* stmt) {
         ABRUPT();
       }
     }
-    if (stmt->next()) {
-      EVAL_IN_STMT(stmt->next());
+    if (const core::Maybe<const Statement> next = stmt->next()) {
+      EVAL_IN_STMT(next.Address());
       GetValue(ctx_->ret(), CHECK_IN_STMT);
     }
   }
@@ -558,8 +559,8 @@ void Interpreter::Visit(const BreakStatement* stmt) {
 
 
 void Interpreter::Visit(const ReturnStatement* stmt) {
-  if (stmt->expr()) {
-    EVAL_IN_STMT(stmt->expr());
+  if (const core::Maybe<const Expression> expr = stmt->expr()) {
+    EVAL_IN_STMT(expr.Address());
     const JSVal value = GetValue(ctx_->ret(), CHECK_IN_STMT);
     RETURN_STMT(Context::RETURN, value, NULL);
   } else {
@@ -603,17 +604,19 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
     for (CaseClauses::const_iterator it = clauses.begin(),
          last = clauses.end(); it != last; ++it) {
       const CaseClause* const clause = *it;
-      if (clause->IsDefault()) {
-        default_it = it;
-        default_found = true;
-      } else {
+      if (const core::Maybe<const Expression> expr = clause->expr()) {
+        // case expr: pattern
         if (!found) {
-          EVAL_IN_STMT(clause->expr());
+          EVAL_IN_STMT(expr.Address());
           const JSVal res = GetValue(ctx_->ret(), CHECK_IN_STMT);
           if (StrictEqual(cond, res)) {
             found = true;
           }
         }
+      } else {
+        // default: pattern
+        default_it = it;
+        default_found = true;
       }
       // case's fall through
       if (found) {
@@ -674,7 +677,7 @@ void Interpreter::Visit(const ThrowStatement* stmt) {
 void Interpreter::Visit(const TryStatement* stmt) {
   stmt->body()->Accept(this);  // evaluate with no error check
   if (ctx_->IsMode<Context::THROW>() || ctx_->IsError()) {
-    if (stmt->catch_block()) {
+    if (const core::Maybe<const Block> block = stmt->catch_block()) {
       const JSVal ex = ctx_->ErrorVal();
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
@@ -686,13 +689,13 @@ void Interpreter::Visit(const TryStatement* stmt) {
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);
         // evaluate with no error check (finally)
-        stmt->catch_block()->Accept(this);
+        (*block).Accept(this);
       }
     }
   }
 
   // TODO(Constellation) fix error + THROW mode
-  if (stmt->finally_block()) {
+  if (const core::Maybe<const Block> block = stmt->finally_block()) {
     const Context::Mode mode = ctx_->mode();
     JSVal value = ctx_->ret();
     if (ctx_->IsError()) {
@@ -702,7 +705,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
 
     ctx_->error()->Clear();
     ctx_->SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
-    stmt->finally_block()->Accept(this);
+    (*block).Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
       if (mode == Context::THROW) {
         ctx_->error()->Report(value);
@@ -1298,12 +1301,6 @@ void Interpreter::Visit(const FalseLiteral* lit) {
   ctx_->Return(JSFalse);
 }
 
-
-void Interpreter::Visit(const Undefined* lit) {
-  ctx_->ret().set_undefined();
-}
-
-
 void Interpreter::Visit(const RegExpLiteral* regexp) {
   ctx_->Return(
       JSRegExp::New(ctx_,
@@ -1316,9 +1313,9 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
   JSArray* const ary = JSArray::New(ctx_);
   std::size_t current = 0;
-  BOOST_FOREACH(const Expression* const expr, literal->items()) {
+  BOOST_FOREACH(const core::Maybe<const Expression>& expr, literal->items()) {
     if (expr) {
-      EVAL(expr);
+      EVAL(expr.Address());
       const JSVal value = GetValue(ctx_->ret(), CHECK);
       ary->DefineOwnPropertyWithIndex(
           ctx_, current,

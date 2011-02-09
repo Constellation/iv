@@ -72,7 +72,7 @@ class JSCodeFunction : public JSFunction {
     return NULL;
   }
   core::UStringPiece GetSource() const;
-  const Identifier* name() const {
+  const core::Maybe<Identifier> name() const {
     return function_->name();
   }
   bool IsStrict() const {

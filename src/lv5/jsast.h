@@ -58,7 +58,7 @@ class AstFactory;
 #define V(AST) typedef core::ast::AST<AstFactory> AST;
   AST_NODE_LIST(V)
 #undef V
-#define V(X, XS) typedef core::SpaceVector<AstFactory, X *>::type XS;
+#define V(XS) typedef core::ast::AstNode<AstFactory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef core::SpaceUString<AstFactory>::type S;

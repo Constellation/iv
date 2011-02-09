@@ -10,7 +10,7 @@ struct AstInfo {
 #define V(AST) typedef typename AST<Factory> AST;
   AST_NODE_LIST(V)
 #undef V
-#define V(X, XS) typedef typename SpaceVector<Factory, X *>::type XS;
+#define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename SpaceUString<Factory>::type S;

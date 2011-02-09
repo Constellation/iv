@@ -71,7 +71,6 @@ class BasicAstVisitor
   virtual void Visit(typename add<NullLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<TrueLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<FalseLiteral<Factory> >::type literal) = 0;  //NOLINT
-  virtual void Visit(typename add<Undefined<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<RegExpLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<ArrayLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<ObjectLiteral<Factory> >::type literal) = 0;  //NOLINT

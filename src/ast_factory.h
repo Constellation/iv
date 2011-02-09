@@ -20,7 +20,7 @@ class BasicAstFactory {
 #define V(AST) typedef typename ast::AST<Factory> AST;
   AST_NODE_LIST(V)
 #undef V
-#define V(X, XS) typedef typename SpaceVector<Factory, X*>::type XS;
+#define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename SpaceUString<Factory>::type S;
@@ -28,9 +28,7 @@ class BasicAstFactory {
 #undef V
 
   BasicAstFactory()
-    : undefined_instance_(
-          new(static_cast<Factory*>(this))Undefined()),
-      empty_statement_instance_(
+    : empty_statement_instance_(
           new(static_cast<Factory*>(this))EmptyStatement()),
       debugger_statement_instance_(
           new(static_cast<Factory*>(this))DebuggerStatement()),
@@ -108,7 +106,7 @@ class BasicAstFactory {
                         end_block_position);
   }
 
-  ArrayLiteral* NewArrayLiteral(Expressions* items,
+  ArrayLiteral* NewArrayLiteral(MaybeExpressions* items,
                                 std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this)) ArrayLiteral(items);
   }
@@ -144,10 +142,6 @@ class BasicAstFactory {
 
   ThisLiteral* NewThisLiteral(std::size_t begin, std::size_t end) {
     return this_instance_;
-  }
-
-  Undefined* NewUndefined() {
-    return undefined_instance_;
   }
 
   TrueLiteral* NewTrueLiteral(std::size_t begin, std::size_t end) {
@@ -380,7 +374,6 @@ class BasicAstFactory {
   }
 
  private:
-  Undefined* undefined_instance_;
   EmptyStatement* empty_statement_instance_;
   DebuggerStatement* debugger_statement_instance_;
   ThisLiteral* this_instance_;

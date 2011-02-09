@@ -46,7 +46,6 @@ V(ArrayLiteral)\
 V(ObjectLiteral)\
 V(NullLiteral)\
 V(ThisLiteral)\
-V(Undefined)\
 V(TrueLiteral)\
 V(FalseLiteral)
 
@@ -90,11 +89,12 @@ STATEMENT_NODE_LIST(V)\
 EXPRESSION_NODE_LIST(V)
 
 #define AST_LIST_LIST(V)\
-V(Identifier, Identifiers)\
-V(Declaration, Declarations)\
-V(Expression, Expressions)\
-V(Statement, Statements)\
-V(CaseClause, CaseClauses)
+V(Identifiers)\
+V(Declarations)\
+V(Expressions)\
+V(Statements)\
+V(CaseClauses)\
+V(MaybeExpressions)
 
 #define AST_STRING(V) V(SpaceUString)
 

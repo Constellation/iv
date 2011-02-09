@@ -114,7 +114,6 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void Visit(const NullLiteral* lit);
   void Visit(const TrueLiteral* lit);
   void Visit(const FalseLiteral* lit);
-  void Visit(const Undefined* lit);
   void Visit(const RegExpLiteral* literal);
   void Visit(const ArrayLiteral* literal);
   void Visit(const ObjectLiteral* literal);

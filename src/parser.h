@@ -8,6 +8,7 @@
 #include <tr1/type_traits>
 #include <tr1/array>
 #include "static_assert.h"
+#include "maybe.h"
 #include "ast.h"
 #include "ast_factory.h"
 #include "lexer.h"
@@ -152,7 +153,7 @@ class Parser
 #define V(AST) typedef typename ast::AST<Factory> AST;
   AST_NODE_LIST(V)
 #undef V
-#define V(X, XS) typedef typename SpaceVector<Factory, X *>::type XS;
+#define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename SpaceUString<Factory>::type S;
@@ -555,7 +556,7 @@ class Parser
         decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
-        decl = factory_->NewDeclaration(name, factory_->NewUndefined());
+        decl = factory_->NewDeclaration(name, NULL);
       }
       decls->push_back(decl);
       scope_->AddUnresolved(name, is_const);
@@ -845,7 +846,6 @@ class Parser
 //  ReturnStatement
 //    : RETURN Expression_opt ';'
   Statement* ParseReturnStatement(bool *res) {
-    // TODO(Constellation) NewUndefined -> NULL
     assert(token_ == Token::RETURN);
     const std::size_t begin = lexer_.begin_position();
     Next();
@@ -861,11 +861,11 @@ class Parser
         token_ == Token::RBRACE ||
         token_ == Token::EOS) {
       ExpectSemicolon(CHECK);
-      return factory_->NewReturnStatement(factory_->NewUndefined(),
+      return factory_->NewReturnStatement(NULL,
                                           begin,
                                           lexer_.previous_end_position());
     }
-    Expression *expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
     return factory_->NewReturnStatement(expr, begin,
                                         lexer_.previous_end_position());
@@ -1124,7 +1124,8 @@ class Parser
         FunctionLiteral::GENERAL,
         CHECK);
     // define named function as variable declaration
-    scope_->AddUnresolved(expr->name(), false);
+    assert(expr->name());
+    scope_->AddUnresolved(expr->name().Address(), false);
     return factory_->NewFunctionStatement(expr);
   }
 
@@ -1800,12 +1801,12 @@ class Parser
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
     const std::size_t begin = lexer_.begin_position();
-    Expressions* const items = factory_->template NewVector<Expression*>();
+    MaybeExpressions* const items = factory_->template NewVector<Maybe<Expression> >();
     Next();
     while (token_ != Token::RBRACK) {
       if (token_ == Token::COMMA) {
         // when Token::COMMA, only increment length
-        items->push_back(NULL);
+        items->push_back(Maybe<Expression>());
       } else {
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
         items->push_back(expr);

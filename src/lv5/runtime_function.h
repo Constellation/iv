@@ -95,8 +95,8 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
     } else {
       JSStringBuilder builder(args.ctx());
       builder.Append(detail::kFunctionPrefix);
-      if (func->AsCodeFunction()->name()) {
-        builder.Append(func->AsCodeFunction()->name()->value());
+      if (const core::Maybe<const Identifier> name = func->AsCodeFunction()->name()) {
+        builder.Append((*name).value());
       } else {
         builder.Append("anonymous");
       }

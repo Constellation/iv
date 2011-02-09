@@ -20,10 +20,10 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   typedef void ReturnType;
 
-#define V(AST) typedef typename iv::core::ast::AST<Factory> AST;
+#define V(AST) typedef typename core::ast::AST<Factory> AST;
   AST_NODE_LIST(V)
 #undef V
-#define V(X, XS) typedef typename core::SpaceVector<Factory, X *>::type XS;
+#define V(XS) typedef typename core::ast::AstNode<Factory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename core::SpaceUString<Factory>::type S;
@@ -91,8 +91,8 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
       Append("{\"type\":\"decl\",\"name\":");
       decl.name()->Accept(this);
       Append(",\"exp\":");
-      if (decl.expr()) {
-        decl.expr()->Accept(this);
+      if (const Maybe<const Expression> expr = decl.expr()) {
+        (*expr).Accept(this);
       }
       Append('}');
       ++it;
@@ -112,9 +112,9 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     ifstmt->cond()->Accept(this);
     Append(",\"body\":");
     ifstmt->then_statement()->Accept(this);
-    if (ifstmt->else_statement()) {
+    if (const Maybe<const Statement> else_stmt = ifstmt->else_statement()) {
       Append(",\"else\":");
-      ifstmt->else_statement()->Accept(this);
+      (*else_stmt).Accept(this);
     }
     Append('}');
   }
@@ -137,17 +137,17 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const ForStatement* forstmt) {
     Append("{\"type\":\"for\"");
-    if (forstmt->init() != NULL) {
+    if (const Maybe<const Statement> init = forstmt->init()) {
       Append(",\"init\":");
-      forstmt->init()->Accept(this);
+      (*init).Accept(this);
     }
-    if (forstmt->cond() != NULL) {
+    if (const Maybe<const Expression> cond = forstmt->cond()) {
       Append(",\"cond\":");
-      forstmt->cond()->Accept(this);
+      (*cond).Accept(this);
     }
-    if (forstmt->next() != NULL) {
+    if (const Maybe<const Statement> next = forstmt->next()) {
       Append(",\"next\":");
-      forstmt->next()->Accept(this);
+      (*next).Accept(this);
     }
     Append(",\"body\":");
     forstmt->body()->Accept(this);
@@ -166,25 +166,28 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const ContinueStatement* continuestmt) {
     Append("{\"type\":\"continue\"");
-    if (continuestmt->label()) {
+    if (const Maybe<const Identifier> label = continuestmt->label()) {
       Append(",\"label\":");
-      continuestmt->label()->Accept(this);
+      (*label).Accept(this);
     }
     Append('}');
   }
 
   void Visit(const BreakStatement* breakstmt) {
     Append("{\"type\":\"break\"");
-    if (breakstmt->label()) {
+    if (const Maybe<const Identifier> label = breakstmt->label()) {
       Append(",\"label\":");
-      breakstmt->label()->Accept(this);
+      (*label).Accept(this);
     }
     Append('}');
   }
 
   void Visit(const ReturnStatement* returnstmt) {
-    Append("{\"type\":\"return\",\"exp\":");
-    returnstmt->expr()->Accept(this);
+    Append("{\"type\":\"return\"");
+    if (const Maybe<const Expression> expr = returnstmt->expr()) {
+      Append(",\"exp\":");
+      (*expr).Accept(this);
+    }
     Append('}');
   }
 
@@ -214,11 +217,11 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
         end = switchstmt->clauses().end();
     while (it != end) {
       const CaseClause& clause = **it;
-      if (clause.IsDefault()) {
-        Append("{\"type\":\"default\"");
-      } else {
+      if (const Maybe<const Expression> expr = clause.expr()) {
         Append("{\"type\":\"case\",\"exp\":");
-        clause.expr()->Accept(this);
+        (*expr).Accept(this);
+      } else {
+        Append("{\"type\":\"default\"");
       }
       Append(",\"body\"[");
       typename Statements::const_iterator stit = clause.body().begin();
@@ -248,16 +251,16 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void Visit(const TryStatement* trystmt) {
     Append("{\"type\":\"try\",\"body\":");
     trystmt->body()->Accept(this);
-    if (trystmt->catch_name()) {
+    if (const Maybe<const Identifier> ident = trystmt->catch_name()) {
       Append(",\"catch\":{\"type\":\"catch\",\"name\":");
-      trystmt->catch_name()->Accept(this);
+      Visit(ident.Address());
       Append(",\"body\":");
-      trystmt->catch_block()->Accept(this);
+      (*trystmt->catch_block()).Accept(this);
       Append('}');
     }
-    if (trystmt->finally_block()) {
+    if (const Maybe<const Block> block = trystmt->finally_block()) {
       Append(",\"finally\":{\"type\":\"finally\",\"body\":");
-      trystmt->finally_block()->Accept(this);
+      (*block).Accept(this);
       Append('}');
     }
     Append('}');
@@ -355,10 +358,6 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     Append("{\"type\":\"false\"}");
   }
 
-  void Visit(const Undefined* literal) {
-    Append("{\"type\":\"undefined\"}");
-  }
-
   void Visit(const RegExpLiteral* literal) {
     Append("{\"type\":\"regexp\",\"value\":\"");
     DecodeString(literal->value().begin(), literal->value().end());
@@ -369,12 +368,12 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const ArrayLiteral* literal) {
     Append("{\"type\":\"array\",\"value\":[");
-    typename Expressions::const_iterator it = literal->items().begin();
-    const typename Expressions::const_iterator end = literal->items().end();
+    typename MaybeExpressions::const_iterator it = literal->items().begin();
+    const typename MaybeExpressions::const_iterator end = literal->items().end();
     bool previous_is_elision = false;
     while (it != end) {
       if ((*it)) {
-        (*it)->Accept(this);
+        (**it).Accept(this);
         previous_is_elision = false;
       } else {
         previous_is_elision = true;
@@ -423,8 +422,8 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const FunctionLiteral* literal) {
     Append("{\"type\":\"function\",\"name\":");
-    if (literal->name()) {
-      literal->name()->Accept(this);
+    if (const Maybe<const Identifier> name = literal->name()) {
+      (*name).Accept(this);
     }
     Append(",\"params\":[");
     typename Identifiers::const_iterator it = literal->params().begin();
