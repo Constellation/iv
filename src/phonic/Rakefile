@@ -59,11 +59,13 @@ task :checkout => ["ext/include/iv"] do |t|
     list << path
     cp f, File.expand_path(path)
   end
+  mkdir_p File.join("ext", "iv", "phonic", "third_party", "netlib_dtoa")
   Dir.glob("../third_party/netlib_dtoa/*") do |f|
     path = File.join("ext", "iv", "phonic", "third_party", "netlib_dtoa", File.basename(f))
     list << path
     cp f, File.expand_path(path)
   end
+  mkdir_p File.join("ext", "iv", "phonic", "third_party", "v8_dtoa")
   Dir.glob("../third_party/v8_dtoa/*") do |f|
     path = File.join("ext", "iv", "phonic", "third_party", "v8_dtoa", File.basename(f))
     list << path
