@@ -16,8 +16,7 @@ namespace phonic {
 class AstFactory : public core::Space<2> {
  public:
   AstFactory()
-    : core::Space<2>(),
-      undefined_instance_(new(this)Undefined()) {
+    : core::Space<2>() {
   }
 
   Scope* NewScope(FunctionLiteral::DeclType type) {
@@ -88,7 +87,7 @@ class AstFactory : public core::Space<2> {
   }
 
   FunctionLiteral* NewFunctionLiteral(FunctionLiteral::DeclType type,
-                                      Identifier* name,
+                                      core::Maybe<Identifier> name,
                                       Identifiers* params,
                                       Statements* body,
                                       Scope* scope,
@@ -110,7 +109,7 @@ class AstFactory : public core::Space<2> {
     return func;
   }
 
-  ArrayLiteral* NewArrayLiteral(Expressions* items,
+  ArrayLiteral* NewArrayLiteral(MaybeExpressions* items,
                                 std::size_t begin, std::size_t end) {
     ArrayLiteral* ary = new (this) ArrayLiteral(items);
     ary->Location(begin, end);
@@ -149,10 +148,6 @@ class AstFactory : public core::Space<2> {
     ThisLiteral* th = new (this) ThisLiteral();
     th->Location(begin, end);
     return th;
-  }
-
-  Undefined* NewUndefined() {
-    return undefined_instance_;
   }
 
   TrueLiteral* NewTrueLiteral(std::size_t begin, std::size_t end) {
@@ -201,30 +196,29 @@ class AstFactory : public core::Space<2> {
                                           Declarations* decls,
                                           std::size_t begin,
                                           std::size_t end) {
-    VariableStatement* var = new (this) VariableStatement(token, decls);
     assert(!decls->empty());
+    VariableStatement* var = new (this) VariableStatement(token, decls);
     var->Location(begin, end);
     return var;
   }
 
-  Declaration* NewDeclaration(Identifier* name, Expression* expr) {
-    assert(name && expr);
+  Declaration* NewDeclaration(Identifier* name, core::Maybe<Expression> expr) {
+    assert(name);
     Declaration* decl = new (this) Declaration(name, expr);
-    const std::size_t end = (expr->AsUndefined()) ?
-        name->end_position() : expr->end_position();
+    const std::size_t end = (expr) ? (*expr).end_position() : name->end_position();
     decl->Location(name->begin_position(), end);
     return decl;
   }
 
   IfStatement* NewIfStatement(Expression* cond,
                               Statement* then_statement,
-                              Statement* else_statement,
+                              core::Maybe<Statement> else_statement,
                               std::size_t begin) {
     IfStatement* stmt = new (this) IfStatement(cond,
                                                then_statement, else_statement);
     assert(then_statement);
     const std::size_t end = (else_statement) ?
-        else_statement->end_position() : then_statement->end_position();
+        (*else_statement).end_position() : then_statement->end_position();
     stmt->Location(begin, end);
     return stmt;
   }
@@ -258,9 +252,9 @@ class AstFactory : public core::Space<2> {
   }
 
   ForStatement* NewForStatement(Statement* body,
-                                Statement* init,
-                                Expression* cond,
-                                Statement* next,
+                                core::Maybe<Statement> init,
+                                core::Maybe<Expression> cond,
+                                core::Maybe<Statement> next,
                                 std::size_t begin) {
     assert(body);
     ForStatement* stmt = new (this) ForStatement(body, init, cond, next);
@@ -274,7 +268,7 @@ class AstFactory : public core::Space<2> {
     return stmt;
   }
 
-  ContinueStatement* NewContinueStatement(Identifier* label,
+  ContinueStatement* NewContinueStatement(core::Maybe<Identifier> label,
                                           IterationStatement** target,
                                           std::size_t begin,
                                           std::size_t end) {
@@ -283,7 +277,7 @@ class AstFactory : public core::Space<2> {
     return stmt;
   }
 
-  BreakStatement* NewBreakStatement(Identifier* label,
+  BreakStatement* NewBreakStatement(core::Maybe<Identifier> label,
                                     BreakableStatement** target,
                                     std::size_t begin,
                                     std::size_t end) {
@@ -292,10 +286,9 @@ class AstFactory : public core::Space<2> {
     return stmt;
   }
 
-  ReturnStatement* NewReturnStatement(Expression* expr,
+  ReturnStatement* NewReturnStatement(core::Maybe<Expression> expr,
                                       std::size_t begin,
                                       std::size_t end) {
-    assert(expr);
     ReturnStatement* stmt = new (this) ReturnStatement(expr);
     stmt->Location(begin, end);
     return stmt;
@@ -317,7 +310,7 @@ class AstFactory : public core::Space<2> {
   }
 
   CaseClause* NewCaseClause(bool is_default,
-                            Expression* expr, Statements* body,
+                            core::Maybe<Expression> expr, Statements* body,
                             std::size_t begin,
                             std::size_t end) {
     CaseClause* clause = new (this) CaseClause(is_default, expr, body);
@@ -336,9 +329,9 @@ class AstFactory : public core::Space<2> {
   }
 
   TryStatement* NewTryStatement(Block* try_block,
-                                Identifier* catch_name,
-                                Block* catch_block,
-                                Block* finally_block,
+                                core::Maybe<Identifier> catch_name,
+                                core::Maybe<Block> catch_block,
+                                core::Maybe<Block> finally_block,
                                 std::size_t begin) {
     TryStatement* stmt = new (this) TryStatement(try_block,
                                                  catch_name,
@@ -346,7 +339,7 @@ class AstFactory : public core::Space<2> {
                                                  finally_block);
     assert(catch_block || finally_block);
     const std::size_t end = (finally_block) ?
-        finally_block->end_position() : catch_block->end_position();
+        (*finally_block).end_position() : (*catch_block).end_position();
     stmt->Location(begin, end);
     return stmt;
   }
@@ -422,9 +415,6 @@ class AstFactory : public core::Space<2> {
     access->Location(expr->begin_position(), ident->end_position());
     return access;
   }
-
- private:
-  Undefined* undefined_instance_;
 };
 
 

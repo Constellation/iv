@@ -86,7 +86,7 @@ class BasicAstFactory {
   }
 
   FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
-                                      Identifier* name,
+                                      Maybe<Identifier> name,
                                       Identifiers* params,
                                       Statements* body,
                                       Scope* scope,
@@ -186,7 +186,7 @@ class BasicAstFactory {
 
   // if you want begin / end position,
   // set position to Identifier / Expression and use it
-  Declaration* NewDeclaration(Identifier* name, Expression* expr) {
+  Declaration* NewDeclaration(Identifier* name, Maybe<Expression> expr) {
     return new (static_cast<Factory*>(this)) Declaration(name, expr);
   }
 
@@ -194,7 +194,7 @@ class BasicAstFactory {
   // set position to Statement and use it
   IfStatement* NewIfStatement(Expression* cond,
                               Statement* then_statement,
-                              Statement* else_statement,
+                              Maybe<Statement> else_statement,
                               std::size_t begin) {
     return new (static_cast<Factory*>(this)) IfStatement(cond,
                                                          then_statement,
@@ -229,9 +229,9 @@ class BasicAstFactory {
   // if you want end position,
   // set position to Statement and use it
   ForStatement* NewForStatement(Statement* body,
-                                Statement* init,
-                                Expression* cond,
-                                Statement* next,
+                                Maybe<Statement> init,
+                                Maybe<Expression> cond,
+                                Maybe<Statement> next,
                                 std::size_t begin) {
     return new (static_cast<Factory*>(this)) ForStatement(body, init,
                                                           cond, next);
@@ -241,21 +241,21 @@ class BasicAstFactory {
     return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 
-  ContinueStatement* NewContinueStatement(Identifier* label,
+  ContinueStatement* NewContinueStatement(Maybe<Identifier> label,
                                           IterationStatement** target,
                                           std::size_t begin,
                                           std::size_t end) {
     return new (static_cast<Factory*>(this)) ContinueStatement(label, target);
   }
 
-  BreakStatement* NewBreakStatement(Identifier* label,
+  BreakStatement* NewBreakStatement(Maybe<Identifier> label,
                                     BreakableStatement** target,
                                     std::size_t begin,
                                     std::size_t end) {
     return new (static_cast<Factory*>(this)) BreakStatement(label, target);
   }
 
-  ReturnStatement* NewReturnStatement(Expression* expr,
+  ReturnStatement* NewReturnStatement(Maybe<Expression> expr,
                                       std::size_t begin,
                                       std::size_t end) {
     return new (static_cast<Factory*>(this)) ReturnStatement(expr);
@@ -275,7 +275,7 @@ class BasicAstFactory {
 
   // !!! if body is empty, end_position is end.
   CaseClause* NewCaseClause(bool is_default,
-                            Expression* expr, Statements* body,
+                            Maybe<Expression> expr, Statements* body,
                             std::size_t begin,
                             std::size_t end) {
     return new (static_cast<Factory*>(this)) CaseClause(is_default, expr, body);
@@ -289,9 +289,9 @@ class BasicAstFactory {
   // if you want end position,
   // set position to Block and use it
   TryStatement* NewTryStatement(Block* try_block,
-                                Identifier* catch_name,
-                                Block* catch_block,
-                                Block* finally_block,
+                                Maybe<Identifier> catch_name,
+                                Maybe<Block> catch_block,
+                                Maybe<Block> finally_block,
                                 std::size_t begin) {
     return new (static_cast<Factory*>(this)) TryStatement(try_block,
                                                           catch_name,

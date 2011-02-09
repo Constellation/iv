@@ -341,7 +341,7 @@ template<typename Factory>
 class Declaration : public DeclarationBase<Factory> {
  public:
   Declaration(Identifier<Factory>* name,
-              Expression<Factory>* expr)
+              Maybe<Expression<Factory> > expr)
     : name_(name),
       expr_(expr) {
   }
@@ -382,7 +382,7 @@ class IfStatement : public IfStatementBase<Factory> {
  public:
   IfStatement(Expression<Factory>* cond,
               Statement<Factory>* then,
-              Statement<Factory>* elses)
+              Maybe<Statement<Factory> > elses)
     : cond_(cond),
       then_(then),
       else_(elses) {
@@ -465,9 +465,9 @@ template<typename Factory>
 class ForStatement : public ForStatementBase<Factory> {
  public:
   ForStatement(Statement<Factory>* body,
-               Statement<Factory>* init,
-               Expression<Factory>* cond,
-               Statement<Factory>* next)
+               Maybe<Statement<Factory> > init,
+               Maybe<Expression<Factory> > cond,
+               Maybe<Statement<Factory> > next)
     : body_(body),
       init_(init),
       cond_(cond),
@@ -522,7 +522,7 @@ INHERIT(ContinueStatement);
 template<typename Factory>
 class ContinueStatement : public ContinueStatementBase<Factory> {
  public:
-  ContinueStatement(Identifier<Factory>* label,
+  ContinueStatement(Maybe<Identifier<Factory> > label,
                     IterationStatement<Factory>** target)
     : label_(label),
       target_(target) {
@@ -549,7 +549,7 @@ INHERIT(BreakStatement);
 template<typename Factory>
 class BreakStatement : public BreakStatementBase<Factory> {
  public:
-  BreakStatement(Identifier<Factory>* label,
+  BreakStatement(Maybe<Identifier<Factory> > label,
                  BreakableStatement<Factory>** target)
     : label_(label),
       target_(target) {
@@ -585,7 +585,7 @@ INHERIT(ReturnStatement);
 template<typename Factory>
 class ReturnStatement : public ReturnStatementBase<Factory> {
  public:
-  explicit ReturnStatement(Expression<Factory>* expr)
+  explicit ReturnStatement(Maybe<Expression<Factory> > expr)
     : expr_(expr) {
   }
   inline Maybe<Expression<Factory> > expr() const { return expr_; }
@@ -650,7 +650,7 @@ class CaseClause : public CaseClauseBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Statements Statements;
   explicit CaseClause(bool is_default,
-                      Expression<Factory>* expr,
+                      Maybe<Expression<Factory> > expr,
                       Statements* body)
     : expr_(expr),
       body_(body),
@@ -726,9 +726,9 @@ template<typename Factory>
 class TryStatement : public TryStatementBase<Factory> {
  public:
   explicit TryStatement(Block<Factory>* try_block,
-                        Identifier<Factory>* catch_name,
-                        Block<Factory>* catch_block,
-                        Block<Factory>* finally_block)
+                        Maybe<Identifier<Factory> > catch_name,
+                        Maybe<Block<Factory> > catch_block,
+                        Maybe<Block<Factory> > finally_block)
     : body_(try_block),
       catch_name_(catch_name),
       catch_block_(catch_block),
@@ -1222,7 +1222,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
     return strict_;
   }
   FunctionLiteral(DeclType type,
-                  Identifier<Factory>* name,
+                  Maybe<Identifier<Factory> > name,
                   Identifiers* params,
                   Statements* body,
                   Scope<Factory>* scope,

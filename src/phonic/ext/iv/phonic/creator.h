@@ -5,6 +5,7 @@ extern "C" {
 }
 #include <iv/ast_visitor.h>
 #include <iv/utils.h>
+#include <iv/maybe.h>
 #include "factory.h"
 #include "encoding.h"
 #define SYM(str) ID2SYM(rb_intern(str))
@@ -78,8 +79,8 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("type"), SYM("Declaration"));
     Visit(decl->name());
     rb_hash_aset(hash, SYM("name"), ret_);
-    if (decl->expr()) {
-      decl->expr()->Accept(this);
+    if (const core::Maybe<const Expression> expr = decl->expr()) {
+      (*expr).Accept(this);
       rb_hash_aset(hash, SYM("expr"), ret_);
     }
     SetLocation(hash, decl);
@@ -100,8 +101,8 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     rb_hash_aset(hash, SYM("cond"), ret_);
     stmt->then_statement()->Accept(this);
     rb_hash_aset(hash, SYM("then"), ret_);
-    if (stmt->else_statement()) {
-      stmt->else_statement()->Accept(this);
+    if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
+      (*else_stmt).Accept(this);
       rb_hash_aset(hash, SYM("else"), ret_);
     }
     SetLocation(hash, stmt);
@@ -133,16 +134,16 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const ForStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("ForStatement"));
-    if (stmt->init()) {
-      stmt->init()->Accept(this);
+    if (const core::Maybe<const Statement> init = stmt->init()) {
+      (*init).Accept(this);
       rb_hash_aset(hash, SYM("init"), ret_);
     }
-    if (stmt->cond()) {
-      stmt->cond()->Accept(this);
+    if (const core::Maybe<const Expression> cond = stmt->cond()) {
+      (*cond).Accept(this);
       rb_hash_aset(hash, SYM("cond"), ret_);
     }
-    if (stmt->next()) {
-      stmt->next()->Accept(this);
+    if (const core::Maybe<const Statement> next = stmt->next()) {
+      (*next).Accept(this);
       rb_hash_aset(hash, SYM("next"), ret_);
     }
     stmt->body()->Accept(this);
@@ -167,8 +168,8 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const ContinueStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("ContinueStatement"));
-    if (stmt->label()) {
-      stmt->label()->Accept(this);
+    if (const core::Maybe<const Identifier> label = stmt->label()) {
+      (*label).Accept(this);
       rb_hash_aset(hash, SYM("label"), ret_);
     }
     SetLocation(hash, stmt);
@@ -178,8 +179,8 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const BreakStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("BreakStatement"));
-    if (stmt->label()) {
-      stmt->label()->Accept(this);
+    if (const core::Maybe<const Identifier> label = stmt->label()) {
+      (*label).Accept(this);
       rb_hash_aset(hash, SYM("label"), ret_);
     }
     SetLocation(hash, stmt);
@@ -189,8 +190,10 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const ReturnStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("ReturnStatement"));
-    stmt->expr()->Accept(this);
-    rb_hash_aset(hash, SYM("expr"), ret_);
+    if (const core::Maybe<const Expression> expr = stmt->expr()) {
+      (*expr).Accept(this);
+      rb_hash_aset(hash, SYM("expr"), ret_);
+    }
     SetLocation(hash, stmt);
     ret_ = hash;
   }
@@ -236,12 +239,12 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const CaseClause* cl) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("CaseClause"));
-    if (cl->IsDefault()) {
-      rb_hash_aset(hash, SYM("kind"), SYM("Default"));
-    } else {
+    if (const core::Maybe<const Expression> expr = cl->expr()) {
       rb_hash_aset(hash, SYM("kind"), SYM("Case"));
-      cl->expr()->Accept(this);
+      (*expr).Accept(this);
       rb_hash_aset(hash, SYM("expr"), ret_);
+    } else {
+      rb_hash_aset(hash, SYM("kind"), SYM("Default"));
     }
     VALUE stmts = rb_ary_new();
     for (Statements::const_iterator st = cl->body().begin(),
@@ -257,13 +260,28 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const ThrowStatement* stmt) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("ThrowStatement"));
+    stmt->expr()->Accept(this);
+    rb_hash_aset(hash, SYM("expr"), ret_);
     SetLocation(hash, stmt);
     ret_ = hash;
   }
 
   void Visit(const TryStatement* stmt) {
+    assert(stmt->catch_block() || stmt->finally_block());
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("TryStatement"));
+    stmt->body()->Accept(this);
+    rb_hash_aset(hash, SYM("body"), ret_);
+    if (const core::Maybe<const Identifier> ident = stmt->catch_name()) {
+      Visit(ident.Address());
+      rb_hash_aset(hash, SYM("catch_name"), ret_);
+      Visit(stmt->catch_block().Address());
+      rb_hash_aset(hash, SYM("catch_block"), ret_);
+    }
+    if (const core::Maybe<const Block> block = stmt->finally_block()) {
+      Visit(block.Address());
+      rb_hash_aset(hash, SYM("finally_block"), ret_);
+    }
     SetLocation(hash, stmt);
     ret_ = hash;
   }
@@ -416,13 +434,6 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     ret_ = hash;
   }
 
-  void Visit(const Undefined* literal) {
-    // Undefined has no location
-    VALUE hash = rb_hash_new();
-    rb_hash_aset(hash, SYM("type"), SYM("Undefined"));
-    ret_ = hash;
-  }
-
   void Visit(const RegExpLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("RegExpLiteral"));
@@ -448,14 +459,24 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("ArrayLiteral"));
     VALUE array = rb_ary_new();
-    for (Expressions::const_iterator it = literal->items().begin(),
+    for (MaybeExpressions::const_iterator it = literal->items().begin(),
          last = literal->items().end(); it != last; ++it) {
-      (*it)->Accept(this);
-      rb_ary_push(array, ret_);
+      if (*it) {
+        (**it).Accept(this);
+        rb_ary_push(array, ret_);
+      } else {
+        rb_ary_push(array, NewArrayHole());
+      }
     }
     rb_hash_aset(hash, SYM("value"), array);
     SetLocation(hash, literal);
     ret_ = hash;
+  }
+
+  static VALUE NewArrayHole() {
+    VALUE hash = rb_hash_new();
+    rb_hash_aset(hash, SYM("type"), SYM("ArrayHole"));
+    return hash;
   }
 
   void Visit(const ObjectLiteral* literal) {
@@ -497,8 +518,8 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
   void Visit(const FunctionLiteral* literal) {
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, SYM("type"), SYM("FunctionLiteral"));
-    if (literal->name()) {
-      Visit(literal->name());
+    if (const core::Maybe<const Identifier> name = literal->name()) {
+      Visit(name.Address());
       rb_hash_aset(hash, SYM("name"), ret_);
     }
     {
