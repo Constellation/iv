@@ -1889,9 +1889,9 @@ class Parser
               token_ == Token::STRING ||
               token_ == Token::NUMBER) {
             if (token_ == Token::NUMBER) {
-              ident = ParseIdentifierNumber();
+              ident = ParseIdentifierNumber(CHECK);
             } else if (token_ == Token::STRING) {
-              ident = ParseIdentifierString(lexer_.Buffer());
+              ident = ParseIdentifierString(CHECK);
             } else {
               ident = ParseIdentifier(lexer_.Buffer());
             }
@@ -1924,9 +1924,9 @@ class Parser
                  token_ == Token::STRING ||
                  token_ == Token::NUMBER) {
         if (token_ == Token::NUMBER) {
-          ident = ParseIdentifierNumber();
+          ident = ParseIdentifierNumber(CHECK);
         } else if (token_ == Token::STRING) {
-          ident = ParseIdentifierString(lexer_.Buffer());
+          ident = ParseIdentifierString(CHECK);
         } else {
           ident = ParseIdentifier(lexer_.Buffer());
         }
@@ -2147,7 +2147,10 @@ class Parser
                                         end_block_position);
   }
 
-  Identifier* ParseIdentifierNumber() {
+  Identifier* ParseIdentifierNumber(bool* res) {
+    if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
+      RAISE("octal integer literal not allowed in strict code");
+    }
     const double val = lexer_.Numeric();
     std::tr1::array<char, 80> buf;
     DoubleToCString(val, buf.data(), 80);
@@ -2161,10 +2164,12 @@ class Parser
   }
 
 
-  template<typename Range>
-  Identifier* ParseIdentifierString(const Range& range) {
+  Identifier* ParseIdentifierString(bool* res) {
+    if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
+      RAISE("octal excape sequence not allowed in strict code");
+    }
     Identifier* const ident = factory_->NewIdentifier(Token::STRING,
-                                                      range,
+                                                      lexer_.Buffer(),
                                                       lexer_.begin_position(),
                                                       lexer_.end_position());
     Next();
