@@ -1,5 +1,6 @@
 #ifndef _IV_MAYBE_H_
 #define _IV_MAYBE_H_
+#include <cassert>
 #include <algorithm>
 #include <tr1/type_traits>
 #include "enable_if.h"

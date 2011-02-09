@@ -255,12 +255,12 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
       Append(",\"catch\":{\"type\":\"catch\",\"name\":");
       Visit(ident.Address());
       Append(",\"body\":");
-      (*trystmt->catch_block()).Accept(this);
+      Visit(trystmt->catch_block().Address());
       Append('}');
     }
     if (const Maybe<const Block> block = trystmt->finally_block()) {
       Append(",\"finally\":{\"type\":\"finally\",\"body\":");
-      (*block).Accept(this);
+      Visit(block.Address());
       Append('}');
     }
     Append('}');
@@ -423,7 +423,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void Visit(const FunctionLiteral* literal) {
     Append("{\"type\":\"function\",\"name\":");
     if (const Maybe<const Identifier> name = literal->name()) {
-      (*name).Accept(this);
+      Visit(name.Address());
     }
     Append(",\"params\":[");
     typename Identifiers::const_iterator it = literal->params().begin();
