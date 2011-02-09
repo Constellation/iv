@@ -1,0 +1,9 @@
+Import('context')
+import sys
+
+def Build():
+  env = Environment()
+  return env.StaticLibrary('netlib_dtoa', [Glob('*.c')])
+
+program = Build()
+Return('program')

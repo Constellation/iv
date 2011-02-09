@@ -35,7 +35,7 @@ enum DTOAMode {
 };
 
 template<DTOAMode m>
-JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) {
+inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) {
   std::tr1::array<char, 80> buf;
   const DTOAMode mode = (m == DTOA_FIXED && (x >= 1e21 || x <= -1e21))? DTOA_STD : m;
   int decpt;

@@ -11,6 +11,9 @@ config.log
 tools/*.pyc
 src/phonic/ext/include/
 src/phonic/Manifest.txt
+src/phonic/lib
+src/phonic/ext/iv/phonic/netlib_dtoa.c
+src/phonic/ext/iv/phonic/netlib_dtoa_config.h
 src/phonic/ext/iv/phonic/README
 src/phonic/ext/iv/phonic/SConscript
 src/phonic/ext/iv/phonic/cached-powers.h

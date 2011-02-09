@@ -6,6 +6,7 @@
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
 #include <tr1/type_traits>
+#include <tr1/array>
 #include "static_assert.h"
 #include "ast.h"
 #include "ast_factory.h"
@@ -2149,7 +2150,7 @@ class Parser
   Identifier* ParseIdentifierNumber() {
     const double val = lexer_.Numeric();
     std::tr1::array<char, 80> buf;
-    DoubleToCString(val, buf.data(), buf.size());
+    DoubleToCString(val, buf.data(), 80);
     Identifier* const ident = factory_->NewIdentifier(
         Token::NUMBER,
         core::StringPiece(buf.data(), std::strlen(buf.data())),

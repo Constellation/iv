@@ -31,4 +31,10 @@
 #define IV_IS_BIG_ENDIAN
 #endif
 
+#ifdef IV_IS_LITTLE_ENDIAN
+#define IEEE_8087
+#else
+#define IEEE_MC68k
+#endif
+
 #endif  // _IV_BYTEORDER_H_
