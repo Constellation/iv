@@ -6,7 +6,7 @@ require 'hoe'
 require 'pp'
 $root = File.dirname(__FILE__)
 $name = 'iv-phonic'
-$version = '0.1.5'
+$version = '0.1.6'
 
 directory "ext/include/iv"
 
