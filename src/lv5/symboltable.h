@@ -4,7 +4,6 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include <boost/thread.hpp>
-#include <boost/foreach.hpp>
 #include "jsstring.h"
 #include "symbol.h"
 #include "ustring.h"
@@ -44,9 +43,10 @@ class SymbolTable {
         return sym;
       } else {
         Indexes& vec = it->second;
-        BOOST_FOREACH(const Symbol& i, vec) {
-          if (strings_[i.value_as_index] == target) {
-            return i;
+        for (typename Indexes::const_iterator iit = vec.begin(),
+             last = vec.end(); iit != last; ++iit) {
+          if (strings_[iit->value_as_index] == target) {
+            return *iit;
           }
         }
         const Symbol sym = { strings_.size() };
@@ -71,9 +71,10 @@ class SymbolTable {
         return dummy;
       } else {
         Indexes& vec = it->second;
-        BOOST_FOREACH(const Symbol& i, vec) {
-          if (strings_[i.value_as_index] == target) {
-            return i;
+        for (typename Indexes::const_iterator iit = vec.begin(),
+             last = vec.end(); iit != last; ++iit) {
+          if (strings_[iit->value_as_index] == target) {
+            return *iit;
           }
         }
         *found = false;
