@@ -298,6 +298,40 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
 }
 
 
+// section 15.5.4.10 String.prototype.match(regexp)
+inline JSVal StringMatch(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("String.prototype.match", args, e);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(e));
+  Context* const ctx = args.ctx();
+  JSString* const str = val.ToString(ctx, ERROR(e));
+  const uint32_t args_count = args.size();
+  JSRegExp* regexp;
+  if (args_count == 0 ||
+      !args[0].IsObject() ||
+      (args[0].object()->class_name() != ctx->Intern("RegExp"))) {
+    Arguments a(ctx, 1);
+    if (args_count == 0) {
+      a[0] = JSUndefined;
+    } else {
+      a[0] = args[0];
+    }
+    JSVal res = RegExpConstructor(a, ERROR(e));
+    assert(res.IsObject());
+    regexp = static_cast<JSRegExp*>(res.object());
+  } else {
+    regexp = static_cast<JSRegExp*>(args[0].object());
+  }
+  const bool global = regexp->global();
+  if (!global) {
+    Arguments a(ctx, regexp, 1);
+    a[0] = str;
+    return RegExpExec(a, e);
+  }
+  // step 8
+  return regexp->ExecGlobal(ctx, str, e);
+}
+
 // section 15.5.4.12 String.prototype.search(regexp)
 inline JSVal StringSearch(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("String.prototype.search", args, e);
