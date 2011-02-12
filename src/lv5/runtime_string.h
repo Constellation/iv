@@ -142,7 +142,8 @@ inline JSString* ReplaceOnce(Context* ctx, const JSString& str,
       } else {
         builder.Append(ch);
       }
-    } else if (state == Replace::kDollar) {
+    } else {
+      assert(state == Replace::kDollar);
       switch (ch) {
         case '$':  // $$ pattern
           state = Replace::kNormal;
