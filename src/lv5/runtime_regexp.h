@@ -108,7 +108,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
   if (obj.IsObject() &&
       ctx->Intern("RegExp") == obj.object()->class_name()) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
-    JSStringBuilder builder(ctx);
+    StringBuilder builder;
     builder.Append('/');
     builder.Append(*(reg->source(ctx)));
     builder.Append('/');
@@ -121,7 +121,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
     if (reg->multiline()) {
       builder.Append('m');
     }
-    return builder.Build();
+    return builder.Build(ctx);
   }
   e->Report(Error::Type,
             "RegExp.prototype.toString is not generic function");

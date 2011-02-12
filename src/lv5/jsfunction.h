@@ -1,6 +1,5 @@
 #ifndef _IV_LV5_JSFUNCTION_H_
 #define _IV_LV5_JSFUNCTION_H_
-#include <tr1/functional>
 #include "ustringpiece.h"
 #include "jsobject.h"
 #include "arguments.h"

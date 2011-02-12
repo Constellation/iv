@@ -106,7 +106,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
   const char separator = ',';
   const Symbol toLocaleString = ctx->Intern("toLocaleString");
   Arguments args_list(ctx);
-  JSStringBuilder builder(ctx);
+  StringBuilder builder;
   {
     const JSVal first = array->GetWithIndex(ctx, 0, ERROR(error));
     if (!first.IsUndefined() && !first.IsNull()) {
@@ -146,7 +146,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
     }
     ++k;
   }
-  return builder.Build();
+  return builder.Build(ctx);
 }
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
@@ -253,7 +253,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
-  JSStringBuilder builder(ctx);
+  StringBuilder builder;
   {
     const JSVal element0 = obj->GetWithIndex(ctx, 0, ERROR(error));
     if (!element0.IsUndefined() && !element0.IsNull()) {
@@ -274,7 +274,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
     }
     ++k;
   }
-  return builder.Build();
+  return builder.Build(ctx);
 }
 
 // section 15.4.4.6 Array.prototype.pop()

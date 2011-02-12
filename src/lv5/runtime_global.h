@@ -113,7 +113,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::tr1::array<uint8_t, 4> uc8buf;
   std::tr1::array<uint16_t, 3> hexbuf;
-  JSStringBuilder builder(ctx);
+  StringBuilder builder;
   hexbuf[0] = '%';
   for (JSString::const_iterator it = str.begin(),
        last = str.end(); it != last; ++it) {
@@ -149,12 +149,12 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
       }
     }
   }
-  return builder.Build();
+  return builder.Build(ctx);
 }
 
 template<typename URITraits>
 JSVal Decode(Context* ctx, const JSString& str, Error* e) {
-  JSStringBuilder builder(ctx);
+  StringBuilder builder;
   const uint32_t length = str.size();
   std::tr1::array<uint16_t, 3> buf;
   std::tr1::array<uint8_t, 4> octets;
@@ -238,7 +238,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
       }
     }
   }
-  return builder.Build();
+  return builder.Build(ctx);
 }
 }  // iv::lv5::runtime::detail
 

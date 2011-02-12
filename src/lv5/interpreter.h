@@ -1,5 +1,7 @@
 #ifndef IV_LV5_INTERPRETER_H_
 #define IV_LV5_INTERPRETER_H_
+#include <cmath>
+#include <tr1/cmath>
 #include "ast.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"

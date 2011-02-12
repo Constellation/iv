@@ -41,7 +41,7 @@ inline JSVal FunctionPrototype(const Arguments& args, Error* error) {
 inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
-  JSStringBuilder builder(ctx);
+  StringBuilder builder;
   if (arg_count == 0) {
     builder.Append("(function() { \n})");
   } else if (arg_count == 1) {
@@ -68,7 +68,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
     builder.Append(*prog);
     builder.Append("\n})");
   }
-  JSString* const source = builder.Build();
+  JSString* const source = builder.Build(args.ctx());
   JSScript* const script = CompileScript(args.ctx(), source,
                                          false, ERROR(error));
   detail::CheckFunctionExpressionIsOne(*script->function(), ERROR(error));
@@ -93,7 +93,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
       return JSString::NewAsciiString(args.ctx(),
                                       "function native() { [native code] }");
     } else {
-      JSStringBuilder builder(args.ctx());
+      StringBuilder builder;
       builder.Append(detail::kFunctionPrefix);
       if (const core::Maybe<const Identifier> name = func->AsCodeFunction()->name()) {
         builder.Append((*name).value());
@@ -101,7 +101,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
         builder.Append("anonymous");
       }
       builder.Append(func->AsCodeFunction()->GetSource());
-      return builder.Build();
+      return builder.Build(args.ctx());
     }
   }
   error->Report(Error::Type,

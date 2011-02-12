@@ -19,11 +19,11 @@ namespace iv {
 namespace lv5 {
 
 class Context;
-class JSStringBuilder;
+class StringBuilder;
 
 class JSString : public gc {
  public:
-  friend class JSStringBuilder;
+  friend class StringBuilder;
   typedef JSString this_type;
   typedef GCUString value_type;
   typedef value_type::iterator iterator;
@@ -186,12 +186,11 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   return os << str.value();
 }
 
-class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
+class StringBuilder : private core::Noncopyable<StringBuilder>::type {
  public:
-  typedef JSStringBuilder this_type;
-  JSStringBuilder(Context* ctx)
-    : ctx_(ctx),
-      target_() {
+  typedef StringBuilder this_type;
+  StringBuilder()
+    : target_() {
   }
   void Append(const core::UStringPiece& piece) {
     target_.insert(target_.end(), piece.begin(), piece.end());
@@ -201,9 +200,6 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
   }
   void Append(const JSString& str) {
     target_.insert(target_.end(), str.begin(), str.end());
-  }
-  void Append(char ch) {
-    target_.push_back(ch);
   }
   void Append(uc16 ch) {
     target_.push_back(ch);
@@ -235,12 +231,19 @@ class JSStringBuilder : private core::Noncopyable<JSStringBuilder>::type {
     return *this;
   }
 
-  JSString* Build() {
-    return JSString::New(ctx_, target_.begin(), target_.end());
+  JSString* Build(Context* ctx) const {
+    return JSString::New(ctx, target_.begin(), target_.end());
+  }
+
+  core::UStringPiece BuildUStringPiece() const {
+    return core::UStringPiece(target_.data(), target_.size());
+  }
+
+  core::UString BuildUString() const {
+    return core::UString(target_.data(), target_.size());
   }
 
  private:
-  Context* ctx_;
   std::vector<uc16> target_;
 };
 

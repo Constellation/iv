@@ -140,14 +140,13 @@ inline JSVal StringConstructor(const Arguments& args, Error* error) {
 // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
 inline JSVal StringFromCharCode(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.fromCharCode", args, error);
-  std::vector<uc16> buf(args.size());
-  std::vector<uc16>::iterator target = buf.begin();
+  StringBuilder builder;
   for (Arguments::const_iterator it = args.begin(),
-       last = args.end(); it != last; ++it, ++target) {
+       last = args.end(); it != last; ++it) {
     const double val = it->ToNumber(args.ctx(), ERROR(error));
-    *target = core::DoubleToUInt32(val);
+    builder.Append(core::DoubleToUInt32(val));
   }
-  return JSString::New(args.ctx(), core::UStringPiece(buf.data(), buf.size()));
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.2 String.prototype.toString()
@@ -607,12 +606,12 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
-  JSStringBuilder builder(args.ctx());
+  StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
-  return builder.Build();
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.17 String.prototype.toLocaleLowerCase()
@@ -621,12 +620,12 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
-  JSStringBuilder builder(args.ctx());
+  StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
-  return builder.Build();
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.18 String.prototype.toUpperCase()
@@ -635,12 +634,12 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
-  JSStringBuilder builder(args.ctx());
+  StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
-  return builder.Build();
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.19 String.prototype.toLocaleUpperCase()
@@ -649,12 +648,12 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
-  JSStringBuilder builder(args.ctx());
+  StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
-  return builder.Build();
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.20 String.prototype.trim()

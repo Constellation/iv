@@ -748,12 +748,12 @@ void Interpreter::Visit(const Assignment* assign) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
-          JSStringBuilder builder(ctx_);
+          StringBuilder builder;
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
           builder.Append(*lstr);
           builder.Append(*rstr);
-          result.set_value(builder.Build());
+          result.set_value(builder.Build(ctx_));
           break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -910,12 +910,12 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
-          JSStringBuilder builder(ctx_);
+          StringBuilder builder;
           const JSString* const lstr = lprim.ToString(ctx_, CHECK);
           const JSString* const rstr = rprim.ToString(ctx_, CHECK);
           builder.Append(*lstr);
           builder.Append(*rstr);
-          ctx_->Return(builder.Build());
+          ctx_->Return(builder.Build(ctx_));
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -1491,14 +1491,11 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
   const JSReference* const ref = val.reference();
   const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
-    // TODO(Constellation) clean up code
-    std::vector<uc16> vec;
-    vec.push_back('"');
-    const core::UString& sym = context::GetSymbolString(ctx_, ref->GetReferencedName());
-    vec.insert(vec.end(), sym.begin(), sym.end());
-    const core::StringPiece piece("\" not defined");
-    vec.insert(vec.end(), piece.begin(), piece.end());
-    error->Report(Error::Reference, core::UStringPiece(vec.data(), vec.size()));
+    StringBuilder builder;
+    builder.Append('"');
+    builder.Append(context::GetSymbolString(ctx_, ref->GetReferencedName()));
+    builder.Append("\" not defined");
+    error->Report(Error::Reference, builder.BuildUStringPiece());
     return JSUndefined;
   }
   if (ref->IsPropertyReference()) {

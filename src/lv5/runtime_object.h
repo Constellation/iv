@@ -424,11 +424,11 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
     return JSString::NewAsciiString(args.ctx(), "[object Null]");
   }
   JSObject* const obj = this_binding.ToObject(args.ctx(), ERROR(error));
-  JSStringBuilder builder(args.ctx());
+  StringBuilder builder;
   builder.Append("[object ");
   builder.Append(context::GetSymbolString(args.ctx(), obj->class_name()));
   builder.Append("]");
-  return builder.Build();
+  return builder.Build(args.ctx());
 }
 
 // section 15.2.4.3 Object.prototype.toLocaleString()

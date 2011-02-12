@@ -72,7 +72,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
 
   JSString* Quote(const JSString& str, Error* e) {
     static const char kHexDigits[17] = "0123456789ABCDEF";
-    JSStringBuilder builder(ctx_);
+    StringBuilder builder;
     builder.Append('"');
     for (JSString::const_iterator it = str.begin(),
          last = str.end(); it != last; ++it) {
@@ -121,7 +121,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
       }
     }
     builder.Append('"');
-    return builder.Build();
+    return builder.Build(ctx_);
   }
 
   void CyclicCheck(JSObject* value, Error* e) {
@@ -176,7 +176,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     if (partial.empty()) {
       final = JSString::NewAsciiString(ctx_, "{}");
     } else {
-      JSStringBuilder builder(ctx_);
+      StringBuilder builder;
       if (gap_.empty()) {
         builder.Append('{');
         std::vector<core::UString>::const_iterator
@@ -191,7 +191,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
           }
         }
         builder.Append('}');
-        final = builder.Build();
+        final = builder.Build(ctx_);
       } else {
         builder.Append("{\n");
         builder.Append(indent_);
@@ -210,7 +210,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
         builder.Append('\n');
         builder.Append(stepback);
         builder.Append('}');
-        final = builder.Build();
+        final = builder.Build(ctx_);
       }
     }
     indent_.assign(stepback);
@@ -244,7 +244,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     if (partial.empty()) {
       final = JSString::NewAsciiString(ctx_, "[]");
     } else {
-      JSStringBuilder builder(ctx_);
+      StringBuilder builder;
       if (gap_.empty()) {
         builder.Append('[');
         std::vector<core::UString>::const_iterator
@@ -259,7 +259,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
           }
         }
         builder.Append(']');
-        final = builder.Build();
+        final = builder.Build(ctx_);
       } else {
         builder.Append("[\n");
         builder.Append(indent_);
@@ -278,7 +278,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
         builder.Append('\n');
         builder.Append(stepback);
         builder.Append(']');
-        final = builder.Build();
+        final = builder.Build(ctx_);
       }
     }
     indent_.assign(stepback);

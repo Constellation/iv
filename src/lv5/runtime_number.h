@@ -74,12 +74,12 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
             return JSString::NewAsciiString(args.ctx(), "-Infinity");
           }
         }
-        JSStringBuilder builder(args.ctx());
+        StringBuilder builder;
         core::DoubleToStringWithRadix(
             num,
             static_cast<int>(radix),
             &builder);
-        return builder.Build();
+        return builder.Build(args.ctx());
       }
     } else {
       // TODO(Constellation) more details

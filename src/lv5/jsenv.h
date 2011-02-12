@@ -195,15 +195,12 @@ class JSObjectEnv : public JSEnv {
     const bool value = record_->HasProperty(ctx, name);
     if (!value) {
       if (strict) {
-        // TODO(Constellation) clean up code
-        std::vector<uc16> vec;
-        vec.push_back('"');
-        const core::UString& sym = context::GetSymbolString(ctx, name);
-        vec.insert(vec.end(), sym.begin(), sym.end());
-        const core::StringPiece piece("\" not defined");
-        vec.insert(vec.end(), piece.begin(), piece.end());
+        StringBuilder builder;
+        builder.Append('"');
+        builder.Append(context::GetSymbolString(ctx, name));
+        builder.Append("\" not defined");
         res->Report(Error::Reference,
-                    core::UStringPiece(vec.data(), vec.size()));
+                    builder.BuildUStringPiece());
       }
       return JSUndefined;
     }

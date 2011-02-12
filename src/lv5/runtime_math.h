@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_MATH_H_
 #define _IV_LV5_RUNTIME_MATH_H_
 #include <cmath>
+#include <tr1/cmath>
 #include "arguments.h"
 #include "jsval.h"
 #include "context.h"
