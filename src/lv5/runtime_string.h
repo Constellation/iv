@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_STRING_H_
 #define _IV_LV5_RUNTIME_STRING_H_
+#include <cassert>
 #include <vector>
 #include <utility>
 #include <tr1/tuple>
@@ -114,6 +115,67 @@ inline std::tr1::tuple<uint32_t, uint32_t, bool> RegExpMatch(const JSString& str
                                                              PairVector* vec) {
   vec->clear();
   return reg->Match(str.value(), q, vec);
+}
+
+struct Replace {
+  enum State {
+    kNormal,
+    kDollar,
+    kDigit,
+    kDigitZero
+  };
+};
+
+inline JSString* ReplaceOnce(Context* ctx, const JSString& str,
+                             const JSString& search_str,
+                             JSString::size_type loc,
+                             const JSString& replace_str) {
+  StringBuilder builder;
+  builder.Append(str.begin(), str.begin() + loc);
+  Replace::State state = Replace::kNormal;
+  for (JSString::const_iterator it = replace_str.begin(),
+       last = replace_str.end(); it != last; ++it) {
+    const uc16 ch = *it;
+    if (state == Replace::kNormal) {
+      if (ch == '$') {
+        state = Replace::kDollar;
+      } else {
+        builder.Append(ch);
+      }
+    } else if (state == Replace::kDollar) {
+      switch (ch) {
+        case '$':  // $$ pattern
+          state = Replace::kNormal;
+          builder.Append('$');
+          break;
+
+        case '&':  // $& pattern
+          state = Replace::kNormal;
+          builder.Append(search_str);
+          break;
+
+        case '`':  // $` pattern
+          state = Replace::kNormal;
+          builder.Append(str.begin(), str.begin() + loc);
+          break;
+
+        case '\'':  // $' pattern
+          state = Replace::kNormal;
+          builder.Append(str.begin() + loc + search_str.size(), str.end());
+          break;
+
+        default:
+          state = Replace::kNormal;
+          builder.Append('$');
+          builder.Append(ch);
+      }
+    }
+  }
+  if (state == Replace::kDollar) {
+    builder.Append('$');
+  }
+  builder.Append(str.begin() + loc + search_str.size(), str.end());
+  return builder.Build(ctx);
 }
 
 }  // namespace iv::lv5::runtime::detail
@@ -315,7 +377,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
     } else {
       a[0] = args[0];
     }
-    JSVal res = RegExpConstructor(a, ERROR(e));
+    const JSVal res = RegExpConstructor(a, ERROR(e));
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
   } else {
@@ -336,6 +398,55 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, ERROR(e));
+  const uint32_t args_count = args.size();
+  const bool search_value_is_regexp =
+      args_count != 0 &&
+      args[0].IsObject() &&
+      (args[0].object()->class_name() == ctx->Intern("RegExp"));
+
+  JSString* search_str = NULL;
+
+  if (search_value_is_regexp) {
+    // searchValue is RegExp
+    const JSRegExp* regexp = static_cast<JSRegExp*>(args[0].object());
+    if (regexp->global()) {
+    } else {
+    }
+  } else {
+    if (args_count == 0) {
+      search_str = JSString::NewAsciiString(args.ctx(), "undefined");
+    } else {
+      search_str = args[0].ToString(ctx, ERROR(e));
+    }
+    const GCUString::size_type loc = str->value().find(search_str->value(), 0);
+    if (loc == GCUString::npos) {
+      // not found
+      return str;
+    }
+    // found pattern
+    if (args_count > 1 && args[1].IsCallable()) {
+      JSFunction* const callable = args[1].object()->AsCallable();
+      Arguments a(ctx, 3);
+      a[0] = search_str;
+      a[1] = static_cast<double>(loc);
+      a[2] = str;
+      const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
+      StringBuilder builder;
+      const JSString* const res = result.ToString(ctx, ERROR(e));
+      builder.Append(str->begin(), str->begin() + loc);
+      builder.Append(*res);
+      builder.Append(str->begin() + loc + search_str->size(), str->end());
+      return builder.Build(ctx);
+    } else {
+      const JSString* replace_value;
+      if (args_count > 1) {
+        replace_value = args[1].ToString(ctx, ERROR(e));
+      } else {
+        replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
+      }
+      return detail::ReplaceOnce(ctx, *str, *search_str, loc, *replace_value);
+    }
+  }
   return str;
 }
 
@@ -356,7 +467,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
   } else {
     Arguments a(ctx, 1);
     a[0] = args[0];
-    JSVal res = RegExpConstructor(a, ERROR(e));
+    const JSVal res = RegExpConstructor(a, ERROR(e));
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
   }
