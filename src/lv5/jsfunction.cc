@@ -151,10 +151,10 @@ void JSNativeFunction::Initialize(Context* ctx,
   InitializeSimple(ctx);
 }
 
-JSBindedFunction::JSBindedFunction(Context* ctx,
-                                   JSFunction* target,
-                                   const JSVal& this_binding,
-                                   const Arguments& args)
+JSBoundFunction::JSBoundFunction(Context* ctx,
+                                 JSFunction* target,
+                                 const JSVal& this_binding,
+                                 const Arguments& args)
   : target_(target),
     this_binding_(this_binding),
     arguments_(args.size() == 0 ? 0 : args.size() - 1) {
@@ -162,7 +162,7 @@ JSBindedFunction::JSBindedFunction(Context* ctx,
   if (args.size() > 0) {
     copy(args.begin() + 1, args.end(), arguments_.begin());
   }
-  const uint32_t binded_args_size = arguments_.size();
+  const uint32_t bound_args_size = arguments_.size();
   const Class& cls = ctx->Cls("Function");
   set_class_name(cls.name);
   set_prototype(cls.prototype);
@@ -173,8 +173,8 @@ JSBindedFunction::JSBindedFunction(Context* ctx,
     assert(length.IsNumber());
     const uint32_t target_param_size = core::DoubleToUInt32(length.number());
     assert(target_param_size == length.number());
-    const uint32_t len = (target_param_size >= binded_args_size) ?
-        target_param_size - binded_args_size : 0;
+    const uint32_t len = (target_param_size >= bound_args_size) ?
+        target_param_size - bound_args_size : 0;
     DefineOwnProperty(
         ctx, ctx->length_symbol(),
         DataDescriptor(len,
@@ -200,8 +200,8 @@ JSBindedFunction::JSBindedFunction(Context* ctx,
                     false, ctx->error());
 }
 
-JSVal JSBindedFunction::Call(const Arguments& args,
-                             Error* error) {
+JSVal JSBoundFunction::Call(const Arguments& args,
+                            Error* error) {
   using std::copy;
   Arguments args_list(args.ctx(), args.size() + arguments_.size());
   copy(args.begin(), args.end(),
@@ -210,18 +210,18 @@ JSVal JSBindedFunction::Call(const Arguments& args,
   return target_->Call(args_list, error);
 }
 
-bool JSBindedFunction::HasInstance(Context* ctx,
-                                   const JSVal& val, Error* error) {
+bool JSBoundFunction::HasInstance(Context* ctx,
+                                  const JSVal& val, Error* error) {
   return target_->HasInstance(ctx, val, error);
 }
 
-JSBindedFunction* JSBindedFunction::New(Context* ctx,
-                                        JSFunction* target,
-                                        const JSVal& this_binding,
-                                        const Arguments& args) {
-  JSBindedFunction* const binded =
-      new JSBindedFunction(ctx, target, this_binding, args);
-  return binded;
+JSBoundFunction* JSBoundFunction::New(Context* ctx,
+                                      JSFunction* target,
+                                      const JSVal& this_binding,
+                                      const Arguments& args) {
+  JSBoundFunction* const bound =
+      new JSBoundFunction(ctx, target, this_binding, args);
+  return bound;
 }
 
 } }  // namespace iv::lv5

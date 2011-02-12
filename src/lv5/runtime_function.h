@@ -89,7 +89,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (func->AsNativeFunction() || func->AsBindedFunction()) {
+    if (func->AsNativeFunction() || func->AsBoundFunction()) {
       return JSString::NewAsciiString(args.ctx(),
                                       "function native() { [native code] }");
     } else {
@@ -205,7 +205,7 @@ inline JSVal FunctionBind(const Arguments& args, Error* error) {
     } else {
       this_binding = args[0];
     }
-    return JSBindedFunction::New(args.ctx(), target, this_binding, args);
+    return JSBoundFunction::New(args.ctx(), target, this_binding, args);
   }
   error->Report(Error::Type,
                 "Function.prototype.bind is not generic function");

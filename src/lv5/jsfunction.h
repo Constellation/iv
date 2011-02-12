@@ -11,7 +11,7 @@ namespace lv5 {
 class Context;
 class JSCodeFunction;
 class JSNativeFunction;
-class JSBindedFunction;
+class JSBoundFunction;
 class Error;
 class JSEnv;
 class JSScript;
@@ -33,7 +33,7 @@ class JSFunction : public JSObject {
             Symbol name, Error* error);
   virtual JSNativeFunction* AsNativeFunction() = 0;
   virtual JSCodeFunction* AsCodeFunction() = 0;
-  virtual JSBindedFunction* AsBindedFunction() = 0;
+  virtual JSBoundFunction* AsBoundFunction() = 0;
   virtual bool IsStrict() const = 0;
   void Initialize(Context* ctx);
 };
@@ -68,7 +68,7 @@ class JSCodeFunction : public JSFunction {
   JSNativeFunction* AsNativeFunction() {
     return NULL;
   }
-  JSBindedFunction* AsBindedFunction() {
+  JSBoundFunction* AsBoundFunction() {
     return NULL;
   }
   core::UStringPiece GetSource() const;
@@ -97,7 +97,7 @@ class JSNativeFunction : public JSFunction {
   JSNativeFunction* AsNativeFunction() {
     return this;
   }
-  JSBindedFunction* AsBindedFunction() {
+  JSBoundFunction* AsBoundFunction() {
     return NULL;
   }
   bool IsStrict() const {
@@ -128,9 +128,9 @@ class JSNativeFunction : public JSFunction {
   value_type func_;
 };
 
-class JSBindedFunction : public JSFunction {
+class JSBoundFunction : public JSFunction {
  public:
-  JSBindedFunction(Context* ctx,
+  JSBoundFunction(Context* ctx,
                    JSFunction* target,
                    const JSVal& this_binding,
                    const Arguments& args);
@@ -143,7 +143,7 @@ class JSBindedFunction : public JSFunction {
   JSNativeFunction* AsNativeFunction() {
     return NULL;
   }
-  JSBindedFunction* AsBindedFunction() {
+  JSBoundFunction* AsBoundFunction() {
     return this;
   }
   JSFunction* target() const {
@@ -158,9 +158,9 @@ class JSBindedFunction : public JSFunction {
   JSVal Call(const Arguments& args, Error* error);
   bool HasInstance(Context* ctx,
                    const JSVal& val, Error* error);
-  static JSBindedFunction* New(Context* ctx, JSFunction* target,
-                               const JSVal& this_binding,
-                               const Arguments& args);
+  static JSBoundFunction* New(Context* ctx, JSFunction* target,
+                              const JSVal& this_binding,
+                              const Arguments& args);
  private:
   JSFunction* target_;
   JSVal this_binding_;

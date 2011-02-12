@@ -331,11 +331,13 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
 }
 
 // section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
-inline JSVal StringMatch(const Arguments& args, Error* e) {
+inline JSVal StringReplace(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
+  JSString* const str = val.ToString(ctx, ERROR(e));
+  return str;
 }
 
 // section 15.5.4.12 String.prototype.search(regexp)

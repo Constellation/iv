@@ -1474,17 +1474,17 @@ void Interpreter::Visit(const ConstructorCall* call) {
   JSObject* const obj = JSObject::New(ctx_);
   JSFunction* const constructor = func.object()->AsCallable();
   JSVal result;
-  if (constructor->AsBindedFunction()) {
-    JSBindedFunction* const binded  = constructor->AsBindedFunction();
-    JSFunction* const target = binded->target();
+  if (constructor->AsBoundFunction()) {
+    JSBoundFunction* const bound  = constructor->AsBoundFunction();
+    JSFunction* const target = bound->target();
     const JSVal proto = target->Get(
         ctx_, ctx_->prototype_symbol(), CHECK);
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }
-    Arguments sub(ctx_, args.size() + binded->arguments().size());
+    Arguments sub(ctx_, args.size() + bound->arguments().size());
     copy(args.begin(), args.end(),
-         copy(binded->arguments().begin(), binded->arguments().end(), sub.begin()));
+         copy(bound->arguments().begin(), bound->arguments().end(), sub.begin()));
     sub.set_this_binding(obj);
     result = target->Call(sub, CHECK);
   } else {
