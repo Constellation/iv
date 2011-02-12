@@ -324,12 +324,18 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
   }
   const bool global = regexp->global();
   if (!global) {
-    Arguments a(ctx, regexp, 1);
-    a[0] = str;
-    return RegExpExec(a, e);
+    return regexp->Exec(ctx, str, e);
   }
   // step 8
   return regexp->ExecGlobal(ctx, str, e);
+}
+
+// section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
+inline JSVal StringMatch(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(ERROR(e));
+  Context* const ctx = args.ctx();
 }
 
 // section 15.5.4.12 String.prototype.search(regexp)
