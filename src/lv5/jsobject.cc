@@ -34,7 +34,7 @@ JSObject::JSObject(JSObject* proto,
       return JSUndefined;\
     }\
     if (method.IsCallable()) {\
-      const JSVal val = method.object()->AsCallable()->Call(arg, error);\
+      const JSVal val = method.object()->AsCallable()->Call(arg, this, error);\
       if (*error) {\
         return JSUndefined;\
       }\
@@ -45,7 +45,7 @@ JSObject::JSObject(JSObject* proto,
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint::Object hint, Error* res) {
-  const Arguments args(ctx, this);
+  Arguments args(ctx);
   if (hint == Hint::STRING) {
     // hint is STRING
     TRY(ctx, ctx->toString_symbol(), args, res);
@@ -62,7 +62,7 @@ JSVal JSObject::DefaultValue(Context* ctx,
 #undef TRY
 
 JSVal JSObject::Get(Context* ctx,
-                    Symbol name, Error* res) {
+                    Symbol name, Error* e) {
   const PropertyDescriptor desc = GetProperty(ctx, name);
   if (desc.IsEmpty()) {
     return JSUndefined;
@@ -73,7 +73,8 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
-      return getter->AsCallable()->Call(Arguments(ctx, this), res);
+      Arguments a(ctx);
+      return getter->AsCallable()->Call(a, this, e);
     } else {
       return JSUndefined;
     }
@@ -264,10 +265,10 @@ bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,
 
 void JSObject::Put(Context* ctx,
                    Symbol name,
-                   const JSVal& val, bool th, Error* res) {
+                   const JSVal& val, bool th, Error* e) {
   if (!CanPut(ctx, name)) {
     if (th) {
-      res->Report(Error::Type, "put failed");
+      e->Report(Error::Type, "put failed");
     }
     return;
   }
@@ -279,7 +280,7 @@ void JSObject::Put(Context* ctx,
                           val,
                           PropertyDescriptor::UNDEF_ENUMERABLE |
                           PropertyDescriptor::UNDEF_CONFIGURABLE |
-                          PropertyDescriptor::UNDEF_WRITABLE), th, res);
+                          PropertyDescriptor::UNDEF_WRITABLE), th, e);
     return;
   }
   const PropertyDescriptor desc = GetProperty(ctx, name);
@@ -287,16 +288,15 @@ void JSObject::Put(Context* ctx,
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
     Arguments args(ctx, 1);
-    args.set_this_binding(this);
     args[0] = val;
-    accs->set()->AsCallable()->Call(args, res);
+    accs->set()->AsCallable()->Call(args, this, e);
   } else {
     DefineOwnProperty(ctx, name,
                       DataDescriptor(val,
                                      PropertyDescriptor::WRITABLE |
                                      PropertyDescriptor::ENUMERABLE |
                                      PropertyDescriptor::CONFIGURABLE),
-                      th, res);
+                      th, e);
   }
 }
 

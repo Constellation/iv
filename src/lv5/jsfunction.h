@@ -26,7 +26,9 @@ class JSFunction : public JSObject {
     return this;
   }
   virtual ~JSFunction() { }
-  virtual JSVal Call(const Arguments& args, Error* error) = 0;
+  virtual JSVal Call(Arguments& args,
+                     const JSVal& this_binding, Error* error) = 0;
+  virtual JSVal Construct(Arguments& args, Error* error) = 0;
   virtual bool HasInstance(Context* ctx,
                            const JSVal& val, Error* error);
   JSVal Get(Context* ctx,
@@ -44,7 +46,8 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env);
-  JSVal Call(const Arguments& args, Error* error);
+  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
+  JSVal Construct(Arguments& args, Error* error);
   JSEnv* scope() const {
     return env_;
   }
@@ -89,8 +92,8 @@ class JSNativeFunction : public JSFunction {
   typedef JSVal(*value_type)(const Arguments&, Error*);
   JSNativeFunction() : func_() { }
   JSNativeFunction(Context* ctx, value_type func, std::size_t n);
-  JSVal Call(const Arguments& args,
-             Error* error);
+  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
+  JSVal Construct(Arguments& args, Error* error);
   JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
@@ -155,7 +158,8 @@ class JSBoundFunction : public JSFunction {
   const JSVals& arguments() const {
     return arguments_;
   }
-  JSVal Call(const Arguments& args, Error* error);
+  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
+  JSVal Construct(Arguments& args, Error* error);
   bool HasInstance(Context* ctx,
                    const JSVal& val, Error* error);
   static JSBoundFunction* New(Context* ctx, JSFunction* target,

@@ -1422,17 +1422,18 @@ void Interpreter::Visit(const FunctionCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
+  JSFunction* const callable = func.object()->AsCallable();
+  JSVal this_binding = JSUndefined;
   if (target.IsReference()) {
     const JSReference* const ref = target.reference();
     if (ref->IsPropertyReference()) {
-      args.set_this_binding(ref->base());
+      this_binding = ref->base();
     } else {
       assert(ref->base().IsEnvironment());
-      args.set_this_binding(ref->base().environment()->ImplicitThisValue());
+      this_binding = ref->base().environment()->ImplicitThisValue();
       // direct call to eval check
       {
-        const JSNativeFunction* const native =
-            func.object()->AsCallable()->AsNativeFunction();
+        const JSNativeFunction* const native = callable->AsNativeFunction();
         if (native &&
             native->function() == &runtime::GlobalEval) {
           // this function is eval function
@@ -1440,17 +1441,15 @@ void Interpreter::Visit(const FunctionCall* call) {
           if (maybe_eval &&
               maybe_eval->symbol() == ctx_->eval_symbol()) {
             // direct call to eval point
+            args.set_this_binding(this_binding);
             ctx_->ret() = runtime::DirectCallToEval(args, CHECK);
             return;
           }
         }
       }
     }
-  } else {
-    args.set_this_binding(JSUndefined);
   }
-
-  ctx_->ret() = func.object()->AsCallable()->Call(args, CHECK);
+  ctx_->ret() = callable->Call(args, this_binding, CHECK);
 }
 
 
@@ -1471,36 +1470,7 @@ void Interpreter::Visit(const ConstructorCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
-  JSObject* const obj = JSObject::New(ctx_);
-  JSFunction* const constructor = func.object()->AsCallable();
-  JSVal result;
-  if (constructor->AsBoundFunction()) {
-    JSBoundFunction* const bound  = constructor->AsBoundFunction();
-    JSFunction* const target = bound->target();
-    const JSVal proto = target->Get(
-        ctx_, ctx_->prototype_symbol(), CHECK);
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
-    Arguments sub(ctx_, args.size() + bound->arguments().size());
-    copy(args.begin(), args.end(),
-         copy(bound->arguments().begin(), bound->arguments().end(), sub.begin()));
-    sub.set_this_binding(obj);
-    result = target->Call(sub, CHECK);
-  } else {
-    const JSVal proto = constructor->Get(
-        ctx_, ctx_->prototype_symbol(), CHECK);
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
-    args.set_this_binding(obj);
-    result = constructor->Call(args, CHECK);
-  }
-  if (result.IsObject()) {
-    ctx_->ret() = result;
-  } else {
-    ctx_->Return(obj);
-  }
+  ctx_->ret() = func.object()->AsCallable()->Construct(args, CHECK);
 }
 
 void Interpreter::Visit(const Declaration* dummy) {
@@ -1549,8 +1519,9 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          const JSVal res = ac->get()->AsCallable()->Call(
-              Arguments(ctx_, base), error);
+          Arguments a(ctx_);
+          const JSVal res = ac->get()->AsCallable()->Call(a,
+                                                          base, error);
           if (*error) {
             return JSUndefined;
           }
@@ -1627,9 +1598,10 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        Arguments a(ctx_);
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(Arguments(ctx_, base), ERRCHECK);
+        ac->set()->AsCallable()->Call(a, base, ERRCHECK);
       } else {
         if (th) {
           error->Report(Error::Type, "value to symbol in transient object");

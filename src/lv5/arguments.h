@@ -59,20 +59,6 @@ class Arguments {
       constructor_call_(false) {
   }
 
-  Arguments(Context* ctx, const JSVal& this_binding)
-    : ctx_(ctx),
-      this_binding_(this_binding),
-      args_(),
-      constructor_call_(false) {
-  }
-
-  Arguments(Context* ctx, const JSVal& this_binding, std::size_t n)
-    : ctx_(ctx),
-      this_binding_(this_binding),
-      args_(n),
-      constructor_call_(false) {
-  }
-
   Arguments(Context* ctx, std::size_t n)
     : ctx_(ctx),
       this_binding_(),

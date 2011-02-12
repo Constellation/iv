@@ -118,10 +118,11 @@ inline JSVal FunctionApply(const Arguments& args, Error* error) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
+      Arguments a(ctx);
       if (args_size == 0) {
-        return func->Call(Arguments(ctx, JSUndefined), error);
+        return func->Call(a, JSUndefined, error);
       } else {
-        return func->Call(Arguments(ctx, args[0]), error);
+        return func->Call(a, args[0], error);
       }
     }
     const JSVal& second = args[1];
@@ -156,8 +157,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* error) {
             index, ERROR(error));
         ++index;
     }
-    args_list.set_this_binding(args[0]);
-    return func->Call(args_list, error);
+    return func->Call(args_list, args[0], error);
   }
   error->Report(Error::Type,
                 "Function.prototype.apply is not generic function");
@@ -180,12 +180,8 @@ inline JSVal FunctionCall(const Arguments& args, Error* error) {
       copy(args.begin() + 1, args.end(), args_list.begin());
     }
 
-    if (args_size > 0) {
-      args_list.set_this_binding(args[0]);
-    } else {
-      args_list.set_this_binding(JSUndefined);
-    }
-    return func->Call(args_list, error);
+    const JSVal this_binding = (args_size > 0) ? args[0] : JSUndefined;
+    return func->Call(args_list, this_binding, error);
   }
   error->Report(Error::Type,
                 "Function.prototype.call is not generic function");

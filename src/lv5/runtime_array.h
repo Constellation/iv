@@ -73,16 +73,18 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.2 Array.prototype.toString()
-inline JSVal ArrayToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.toString", args, error);
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+inline JSVal ArrayToString(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   const JSVal join = obj->Get(args.ctx(),
-                              args.ctx()->Intern("join"), ERROR(error));
+                              args.ctx()->Intern("join"), ERROR(e));
   if (join.IsCallable()) {
-    return join.object()->AsCallable()->Call(
-        Arguments(args.ctx(), obj), ERROR(error));
+    Arguments a(args.ctx());
+    return join.object()->AsCallable()->Call(a, obj, e);
   } else {
-    return ObjectToString(Arguments(args.ctx(), obj), ERROR(error));
+    Arguments a(args.ctx());
+    a.set_this_binding(obj);
+    return ObjectToString(a, e);
   }
 }
 
@@ -114,9 +116,9 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
         error->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
-      args_list.set_this_binding(elm_obj);
-      const JSVal R =
-          method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSVal R = method.object()->AsCallable()->Call(args_list,
+                                                          elm_obj,
+                                                          ERROR(error));
       const JSString* const str = R.ToString(ctx, ERROR(error));
       builder.Append(*str);
     }
@@ -136,9 +138,9 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
         error->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
-      args_list.set_this_binding(elm_obj);
-      const JSVal R =
-          method.object()->AsCallable()->Call(args_list, ERROR(error));
+      const JSVal R = method.object()->AsCallable()->Call(args_list,
+                                                          elm_obj,
+                                                          ERROR(error));
       const JSString* const str = R.ToString(ctx, ERROR(error));
       builder.Append(*str);
     }
@@ -735,18 +737,16 @@ inline JSVal ArrayEvery(const Arguments& args, Error* error) {
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
-  if (arg_count > 1) {
-    arg_list.set_this_binding(args[1]);
-  } else {
-    arg_list.set_this_binding(JSUndefined);
-  }
+  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[1] = k;
-      const JSVal test_result = callbackfn->Call(arg_list, ERROR(error));
+      const JSVal test_result = callbackfn->Call(arg_list,
+                                                 this_binding,
+                                                 ERROR(error));
       const bool result = test_result.ToBoolean(ERROR(error));
       if (!result) {
         return JSFalse;
@@ -777,18 +777,16 @@ inline JSVal ArraySome(const Arguments& args, Error* error) {
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
-  if (arg_count > 1) {
-    arg_list.set_this_binding(args[1]);
-  } else {
-    arg_list.set_this_binding(JSUndefined);
-  }
+  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[1] = k;
-      const JSVal test_result = callbackfn->Call(arg_list, ERROR(error));
+      const JSVal test_result = callbackfn->Call(arg_list,
+                                                 this_binding,
+                                                 ERROR(error));
       const bool result = test_result.ToBoolean(ERROR(error));
       if (result) {
         return JSTrue;
@@ -819,18 +817,14 @@ inline JSVal ArrayForEach(const Arguments& args, Error* error) {
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   Arguments arg_list(ctx, 3);
-  if (arg_count > 1) {
-    arg_list.set_this_binding(args[1]);
-  } else {
-    arg_list.set_this_binding(JSUndefined);
-  }
+  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[1] = k;
-      callbackfn->Call(arg_list, ERROR(error));
+      callbackfn->Call(arg_list, this_binding, ERROR(error));
     }
   }
   return JSUndefined;
@@ -859,18 +853,16 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
   JSArray* const ary = JSArray::New(ctx, len);
 
   Arguments arg_list(ctx, 3);
-  if (arg_count > 1) {
-    arg_list.set_this_binding(args[1]);
-  } else {
-    arg_list.set_this_binding(JSUndefined);
-  }
+  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[1] = k;
-      const JSVal mapped_value = callbackfn->Call(arg_list, ERROR(error));
+      const JSVal mapped_value = callbackfn->Call(arg_list,
+                                                  this_binding,
+                                                  ERROR(error));
       ary->DefineOwnPropertyWithIndex(
           ctx,
           k,
@@ -907,11 +899,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
   JSArray* const ary = JSArray::New(ctx);
 
   Arguments arg_list(ctx, 3);
-  if (arg_count > 1) {
-    arg_list.set_this_binding(args[1]);
-  } else {
-    arg_list.set_this_binding(JSUndefined);
-  }
+  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0, to = 0; k < len; ++k) {
@@ -919,7 +907,9 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
       const JSVal k_value = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[0] = k_value;
       arg_list[1] = k;
-      const JSVal selected = callbackfn->Call(arg_list, ERROR(error));
+      const JSVal selected = callbackfn->Call(arg_list,
+                                              this_binding,
+                                              ERROR(error));
       const bool result = selected.ToBoolean(ERROR(error));
       if (result) {
         ary->DefineOwnPropertyWithIndex(
@@ -987,7 +977,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
     }
   }
 
-  Arguments arg_list(ctx, JSUndefined, 4);
+  Arguments arg_list(ctx, 4);
   arg_list[3] = obj;
 
   for (;k < len; ++k) {
@@ -995,7 +985,9 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[2] = k;
-      accumulator = callbackfn->Call(arg_list, ERROR(error));
+      accumulator = callbackfn->Call(arg_list,
+                                     JSUndefined,
+                                     ERROR(error));
     }
   }
   return accumulator;
@@ -1051,7 +1043,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
     }
   }
 
-  Arguments arg_list(ctx, JSUndefined, 4);
+  Arguments arg_list(ctx, 4);
   arg_list[3] = obj;
 
   while (k--) {
@@ -1059,7 +1051,9 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(error));
       arg_list[2] = k;
-      accumulator = callbackfn->Call(arg_list, ERROR(error));
+      accumulator = callbackfn->Call(arg_list,
+                                     JSUndefined,
+                                     ERROR(error));
     }
   }
   return accumulator;

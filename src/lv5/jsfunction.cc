@@ -7,6 +7,7 @@
 #include "context.h"
 #include "arguments.h"
 #include "jsscript.h"
+#include "lv5.h"
 
 namespace iv {
 namespace lv5 {
@@ -58,17 +59,32 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
                      false, NULL);
 }
 
-JSVal JSCodeFunction::Call(
-    const Arguments& args,
-    Error* error) {
+JSVal JSCodeFunction::Call(Arguments& args,
+                           const JSVal& this_binding, Error* error) {
   Interpreter* const interp = args.ctx()->interp();
   Context* const ctx = args.ctx();
+  args.set_this_binding(this_binding);
   interp->CallCode(this, args, error);
   if (ctx->mode() == Context::RETURN) {
     ctx->set_mode(Context::NORMAL);
   }
   assert(!ctx->ret().IsEmpty() || *error);
   return ctx->ret();
+}
+
+JSVal JSCodeFunction::Construct(Arguments& args, Error* e) {
+  Context* const ctx = args.ctx();
+  JSObject* const obj = JSObject::New(ctx);
+  const JSVal proto = Get(ctx, ctx->prototype_symbol(), ERROR(e));
+  if (proto.IsObject()) {
+    obj->set_prototype(proto.object());
+  }
+  const JSVal result = Call(args, obj, ERROR(e));
+  if (result.IsObject()) {
+    return result;
+  } else {
+    return obj;
+  }
 }
 
 core::UStringPiece JSCodeFunction::GetSource() const {
@@ -128,8 +144,14 @@ JSNativeFunction::JSNativeFunction(Context* ctx, value_type func, std::size_t n)
                      false, NULL);
 }
 
-JSVal JSNativeFunction::Call(const Arguments& args,
-                             Error* error) {
+JSVal JSNativeFunction::Call(Arguments& args,
+                             const JSVal& this_binding, Error* error) {
+  args.set_this_binding(this_binding);
+  return func_(args, error);
+}
+
+JSVal JSNativeFunction::Construct(Arguments& args, Error* error) {
+  args.set_this_binding(JSUndefined);
   return func_(args, error);
 }
 
@@ -200,14 +222,22 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
                     false, ctx->error());
 }
 
-JSVal JSBoundFunction::Call(const Arguments& args,
-                            Error* error) {
+JSVal JSBoundFunction::Call(Arguments& args,
+                            const JSVal& this_binding, Error* error) {
   using std::copy;
   Arguments args_list(args.ctx(), args.size() + arguments_.size());
   copy(args.begin(), args.end(),
        copy(arguments_.begin(), arguments_.end(), args_list.begin()));
-  args_list.set_this_binding(this_binding_);
-  return target_->Call(args_list, error);
+  return target_->Call(args_list, this_binding_, error);
+}
+
+// TODO(Constellation) check this binding
+JSVal JSBoundFunction::Construct(Arguments& args, Error* error) {
+  using std::copy;
+  Arguments args_list(args.ctx(), args.size() + arguments_.size());
+  copy(args.begin(), args.end(),
+       copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+  return target_->Construct(args_list, error);
 }
 
 bool JSBoundFunction::HasInstance(Context* ctx,

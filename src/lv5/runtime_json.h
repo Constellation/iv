@@ -70,10 +70,10 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       }
     }
   }
-  Arguments args_list(ctx, holder, 2);
+  Arguments args_list(ctx, 2);
   args_list[0] = ctx->ToString(name);
   args_list[1] = val;
-  return reviver->Call(args_list, e);
+  return reviver->Call(args_list, holder, e);
 }
 
 template<typename T>
