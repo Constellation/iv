@@ -21,6 +21,7 @@ namespace runtime {
 namespace detail {
 
 typedef std::vector<std::pair<int, int> > PairVector;
+
 static inline JSVal StringToStringValueOfImpl(const Arguments& args,
                                               Error* error,
                                               const char* msg) {
@@ -109,12 +110,13 @@ inline JSVal StringSplit(Context* ctx, const JSString& str,
   return ary;
 }
 
-inline std::tr1::tuple<uint32_t, uint32_t, bool> RegExpMatch(const JSString& str,
-                                                             uint32_t q,
-                                                             JSRegExp* reg,
-                                                             PairVector* vec) {
+typedef std::tr1::tuple<uint32_t, uint32_t, bool> MatchResult;
+inline MatchResult RegExpMatch(const JSString& str,
+                               uint32_t q,
+                               const JSRegExp& reg,
+                               PairVector* vec) {
   vec->clear();
-  return reg->Match(str.value(), q, vec);
+  return reg.Match(str.value(), q, vec);
 }
 
 struct Replace {
@@ -176,6 +178,120 @@ inline JSString* ReplaceOnce(Context* ctx, const JSString& str,
     builder.Append('$');
   }
   builder.Append(str.begin() + loc + search_str.size(), str.end());
+  return builder.Build(ctx);
+}
+
+inline JSString* ReplaceRegExpOnce(Context* ctx,
+                                   const JSString& str,
+                                   const MatchResult& res,
+                                   const PairVector& vec,
+                                   const JSString& replace_str) {
+  using std::tr1::get;
+  StringBuilder builder;
+  builder.Append(str.begin(), str.begin() + get<0>(res));
+  Replace::State state = Replace::kNormal;
+  uc16 upper_digit_char = '\0';
+  for (JSString::const_iterator it = replace_str.begin(),
+       last = replace_str.end(); it != last; ++it) {
+    const uc16 ch = *it;
+    if (state == Replace::kNormal) {
+      if (ch == '$') {
+        state = Replace::kDollar;
+      } else {
+        builder.Append(ch);
+      }
+    } else if (state == Replace::kDollar) {
+      switch (ch) {
+        case '$':  // $$ pattern
+          state = Replace::kNormal;
+          builder.Append('$');
+          break;
+
+        case '&':  // $& pattern
+          state = Replace::kNormal;
+          builder.Append(str.begin() + get<0>(res),
+                         str.begin() + get<1>(res));
+          break;
+
+        case '`':  // $` pattern
+          state = Replace::kNormal;
+          builder.Append(str.begin(), str.begin() + get<0>(res));
+          break;
+
+        case '\'':  // $' pattern
+          state = Replace::kNormal;
+          builder.Append(str.begin() + get<1>(res), str.end());
+          break;
+
+        default:
+          if (core::character::IsDecimalDigit(ch)) {
+            if (ch == '0') {  // 0
+              state = Replace::kDigitZero;
+            } else {
+              state = Replace::kDigit;
+            }
+            upper_digit_char = ch;
+          } else {
+            state = Replace::kNormal;
+            builder.Append('$');
+            builder.Append(ch);
+          }
+      }
+    } else if (state == Replace::kDigit) {
+      if (core::character::IsDecimalDigit(ch)) {  // twin digit
+        const std::size_t n =
+            core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
+        if (vec.size() >= n) {
+          const PairVector::value_type& pair = vec[n - 1];
+          builder.Append(str.begin() + pair.first,
+                         str.begin() + pair.second);
+        } else {
+          // put "undefined"
+          builder.Append("undefined");
+        }
+      } else {
+        const std::size_t n = core::Radix36Value(upper_digit_char);
+        if (vec.size() >= n) {
+          const PairVector::value_type& pair = vec[n - 1];
+          builder.Append(str.begin() + pair.first,
+                         str.begin() + pair.second);
+        } else {
+          // put "undefined"
+          builder.Append("undefined");
+        }
+        builder.Append(ch);
+      }
+      state = Replace::kNormal;
+    } else {
+      assert(state == Replace::kDigitZero);
+      if (core::character::IsDecimalDigit(ch)) {
+        const std::size_t n =
+            core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
+        if (vec.size() >= n) {
+          const PairVector::value_type& pair = vec[n - 1];
+          builder.Append(str.begin() + pair.first,
+                         str.begin() + pair.second);
+        } else {
+          // put "undefined"
+          builder.Append("undefined");
+        }
+      } else {
+        // $0 is not used
+        builder.Append('$');
+        builder.Append('0');
+      }
+      state = Replace::kNormal;
+    }
+  }
+
+  if (state == Replace::kDollar) {
+    builder.Append('$');
+  } else if (state == Replace::kDigit ||
+             state == Replace::kDigitZero) {
+    builder.Append(upper_digit_char);
+  }
+
+  builder.Append(str.begin() + get<1>(res), str.end());
   return builder.Build(ctx);
 }
 
@@ -409,9 +525,25 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
 
   if (search_value_is_regexp) {
     // searchValue is RegExp
-    const JSRegExp* regexp = static_cast<JSRegExp*>(args[0].object());
-    if (regexp->global()) {
+    using std::tr1::get;
+    const JSRegExp* reg = static_cast<JSRegExp*>(args[0].object());
+    detail::PairVector cap;
+    if (reg->global()) {
     } else {
+      const detail::MatchResult res = detail::RegExpMatch(*str, 0, *reg, &cap);
+      if (!get<2>(res)) {  // not match
+        return str;
+      }
+      if (args_count > 1 && args[1].IsCallable()) {
+      } else {
+        const JSString* replace_value;
+        if (args_count > 1) {
+          replace_value = args[1].ToString(ctx, ERROR(e));
+        } else {
+          replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
+        }
+        return detail::ReplaceRegExpOnce(ctx, *str, res, cap, *replace_value);
+      }
     }
   } else {
     if (args_count == 0) {
@@ -587,7 +719,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   detail::PairVector cap;
   const uint32_t size = str->size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(*str, 0, reg, &cap))) {
+    if (get<2>(detail::RegExpMatch(*str, 0, *reg, &cap))) {
       return ary;
     }
     ary->DefineOwnPropertyWithIndex(
@@ -605,8 +737,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const std::tr1::tuple<uint32_t, uint32_t, bool> rs =
-        detail::RegExpMatch(*str, q, reg, &cap);
+    const detail::MatchResult rs = detail::RegExpMatch(*str, q, *reg, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;

@@ -117,15 +117,6 @@ JSVal JSRegExp::ExecuteOnce(Context* ctx,
   return ary;
 }
 
-JSVal JSRegExp::Execute(Context* ctx,
-                        const core::UStringPiece& piece,
-                        Error* e) {
-  const uint32_t num_of_captures = impl_->number_of_captures();
-  std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
-  int previous_index = LastIndex(ctx, ERROR(e));
-  return ExecuteOnce(ctx, piece, previous_index, &offset_vector, e);
-}
-
 JSVal JSRegExp::Exec(Context* ctx, JSString* str, Error* e) {
   const uint32_t num_of_captures = impl_->number_of_captures();
   std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
@@ -281,7 +272,7 @@ JSVal JSRegExp::ExecGlobal(Context* ctx,
 std::tr1::tuple<uint32_t, uint32_t, bool> JSRegExp::Match(
     const core::UStringPiece& str,
     int index,
-    std::vector<std::pair<int, int> >* result) {
+    std::vector<std::pair<int, int> >* result) const {
   const uint32_t num_of_captures = impl_->number_of_captures();
   std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
   const int rc = impl_->ExecuteOnce(str,

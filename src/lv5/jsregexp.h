@@ -63,21 +63,13 @@ class JSRegExp : public JSObject {
                     std::vector<int>* offset_vector,
                     Error* e);
 
-  JSVal Execute(Context* ctx,
-                const core::UStringPiece& piece,
-                Error* e);
-
-  JSVal ExecuteGlobal(Context* ctx,
-                      const core::UStringPiece& piece,
-                      Error* e);
-
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e);
   JSVal Exec(Context* ctx, JSString* str, Error* e);
 
   std::tr1::tuple<uint32_t, uint32_t, bool>
       Match(const core::UStringPiece& str,
             int index,
-            std::vector<std::pair<int, int> >* result);
+            std::vector<std::pair<int, int> >* result) const;
 
  private:
   void InitializeProperty(Context* ctx);
