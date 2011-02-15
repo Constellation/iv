@@ -128,171 +128,191 @@ struct Replace {
   };
 };
 
-inline JSString* ReplaceOnce(Context* ctx, const JSString& str,
-                             const JSString& search_str,
-                             JSString::size_type loc,
-                             const JSString& replace_str) {
-  StringBuilder builder;
-  builder.Append(str.begin(), str.begin() + loc);
+template<typename Builder,
+         typename StringT,
+         typename StringU,
+         typename StringV>
+inline void ReplaceOnce(Builder* builder,
+                        const StringT& str,
+                        const StringU& search_str,
+                        JSString::size_type loc,
+                        const StringV& replace_str) {
   Replace::State state = Replace::kNormal;
-  for (JSString::const_iterator it = replace_str.begin(),
+  for (typename StringV::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
     const uc16 ch = *it;
     if (state == Replace::kNormal) {
       if (ch == '$') {
         state = Replace::kDollar;
       } else {
-        builder.Append(ch);
+        builder->Append(ch);
       }
     } else {
       assert(state == Replace::kDollar);
       switch (ch) {
         case '$':  // $$ pattern
           state = Replace::kNormal;
-          builder.Append('$');
+          builder->Append('$');
           break;
 
         case '&':  // $& pattern
           state = Replace::kNormal;
-          builder.Append(search_str);
+          builder->Append(search_str);
           break;
 
         case '`':  // $` pattern
           state = Replace::kNormal;
-          builder.Append(str.begin(), str.begin() + loc);
+          builder->Append(str.begin(), str.begin() + loc);
           break;
 
         case '\'':  // $' pattern
           state = Replace::kNormal;
-          builder.Append(str.begin() + loc + search_str.size(), str.end());
+          builder->Append(str.begin() + loc + search_str.size(), str.end());
           break;
 
         default:
           state = Replace::kNormal;
-          builder.Append('$');
-          builder.Append(ch);
+          builder->Append('$');
+          builder->Append(ch);
       }
     }
   }
   if (state == Replace::kDollar) {
-    builder.Append('$');
+    builder->Append('$');
   }
-  builder.Append(str.begin() + loc + search_str.size(), str.end());
-  return builder.Build(ctx);
 }
 
-inline JSString* ReplaceRegExpOnce(Context* ctx,
-                                   const JSString& str,
-                                   const MatchResult& res,
-                                   const PairVector& vec,
-                                   const JSString& replace_str) {
+template<typename Builder, typename StringT, typename StringU>
+inline void ReplaceRegExpOnce(Builder* builder,
+                              const StringT& str,
+                              const MatchResult& res,
+                              const PairVector& vec,
+                              const StringU& replace_str) {
   using std::tr1::get;
-  StringBuilder builder;
-  builder.Append(str.begin(), str.begin() + get<0>(res));
   Replace::State state = Replace::kNormal;
   uc16 upper_digit_char = '\0';
-  for (JSString::const_iterator it = replace_str.begin(),
+  for (typename StringU::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
     const uc16 ch = *it;
     if (state == Replace::kNormal) {
       if (ch == '$') {
         state = Replace::kDollar;
       } else {
-        builder.Append(ch);
+        builder->Append(ch);
       }
     } else if (state == Replace::kDollar) {
       switch (ch) {
         case '$':  // $$ pattern
           state = Replace::kNormal;
-          builder.Append('$');
+          builder->Append('$');
           break;
 
         case '&':  // $& pattern
           state = Replace::kNormal;
-          builder.Append(str.begin() + get<0>(res),
-                         str.begin() + get<1>(res));
+          builder->Append(str.begin() + get<0>(res),
+                          str.begin() + get<1>(res));
           break;
 
         case '`':  // $` pattern
           state = Replace::kNormal;
-          builder.Append(str.begin(), str.begin() + get<0>(res));
+          builder->Append(str.begin(), str.begin() + get<0>(res));
           break;
 
         case '\'':  // $' pattern
           state = Replace::kNormal;
-          builder.Append(str.begin() + get<1>(res), str.end());
+          builder->Append(str.begin() + get<1>(res), str.end());
           break;
 
         default:
           if (core::character::IsDecimalDigit(ch)) {
-            if (ch == '0') {  // 0
-              state = Replace::kDigitZero;
-            } else {
-              state = Replace::kDigit;
-            }
+            state = (ch == '0') ? Replace::kDigitZero : Replace::kDigit;
             upper_digit_char = ch;
           } else {
             state = Replace::kNormal;
-            builder.Append('$');
-            builder.Append(ch);
+            builder->Append('$');
+            builder->Append(ch);
           }
       }
-    } else if (state == Replace::kDigit) {
+    } else if (state == Replace::kDigit) {  // twin digit pattern search
       if (core::character::IsDecimalDigit(ch)) {  // twin digit
-        const std::size_t n =
-            core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
+        const std::size_t single_n = core::Radix36Value(upper_digit_char);
+        const std::size_t n = single_n * 10 + core::Radix36Value(ch);
         if (vec.size() >= n) {
           const PairVector::value_type& pair = vec[n - 1];
-          builder.Append(str.begin() + pair.first,
-                         str.begin() + pair.second);
+          if (pair.first != -1 && pair.second != -1) {  // check undefined
+            builder->Append(str.begin() + pair.first,
+                            str.begin() + pair.second);
+          }
         } else {
-          // put "undefined"
-          builder.Append("undefined");
+          // single digit pattern search
+          if (vec.size() >= single_n) {
+            const PairVector::value_type& pair = vec[single_n - 1];
+            if (pair.first != -1 && pair.second != -1) {  // check undefined
+              builder->Append(str.begin() + pair.first,
+                              str.begin() + pair.second);
+            }
+          } else {
+            builder->Append('$');
+            builder->Append(upper_digit_char);
+          }
+          builder->Append(ch);
         }
       } else {
         const std::size_t n = core::Radix36Value(upper_digit_char);
         if (vec.size() >= n) {
           const PairVector::value_type& pair = vec[n - 1];
-          builder.Append(str.begin() + pair.first,
-                         str.begin() + pair.second);
+          if (pair.first != -1 && pair.second != -1) {  // check undefined
+            builder->Append(str.begin() + pair.first,
+                            str.begin() + pair.second);
+          }
         } else {
-          // put "undefined"
-          builder.Append("undefined");
+          builder->Append('$');
+          builder->Append(upper_digit_char);
         }
-        builder.Append(ch);
+        builder->Append(ch);
       }
       state = Replace::kNormal;
-    } else {
+    } else {  // twin digit pattern search
       assert(state == Replace::kDigitZero);
       if (core::character::IsDecimalDigit(ch)) {
         const std::size_t n =
             core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
         if (vec.size() >= n) {
           const PairVector::value_type& pair = vec[n - 1];
-          builder.Append(str.begin() + pair.first,
-                         str.begin() + pair.second);
+          if (pair.first != -1 && pair.second != -1) {  // check undefined
+            builder->Append(str.begin() + pair.first,
+                            str.begin() + pair.second);
+          }
         } else {
-          // put "undefined"
-          builder.Append("undefined");
+          builder->Append("$0");
+          builder->Append(ch);
         }
       } else {
         // $0 is not used
-        builder.Append('$');
-        builder.Append('0');
+        builder->Append("$0");
+        builder->Append(ch);
       }
       state = Replace::kNormal;
     }
   }
 
   if (state == Replace::kDollar) {
-    builder.Append('$');
-  } else if (state == Replace::kDigit ||
-             state == Replace::kDigitZero) {
-    builder.Append(upper_digit_char);
+    builder->Append('$');
+  } else if (state == Replace::kDigit) {
+    const std::size_t n = core::Radix36Value(upper_digit_char);
+    if (vec.size() >= n) {
+      const PairVector::value_type& pair = vec[n - 1];
+      if (pair.first != -1 && pair.second != -1) {  // check undefined
+        builder->Append(str.begin() + pair.first,
+                        str.begin() + pair.second);
+      }
+    } else {
+      builder->Append('$');
+      builder->Append(upper_digit_char);
+    }
+  } else if (state == Replace::kDigitZero) {
+    builder->Append("$0");
   }
-
-  builder.Append(str.begin() + get<1>(res), str.end());
-  return builder.Build(ctx);
 }
 
 }  // namespace iv::lv5::runtime::detail
@@ -535,6 +555,27 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         return str;
       }
       if (args_count > 1 && args[1].IsCallable()) {
+        JSFunction* const callable = args[1].object()->AsCallable();
+        Arguments a(ctx, 3 + cap.size());
+        a[0] = search_str;
+        std::size_t i = 1;
+        for (detail::PairVector::const_iterator it = cap.begin(),
+             last = cap.end(); it != last; ++it, ++i) {
+          if (it->first != -1 && it->second != -1) {  // check undefined
+            a[i] = JSString::New(ctx,
+                                 str->begin() + it->first,
+                                 str->begin() + it->second);
+          }
+        }
+        a[i++] = get<0>(res);
+        a[i++] = str;
+        const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
+        StringBuilder builder;
+        const JSString* const replaced_str = result.ToString(ctx, ERROR(e));
+        builder.Append(str->begin(), str->begin() + get<0>(res));
+        builder.Append(*replaced_str);
+        builder.Append(str->begin() + get<1>(res), str->end());
+        return builder.Build(ctx);
       } else {
         const JSString* replace_value;
         if (args_count > 1) {
@@ -542,7 +583,11 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         } else {
           replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
         }
-        return detail::ReplaceRegExpOnce(ctx, *str, res, cap, *replace_value);
+        StringBuilder builder;
+        builder.Append(str->begin(), str->begin() + get<0>(res));
+        detail::ReplaceRegExpOnce(&builder, *str, res, cap, *replace_value);
+        builder.Append(str->begin() + get<1>(res), str->end());
+        return builder.Build(ctx);
       }
     }
   } else {
@@ -577,7 +622,11 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
-      return detail::ReplaceOnce(ctx, *str, *search_str, loc, *replace_value);
+      StringBuilder builder;
+      builder.Append(str->begin(), str->begin() + loc);
+      detail::ReplaceOnce(&builder, *str, *search_str, loc, *replace_value);
+      builder.Append(str->begin() + loc + search_str->size(), str->end());
+      return builder.Build(ctx);
     }
   }
   return str;
