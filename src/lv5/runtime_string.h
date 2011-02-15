@@ -5,6 +5,7 @@
 #include <utility>
 #include <tr1/tuple>
 #include "ustring.h"
+#include "matchresult.h"
 #include "ustringpiece.h"
 #include "character.h"
 #include "conversions.h"
@@ -19,8 +20,6 @@ namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail {
-
-typedef std::vector<std::pair<int, int> > PairVector;
 
 static inline JSVal StringToStringValueOfImpl(const Arguments& args,
                                               Error* error,
@@ -110,11 +109,10 @@ inline JSVal StringSplit(Context* ctx, const JSString& str,
   return ary;
 }
 
-typedef std::tr1::tuple<uint32_t, uint32_t, bool> MatchResult;
-inline MatchResult RegExpMatch(const JSString& str,
-                               uint32_t q,
-                               const JSRegExp& reg,
-                               PairVector* vec) {
+inline regexp::MatchResult RegExpMatch(const JSString& str,
+                                       uint32_t q,
+                                       const JSRegExp& reg,
+                                       regexp::PairVector* vec) {
   vec->clear();
   return reg.Match(str.value(), q, vec);
 }
@@ -185,8 +183,8 @@ inline void ReplaceOnce(Builder* builder,
 template<typename Builder, typename StringT, typename StringU>
 inline void ReplaceRegExpOnce(Builder* builder,
                               const StringT& str,
-                              const MatchResult& res,
-                              const PairVector& vec,
+                              const regexp::MatchResult& res,
+                              const regexp::PairVector& vec,
                               const StringU& replace_str) {
   using std::tr1::get;
   Replace::State state = Replace::kNormal;
@@ -238,7 +236,7 @@ inline void ReplaceRegExpOnce(Builder* builder,
         const std::size_t single_n = core::Radix36Value(upper_digit_char);
         const std::size_t n = single_n * 10 + core::Radix36Value(ch);
         if (vec.size() >= n) {
-          const PairVector::value_type& pair = vec[n - 1];
+          const regexp::PairVector::value_type& pair = vec[n - 1];
           if (pair.first != -1 && pair.second != -1) {  // check undefined
             builder->Append(str.begin() + pair.first,
                             str.begin() + pair.second);
@@ -246,7 +244,7 @@ inline void ReplaceRegExpOnce(Builder* builder,
         } else {
           // single digit pattern search
           if (vec.size() >= single_n) {
-            const PairVector::value_type& pair = vec[single_n - 1];
+            const regexp::PairVector::value_type& pair = vec[single_n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
               builder->Append(str.begin() + pair.first,
                               str.begin() + pair.second);
@@ -260,7 +258,7 @@ inline void ReplaceRegExpOnce(Builder* builder,
       } else {
         const std::size_t n = core::Radix36Value(upper_digit_char);
         if (vec.size() >= n) {
-          const PairVector::value_type& pair = vec[n - 1];
+          const regexp::PairVector::value_type& pair = vec[n - 1];
           if (pair.first != -1 && pair.second != -1) {  // check undefined
             builder->Append(str.begin() + pair.first,
                             str.begin() + pair.second);
@@ -278,7 +276,7 @@ inline void ReplaceRegExpOnce(Builder* builder,
         const std::size_t n =
             core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
         if (vec.size() >= n) {
-          const PairVector::value_type& pair = vec[n - 1];
+          const regexp::PairVector::value_type& pair = vec[n - 1];
           if (pair.first != -1 && pair.second != -1) {  // check undefined
             builder->Append(str.begin() + pair.first,
                             str.begin() + pair.second);
@@ -301,7 +299,7 @@ inline void ReplaceRegExpOnce(Builder* builder,
   } else if (state == Replace::kDigit) {
     const std::size_t n = core::Radix36Value(upper_digit_char);
     if (vec.size() >= n) {
-      const PairVector::value_type& pair = vec[n - 1];
+      const regexp::PairVector::value_type& pair = vec[n - 1];
       if (pair.first != -1 && pair.second != -1) {  // check undefined
         builder->Append(str.begin() + pair.first,
                         str.begin() + pair.second);
@@ -547,19 +545,77 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     // searchValue is RegExp
     using std::tr1::get;
     const JSRegExp* reg = static_cast<JSRegExp*>(args[0].object());
-    detail::PairVector cap;
+    regexp::PairVector cap;
     if (reg->global()) {
+      StringBuilder builder;
+      int previous_index = 0;
+      int not_matched_index = previous_index;
+      const int size = str->size();
+      do {
+        const regexp::MatchResult res = detail::RegExpMatch(*str,
+                                                            previous_index,
+                                                            *reg, &cap);
+        if (!get<2>(res)) {
+          break;
+        }
+        builder.Append(str->begin() + not_matched_index, str->begin() + get<0>(res));
+        const int this_index = get<1>(res);
+        not_matched_index = this_index;
+        if (previous_index == this_index) {
+          ++previous_index;
+        } else {
+          previous_index = this_index;
+        }
+        if (args_count > 1 && args[1].IsCallable()) {
+          JSFunction* const callable = args[1].object()->AsCallable();
+          Arguments a(ctx, 3 + cap.size());
+          a[0] = JSString::New(ctx,
+                               str->begin() + get<0>(res),
+                               str->begin() + get<1>(res));
+          std::size_t i = 1;
+          for (regexp::PairVector::const_iterator it = cap.begin(),
+               last = cap.end(); it != last; ++it, ++i) {
+            if (it->first != -1 && it->second != -1) {  // check undefined
+              a[i] = JSString::New(ctx,
+                                   str->begin() + it->first,
+                                   str->begin() + it->second);
+            }
+          }
+          a[i++] = get<0>(res);
+          a[i++] = str;
+          const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
+          const JSString* const replaced_str = result.ToString(ctx, ERROR(e));
+          builder.Append(*replaced_str);
+        } else {
+          const JSString* replace_value;
+          if (args_count > 1) {
+            replace_value = args[1].ToString(ctx, ERROR(e));
+          } else {
+            replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
+          }
+          detail::ReplaceRegExpOnce(&builder, *str, res, cap, *replace_value);
+        }
+        if (previous_index > size || previous_index < 0) {
+          break;
+        }
+      } while (true);
+      builder.Append(str->begin() + not_matched_index, str->end());
+      return builder.Build(ctx);
     } else {
-      const detail::MatchResult res = detail::RegExpMatch(*str, 0, *reg, &cap);
+      const regexp::MatchResult res = detail::RegExpMatch(*str, 0, *reg, &cap);
       if (!get<2>(res)) {  // not match
         return str;
       }
+      StringBuilder builder;
+      builder.Append(str->begin(), str->begin() + get<0>(res));
       if (args_count > 1 && args[1].IsCallable()) {
         JSFunction* const callable = args[1].object()->AsCallable();
         Arguments a(ctx, 3 + cap.size());
-        a[0] = search_str;
+        a[0] = JSString::New(ctx,
+                             str->begin() + get<0>(res),
+                             str->begin() + get<1>(res));
         std::size_t i = 1;
-        for (detail::PairVector::const_iterator it = cap.begin(),
+        for (regexp::PairVector::const_iterator it = cap.begin(),
              last = cap.end(); it != last; ++it, ++i) {
           if (it->first != -1 && it->second != -1) {  // check undefined
             a[i] = JSString::New(ctx,
@@ -570,12 +626,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         a[i++] = get<0>(res);
         a[i++] = str;
         const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
-        StringBuilder builder;
         const JSString* const replaced_str = result.ToString(ctx, ERROR(e));
-        builder.Append(str->begin(), str->begin() + get<0>(res));
         builder.Append(*replaced_str);
-        builder.Append(str->begin() + get<1>(res), str->end());
-        return builder.Build(ctx);
       } else {
         const JSString* replace_value;
         if (args_count > 1) {
@@ -583,12 +635,10 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         } else {
           replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
         }
-        StringBuilder builder;
-        builder.Append(str->begin(), str->begin() + get<0>(res));
         detail::ReplaceRegExpOnce(&builder, *str, res, cap, *replace_value);
-        builder.Append(str->begin() + get<1>(res), str->end());
-        return builder.Build(ctx);
       }
+      builder.Append(str->begin() + get<1>(res), str->end());
+      return builder.Build(ctx);
     }
   } else {
     if (args_count == 0) {
@@ -602,6 +652,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       return str;
     }
     // found pattern
+    StringBuilder builder;
+    builder.Append(str->begin(), str->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
       Arguments a(ctx, 3);
@@ -609,12 +661,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       a[1] = static_cast<double>(loc);
       a[2] = str;
       const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
-      StringBuilder builder;
       const JSString* const res = result.ToString(ctx, ERROR(e));
-      builder.Append(str->begin(), str->begin() + loc);
       builder.Append(*res);
-      builder.Append(str->begin() + loc + search_str->size(), str->end());
-      return builder.Build(ctx);
     } else {
       const JSString* replace_value;
       if (args_count > 1) {
@@ -622,14 +670,11 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
-      StringBuilder builder;
-      builder.Append(str->begin(), str->begin() + loc);
       detail::ReplaceOnce(&builder, *str, *search_str, loc, *replace_value);
-      builder.Append(str->begin() + loc + search_str->size(), str->end());
-      return builder.Build(ctx);
     }
+    builder.Append(str->begin() + loc + search_str->size(), str->end());
+    return builder.Build(ctx);
   }
-  return str;
 }
 
 // section 15.5.4.12 String.prototype.search(regexp)
@@ -765,7 +810,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
   JSArray* const ary = JSArray::New(ctx);
-  detail::PairVector cap;
+  regexp::PairVector cap;
   const uint32_t size = str->size();
   if (size == 0) {
     if (get<2>(detail::RegExpMatch(*str, 0, *reg, &cap))) {
@@ -786,7 +831,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const detail::MatchResult rs = detail::RegExpMatch(*str, q, *reg, &cap);
+    const regexp::MatchResult rs = detail::RegExpMatch(*str, q, *reg, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;
@@ -810,7 +855,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       }
 
       uint32_t i = 0;
-      for (detail::PairVector::const_iterator it = cap.begin(),
+      for (regexp::PairVector::const_iterator it = cap.begin(),
            last = cap.end(); it != last; ++it) {
         ++i;
         if (it->first != -1 && it->second != -1) {

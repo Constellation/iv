@@ -269,27 +269,6 @@ JSVal JSRegExp::ExecGlobal(Context* ctx,
   return ary;
 }
 
-std::tr1::tuple<uint32_t, uint32_t, bool> JSRegExp::Match(
-    const core::UStringPiece& str,
-    int index,
-    std::vector<std::pair<int, int> >* result) const {
-  const uint32_t num_of_captures = impl_->number_of_captures();
-  std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
-  const int rc = impl_->ExecuteOnce(str,
-                                    index, &offset_vector);
-  if (rc == jscre::JSRegExpErrorNoMatch ||
-      rc == jscre::JSRegExpErrorHitLimit) {
-    return std::tr1::make_tuple(0, 0, false);
-  }
-  if (rc < 0) {
-    return std::tr1::make_tuple(0, 0, false);
-  }
-  for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
-    result->push_back(std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
-  }
-  return std::tr1::make_tuple(offset_vector[0], offset_vector[1], true);
-}
-
 JSRegExp* JSRegExp::New(Context* ctx) {
   JSRegExp* const reg = new JSRegExp(ctx);
   const Class& cls = ctx->Cls("RegExp");

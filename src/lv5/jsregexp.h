@@ -2,11 +2,11 @@
 #define _IV_LV5_JSREGEXP_H_
 #include <vector>
 #include <utility>
-#include <tr1/tuple>
 #include "jsobject.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "jsregexp_impl.h"
+#include "matchresult.h"
 namespace iv {
 namespace lv5 {
 class Context;
@@ -66,10 +66,26 @@ class JSRegExp : public JSObject {
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e);
   JSVal Exec(Context* ctx, JSString* str, Error* e);
 
-  std::tr1::tuple<uint32_t, uint32_t, bool>
-      Match(const core::UStringPiece& str,
-            int index,
-            std::vector<std::pair<int, int> >* result) const;
+  template<typename String>
+  regexp::MatchResult Match(const String& str,
+                            int index,
+                            regexp::PairVector* result) const {
+    const uint32_t num_of_captures = impl_->number_of_captures();
+    std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
+    const int rc = impl_->ExecuteOnce(str,
+                                      index, &offset_vector);
+    if (rc == jscre::JSRegExpErrorNoMatch ||
+        rc == jscre::JSRegExpErrorHitLimit) {
+      return std::tr1::make_tuple(0, 0, false);
+    }
+    if (rc < 0) {
+      return std::tr1::make_tuple(0, 0, false);
+    }
+    for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
+      result->push_back(std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
+    }
+    return std::tr1::make_tuple(offset_vector[0], offset_vector[1], true);
+  }
 
  private:
   void InitializeProperty(Context* ctx);

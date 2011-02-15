@@ -128,8 +128,8 @@ class JSRegExpImpl : public gc_cleanup {
     return number_of_captures_;
   }
 
-  template<typename T>
-  int ExecuteOnce(const core::UStringPiece& subject,
+  template<typename String, typename T>
+  int ExecuteOnce(const String& subject,
                   int offset,
                   T* offset_vector) const {
     return jscre::jsRegExpExecute(reg_,
