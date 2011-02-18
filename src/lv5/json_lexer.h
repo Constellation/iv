@@ -194,6 +194,10 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
     buffer8_.clear();
     if (find_sign) {
       Record8('-');
+      if (c_ < 0 ||
+          !core::character::IsDecimalDigit(c_)) {
+        return core::Token::ILLEGAL;
+      }
     }
     if (c_ == '0') {
       Record8Advance();
@@ -202,6 +206,10 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
     }
     if (c_ == '.') {
       Record8Advance();
+      if (c_ < 0 ||
+          !core::character::IsDecimalDigit(c_)) {
+        return core::Token::ILLEGAL;
+      }
       ScanDecimalDigits();
     }
 

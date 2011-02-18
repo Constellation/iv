@@ -406,7 +406,11 @@ inline double CurrentTime() {
 #endif
 
 
-inline JSVal DateParse(const JSString& str) {
+template<typename String>
+inline double DateParse(const String& str) {
+  for (typename String::const_iterator it = str.begin(),
+       last = str.end(); it != last; ++it) {
+  }
   return JSValData::kNaN;
 }
 
@@ -431,8 +435,8 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
       // section 15.9.3.2 new Date(value)
       const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, ERROR(error));
       if (v.IsString()) {
-        // TODO(Constellation) parse implementation required
-        return JSUndefined;
+        return JSDate::New(ctx,
+                           detail::TimeClip(detail::DateParse(*v.string())));
       } else {
         const double V = v.ToNumber(ctx, ERROR(error));
         return JSDate::New(
