@@ -252,14 +252,15 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
   }
   Context* const ctx = args.ctx();
   JSScript* const script = CompileScript(args.ctx(), first.string(),
-                                         ctx->IsStrict(), ERROR(error));
+                                         false, ERROR(error));
+                                         //  ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
-        Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+        Interpreter::NewDeclarativeEnvironment(ctx, ctx->global_env());
     const Interpreter::ContextSwitcher switcher(ctx,
                                                 env,
                                                 env,
-                                                ctx->this_binding(),
+                                                ctx->global_obj(),
                                                 true);
     ctx->Run(script);
   } else {

@@ -405,6 +405,11 @@ inline double CurrentTime() {
 }
 #endif
 
+
+inline JSVal DateParse(const JSString& str) {
+  return JSValData::kNaN;
+}
+
 }  // namespace iv::lv5::runtime::detail
 
 // section 15.9.2.1
@@ -521,9 +526,19 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
   }
 }
 
+
+// section 15.9.4.2 Date.parse(string)
+inline JSVal DateParse(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Date.parse", args, e);
+  const JSVal first = (args.size() == 0) ? JSUndefined : args[0];
+  const JSString* target = first.ToString(args.ctx(), ERROR(e));
+  return detail::DateParse(*target);
+}
+
 // section 15.9.4.3
 // Date.UTC(year, month[, date[, hours[, minutes[, seconds[, ms]]]])
 inline JSVal DateUTC(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.UTC", args, error);
   const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
   double y;
@@ -589,6 +604,7 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
 
 // section 15.9.4.4 Date.now()
 inline JSVal DateNow(const Arguments& args, Error* error) {
+  CONSTRUCTOR_CHECK("Date.now", args, error);
   return std::floor(detail::CurrentTime() * 1000.0);
 }
 
