@@ -77,7 +77,8 @@ inline double TimeFromYear(int y) {
 
 // JSC's method
 inline int YearFromTime(double t) {
-  const int about = static_cast<int>(std::floor(t / (kMsPerDay * 365.2425)) + 1970);
+  const int about = static_cast<int>(
+      std::floor(t / (kMsPerDay * 365.2425)) + 1970);
   const double time = TimeFromYear(about);
   if (time > t) {
     return about - 1;
@@ -106,10 +107,10 @@ static const int kMonthMap[2][12] = {
   {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
 };
 
-static const char* kMonths[12] = {
+static const std::tr1::array<const char*, 12> kMonths = { {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
+} };
 
 inline int MonthFromTime(double t) {
   int within = DayWithinYear(t);
@@ -125,7 +126,8 @@ inline int MonthFromTime(double t) {
 }
 
 inline const char* MonthToString(double t) {
-  assert(0 <= MonthFromTime(t) && MonthFromTime(t) <= 11);
+  assert(0 <= MonthFromTime(t) &&
+         MonthFromTime(t) < static_cast<int>(kMonths.size()));
   return kMonths[MonthFromTime(t)];
 }
 
@@ -146,9 +148,9 @@ inline int MonthToDaysInYear(int month, int is_leap) {
   return kMonthMap[is_leap][month];
 }
 
-static const char* kWeekDays[7] = {
+static const std::tr1::array<const char*, 7> kWeekDays = { {
   "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
-};
+} };
 
 inline int WeekDay(double t) {
   const int res = core::DoubleToInt32(std::fmod((Day(t) + 4), 7));
@@ -159,7 +161,7 @@ inline int WeekDay(double t) {
 }
 
 inline const char* WeekDayToString(double t) {
-  assert(0 <= WeekDay(t) && WeekDay(t) <= 6);
+  assert(0 <= WeekDay(t) && WeekDay(t) < static_cast<int>(kWeekDays.size()));
   return kWeekDays[WeekDay(t)];
 }
 
@@ -354,7 +356,8 @@ inline double DateToDays(int year, int month, int date) {
     --year;
   }
   const double yearday = std::floor(DaysFromYear(year));
-  const int monthday = MonthToDaysInYear(month, (DaysInYear(year) == 366 ? 1 : 0));
+  const int monthday = MonthToDaysInYear(month,
+                                         (DaysInYear(year) == 366 ? 1 : 0));
   assert((year >= 1970 && yearday >= 0) || (year < 1970 && yearday < 0));
   return yearday + monthday + date - 1;
 }

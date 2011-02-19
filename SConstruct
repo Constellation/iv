@@ -91,7 +91,7 @@ def Build():
       Exit(1)
     if options.get('noicu'):
       # use iconv
-      conf.CheckLibWithHeader('iconv', 'iconv.h', 'c++')
+      conf.CheckLibWithHeader('iconv', 'iconv.h', 'cxx')
       option_dict['%USE_ICU%'] = '0'
     else:
       conf.env.ParseConfig('icu-config --cppflags --ldflags')
@@ -100,7 +100,7 @@ def Build():
             "-pedantic", "-Wpointer-arith",
             "-Wwrite-strings", "-Wno-long-long"   ])
       option_dict['%USE_ICU%'] = '1'
-    conf.CheckLibWithHeader('m', 'cmath', 'c++')
+    conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
 
   if env["CXXVERSION"] >= "4.4.3":

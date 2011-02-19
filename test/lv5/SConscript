@@ -3,7 +3,7 @@ Import('context object_files libs')
 def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
-  conf.CheckLib('gtest')
+  conf.CheckLib(library='gtest', language='cxx')
   env = conf.Finish()
   env.Append(
     LIBS=libs,
