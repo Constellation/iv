@@ -1,6 +1,10 @@
 import sys
+import os
+import glob
 from os.path import join, dirname, abspath
 Import('context object_files root_dir')
+
+objs = [os.path.splitext(x)[0]+'.o' for x in glob.glob('*.cc')]
 
 def Build():
   jscre = context.SConscript(

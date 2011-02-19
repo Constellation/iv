@@ -5,14 +5,14 @@
 #include "noncopyable.h"
 #include "character.h"
 #include "conversions.h"
-#include "arguments.h"
-#include "jsval.h"
-#include "jsstring.h"
-#include "jsscript.h"
-#include "error.h"
-#include "context.h"
-#include "lv5.h"
-#include "internal.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsscript.h"
+#include "lv5/error.h"
+#include "lv5/context.h"
+#include "lv5/internal.h"
 
 namespace iv {
 namespace lv5 {

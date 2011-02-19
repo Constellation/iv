@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_LV5_H_
 #define _IV_LV5_LV5_H_
-#include "jsval.h"
+#include "lv5/jsval.h"
 #define ERROR_VOID(error)\
   error);\
   if (*error) {\

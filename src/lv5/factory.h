@@ -6,8 +6,8 @@
 #include "ast_factory.h"
 #include "location.h"
 #include "ustringpiece.h"
-#include "context_utils.h"
-#include "jsast.h"
+#include "lv5/context_utils.h"
+#include "lv5/jsast.h"
 
 namespace iv {
 namespace lv5 {

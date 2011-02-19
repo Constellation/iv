@@ -1,10 +1,11 @@
 #ifndef _IV_LV5_RUNTIME_BOOLEAN_H_
 #define _IV_LV5_RUNTIME_BOOLEAN_H_
-#include "arguments.h"
-#include "jsval.h"
-#include "error.h"
-#include "jsobject.h"
-#include "jsstring.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsstring.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {

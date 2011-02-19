@@ -3,10 +3,10 @@
 #include <iostream>  // NOLINT
 #include <cstdlib>
 #include "conversions.h"
-#include "lv5.h"
-#include "jsval.h"
-#include "error.h"
-#include "arguments.h"
+#include "lv5/lv5.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/arguments.h"
 namespace iv {
 namespace lv5 {
 

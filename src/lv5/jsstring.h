@@ -10,10 +10,10 @@
 #include "noncopyable.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "gc_template.h"
 #include "ustring.h"
 #include "icu/uconv.h"
 #include "icu/ustream.h"
+#include "lv5/gc_template.h"
 
 namespace iv {
 namespace lv5 {

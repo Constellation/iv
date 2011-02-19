@@ -6,7 +6,7 @@
 #include <tr1/cstdio>
 #include <tr1/array>
 #include <tr1/cstdint>
-#include "jsstring.h"
+#include "lv5/jsstring.h"
 
 extern "C" {
 extern char *dtoa(double d, int mode, int ndigits,

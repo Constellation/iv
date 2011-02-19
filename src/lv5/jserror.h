@@ -1,10 +1,10 @@
 #ifndef _IV_LV5_JSEXCEPTION_H_
 #define _IV_LV5_JSEXCEPTION_H_
 #include <cassert>
-#include "error.h"
-#include "jsobject.h"
-#include "jsval.h"
-#include "context_utils.h"
+#include "lv5/error.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsval.h"
+#include "lv5/context_utils.h"
 
 namespace iv {
 namespace lv5 {

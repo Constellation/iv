@@ -6,15 +6,15 @@
 #include <string>
 #include <algorithm>
 #include <tr1/array>
-#include "arguments.h"
-#include "jsval.h"
-#include "jsstring.h"
-#include "jsobject.h"
-#include "jsarray.h"
-#include "error.h"
-#include "context.h"
-#include "lv5.h"
-#include "internal.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsarray.h"
+#include "lv5/error.h"
+#include "lv5/context.h"
+#include "lv5/internal.h"
 
 namespace iv {
 namespace lv5 {

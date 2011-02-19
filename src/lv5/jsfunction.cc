@@ -1,13 +1,13 @@
 #include <iostream>  // NOLINT
 #include "ast.h"
-#include "jsfunction.h"
-#include "jsenv.h"
-#include "jsval.h"
-#include "interpreter.h"
-#include "context.h"
-#include "arguments.h"
-#include "jsscript.h"
-#include "lv5.h"
+#include "lv5/lv5.h"
+#include "lv5/jsfunction.h"
+#include "lv5/jsenv.h"
+#include "lv5/jsval.h"
+#include "lv5/interpreter.h"
+#include "lv5/context.h"
+#include "lv5/arguments.h"
+#include "lv5/jsscript.h"
 
 namespace iv {
 namespace lv5 {

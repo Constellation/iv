@@ -2,11 +2,11 @@
 #define _IV_LV5_JSREGEXP_H_
 #include <vector>
 #include <utility>
-#include "jsobject.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "jsregexp_impl.h"
-#include "matchresult.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsregexp_impl.h"
+#include "lv5/matchresult.h"
 namespace iv {
 namespace lv5 {
 class Context;

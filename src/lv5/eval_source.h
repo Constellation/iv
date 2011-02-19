@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_EVAL_SOURCE_H_
 #define _IV_LV5_EVAL_SOURCE_H_
 #include "noncopyable.h"
-#include "jsstring.h"
+#include "lv5/jsstring.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

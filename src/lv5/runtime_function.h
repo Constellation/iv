@@ -3,12 +3,12 @@
 #include <algorithm>
 #include "ustring.h"
 #include "ustringpiece.h"
-#include "jsfunction.h"
-#include "arguments.h"
-#include "jsval.h"
-#include "jsstring.h"
-#include "error.h"
-#include "lv5.h"
+#include "lv5/lv5.h"
+#include "lv5/jsfunction.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/jsstring.h"
+#include "lv5/error.h"
 
 namespace iv {
 namespace lv5 {

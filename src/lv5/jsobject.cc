@@ -1,12 +1,12 @@
 #include <cassert>
 #include <algorithm>
-#include "jsobject.h"
-#include "property.h"
-#include "jsfunction.h"
-#include "jsval.h"
-#include "jsenv.h"
-#include "context.h"
-#include "class.h"
+#include "lv5/jsobject.h"
+#include "lv5/property.h"
+#include "lv5/jsfunction.h"
+#include "lv5/jsval.h"
+#include "lv5/jsenv.h"
+#include "lv5/context.h"
+#include "lv5/class.h"
 
 namespace iv {
 namespace lv5 {

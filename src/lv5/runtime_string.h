@@ -5,16 +5,17 @@
 #include <utility>
 #include <tr1/tuple>
 #include "ustring.h"
-#include "matchresult.h"
 #include "ustringpiece.h"
 #include "character.h"
 #include "conversions.h"
-#include "arguments.h"
-#include "jsval.h"
-#include "error.h"
-#include "jsstring.h"
-#include "jsregexp.h"
-#include "runtime_regexp.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/matchresult.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsregexp.h"
+#include "lv5/runtime_regexp.h"
 
 namespace iv {
 namespace lv5 {

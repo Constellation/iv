@@ -7,14 +7,14 @@
 #include <tr1/array>
 #include "token.h"
 #include "parser.h"
-#include "context.h"
-#include "factory.h"
 #include "stringpiece.h"
-#include "jsscript.h"
-#include "jsval.h"
-#include "jsstring.h"
-#include "command.h"
 #include "icu/source.h"
+#include "lv5/context.h"
+#include "lv5/factory.h"
+#include "lv5/jsscript.h"
+#include "lv5/jsval.h"
+#include "lv5/jsstring.h"
+#include "lv5/command.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

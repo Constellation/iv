@@ -4,10 +4,10 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include <boost/thread.hpp>
-#include "jsstring.h"
-#include "symbol.h"
 #include "ustring.h"
 #include "conversions.h"
+#include "lv5/jsstring.h"
+#include "lv5/symbol.h"
 namespace iv {
 namespace lv5 {
 class Context;

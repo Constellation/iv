@@ -1,17 +1,17 @@
 #ifndef _IV_LV5_INTERNAL_H_
 #define _IV_LV5_INTERNAL_H_
 #include <tr1/memory>
-#include "eval_source.h"
-#include "factory.h"
 #include "parser.h"
-#include "property.h"
-#include "jsscript.h"
-#include "jsstring.h"
-#include "jsval.h"
-#include "jsobject.h"
-#include "context.h"
-#include "error.h"
-#include "lv5.h"
+#include "lv5/lv5.h"
+#include "lv5/eval_source.h"
+#include "lv5/factory.h"
+#include "lv5/property.h"
+#include "lv5/jsscript.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsval.h"
+#include "lv5/jsobject.h"
+#include "lv5/context.h"
+#include "lv5/error.h"
 namespace iv {
 namespace lv5 {
 

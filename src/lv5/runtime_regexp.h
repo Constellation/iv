@@ -1,11 +1,11 @@
 #ifndef _IV_LV5_RUNTIME_REGEXP_H_
 #define _IV_LV5_RUNTIME_REGEXP_H_
-#include "arguments.h"
-#include "jsval.h"
-#include "context.h"
-#include "error.h"
-#include "lv5.h"
-#include "jsregexp.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/context.h"
+#include "lv5/error.h"
+#include "lv5/jsregexp.h"
 
 namespace iv {
 namespace lv5 {

@@ -2,12 +2,12 @@
 #define _IV_LV5_RUNTIME_MATH_H_
 #include <cmath>
 #include <tr1/cmath>
-#include "arguments.h"
-#include "jsval.h"
-#include "context.h"
-#include "error.h"
-#include "math.h"
-#include "lv5.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/context.h"
+#include "lv5/error.h"
+#include "lv5/math.h"
 
 namespace iv {
 namespace lv5 {

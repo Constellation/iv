@@ -10,8 +10,8 @@
 #include "static_assert.h"
 #include "none.h"
 #include "utils.h"
-#include "hint.h"
-#include "jsstring.h"
+#include "lv5/hint.h"
+#include "lv5/jsstring.h"
 
 namespace iv {
 namespace lv5 {

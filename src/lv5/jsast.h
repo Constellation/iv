@@ -3,9 +3,9 @@
 #include <vector>
 #include <cassert>
 #include "uchar.h"
-#include "jsregexp_impl.h"
 #include "ast.h"
-#include "symbol.h"
+#include "lv5/symbol.h"
+#include "lv5/jsregexp_impl.h"
 
 namespace iv {
 namespace lv5 {

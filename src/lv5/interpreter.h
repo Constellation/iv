@@ -5,11 +5,11 @@
 #include "ast.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
-#include "jsast.h"
-#include "arguments.h"
 #include "utils.h"
-#include "jsval.h"
-#include "symbol.h"
+#include "lv5/jsast.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/symbol.h"
 
 namespace iv {
 namespace lv5 {

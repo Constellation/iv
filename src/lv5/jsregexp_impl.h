@@ -7,10 +7,10 @@
 #include "ustringpiece.h"
 
 #ifdef DEBUG
-#include "third_party/jscre/pcre.h"
+#include "lv5/third_party/jscre/pcre.h"
 #define DEBUG
 #else
-#include "third_party/jscre/pcre.h"
+#include "lv5/third_party/jscre/pcre.h"
 #endif
 
 namespace iv {

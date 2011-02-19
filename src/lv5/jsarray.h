@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_JSARRAY_H_
 #define _IV_LV5_JSARRAY_H_
-#include "gc_template.h"
-#include "jsval.h"
-#include "jsobject.h"
+#include "lv5/gc_template.h"
+#include "lv5/jsval.h"
+#include "lv5/jsobject.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

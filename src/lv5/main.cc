@@ -8,32 +8,25 @@
 #include <algorithm>
 #include <tr1/array>
 #include <gc/gc.h>
-
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "about.h"
-
 #include "cmdline.h"
 #include "ast.h"
-
 #include "ast_serializer.h"
-
 #include "parser.h"
-#include "factory.h"
-
-#include "interpreter.h"
-#include "context.h"
-#include "jsast.h"
-#include "jsval.h"
-#include "jsstring.h"
-#include "jsscript.h"
-#include "command.h"
-#include "interactive.h"
-
 #include "icu/ustream.h"
 #include "icu/source.h"
-
-#include "fpu.h"
+#include "lv5/factory.h"
+#include "lv5/interpreter.h"
+#include "lv5/context.h"
+#include "lv5/jsast.h"
+#include "lv5/jsval.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsscript.h"
+#include "lv5/command.h"
+#include "lv5/interactive.h"
+#include "lv5/fpu.h"
 
 namespace {
 

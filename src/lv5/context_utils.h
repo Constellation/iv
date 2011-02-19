@@ -3,9 +3,9 @@
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "class.h"
-#include "symbol.h"
-#include "jsast.h"
+#include "lv5/class.h"
+#include "lv5/symbol.h"
+#include "lv5/jsast.h"
 class Context;
 
 namespace iv {

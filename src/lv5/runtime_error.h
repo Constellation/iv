@@ -3,12 +3,13 @@
 #include "conversions.h"
 #include "ustring.h"
 #include "ustringpiece.h"
-#include "arguments.h"
-#include "jsval.h"
-#include "error.h"
-#include "jsstring.h"
-#include "jserror.h"
-#include "context.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/jsstring.h"
+#include "lv5/jserror.h"
+#include "lv5/context.h"
 
 namespace iv {
 namespace lv5 {

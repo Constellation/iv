@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_PROPERTY_H_
 #define _IV_LV5_PROPERTY_H_
 #include <cassert>
-#include "jsval.h"
+#include "lv5/jsval.h"
 
 namespace iv {
 namespace lv5 {

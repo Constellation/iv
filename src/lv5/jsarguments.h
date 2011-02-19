@@ -1,10 +1,10 @@
 #ifndef _IV_LV5_JSARGUMENTS_H_
 #define _IV_LV5_JSARGUMENTS_H_
 #include "ast.h"
-#include "symbol.h"
-#include "property.h"
-#include "arguments.h"
-#include "gc_template.h"
+#include "lv5/symbol.h"
+#include "lv5/property.h"
+#include "lv5/arguments.h"
+#include "lv5/gc_template.h"
 namespace iv {
 namespace lv5 {
 

@@ -1,18 +1,19 @@
 #ifndef _IV_LV5_RUNTIME_JSON_H_
 #define _IV_LV5_RUNTIME_JSON_H_
 #include <vector>
-#include "arguments.h"
-#include "jsval.h"
-#include "error.h"
-#include "jsarray.h"
-#include "jsstring.h"
 #include "conversions.h"
-#include "internal.h"
-#include "gc_template.h"
-#include "json_lexer.h"
-#include "json_parser.h"
-#include "json_stringifier.h"
-#include "runtime_object.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/jsarray.h"
+#include "lv5/jsstring.h"
+#include "lv5/internal.h"
+#include "lv5/gc_template.h"
+#include "lv5/json_lexer.h"
+#include "lv5/json_parser.h"
+#include "lv5/json_stringifier.h"
+#include "lv5/runtime_object.h"
 
 namespace iv {
 namespace lv5 {

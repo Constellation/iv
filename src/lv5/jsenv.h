@@ -2,13 +2,13 @@
 #define _IV_LV5_JSENV_H_
 #include <cassert>
 #include <gc/gc_cpp.h>
-#include "gc_template.h"
-#include "jsval.h"
-#include "jsobject.h"
-#include "symbol.h"
-#include "property.h"
-#include "context_utils.h"
-#include "error.h"
+#include "lv5/gc_template.h"
+#include "lv5/jsval.h"
+#include "lv5/jsobject.h"
+#include "lv5/symbol.h"
+#include "lv5/property.h"
+#include "lv5/context_utils.h"
+#include "lv5/error.h"
 
 namespace iv {
 namespace lv5 {

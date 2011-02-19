@@ -9,23 +9,24 @@
 #include "noncopyable.h"
 #include "enable_if.h"
 #include "ast.h"
-#include "jsenv.h"
-#include "jsval.h"
-#include "jsobject.h"
-#include "jsfunction.h"
-#include "symboltable.h"
-#include "class.h"
-#include "interpreter.h"
-#include "error.h"
-#include "jsast.h"
-#include "jsscript.h"
-#include "gc_template.h"
-#include "context_utils.h"
+#include "lv5/jsval.h"
+#include "lv5/jsenv.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsfunction.h"
+#include "lv5/symboltable.h"
+#include "lv5/class.h"
+#include "lv5/interpreter.h"
+#include "lv5/error.h"
+#include "lv5/jsast.h"
+#include "lv5/gc_template.h"
+#include "lv5/context_utils.h"
 
 namespace iv {
 namespace lv5 {
 
 class SymbolChecker;
+class JSScript;
+class JSEnv;
 
 class Context : private core::Noncopyable<Context>::type {
  public:

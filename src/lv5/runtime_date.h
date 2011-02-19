@@ -15,9 +15,10 @@
 
 #include "utils.h"
 #include "conversions.h"
-#include "jsdate.h"
-#include "jsstring.h"
-#include "jsval.h"
+#include "lv5/lv5.h"
+#include "lv5/jsdate.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsval.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {

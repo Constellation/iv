@@ -7,13 +7,14 @@
 #include <tr1/cinttypes>
 #include "dtoa.h"
 #include "conversions.h"
-#include "arguments.h"
-#include "jsval.h"
-#include "error.h"
-#include "math.h"
-#include "jsobject.h"
-#include "jsstring.h"
-#include "jsdtoa.h"
+#include "lv5/lv5.h"
+#include "lv5/arguments.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
+#include "lv5/math.h"
+#include "lv5/jsobject.h"
+#include "lv5/jsstring.h"
+#include "lv5/jsdtoa.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {

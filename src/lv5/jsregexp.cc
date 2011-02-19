@@ -1,8 +1,8 @@
-#include "jsregexp.h"
-#include "jsarray.h"
-#include "jsstring.h"
-#include "context.h"
-#include "lv5.h"
+#include "lv5/lv5.h"
+#include "lv5/jsregexp.h"
+#include "lv5/jsarray.h"
+#include "lv5/jsstring.h"
+#include "lv5/context.h"
 namespace iv {
 namespace lv5 {
 

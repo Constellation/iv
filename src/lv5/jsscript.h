@@ -2,9 +2,9 @@
 #define _IV_LV5_JSSCRIPT_H_
 #include <gc/gc_cpp.h>
 #include <tr1/memory>
-#include "jsast.h"
 #include "icu/source.h"
-#include "eval_source.h"
+#include "lv5/jsast.h"
+#include "lv5/eval_source.h"
 namespace iv {
 namespace lv5 {
 class Context;

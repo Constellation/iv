@@ -3,10 +3,10 @@
 #include <vector>
 #include <gc/gc_cpp.h>
 #include "ast.h"
-#include "gc_template.h"
-#include "property.h"
-#include "hint.h"
-#include "symbol.h"
+#include "lv5/gc_template.h"
+#include "lv5/property.h"
+#include "lv5/hint.h"
+#include "lv5/symbol.h"
 
 namespace iv {
 namespace lv5 {
