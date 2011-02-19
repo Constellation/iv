@@ -1,10 +1,14 @@
-Import('context object_files')
+Import('context object_files libs')
 
 def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
   conf.CheckLib('gtest')
   env = conf.Finish()
+  env.Append(
+    LIBS=libs,
+    CCFLAGS=["-fno-strict-aliasing"],
+    CPPDEFINES=["__STDC_FORMAT_MACROS"])
   return env.Program('cctest', [Glob('*.cc'), object_files])
 
 program = Build()

@@ -54,7 +54,7 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 
 int main(int argc, char **argv) {
   using iv::lv5::JSVal;
-  iv::lv5::FixFPU();
+  iv::lv5::FPU fpu;
   GC_INIT();
 
   iv::cmdline::Parser cmd("lv5");
