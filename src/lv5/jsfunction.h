@@ -7,6 +7,9 @@
 #include "lv5/jsast.h"
 namespace iv {
 namespace lv5 {
+namespace runtime {
+JSVal GlobalEval(const Arguments& args, Error* error);
+}  // namespace iv::lv5::runtime
 
 class Context;
 class JSCodeFunction;
@@ -39,6 +42,9 @@ class JSFunction : public JSObject {
   virtual JSCodeFunction* AsCodeFunction() = 0;
   virtual JSBoundFunction* AsBoundFunction() = 0;
   virtual bool IsStrict() const = 0;
+  virtual bool IsEvalFunction() const {
+    return false;
+  }
   void Initialize(Context* ctx);
 };
 
@@ -243,6 +249,10 @@ class JSInlinedFunction : public JSFunction {
 
   bool IsStrict() const {
     return false;
+  }
+
+  bool IsEvalFunction() const {
+    return func == &runtime::GlobalEval;
   }
 
   value_type function() const {

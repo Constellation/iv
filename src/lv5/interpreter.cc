@@ -1433,9 +1433,7 @@ void Interpreter::Visit(const FunctionCall* call) {
       this_binding = ref->base().environment()->ImplicitThisValue();
       // direct call to eval check
       {
-        const JSNativeFunction* const native = callable->AsNativeFunction();
-        if (native &&
-            native->function() == &runtime::GlobalEval) {
+        if (callable->IsEvalFunction()) {
           // this function is eval function
           const Identifier* const maybe_eval = call->target()->AsIdentifier();
           if (maybe_eval &&
