@@ -1512,145 +1512,163 @@ void Context::Initialize() {
     // section 15.8.2.1 abs(x)
     math->DefineOwnProperty(
         this, Intern("abs"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAbs, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathAbs, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.2 acos(x)
     math->DefineOwnProperty(
         this, Intern("acos"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAcos, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathAcos, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.3 asin(x)
     math->DefineOwnProperty(
         this, Intern("asin"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAsin, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathAsin, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.4 atan(x)
     math->DefineOwnProperty(
         this, Intern("atan"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAtan, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathAtan, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.5 atan2(y, x)
     math->DefineOwnProperty(
         this, Intern("atan2"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathAtan2, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathAtan2, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.6 ceil(x)
     math->DefineOwnProperty(
         this, Intern("ceil"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathCeil, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathCeil, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.7 cos(x)
     math->DefineOwnProperty(
         this, Intern("cos"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathCos, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathCos, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.8 exp(x)
     math->DefineOwnProperty(
         this, Intern("exp"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathExp, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathExp, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.9 floor(x)
     math->DefineOwnProperty(
         this, Intern("floor"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathFloor, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathFloor, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.10 log(x)
     math->DefineOwnProperty(
         this, Intern("log"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathLog, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathLog, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.11 max([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("max"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathMax, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathMax, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.12 min([value1[, value2[, ... ]]])
     math->DefineOwnProperty(
         this, Intern("min"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathMin, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathMin, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.13 pow(x, y)
     math->DefineOwnProperty(
         this, Intern("pow"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathPow, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathPow, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.14 random()
     math->DefineOwnProperty(
         this, Intern("random"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathRandom, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathRandom, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.15 round(x)
     math->DefineOwnProperty(
         this, Intern("round"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathRound, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathRound, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.16 sin(x)
     math->DefineOwnProperty(
         this, Intern("sin"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathSin, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathSin, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.17 sqrt(x)
     math->DefineOwnProperty(
         this, Intern("sqrt"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathSqrt, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathSqrt, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.8.2.18 tan(x)
     math->DefineOwnProperty(
         this, Intern("tan"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::MathTan, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::MathTan, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
   {
