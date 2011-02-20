@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_JSFUNCTION_H_
 #define _IV_LV5_JSFUNCTION_H_
 #include "ustringpiece.h"
+#include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
 #include "lv5/arguments.h"
 #include "lv5/jsast.h"
@@ -25,9 +26,11 @@ class JSFunction : public JSObject {
     return this;
   }
   virtual ~JSFunction() { }
-  virtual JSVal Call(Arguments& args,
-                     const JSVal& this_binding, Error* error) = 0;
-  virtual JSVal Construct(Arguments& args, Error* error) = 0;
+  virtual JSVal Call(Arguments& args,  // NOLINT
+                     const JSVal& this_binding,
+                     Error* error) = 0;
+  virtual JSVal Construct(Arguments& args,  // NOLINT
+                          Error* error) = 0;
   virtual bool HasInstance(Context* ctx,
                            const JSVal& val, Error* error);
   JSVal Get(Context* ctx,
@@ -45,8 +48,10 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env);
-  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
-  JSVal Construct(Arguments& args, Error* error);
+  JSVal Call(Arguments& args,  // NOLINT
+             const JSVal& this_binding,
+             Error* error);
+  JSVal Construct(Arguments& args, Error* error);  // NOLINT
   JSEnv* scope() const {
     return env_;
   }
@@ -89,22 +94,46 @@ class JSCodeFunction : public JSFunction {
 class JSNativeFunction : public JSFunction {
  public:
   typedef JSVal(*value_type)(const Arguments&, Error*);
+
   JSNativeFunction() : func_() { }
-  JSNativeFunction(Context* ctx, value_type func, std::size_t n);
-  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
-  JSVal Construct(Arguments& args, Error* error);
+
+  JSNativeFunction(Context* ctx, value_type func, std::size_t n)
+    : func_(func) {
+    DefineOwnProperty(
+        ctx, context::length_symbol(ctx),
+        DataDescriptor(n,
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+  }
+
+  JSVal Call(Arguments& args,  // NOLINT
+             const JSVal& this_binding,
+             Error* error) {
+    args.set_this_binding(this_binding);
+    return func_(args, error);
+  }
+
+  JSVal Construct(Arguments& args, Error* error) {  // NOLINT
+    args.set_this_binding(JSUndefined);
+    return func_(args, error);
+  }
+
   JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
+
   JSNativeFunction* AsNativeFunction() {
     return this;
   }
+
   JSBoundFunction* AsBoundFunction() {
     return NULL;
   }
+
   bool IsStrict() const {
     return false;
   }
+
   value_type function() const {
     return func_;
   }
@@ -122,7 +151,11 @@ class JSNativeFunction : public JSFunction {
     return new JSNativeFunction(ctx, func, n);
   }
 
-  void InitializeSimple(Context* ctx);
+  void InitializeSimple(Context* ctx) {
+    const Class& cls = context::Cls(ctx, "Function");
+    set_class_name(cls.name);
+    set_prototype(cls.prototype);
+  }
 
   void Initialize(Context* ctx, value_type func, std::size_t n);
 
@@ -158,7 +191,7 @@ class JSBoundFunction : public JSFunction {
     return arguments_;
   }
   JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
-  JSVal Construct(Arguments& args, Error* error);
+  JSVal Construct(Arguments& args, Error* error);  // NOLINT
   bool HasInstance(Context* ctx,
                    const JSVal& val, Error* error);
   static JSBoundFunction* New(Context* ctx, JSFunction* target,
@@ -168,6 +201,69 @@ class JSBoundFunction : public JSFunction {
   JSFunction* target_;
   JSVal this_binding_;
   JSVals arguments_;
+};
+
+template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+class JSInlinedFunction : public JSFunction {
+ public:
+  typedef JSVal(*value_type)(const Arguments&, Error*);
+  typedef JSInlinedFunction<func, n> this_type;
+
+  JSInlinedFunction(Context* ctx) {
+    DefineOwnProperty(
+        ctx, context::length_symbol(ctx),
+        DataDescriptor(n,
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+  }
+
+  JSVal Call(Arguments& args,  // NOLINT
+             const JSVal& this_binding,
+             Error* error) {
+    args.set_this_binding(this_binding);
+    return func(args, error);
+  }
+
+  JSVal Construct(Arguments& args, Error* error) {  // NOLINT
+    args.set_this_binding(JSUndefined);
+    return func(args, error);
+  }
+
+  JSCodeFunction* AsCodeFunction() {
+    return NULL;
+  }
+
+  JSNativeFunction* AsNativeFunction() {
+    return NULL;
+  }
+
+  JSBoundFunction* AsBoundFunction() {
+    return NULL;
+  }
+
+  bool IsStrict() const {
+    return false;
+  }
+
+  value_type function() const {
+    return func;
+  }
+
+  static this_type* New(Context* ctx) {
+    this_type* const obj = new this_type(ctx);
+    obj->Initialize(ctx);
+    return obj;
+  }
+
+  static this_type* NewPlain(Context* ctx) {
+    return new this_type(ctx);
+  }
+
+  void Initialize(Context* ctx) {
+    const Class& cls = context::Cls(ctx, "Function");
+    set_class_name(cls.name);
+    set_prototype(cls.prototype);
+  }
 };
 
 } }  // namespace iv::lv5

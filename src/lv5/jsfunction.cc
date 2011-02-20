@@ -135,33 +135,6 @@ JSVal JSFunction::Get(Context* ctx,
   return val;
 }
 
-JSNativeFunction::JSNativeFunction(Context* ctx, value_type func, std::size_t n)
-  : func_(func) {
-  DefineOwnProperty(
-      ctx, ctx->length_symbol(),
-      DataDescriptor(n,
-                     PropertyDescriptor::NONE),
-                     false, NULL);
-}
-
-JSVal JSNativeFunction::Call(Arguments& args,
-                             const JSVal& this_binding, Error* error) {
-  args.set_this_binding(this_binding);
-  return func_(args, error);
-}
-
-JSVal JSNativeFunction::Construct(Arguments& args, Error* error) {
-  args.set_this_binding(JSUndefined);
-  return func_(args, error);
-}
-
-void JSNativeFunction::InitializeSimple(Context* ctx) {
-  // section 13.2 Creating Function Objects
-  const Class& cls = ctx->Cls("Function");
-  set_class_name(cls.name);
-  set_prototype(cls.prototype);
-}
-
 void JSNativeFunction::Initialize(Context* ctx,
                                   value_type func, std::size_t n) {
   func_ = func;

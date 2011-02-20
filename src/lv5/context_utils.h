@@ -24,5 +24,10 @@ Symbol Intern(Context* ctx, const Identifier& ident);
 Symbol Intern(Context* ctx, uint32_t index);
 Symbol Intern(Context* ctx, double number);
 
+Symbol constructor_symbol(const Context* ctx);
+Symbol prototype_symbol(const Context* ctx);
+Symbol length_symbol(const Context* ctx);
+bool IsStrict(const Context* ctx);
+
 } } }  // namespace iv::lv5::context
 #endif  // _IV_LV5_CONTEXT_UTILS_H_

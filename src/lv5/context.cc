@@ -81,6 +81,22 @@ Symbol Intern(Context* ctx, double number) {
   return ctx->InternDouble(number);
 }
 
+Symbol constructor_symbol(const Context* ctx) {
+  return ctx->constructor_symbol();
+}
+
+Symbol prototype_symbol(const Context* ctx) {
+  return ctx->prototype_symbol();
+}
+
+Symbol length_symbol(const Context* ctx) {
+  return ctx->length_symbol();
+}
+
+bool IsStrict(const Context* ctx) {
+  return ctx->IsStrict();
+}
+
 }  // namespace iv::lv5::context
 
 Context::Context()
