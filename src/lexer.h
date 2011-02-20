@@ -695,26 +695,32 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       case '\\':
         Record16Advance();
         break;
+
       case 'b' :
         Record16('\b');
         Advance();
         break;
+
       case 'f' :
         Record16('\f');
         Advance();
         break;
+
       case 'n' :
         Record16('\n');
         Advance();
         break;
+
       case 'r' :
         Record16('\r');
         Advance();
         break;
+
       case 't' :
         Record16('\t');
         Advance();
         break;
+
       case 'u' : {
         Advance();
         bool ng = false;
@@ -725,10 +731,12 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16(uc);
         break;
       }
+
       case 'v' :
         Record16('\v');
         Advance();
         break;
+
       case 'x' : {
         Advance();
         bool ng = false;
@@ -739,7 +747,15 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record16(uc);
         break;
       }
-      case '0' :
+
+      case '0' : {
+        if (type_ != OCTAL) {
+          type_ = OCTAL;
+        }
+        Record16(ScanOctalEscape());
+        break;
+      }
+
       case '1' :
       case '2' :
       case '3' :

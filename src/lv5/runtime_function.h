@@ -169,7 +169,6 @@ inline JSVal FunctionCall(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Function.prototype.call", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
-    using std::copy;
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
@@ -177,7 +176,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* error) {
     Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0);
 
     if (args_size > 1) {
-      copy(args.begin() + 1, args.end(), args_list.begin());
+      std::copy(args.begin() + 1, args.end(), args_list.begin());
     }
 
     const JSVal this_binding = (args_size > 0) ? args[0] : JSUndefined;

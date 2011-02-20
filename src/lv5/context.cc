@@ -1676,6 +1676,14 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.9.4.2 Date.parse(string)
+    constructor->DefineOwnProperty(
+        this, Intern("parse"),
+        DataDescriptor(JSNativeFunction::New(this, &runtime::DateParse, 1),
+                       PropertyDescriptor::WRITABLE |
+                       PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.9.4.3 Date.UTC()
     constructor->DefineOwnProperty(
         this, Intern("UTC"),

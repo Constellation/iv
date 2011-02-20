@@ -309,9 +309,16 @@ class Parser
             Expression* const expr = stmt->AsExpressionStatement()->expr();
             if (expr->AsDirectivable()) {
               // expression is directive
-              if (expr->AsStringLiteral()->value().compare(
+              if (!strict_switcher.IsStrict() &&
+                  expr->AsStringLiteral()->value().compare(
                       ParserData::kUseStrict.data()) == 0) {
                 strict_switcher.SwitchStrictMode();
+                // and one token lexed is not in strict
+                // so rescan
+                if (token_ == Token::IDENTIFIER) {
+                  typedef detail::Keyword<IdentifyReservedWords> KeywordChecker;
+                  token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
+                }
               }
             } else {
               recognize_directive = false;

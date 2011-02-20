@@ -5,420 +5,17 @@
 #include <cstring>
 #include <tr1/cstdint>
 #include <tr1/array>
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
 #include "utils.h"
 #include "conversions.h"
 #include "lv5/lv5.h"
 #include "lv5/jsdate.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsval.h"
+#include "lv5/date_utils.h"
+#include "lv5/date_parser.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace detail {
-
-static const int kHoursPerDay = 24;
-static const int kMinutesPerHour = 60;
-static const int kSecondsPerMinute = 60;
-
-static const int kMsPerSecond = 1000;
-static const int kMsPerMinute = kMsPerSecond * kSecondsPerMinute;
-static const int kMsPerHour = kMsPerMinute * kMinutesPerHour;
-static const int kMsPerDay = kMsPerHour * kHoursPerDay;
-
-static const int64_t kEpochTime = 116444736000000000LL;
-
-static const double kMaxTime = 8.64E15;
-
-inline double Day(double t) {
-  return std::floor(t / kMsPerDay);
-}
-
-inline double TimeWithinDay(double t) {
-  const double res = std::fmod(t, kMsPerDay);
-  if (res < 0) {
-    return res + kMsPerDay;
-  }
-  return res;
-}
-
-inline int DaysInYear(int y) {
-  return (((y % 100 == 0) ? y / 100 : y) % 4 == 0) ? 366 : 365;
-}
-
-inline double DaysFromYear(int y) {
-  static const int kLeapDaysBefore1971By4Rule = 1970 / 4;
-  static const int kExcludeLeapDaysBefore1971By100Rule = 1970 / 100;
-  static const int kLeapDaysBefore1971By400Rule = 1970 / 400;
-
-  const double year_minus_one = y - 1;
-  const double years_to_add_by_4 =
-      std::floor(year_minus_one / 4.0) - kLeapDaysBefore1971By4Rule;
-  const double years_to_exclude_by_100 =
-      std::floor(year_minus_one / 100.0) - kExcludeLeapDaysBefore1971By100Rule;
-  const double years_to_add_by_400 =
-      std::floor(year_minus_one / 400.0) - kLeapDaysBefore1971By400Rule;
-  return 365.0 * (y - 1970) +
-      years_to_add_by_4 -
-      years_to_exclude_by_100 +
-      years_to_add_by_400;
-}
-
-inline double TimeFromYear(int y) {
-  return kMsPerDay * DaysFromYear(y);
-}
-
-// JSC's method
-inline int YearFromTime(double t) {
-  const int about = static_cast<int>(
-      std::floor(t / (kMsPerDay * 365.2425)) + 1970);
-  const double time = TimeFromYear(about);
-  if (time > t) {
-    return about - 1;
-  } else if (TimeFromYear(about+1) <= t) {
-    return about + 1;
-  } else {
-    return about;
-  }
-}
-
-inline int IsLeapYear(double t) {
-  return (DaysInYear(YearFromTime(t)) == 366) ? 1 : 0;
-}
-
-inline int DayWithinYear(double t) {
-  return core::DoubleToInt32(Day(t) - DaysFromYear(YearFromTime(t)));
-}
-
-static const int kDaysMap[2][12] = {
-  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-};
-
-static const int kMonthMap[2][12] = {
-  {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
-  {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
-};
-
-static const std::tr1::array<const char*, 12> kMonths = { {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-} };
-
-inline int MonthFromTime(double t) {
-  int within = DayWithinYear(t);
-  const int leap = IsLeapYear(t);
-  for (int i = 0; i < 12; ++i) {
-    within -= kDaysMap[leap][i];
-    if (within < 0) {
-      return i;
-    }
-  }
-  UNREACHABLE();
-  return 0;  // makes compiler happy
-}
-
-inline const char* MonthToString(double t) {
-  assert(0 <= MonthFromTime(t) &&
-         MonthFromTime(t) < static_cast<int>(kMonths.size()));
-  return kMonths[MonthFromTime(t)];
-}
-
-inline int DateFromTime(double t) {
-  int within = DayWithinYear(t);
-  const int leap = IsLeapYear(t);
-  for (int i = 0; i < 12; ++i) {
-    within -= kDaysMap[leap][i];
-    if (within < 0) {
-      return within + kDaysMap[leap][i] + 1;
-    }
-  }
-  UNREACHABLE();
-  return 0;  // makes compiler happy
-}
-
-inline int MonthToDaysInYear(int month, int is_leap) {
-  return kMonthMap[is_leap][month];
-}
-
-static const std::tr1::array<const char*, 7> kWeekDays = { {
-  "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
-} };
-
-inline int WeekDay(double t) {
-  const int res = core::DoubleToInt32(std::fmod((Day(t) + 4), 7));
-  if (res < 0) {
-    return res + 7;
-  }
-  return res;
-}
-
-inline const char* WeekDayToString(double t) {
-  assert(0 <= WeekDay(t) && WeekDay(t) < static_cast<int>(kWeekDays.size()));
-  return kWeekDays[WeekDay(t)];
-}
-
-inline int32_t GetLocalTZA() {
-  const std::time_t current = std::time(NULL);
-  std::tm local;
-  std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
-  local.tm_sec = 0;
-  local.tm_min = 0;
-  local.tm_hour = 0;
-  local.tm_mday = 1;
-  local.tm_mon = 0;
-  local.tm_wday = 0;
-  local.tm_yday = 0;
-  local.tm_isdst = 0;
-  local.tm_year = 109;
-  return (1230768000 - std::mktime(&local)) * 1000;
-}
-
-inline int32_t LocalTZA() {
-  static const int32_t local_tza = GetLocalTZA();
-  return local_tza;
-}
-
-#ifdef WIN32
-inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
-  LARGE_INTEGER i;
-  i.LowPart = ft.dwLowDateTime;
-  i.HighPart = ft.dwHighDateTime;
-  return (i.QuadPart - kEpochTime) / 10 / 1000000;
-}
-
-inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
-  FILETIME ft;
-  ::SystemTimeToFileTime(&st, &ft);
-  return FileTimeToUnixTime(ft);
-}
-
-inline double DaylightSavingTA(double t) {
-  // http://msdn.microsoft.com/en-us/library/ms724421
-  if (std::isnan(t)) {
-    return t;
-  }
-  TIME_ZONE_INFORMATION tzi;
-  const DWORD r = ::GetTimeZoneInformation(&tzi);
-  switch (r) {
-    case TIME_ZONE_ID_STANDARD:
-    case TIME_ZONE_ID_DAYLIGHT: {
-      if (tzi.StandardDate.wMonth == 0 ||
-          tzi.DaylightDate.wMonth == 0) {
-        break;
-      }
-
-      const std::time_t ts = SystemTimeToUnixTime(tzi.StandardDate);
-      const std::time_t td = SystemTimeToUnixTime(tzi.DaylightDate);
-
-      if (td <= t && t <= ts) {
-        return - tzi.DaylightBias * (60 * kMsPerSecond);
-      } else {
-        return 0.0;
-      }
-    }
-    case TIME_ZONE_ID_UNKNOWN: {
-      // Daylight Saving Time not used in this time zone
-      return 0.0;
-    }
-  }
-  return 0.0;
-}
-#else
-inline double DaylightSavingTA(double t) {
-  if (std::isnan(t)) {
-    return t;
-  }
-  const std::time_t current = core::DoubleToInt64(t);
-  if (current == t) {
-    const std::tm* const tmp = std::localtime(&current);  // NOLINT
-    if (tmp->tm_isdst > 0) {
-      return kMsPerHour;
-    }
-  } else {
-    // Daylight Saving Time
-    // from    2 AM the first Sunday in April
-    // through 2 AM the last Sunday in October
-    double target = t - LocalTZA();
-    const int year = YearFromTime(target);
-    const int leap = IsLeapYear(target);
-
-    double start = TimeFromYear(year);
-    double end = start;
-
-    // goto April 1st
-    start += MonthToDaysInYear(3, leap) * kMsPerDay;
-    // goto the first Sunday in April
-    while (WeekDay(start) != 0) {
-      start += kMsPerDay;
-    }
-
-    // goto Octobar 30th
-    end += (MonthToDaysInYear(9, leap) + 30) * kMsPerDay;
-    // goto the last Sunday in Octobar
-    while (WeekDay(end) != 0) {
-      end -= kMsPerDay;
-    }
-
-    target -= 2 * kMsPerHour;
-
-    if (start <= target && target <= end) {
-      return kMsPerHour;
-    }
-  }
-  return 0.0;
-}
-#endif
-
-static const char* kNaNTimeZone = "";
-inline const char* LocalTimeZone(double t) {
-  if (std::isnan(t)) {
-    return kNaNTimeZone;
-  }
-  const std::time_t tv = static_cast<time_t>(std::floor(t/kMsPerSecond));
-  const struct std::tm* const tmp = std::localtime(&tv);  // NOLINT
-  if (NULL == tmp) {
-    return kNaNTimeZone;
-  }
-  return tmp->tm_zone;
-}
-
-inline double LocalTime(double t) {
-  return t + LocalTZA() + DaylightSavingTA(t);
-}
-
-inline double UTC(double t) {
-  const double local = LocalTZA();
-  return t - local - DaylightSavingTA(t - local);
-}
-
-inline int HourFromTime(double t) {
-  const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerHour), kHoursPerDay));
-  if (res < 0) {
-    return res + kHoursPerDay;
-  }
-  return res;
-}
-
-inline int MinFromTime(double t) {
-  const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerMinute), kMinutesPerHour));
-  if (res < 0) {
-    return res + kMinutesPerHour;
-  }
-  return res;
-}
-
-inline int SecFromTime(double t) {
-  const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerSecond), kSecondsPerMinute));
-  if (res < 0) {
-    return res + kSecondsPerMinute;
-  }
-  return res;
-}
-
-inline int MsFromTime(double t) {
-  const int res = core::DoubleToInt32(
-      std::fmod(t, kMsPerSecond));
-  if (res < 0) {
-    return res + kMsPerSecond;
-  }
-  return res;
-}
-
-inline double MakeTime(double hour, double min, double sec, double ms) {
-  if (!std::isfinite(hour) ||
-      !std::isfinite(min) ||
-      !std::isfinite(sec) ||
-      !std::isfinite(ms)) {
-    return JSValData::kNaN;
-  } else {
-    return
-        core::DoubleToInteger(hour) * kMsPerHour +
-        core::DoubleToInteger(min) * kMsPerMinute +
-        core::DoubleToInteger(sec) * kMsPerSecond +
-        core::DoubleToInteger(ms);
-  }
-}
-
-inline double DateToDays(int year, int month, int date) {
-  if (month < 0) {
-    month += 12;
-    --year;
-  }
-  const double yearday = std::floor(DaysFromYear(year));
-  const int monthday = MonthToDaysInYear(month,
-                                         (DaysInYear(year) == 366 ? 1 : 0));
-  assert((year >= 1970 && yearday >= 0) || (year < 1970 && yearday < 0));
-  return yearday + monthday + date - 1;
-}
-
-inline double MakeDay(double year, double month, double date) {
-  if (!std::isfinite(year) ||
-      !std::isfinite(month) ||
-      !std::isfinite(date)) {
-    return JSValData::kNaN;
-  } else {
-    const int y = core::DoubleToInt32(year);
-    const int m = core::DoubleToInt32(month);
-    const int dt = core::DoubleToInt32(date);
-    const int ym = y + m / 12;
-    const int mn = m % 12;
-    return DateToDays(ym, mn, dt);
-  }
-}
-
-inline double MakeDate(double day, double time) {
-  double res = day * kMsPerDay + time;
-  if (std::abs(res) > kMaxTime) {
-    return JSValData::kNaN;
-  }
-  return res;
-}
-
-inline double TimeClip(double time) {
-  if (!std::isfinite(time)) {
-    return JSValData::kNaN;
-  }
-  if (std::abs(time) > kMaxTime) {
-    return JSValData::kNaN;
-  }
-  return core::DoubleToInteger(time);
-}
-
-#ifdef WIN32
-inline double CurrentTime() {
-  FILETIME ft;
-  ::GetSystemTimeAsFileTime(&ft);
-  return FileTimeToUnixTime(ft);
-}
-#else
-inline double CurrentTime() {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-#endif
-
-
-template<typename String>
-inline double DateParse(const String& str) {
-  for (typename String::const_iterator it = str.begin(),
-       last = str.end(); it != last; ++it) {
-  }
-  return JSValData::kNaN;
-}
-
-}  // namespace iv::lv5::runtime::detail
 
 // section 15.9.2.1
 //   Date([year[, month[, date[, hours[, minutes[, seconds[, ms]]]])
@@ -432,7 +29,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     if (args_size == 0) {
       // section 15.9.3.3 new Date()
       return JSDate::New(
-          ctx, detail::TimeClip(detail::CurrentTime() * 1000.0));
+          ctx, date::TimeClip(date::CurrentTime() * 1000.0));
     }
 
     if (args_size == 1) {
@@ -440,11 +37,10 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
       const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, ERROR(error));
       if (v.IsString()) {
         return JSDate::New(ctx,
-                           detail::TimeClip(detail::DateParse(*v.string())));
+                           date::TimeClip(date::Parse(*v.string())));
       } else {
         const double V = v.ToNumber(ctx, ERROR(error));
-        return JSDate::New(
-            ctx, detail::TimeClip(V));
+        return JSDate::New(ctx, date::TimeClip(V));
       }
     }
 
@@ -496,22 +92,22 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
 
     return JSDate::New(
         ctx,
-        detail::TimeClip(
-            detail::UTC(detail::MakeDate(detail::MakeDay(y, m, dt),
-                                         detail::MakeTime(h, min, s, milli)))));
+        date::TimeClip(
+            date::UTC(date::MakeDate(date::MakeDay(y, m, dt),
+                                     date::MakeTime(h, min, s, milli)))));
   } else {
-    const double t = detail::TimeClip(detail::CurrentTime() * 1000.0);
-    const double dst = detail::DaylightSavingTA(t);
-    double offset = detail::LocalTZA() + dst;
+    const double t = date::TimeClip(date::CurrentTime() * 1000.0);
+    const double dst = date::DaylightSavingTA(t);
+    double offset = date::LocalTZA() + dst;
     const double time = t + offset;
     char sign = '+';
     if (offset < 0) {
       sign = '-';
-      offset = -(detail::LocalTZA() + dst);
+      offset = -(date::LocalTZA() + dst);
     }
 
     // calc tz info
-    int tz_min = offset / detail::kMsPerMinute;
+    int tz_min = offset / date::kMsPerMinute;
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
@@ -519,17 +115,17 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     int num = std::snprintf(
         buf.data(), buf.size(),
         "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
-        detail::WeekDayToString(time),
-        detail::MonthToString(time),
-        detail::DateFromTime(time),
-        detail::YearFromTime(time),
-        detail::HourFromTime(time),
-        detail::MinFromTime(time),
-        detail::SecFromTime(time),
+        date::WeekDayToString(time),
+        date::MonthToString(time),
+        date::DateFromTime(time),
+        date::YearFromTime(time),
+        date::HourFromTime(time),
+        date::MinFromTime(time),
+        date::SecFromTime(time),
         sign,
         tz_hour,
         tz_min,
-        detail::LocalTimeZone(time));
+        date::LocalTimeZone(time));
     return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
   }
 }
@@ -540,7 +136,7 @@ inline JSVal DateParse(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Date.parse", args, e);
   const JSVal first = (args.size() == 0) ? JSUndefined : args[0];
   const JSString* target = first.ToString(args.ctx(), ERROR(e));
-  return detail::DateParse(*target);
+  return date::Parse(*target);
 }
 
 // section 15.9.4.3
@@ -605,15 +201,15 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
     }
   }
 
-  return detail::TimeClip(
-      detail::MakeDate(detail::MakeDay(y, m, dt),
-                       detail::MakeTime(h, min, s, milli)));
+  return date::TimeClip(
+      date::MakeDate(date::MakeDay(y, m, dt),
+                     date::MakeTime(h, min, s, milli)));
 }
 
 // section 15.9.4.4 Date.now()
 inline JSVal DateNow(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Date.now", args, error);
-  return std::floor(detail::CurrentTime() * 1000.0);
+  return std::floor(date::CurrentTime() * 1000.0);
 }
 
 // section 15.9.5.2 Date.prototype.toString()
@@ -627,17 +223,17 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double dst = detail::DaylightSavingTA(t);
-      double offset = detail::LocalTZA() + dst;
+      const double dst = date::DaylightSavingTA(t);
+      double offset = date::LocalTZA() + dst;
       const double time = t + offset;
       char sign = '+';
       if (offset < 0) {
         sign = '-';
-        offset = -(detail::LocalTZA() + dst);
+        offset = -(date::LocalTZA() + dst);
       }
 
       // calc tz info
-      int tz_min = offset / detail::kMsPerMinute;
+      int tz_min = offset / date::kMsPerMinute;
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -645,17 +241,17 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
-          detail::WeekDayToString(time),
-          detail::MonthToString(time),
-          detail::DateFromTime(time),
-          detail::YearFromTime(time),
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time),
+          date::WeekDayToString(time),
+          date::MonthToString(time),
+          date::DateFromTime(time),
+          date::YearFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time),
           sign,
           tz_hour,
           tz_min,
-          detail::LocalTimeZone(time));
+          date::LocalTimeZone(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -675,15 +271,15 @@ inline JSVal DateToDateString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double time = detail::LocalTime(t);
+      const double time = date::LocalTime(t);
       std::tr1::array<char, 20> buf;
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
-          detail::WeekDayToString(time),
-          detail::MonthToString(time),
-          detail::DateFromTime(time),
-          detail::YearFromTime(time));
+          date::WeekDayToString(time),
+          date::MonthToString(time),
+          date::DateFromTime(time),
+          date::YearFromTime(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -703,17 +299,17 @@ inline JSVal DateToTimeString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double dst = detail::DaylightSavingTA(t);
-      double offset = detail::LocalTZA() + dst;
+      const double dst = date::DaylightSavingTA(t);
+      double offset = date::LocalTZA() + dst;
       const double time = t + offset;
       char sign = '+';
       if (offset < 0) {
         sign = '-';
-        offset = -(detail::LocalTZA() + dst);
+        offset = -(date::LocalTZA() + dst);
       }
 
       // calc tz info
-      int tz_min = offset / detail::kMsPerMinute;
+      int tz_min = offset / date::kMsPerMinute;
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -721,13 +317,13 @@ inline JSVal DateToTimeString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time),
           sign,
           tz_hour,
           tz_min,
-          detail::LocalTimeZone(time));
+          date::LocalTimeZone(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -747,17 +343,17 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double dst = detail::DaylightSavingTA(t);
-      double offset = detail::LocalTZA() + dst;
+      const double dst = date::DaylightSavingTA(t);
+      double offset = date::LocalTZA() + dst;
       const double time = t + offset;
       char sign = '+';
       if (offset < 0) {
         sign = '-';
-        offset = -(detail::LocalTZA() + dst);
+        offset = -(date::LocalTZA() + dst);
       }
 
       // calc tz info
-      int tz_min = offset / detail::kMsPerMinute;
+      int tz_min = offset / date::kMsPerMinute;
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -765,17 +361,17 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
-          detail::WeekDayToString(time),
-          detail::MonthToString(time),
-          detail::DateFromTime(time),
-          detail::YearFromTime(time),
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time),
+          date::WeekDayToString(time),
+          date::MonthToString(time),
+          date::DateFromTime(time),
+          date::YearFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time),
           sign,
           tz_hour,
           tz_min,
-          detail::LocalTimeZone(time));
+          date::LocalTimeZone(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -795,15 +391,15 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double time = detail::LocalTime(t);
+      const double time = date::LocalTime(t);
       std::tr1::array<char, 20> buf;
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
-          detail::WeekDayToString(time),
-          detail::MonthToString(time),
-          detail::DateFromTime(time),
-          detail::YearFromTime(time));
+          date::WeekDayToString(time),
+          date::MonthToString(time),
+          date::DateFromTime(time),
+          date::YearFromTime(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -823,17 +419,17 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* error) {
     if (std::isnan(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      const double dst = detail::DaylightSavingTA(t);
-      double offset = detail::LocalTZA() + dst;
+      const double dst = date::DaylightSavingTA(t);
+      double offset = date::LocalTZA() + dst;
       const double time = t + offset;
       char sign = '+';
       if (offset < 0) {
         sign = '-';
-        offset = -(detail::LocalTZA() + dst);
+        offset = -(date::LocalTZA() + dst);
       }
 
       // calc tz info
-      int tz_min = offset / detail::kMsPerMinute;
+      int tz_min = offset / date::kMsPerMinute;
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -841,13 +437,13 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time),
           sign,
           tz_hour,
           tz_min,
-          detail::LocalTimeZone(time));
+          date::LocalTimeZone(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -895,7 +491,7 @@ inline JSVal DateGetFullYear(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::YearFromTime(detail::LocalTime(time));
+    return date::YearFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getFullYear is not generic function");
@@ -913,7 +509,7 @@ inline JSVal DateGetUTCFullYear(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::YearFromTime(time);
+    return date::YearFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCFullYear is not generic function");
@@ -931,7 +527,7 @@ inline JSVal DateGetMonth(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MonthFromTime(detail::LocalTime(time));
+    return date::MonthFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getMonth is not generic function");
@@ -949,7 +545,7 @@ inline JSVal DateGetUTCMonth(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MonthFromTime(time);
+    return date::MonthFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCMonth is not generic function");
@@ -967,7 +563,7 @@ inline JSVal DateGetDate(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::DateFromTime(detail::LocalTime(time));
+    return date::DateFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getDate is not generic function");
@@ -985,7 +581,7 @@ inline JSVal DateGetUTCDate(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::DateFromTime(time);
+    return date::DateFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCDate is not generic function");
@@ -1003,7 +599,7 @@ inline JSVal DateGetDay(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::WeekDay(detail::LocalTime(time));
+    return date::WeekDay(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getDay is not generic function");
@@ -1021,7 +617,7 @@ inline JSVal DateGetUTCDay(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::WeekDay(time);
+    return date::WeekDay(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCDay is not generic function");
@@ -1039,7 +635,7 @@ inline JSVal DateGetHours(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::HourFromTime(detail::LocalTime(time));
+    return date::HourFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getHours is not generic function");
@@ -1057,7 +653,7 @@ inline JSVal DateGetUTCHours(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::HourFromTime(time);
+    return date::HourFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCHours is not generic function");
@@ -1075,7 +671,7 @@ inline JSVal DateGetMinutes(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MinFromTime(detail::LocalTime(time));
+    return date::MinFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getMinutes is not generic function");
@@ -1093,7 +689,7 @@ inline JSVal DateGetUTCMinutes(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MinFromTime(time);
+    return date::MinFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCMinutes is not generic function");
@@ -1111,7 +707,7 @@ inline JSVal DateGetSeconds(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::SecFromTime(detail::LocalTime(time));
+    return date::SecFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getSeconds is not generic function");
@@ -1129,7 +725,7 @@ inline JSVal DateGetUTCSeconds(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::SecFromTime(time);
+    return date::SecFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCSeconds is not generic function");
@@ -1147,7 +743,7 @@ inline JSVal DateGetMilliseconds(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MsFromTime(detail::LocalTime(time));
+    return date::MsFromTime(date::LocalTime(time));
   }
   error->Report(Error::Type,
                 "Date.prototype.getMilliseconds is not generic function");
@@ -1165,7 +761,7 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return detail::MsFromTime(time);
+    return date::MsFromTime(time);
   }
   error->Report(Error::Type,
                 "Date.prototype.getUTCMilliseconds is not generic function");
@@ -1183,7 +779,7 @@ inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* error) {
     if (std::isnan(time)) {
       return JSValData::kNaN;
     }
-    return (time - detail::LocalTime(time)) / detail::kMsPerMinute;
+    return (time - date::LocalTime(time)) / date::kMsPerMinute;
   }
   error->Report(Error::Type,
                 "Date.prototype.getTimezoneOffset is not generic function");
@@ -1199,7 +795,7 @@ inline JSVal DateSetTime(const Arguments& args, Error* error) {
     double v;
     if (args.size() > 0) {
       const double val = args[0].ToNumber(args.ctx(), ERROR(error));
-      v = detail::TimeClip(val);
+      v = date::TimeClip(val);
     } else {
       v = JSValData::kNaN;
     }
@@ -1217,7 +813,7 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     double ms;
     if (args.size() > 0) {
@@ -1225,14 +821,14 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* error) {
     } else {
       ms = JSValData::kNaN;
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::Day(t),
-                detail::MakeTime(detail::HourFromTime(t),
-                                 detail::MinFromTime(t),
-                                 detail::SecFromTime(t),
-                                 ms))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::Day(t),
+                date::MakeTime(date::HourFromTime(t),
+                               date::MinFromTime(t),
+                               date::SecFromTime(t),
+                               ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1254,13 +850,13 @@ inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* error) {
     } else {
       ms = JSValData::kNaN;
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             detail::MinFromTime(t),
-                             detail::SecFromTime(t),
-                             ms)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::Day(t),
+            date::MakeTime(date::HourFromTime(t),
+                           date::MinFromTime(t),
+                           date::SecFromTime(t),
+                           ms)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1275,7 +871,7 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     const std::size_t args_size = args.size();
     double sec;
@@ -1285,20 +881,20 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* error) {
       if (args_size > 1) {
         ms = args[1].ToNumber(args.ctx(), ERROR(error));
       } else {
-        ms = detail::MsFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       sec = JSValData::kNaN;
-      ms = detail::MsFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::Day(t),
-                detail::MakeTime(detail::HourFromTime(t),
-                                 detail::MinFromTime(t),
-                                 sec,
-                                 ms))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::Day(t),
+                date::MakeTime(date::HourFromTime(t),
+                               date::MinFromTime(t),
+                               sec,
+                               ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1322,19 +918,19 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* error) {
       if (args_size > 1) {
         ms = args[1].ToNumber(args.ctx(), ERROR(error));
       } else {
-        ms = detail::MsFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       sec = JSValData::kNaN;
-      ms = detail::MsFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             detail::MinFromTime(t),
-                             sec,
-                             ms)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::Day(t),
+            date::MakeTime(date::HourFromTime(t),
+                           date::MinFromTime(t),
+                           sec,
+                           ms)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1349,7 +945,7 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     const std::size_t args_size = args.size();
     double m;
@@ -1362,25 +958,25 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* error) {
         if (args_size > 2) {
           ms = args[2].ToNumber(args.ctx(), ERROR(error));
         } else {
-          ms = detail::MsFromTime(t);
+          ms = date::MsFromTime(t);
         }
       } else {
-        sec = detail::SecFromTime(t);
-        ms = detail::MsFromTime(t);
+        sec = date::SecFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       m = JSValData::kNaN;
-      sec = detail::SecFromTime(t);
-      ms = detail::MsFromTime(t);
+      sec = date::SecFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::Day(t),
-                detail::MakeTime(detail::HourFromTime(t),
-                                 m,
-                                 sec,
-                                 ms))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::Day(t),
+                date::MakeTime(date::HourFromTime(t),
+                               m,
+                               sec,
+                               ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1407,24 +1003,24 @@ inline JSVal DateSetUTCMinutes(const Arguments& args, Error* error) {
         if (args_size > 2) {
           ms = args[2].ToNumber(args.ctx(), ERROR(error));
         } else {
-          ms = detail::MsFromTime(t);
+          ms = date::MsFromTime(t);
         }
       } else {
-        sec = detail::SecFromTime(t);
-        ms = detail::MsFromTime(t);
+        sec = date::SecFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       m = JSValData::kNaN;
-      sec = detail::SecFromTime(t);
-      ms = detail::MsFromTime(t);
+      sec = date::SecFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(detail::HourFromTime(t),
-                             m,
-                             sec,
-                             ms)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::Day(t),
+            date::MakeTime(date::HourFromTime(t),
+                           m,
+                           sec,
+                           ms)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1439,7 +1035,7 @@ inline JSVal DateSetHours(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     const std::size_t args_size = args.size();
     double h;
@@ -1455,28 +1051,28 @@ inline JSVal DateSetHours(const Arguments& args, Error* error) {
           if (args_size > 3) {
             ms = args[3].ToNumber(args.ctx(), ERROR(error));
           } else {
-            ms = detail::MsFromTime(t);
+            ms = date::MsFromTime(t);
           }
         } else {
-          sec = detail::MsFromTime(t);
-          ms = detail::MsFromTime(t);
+          sec = date::MsFromTime(t);
+          ms = date::MsFromTime(t);
         }
       } else {
-        m = detail::MinFromTime(t);
-        sec = detail::SecFromTime(t);
-        ms = detail::MsFromTime(t);
+        m = date::MinFromTime(t);
+        sec = date::SecFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       h = JSValData::kNaN;
-      m = detail::MinFromTime(t);
-      sec = detail::SecFromTime(t);
-      ms = detail::MsFromTime(t);
+      m = date::MinFromTime(t);
+      sec = date::SecFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::Day(t),
-                detail::MakeTime(h, m, sec, ms))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::Day(t),
+                date::MakeTime(h, m, sec, ms))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1506,27 +1102,27 @@ inline JSVal DateSetUTCHours(const Arguments& args, Error* error) {
           if (args_size > 3) {
             ms = args[3].ToNumber(args.ctx(), ERROR(error));
           } else {
-            ms = detail::MsFromTime(t);
+            ms = date::MsFromTime(t);
           }
         } else {
-          sec = detail::MsFromTime(t);
-          ms = detail::MsFromTime(t);
+          sec = date::MsFromTime(t);
+          ms = date::MsFromTime(t);
         }
       } else {
-        m = detail::MinFromTime(t);
-        sec = detail::SecFromTime(t);
-        ms = detail::MsFromTime(t);
+        m = date::MinFromTime(t);
+        sec = date::SecFromTime(t);
+        ms = date::MsFromTime(t);
       }
     } else {
       h = JSValData::kNaN;
-      m = detail::MinFromTime(t);
-      sec = detail::SecFromTime(t);
-      ms = detail::MsFromTime(t);
+      m = date::MinFromTime(t);
+      sec = date::SecFromTime(t);
+      ms = date::MsFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::Day(t),
-            detail::MakeTime(h, m, sec, ms)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::Day(t),
+            date::MakeTime(h, m, sec, ms)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1541,7 +1137,7 @@ inline JSVal DateSetDate(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     const std::size_t args_size = args.size();
     double dt;
@@ -1550,13 +1146,13 @@ inline JSVal DateSetDate(const Arguments& args, Error* error) {
     } else {
       dt = JSValData::kNaN;
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::MakeDay(detail::YearFromTime(t),
-                                detail::MonthFromTime(t),
-                                dt),
-                detail::TimeWithinDay(t))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::MakeDay(date::YearFromTime(t),
+                              date::MonthFromTime(t),
+                              dt),
+                date::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1579,12 +1175,12 @@ inline JSVal DateSetUTCDate(const Arguments& args, Error* error) {
     } else {
       dt = JSValData::kNaN;
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(detail::YearFromTime(t),
-                            detail::MonthFromTime(t),
-                            dt),
-            detail::TimeWithinDay(t)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::MakeDay(date::YearFromTime(t),
+                          date::MonthFromTime(t),
+                          dt),
+            date::TimeWithinDay(t)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1599,7 +1195,7 @@ inline JSVal DateSetMonth(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    const double t = detail::LocalTime(
+    const double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     const std::size_t args_size = args.size();
     double m;
@@ -1609,19 +1205,19 @@ inline JSVal DateSetMonth(const Arguments& args, Error* error) {
       if (args_size > 1) {
         dt = args[1].ToNumber(args.ctx(), ERROR(error));
       } else {
-        dt = detail::DateFromTime(t);
+        dt = date::DateFromTime(t);
       }
     } else {
       m = JSValData::kNaN;
-      dt = detail::DateFromTime(t);
+      dt = date::DateFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::MakeDay(detail::YearFromTime(t),
-                                m,
-                                dt),
-                detail::TimeWithinDay(t))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::MakeDay(date::YearFromTime(t),
+                              m,
+                              dt),
+                date::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1645,18 +1241,18 @@ inline JSVal DateSetUTCMonth(const Arguments& args, Error* error) {
       if (args_size > 1) {
         dt = args[1].ToNumber(args.ctx(), ERROR(error));
       } else {
-        dt = detail::DateFromTime(t);
+        dt = date::DateFromTime(t);
       }
     } else {
       m = JSValData::kNaN;
-      dt = detail::DateFromTime(t);
+      dt = date::DateFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(detail::YearFromTime(t),
-                            m,
-                            dt),
-            detail::TimeWithinDay(t)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::MakeDay(date::YearFromTime(t),
+                          m,
+                          dt),
+            date::TimeWithinDay(t)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1671,7 +1267,7 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   const Class& cls = args.ctx()->Cls("Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
-    double t = detail::LocalTime(
+    double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
     if (std::isnan(t)) {
       t = +0.0;
@@ -1687,24 +1283,22 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
         if (args_size > 2) {
           dt = args[2].ToNumber(args.ctx(), ERROR(error));
         } else {
-          dt = detail::DateFromTime(t);
+          dt = date::DateFromTime(t);
         }
       } else {
-        m = detail::MonthFromTime(t);
-        dt = detail::DateFromTime(t);
+        m = date::MonthFromTime(t);
+        dt = date::DateFromTime(t);
       }
     } else {
       y = JSValData::kNaN;
-      m = detail::MonthFromTime(t);
-      dt = detail::DateFromTime(t);
+      m = date::MonthFromTime(t);
+      dt = date::DateFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::UTC(
-            detail::MakeDate(
-                detail::MakeDay(y,
-                                m,
-                                dt),
-                detail::TimeWithinDay(t))));
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::MakeDay(y, m, dt),
+                date::TimeWithinDay(t))));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1734,23 +1328,21 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
         if (args_size > 2) {
           dt = args[2].ToNumber(args.ctx(), ERROR(error));
         } else {
-          dt = detail::DateFromTime(t);
+          dt = date::DateFromTime(t);
         }
       } else {
-        m = detail::MonthFromTime(t);
-        dt = detail::DateFromTime(t);
+        m = date::MonthFromTime(t);
+        dt = date::DateFromTime(t);
       }
     } else {
       y = JSValData::kNaN;
-      m = detail::MonthFromTime(t);
-      dt = detail::DateFromTime(t);
+      m = date::MonthFromTime(t);
+      dt = date::DateFromTime(t);
     }
-    const double v = detail::TimeClip(
-        detail::MakeDate(
-            detail::MakeDay(y,
-                            m,
-                            dt),
-            detail::TimeWithinDay(t)));
+    const double v = date::TimeClip(
+        date::MakeDate(
+            date::MakeDay(y, m, dt),
+            date::TimeWithinDay(t)));
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
   }
@@ -1774,13 +1366,13 @@ inline JSVal DateToUTCString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
-          detail::WeekDayToString(time),
-          detail::DateFromTime(time),
-          detail::MonthToString(time),
-          detail::YearFromTime(time),
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time));
+          date::WeekDayToString(time),
+          date::DateFromTime(time),
+          date::MonthToString(time),
+          date::YearFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -1804,13 +1396,13 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
       int num = std::snprintf(
           buf.data(), buf.size(),
           "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-          detail::YearFromTime(time),
-          detail::MonthFromTime(time)+1,
-          detail::DateFromTime(time),
-          detail::HourFromTime(time),
-          detail::MinFromTime(time),
-          detail::SecFromTime(time),
-          detail::MsFromTime(time));
+          date::YearFromTime(time),
+          date::MonthFromTime(time)+1,
+          date::DateFromTime(time),
+          date::HourFromTime(time),
+          date::MinFromTime(time),
+          date::SecFromTime(time),
+          date::MsFromTime(time));
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
