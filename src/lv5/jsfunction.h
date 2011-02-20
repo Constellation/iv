@@ -212,7 +212,7 @@ class JSInlinedFunction : public JSFunction {
   JSInlinedFunction(Context* ctx) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
-        DataDescriptor(n,
+        DataDescriptor(static_cast<double>(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
   }

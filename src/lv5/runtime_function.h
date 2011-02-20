@@ -89,7 +89,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (func->AsNativeFunction() || func->AsBoundFunction()) {
+    if (!func->AsCodeFunction()) {
       return JSString::NewAsciiString(args.ctx(),
                                       "function native() { [native code] }");
     } else {

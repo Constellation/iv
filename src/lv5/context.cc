@@ -1657,8 +1657,8 @@ void Context::Initialize() {
     // section 15.9 Date
     JSObject* const proto = JSDate::NewPlain(this, JSValData::kNaN);
     // section 15.9.2.1 The Date Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::DateConstructor, 7);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::DateConstructor, 7>::New(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -1695,40 +1695,44 @@ void Context::Initialize() {
     // section 15.9.4.2 Date.parse(string)
     constructor->DefineOwnProperty(
         this, Intern("parse"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateParse, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateParse, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.4.3 Date.UTC()
     constructor->DefineOwnProperty(
         this, Intern("UTC"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateUTC, 7),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateUTC, 7>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.4.4 Date.now()
     constructor->DefineOwnProperty(
         this, Intern("now"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateNow, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateNow, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.2 Date.prototype.toString()
     proto->DefineOwnProperty(
         this, toString_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateToString, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateToString, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.3 Date.prototype.toDateString()
     proto->DefineOwnProperty(
         this, Intern("toDateString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToDateString, 0),
+            JSInlinedFunction<&runtime::DateToDateString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1737,7 +1741,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toTimeString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToTimeString, 0),
+            JSInlinedFunction<&runtime::DateToTimeString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1746,7 +1750,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToLocaleString, 0),
+            JSInlinedFunction<&runtime::DateToLocaleString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1755,7 +1759,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleDateString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToLocaleDateString, 0),
+            JSInlinedFunction<&runtime::DateToLocaleDateString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1764,7 +1768,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleTimeString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToLocaleTimeString, 0),
+            JSInlinedFunction<&runtime::DateToLocaleTimeString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1772,24 +1776,26 @@ void Context::Initialize() {
     // section 15.9.5.8 Date.prototype.valueOf()
     proto->DefineOwnProperty(
         this, Intern("valueOf"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateValueOf, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateValueOf, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.9 Date.prototype.getTime()
     proto->DefineOwnProperty(
         this, Intern("getTime"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetTime, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetTime, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.10 Date.prototype.getFullYear()
     proto->DefineOwnProperty(
         this, Intern("getFullYear"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetFullYear, 0),
+            JSInlinedFunction<&runtime::DateGetFullYear, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1798,7 +1804,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCFullYear"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCFullYear, 0),
+            JSInlinedFunction<&runtime::DateGetUTCFullYear, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1807,7 +1813,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getMonth"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetMonth, 0),
+            JSInlinedFunction<&runtime::DateGetMonth, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1816,7 +1822,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCMonth"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCMonth, 0),
+            JSInlinedFunction<&runtime::DateGetUTCMonth, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1824,40 +1830,44 @@ void Context::Initialize() {
     // section 15.9.5.14 Date.prototype.getDate()
     proto->DefineOwnProperty(
         this, Intern("getDate"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetDate, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetDate, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.15 Date.prototype.getUTCDate()
     proto->DefineOwnProperty(
         this, Intern("getUTCDate"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCDate, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetUTCDate, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.16 Date.prototype.getDay()
     proto->DefineOwnProperty(
         this, Intern("getDay"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetDay, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetDay, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.17 Date.prototype.getUTCDay()
     proto->DefineOwnProperty(
         this, Intern("getUTCDay"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateGetUTCDay, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetUTCDay, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.18 Date.prototype.getHours()
     proto->DefineOwnProperty(
         this, Intern("getHours"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetHours, 0),
+            JSInlinedFunction<&runtime::DateGetHours, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1866,7 +1876,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCHours"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCHours, 0),
+            JSInlinedFunction<&runtime::DateGetUTCHours, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1875,7 +1885,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getMinutes"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetMinutes, 0),
+            JSInlinedFunction<&runtime::DateGetMinutes, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1884,7 +1894,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCMinutes"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCMinutes, 0),
+            JSInlinedFunction<&runtime::DateGetUTCMinutes, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1893,7 +1903,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getSeconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetSeconds, 0),
+            JSInlinedFunction<&runtime::DateGetSeconds, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1902,7 +1912,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCSeconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCSeconds, 0),
+            JSInlinedFunction<&runtime::DateGetUTCSeconds, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1911,7 +1921,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getMilliseconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetMilliseconds, 0),
+            JSInlinedFunction<&runtime::DateGetMilliseconds, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1920,7 +1930,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getUTCMilliseconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetUTCMilliseconds, 0),
+            JSInlinedFunction<&runtime::DateGetUTCMilliseconds, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1929,7 +1939,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("getTimezoneOffset"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateGetTimezoneOffset, 0),
+            JSInlinedFunction<&runtime::DateGetTimezoneOffset, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1937,16 +1947,17 @@ void Context::Initialize() {
     // section 15.9.5.27 Date.prototype.setTime(time)
     proto->DefineOwnProperty(
         this, Intern("setTime"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetTime, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateSetTime, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.28 Date.prototype.setMilliseconds(ms)
     proto->DefineOwnProperty(
         this, Intern("setMilliseconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetMilliseconds, 1),
+            JSInlinedFunction<&runtime::DateSetMilliseconds, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1955,7 +1966,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCMilliseconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCMilliseconds, 1),
+            JSInlinedFunction<&runtime::DateSetUTCMilliseconds, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1964,7 +1975,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setSeconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetSeconds, 2),
+            JSInlinedFunction<&runtime::DateSetSeconds, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1973,7 +1984,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCSeconds"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCSeconds, 2),
+            JSInlinedFunction<&runtime::DateSetUTCSeconds, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1982,7 +1993,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setMinutes"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetMinutes, 3),
+            JSInlinedFunction<&runtime::DateSetMinutes, 3>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1991,7 +2002,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCMinutes"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCMinutes, 3),
+            JSInlinedFunction<&runtime::DateSetUTCMinutes, 3>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2000,7 +2011,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setHours"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetHours, 4),
+            JSInlinedFunction<&runtime::DateSetHours, 4>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2009,7 +2020,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCHours"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCHours, 4),
+            JSInlinedFunction<&runtime::DateSetUTCHours, 4>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2017,24 +2028,26 @@ void Context::Initialize() {
     // section 15.9.5.36 Date.prototype.setDate(date)
     proto->DefineOwnProperty(
         this, Intern("setDate"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetDate, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateSetDate, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.37 Date.prototype.setUTCDate(date)
     proto->DefineOwnProperty(
         this, Intern("setUTCDate"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::DateSetUTCDate, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateSetUTCDate, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.9.5.38 Date.prototype.setMonth(month[, date])
     proto->DefineOwnProperty(
         this, Intern("setMonth"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetMonth, 2),
+            JSInlinedFunction<&runtime::DateSetMonth, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2043,7 +2056,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCMonth"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCMonth, 2),
+            JSInlinedFunction<&runtime::DateSetUTCMonth, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2052,7 +2065,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setFullYear"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetFullYear, 3),
+            JSInlinedFunction<&runtime::DateSetFullYear, 3>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2061,7 +2074,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setUTCFullYear"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateSetUTCFullYear, 3),
+            JSInlinedFunction<&runtime::DateSetUTCFullYear, 3>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2070,7 +2083,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toUTCString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToUTCString, 0),
+            JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2079,7 +2092,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toISOString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToISOString, 0),
+            JSInlinedFunction<&runtime::DateToISOString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2088,7 +2101,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toJSON"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::DateToJSON, 1),
+            JSInlinedFunction<&runtime::DateToJSON, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2098,8 +2111,8 @@ void Context::Initialize() {
     // RegExp
     JSObject* const proto = JSRegExp::NewPlain(this);
     // section 15.10.4 The RegExp Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::RegExpConstructor, 2);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -2135,7 +2148,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("exec"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::RegExpExec, 1),
+            JSInlinedFunction<&runtime::RegExpExec, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2144,7 +2157,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("test"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::RegExpTest, 1),
+            JSInlinedFunction<&runtime::RegExpTest, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2153,7 +2166,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::RegExpToString, 0),
+            JSInlinedFunction<&runtime::RegExpToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2175,17 +2188,19 @@ void Context::Initialize() {
     // section 15.12.2 parse(text[, reviver])
     json->DefineOwnProperty(
         this, Intern("parse"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONParse, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::JSONParse, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.12.3 stringify(value[, replacer[, space]])
     json->DefineOwnProperty(
         this, Intern("stringify"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::JSONStringify, 3),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::JSONStringify, 3>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
 
@@ -2211,45 +2226,49 @@ void Context::Initialize() {
     // section 15.1.2.1 eval(x)
     global_obj_.DefineOwnProperty(
         this, Intern("eval"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalEval, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalEval, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.3 parseIng(string, radix)
     global_obj_.DefineOwnProperty(
         this, Intern("parseInt"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalParseInt, 2),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalParseInt, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.3 parseFloat(string)
     global_obj_.DefineOwnProperty(
         this, Intern("parseFloat"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::GlobalParseFloat, 1),
+            JSInlinedFunction<&runtime::GlobalParseFloat, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.4 isNaN(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isNaN"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalIsNaN, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalIsNaN, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     // section 15.1.2.5 isFinite(number)
     global_obj_.DefineOwnProperty(
         this, Intern("isFinite"),
-        DataDescriptor(JSNativeFunction::New(this, &runtime::GlobalIsFinite, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalIsFinite, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // 15.1.3.1 decodeURI(encodedURI)
     global_obj_.DefineOwnProperty(
         this, Intern("decodeURI"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::GlobalDecodeURI, 1),
+            JSInlinedFunction<&runtime::GlobalDecodeURI, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2258,7 +2277,7 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("decodeURIComponent"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::GlobalDecodeURIComponent, 1),
+            JSInlinedFunction<&runtime::GlobalDecodeURIComponent, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2267,7 +2286,7 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("encodeURI"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::GlobalEncodeURI, 1),
+            JSInlinedFunction<&runtime::GlobalEncodeURI, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2276,7 +2295,7 @@ void Context::Initialize() {
     global_obj_.DefineOwnProperty(
         this, Intern("encodeURIComponent"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::GlobalEncodeURIComponent, 1),
+            JSInlinedFunction<&runtime::GlobalEncodeURIComponent, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
