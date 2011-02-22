@@ -23,9 +23,6 @@ class JSArguments : public JSObject {
     : env_(env),
       map_() { }
 
-  virtual ~JSArguments() {
-    std::cout << "JS ARGUMENTS" << std::endl;
-  }
   static JSArguments* New(Context* ctx,
                           JSCodeFunction* code,
                           const Identifiers& names,
