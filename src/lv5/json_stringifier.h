@@ -291,13 +291,13 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
       JSObject* const target = value.object();
       const JSVal method = target->Get(ctx_, ctx_->Intern("toJSON"), ERROR(e));
       if (method.IsCallable()) {
-        Arguments args_list(ctx_, 1);
+        Arguments args_list(ctx_, 1, ERROR(e));
         args_list[0] = ctx_->ToString(key);
         value = method.object()->AsCallable()->Call(args_list, target, ERROR(e));
       }
     }
     if (replacer_) {
-      Arguments args_list(ctx_, 2);
+      Arguments args_list(ctx_, 2, ERROR(e));
       args_list[0] = ctx_->ToString(key);
       args_list[1] = value;
       value = replacer_->Call(args_list, holder, ERROR(e));

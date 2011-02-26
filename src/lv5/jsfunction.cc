@@ -196,25 +196,25 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
 }
 
 JSVal JSBoundFunction::Call(Arguments& args,
-                            const JSVal& this_binding, Error* error) {
+                            const JSVal& this_binding, Error* e) {
   using std::copy;
-  Arguments args_list(args.ctx(), args.size() + arguments_.size());
+  Arguments args_list(args.ctx(), args.size() + arguments_.size(), ERROR(e));
   copy(args.begin(), args.end(),
        copy(arguments_.begin(), arguments_.end(), args_list.begin()));
-  return target_->Call(args_list, this_binding_, error);
+  return target_->Call(args_list, this_binding_, e);
 }
 
-JSVal JSBoundFunction::Construct(Arguments& args, Error* error) {
+JSVal JSBoundFunction::Construct(Arguments& args, Error* e) {
   using std::copy;
-  Arguments args_list(args.ctx(), args.size() + arguments_.size());
+  Arguments args_list(args.ctx(), args.size() + arguments_.size(), ERROR(e));
   copy(args.begin(), args.end(),
        copy(arguments_.begin(), arguments_.end(), args_list.begin()));
-  return target_->Construct(args_list, error);
+  return target_->Construct(args_list, e);
 }
 
 bool JSBoundFunction::HasInstance(Context* ctx,
-                                  const JSVal& val, Error* error) {
-  return target_->HasInstance(ctx, val, error);
+                                  const JSVal& val, Error* e) {
+  return target_->HasInstance(ctx, val, e);
 }
 
 JSBoundFunction* JSBoundFunction::New(Context* ctx,

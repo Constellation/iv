@@ -17,7 +17,7 @@ namespace runtime {
 // section 15.4.1.1 Array([item0 [, item1 [, ...]]])
 // section 15.4.2.1 new Array([item0 [, item1 [, ...]]])
 // section 15.4.2.2 new Array(len)
-inline JSVal ArrayConstructor(const Arguments& args, Error* error) {
+inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
   const std::size_t args_size = args.size();
   Context* ctx = args.ctx();
   if (args_size == 0) {
@@ -26,13 +26,13 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* error) {
   if (args_size == 1) {
     const JSVal& first = args[0];
     if (first.IsNumber()) {
-      const double val = first.ToNumber(ctx, ERROR(error));
+      const double val = first.ToNumber(ctx, ERROR(e));
       const uint32_t len = core::DoubleToUInt32(val);
       if (val == len) {
         return JSArray::New(ctx, len);
       } else {
-        error->Report(Error::Range,
-                      "len of `new Array(len)` is number, but out of range");
+        e->Report(Error::Range,
+                  "len of `new Array(len)` is number, but out of range");
         return JSUndefined;
       }
     } else {
@@ -42,7 +42,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* error) {
           DataDescriptor(first, PropertyDescriptor::WRITABLE |
                                 PropertyDescriptor::ENUMERABLE |
                                 PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
       return ary;
     }
   } else {
@@ -55,14 +55,14 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* error) {
           DataDescriptor(*it, PropertyDescriptor::WRITABLE |
                               PropertyDescriptor::ENUMERABLE |
                               PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
     }
     return ary;
   }
 }
 
 // section 15.4.3.2 Array.isArray(arg)
-inline JSVal ArrayIsArray(const Arguments& args, Error* error) {
+inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
   if (args.size() == 0) {
     return JSFalse;
   }
@@ -80,24 +80,24 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
   const JSVal join = obj->Get(args.ctx(),
                               args.ctx()->Intern("join"), ERROR(e));
   if (join.IsCallable()) {
-    Arguments a(args.ctx());
+    Arguments a(args.ctx(), ERROR(e));
     return join.object()->AsCallable()->Call(a, obj, e);
   } else {
-    Arguments a(args.ctx());
+    Arguments a(args.ctx(), ERROR(e));
     a.set_this_binding(obj);
     return ObjectToString(a, e);
   }
 }
 
 // section 15.4.4.3 Array.prototype.toLocaleString()
-inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, error);
+inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const array = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const array = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = array->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
@@ -106,21 +106,21 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
   // implementation depended locale based separator
   const char separator = ',';
   const Symbol toLocaleString = ctx->Intern("toLocaleString");
-  Arguments args_list(ctx);
+  Arguments args_list(ctx, ERROR(e));
   StringBuilder builder;
   {
-    const JSVal first = array->GetWithIndex(ctx, 0, ERROR(error));
+    const JSVal first = array->GetWithIndex(ctx, 0, ERROR(e));
     if (!first.IsUndefined() && !first.IsNull()) {
-      JSObject* const elm_obj = first.ToObject(ctx, ERROR(error));
-      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(error));
+      JSObject* const elm_obj = first.ToObject(ctx, ERROR(e));
+      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(e));
       if (!method.IsCallable()) {
-        error->Report(Error::Type, "toLocaleString is not function");
+        e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
       const JSVal R = method.object()->AsCallable()->Call(args_list,
                                                           elm_obj,
-                                                          ERROR(error));
-      const JSString* const str = R.ToString(ctx, ERROR(error));
+                                                          ERROR(e));
+      const JSString* const str = R.ToString(ctx, ERROR(e));
       builder.Append(*str);
     }
   }
@@ -131,18 +131,18 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
     const JSVal element = array->GetWithIndex(
         ctx,
         k,
-        ERROR(error));
+        ERROR(e));
     if (!element.IsUndefined() && !element.IsNull()) {
-      JSObject* const elm_obj = element.ToObject(ctx, ERROR(error));
-      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(error));
+      JSObject* const elm_obj = element.ToObject(ctx, ERROR(e));
+      const JSVal method = elm_obj->Get(ctx, toLocaleString, ERROR(e));
       if (!method.IsCallable()) {
-        error->Report(Error::Type, "toLocaleString is not function");
+        e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
       const JSVal R = method.object()->AsCallable()->Call(args_list,
                                                           elm_obj,
-                                                          ERROR(error));
-      const JSString* const str = R.ToString(ctx, ERROR(error));
+                                                          ERROR(e));
+      const JSString* const str = R.ToString(ctx, ERROR(e));
       builder.Append(*str);
     }
     ++k;
@@ -151,10 +151,10 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
-inline JSVal ArrayConcat(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.concat", args, error);
+inline JSVal ArrayConcat(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.concat", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
 
   uint32_t n = 0;
@@ -163,12 +163,12 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
     uint32_t k = 0;
     const JSVal length = elm->Get(
         ctx,
-        ctx->length_symbol(), ERROR(error));
+        ctx->length_symbol(), ERROR(e));
     assert(length.IsNumber());  // Array always number
     const uint32_t len = core::DoubleToUInt32(length.number());
     while (k < len) {
       if (elm->HasPropertyWithIndex(ctx, k)) {
-        const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(error));
+        const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
         ary->DefineOwnPropertyWithIndex(
             ctx,
             n,
@@ -176,7 +176,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
-            false, ERROR(error));
+            false, ERROR(e));
       }
       ++n;
       ++k;
@@ -189,7 +189,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
                        PropertyDescriptor::CONFIGURABLE),
-        false, ERROR(error));
+        false, ERROR(e));
     ++n;
   }
 
@@ -200,12 +200,12 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
       uint32_t k = 0;
       const JSVal length = elm->Get(
           ctx,
-          ctx->length_symbol(), ERROR(error));
+          ctx->length_symbol(), ERROR(e));
       assert(length.IsNumber());  // Array always number
       const uint32_t len = core::DoubleToUInt32(length.number());
       while (k < len) {
         if (elm->HasPropertyWithIndex(ctx, k)) {
-          const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(error));
+          const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
           ary->DefineOwnPropertyWithIndex(
               ctx,
               n,
@@ -213,7 +213,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, ERROR(error));
+              false, ERROR(e));
         }
         ++n;
         ++k;
@@ -226,28 +226,28 @@ inline JSVal ArrayConcat(const Arguments& args, Error* error) {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
       ++n;
     }
   }
   ary->Put(ctx, ctx->length_symbol(),
-           n, false, ERROR(error));
+           n, false, ERROR(e));
   return ary;
 }
 
 // section 15.4.4.5 Array.prototype.join(separator)
-inline JSVal ArrayJoin(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.join", args, error);
+inline JSVal ArrayJoin(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.join", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   JSString* separator;
   if (args.size() > 0 && !args[0].IsUndefined()) {
-    separator = args[0].ToString(ctx, ERROR(error));
+    separator = args[0].ToString(ctx, ERROR(e));
   } else {
     separator = JSString::NewAsciiString(ctx, ",");
   }
@@ -256,9 +256,9 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
   }
   StringBuilder builder;
   {
-    const JSVal element0 = obj->GetWithIndex(ctx, 0, ERROR(error));
+    const JSVal element0 = obj->GetWithIndex(ctx, 0, ERROR(e));
     if (!element0.IsUndefined() && !element0.IsNull()) {
-      const JSString* const str = element0.ToString(ctx, ERROR(error));
+      const JSString* const str = element0.ToString(ctx, ERROR(e));
       builder.Append(*str);
     }
   }
@@ -268,9 +268,9 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
     const JSVal element = obj->GetWithIndex(
         ctx,
         k,
-        ERROR(error));
+        ERROR(e));
     if (!element.IsUndefined() && !element.IsNull()) {
-      const JSString* const str = element.ToString(ctx, ERROR(error));
+      const JSString* const str = element.ToString(ctx, ERROR(e));
       builder.Append(*str);
     }
     ++k;
@@ -279,37 +279,37 @@ inline JSVal ArrayJoin(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.6 Array.prototype.pop()
-inline JSVal ArrayPop(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.pop", args, error);
+inline JSVal ArrayPop(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.pop", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
-    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(error));
+    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
-    const JSVal element = obj->GetWithIndex(ctx, index, ERROR(error));
-    obj->DeleteWithIndex(ctx, index, true, ERROR(error));
+    const JSVal element = obj->GetWithIndex(ctx, index, ERROR(e));
+    obj->DeleteWithIndex(ctx, index, true, ERROR(e));
     obj->Put(ctx, ctx->length_symbol(),
-             index, true, ERROR(error));
+             index, true, ERROR(e));
     return element;
   }
 }
 
 // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
-inline JSVal ArrayPush(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.push", args, error);
+inline JSVal ArrayPush(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   uint32_t n = core::DoubleToUInt32(val);
   bool index_over = false;
   Arguments::const_iterator it = args.begin();
@@ -319,7 +319,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* error) {
         ctx,
         n,
         *it,
-        true, ERROR(error));
+        true, ERROR(e));
     if (n == UINT32_MAX) {
       index_over = true;
       break;
@@ -332,26 +332,26 @@ inline JSVal ArrayPush(const Arguments& args, Error* error) {
           ctx,
           ctx->InternDouble(len),
           *it,
-          true, ERROR(error));
+          true, ERROR(e));
     }
   }
   obj->Put(
       ctx,
       ctx->length_symbol(),
       len,
-      true, ERROR(error));
+      true, ERROR(e));
   return len;
 }
 
 // section 15.4.4.8 Array.prototype.reverse()
-inline JSVal ArrayReverse(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.reverse", args, error);
+inline JSVal ArrayReverse(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.reverse", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t middle = len >> 1;
   for (uint32_t lower = 0; lower != middle; ++lower) {
@@ -359,22 +359,22 @@ inline JSVal ArrayReverse(const Arguments& args, Error* error) {
     const JSVal lower_value = obj->GetWithIndex(
         ctx,
         lower,
-        ERROR(error));
+        ERROR(e));
     const JSVal upper_value = obj->GetWithIndex(
         ctx,
         upper,
-        ERROR(error));
+        ERROR(e));
     const bool lower_exists = obj->HasPropertyWithIndex(ctx, lower);
     const bool upper_exists = obj->HasPropertyWithIndex(ctx, upper);
     if (lower_exists && upper_exists) {
-      obj->PutWithIndex(ctx, lower, upper_value, true, ERROR(error));
-      obj->PutWithIndex(ctx, upper, lower_value, true, ERROR(error));
+      obj->PutWithIndex(ctx, lower, upper_value, true, ERROR(e));
+      obj->PutWithIndex(ctx, upper, lower_value, true, ERROR(e));
     } else if (!lower_exists && upper_exists) {
-      obj->PutWithIndex(ctx, lower, upper_value, true, ERROR(error));
-      obj->DeleteWithIndex(ctx, upper, true, ERROR(error));
+      obj->PutWithIndex(ctx, lower, upper_value, true, ERROR(e));
+      obj->DeleteWithIndex(ctx, upper, true, ERROR(e));
     } else if (lower_exists && !upper_exists) {
-      obj->DeleteWithIndex(ctx, lower, true, ERROR(error));
-      obj->PutWithIndex(ctx, upper, lower_value, true, ERROR(error));
+      obj->DeleteWithIndex(ctx, lower, true, ERROR(e));
+      obj->PutWithIndex(ctx, upper, lower_value, true, ERROR(e));
     } else {
       // no action is required
     }
@@ -383,50 +383,50 @@ inline JSVal ArrayReverse(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.9 Array.prototype.shift()
-inline JSVal ArrayShift(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.shift", args, error);
+inline JSVal ArrayShift(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.shift", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
-    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(error));
+    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(e));
     return JSUndefined;
   }
-  const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(error));
+  const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(e));
   uint32_t to = 0;
   uint32_t from = 0;
   for (uint32_t k = 1; k < len; ++k, to = from) {
     from = k;
     if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(error));
-      obj->PutWithIndex(ctx, to, from_value, true, ERROR(error));
+      const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(e));
+      obj->PutWithIndex(ctx, to, from_value, true, ERROR(e));
     } else {
-      obj->DeleteWithIndex(ctx, to, true, ERROR(error));
+      obj->DeleteWithIndex(ctx, to, true, ERROR(e));
     }
   }
-  obj->DeleteWithIndex(ctx, from, true, ERROR(error));
-  obj->Put(ctx, ctx->length_symbol(), len - 1, true, ERROR(error));
+  obj->DeleteWithIndex(ctx, from, true, ERROR(e));
+  obj->Put(ctx, ctx->length_symbol(), len - 1, true, ERROR(e));
   return first;
 }
 
 // section 15.4.4.10 Array.prototype.slice(start, end)
-inline JSVal ArraySlice(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.slice", args, error);
+inline JSVal ArraySlice(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.slice", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   uint32_t k;
   if (args.size() > 0) {
-    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    double relative_start = args[0].ToNumber(ctx, ERROR(e));
     relative_start = core::DoubleToInteger(relative_start);
     if (relative_start < 0) {
       k = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
@@ -441,7 +441,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
     if (args[1].IsUndefined()) {
       final = len;
     } else {
-      double relative_end = args[1].ToNumber(ctx, ERROR(error));
+      double relative_end = args[1].ToNumber(ctx, ERROR(e));
       relative_end = core::DoubleToInteger(relative_end);
       if (relative_end < 0) {
         final = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
@@ -454,7 +454,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
   }
   for (uint32_t n = 0; k < final; ++k, ++n) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal kval = obj->GetWithIndex(ctx, k, ERROR(error));
+      const JSVal kval = obj->GetWithIndex(ctx, k, ERROR(e));
       ary->DefineOwnPropertyWithIndex(
           ctx,
           n,
@@ -462,27 +462,27 @@ inline JSVal ArraySlice(const Arguments& args, Error* error) {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
     }
   }
   return ary;
 }
 
 // section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
-inline JSVal ArraySplice(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.splice", args, error);
+inline JSVal ArraySplice(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t args_size = args.size();
   uint32_t actual_start;
   if (args_size > 0) {
-    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    double relative_start = args[0].ToNumber(ctx, ERROR(e));
     relative_start = core::DoubleToInteger(relative_start);
     if (relative_start < 0) {
       actual_start = core::DoubleToUInt32(
@@ -496,7 +496,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   }
   uint32_t actual_delete_count;
   if (args_size > 1) {
-    double delete_count = args[1].ToNumber(ctx, ERROR(error));
+    double delete_count = args[1].ToNumber(ctx, ERROR(e));
     delete_count = core::DoubleToInteger(delete_count);
     actual_delete_count = core::DoubleToUInt32(
         std::min<double>(
@@ -507,7 +507,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
   for (uint32_t k = 0; k < actual_delete_count; ++k) {
     const uint32_t from = actual_start + k;
     if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_val = obj->GetWithIndex(ctx, from, ERROR(error));
+      const JSVal from_val = obj->GetWithIndex(ctx, from, ERROR(e));
       ary->DefineOwnPropertyWithIndex(
           ctx,
           k,
@@ -515,7 +515,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
     }
   }
 
@@ -526,25 +526,25 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
       const uint32_t from = k + actual_delete_count;
       const uint32_t to = k + item_count;
       if (obj->HasPropertyWithIndex(ctx, from)) {
-        const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(error));
-        obj->PutWithIndex(ctx, to, from_value, true, ERROR(error));
+        const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(e));
+        obj->PutWithIndex(ctx, to, from_value, true, ERROR(e));
       } else {
-        obj->DeleteWithIndex(ctx, to, true, ERROR(error));
+        obj->DeleteWithIndex(ctx, to, true, ERROR(e));
       }
     }
     for (uint32_t k = len, last = len + item_count - actual_delete_count;
          k > last; --k) {
-        obj->DeleteWithIndex(ctx, (k - 1), true, ERROR(error));
+        obj->DeleteWithIndex(ctx, (k - 1), true, ERROR(e));
     }
   } else if (item_count > actual_delete_count) {
     for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
       const uint32_t from = k + actual_delete_count - 1;
       const uint32_t to = k + item_count - 1;
       if (obj->HasPropertyWithIndex(ctx, from)) {
-        const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(error));
-        obj->PutWithIndex(ctx, to, from_value, true, ERROR(error));
+        const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(e));
+        obj->PutWithIndex(ctx, to, from_value, true, ERROR(e));
       } else {
-        obj->DeleteWithIndex(ctx, to, true, ERROR(error));
+        obj->DeleteWithIndex(ctx, to, true, ERROR(e));
       }
     }
   }
@@ -554,24 +554,24 @@ inline JSVal ArraySplice(const Arguments& args, Error* error) {
     obj->PutWithIndex(
         ctx,
         k + actual_start,
-        *it, true, ERROR(error));
+        *it, true, ERROR(e));
   }
   obj->Put(
       ctx,
       ctx->length_symbol(),
-      len - actual_delete_count + item_count, true, ERROR(error));
+      len - actual_delete_count + item_count, true, ERROR(e));
   return ary;
 }
 
 // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
-inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.unshift", args, error);
+inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.unshift", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
@@ -579,10 +579,10 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
     const uint32_t from = k - 1;
     const uint32_t to = k + arg_count - 1;
     if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(error));
-      obj->PutWithIndex(ctx, to, from_value, true, ERROR(error));
+      const JSVal from_value = obj->GetWithIndex(ctx, from, ERROR(e));
+      obj->PutWithIndex(ctx, to, from_value, true, ERROR(e));
     } else {
-      obj->DeleteWithIndex(ctx, to, true, ERROR(error));
+      obj->DeleteWithIndex(ctx, to, true, ERROR(e));
     }
   }
 
@@ -593,25 +593,25 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* error) {
         ctx,
         j,
         *it,
-        true, ERROR(error));
+        true, ERROR(e));
   }
   obj->Put(
       ctx,
       ctx->length_symbol(),
       len + arg_count,
-      true, ERROR(error));
+      true, ERROR(e));
   return len + arg_count;
 }
 
 // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
-inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, error);
+inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
@@ -628,7 +628,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
 
   uint32_t k;
   if (arg_count > 1) {
-    double fromIndex = args[1].ToNumber(ctx, ERROR(error));
+    double fromIndex = args[1].ToNumber(ctx, ERROR(e));
     fromIndex = core::DoubleToInteger(fromIndex);
     if (fromIndex >= len) {
       return -1;
@@ -648,7 +648,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
 
   for (; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(error));
+      const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(e));
       if (StrictEqual(search_element, element_k)) {
         return k;
       }
@@ -658,14 +658,14 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
-inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, error);
+inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
@@ -682,7 +682,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
 
   uint32_t k;
   if (arg_count > 1) {
-    double fromIndex = args[1].ToNumber(ctx, ERROR(error));
+    double fromIndex = args[1].ToNumber(ctx, ERROR(e));
     fromIndex = core::DoubleToInteger(fromIndex);
     if (fromIndex >= 0) {
       if (fromIndex > (len - 1)) {
@@ -703,7 +703,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
 
   while (true) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(error));
+      const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(e));
       if (StrictEqual(search_element, element_k)) {
         return k;
       }
@@ -718,37 +718,37 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
-inline JSVal ArrayEvery(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.every", args, error);
+inline JSVal ArrayEvery(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.every", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.every requires callable object as 1st argument");
     return JSUndefined;
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3);
+  Arguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
       const JSVal test_result = callbackfn->Call(arg_list,
                                                  this_binding,
-                                                 ERROR(error));
-      const bool result = test_result.ToBoolean(ERROR(error));
+                                                 ERROR(e));
+      const bool result = test_result.ToBoolean(ERROR(e));
       if (!result) {
         return JSFalse;
       }
@@ -758,37 +758,37 @@ inline JSVal ArrayEvery(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
-inline JSVal ArraySome(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.some", args, error);
+inline JSVal ArraySome(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.some", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.some requires callable object as 1st argument");
     return JSUndefined;
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3);
+  Arguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
       const JSVal test_result = callbackfn->Call(arg_list,
                                                  this_binding,
-                                                 ERROR(error));
-      const bool result = test_result.ToBoolean(ERROR(error));
+                                                 ERROR(e));
+      const bool result = test_result.ToBoolean(ERROR(e));
       if (result) {
         return JSTrue;
       }
@@ -798,53 +798,53 @@ inline JSVal ArraySome(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.18 Array.prototype.forEach(callbackfn[, thisArg])
-inline JSVal ArrayForEach(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.forEach", args, error);
+inline JSVal ArrayForEach(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.forEach", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.forEach requires callable object as 1st argument");
     return JSUndefined;
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3);
+  Arguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
-      callbackfn->Call(arg_list, this_binding, ERROR(error));
+      callbackfn->Call(arg_list, this_binding, ERROR(e));
     }
   }
   return JSUndefined;
 }
 
 // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
-inline JSVal ArrayMap(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.map", args, error);
+inline JSVal ArrayMap(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.map", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.map requires callable object as 1st argument");
     return JSUndefined;
@@ -853,17 +853,17 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
 
   JSArray* const ary = JSArray::New(ctx, len);
 
-  Arguments arg_list(ctx, 3);
+  Arguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
       const JSVal mapped_value = callbackfn->Call(arg_list,
                                                   this_binding,
-                                                  ERROR(error));
+                                                  ERROR(e));
       ary->DefineOwnPropertyWithIndex(
           ctx,
           k,
@@ -871,26 +871,26 @@ inline JSVal ArrayMap(const Arguments& args, Error* error) {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(error));
+          false, ERROR(e));
     }
   }
   return ary;
 }
 
 // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
-inline JSVal ArrayFilter(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.filter", args, error);
+inline JSVal ArrayFilter(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.filter", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.filter requires callable object as 1st argument");
     return JSUndefined;
@@ -899,19 +899,19 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
 
   JSArray* const ary = JSArray::New(ctx);
 
-  Arguments arg_list(ctx, 3);
+  Arguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
   for (uint32_t k = 0, to = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal k_value = obj->GetWithIndex(ctx, k, ERROR(error));
+      const JSVal k_value = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[0] = k_value;
       arg_list[1] = k;
       const JSVal selected = callbackfn->Call(arg_list,
                                               this_binding,
-                                              ERROR(error));
-      const bool result = selected.ToBoolean(ERROR(error));
+                                              ERROR(e));
+      const bool result = selected.ToBoolean(ERROR(e));
       if (result) {
         ary->DefineOwnPropertyWithIndex(
             ctx,
@@ -920,7 +920,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
-            false, ERROR(error));
+            false, ERROR(e));
         ++to;
       }
     }
@@ -929,19 +929,19 @@ inline JSVal ArrayFilter(const Arguments& args, Error* error) {
 }
 
 // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
-inline JSVal ArrayReduce(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.reduce", args, error);
+inline JSVal ArrayReduce(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.reduce", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.reduce requires callable object as 1st argument");
     return JSUndefined;
@@ -949,7 +949,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   if (len == 0 && arg_count <= 1) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.reduce with empty Array requires "
         "initial value as 2nd argument");
@@ -965,49 +965,49 @@ inline JSVal ArrayReduce(const Arguments& args, Error* error) {
     for (; k < len; ++k) {
       if (obj->HasPropertyWithIndex(ctx, k)) {
         k_present = true;
-        accumulator = obj->GetWithIndex(ctx, k, ERROR(error));
+        accumulator = obj->GetWithIndex(ctx, k, ERROR(e));
         ++k;
         break;
       }
     }
     if (!k_present) {
-      error->Report(
+      e->Report(
           Error::Type,
           "Array.protoype.reduce with empty Array requires initial value");
       return JSUndefined;
     }
   }
 
-  Arguments arg_list(ctx, 4);
+  Arguments arg_list(ctx, 4, ERROR(e));
   arg_list[3] = obj;
 
   for (;k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = accumulator;
-      arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[2] = k;
       accumulator = callbackfn->Call(arg_list,
                                      JSUndefined,
-                                     ERROR(error));
+                                     ERROR(e));
     }
   }
   return accumulator;
 }
 
 // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
-inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, error);
+inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(error));
-  const double val = length.ToNumber(ctx, ERROR(error));
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.reduceRight requires "
         "callable object as 1st argument");
@@ -1016,7 +1016,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
   if (len == 0 && arg_count <= 1) {
-    error->Report(
+    e->Report(
         Error::Type,
         "Array.protoype.reduceRight with empty Array requires "
         "initial value as 2nd argument");
@@ -1032,29 +1032,29 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* error) {
     while (k--) {
       if (obj->HasPropertyWithIndex(ctx, k)) {
         k_present = true;
-        accumulator = obj->GetWithIndex(ctx, k, ERROR(error));
+        accumulator = obj->GetWithIndex(ctx, k, ERROR(e));
         break;
       }
     }
     if (!k_present) {
-      error->Report(
+      e->Report(
           Error::Type,
           "Array.protoype.reduceRight with empty Array requires initial value");
       return JSUndefined;
     }
   }
 
-  Arguments arg_list(ctx, 4);
+  Arguments arg_list(ctx, 4, ERROR(e));
   arg_list[3] = obj;
 
   while (k--) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = accumulator;
-      arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(error));
+      arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[2] = k;
       accumulator = callbackfn->Call(arg_list,
                                      JSUndefined,
-                                     ERROR(error));
+                                     ERROR(e));
     }
   }
   return accumulator;

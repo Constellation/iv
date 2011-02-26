@@ -7,6 +7,7 @@
 #include "lv5/jsenv.h"
 #include "lv5/context.h"
 #include "lv5/class.h"
+#include "lv5/lv5.h"
 
 namespace iv {
 namespace lv5 {
@@ -44,19 +45,19 @@ JSObject::JSObject(JSObject* proto,
     }\
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
-                             Hint::Object hint, Error* res) {
-  Arguments args(ctx);
+                             Hint::Object hint, Error* e) {
+  Arguments args(ctx, ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
-    TRY(ctx, ctx->toString_symbol(), args, res);
-    TRY(ctx, ctx->valueOf_symbol(), args, res);
+    TRY(ctx, ctx->toString_symbol(), args, e);
+    TRY(ctx, ctx->valueOf_symbol(), args, e);
   } else {
     // section 8.12.8
     // hint is NUMBER or NONE
-    TRY(ctx, ctx->valueOf_symbol(), args, res);
-    TRY(ctx, ctx->toString_symbol(), args, res);
+    TRY(ctx, ctx->valueOf_symbol(), args, e);
+    TRY(ctx, ctx->toString_symbol(), args, e);
   }
-  res->Report(Error::Type, "invalid default value");
+  e->Report(Error::Type, "invalid default value");
   return JSUndefined;
 }
 #undef TRY
@@ -73,7 +74,7 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
-      Arguments a(ctx);
+      Arguments a(ctx, ERROR(e));
       return getter->AsCallable()->Call(a, this, e);
     } else {
       return JSUndefined;
@@ -82,8 +83,8 @@ JSVal JSObject::Get(Context* ctx,
 }
 
 JSVal JSObject::GetWithIndex(Context* ctx,
-                             uint32_t index, Error* res) {
-  return Get(ctx, ctx->InternIndex(index), res);
+                             uint32_t index, Error* e) {
+  return Get(ctx, ctx->InternIndex(index), e);
 }
 
 // not recursion
@@ -156,7 +157,7 @@ bool JSObject::CanPutWithIndex(Context* ctx, uint32_t index) const {
 #define REJECT(str)\
   do {\
     if (th) {\
-      res->Report(Error::Type, str);\
+      e->Report(Error::Type, str);\
     }\
     return false;\
   } while (0)
@@ -165,7 +166,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
-                                 Error* res) {
+                                 Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
   const PropertyDescriptor current = GetOwnProperty(ctx, name);
   if (current.IsEmpty()) {
@@ -255,10 +256,10 @@ bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,
                                           uint32_t index,
                                           const PropertyDescriptor& desc,
                                           bool th,
-                                          Error* res) {
+                                          Error* e) {
   return DefineOwnProperty(ctx,
                            ctx->InternIndex(index),
-                           desc, th, res);
+                           desc, th, e);
 }
 
 #undef REJECT
@@ -287,7 +288,7 @@ void JSObject::Put(Context* ctx,
   if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
-    Arguments args(ctx, 1);
+    Arguments args(ctx, 1, ERROR_VOID(e));
     args[0] = val;
     accs->set()->AsCallable()->Call(args, this, e);
   } else {
@@ -302,8 +303,8 @@ void JSObject::Put(Context* ctx,
 
 void JSObject::PutWithIndex(Context* ctx,
                             uint32_t index,
-                            const JSVal& val, bool th, Error* res) {
-  Put(ctx, ctx->InternIndex(index), val, th, res);
+                            const JSVal& val, bool th, Error* e) {
+  Put(ctx, ctx->InternIndex(index), val, th, e);
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
@@ -314,7 +315,7 @@ bool JSObject::HasPropertyWithIndex(Context* ctx, uint32_t index) const {
   return HasProperty(ctx, ctx->InternIndex(index));
 }
 
-bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
+bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   const PropertyDescriptor desc = GetOwnProperty(ctx, name);
   if (desc.IsEmpty()) {
     return true;
@@ -324,17 +325,17 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* res) {
     return true;
   } else {
     if (th) {
-      res->Report(Error::Type, "delete failed");
+      e->Report(Error::Type, "delete failed");
     }
     return false;
   }
 }
 
 bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
-                               bool th, Error* res) {
+                               bool th, Error* e) {
   const SymbolChecker checker(ctx, index);
   if (checker.Found()) {
-    return Delete(ctx, checker.symbol(), th, res);
+    return Delete(ctx, checker.symbol(), th, e);
   } else {
     return true;
   }

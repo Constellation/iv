@@ -1412,11 +1412,11 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
 }
 
 // section 15.9.5.44 Date.prototype.toJSON()
-inline JSVal DateToJSON(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Date.prototype.toJSON", args, error);
+inline JSVal DateToJSON(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Date.prototype.toJSON", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-  const JSVal tv = JSVal(obj).ToPrimitive(ctx, Hint::NUMBER, ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
+  const JSVal tv = JSVal(obj).ToPrimitive(ctx, Hint::NUMBER, ERROR(e));
 
   if (tv.IsNumber()) {
     const double& val = tv.number();
@@ -1427,14 +1427,14 @@ inline JSVal DateToJSON(const Arguments& args, Error* error) {
 
   const JSVal toISO = obj->Get(
       ctx,
-      ctx->Intern("toISOString"), ERROR(error));
+      ctx->Intern("toISOString"), ERROR(e));
 
   if (!toISO.IsCallable()) {
-    error->Report(Error::Type, "toISOString is not function");
+    e->Report(Error::Type, "toISOString is not function");
     return JSUndefined;
   }
-  Arguments a(ctx);
-  return toISO.object()->AsCallable()->Call(a, obj, error);
+  Arguments a(ctx, ERROR(e));
+  return toISO.object()->AsCallable()->Call(a, obj, e);
 }
 
 } } }  // namespace iv::lv5::runtime

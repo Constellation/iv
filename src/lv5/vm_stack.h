@@ -1,15 +1,9 @@
 #ifndef _IV_LV5_VM_STACK_H_
 #define _IV_LV5_VM_STACK_H_
-#include <iostream>
 #include <iterator>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <gc/gc.h>
-extern "C" {
-#include <gc/gc_mark.h>
-}
 #include "noncopyable.h"
 #include "lv5/jsval.h"
+#include "lv5/os_allocator.h"
 namespace iv {
 namespace lv5 {
 
@@ -37,11 +31,12 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   VMStack()
     : stack_(NULL),
       stack_pointer_(NULL) {
-    int fd = -1;
-    void* mem = NULL;
-    mem = mmap(mem, kStackCapacity * sizeof(JSVal),
-               PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, fd, 0);
-    stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(mem);
+    stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(
+        OSAllocator::Allocate(kStackCapacity * sizeof(JSVal)));
+  }
+
+  ~VMStack() {
+    OSAllocator::Deallocate(stack_, kStackCapacity * sizeof(JSVal));
   }
 
   pointer stack_pointer_begin() const {

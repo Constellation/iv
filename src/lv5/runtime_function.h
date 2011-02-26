@@ -110,80 +110,80 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
 }
 
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
-inline JSVal FunctionApply(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Function.prototype.apply", args, error);
+inline JSVal FunctionApply(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
-      Arguments a(ctx);
+      Arguments a(ctx, ERROR(e));
       if (args_size == 0) {
-        return func->Call(a, JSUndefined, error);
+        return func->Call(a, JSUndefined, e);
       } else {
-        return func->Call(a, args[0], error);
+        return func->Call(a, args[0], e);
       }
     }
     const JSVal& second = args[1];
     if (!second.IsObject()) {
-      error->Report(
+      e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
     JSObject* const arg_array = second.object();
-    const JSVal len = arg_array->Get(ctx, ctx->length_symbol(), ERROR(error));
+    const JSVal len = arg_array->Get(ctx, ctx->length_symbol(), ERROR(e));
     if (len.IsUndefined() || len.IsNull()) {
-      error->Report(
+      e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
-    const double temp = len.ToNumber(ctx, ERROR(error));
+    const double temp = len.ToNumber(ctx, ERROR(e));
     const uint32_t n = core::DoubleToUInt32(temp);
     if (n != temp) {
-      error->Report(
+      e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
 
-    Arguments args_list(ctx, n);
+    Arguments args_list(ctx, n, ERROR(e));
     uint32_t index = 0;
     while (index < n) {
         args_list[index] = arg_array->GetWithIndex(
             ctx,
-            index, ERROR(error));
+            index, ERROR(e));
         ++index;
     }
-    return func->Call(args_list, args[0], error);
+    return func->Call(args_list, args[0], e);
   }
-  error->Report(Error::Type,
-                "Function.prototype.apply is not generic function");
+  e->Report(Error::Type,
+            "Function.prototype.apply is not generic function");
   return JSUndefined;
 }
 
 // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
-inline JSVal FunctionCall(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Function.prototype.call", args, error);
+inline JSVal FunctionCall(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
 
-    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0);
+    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, ERROR(e));
 
     if (args_size > 1) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());
     }
 
     const JSVal this_binding = (args_size > 0) ? args[0] : JSUndefined;
-    return func->Call(args_list, this_binding, error);
+    return func->Call(args_list, this_binding, e);
   }
-  error->Report(Error::Type,
-                "Function.prototype.call is not generic function");
+  e->Report(Error::Type,
+            "Function.prototype.call is not generic function");
   return JSUndefined;
 }
 

@@ -6,7 +6,6 @@ extern "C" {
 #include <gc/gc_mark.h>
 }
 #include "noncopyable.h"
-#include "lv5/jsval.h"
 #include "lv5/vm_stack.h"
 namespace iv {
 namespace lv5 {

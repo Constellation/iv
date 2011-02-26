@@ -3,6 +3,7 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
+#include "error.h"
 #include "noncopyable.h"
 #include "lv5/jsval.h"
 #include "lv5/context_utils.h"
@@ -84,28 +85,40 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     return stack_[n + 1];
   }
 
-  explicit Arguments(Context* ctx)
+  explicit Arguments(Context* ctx, Error* e)
     : ctx_(ctx),
       stack_(),
       size_(0),
       constructor_call_(false) {
     stack_ = context::stack(ctx_)->Gain(size_ + 1);
-    assert(stack_);
-    std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    if (!stack_) {  // stack overflow
+      e->Report(Error::Range, "maximum call stack size exceeded");
+    } else {
+      assert(stack_);
+      // init
+      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    }
   }
 
-  Arguments(Context* ctx, std::size_t n)
+  Arguments(Context* ctx, std::size_t n, Error* e)
     : ctx_(ctx),
       stack_(),
       size_(n),
       constructor_call_(false) {
     stack_ = context::stack(ctx_)->Gain(size_ + 1);
-    assert(stack_);
-    std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    if (!stack_) {  // stack overflow
+      e->Report(Error::Range, "maximum call stack size exceeded");
+    } else {
+      assert(stack_);
+      // init
+      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    }
   }
 
   ~Arguments() {
-    context::stack(ctx_)->Release(size_ + 1);
+    if (stack_) {
+      context::stack(ctx_)->Release(size_ + 1);
+    }
   }
 
   Context* ctx() const {
