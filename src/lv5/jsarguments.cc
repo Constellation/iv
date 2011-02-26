@@ -48,7 +48,7 @@ JSArguments* JSArguments::New(Context* ctx,
     index -= 1;
   }
   if (strict) {
-    JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+    JSFunction* const throw_type_error = ctx->throw_type_error();
     obj->DefineOwnProperty(ctx, ctx->caller_symbol(),
                            AccessorDescriptor(throw_type_error,
                                               throw_type_error,

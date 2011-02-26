@@ -24,6 +24,9 @@
 
 namespace iv {
 namespace lv5 {
+namespace runtime {
+JSVal ThrowTypeError(const Arguments& args, Error* error);
+}  // namespace iv::lv5::runtime
 
 class SymbolChecker;
 class JSScript;
@@ -155,6 +158,19 @@ class Context : private core::Noncopyable<Context>::type {
                                      func, strict_, &error_);
   }
 
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  void DefineFunction(const core::StringPiece& func_name) {
+    JSFunction* const f = JSInlinedFunction<func, n>::New(this);
+    const Symbol name = Intern(func_name);
+    variable_env_->CreateMutableBinding(this, name, false, &error_);
+    if (error_) {
+      return;
+    }
+    variable_env_->SetMutableBinding(this,
+                                     name,
+                                     f, strict_, &error_);
+  }
+
   void Initialize();
   bool Run(JSScript* script);
 
@@ -196,7 +212,7 @@ class Context : private core::Noncopyable<Context>::type {
   inline Symbol Array_symbol() const {
     return Array_symbol_;
   }
-  JSNativeFunction* throw_type_error() {
+  JSFunction* throw_type_error() {
     return &throw_type_error_;
   }
   JSScript* current_script() const {
@@ -240,7 +256,6 @@ class Context : private core::Noncopyable<Context>::type {
 
   VMStack stack_;
   JSObject global_obj_;
-  JSNativeFunction throw_type_error_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;
@@ -266,6 +281,7 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol constructor_symbol_;
   Symbol Array_symbol_;
   JSScript* current_script_;
+  JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
 };
 
 class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {

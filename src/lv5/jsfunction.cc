@@ -31,7 +31,7 @@ void JSFunction::Initialize(Context* ctx) {
                      PropertyDescriptor::WRITABLE),
                      false, NULL);
   if (ctx->IsStrict()) {
-    JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+    JSFunction* const throw_type_error = ctx->throw_type_error();
     DefineOwnProperty(ctx, ctx->caller_symbol(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
@@ -182,7 +182,7 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
                        PropertyDescriptor::NONE),
                        false, NULL);
   }
-  JSNativeFunction* const throw_type_error = ctx->throw_type_error();
+  JSFunction* const throw_type_error = ctx->throw_type_error();
   DefineOwnProperty(ctx, ctx->caller_symbol(),
                     AccessorDescriptor(throw_type_error,
                                        throw_type_error,
@@ -204,7 +204,6 @@ JSVal JSBoundFunction::Call(Arguments& args,
   return target_->Call(args_list, this_binding_, error);
 }
 
-// TODO(Constellation) check this binding
 JSVal JSBoundFunction::Construct(Arguments& args, Error* error) {
   using std::copy;
   Arguments args_list(args.ctx(), args.size() + arguments_.size());

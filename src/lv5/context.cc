@@ -106,7 +106,6 @@ VMStack* stack(Context* ctx) {
 Context::Context()
   : stack_(),
     global_obj_(),
-    throw_type_error_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL),
@@ -132,7 +131,8 @@ Context::Context()
     prototype_symbol_(Intern(prototype_string)),
     constructor_symbol_(Intern(constructor_string)),
     Array_symbol_(Intern(Array_string)),
-    current_script_(NULL) {
+    current_script_(NULL),
+    throw_type_error_(this) {
   JSObjectEnv* const env = Interpreter::NewObjectEnvironment(this,
                                                              &global_obj_,
                                                              NULL);
@@ -245,10 +245,10 @@ void Context::Initialize() {
   JSObject* const obj_proto = JSObject::NewPlain(this);
 
   // Function
-  JSNativeFunction* const func_proto =
-      JSNativeFunction::NewPlain(this, &runtime::FunctionPrototype, 0);
-  JSNativeFunction* const func_constructor =
-      JSNativeFunction::NewPlain(this, &runtime::FunctionConstructor, 1);
+  JSFunction* const func_proto =
+      JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
+  JSFunction* const func_constructor =
+      JSInlinedFunction<&runtime::FunctionConstructor, 1>::NewPlain(this);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
     Intern("Function"),
@@ -282,8 +282,8 @@ void Context::Initialize() {
       false, NULL);
 
   // section 15.2.2
-  JSNativeFunction* const obj_constructor =
-      JSNativeFunction::NewPlain(this, &runtime::ObjectConstructor, 1);
+  JSFunction* const obj_constructor =
+      JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
 
   struct Class obj_cls = {
     Intern("Object"),
@@ -310,33 +310,37 @@ void Context::Initialize() {
 
   func_proto->DefineOwnProperty(
       this, toString_symbol_,
-      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionToString, 0),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+      DataDescriptor(
+          JSInlinedFunction<&runtime::FunctionToString, 0>::New(this),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
   // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
   func_proto->DefineOwnProperty(
       this, Intern("apply"),
-      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionApply, 2),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+      DataDescriptor(
+          JSInlinedFunction<&runtime::FunctionApply, 2>::New(this),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
   // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
       this, Intern("call"),
-      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionCall, 1),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+      DataDescriptor(
+          JSInlinedFunction<&runtime::FunctionCall, 1>::New(this),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
   // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
       this, Intern("bind"),
-      DataDescriptor(JSNativeFunction::New(this, &runtime::FunctionBind, 1),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+      DataDescriptor(
+          JSInlinedFunction<&runtime::FunctionBind, 1>::New(this),
+          PropertyDescriptor::WRITABLE |
+          PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
   {
@@ -346,7 +350,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getPrototypeOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectGetPrototypeOf, 1),
+            JSInlinedFunction<&runtime::ObjectGetPrototypeOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -355,8 +359,8 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getOwnPropertyDescriptor"),
         DataDescriptor(
-            JSNativeFunction::New(this,
-                                  &runtime::ObjectGetOwnPropertyDescriptor, 2),
+            JSInlinedFunction<
+              &runtime::ObjectGetOwnPropertyDescriptor, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -365,7 +369,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("getOwnPropertyNames"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectGetOwnPropertyNames, 1),
+            JSInlinedFunction<&runtime::ObjectGetOwnPropertyNames, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -374,7 +378,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("create"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectCreate, 2),
+            JSInlinedFunction<&runtime::ObjectCreate, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -383,7 +387,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("defineProperty"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectDefineProperty, 3),
+            JSInlinedFunction<&runtime::ObjectDefineProperty, 3>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -392,7 +396,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("defineProperties"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectDefineProperties, 2),
+            JSInlinedFunction<&runtime::ObjectDefineProperties, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -401,7 +405,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("seal"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectSeal, 1),
+            JSInlinedFunction<&runtime::ObjectSeal, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -410,7 +414,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("freeze"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectFreeze, 1),
+            JSInlinedFunction<&runtime::ObjectFreeze, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -419,7 +423,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("preventExtensions"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectPreventExtensions, 1),
+            JSInlinedFunction<&runtime::ObjectPreventExtensions, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -428,7 +432,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isSealed"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectIsSealed, 1),
+            JSInlinedFunction<&runtime::ObjectIsSealed, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -437,7 +441,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isFrozen"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectIsFrozen, 1),
+            JSInlinedFunction<&runtime::ObjectIsFrozen, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -446,7 +450,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("isExtensible"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectIsExtensible, 1),
+            JSInlinedFunction<&runtime::ObjectIsExtensible, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -455,7 +459,7 @@ void Context::Initialize() {
     obj_constructor->DefineOwnProperty(
         this, Intern("keys"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectKeys, 1),
+            JSInlinedFunction<&runtime::ObjectKeys, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -463,16 +467,17 @@ void Context::Initialize() {
     // section 15.2.4.2 Object.prototype.toString()
     obj_proto->DefineOwnProperty(
         this, toString_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::ObjectToString, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::ObjectToString, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.2.4.3 Object.prototype.toLocaleString()
     obj_proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectToLocaleString, 0),
+            JSInlinedFunction<&runtime::ObjectToLocaleString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -481,7 +486,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("valueOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectValueOf, 0),
+            JSInlinedFunction<&runtime::ObjectValueOf, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -490,7 +495,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("hasOwnProperty"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectHasOwnProperty, 1),
+            JSInlinedFunction<&runtime::ObjectHasOwnProperty, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -499,7 +504,7 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("isPrototypeOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ObjectIsPrototypeOf, 1),
+            JSInlinedFunction<&runtime::ObjectIsPrototypeOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -508,8 +513,8 @@ void Context::Initialize() {
     obj_proto->DefineOwnProperty(
         this, Intern("propertyIsEnumerable"),
         DataDescriptor(
-            JSNativeFunction::New(
-                this, &runtime::ObjectPropertyIsEnumerable, 1),
+            JSInlinedFunction<
+              &runtime::ObjectPropertyIsEnumerable, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -526,8 +531,8 @@ void Context::Initialize() {
     // Array
     JSObject* const proto = JSArray::NewPlain(this);
     // section 15.4.2 The Array Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::ArrayConstructor, 1);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -563,7 +568,7 @@ void Context::Initialize() {
     constructor->DefineOwnProperty(
         this, Intern("isArray"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayIsArray, 1),
+            JSInlinedFunction<&runtime::ArrayIsArray, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -572,7 +577,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToString, 0),
+            JSInlinedFunction<&runtime::ArrayToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -581,7 +586,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayToLocaleString, 0),
+            JSInlinedFunction<&runtime::ArrayToLocaleString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -590,7 +595,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("concat"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayConcat, 1),
+            JSInlinedFunction<&runtime::ArrayConcat, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -599,7 +604,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("join"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayJoin, 1),
+            JSInlinedFunction<&runtime::ArrayJoin, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -608,7 +613,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("pop"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayPop, 0),
+            JSInlinedFunction<&runtime::ArrayPop, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -617,7 +622,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("push"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayPush, 1),
+            JSInlinedFunction<&runtime::ArrayPush, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -626,7 +631,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("reverse"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayReverse, 0),
+            JSInlinedFunction<&runtime::ArrayReverse, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -635,7 +640,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("shift"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayShift, 0),
+            JSInlinedFunction<&runtime::ArrayShift, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -644,7 +649,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("slice"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArraySlice, 2),
+            JSInlinedFunction<&runtime::ArraySlice, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -653,7 +658,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("splice"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArraySplice, 2),
+            JSInlinedFunction<&runtime::ArraySplice, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -662,7 +667,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("unshift"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayUnshift, 1),
+            JSInlinedFunction<&runtime::ArrayUnshift, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -671,7 +676,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("indexOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayIndexOf, 1),
+            JSInlinedFunction<&runtime::ArrayIndexOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -680,7 +685,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("lastIndexOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayLastIndexOf, 1),
+            JSInlinedFunction<&runtime::ArrayLastIndexOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -689,7 +694,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("every"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayEvery, 1),
+            JSInlinedFunction<&runtime::ArrayEvery, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -698,7 +703,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("some"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArraySome, 1),
+            JSInlinedFunction<&runtime::ArraySome, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -707,7 +712,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("forEach"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayForEach, 1),
+            JSInlinedFunction<&runtime::ArrayForEach, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -716,7 +721,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("map"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayMap, 1),
+            JSInlinedFunction<&runtime::ArrayMap, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -725,7 +730,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("filter"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayFilter, 1),
+            JSInlinedFunction<&runtime::ArrayFilter, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -734,7 +739,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("reduce"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayReduce, 1),
+            JSInlinedFunction<&runtime::ArrayReduce, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -743,7 +748,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("reduceRight"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::ArrayReduceRight, 1),
+            JSInlinedFunction<&runtime::ArrayReduceRight, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -755,8 +760,8 @@ void Context::Initialize() {
     JSStringObject* const proto = JSStringObject::NewPlain(this);
 
     // section 15.5.2 The String Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::StringConstructor, 1);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -792,7 +797,7 @@ void Context::Initialize() {
     constructor->DefineOwnProperty(
         this, Intern("fromCharCode"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringFromCharCode, 1),
+            JSInlinedFunction<&runtime::StringFromCharCode, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -801,7 +806,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToString, 0),
+            JSInlinedFunction<&runtime::StringToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -810,7 +815,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, valueOf_symbol_,
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringValueOf, 0),
+            JSInlinedFunction<&runtime::StringValueOf, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -819,7 +824,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("charAt"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringCharAt, 1),
+            JSInlinedFunction<&runtime::StringCharAt, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -828,7 +833,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("charCodeAt"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringCharCodeAt, 1),
+            JSInlinedFunction<&runtime::StringCharCodeAt, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -837,7 +842,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("concat"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringConcat, 1),
+            JSInlinedFunction<&runtime::StringConcat, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -846,7 +851,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("indexOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringIndexOf, 1),
+            JSInlinedFunction<&runtime::StringIndexOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -855,7 +860,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("lastIndexOf"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringLastIndexOf, 1),
+            JSInlinedFunction<&runtime::StringLastIndexOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -864,7 +869,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("localeCompare"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringLocaleCompare, 1),
+            JSInlinedFunction<&runtime::StringLocaleCompare, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -873,7 +878,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("match"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringMatch, 1),
+            JSInlinedFunction<&runtime::StringMatch, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -882,7 +887,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("replace"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringReplace, 2),
+            JSInlinedFunction<&runtime::StringReplace, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -891,7 +896,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("search"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringSearch, 1),
+            JSInlinedFunction<&runtime::StringSearch, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -900,7 +905,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("slice"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringSlice, 2),
+            JSInlinedFunction<&runtime::StringSlice, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -909,7 +914,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("split"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringSplit, 2),
+            JSInlinedFunction<&runtime::StringSplit, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -918,7 +923,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("substring"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringSubString, 2),
+            JSInlinedFunction<&runtime::StringSubString, 2>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -927,7 +932,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLowerCase"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToLowerCase, 0),
+            JSInlinedFunction<&runtime::StringToLowerCase, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -936,7 +941,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleLowerCase"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToLocaleLowerCase, 0),
+            JSInlinedFunction<&runtime::StringToLocaleLowerCase, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -945,7 +950,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toUpperCase"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToUpperCase, 0),
+            JSInlinedFunction<&runtime::StringToUpperCase, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -954,7 +959,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toLocaleUpperCase"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringToLocaleUpperCase, 0),
+            JSInlinedFunction<&runtime::StringToLocaleUpperCase, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -963,7 +968,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("trim"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::StringTrim, 0),
+            JSInlinedFunction<&runtime::StringTrim, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -974,8 +979,8 @@ void Context::Initialize() {
     JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
 
     // section 15.5.2 The Boolean Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::BooleanConstructor, 1);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -1011,7 +1016,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, toString_symbol_,
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::BooleanToString, 0),
+            JSInlinedFunction<&runtime::BooleanToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1019,9 +1024,10 @@ void Context::Initialize() {
     // section 15.6.4.3 Boolean.prototype.valueOf()
     proto->DefineOwnProperty(
         this, valueOf_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::BooleanValueOf, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::BooleanValueOf, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
   }
 
@@ -1030,8 +1036,8 @@ void Context::Initialize() {
     JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
 
     // section 15.7.3 The Number Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::NumberConstructor, 1);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -1103,16 +1109,17 @@ void Context::Initialize() {
     // section 15.7.4.2 Number.prototype.toString([radix])
     proto->DefineOwnProperty(
         this, toString_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberToString, 1),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::NumberToString, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.7.4.3 Number.prototype.toLocaleString()
     proto->DefineOwnProperty(
         this, Intern("toLocaleString"),
         DataDescriptor(
-            JSNativeFunction::New(this, &runtime::NumberToLocaleString, 0),
+            JSInlinedFunction<&runtime::NumberToLocaleString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1120,16 +1127,17 @@ void Context::Initialize() {
     // section 15.7.4.4 Number.prototype.valueOf()
     proto->DefineOwnProperty(
         this, valueOf_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::NumberValueOf, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::NumberValueOf, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
     proto->DefineOwnProperty(
         this, Intern("toFixed"),
         DataDescriptor(
-          JSNativeFunction::New(this, &runtime::NumberToFixed, 1),
+          JSInlinedFunction<&runtime::NumberToFixed, 1>::New(this),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1138,7 +1146,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toExponential"),
         DataDescriptor(
-          JSNativeFunction::New(this, &runtime::NumberToExponential, 1),
+          JSInlinedFunction<&runtime::NumberToExponential, 1>::New(this),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1147,7 +1155,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("toPrecision"),
         DataDescriptor(
-          JSNativeFunction::New(this, &runtime::NumberToPrecision, 1),
+          JSInlinedFunction<&runtime::NumberToPrecision, 1>::New(this),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -1157,8 +1165,8 @@ void Context::Initialize() {
     // Error
     JSObject* const proto = JSObject::NewPlain(this);
     // section 15.11.2 The Error Constructor
-    JSNativeFunction* const constructor =
-        JSNativeFunction::NewPlain(this, &runtime::ErrorConstructor, 1);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
     // set prototype
@@ -1185,9 +1193,10 @@ void Context::Initialize() {
     // section 15.11.4.4 Error.prototype.toString()
     proto->DefineOwnProperty(
         this, toString_symbol_,
-        DataDescriptor(JSNativeFunction::New(this, &runtime::ErrorToString, 0),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::ErrorToString, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
     // section 15.11.4.2 Error.prototype.name
@@ -1213,8 +1222,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.1 EvalError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &runtime::EvalErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1253,8 +1262,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.2 RangeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &runtime::RangeErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1293,9 +1302,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.3 ReferenceError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this,
-                                     &runtime::ReferenceErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1334,8 +1342,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.4 SyntaxError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &runtime::SyntaxErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1374,8 +1382,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.5 TypeError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &runtime::TypeErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1414,8 +1422,8 @@ void Context::Initialize() {
     {
       // section 15.11.6.6 URIError
       JSObject* const sub_proto = JSObject::NewPlain(this);
-      JSNativeFunction* const sub_constructor =
-          JSNativeFunction::NewPlain(this, &runtime::URIErrorConstructor, 1);
+      JSFunction* const sub_constructor =
+          JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1681,7 +1689,7 @@ void Context::Initialize() {
     JSObject* const proto = JSDate::NewPlain(this, JSValData::kNaN);
     // section 15.9.2.1 The Date Constructor
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::DateConstructor, 7>::New(this);
+        JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
     constructor->set_class_name(func_cls.name);
     constructor->set_prototype(func_cls.prototype);
 
@@ -2337,7 +2345,7 @@ void Context::Initialize() {
     };
     builtins_[cls.name] = cls;
   }
-  throw_type_error_.Initialize(this, &runtime::ThrowTypeError, 0);
+  throw_type_error_.Initialize(this);
 }
 
 const Class& Context::Cls(Symbol name) {

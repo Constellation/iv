@@ -28,8 +28,8 @@ class Interactive {
  public:
   Interactive()
     : ctx_() {
-    ctx_.DefineFunction(&lv5::Print, "print", 1);
-    ctx_.DefineFunction(&lv5::Quit, "quit", 1);
+    ctx_.DefineFunction<&lv5::Print, 1>("print");
+    ctx_.DefineFunction<&lv5::Quit, 1>("quit");
   }
   int Run() {
     std::vector<char> buffer;

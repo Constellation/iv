@@ -138,8 +138,8 @@ int main(int argc, char **argv) {
       global->Accept(&ser);
       std::cout << ser.out() << std::endl;
     } else {
-      ctx.DefineFunction(&iv::lv5::Print, "print", 1);
-      ctx.DefineFunction(&iv::lv5::Quit, "quit", 1);
+      ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+      ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
       iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
           &ctx, global, &factory, &src);
       if (ctx.Run(script)) {
