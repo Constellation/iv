@@ -27,6 +27,7 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   typedef std::size_t size_type;
 
   static const size_type kStackCapacity = 16 * 1024;
+  static const size_type kMaxCallCount = 2048;
 
   VMStack()
     : stack_(NULL),
@@ -68,7 +69,9 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   }
 
   pointer Gain(size_type n) {
-    if (stack_pointer_ + n < stack_pointer_end()) {
+    if (stack_pointer_ + n < stack_pointer_end() &&
+        call_count_ < kMaxCallCount) {
+      ++call_count_;
       const pointer stack = stack_pointer_;
       stack_pointer_ += n;
       return stack;
@@ -80,11 +83,13 @@ class VMStack : private core::Noncopyable<VMStack>::type {
 
   void Release(size_type n) {
     stack_pointer_ -= n;
+    --call_count_;
   }
 
  private:
   pointer stack_;
   pointer stack_pointer_;
+  std::size_t call_count_;
 };
 
 } }  // namespace iv::lv5
