@@ -29,17 +29,19 @@ class OSAllocator {
 
   static void Commit(void* address, std::size_t bytes) {
 #ifdef MADV_FREE_REUSE
-    while (madvise(address, bytes, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
+    while (madvise(address, bytes, MADV_FREE_REUSE) == -1 && errno == EAGAIN) {
+    }
 #endif
   }
 
   static void Decommit(void* addr, std::size_t bytes) {
 #if defined(MADV_FREE_REUSABLE)
-    while (madvise(addr, bytes, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
+    while (madvise(addr, bytes, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN) {
+    }
 #elif defined(MADV_FREE)
-    while (madvise(addr, bytes, MADV_FREE) == -1 && errno == EAGAIN);
+    while (madvise(addr, bytes, MADV_FREE) == -1 && errno == EAGAIN) { }
 #elif defined(MADV_DONTNEED)
-    while (madvise(addr, bytes, MADV_DONTNEED) == -1 && errno == EAGAIN);
+    while (madvise(addr, bytes, MADV_DONTNEED) == -1 && errno == EAGAIN) { }
 #endif
   }
 };

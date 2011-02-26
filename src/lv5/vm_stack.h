@@ -27,7 +27,7 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   typedef std::size_t size_type;
 
   static const size_type kStackCapacity = 16 * 1024;
-  static const size_type kMaxCallCount = 8192;
+  static const size_type kMaxCallCount = 4096;
 
   VMStack()
     : stack_(NULL),
