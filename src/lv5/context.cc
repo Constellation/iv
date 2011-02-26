@@ -104,7 +104,7 @@ VMStack* stack(Context* ctx) {
 }  // namespace iv::lv5::context
 
 Context::Context()
-  : stack_(),
+  : stack_resource_(),
     global_obj_(),
     lexical_env_(NULL),
     variable_env_(NULL),

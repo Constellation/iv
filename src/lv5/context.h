@@ -20,7 +20,8 @@
 #include "lv5/jsast.h"
 #include "lv5/gc_template.h"
 #include "lv5/context_utils.h"
-#include "lv5/vmstack.h"
+#include "lv5/stack_resource.h"
+#include "lv5/vm_stack.h"
 
 namespace iv {
 namespace lv5 {
@@ -242,7 +243,7 @@ class Context : private core::Noncopyable<Context>::type {
   const Class& Cls(const core::StringPiece& str);
 
   VMStack* stack() {
-    return &stack_;
+    return stack_resource_.stack();
   }
 
  private:
@@ -254,7 +255,7 @@ class Context : private core::Noncopyable<Context>::type {
 
   const core::UString& GetSymbolString(Symbol sym) const;
 
-  VMStack stack_;
+  StackResource stack_resource_;
   JSObject global_obj_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;

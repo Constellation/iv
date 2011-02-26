@@ -6,7 +6,7 @@
 #include "lv5/class.h"
 #include "lv5/symbol.h"
 #include "lv5/jsast.h"
-#include "lv5/vmstack.h"
+#include "lv5/vm_stack.h"
 class Context;
 
 namespace iv {
