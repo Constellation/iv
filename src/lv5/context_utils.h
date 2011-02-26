@@ -6,6 +6,7 @@
 #include "lv5/class.h"
 #include "lv5/symbol.h"
 #include "lv5/jsast.h"
+#include "lv5/vmstack.h"
 class Context;
 
 namespace iv {
@@ -28,6 +29,8 @@ Symbol constructor_symbol(const Context* ctx);
 Symbol prototype_symbol(const Context* ctx);
 Symbol length_symbol(const Context* ctx);
 bool IsStrict(const Context* ctx);
+
+VMStack* stack(Context* ctx);
 
 } } }  // namespace iv::lv5::context
 #endif  // _IV_LV5_CONTEXT_UTILS_H_

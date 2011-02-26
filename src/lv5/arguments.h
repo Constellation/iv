@@ -5,89 +5,107 @@
 #include <algorithm>
 #include "noncopyable.h"
 #include "lv5/jsval.h"
+#include "lv5/context_utils.h"
 
 namespace iv {
 namespace lv5 {
 class Interpreter;
 class Context;
 
-class Arguments {
+class Arguments : private core::Noncopyable<Arguments>::type {
  public:
-  typedef trace::Vector<JSVal>::type JSVals;
   typedef Arguments this_type;
 
-  typedef JSVals::value_type value_type;
-  typedef JSVals::reference reference;
-  typedef JSVals::const_reference const_reference;
-  typedef JSVals::iterator iterator;
-  typedef JSVals::const_iterator const_iterator;
-  typedef JSVals::pointer pointer;
-  typedef JSVals::difference_type difference_type;
-  typedef JSVals::size_type size_type;
+  typedef VMStack::value_type value_type;
+  typedef VMStack::reference reference;
+  typedef VMStack::const_reference const_reference;
+  typedef VMStack::iterator iterator;
+  typedef VMStack::const_iterator const_iterator;
+  typedef VMStack::pointer pointer;
+  typedef VMStack::difference_type difference_type;
+  typedef VMStack::size_type size_type;
 
-  typedef JSVals::const_reverse_iterator const_reverse_iterator;
-  typedef JSVals::reverse_iterator reverse_iterator;
+  typedef VMStack::const_reverse_iterator const_reverse_iterator;
+  typedef VMStack::reverse_iterator reverse_iterator;
 
-  inline iterator begin() { return args_.begin(); }
-  inline const_iterator begin() const { return args_.begin(); }
-  inline iterator end() { return args_.end(); }
-  inline const_iterator end() const { return args_.end(); }
-  inline reverse_iterator rbegin() { return args_.rbegin(); }
-  inline const_reverse_iterator rbegin() const { return args_.rbegin(); }
-  inline reverse_iterator rend() { return args_.rend(); }
-  inline const_reverse_iterator rend() const { return args_.rend(); }
-
-  size_type max_size() const { return args_.max_size(); }
-  size_type capacity() const { return args_.capacity(); }
-  size_type size() const { return args_.size(); }
-  bool empty() const { return args_.empty(); }
-  void swap(JSVals& rhs) { args_.swap(rhs); }
-  void swap(this_type& rhs) {
-    using std::swap;
-    args_.swap(rhs.args_);
-    swap(ctx_, rhs.ctx_);
-    swap(this_binding_, rhs.this_binding_);
-    swap(constructor_call_, rhs.constructor_call_);
+  inline iterator begin() {
+    return stack_ + 1;  // index 0 is this binding
   }
-  reference operator[](size_type n) { return args_[n]; }
-  const_reference operator[](size_type n) const { return args_[n]; }
+
+  inline const_iterator begin() const {
+    return stack_ + 1;
+  }
+
+  inline iterator end() {
+    return begin() + size_;
+  }
+
+  inline const_iterator end() const {
+    return begin() + size_;
+  }
+
+  inline reverse_iterator rbegin() {
+    return reverse_iterator(end());
+  }
+
+  inline const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
+  }
+
+  inline reverse_iterator rend() {
+    return reverse_iterator(begin());
+  }
+
+  inline const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
+
+  size_type max_size() const {
+    return size_;
+  }
+
+  size_type capacity() const {
+    return size_;
+  }
+
+  size_type size() const {
+    return size_;
+  }
+
+  bool empty() const {
+    return size_ == 0;
+  }
+
+  reference operator[](size_type n) {
+    return stack_[n + 1];
+  }
+
+  const_reference operator[](size_type n) const {
+    return stack_[n + 1];
+  }
 
   explicit Arguments(Context* ctx)
     : ctx_(ctx),
-      this_binding_(),
-      args_(),
+      stack_(),
+      size_(0),
       constructor_call_(false) {
+    stack_ = context::stack(ctx_)->Gain(size_ + 1);
+    assert(stack_);
+    std::fill(stack_, stack_ + size_ + 1, JSUndefined);
   }
 
   Arguments(Context* ctx, std::size_t n)
     : ctx_(ctx),
-      this_binding_(),
-      args_(n),
+      stack_(),
+      size_(n),
       constructor_call_(false) {
+    stack_ = context::stack(ctx_)->Gain(size_ + 1);
+    assert(stack_);
+    std::fill(stack_, stack_ + size_ + 1, JSUndefined);
   }
 
-  Arguments(const Arguments& rhs)
-    : ctx_(rhs.ctx_),
-      this_binding_(rhs.this_binding_),
-      args_(rhs.args_),
-      constructor_call_(rhs.constructor_call_) {
-  }
-
-  this_type& operator=(const this_type& rhs) {
-    this_type(rhs).swap(*this);
-    return *this;
-  }
-
-  inline friend void swap(this_type& lhs, this_type& rhs) {
-    return lhs.swap(rhs);
-  }
-
-  inline const JSVals& args() const {
-    return args_;
-  }
-
-  inline void push_back(const JSVal& val) {
-    args_.push_back(val);
+  ~Arguments() {
+    context::stack(ctx_)->Release(size_ + 1);
   }
 
   Context* ctx() const {
@@ -95,11 +113,11 @@ class Arguments {
   }
 
   inline JSVal this_binding() const {
-    return this_binding_;
+    return stack_[0];
   }
 
   inline void set_this_binding(const JSVal& binding) {
-    this_binding_ = binding;
+    stack_[0] = binding;
   }
 
   inline void set_constructor_call(bool val) {
@@ -112,8 +130,8 @@ class Arguments {
 
  private:
   Context* ctx_;
-  JSVal this_binding_;
-  JSVals args_;
+  VMStack::pointer stack_;
+  VMStack::size_type size_;
   bool constructor_call_;
 };
 

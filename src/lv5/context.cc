@@ -97,10 +97,15 @@ bool IsStrict(const Context* ctx) {
   return ctx->IsStrict();
 }
 
+VMStack* stack(Context* ctx) {
+  return ctx->stack();
+}
+
 }  // namespace iv::lv5::context
 
 Context::Context()
-  : global_obj_(),
+  : stack_(),
+    global_obj_(),
     throw_type_error_(),
     lexical_env_(NULL),
     variable_env_(NULL),

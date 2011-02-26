@@ -158,8 +158,7 @@ void Interpreter::CallCode(
 
   // step 4
   {
-    const Arguments::JSVals& arguments = args.args();
-    const std::size_t arg_count = arguments.size();
+    const std::size_t arg_count = args.size();
     std::size_t n = 0;
     BOOST_FOREACH(const Identifier* const ident,
                   code->code()->params()) {
@@ -174,7 +173,7 @@ void Interpreter::CallCode(
                                JSUndefined, ctx_->IsStrict(), CHECK_IN_STMT);
       } else {
         env->SetMutableBinding(ctx_, arg_name,
-                               arguments[n-1], ctx_->IsStrict(), CHECK_IN_STMT);
+                               args[n-1], ctx_->IsStrict(), CHECK_IN_STMT);
       }
     }
   }

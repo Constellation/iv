@@ -20,6 +20,7 @@
 #include "lv5/jsast.h"
 #include "lv5/gc_template.h"
 #include "lv5/context_utils.h"
+#include "lv5/vmstack.h"
 
 namespace iv {
 namespace lv5 {
@@ -224,6 +225,10 @@ class Context : private core::Noncopyable<Context>::type {
   const Class& Cls(Symbol name);
   const Class& Cls(const core::StringPiece& str);
 
+  VMStack* stack() {
+    return &stack_;
+  }
+
  private:
 
   Symbol CheckIntern(const core::StringPiece& str, bool* found);
@@ -233,6 +238,7 @@ class Context : private core::Noncopyable<Context>::type {
 
   const core::UString& GetSymbolString(Symbol sym) const;
 
+  VMStack stack_;
   JSObject global_obj_;
   JSNativeFunction throw_type_error_;
   JSEnv* lexical_env_;

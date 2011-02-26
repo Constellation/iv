@@ -47,6 +47,7 @@ struct Layout<4, true> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        void* pointer_;
       } payload_;
       uint32_t tag_;
     } struct_;
@@ -70,6 +71,7 @@ struct Layout<8, true> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        void* pointer_;
       } payload_;
     } struct_;
   };
@@ -91,6 +93,7 @@ struct Layout<4, false> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        void* pointer_;
       } payload_;
     } struct_;
   };
@@ -113,6 +116,7 @@ struct Layout<8, false> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        void* pointer_;
       } payload_;
     } struct_;
   };
@@ -347,6 +351,11 @@ class JSVal {
     return value_.struct_.payload_.boolean_;
   }
 
+  inline void* pointer() const {
+    assert(IsPtr());
+    return value_.struct_.payload_.pointer_;
+  }
+
   inline bool IsEmpty() const {
     return value_.struct_.tag_ == detail::kEmptyTag;
   }
@@ -376,6 +385,9 @@ class JSVal {
   }
   inline bool IsPrimitive() const {
     return IsNumber() || IsString() || IsBoolean();
+  }
+  inline bool IsPtr() const {
+    return IsObject() || IsString() || IsReference() || IsEnvironment();
   }
   JSString* TypeOf(Context* ctx) const;
 
