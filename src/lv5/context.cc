@@ -2142,6 +2142,26 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section B.2.4 Date.prototype.getYear()
+    // this method is deprecated.
+    proto->DefineOwnProperty(
+        this, Intern("getYear"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetYear, 0>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section B.2.5 Date.prototype.setYear(year)
+    // this method is deprecated.
+    proto->DefineOwnProperty(
+        this, Intern("setYear"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::DateGetYear, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

@@ -1437,5 +1437,64 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
   return toISO.object()->AsCallable()->Call(a, obj, e);
 }
 
+// section B.2.4 Date.prototype.getYear()
+// this method is deprecated.
+inline JSVal DateGetYear(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Date.prototype.getYear", args, e);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
+    // this is date object
+    const double time = static_cast<JSDate*>(obj.object())->value();
+    if (std::isnan(time)) {
+      return JSValData::kNaN;
+    }
+    return date::YearFromTime(date::LocalTime(time)) - 1900;
+  }
+  e->Report(Error::Type,
+            "Date.prototype.getYear is not generic function");
+  return JSUndefined;
+}
+
+// section B.2.5 Date.prototype.setYear(year)
+// this method is deprecated.
+inline JSVal DateSetYear(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Date.prototype.setYear", args, e);
+  const JSVal& obj = args.this_binding();
+  const Class& cls = args.ctx()->Cls("Date");
+  if (obj.IsObject() && cls.name == obj.object()->class_name()) {
+    JSDate* d = static_cast<JSDate*>(obj.object());
+    double t = date::LocalTime(d->value());
+    if (std::isnan(t)) {
+      t = +0.0;
+    }
+    const std::size_t args_size = args.size();
+    double y = JSValData::kNaN;
+    if (args_size > 0) {
+      y = args[0].ToNumber(args.ctx(), ERROR(e));
+    }
+    if (std::isnan(y)) {
+      d->set_value(y);
+      return y;
+    }
+    double year = core::DoubleToInteger(y);
+    if (0.0 <= year && year <= 99.0) {
+      year += 1900;
+    }
+    const double v = date::TimeClip(
+        date::UTC(
+            date::MakeDate(
+                date::MakeDay(year,
+                              date::MonthFromTime(t),
+                              date::DateFromTime(t)),
+                date::TimeWithinDay(t))));
+    d->set_value(v);
+    return v;
+  }
+  e->Report(Error::Type,
+            "Date.prototype.setYear is not generic function");
+  return JSUndefined;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_STRING_H_
