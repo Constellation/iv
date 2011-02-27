@@ -5,14 +5,7 @@
 #include <cstring>
 #include <tr1/cstdint>
 #include <tr1/array>
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
+#include "os_defines.h"
 #include "conversions.h"
 #include "utils.h"
 namespace iv {
@@ -181,96 +174,7 @@ inline int32_t LocalTZA() {
   return local_tza;
 }
 
-#ifdef WIN32
-inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
-  LARGE_INTEGER i;
-  i.LowPart = ft.dwLowDateTime;
-  i.HighPart = ft.dwHighDateTime;
-  return (i.QuadPart - kEpochTime) / 10 / 1000000;
-}
-
-inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
-  FILETIME ft;
-  ::SystemTimeToFileTime(&st, &ft);
-  return FileTimeToUnixTime(ft);
-}
-
-inline double DaylightSavingTA(double t) {
-  // http://msdn.microsoft.com/en-us/library/ms724421
-  if (std::isnan(t)) {
-    return t;
-  }
-  TIME_ZONE_INFORMATION tzi;
-  const DWORD r = ::GetTimeZoneInformation(&tzi);
-  switch (r) {
-    case TIME_ZONE_ID_STANDARD:
-    case TIME_ZONE_ID_DAYLIGHT: {
-      if (tzi.StandardDate.wMonth == 0 ||
-          tzi.DaylightDate.wMonth == 0) {
-        break;
-      }
-
-      const std::time_t ts = SystemTimeToUnixTime(tzi.StandardDate);
-      const std::time_t td = SystemTimeToUnixTime(tzi.DaylightDate);
-
-      if (td <= t && t <= ts) {
-        return - tzi.DaylightBias * (60 * kMsPerSecond);
-      } else {
-        return 0.0;
-      }
-    }
-    case TIME_ZONE_ID_UNKNOWN: {
-      // Daylight Saving Time not used in this time zone
-      return 0.0;
-    }
-  }
-  return 0.0;
-}
-#else
-inline double DaylightSavingTA(double t) {
-  if (std::isnan(t)) {
-    return t;
-  }
-  const std::time_t current = core::DoubleToInt64(t);
-  if (current == t) {
-    const std::tm* const tmp = std::localtime(&current);  // NOLINT
-    if (tmp->tm_isdst > 0) {
-      return kMsPerHour;
-    }
-  } else {
-    // Daylight Saving Time
-    // from    2 AM the first Sunday in April
-    // through 2 AM the last Sunday in October
-    double target = t - LocalTZA();
-    const int year = YearFromTime(target);
-    const int leap = IsLeapYear(target);
-
-    double start = TimeFromYear(year);
-    double end = start;
-
-    // goto April 1st
-    start += MonthToDaysInYear(3, leap) * kMsPerDay;
-    // goto the first Sunday in April
-    while (WeekDay(start) != 0) {
-      start += kMsPerDay;
-    }
-
-    // goto Octobar 30th
-    end += (MonthToDaysInYear(9, leap) + 30) * kMsPerDay;
-    // goto the last Sunday in Octobar
-    while (WeekDay(end) != 0) {
-      end -= kMsPerDay;
-    }
-
-    target -= 2 * kMsPerHour;
-
-    if (start <= target && target <= end) {
-      return kMsPerHour;
-    }
-  }
-  return 0.0;
-}
-#endif
+double DaylightSavingTA(double t);
 
 static const char* kNaNTimeZone = "";
 inline const char* LocalTimeZone(double t) {
@@ -390,19 +294,10 @@ inline double TimeClip(double time) {
   return core::DoubleToInteger(time);
 }
 
-#ifdef WIN32
-inline double CurrentTime() {
-  FILETIME ft;
-  ::GetSystemTimeAsFileTime(&ft);
-  return FileTimeToUnixTime(ft);
-}
-#else
-inline double CurrentTime() {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-#endif
-
 } } }  // namespace iv::lv5::date
+#ifdef OS_WIN
+#include "lv5/date_utils_win.h"
+#else
+#include "lv5/date_utils_posix.h"
+#endif  // OS_WIN
 #endif  // _IV_LV5_DATE_UTILS_H_
