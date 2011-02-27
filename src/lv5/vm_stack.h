@@ -26,18 +26,27 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
+  // not bytes. JSVals capacity.
+  // if you calc bytes, sizeof(JSVal) * kStackCapacity
   static const size_type kStackCapacity = 16 * 1024;
+  static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
+
+  // bytes. 4KB is page size.
+  static const size_type kCommitSize = 4 * 1024;
   static const size_type kMaxCallCount = 4096;
 
   VMStack()
     : stack_(NULL),
-      stack_pointer_(NULL) {
+      stack_pointer_(NULL),
+      call_count_(0),
+      pages_(1) {
     stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(
-        OSAllocator::Allocate(kStackCapacity * sizeof(JSVal)));
+        OSAllocator::Allocate(kStackBytes));
   }
 
   ~VMStack() {
-    OSAllocator::Deallocate(stack_, kStackCapacity * sizeof(JSVal));
+    OSAllocator::Decommit(stack_, kStackBytes);
+    OSAllocator::Deallocate(stack_, kStackBytes);
   }
 
   pointer stack_pointer_begin() const {
@@ -90,6 +99,7 @@ class VMStack : private core::Noncopyable<VMStack>::type {
   pointer stack_;
   pointer stack_pointer_;
   std::size_t call_count_;
+  std::size_t pages_;
 };
 
 } }  // namespace iv::lv5

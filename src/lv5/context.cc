@@ -1224,6 +1224,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("EvalError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1239,9 +1240,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1264,6 +1265,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("RangeError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1279,9 +1281,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1304,6 +1306,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("ReferenceError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1319,9 +1322,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1344,6 +1347,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("SyntaxError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1359,9 +1363,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1384,6 +1388,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("TypeError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1399,9 +1404,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1424,6 +1429,7 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
+      const Symbol sym = Intern("URIError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
@@ -1439,9 +1445,9 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sub_cls.name] = sub_cls;
+      builtins_[sym] = sub_cls;
       global_obj_.DefineOwnProperty(
-          this, sub_cls.name,
+          this, sym,
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
