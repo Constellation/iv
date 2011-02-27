@@ -124,7 +124,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
       // length must be uint32_t
       const uint32_t new_len = core::DoubleToUInt32(new_len_double);
       if (new_len != new_len_double) {
-        res->Report(Error::Range, "out of range");
+        res->Report(Error::Range, "invalid array length");
         return false;
       }
       new_len_desc.set_value(new_len);

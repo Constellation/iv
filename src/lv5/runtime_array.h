@@ -32,7 +32,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
         return JSArray::New(ctx, len);
       } else {
         e->Report(Error::Range,
-                  "len of `new Array(len)` is number, but out of range");
+                  "invalid array length");
         return JSUndefined;
       }
     } else {

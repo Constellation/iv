@@ -41,19 +41,12 @@ class StackResource : private core::Noncopyable<StackResource>::type {
 
     GCMSEntry* entry = mark_sp;
 
-    const void* const stack_pointer_begin =
-        reinterpret_cast<void*>(vmstack->stack_pointer_begin());
-    const void* const stack_pointer_end =
-        reinterpret_cast<void*>(vmstack->stack_pointer_end());
-    const void* const heap_begin = GC_least_plausible_heap_addr;
-    const void* const heap_end = GC_greatest_plausible_heap_addr;
-
     for (VMStack::iterator it = vmstack->stack_pointer_begin(),
          last = vmstack->stack_pointer(); it != last; ++it) {
       if (it->IsPtr()) {
         void* ptr = it->pointer();
-        if ((heap_begin < ptr && ptr < stack_pointer_begin) ||
-            (stack_pointer_end < ptr && ptr < heap_end)) {
+        if (GC_least_plausible_heap_addr < ptr &&
+            ptr < GC_greatest_plausible_heap_addr) {
           entry = GC_mark_and_push(ptr,
                                    entry, mark_sp_limit,
                                    reinterpret_cast<void**>(&stack));

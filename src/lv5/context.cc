@@ -1233,7 +1233,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("EvalError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "EvalError"),
         sub_constructor,
         sub_proto
@@ -1273,7 +1273,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("RangeError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "RangeError"),
         sub_constructor,
         sub_proto
@@ -1313,7 +1313,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("ReferenceError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "ReferenceError"),
         sub_constructor,
         sub_proto
@@ -1353,7 +1353,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("SyntaxError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "SyntaxError"),
         sub_constructor,
         sub_proto
@@ -1393,7 +1393,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("TypeError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "TypeError"),
         sub_constructor,
         sub_proto
@@ -1433,7 +1433,7 @@ void Context::Initialize() {
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("URIError"),
+        Intern("Error"),
         JSString::NewAsciiString(this, "URIError"),
         sub_constructor,
         sub_proto
