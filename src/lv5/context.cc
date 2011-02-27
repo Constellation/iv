@@ -2158,7 +2158,7 @@ void Context::Initialize() {
     proto->DefineOwnProperty(
         this, Intern("setYear"),
         DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetYear, 1>::New(this),
+            JSInlinedFunction<&runtime::DateSetYear, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
