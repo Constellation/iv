@@ -304,5 +304,74 @@ inline bool AbstractEqual(Context* ctx,
 }
 #undef ABSTRACT_CHECK
 
+enum CompareKind {
+  CMP_TRUE,
+  CMP_FALSE,
+  CMP_UNDEFINED,
+  CMP_ERROR
+};
+
+// section 11.8.5
+template<bool LeftFirst>
+CompareKind Compare(Context* ctx,
+                    const JSVal& lhs, const JSVal& rhs, Error* e) {
+  JSVal px;
+  JSVal py;
+  if (LeftFirst) {
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+  } else {
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+  }
+  if (px.IsString() && py.IsString()) {
+    // step 4
+    return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
+  } else {
+    const double nx = px.ToNumber(ctx, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+    const double ny = py.ToNumber(ctx, e);
+    if (*e) {
+      return CMP_ERROR;
+    }
+    if (std::isnan(nx) || std::isnan(ny)) {
+      return CMP_UNDEFINED;
+    }
+    if (nx == ny) {
+      if (std::signbit(nx) != std::signbit(ny)) {
+        return CMP_FALSE;
+      }
+      return CMP_FALSE;
+    }
+    if (nx == std::numeric_limits<double>::infinity()) {
+      return CMP_FALSE;
+    }
+    if (ny == std::numeric_limits<double>::infinity()) {
+      return CMP_TRUE;
+    }
+    if (ny == (-std::numeric_limits<double>::infinity())) {
+      return CMP_FALSE;
+    }
+    if (nx == (-std::numeric_limits<double>::infinity())) {
+      return CMP_TRUE;
+    }
+    return (nx < ny) ? CMP_TRUE : CMP_FALSE;
+  }
+}
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_INTERNAL_H_

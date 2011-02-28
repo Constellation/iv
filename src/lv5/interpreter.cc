@@ -956,7 +956,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LT: {  // <
-        const CompareKind res = Compare<true>(lhs, rhs, CHECK);
+        const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -966,7 +966,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GT: {  // >
-        const CompareKind res = Compare<false>(rhs, lhs, CHECK);
+        const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
         if (res == CMP_TRUE) {
           ctx_->Return(JSTrue);
         } else {
@@ -976,7 +976,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LTE: {  // <=
-        const CompareKind res = Compare<false>(rhs, lhs, CHECK);
+        const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {
@@ -986,7 +986,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::GTE: {  // >=
-        const CompareKind res = Compare<true>(lhs, rhs, CHECK);
+        const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
         if (res == CMP_FALSE) {
           ctx_->Return(JSTrue);
         } else {

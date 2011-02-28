@@ -3,6 +3,7 @@
 #include "conversions.h"
 #include "lv5/lv5.h"
 #include "lv5/arguments.h"
+#include "lv5/internal.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsarray.h"
@@ -13,6 +14,29 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
+namespace detail {
+
+inline JSVal CompareFn(const Arguments& args, Error* e) {
+  assert(args.size() == 2);  // always 2
+  const JSVal& lhs = args[0];
+  const JSVal& rhs = args[1];
+  if (StrictEqual(lhs, rhs)) {
+    return 0.0;
+  } else if (lhs.IsNumber() && rhs.IsNumber()) {
+    if (lhs.number() == rhs.number()) {
+      return 0.0;
+    }
+    return lhs.number() < rhs.number() ? -1.0 : 1.0;
+  }
+  const JSString* const lhs_str = lhs.ToString(args.ctx(), ERROR(e));
+  const JSString* const rhs_str = rhs.ToString(args.ctx(), ERROR(e));
+  if (*lhs_str == *rhs_str) {
+    return 0.0;
+  }
+  return (*lhs_str < *rhs_str) ? -1.0 : 1.0;
+}
+
+}  // namespace iv::lv5::runtime::detail
 
 // section 15.4.1.1 Array([item0 [, item1 [, ...]]])
 // section 15.4.2.1 new Array([item0 [, item1 [, ...]]])
@@ -468,7 +492,150 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   return ary;
 }
 
-// section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
+// section 15.4.4.11 Array.prototype.sort(comparefn)
+// non recursive quick sort
+inline JSVal ArraySort(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Array.prototype.sort", args, e);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
+  const JSVal length = obj->Get(
+      ctx,
+      ctx->length_symbol(), ERROR(e));
+  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = core::DoubleToUInt32(val);
+  JSFunction* comparefn;
+  if (args.size() > 0 && args[0].IsCallable()) {
+    comparefn = args[0].object()->AsCallable();
+  } else {
+    comparefn = JSInlinedFunction<&detail::CompareFn, 2>::New(ctx);
+  }
+  if (len == 0) {
+    return obj;
+  }
+  {
+    // non recursive quick sort
+    int sp = 1;
+    int64_t l = 0, r = 0;
+    const JSVal zero(0.0);
+    static const int32_t kStackSize = 32;
+    std::tr1::array<int64_t, kStackSize> lstack, rstack;
+    lstack[0] = 0;
+    rstack[0] = len - 1;
+    Arguments a(ctx, 2, ERROR(e));
+    while (sp > 0) {
+      --sp;
+      l = lstack[sp];
+      r = rstack[sp];
+
+      if (l < r) {
+        if (r - l < 20) {
+          // only 20 elements. using insertion sort
+          for (int64_t i = l + 1; i <= r; ++i) {
+            const JSVal t = obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
+            int64_t j = i - 1;
+            for (; j >= l; --j) {
+              const JSVal t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+              a[0] = t2;
+              a[1] = t;
+              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const CompareKind kind =
+                  Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
+              if (kind == CMP_TRUE) {  // res > zero is true
+                obj->PutWithIndex(ctx,
+                                  static_cast<uint32_t>(j + 1), t2, true, ERROR(e));
+              } else {
+                break;
+              }
+            }
+            obj->PutWithIndex(ctx, static_cast<uint32_t>(j + 1), t, true, ERROR(e));
+          }
+        } else {
+          // quick sort
+          const int64_t pivot = (l + r) >> 1;
+          const JSVal s = obj->GetWithIndex(ctx, pivot, ERROR(e));
+          a[1] = s;
+          int64_t i = l - 1;
+          int64_t j = r + 1;
+          while (true) {
+            // search from left
+            while (true) {
+              ++i;
+              // if compare func has very storange behavior,
+              // prevent by length
+              if (i == pivot) {
+                break;
+              }
+              const JSVal target =
+                  obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
+              a[0] = target;
+              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const CompareKind kind =
+                  Compare<true>(ctx, res, zero, ERROR(e));
+              if (kind != CMP_TRUE) {  // res < zero is true
+                break;
+              }
+            }
+            // search from right
+            while (true) {
+              --j;
+              // if compare func has very storange behavior,
+              // prevent by length
+              if (j == pivot) {
+                break;
+              }
+              const JSVal target =
+                  obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+              a[0] = target;
+              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const CompareKind kind =
+                  Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
+              if (kind != CMP_TRUE) {  // target < s is true
+                break;
+              }
+            }
+
+            if (i >= j) {
+              break;
+            }
+
+            // swap
+            const JSVal ival =
+                obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
+            const JSVal jval =
+                obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+            obj->PutWithIndex(ctx,
+                              static_cast<uint32_t>(i), jval, true, ERROR(e));
+            obj->PutWithIndex(ctx,
+                              static_cast<uint32_t>(j), ival, true, ERROR(e));
+          }
+
+          if (sp + 2 > kStackSize) {
+            e->Report(
+                Error::Type,
+                "Array.protoype.sort stack overflow");
+            return JSUndefined;
+          }
+
+          if (i - l < r - i) {
+            lstack[sp] = i + 1;
+            rstack[sp++] = r;
+            lstack[sp] = l;
+            rstack[sp++] = i - 1;
+          } else {
+            lstack[sp] = l;
+            rstack[sp++] = i - 1;
+            lstack[sp] = i + 1;
+            rstack[sp++] = r;
+          }
+        }
+      }
+    }
+  }
+  return obj;
+}
+
+// section 15.4.4.12
+// Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])
 inline JSVal ArraySplice(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
   Context* const ctx = args.ctx();

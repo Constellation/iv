@@ -11,7 +11,7 @@ namespace lv5 {
 class Syslog : private core::Noncopyable<Syslog>::type {
  public:
   explicit Syslog(const std::string& ident) {
-    openlog(ident.c_str(), LOG_CONS, LOG_USER);
+    openlog(ident.c_str(), LOG_CONS | LOG_PID, LOG_USER);
   }
 
   ~Syslog() {

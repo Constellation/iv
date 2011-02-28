@@ -654,6 +654,15 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section 15.4.4.11 Array.prototype.sort(comparefn)
+    proto->DefineOwnProperty(
+        this, Intern("sort"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::ArraySort, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     // section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
     proto->DefineOwnProperty(
         this, Intern("splice"),
