@@ -981,6 +981,16 @@ void Context::Initialize() {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
+
+    // section B.2.3 String.prototype.substr(start, length)
+    // this method is deprecated.
+    proto->DefineOwnProperty(
+        this, Intern("substr"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::StringSubstr, 2>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
   }
 
   {

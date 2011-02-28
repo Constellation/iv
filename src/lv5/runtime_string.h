@@ -2,6 +2,7 @@
 #define _IV_LV5_RUNTIME_STRING_H_
 #include <cassert>
 #include <vector>
+#include <limits>
 #include <utility>
 #include <tr1/tuple>
 #include "ustring.h"
@@ -1059,6 +1060,56 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     }
   }
   return JSString::New(args.ctx(), lit, rit + 1);
+}
+
+// section B.2.3 String.prototype.substr(start, length)
+// this method is deprecated.
+inline JSVal StringSubstr(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("String.prototype.substr", args, e);
+  const JSVal& val = args.this_binding();
+  Context* const ctx = args.ctx();
+  const JSString* const str = val.ToString(args.ctx(), ERROR(e));
+  const double len = str->size();
+
+  double start;
+  if (args.size() > 0) {
+    double integer = args[0].ToNumber(ctx, ERROR(e));
+    start = core::DoubleToInteger(integer);
+  } else {
+    start = 0.0;
+  }
+
+  double length;
+  if (args.size() > 1) {
+    if (args[1].IsUndefined()) {
+      length = std::numeric_limits<double>::infinity();
+    } else {
+      const double integer = args[1].ToNumber(ctx, ERROR(e));
+      length = core::DoubleToInteger(integer);
+    }
+  } else {
+    length = std::numeric_limits<double>::infinity();
+  }
+
+  double result5;
+  if (start > 0 || start == 0) {
+    result5 = start;
+  } else {
+    result5 = std::max<double>(start + len, 0.0);
+  }
+
+  const double result6 = std::min<double>(std::max<double>(length, 0.0),
+                                          len - result5);
+
+  if (result6 <= 0) {
+    return JSString::NewEmptyString(ctx);
+  }
+
+  const uint32_t capacity = core::DoubleToUInt32(result6);
+  const uint32_t start_position = core::DoubleToUInt32(result5);
+  return JSString::New(ctx,
+                       str->begin() + start_position,
+                       str->begin() + start_position + capacity);
 }
 
 } } }  // namespace iv::lv5::runtime
