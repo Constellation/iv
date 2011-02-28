@@ -2189,11 +2189,14 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    JSFunction* const toUTCString =
+        JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this);
+
     // section 15.9.5.42 Date.prototype.toUTCString()
     proto->DefineOwnProperty(
         this, Intern("toUTCString"),
         DataDescriptor(
-            JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this),
+            toUTCString,
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
@@ -2232,6 +2235,15 @@ void Context::Initialize() {
         this, Intern("setYear"),
         DataDescriptor(
             JSInlinedFunction<&runtime::DateSetYear, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section B.2.6 Date.prototype.toGMTString()
+    proto->DefineOwnProperty(
+        this, Intern("toGMTString"),
+        DataDescriptor(
+            toUTCString,
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
