@@ -1218,9 +1218,10 @@ void Context::Initialize() {
     // section 15.11.4.3 Error.prototype.message
     proto->DefineOwnProperty(
         this, Intern("message"),
-        DataDescriptor(JSString::NewAsciiString(this, ""),
+        DataDescriptor(JSString::NewEmptyString(this),
                        PropertyDescriptor::NONE),
         false, NULL);
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
@@ -1262,6 +1263,14 @@ void Context::Initialize() {
               JSString::NewAsciiString(this, "EvalError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
@@ -1297,12 +1306,21 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "RangeError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
@@ -1338,12 +1356,21 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "ReferenceError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
@@ -1379,12 +1406,21 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "SyntaxError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
@@ -1420,12 +1456,21 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "TypeError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
@@ -1461,12 +1506,21 @@ void Context::Initialize() {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, Intern("name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "URIError"),
               PropertyDescriptor::NONE),
           false, NULL);
+
+      sub_proto->DefineOwnProperty(
+          this, Intern("message"),
+          DataDescriptor(
+              JSString::NewEmptyString(this),
+              PropertyDescriptor::NONE),
+          false, NULL);
+
       sub_proto->DefineOwnProperty(
           this, constructor_symbol_,
           DataDescriptor(sub_constructor,
