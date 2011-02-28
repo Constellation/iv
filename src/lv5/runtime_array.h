@@ -531,9 +531,11 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
         if (r - l < 20) {
           // only 20 elements. using insertion sort
           for (int64_t i = l + 1; i <= r; ++i) {
+            std::cout << "i" <<  i << std::endl;
             const JSVal t = obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
             int64_t j = i - 1;
             for (; j >= l; --j) {
+              std::cout << "j" << j << std::endl;
               const JSVal t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = t2;
               a[1] = t;
@@ -562,16 +564,17 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               ++i;
               // if compare func has very storange behavior,
               // prevent by length
-              if (i == pivot) {
+              if (i == r) {
                 break;
               }
               const JSVal target =
                   obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
               a[0] = target;
+              // if res < 0, next
               const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
               const CompareKind kind =
                   Compare<true>(ctx, res, zero, ERROR(e));
-              if (kind != CMP_TRUE) {  // res < zero is true
+              if (kind != CMP_TRUE) {
                 break;
               }
             }
@@ -580,12 +583,13 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               --j;
               // if compare func has very storange behavior,
               // prevent by length
-              if (j == pivot) {
+              if (j == l) {
                 break;
               }
               const JSVal target =
                   obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = target;
+              // if res > 0, next
               const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
               const CompareKind kind =
                   Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
@@ -617,14 +621,14 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
           }
 
           if (i - l < r - i) {
-            lstack[sp] = i + 1;
+            lstack[sp] = i;
             rstack[sp++] = r;
             lstack[sp] = l;
             rstack[sp++] = i - 1;
           } else {
             lstack[sp] = l;
             rstack[sp++] = i - 1;
-            lstack[sp] = i + 1;
+            lstack[sp] = i;
             rstack[sp++] = r;
           }
         }
