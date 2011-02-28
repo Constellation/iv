@@ -531,11 +531,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
         if (r - l < 20) {
           // only 20 elements. using insertion sort
           for (int64_t i = l + 1; i <= r; ++i) {
-            std::cout << "i" <<  i << std::endl;
             const JSVal t = obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
             int64_t j = i - 1;
             for (; j >= l; --j) {
-              std::cout << "j" << j << std::endl;
               const JSVal t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = t2;
               a[1] = t;
