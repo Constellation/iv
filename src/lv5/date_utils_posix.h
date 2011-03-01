@@ -27,15 +27,16 @@ inline double DaylightSavingTA(double t) {
     double start = TimeFromYear(year);
     double end = start;
 
+
     // goto April 1st
-    start += MonthToDaysInYear(3, leap) * kMsPerDay;
+    start += static_cast<double>(MonthToDaysInYear(3, leap)) * kMsPerDay;
     // goto the first Sunday in April
     while (WeekDay(start) != 0) {
       start += kMsPerDay;
     }
 
     // goto Octobar 30th
-    end += (MonthToDaysInYear(9, leap) + 30) * kMsPerDay;
+    end += static_cast<double>((MonthToDaysInYear(9, leap) + 30)) * kMsPerDay;
     // goto the last Sunday in Octobar
     while (WeekDay(end) != 0) {
       end -= kMsPerDay;

@@ -39,6 +39,7 @@ class JSArray : public JSObject {
   static JSArray* New(Context* ctx, std::size_t n);
   static JSArray* NewPlain(Context* ctx);
 
+  void Compaction(Context* ctx);
  private:
   void CompactionToLength(uint32_t length);
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
