@@ -6,12 +6,17 @@ namespace iv {
 namespace lv5 {
 namespace date {
 
-inline double DaylightSavingTA(double t) {
-  if (std::isnan(t)) {
-    return t;
+inline double DaylightSavingTA(double utc) {
+  // t is utc time
+  if (std::isnan(utc)) {
+    return utc;
   }
-  const std::time_t current = core::DoubleToInt64(t);
-  if (current == t) {
+
+  // use localtime
+  // but sputniktests not adopt this version
+  const double local = utc + LocalTZA();
+  const std::time_t current = core::DoubleToInt64(local);
+  if (current == local) {
     const std::tm* const tmp = std::localtime(&current);  // NOLINT
     if (tmp->tm_isdst > 0) {
       return kMsPerHour;
@@ -20,9 +25,8 @@ inline double DaylightSavingTA(double t) {
     // Daylight Saving Time
     // from    2 AM the first Sunday in April
     // through 2 AM the last Sunday in October
-    double target = t - LocalTZA();
-    const int year = YearFromTime(target);
-    const int leap = IsLeapYear(target);
+    const int year = YearFromTime(utc);
+    const int leap = IsLeapYear(utc);
 
     double start = TimeFromYear(year);
     double end = start;
@@ -42,7 +46,7 @@ inline double DaylightSavingTA(double t) {
       end -= kMsPerDay;
     }
 
-    target -= 2 * kMsPerHour;
+    const double target = utc - 2 * kMsPerHour;
 
     if (start <= target && target <= end) {
       return kMsPerHour;

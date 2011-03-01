@@ -18,13 +18,14 @@ inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
   return FileTimeToUnixTime(ft);
 }
 
-inline double DaylightSavingTA(double t) {
+inline double DaylightSavingTA(double utc) {
   // http://msdn.microsoft.com/en-us/library/ms724421
-  if (std::isnan(t)) {
-    return t;
+  if (std::isnan(utc)) {
+    return utc;
   }
   TIME_ZONE_INFORMATION tzi;
   const DWORD r = ::GetTimeZoneInformation(&tzi);
+  const double local = utc + LocalTZA();
   switch (r) {
     case TIME_ZONE_ID_STANDARD:
     case TIME_ZONE_ID_DAYLIGHT: {
@@ -36,7 +37,7 @@ inline double DaylightSavingTA(double t) {
       const std::time_t ts = SystemTimeToUnixTime(tzi.StandardDate);
       const std::time_t td = SystemTimeToUnixTime(tzi.DaylightDate);
 
-      if (td <= t && t <= ts) {
+      if (td <= local && local <= ts) {
         return - tzi.DaylightBias * (60 * kMsPerSecond);
       } else {
         return 0.0;
