@@ -2,7 +2,6 @@
 #define _IV_LV5_XORSHIFT_H_
 #include <ctime>
 #include <tr1/cstdint>
-#include <tr1/random>
 
 namespace iv {
 namespace lv5 {

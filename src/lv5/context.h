@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_CONTEXT_H_
 #define _IV_LV5_CONTEXT_H_
 #include <tr1/unordered_map>
-#include <tr1/random>
 #include <tr1/type_traits>
+#include <boost/random.hpp>
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
@@ -48,8 +48,8 @@ class Context : private core::Noncopyable<Context>::type {
   friend Symbol context::Intern(Context* ctx, double number);
 
   typedef Xor128 random_engine_type;
-  typedef std::tr1::uniform_real<double> random_distribution_type;
-  typedef std::tr1::variate_generator<
+  typedef boost::uniform_real<double> random_distribution_type;
+  typedef boost::variate_generator<
       random_engine_type, random_distribution_type> random_generator;
   enum Mode {
     NORMAL,
