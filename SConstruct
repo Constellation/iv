@@ -72,6 +72,8 @@ def Build():
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
 
+  env.PrependENVPath('PATH', os.environ['PATH']) #especially MacPorts's /opt/local/bin
+
   if os.path.exists(join(root_dir, '.config')):
     env.SConscript(
       join(root_dir, '.config'),
@@ -98,7 +100,8 @@ def Build():
       conf.env.Append(
           CCFLAGS=[
             "-pedantic", "-Wpointer-arith",
-            "-Wwrite-strings", "-Wno-long-long"   ])
+            "-Wwrite-strings", "-Wno-long-long",
+            "-Wno-missing-field-initializers"])
       option_dict['%USE_ICU%'] = '1'
     conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
