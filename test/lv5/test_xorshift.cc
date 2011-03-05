@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-#include <tr1/random>
-#include <tr1/functional>
+#include <boost/random.hpp>
 #include <iostream>
 #include "lv5/xorshift.h"
 
@@ -15,8 +14,8 @@ TEST(XorshiftCase, Test) {
 
 TEST(XorshiftCase, DistIntTest) {
   typedef iv::lv5::Xor128 engine_type;
-  typedef std::tr1::uniform_int<int> distribution_type;
-  typedef std::tr1::variate_generator<engine_type, distribution_type> generator;
+  typedef boost::uniform_int<int> distribution_type;
+  typedef boost::variate_generator<engine_type, distribution_type> generator;
   generator gen(engine_type(), distribution_type(0, 100));
   for (int i = 0; i < 1000; ++i) {
     const int res = gen();
@@ -27,8 +26,8 @@ TEST(XorshiftCase, DistIntTest) {
 
 TEST(XorshiftCase, DistRealTest) {
   typedef iv::lv5::Xor128 engine_type;
-  typedef std::tr1::uniform_real<double> distribution_type;
-  typedef std::tr1::variate_generator<engine_type, distribution_type> generator;
+  typedef boost::uniform_real<double> distribution_type;
+  typedef boost::variate_generator<engine_type, distribution_type> generator;
   generator gen(engine_type(), distribution_type(0, 1));
   for (int i = 0; i < 1000; ++i) {
     const double res = gen();
