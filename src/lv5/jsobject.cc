@@ -1,6 +1,7 @@
 #include <cassert>
 #include <algorithm>
 #include "lv5/jsobject.h"
+#include "lv5/context_utils.h"
 #include "lv5/property.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsval.h"

@@ -183,6 +183,11 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol InternIndex(uint32_t index);
   Symbol InternDouble(double number);
 
+  Symbol CheckIntern(const core::StringPiece& str, bool* found);
+  Symbol CheckIntern(const core::UStringPiece& str, bool* found);
+  Symbol CheckIntern(uint32_t index, bool* found);
+  Symbol CheckIntern(double number, bool* found);
+
   inline Symbol length_symbol() const {
     return length_symbol_;
   }
@@ -247,12 +252,6 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
  private:
-
-  Symbol CheckIntern(const core::StringPiece& str, bool* found);
-  Symbol CheckIntern(const core::UStringPiece& str, bool* found);
-  Symbol CheckIntern(uint32_t index, bool* found);
-  Symbol CheckIntern(double number, bool* found);
-
   const core::UString& GetSymbolString(Symbol sym) const;
 
   StackResource stack_resource_;
@@ -283,41 +282,6 @@ class Context : private core::Noncopyable<Context>::type {
   Symbol Array_symbol_;
   JSScript* current_script_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
-};
-
-class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {
- public:
-  SymbolChecker(Context* ctx, const core::StringPiece& str)
-    : found_(false),
-      sym_(ctx->CheckIntern(str, &found_)) {
-  }
-
-  SymbolChecker(Context* ctx, const core::UStringPiece& str)
-    : found_(false),
-      sym_(ctx->CheckIntern(str, &found_)) {
-  }
-
-  SymbolChecker(Context* ctx, uint32_t index)
-    : found_(false),
-      sym_(ctx->CheckIntern(index, &found_)) {
-  }
-
-  SymbolChecker(Context* ctx, double number)
-    : found_(false),
-      sym_(ctx->CheckIntern(number, &found_)) {
-  }
-
-  bool Found() const {
-    return found_;
-  }
-
-  Symbol symbol() const {
-    return sym_;
-  }
-
- private:
-  bool found_;
-  Symbol sym_;
 };
 
 } }  // namespace iv::lv5

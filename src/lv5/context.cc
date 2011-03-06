@@ -81,6 +81,22 @@ Symbol Intern(Context* ctx, double number) {
   return ctx->InternDouble(number);
 }
 
+Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res) {
+  return ctx->CheckIntern(str, res);
+}
+
+Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res) {
+  return ctx->CheckIntern(str, res);
+}
+
+Symbol Lookup(Context* ctx, uint32_t index, bool* res) {
+  return ctx->CheckIntern(index, res);
+}
+
+Symbol Lookup(Context* ctx, double number, bool* res) {
+  return ctx->CheckIntern(number, res);
+}
+
 Symbol constructor_symbol(const Context* ctx) {
   return ctx->constructor_symbol();
 }

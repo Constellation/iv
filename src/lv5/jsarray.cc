@@ -12,6 +12,7 @@
 #include "lv5/property.h"
 #include "lv5/jsstring.h"
 #include "lv5/context_utils.h"
+#include "lv5/symbol_checker.h"
 #include "lv5/context.h"
 #include "lv5/class.h"
 

@@ -25,6 +25,11 @@ Symbol Intern(Context* ctx, const Identifier& ident);
 Symbol Intern(Context* ctx, uint32_t index);
 Symbol Intern(Context* ctx, double number);
 
+Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res);
+Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res);
+Symbol Lookup(Context* ctx, uint32_t index, bool* res);
+Symbol Lookup(Context* ctx, double number, bool* res);
+
 Symbol constructor_symbol(const Context* ctx);
 Symbol prototype_symbol(const Context* ctx);
 Symbol length_symbol(const Context* ctx);
