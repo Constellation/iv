@@ -498,6 +498,52 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
 
 // section B.2.2 unescape(string)
 // this method is deprecated.
+inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("unescape", args, e);
+  Context* const ctx = args.ctx();
+  JSString* str = args.At(0).ToString(ctx ,ERROR(e));
+  const std::size_t len = str->size();
+  if (len == 0) {
+    return str;  // empty string
+  }
+  StringBuilder builder;
+  std::size_t k = 0;
+  while (k != len) {
+    const uc16 ch = (*str)[k];
+    if (ch == '%') {
+      if (k <= (len - 6) &&
+          (*str)[k + 1] == 'u' &&
+          core::character::IsHexDigit((*str)[k + 2]) &&
+          core::character::IsHexDigit((*str)[k + 3]) &&
+          core::character::IsHexDigit((*str)[k + 4]) &&
+          core::character::IsHexDigit((*str)[k + 5])) {
+        uc16 uc = '\0';
+        for (int i = k + 2, last = k + 6; i < last; ++i) {
+          const int d = core::HexValue((*str)[i]);
+          uc = uc * 16 + d;
+        }
+        builder.Append(uc);
+        k += 6;
+      } else if (k <= (len - 3) &&
+                 core::character::IsHexDigit((*str)[k + 1]) &&
+                 core::character::IsHexDigit((*str)[k + 2])) {
+        // step 14
+        builder.Append(
+            core::HexValue((*str)[k + 1]) * 16 + core::HexValue((*str)[k + 2]));
+        k += 3;
+      } else {
+        // step 18
+        builder.Append(ch);
+        ++k;
+      }
+    } else {
+      // step 18
+      builder.Append(ch);
+      ++k;
+    }
+  }
+  return builder.Build(ctx);
+}
 
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_GLOBAL_H_

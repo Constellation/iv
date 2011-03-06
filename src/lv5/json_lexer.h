@@ -266,7 +266,7 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
         break;
       case 'u' : {
         Advance();
-        uc16 uc;
+        uc16 uc = '\0';
         for (int i = 0; i < 4; ++i) {
           const int d = core::HexValue(c_);
           if (d < 0) {

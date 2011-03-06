@@ -2452,6 +2452,16 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    // section B.2.2 unescape(string)
+    // this method is deprecated.
+    global_obj_.DefineOwnProperty(
+        this, Intern("unescape"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalUnescape, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
     global_obj_.set_class_name(Intern("global"));
     global_obj_.set_prototype(obj_proto);
   }
