@@ -2406,7 +2406,7 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // 15.1.3.1 decodeURI(encodedURI)
+    // section 15.1.3.1 decodeURI(encodedURI)
     global_obj_.DefineOwnProperty(
         this, Intern("decodeURI"),
         DataDescriptor(
@@ -2415,7 +2415,7 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // 15.1.3.2 decodeURIComponent(encodedURIComponent)
+    // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
     global_obj_.DefineOwnProperty(
         this, Intern("decodeURIComponent"),
         DataDescriptor(
@@ -2438,6 +2438,16 @@ void Context::Initialize() {
         this, Intern("encodeURIComponent"),
         DataDescriptor(
             JSInlinedFunction<&runtime::GlobalEncodeURIComponent, 1>::New(this),
+            PropertyDescriptor::WRITABLE |
+            PropertyDescriptor::CONFIGURABLE),
+        false, NULL);
+
+    // section B.2.1 escape(string)
+    // this method is deprecated.
+    global_obj_.DefineOwnProperty(
+        this, Intern("escape"),
+        DataDescriptor(
+            JSInlinedFunction<&runtime::GlobalEscape, 1>::New(this),
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);

@@ -36,6 +36,17 @@ inline bool IsURIReserved(uint16_t ch) {
                                    ((ch <= 59) || ch == 61 || (63 <= ch)))))));
 }
 
+inline bool IsEscapeTarget(uint16_t ch) {
+  return
+      '@' == ch ||
+      '*' == ch ||
+      '_' == ch ||
+      '+' == ch ||
+      '-' == ch ||
+      '.' == ch ||
+      '/' == ch;
+}
+
 class URIComponent : core::Noncopyable<URIComponent>::type {
  public:
   static bool ContainsInEncode(uint16_t ch) {
@@ -56,6 +67,18 @@ class URI : core::Noncopyable<URI>::type {
          IsURIMark(ch) ||
          ch == '#' ||
          IsURIReserved(ch));
+  }
+  static bool ContainsInDecode(uint16_t ch) {
+    return IsURIReserved(ch) || ch == '#';
+  }
+};
+
+class Escape : core::Noncopyable<URI>::type {
+ public:
+  static bool ContainsInEncode(uint16_t ch) {
+    return core::character::IsASCII(ch) &&
+        (core::character::IsASCIIAlphanumeric(ch) ||
+         IsEscapeTarget(ch));
   }
   static bool ContainsInDecode(uint16_t ch) {
     return IsURIReserved(ch) || ch == '#';
@@ -306,6 +329,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
+// section 15.1.2.3 parseIng(string, radix)
 inline JSVal GlobalEval(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("eval", args, error);
   return InDirectCallToEval(args, error);
@@ -339,6 +363,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.1.2.3 parseFloat(string)
 inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
@@ -349,6 +374,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.1.2.4 isNaN(number)
 inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("isNaN", args, error);
   if (args.size() > 0) {
@@ -363,6 +389,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
   }
 }
 
+// section 15.1.2.5 isFinite(number)
 inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
@@ -373,8 +400,8 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
   }
 }
 
-// 15.1.3 URI Handling Function Properties
-// 15.1.3.1 decodeURI(encodedURI)
+// section 15.1.3 URI Handling Function Properties
+// section 15.1.3.1 decodeURI(encodedURI)
 inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("decodeURI", args, error);
   const JSString* uri_string;
@@ -386,7 +413,7 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
   return detail::Decode<detail::URI>(args.ctx(), *uri_string, error);
 }
 
-// 15.1.3.2 decodeURIComponent(encodedURIComponent)
+// section 15.1.3.2 decodeURIComponent(encodedURIComponent)
 inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
   const JSString* component_string;
@@ -399,7 +426,7 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
                                               *component_string, error);
 }
 
-// 15.1.3.3 encodeURI(uri)
+// section 15.1.3.3 encodeURI(uri)
 inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
   const JSString* uri_string;
@@ -411,7 +438,7 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
   return detail::Encode<detail::URI>(args.ctx(), *uri_string, error);
 }
 
-// 15.1.3.4 encodeURIComponent(uriComponent)
+// section 15.1.3.4 encodeURIComponent(uriComponent)
 inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("encodeURI", args, error);
   const JSString* component_string;
@@ -429,6 +456,48 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* error) {
                 "[[ThrowTypeError]] called");
   return JSUndefined;
 }
+
+// section B.2.1 escape(string)
+// this method is deprecated.
+inline JSVal GlobalEscape(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("escape", args, e);
+  Context* const ctx = args.ctx();
+  JSString* str = args.At(0).ToString(ctx ,ERROR(e));
+  const std::size_t len = str->size();
+  static const char kHexDigits[17] = "0123456789ABCDEF";
+  std::tr1::array<uint16_t, 6> ubuf;
+  std::tr1::array<uint16_t, 3> hexbuf;
+  ubuf[0] = '%';
+  ubuf[1] = 'u';
+  hexbuf[0] = '%';
+  StringBuilder builder;
+  if (len == 0) {
+    return str;  // empty string
+  }
+  for (std::size_t k = 0; k < len; ++k) {
+    const uc16 ch = (*str)[k];
+    if (detail::Escape::ContainsInEncode(ch)) {
+      builder.Append(ch);
+    } else {
+      if (ch < 256) {
+        hexbuf[1] = kHexDigits[ch / 16];
+        hexbuf[2] = kHexDigits[ch % 16];
+        builder.Append(hexbuf.begin(), hexbuf.size());
+      } else {
+        uint16_t val = ch;
+        for (int i = 0; i < 4; i++) {
+          ubuf[5 - i] = kHexDigits[val % 16];
+          val /= 16;
+        }
+        builder.Append(ubuf.begin(), ubuf.size());
+      }
+    }
+  }
+  return builder.Build(ctx);
+}
+
+// section B.2.2 unescape(string)
+// this method is deprecated.
 
 } } }  // namespace iv::lv5::runtime
 #endif  // _IV_LV5_RUNTIME_GLOBAL_H_

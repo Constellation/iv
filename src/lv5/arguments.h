@@ -85,6 +85,14 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     return stack_[n + 1];
   }
 
+  JSVal At(size_type n) const {
+    if (n < size_) {
+      return stack_[n + 1];
+    } else {
+      return JSUndefined;
+    }
+  }
+
   explicit Arguments(Context* ctx, Error* e)
     : ctx_(ctx),
       stack_(),
