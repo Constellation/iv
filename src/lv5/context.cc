@@ -97,6 +97,10 @@ Symbol Lookup(Context* ctx, double number, bool* res) {
   return ctx->CheckIntern(number, res);
 }
 
+Error* error(Context* ctx) {
+  return ctx->error();
+}
+
 Symbol constructor_symbol(const Context* ctx) {
   return ctx->constructor_symbol();
 }

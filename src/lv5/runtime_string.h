@@ -15,6 +15,7 @@
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsstring.h"
+#include "lv5/jsstringobject.h"
 #include "lv5/jsregexp.h"
 #include "lv5/runtime_regexp.h"
 

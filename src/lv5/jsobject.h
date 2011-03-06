@@ -4,8 +4,6 @@
 #include <gc/gc_cpp.h>
 #include "ast.h"
 #include "lv5/gc_template.h"
-#include "lv5/context_utils.h"
-#include "lv5/symbol_checker.h"
 #include "lv5/property.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
@@ -107,65 +105,6 @@ class JSObject : public gc {
   Symbol class_name_;
   bool extensible_;
   Properties table_;
-};
-
-class JSStringObject : public JSObject {
- public:
-  JSStringObject(Context* ctx, JSString* value);
-
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
-    uint32_t index;
-    if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
-      return JSStringObject::GetOwnPropertyWithIndex(ctx, index);
-    }
-    return JSObject::GetOwnProperty(ctx, name);
-  }
-
-  PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
-                                             uint32_t index) const {
-    const SymbolChecker check(ctx, index);
-    if (check.Found()) {
-      PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, check.symbol());
-      if (!desc.IsEmpty()) {
-        return desc;
-      }
-    }
-    const std::size_t len = value_->size();
-    if (len <= index) {
-      return JSUndefined;
-    }
-    return DataDescriptor(
-        JSString::New(ctx,
-                      value_->begin() + index,
-                      value_->begin() + index + 1),
-        PropertyDescriptor::ENUMERABLE);
-  }
-
-  void GetOwnPropertyNames(Context* ctx,
-                           std::vector<Symbol>* vec,
-                           EnumerationMode mode) const {
-    if (vec->empty()) {
-      for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        vec->push_back(context::Intern(ctx, i));
-      }
-    } else {
-      for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        const Symbol sym = context::Intern(ctx, i);
-        if (std::find(vec->begin(), vec->end(), sym) == vec->end()) {
-          vec->push_back(sym);
-        }
-      }
-    }
-    JSObject::GetOwnPropertyNames(ctx, vec, mode);
-  }
-
-  static JSStringObject* New(Context* ctx, JSString* str);
-  static JSStringObject* NewPlain(Context* ctx);
-  JSString* value() const {
-    return value_;
-  }
- private:
-  JSString* value_;
 };
 
 class JSNumberObject : public JSObject {

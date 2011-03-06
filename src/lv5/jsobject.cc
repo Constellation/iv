@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "lv5/jsobject.h"
 #include "lv5/context_utils.h"
+#include "lv5/symbol_checker.h"
 #include "lv5/property.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsval.h"
@@ -387,27 +388,6 @@ JSObject* JSObject::New(Context* ctx) {
 
 JSObject* JSObject::NewPlain(Context* ctx) {
   return new JSObject();
-}
-
-JSStringObject::JSStringObject(Context* ctx, JSString* value)
-  : value_(value) {
-  DefineOwnProperty(ctx, ctx->length_symbol(),
-                    DataDescriptor(value->size(),
-                                   PropertyDescriptor::NONE),
-                                   false, ctx->error());
-}
-
-JSStringObject* JSStringObject::New(Context* ctx, JSString* str) {
-  JSStringObject* const obj = new JSStringObject(ctx, str);
-  const Symbol name = ctx->Intern("String");
-  const Class& cls = ctx->Cls(name);
-  obj->set_class_name(cls.name);
-  obj->set_prototype(cls.prototype);
-  return obj;
-}
-
-JSStringObject* JSStringObject::NewPlain(Context* ctx) {
-  return new JSStringObject(ctx, JSString::NewEmptyString(ctx));
 }
 
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {

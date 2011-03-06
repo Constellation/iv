@@ -33,6 +33,9 @@ Symbol Lookup(Context* ctx, double number, bool* res);
 Symbol constructor_symbol(const Context* ctx);
 Symbol prototype_symbol(const Context* ctx);
 Symbol length_symbol(const Context* ctx);
+
+Error* error(Context* ctx);
+
 bool IsStrict(const Context* ctx);
 
 VMStack* stack(Context* ctx);
