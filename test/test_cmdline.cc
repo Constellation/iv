@@ -25,8 +25,8 @@ TEST(CmdLineCase, CmdLineTest) {
   EXPECT_FALSE(cmd.Exist("version"));
   EXPECT_FALSE(cmd.Exist("copyright"));
 
-  EXPECT_EQ(std::string("test"), cmd.get<std::string>("name"));
-  EXPECT_EQ(20, cmd.get<int>("port"));
+  EXPECT_EQ(std::string("test"), cmd.Get<std::string>("name"));
+  EXPECT_EQ(20, cmd.Get<int>("port"));
   EXPECT_TRUE(std::equal(list, list+4, cmd.rest().begin()));
 }
 

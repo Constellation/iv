@@ -1,14 +1,14 @@
 #ifndef _IV_LV5_CONTEXT_H_
 #define _IV_LV5_CONTEXT_H_
 #include <tr1/unordered_map>
-#include <tr1/random>
 #include <tr1/type_traits>
-#include "xorshift.h"
+#include <boost/random.hpp>
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
 #include "enable_if.h"
 #include "ast.h"
+#include "lv5/xorshift.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
@@ -47,9 +47,9 @@ class Context : private core::Noncopyable<Context>::type {
   friend Symbol context::Intern(Context* ctx, uint32_t index);
   friend Symbol context::Intern(Context* ctx, double number);
 
-  typedef iv::core::Xor128 random_engine_type;
-  typedef std::tr1::uniform_real<double> random_distribution_type;
-  typedef std::tr1::variate_generator<
+  typedef Xor128 random_engine_type;
+  typedef boost::uniform_real<double> random_distribution_type;
+  typedef boost::variate_generator<
       random_engine_type, random_distribution_type> random_generator;
   enum Mode {
     NORMAL,
