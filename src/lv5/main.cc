@@ -27,6 +27,7 @@
 #include "lv5/command.h"
 #include "lv5/interactive.h"
 #include "lv5/fpu.h"
+#include "lv5/program.h"
 
 namespace {
 
@@ -53,8 +54,8 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 }  // namespace
 
 int main(int argc, char **argv) {
-  using iv::lv5::JSVal;
   iv::lv5::FPU fpu;
+  iv::lv5::program::Init(argc, argv);
   GC_INIT();
 
   iv::cmdline::Parser cmd("lv5");
@@ -143,7 +144,7 @@ int main(int argc, char **argv) {
       iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
           &ctx, global, &factory, &src);
       if (ctx.Run(script)) {
-        const JSVal e = ctx.ErrorVal();
+        const iv::lv5::JSVal e = ctx.ErrorVal();
         ctx.error()->Clear();
         ctx.SetStatement(iv::lv5::Context::Context::NORMAL,
                          iv::lv5::JSEmpty, NULL);
