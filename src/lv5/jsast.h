@@ -11,7 +11,11 @@ namespace iv {
 namespace lv5 {
 class AstFactory;
 class Context;
-}  // namespace iv::lv5
+namespace context {
+
+void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+
+} }  // namespace iv::lv5
 namespace core {
 namespace ast {
 
@@ -37,6 +41,7 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
     regexp_ = new iv::lv5::JSRegExpImpl(
         Derived()->value(),
         Derived()->flags());
+    iv::lv5::context::RegisterLiteralRegExp(ctx, regexp_);
   }
   const iv::lv5::JSRegExpImpl* regexp() const {
     return regexp_;

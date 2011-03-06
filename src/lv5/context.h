@@ -47,6 +47,8 @@ class Context : private core::Noncopyable<Context>::type {
   friend Symbol context::Intern(Context* ctx, uint32_t index);
   friend Symbol context::Intern(Context* ctx, double number);
 
+  friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+
   typedef Xor128 random_engine_type;
   typedef boost::uniform_real<double> random_distribution_type;
   typedef boost::variate_generator<
@@ -239,6 +241,11 @@ class Context : private core::Noncopyable<Context>::type {
   bool IsArray(const JSObject& obj) {
     return obj.class_name() == Array_symbol_;
   }
+
+  trace::Vector<JSRegExpImpl*>::type& regs() {
+    return regs_;
+  }
+
   double Random();
   JSString* ToString(Symbol sym);
   bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
@@ -266,6 +273,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSVal ret_;
   const BreakableStatement* target_;
   Error error_;
+  trace::Vector<JSRegExpImpl*>::type regs_;
   trace::HashMap<Symbol, Class>::type builtins_;
   bool strict_;
   std::size_t generate_script_counter_;

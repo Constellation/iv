@@ -7,7 +7,9 @@
 #include "lv5/symbol.h"
 #include "lv5/jsast.h"
 #include "lv5/vm_stack.h"
+
 class Context;
+class JSRegExpImpl;
 
 namespace iv {
 namespace lv5 {
@@ -39,6 +41,8 @@ Error* error(Context* ctx);
 bool IsStrict(const Context* ctx);
 
 VMStack* stack(Context* ctx);
+
+void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
 } } }  // namespace iv::lv5::context
 #endif  // _IV_LV5_CONTEXT_UTILS_H_
