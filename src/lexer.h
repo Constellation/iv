@@ -467,7 +467,6 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
   bool ScanRegExpFlags() {
     buffer16_.clear();
-    uc16 uc;
     while (Chars::IsIdentifierPart(c_)) {
       if (c_ == '\\') {
         Advance();
@@ -476,7 +475,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         }
         Advance();
         bool ng = false;
-        uc = ScanHexEscape('u', 4, &ng);
+        const uc16 uc = ScanHexEscape('u', 4, &ng);
         if (ng || uc == '\\') {
           return false;
         }
@@ -614,8 +613,6 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
   template<typename LexType>
   Token::Type ScanIdentifier(bool strict) {
-    uc16 uc;
-
     buffer16_.clear();
 
     if (c_ == '\\') {
@@ -625,7 +622,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       }
       Advance();
       bool ng = false;
-      uc = ScanHexEscape('u', 4, &ng);
+      const uc16 uc = ScanHexEscape('u', 4, &ng);
       if (ng || uc == '\\' || !Chars::IsIdentifierStart(uc)) {
         return Token::ILLEGAL;
       }
@@ -642,7 +639,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         }
         Advance();
         bool ng = false;
-        uc = ScanHexEscape('u', 4, &ng);
+        const uc16 uc = ScanHexEscape('u', 4, &ng);
         if (ng || uc == '\\' || !Chars::IsIdentifierPart(uc)) {
           return Token::ILLEGAL;
         }
