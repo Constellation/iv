@@ -40,7 +40,7 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
   const DTOAMode mode = (m == DTOA_FIXED && (x >= 1e21 || x <= -1e21))? DTOA_STD : m;
   int decpt;
   int sign;
-  int precision = frac + offset;
+  const int precision = frac + offset;
   char* rev;
   char* res = dtoa(x, detail::kDTOAModeList[mode],
                    precision, &decpt, &sign, &rev);
@@ -48,6 +48,7 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
     return JSString::NewAsciiString(ctx, "NaN");
   }
   int digits = rev - res;
+  assert(static_cast<std::size_t>(digits) <= (buf.size() - 2));
   char* begin = buf.data() + 2;
   std::memcpy(begin, res, digits);
   freedtoa(res);
@@ -74,6 +75,7 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
         break;
 
       case DTOA_EXPONENTIAL:
+        assert(precision > 0);
         min = precision;
         // fall through
 
@@ -82,8 +84,9 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
         break;
 
       case DTOA_PRECISION:
+        assert(precision > 0);
         min = precision;
-        if (decpt < -5 || decpt > 21) {
+        if (decpt < -5 || decpt > precision) {
           exp_notation = true;
         }
         break;
@@ -106,6 +109,7 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
       std::tr1::snprintf(end, buf.size() - (end - buf.data()),
                          "e%+d", decpt - 1);
     } else if (decpt != digits) {
+      assert(decpt <= digits);
       if (decpt > 0) {
         char* p = --begin;
         do {
@@ -117,9 +121,10 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
         char* p = end;
         end += (1 - decpt);
         char* q = end;
+        assert(end < (buf.data() + buf.size()));
         *end = '\0';
-        while (p != end) {
-          *--p = *--q;
+        while (p != begin) {
+          *--q = *--p;
         }
         for (p = begin + 1; p != q; ++p) {
           *p = '0';

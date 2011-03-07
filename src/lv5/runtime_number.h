@@ -161,7 +161,6 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
                   "fractionDigits is in range between 0 to 20");
     return JSUndefined;
   }
-  const int f = core::DoubleToInt32(fd);
   const JSVal& obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
@@ -185,7 +184,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     return JSString::NewAsciiString(args.ctx(), str);
   } else {
     // TODO(Constellation) (0.5).toFixed(0) === 1
-    return DoubleToJSString<DTOA_FIXED>(ctx, x, f, 0);
+    return DoubleToJSString<DTOA_FIXED>(ctx, x, core::DoubleToInt32(fd), 0);
   }
 }
 
