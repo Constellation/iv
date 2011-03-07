@@ -142,9 +142,10 @@ def Build():
 
   env.Append(CCFLAGS=["-g"])
   env.Append(
+    CXXFLAGS=['-pipe'],
     CCFLAGS=[
       "-Wall", "-Wextra", "-Werror",
-      "-Wno-unused-parameter", "-Wwrite-strings"],
+      "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type"],
     CPPPATH=[join(root_dir, 'src'), join(root_dir, 'obj', 'src')],
     CPPDEFINES=[
       "_GNU_SOURCE",
