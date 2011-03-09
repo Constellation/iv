@@ -1,0 +1,17 @@
+# iv
+
+iv is ECMA262 5.1 lexer and parser and interpreter project written in C++ / JS
+
+a lot of inspired from V8, SpiderMonkey, JavaScriptCore
+
+## iv / lv5
+
+lv5 is ECMA262 5.1 interpreter
+
+for more information, see [lv5 README](https://github.com/Constellation/iv/tree/master/src/lv5)
+
+## iv / phonic
+
+phonic is Ruby library of ECMA262 5.1 Parser API
+
+for more information, see [phonic README](https://github.com/Constellation/iv/tree/master/src/phonic)
