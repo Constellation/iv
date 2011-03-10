@@ -188,7 +188,7 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
                                        throw_type_error,
                                        PropertyDescriptor::NONE),
                     false, ctx->error());
-  DefineOwnProperty(ctx, ctx->callee_symbol(),
+  DefineOwnProperty(ctx, ctx->arguments_symbol(),
                     AccessorDescriptor(throw_type_error,
                                        throw_type_error,
                                        PropertyDescriptor::NONE),
