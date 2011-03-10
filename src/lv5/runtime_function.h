@@ -1,6 +1,8 @@
 #ifndef _IV_LV5_RUNTIME_FUNCTION_H_
 #define _IV_LV5_RUNTIME_FUNCTION_H_
 #include <algorithm>
+#include <tr1/type_traits>
+#include "enable_if.h"
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "lv5/lv5.h"
@@ -17,7 +19,8 @@ namespace detail {
 
 static const std::string kFunctionPrefix("function ");
 
-inline void CheckFunctionExpressionIsOne(const FunctionLiteral& func, Error* e) {
+inline void CheckFunctionExpressionIsOne(const FunctionLiteral& func,
+                                         Error* e) {
   const FunctionLiteral::Statements& stmts = func.body();
   if (stmts.size() == 1) {
     const Statement& stmt = *stmts[0];
@@ -30,6 +33,27 @@ inline void CheckFunctionExpressionIsOne(const FunctionLiteral& func, Error* e) 
   e->Report(Error::Syntax,
             "Function Constructor with invalid arguments");
 }
+
+struct NativeFunction {
+  enum SpecificationMode {
+    kSpecificationStrict,
+    kSpecificationCompatibility
+  };
+
+  template<SpecificationMode mode>
+  static JSString* ToString(Context* ctx, JSFunction* func,
+      typename enable_if_c<mode == kSpecificationStrict>::type* = 0) {
+    return JSString::NewAsciiString(ctx,
+                                    "function native() { /* native code */ }");
+  }
+
+  template<SpecificationMode mode>
+  static JSString* ToString(Context* ctx, JSFunction* func,
+      typename enable_if_c<mode == kSpecificationCompatibility>::type* = 0) {
+    return JSString::NewAsciiString(ctx,
+                                    "function native() { [native code] }");
+  }
+};
 
 }  // namespace iv::lv5::runtime::detail
 
@@ -90,12 +114,14 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     if (!func->AsCodeFunction()) {
-      return JSString::NewAsciiString(args.ctx(),
-                                      "function native() { [native code] }");
+      return
+          detail::NativeFunction::ToString<
+            detail::NativeFunction::kSpecificationStrict>(args.ctx(), func);
     } else {
       StringBuilder builder;
       builder.Append(detail::kFunctionPrefix);
-      if (const core::Maybe<const Identifier> name = func->AsCodeFunction()->name()) {
+      if (const core::Maybe<const Identifier> name =
+          func->AsCodeFunction()->name()) {
         builder.Append((*name).value());
       } else {
         builder.Append("anonymous");
@@ -120,9 +146,9 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     if (args_size < 2) {
       Arguments a(ctx, ERROR(e));
       if (args_size == 0) {
-        return func->Call(a, JSUndefined, e);
+        return func->Call(&a, JSUndefined, e);
       } else {
-        return func->Call(a, args[0], e);
+        return func->Call(&a, args[0], e);
       }
     }
     const JSVal& second = args[1];
@@ -157,7 +183,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
             index, ERROR(e));
         ++index;
     }
-    return func->Call(args_list, args[0], e);
+    return func->Call(&args_list, args[0], e);
   }
   e->Report(Error::Type,
             "Function.prototype.apply is not generic function");
@@ -180,7 +206,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
     }
 
     const JSVal this_binding = (args_size > 0) ? args[0] : JSUndefined;
-    return func->Call(args_list, this_binding, e);
+    return func->Call(&args_list, this_binding, e);
   }
   e->Report(Error::Type,
             "Function.prototype.call is not generic function");

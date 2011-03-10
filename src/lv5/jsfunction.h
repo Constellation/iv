@@ -3,8 +3,10 @@
 #include "ustringpiece.h"
 #include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
+#include "lv5/error.h"
 #include "lv5/arguments.h"
 #include "lv5/jsast.h"
+#include "lv5/lv5.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -29,10 +31,10 @@ class JSFunction : public JSObject {
     return this;
   }
   virtual ~JSFunction() { }
-  virtual JSVal Call(Arguments& args,  // NOLINT
+  virtual JSVal Call(Arguments* args,
                      const JSVal& this_binding,
                      Error* error) = 0;
-  virtual JSVal Construct(Arguments& args,  // NOLINT
+  virtual JSVal Construct(Arguments* args,
                           Error* error) = 0;
   virtual bool HasInstance(Context* ctx,
                            const JSVal& val, Error* error);
@@ -54,10 +56,10 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env);
-  JSVal Call(Arguments& args,  // NOLINT
+  JSVal Call(Arguments* args,
              const JSVal& this_binding,
              Error* error);
-  JSVal Construct(Arguments& args, Error* error);  // NOLINT
+  JSVal Construct(Arguments* args, Error* error);
   JSEnv* scope() const {
     return env_;
   }
@@ -112,16 +114,16 @@ class JSNativeFunction : public JSFunction {
                        false, NULL);
   }
 
-  JSVal Call(Arguments& args,  // NOLINT
+  JSVal Call(Arguments* args,
              const JSVal& this_binding,
              Error* error) {
-    args.set_this_binding(this_binding);
-    return func_(args, error);
+    args->set_this_binding(this_binding);
+    return func_(*args, error);
   }
 
-  JSVal Construct(Arguments& args, Error* error) {  // NOLINT
-    args.set_this_binding(JSUndefined);
-    return func_(args, error);
+  JSVal Construct(Arguments* args, Error* error) {
+    args->set_this_binding(JSUndefined);
+    return func_(*args, error);
   }
 
   JSCodeFunction* AsCodeFunction() {
@@ -163,7 +165,15 @@ class JSNativeFunction : public JSFunction {
     set_prototype(cls.prototype);
   }
 
-  void Initialize(Context* ctx, value_type func, std::size_t n);
+  void Initialize(Context* ctx, value_type func, std::size_t n) {
+    func_ = func;
+    DefineOwnProperty(
+        ctx, context::length_symbol(ctx),
+        DataDescriptor(n,
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+    InitializeSimple(ctx);
+  }
 
  private:
   value_type func_;
@@ -175,34 +185,66 @@ class JSBoundFunction : public JSFunction {
                    JSFunction* target,
                    const JSVal& this_binding,
                    const Arguments& args);
+
   bool IsStrict() const {
     return false;
   }
+
   JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
+
   JSNativeFunction* AsNativeFunction() {
     return NULL;
   }
+
   JSBoundFunction* AsBoundFunction() {
     return this;
   }
+
   JSFunction* target() const {
     return target_;
   }
+
   const JSVal& this_binding() const {
     return this_binding_;
   }
+
   const JSVals& arguments() const {
     return arguments_;
   }
-  JSVal Call(Arguments& args, const JSVal& this_binding, Error* error);
-  JSVal Construct(Arguments& args, Error* error);  // NOLINT
+
+  JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+    using std::copy;
+    Arguments args_list(args->ctx(),
+                        args->size() + arguments_.size(), ERROR(e));
+    copy(args->begin(), args->end(),
+         copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+    return target_->Call(&args_list, this_binding_, e);
+  }
+
+  JSVal Construct(Arguments* args, Error* e) {
+    using std::copy;
+    Arguments args_list(args->ctx(),
+                        args->size() + arguments_.size(), ERROR(e));
+    copy(args->begin(), args->end(),
+         copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+    return target_->Construct(&args_list, e);
+  }
+
   bool HasInstance(Context* ctx,
-                   const JSVal& val, Error* error);
+                   const JSVal& val, Error* e) {
+    return target_->HasInstance(ctx, val, e);
+  }
+
   static JSBoundFunction* New(Context* ctx, JSFunction* target,
                               const JSVal& this_binding,
-                              const Arguments& args);
+                              const Arguments& args) {
+    JSBoundFunction* const bound =
+        new JSBoundFunction(ctx, target, this_binding, args);
+    return bound;
+  }
+
  private:
   JSFunction* target_;
   JSVal this_binding_;
@@ -215,7 +257,7 @@ class JSInlinedFunction : public JSFunction {
   typedef JSVal(*value_type)(const Arguments&, Error*);
   typedef JSInlinedFunction<func, n> this_type;
 
-  JSInlinedFunction(Context* ctx) {
+  explicit JSInlinedFunction(Context* ctx) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
         DataDescriptor(static_cast<double>(n),
@@ -223,16 +265,16 @@ class JSInlinedFunction : public JSFunction {
                        false, NULL);
   }
 
-  JSVal Call(Arguments& args,  // NOLINT
+  JSVal Call(Arguments* args,
              const JSVal& this_binding,
              Error* error) {
-    args.set_this_binding(this_binding);
-    return func(args, error);
+    args->set_this_binding(this_binding);
+    return func(*args, error);
   }
 
-  JSVal Construct(Arguments& args, Error* error) {  // NOLINT
-    args.set_this_binding(JSUndefined);
-    return func(args, error);
+  JSVal Construct(Arguments* args, Error* error) {
+    args->set_this_binding(JSUndefined);
+    return func(*args, error);
   }
 
   JSCodeFunction* AsCodeFunction() {

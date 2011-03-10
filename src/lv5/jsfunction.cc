@@ -59,12 +59,12 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
                      false, NULL);
 }
 
-JSVal JSCodeFunction::Call(Arguments& args,
+JSVal JSCodeFunction::Call(Arguments* args,
                            const JSVal& this_binding, Error* error) {
-  Interpreter* const interp = args.ctx()->interp();
-  Context* const ctx = args.ctx();
-  args.set_this_binding(this_binding);
-  interp->CallCode(this, args, error);
+  Context* const ctx = args->ctx();
+  Interpreter* const interp = ctx->interp();
+  args->set_this_binding(this_binding);
+  interp->CallCode(this, *args, error);
   if (ctx->mode() == Context::RETURN) {
     ctx->set_mode(Context::NORMAL);
   }
@@ -72,8 +72,8 @@ JSVal JSCodeFunction::Call(Arguments& args,
   return ctx->ret();
 }
 
-JSVal JSCodeFunction::Construct(Arguments& args, Error* e) {
-  Context* const ctx = args.ctx();
+JSVal JSCodeFunction::Construct(Arguments* args, Error* e) {
+  Context* const ctx = args->ctx();
   JSObject* const obj = JSObject::New(ctx);
   const JSVal proto = Get(ctx, ctx->prototype_symbol(), ERROR(e));
   if (proto.IsObject()) {
@@ -135,17 +135,6 @@ JSVal JSFunction::Get(Context* ctx,
   return val;
 }
 
-void JSNativeFunction::Initialize(Context* ctx,
-                                  value_type func, std::size_t n) {
-  func_ = func;
-  DefineOwnProperty(
-      ctx, ctx->length_symbol(),
-      DataDescriptor(n,
-                     PropertyDescriptor::NONE),
-                     false, NULL);
-  InitializeSimple(ctx);
-}
-
 JSBoundFunction::JSBoundFunction(Context* ctx,
                                  JSFunction* target,
                                  const JSVal& this_binding,
@@ -193,37 +182,6 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
                                        throw_type_error,
                                        PropertyDescriptor::NONE),
                     false, ctx->error());
-}
-
-JSVal JSBoundFunction::Call(Arguments& args,
-                            const JSVal& this_binding, Error* e) {
-  using std::copy;
-  Arguments args_list(args.ctx(), args.size() + arguments_.size(), ERROR(e));
-  copy(args.begin(), args.end(),
-       copy(arguments_.begin(), arguments_.end(), args_list.begin()));
-  return target_->Call(args_list, this_binding_, e);
-}
-
-JSVal JSBoundFunction::Construct(Arguments& args, Error* e) {
-  using std::copy;
-  Arguments args_list(args.ctx(), args.size() + arguments_.size(), ERROR(e));
-  copy(args.begin(), args.end(),
-       copy(arguments_.begin(), arguments_.end(), args_list.begin()));
-  return target_->Construct(args_list, e);
-}
-
-bool JSBoundFunction::HasInstance(Context* ctx,
-                                  const JSVal& val, Error* e) {
-  return target_->HasInstance(ctx, val, e);
-}
-
-JSBoundFunction* JSBoundFunction::New(Context* ctx,
-                                      JSFunction* target,
-                                      const JSVal& this_binding,
-                                      const Arguments& args) {
-  JSBoundFunction* const bound =
-      new JSBoundFunction(ctx, target, this_binding, args);
-  return bound;
 }
 
 } }  // namespace iv::lv5

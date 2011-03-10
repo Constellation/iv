@@ -293,14 +293,14 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
       if (method.IsCallable()) {
         Arguments args_list(ctx_, 1, ERROR(e));
         args_list[0] = ctx_->ToString(key);
-        value = method.object()->AsCallable()->Call(args_list, target, ERROR(e));
+        value = method.object()->AsCallable()->Call(&args_list, target, ERROR(e));
       }
     }
     if (replacer_) {
       Arguments args_list(ctx_, 2, ERROR(e));
       args_list[0] = ctx_->ToString(key);
       args_list[1] = value;
-      value = replacer_->Call(args_list, holder, ERROR(e));
+      value = replacer_->Call(&args_list, holder, ERROR(e));
     }
     if (value.IsObject()) {
       JSObject* const target = value.object();

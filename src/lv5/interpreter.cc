@@ -1446,7 +1446,7 @@ void Interpreter::Visit(const FunctionCall* call) {
       }
     }
   }
-  ctx_->ret() = callable->Call(args, this_binding, CHECK);
+  ctx_->ret() = callable->Call(&args, this_binding, CHECK);
 }
 
 
@@ -1467,7 +1467,7 @@ void Interpreter::Visit(const ConstructorCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
-  ctx_->ret() = func.object()->AsCallable()->Construct(args, CHECK);
+  ctx_->ret() = func.object()->AsCallable()->Construct(&args, CHECK);
 }
 
 void Interpreter::Visit(const Declaration* dummy) {
@@ -1517,7 +1517,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
           if (*error) {
             return JSUndefined;
           }
-          const JSVal res = ac->get()->AsCallable()->Call(a,
+          const JSVal res = ac->get()->AsCallable()->Call(&a,
                                                           base, error);
           if (*error) {
             return JSUndefined;
@@ -1601,7 +1601,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
         }
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(a, base, ERRCHECK);
+        ac->set()->AsCallable()->Call(&a, base, ERRCHECK);
       } else {
         if (th) {
           error->Report(Error::Type, "value to symbol in transient object");

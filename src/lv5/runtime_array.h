@@ -105,7 +105,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
                               args.ctx()->Intern("join"), ERROR(e));
   if (join.IsCallable()) {
     Arguments a(args.ctx(), ERROR(e));
-    return join.object()->AsCallable()->Call(a, obj, e);
+    return join.object()->AsCallable()->Call(&a, obj, e);
   } else {
     Arguments a(args.ctx(), ERROR(e));
     a.set_this_binding(obj);
@@ -141,7 +141,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
-      const JSVal R = method.object()->AsCallable()->Call(args_list,
+      const JSVal R = method.object()->AsCallable()->Call(&args_list,
                                                           elm_obj,
                                                           ERROR(e));
       const JSString* const str = R.ToString(ctx, ERROR(e));
@@ -163,7 +163,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
-      const JSVal R = method.object()->AsCallable()->Call(args_list,
+      const JSVal R = method.object()->AsCallable()->Call(&args_list,
                                                           elm_obj,
                                                           ERROR(e));
       const JSString* const str = R.ToString(ctx, ERROR(e));
@@ -537,7 +537,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               const JSVal t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = t2;
               a[1] = t;
-              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
               const CompareKind kind =
                   Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
               if (kind == CMP_TRUE) {  // res > zero is true
@@ -569,7 +569,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
               a[0] = target;
               // if res < 0, next
-              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
               const CompareKind kind =
                   Compare<true>(ctx, res, zero, ERROR(e));
               if (kind != CMP_TRUE) {
@@ -588,7 +588,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = target;
               // if res > 0, next
-              const JSVal res = comparefn->Call(a, JSUndefined, ERROR(e));
+              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
               const CompareKind kind =
                   Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
               if (kind != CMP_TRUE) {  // target < s is true
@@ -914,7 +914,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
-      const JSVal test_result = callbackfn->Call(arg_list,
+      const JSVal test_result = callbackfn->Call(&arg_list,
                                                  this_binding,
                                                  ERROR(e));
       const bool result = test_result.ToBoolean(ERROR(e));
@@ -954,7 +954,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
-      const JSVal test_result = callbackfn->Call(arg_list,
+      const JSVal test_result = callbackfn->Call(&arg_list,
                                                  this_binding,
                                                  ERROR(e));
       const bool result = test_result.ToBoolean(ERROR(e));
@@ -994,7 +994,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
-      callbackfn->Call(arg_list, this_binding, ERROR(e));
+      callbackfn->Call(&arg_list, this_binding, ERROR(e));
     }
   }
   return JSUndefined;
@@ -1030,7 +1030,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[1] = k;
-      const JSVal mapped_value = callbackfn->Call(arg_list,
+      const JSVal mapped_value = callbackfn->Call(&arg_list,
                                                   this_binding,
                                                   ERROR(e));
       ary->DefineOwnPropertyWithIndex(
@@ -1077,7 +1077,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
       const JSVal k_value = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[0] = k_value;
       arg_list[1] = k;
-      const JSVal selected = callbackfn->Call(arg_list,
+      const JSVal selected = callbackfn->Call(&arg_list,
                                               this_binding,
                                               ERROR(e));
       const bool result = selected.ToBoolean(ERROR(e));
@@ -1155,7 +1155,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[2] = k;
-      accumulator = callbackfn->Call(arg_list,
+      accumulator = callbackfn->Call(&arg_list,
                                      JSUndefined,
                                      ERROR(e));
     }
@@ -1221,7 +1221,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, ERROR(e));
       arg_list[2] = k;
-      accumulator = callbackfn->Call(arg_list,
+      accumulator = callbackfn->Call(&arg_list,
                                      JSUndefined,
                                      ERROR(e));
     }

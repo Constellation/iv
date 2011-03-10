@@ -361,7 +361,7 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     }
     a[i++] = get<0>(res);
     a[i++] = str_;
-    const JSVal result = function_->Call(a, JSUndefined, ERROR_VOID(e));
+    const JSVal result = function_->Call(&a, JSUndefined, ERROR_VOID(e));
     const JSString* const replaced_str = result.ToString(ctx_, ERROR_VOID(e));
     builder->Append(*replaced_str);
   }
@@ -701,7 +701,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       a[0] = search_str;
       a[1] = static_cast<double>(loc);
       a[2] = str;
-      const JSVal result = callable->Call(a, JSUndefined, ERROR(e));
+      const JSVal result = callable->Call(&a, JSUndefined, ERROR(e));
       const JSString* const res = result.ToString(ctx, ERROR(e));
       builder.Append(*res);
     } else {

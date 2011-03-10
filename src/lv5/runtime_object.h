@@ -443,7 +443,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* error) {
     return JSUndefined;
   }
   Arguments arguments(args.ctx(), 0);
-  return toString.object()->AsCallable()->Call(arguments, obj, error);
+  return toString.object()->AsCallable()->Call(&arguments, obj, error);
 }
 
 // section 15.2.4.4 Object.prototype.valueOf()

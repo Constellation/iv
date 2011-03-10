@@ -37,7 +37,7 @@ JSObject::JSObject(JSObject* proto,
       return JSUndefined;\
     }\
     if (method.IsCallable()) {\
-      const JSVal val = method.object()->AsCallable()->Call(arg, this, error);\
+      const JSVal val = method.object()->AsCallable()->Call(&arg, this, error);\
       if (*error) {\
         return JSUndefined;\
       }\
@@ -77,7 +77,7 @@ JSVal JSObject::Get(Context* ctx,
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
       Arguments a(ctx, ERROR(e));
-      return getter->AsCallable()->Call(a, this, e);
+      return getter->AsCallable()->Call(&a, this, e);
     } else {
       return JSUndefined;
     }
@@ -292,7 +292,7 @@ void JSObject::Put(Context* ctx,
     assert(accs->set());
     Arguments args(ctx, 1, ERROR_VOID(e));
     args[0] = val;
-    accs->set()->AsCallable()->Call(args, this, e);
+    accs->set()->AsCallable()->Call(&args, this, e);
   } else {
     DefineOwnProperty(ctx, name,
                       DataDescriptor(val,

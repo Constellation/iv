@@ -1434,7 +1434,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
     return JSUndefined;
   }
   Arguments a(ctx, ERROR(e));
-  return toISO.object()->AsCallable()->Call(a, obj, e);
+  return toISO.object()->AsCallable()->Call(&a, obj, e);
 }
 
 // section B.2.4 Date.prototype.getYear()
