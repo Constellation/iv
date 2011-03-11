@@ -11,7 +11,6 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
-#include "lv5/math.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsdtoa.h"
