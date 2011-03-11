@@ -68,7 +68,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
       if (radix != 10) {
         if (std::isnan(num)) {
           return JSString::NewAsciiString(args.ctx(), "NaN");
-        } else if (!std::isfinite(num)) {
+        } else if (std::isinf(num)) {
           if (num > 0) {
             return JSString::NewAsciiString(args.ctx(), "Infinity");
           } else {
@@ -209,15 +209,13 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
     x = obj.number();
   }
 
-  if (!std::isfinite(x)) {
-    if (std::isnan(x)) {
-      return JSString::NewAsciiString(ctx, "NaN");
+  if (std::isnan(x)) {
+    return JSString::NewAsciiString(ctx, "NaN");
+  } else if (std::isinf(x)) {
+    if (x < 0) {
+      return JSString::NewAsciiString(ctx, "-Infinity");
     } else {
-      if (x < 0) {
-        return JSString::NewAsciiString(ctx, "-Infinity");
-      } else {
-        return JSString::NewAsciiString(ctx, "Infinity");
-      }
+      return JSString::NewAsciiString(ctx, "Infinity");
     }
   }
 
@@ -283,15 +281,13 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
     }
   }
 
-  if (!std::isfinite(x)) {
-    if (std::isnan(x)) {
-      return JSString::NewAsciiString(ctx, "NaN");
+  if (std::isnan(x)) {
+    return JSString::NewAsciiString(ctx, "NaN");
+  } else if (std::isinf(x)) {
+    if (x < 0) {
+      return JSString::NewAsciiString(ctx, "-Infinity");
     } else {
-      if (x < 0) {
-        return JSString::NewAsciiString(ctx, "-Infinity");
-      } else {
-        return JSString::NewAsciiString(ctx, "Infinity");
-      }
+      return JSString::NewAsciiString(ctx, "Infinity");
     }
   }
 
