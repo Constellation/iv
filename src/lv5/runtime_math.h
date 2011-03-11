@@ -7,7 +7,6 @@
 #include "lv5/jsval.h"
 #include "lv5/context.h"
 #include "lv5/error.h"
-#include "lv5/math.h"
 
 namespace iv {
 namespace lv5 {
@@ -147,7 +146,7 @@ inline JSVal MathPow(const Arguments& args, Error* error) {
     if (y == 0) {
       return 1.0;
     } else if (std::isnan(y) ||
-               ((x == 1 || x == -1) && IsInfinity(y))) {
+               ((x == 1 || x == -1) && std::isinf(y))) {
       return JSNaN;
     } else {
       return std::pow(x, y);
