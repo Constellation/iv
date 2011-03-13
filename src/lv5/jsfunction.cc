@@ -12,7 +12,18 @@
 namespace iv {
 namespace lv5 {
 
-void JSFunction::Initialize(Context* ctx) {
+JSCodeFunction::JSCodeFunction(Context* ctx,
+                               const FunctionLiteral* func,
+                               JSScript* script,
+                               JSEnv* env)
+  : function_(func),
+    script_(script),
+    env_(env) {
+  DefineOwnProperty(
+      ctx, ctx->length_symbol(),
+      DataDescriptor(func->params().size(),
+                     PropertyDescriptor::NONE),
+                     false, NULL);
   // section 13.2 Creating Function Objects
   const Class& cls = ctx->Cls("Function");
   set_class_name(cls.name);
@@ -43,20 +54,6 @@ void JSFunction::Initialize(Context* ctx) {
                                          PropertyDescriptor::NONE),
                       false, NULL);
   }
-}
-
-JSCodeFunction::JSCodeFunction(Context* ctx,
-                               const FunctionLiteral* func,
-                               JSScript* script,
-                               JSEnv* env)
-  : function_(func),
-    script_(script),
-    env_(env) {
-  DefineOwnProperty(
-      ctx, ctx->length_symbol(),
-      DataDescriptor(func->params().size(),
-                     PropertyDescriptor::NONE),
-                     false, NULL);
 }
 
 JSVal JSCodeFunction::Call(Arguments* args,
@@ -92,47 +89,6 @@ core::UStringPiece JSCodeFunction::GetSource() const {
   const std::size_t end_pos = function_->end_position();
   return script_->SubString(start_pos,
                             end_pos - start_pos);
-}
-
-bool JSFunction::HasInstance(Context* ctx,
-                             const JSVal& val, Error* error) {
-  if (!val.IsObject()) {
-    return false;
-  }
-  const JSVal got = Get(ctx, ctx->prototype_symbol(), error);
-  if (*error) {
-    return false;
-  }
-  if (!got.IsObject()) {
-    error->Report(Error::Type, "\"prototype\" is not object");
-    return false;
-  }
-  const JSObject* const proto = got.object();
-  const JSObject* obj = val.object()->prototype();
-  while (obj) {
-    if (obj == proto) {
-      return true;
-    } else {
-      obj = obj->prototype();
-    }
-  }
-  return false;
-}
-
-JSVal JSFunction::Get(Context* ctx,
-                      Symbol name, Error* error) {
-  const JSVal val = JSObject::Get(ctx, name, error);
-  if (*error) {
-    return val;
-  }
-  if (name == ctx->caller_symbol() &&
-      val.IsCallable() &&
-      val.object()->AsCallable()->IsStrict()) {
-    error->Report(Error::Type,
-                  "\"caller\" property is not accessible in strict code");
-    return JSFalse;
-  }
-  return val;
 }
 
 JSBoundFunction::JSBoundFunction(Context* ctx,

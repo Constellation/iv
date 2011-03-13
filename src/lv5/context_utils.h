@@ -33,6 +33,7 @@ Symbol Lookup(Context* ctx, uint32_t index, bool* res);
 Symbol Lookup(Context* ctx, double number, bool* res);
 
 Symbol constructor_symbol(const Context* ctx);
+Symbol caller_symbol(const Context* ctx);
 Symbol prototype_symbol(const Context* ctx);
 Symbol length_symbol(const Context* ctx);
 

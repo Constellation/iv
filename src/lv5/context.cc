@@ -106,6 +106,10 @@ Symbol constructor_symbol(const Context* ctx) {
   return ctx->constructor_symbol();
 }
 
+Symbol caller_symbol(const Context* ctx) {
+  return ctx->caller_symbol();
+}
+
 Symbol prototype_symbol(const Context* ctx) {
   return ctx->prototype_symbol();
 }

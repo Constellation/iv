@@ -24,30 +24,74 @@ class JSScript;
 class JSFunction : public JSObject {
  public:
   JSFunction() : JSObject() { }
+
   bool IsCallable() const {
     return true;
   }
+
   JSFunction* AsCallable() {
     return this;
   }
-  virtual ~JSFunction() { }
+
   virtual JSVal Call(Arguments* args,
                      const JSVal& this_binding,
                      Error* error) = 0;
+
   virtual JSVal Construct(Arguments* args,
                           Error* error) = 0;
+
   virtual bool HasInstance(Context* ctx,
-                           const JSVal& val, Error* error);
+                           const JSVal& val, Error* e) {
+    if (!val.IsObject()) {
+      return false;
+    }
+    const JSVal got = Get(ctx, context::prototype_symbol(ctx), e);
+    if (*e) {
+      return false;
+    }
+    if (!got.IsObject()) {
+      e->Report(Error::Type, "\"prototype\" is not object");
+      return false;
+    }
+    const JSObject* const proto = got.object();
+    const JSObject* obj = val.object()->prototype();
+    while (obj) {
+      if (obj == proto) {
+        return true;
+      } else {
+        obj = obj->prototype();
+      }
+    }
+    return false;
+  }
+
   JSVal Get(Context* ctx,
-            Symbol name, Error* error);
+            Symbol name, Error* e) {
+    const JSVal val = JSObject::Get(ctx, name, e);
+    if (*e) {
+      return val;
+    }
+    if (name == context::caller_symbol(ctx) &&
+        val.IsCallable() &&
+        val.object()->AsCallable()->IsStrict()) {
+      e->Report(Error::Type,
+                "\"caller\" property is not accessible in strict code");
+      return JSFalse;
+    }
+    return val;
+  }
+
   virtual JSNativeFunction* AsNativeFunction() = 0;
+
   virtual JSCodeFunction* AsCodeFunction() = 0;
+
   virtual JSBoundFunction* AsBoundFunction() = 0;
+
   virtual bool IsStrict() const = 0;
+
   virtual bool IsEvalFunction() const {
     return false;
   }
-  void Initialize(Context* ctx);
 };
 
 class JSCodeFunction : public JSFunction {
@@ -73,7 +117,6 @@ class JSCodeFunction : public JSFunction {
                              JSEnv* env) {
     JSCodeFunction* const obj =
         new JSCodeFunction(ctx, func, script, env);
-    obj->Initialize(ctx);
     return obj;
   }
 
@@ -149,7 +192,7 @@ class JSNativeFunction : public JSFunction {
   template<typename Func>
   static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
     JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n);
-    obj->InitializeSimple(ctx);
+    obj->Initialize(ctx);
     return obj;
   }
 
@@ -159,20 +202,10 @@ class JSNativeFunction : public JSFunction {
     return new JSNativeFunction(ctx, func, n);
   }
 
-  void InitializeSimple(Context* ctx) {
+  void Initialize(Context* ctx) {
     const Class& cls = context::Cls(ctx, "Function");
     set_class_name(cls.name);
     set_prototype(cls.prototype);
-  }
-
-  void Initialize(Context* ctx, value_type func, std::size_t n) {
-    func_ = func;
-    DefineOwnProperty(
-        ctx, context::length_symbol(ctx),
-        DataDescriptor(n,
-                       PropertyDescriptor::NONE),
-                       false, NULL);
-    InitializeSimple(ctx);
   }
 
  private:
@@ -181,10 +214,6 @@ class JSNativeFunction : public JSFunction {
 
 class JSBoundFunction : public JSFunction {
  public:
-  JSBoundFunction(Context* ctx,
-                   JSFunction* target,
-                   const JSVal& this_binding,
-                   const Arguments& args);
 
   bool IsStrict() const {
     return false;
@@ -246,6 +275,11 @@ class JSBoundFunction : public JSFunction {
   }
 
  private:
+  JSBoundFunction(Context* ctx,
+                   JSFunction* target,
+                   const JSVal& this_binding,
+                   const Arguments& args);
+
   JSFunction* target_;
   JSVal this_binding_;
   JSVals arguments_;
