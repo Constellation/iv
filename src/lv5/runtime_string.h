@@ -941,7 +941,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 }
 
 // section 15.5.4.15 String.prototype.substring(start, end)
-inline JSVal StringSubString(const Arguments& args, Error* error) {
+inline JSVal StringSubstring(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));

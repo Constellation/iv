@@ -603,199 +603,54 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.4.4.2 Array.prototype.toString()
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.3 Array.prototype.toLocaleString()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayToLocaleString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
-    proto->DefineOwnProperty(
-        this, Intern("concat"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayConcat, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.5 Array.prototype.join(separator)
-    proto->DefineOwnProperty(
-        this, Intern("join"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayJoin, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.6 Array.prototype.pop()
-    proto->DefineOwnProperty(
-        this, Intern("pop"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayPop, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
-    proto->DefineOwnProperty(
-        this, Intern("push"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayPush, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.8 Array.prototype.reverse()
-    proto->DefineOwnProperty(
-        this, Intern("reverse"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayReverse, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.9 Array.prototype.shift()
-    proto->DefineOwnProperty(
-        this, Intern("shift"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayShift, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.10 Array.prototype.slice(start, end)
-    proto->DefineOwnProperty(
-        this, Intern("slice"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArraySlice, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.11 Array.prototype.sort(comparefn)
-    proto->DefineOwnProperty(
-        this, Intern("sort"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArraySort, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.12 Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])  // NOLINT
-    proto->DefineOwnProperty(
-        this, Intern("splice"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArraySplice, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
-    proto->DefineOwnProperty(
-        this, Intern("unshift"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayUnshift, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
-    proto->DefineOwnProperty(
-        this, Intern("indexOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayIndexOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
-    proto->DefineOwnProperty(
-        this, Intern("lastIndexOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayLastIndexOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
-    proto->DefineOwnProperty(
-        this, Intern("every"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayEvery, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
-    proto->DefineOwnProperty(
-        this, Intern("some"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArraySome, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.18 Array.prototype.forEach(callbackfn[, thisArg])
-    proto->DefineOwnProperty(
-        this, Intern("forEach"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayForEach, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
-    proto->DefineOwnProperty(
-        this, Intern("map"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayMap, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
-    proto->DefineOwnProperty(
-        this, Intern("filter"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayFilter, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
-    proto->DefineOwnProperty(
-        this, Intern("reduce"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayReduce, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
-    proto->DefineOwnProperty(
-        this, Intern("reduceRight"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayReduceRight, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        // section 15.4.4.2 Array.prototype.toString()
+        .def<&runtime::ArrayToString, 0>("toString")
+        // section 15.4.4.3 Array.prototype.toLocaleString()
+        .def<&runtime::ArrayToLocaleString, 0>("toLocaleString")
+        // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
+        .def<&runtime::ArrayConcat, 1>("concat")
+        // section 15.4.4.5 Array.prototype.join(separator)
+        .def<&runtime::ArrayJoin, 1>("join")
+        // section 15.4.4.6 Array.prototype.pop()
+        .def<&runtime::ArrayPop, 0>("pop")
+        // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
+        .def<&runtime::ArrayPush, 1>("push")
+        // section 15.4.4.8 Array.prototype.reverse()
+        .def<&runtime::ArrayReverse, 0>("reverse")
+        // section 15.4.4.9 Array.prototype.shift()
+        .def<&runtime::ArrayShift, 0>("shift")
+        // section 15.4.4.10 Array.prototype.slice(start, end)
+        .def<&runtime::ArraySlice, 2>("slice")
+        // section 15.4.4.11 Array.prototype.sort(comparefn)
+        .def<&runtime::ArraySort, 1>("sort")
+        // section 15.4.4.12
+        // Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])
+        .def<&runtime::ArraySplice, 2>("splice")
+        // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
+        .def<&runtime::ArrayUnshift, 1>("unshift")
+        // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
+        .def<&runtime::ArrayIndexOf, 1>("indexOf")
+        // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
+        .def<&runtime::ArrayLastIndexOf, 1>("lastIndexOf")
+        // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
+        .def<&runtime::ArrayEvery, 1>("every")
+        // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
+        .def<&runtime::ArraySome, 1>("some")
+        // section 15.4.4.18 Array.prototype.forEach(callbackfn[, thisArg])
+        .def<&runtime::ArrayForEach, 1>("forEach")
+        // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
+        .def<&runtime::ArrayMap, 1>("map")
+        // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
+        .def<&runtime::ArrayFilter, 1>("filter")
+        // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
+        .def<&runtime::ArrayReduce, 1>("reduce")
+        // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
+        .def<&runtime::ArrayReduceRight, 1>("reduceRight");
   }
 
   {
     // String
-    // TODO(Constellation) more
     JSStringObject* const proto = JSStringObject::NewPlain(this);
 
     // section 15.5.2 The String Constructor
@@ -841,186 +696,48 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.5.4.2 String.prototype.toString()
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.3 String.prototype.valueOf()
-    proto->DefineOwnProperty(
-        this, valueOf_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringValueOf, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.4 String.prototype.charAt(pos)
-    proto->DefineOwnProperty(
-        this, Intern("charAt"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringCharAt, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.5 String.prototype.charCodeAt(pos)
-    proto->DefineOwnProperty(
-        this, Intern("charCodeAt"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringCharCodeAt, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
-    proto->DefineOwnProperty(
-        this, Intern("concat"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringConcat, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.7 String.prototype.indexOf(searchString, position)
-    proto->DefineOwnProperty(
-        this, Intern("indexOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringIndexOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
-    proto->DefineOwnProperty(
-        this, Intern("lastIndexOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringLastIndexOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.9 String.prototype.localeCompare(that)
-    proto->DefineOwnProperty(
-        this, Intern("localeCompare"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringLocaleCompare, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.10 String.prototype.match(regexp)
-    proto->DefineOwnProperty(
-        this, Intern("match"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringMatch, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
-    proto->DefineOwnProperty(
-        this, Intern("replace"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringReplace, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.12 String.prototype.search(regexp)
-    proto->DefineOwnProperty(
-        this, Intern("search"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringSearch, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.13 String.prototype.slice(start, end)
-    proto->DefineOwnProperty(
-        this, Intern("slice"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringSlice, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.14 String.prototype.split(separator, limit)
-    proto->DefineOwnProperty(
-        this, Intern("split"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringSplit, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.15 String.prototype.substring(start, end)
-    proto->DefineOwnProperty(
-        this, Intern("substring"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringSubString, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.16 String.prototype.toLowerCase()
-    proto->DefineOwnProperty(
-        this, Intern("toLowerCase"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringToLowerCase, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.17 String.prototype.toLocaleLowerCase()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleLowerCase"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringToLocaleLowerCase, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.18 String.prototype.toUpperCase()
-    proto->DefineOwnProperty(
-        this, Intern("toUpperCase"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringToUpperCase, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.19 String.prototype.toLocaleUpperCase()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleUpperCase"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringToLocaleUpperCase, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.5.4.20 String.prototype.trim()
-    proto->DefineOwnProperty(
-        this, Intern("trim"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringTrim, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.3 String.prototype.substr(start, length)
-    // this method is deprecated.
-    proto->DefineOwnProperty(
-        this, Intern("substr"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringSubstr, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        // section 15.5.4.2 String.prototype.toString()
+        .def<&runtime::StringToString, 0>("toString")
+        // section 15.5.4.3 String.prototype.valueOf()
+        .def<&runtime::StringValueOf, 0>("valueOf")
+        // section 15.5.4.4 String.prototype.charAt(pos)
+        .def<&runtime::StringCharAt, 1>("charAt")
+        // section 15.5.4.5 String.prototype.charCodeAt(pos)
+        .def<&runtime::StringCharCodeAt, 1>("charCodeAt")
+        // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
+        .def<&runtime::StringConcat, 1>("concat")
+        // section 15.5.4.7 String.prototype.indexOf(searchString, position)
+        .def<&runtime::StringIndexOf, 1>("indexOf")
+        // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
+        .def<&runtime::StringLastIndexOf, 1>("lastIndexOf")
+        // section 15.5.4.9 String.prototype.localeCompare(that)
+        .def<&runtime::StringLocaleCompare, 1>("localeCompare")
+        // section 15.5.4.10 String.prototype.match(regexp)
+        .def<&runtime::StringMatch, 1>("match")
+        // section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
+        .def<&runtime::StringReplace, 2>("replace")
+        // section 15.5.4.12 String.prototype.search(regexp)
+        .def<&runtime::StringSearch, 1>("search")
+        // section 15.5.4.13 String.prototype.slice(start, end)
+        .def<&runtime::StringSlice, 2>("slice")
+        // section 15.5.4.14 String.prototype.split(separator, limit)
+        .def<&runtime::StringSplit, 2>("split")
+        // section 15.5.4.15 String.prototype.substring(start, end)
+        .def<&runtime::StringSubstring, 2>("substring")
+        // section 15.5.4.16 String.prototype.toLowerCase()
+        .def<&runtime::StringToLowerCase, 0>("toLowerCase")
+        // section 15.5.4.17 String.prototype.toLocaleLowerCase()
+        .def<&runtime::StringToLocaleLowerCase, 0>("toLocaleLowerCase")
+        // section 15.5.4.18 String.prototype.toUpperCase()
+        .def<&runtime::StringToUpperCase, 0>("toUpperCase")
+        // section 15.5.4.19 String.prototype.toLocaleUpperCase()
+        .def<&runtime::StringToLocaleUpperCase, 0>("toLocaleUpperCase")
+        // section 15.5.4.20 String.prototype.trim()
+        .def<&runtime::StringTrim, 0>("trim")
+        // section B.2.3 String.prototype.substr(start, length)
+        // this method is deprecated.
+        .def<&runtime::StringSubstr, 2>("substr");
   }
 
   {
@@ -1702,365 +1419,87 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.9.5.2 Date.prototype.toString()
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.3 Date.prototype.toDateString()
-    proto->DefineOwnProperty(
-        this, Intern("toDateString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToDateString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.4 Date.prototype.toTimeString()
-    proto->DefineOwnProperty(
-        this, Intern("toTimeString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToTimeString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.5 Date.prototype.toLocaleString()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToLocaleString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.6 Date.prototype.toLocaleDateString()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleDateString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToLocaleDateString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.7 Date.prototype.toLocaleTimeString()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleTimeString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToLocaleTimeString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.8 Date.prototype.valueOf()
-    proto->DefineOwnProperty(
-        this, Intern("valueOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateValueOf, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.9 Date.prototype.getTime()
-    proto->DefineOwnProperty(
-        this, Intern("getTime"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetTime, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.10 Date.prototype.getFullYear()
-    proto->DefineOwnProperty(
-        this, Intern("getFullYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetFullYear, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.11 Date.prototype.getUTCFullYear()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCFullYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCFullYear, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.12 Date.prototype.getMonth()
-    proto->DefineOwnProperty(
-        this, Intern("getMonth"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetMonth, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.13 Date.prototype.getUTCMonth()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCMonth"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCMonth, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.14 Date.prototype.getDate()
-    proto->DefineOwnProperty(
-        this, Intern("getDate"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetDate, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.15 Date.prototype.getUTCDate()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCDate"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCDate, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.16 Date.prototype.getDay()
-    proto->DefineOwnProperty(
-        this, Intern("getDay"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetDay, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.17 Date.prototype.getUTCDay()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCDay"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCDay, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.18 Date.prototype.getHours()
-    proto->DefineOwnProperty(
-        this, Intern("getHours"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetHours, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.19 Date.prototype.getUTCHours()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCHours"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCHours, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.20 Date.prototype.getMinutes()
-    proto->DefineOwnProperty(
-        this, Intern("getMinutes"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetMinutes, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.21 Date.prototype.getUTCMinutes()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCMinutes"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCMinutes, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.22 Date.prototype.getSeconds()
-    proto->DefineOwnProperty(
-        this, Intern("getSeconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetSeconds, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.23 Date.prototype.getUTCSeconds()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCSeconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCSeconds, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.24 Date.prototype.getMilliseconds()
-    proto->DefineOwnProperty(
-        this, Intern("getMilliseconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetMilliseconds, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.25 Date.prototype.getUTCMilliseconds()
-    proto->DefineOwnProperty(
-        this, Intern("getUTCMilliseconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetUTCMilliseconds, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.26 Date.prototype.getTimezoneOffset()
-    proto->DefineOwnProperty(
-        this, Intern("getTimezoneOffset"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetTimezoneOffset, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.27 Date.prototype.setTime(time)
-    proto->DefineOwnProperty(
-        this, Intern("setTime"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetTime, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.28 Date.prototype.setMilliseconds(ms)
-    proto->DefineOwnProperty(
-        this, Intern("setMilliseconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetMilliseconds, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.29 Date.prototype.setUTCMilliseconds(ms)
-    proto->DefineOwnProperty(
-        this, Intern("setUTCMilliseconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCMilliseconds, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.30 Date.prototype.setSeconds(sec[, ms])
-    proto->DefineOwnProperty(
-        this, Intern("setSeconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetSeconds, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.31 Date.prototype.setUTCSeconds(sec[, ms])
-    proto->DefineOwnProperty(
-        this, Intern("setUTCSeconds"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCSeconds, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.32 Date.prototype.setMinutes(min[, sec[, ms]])
-    proto->DefineOwnProperty(
-        this, Intern("setMinutes"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetMinutes, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.33 Date.prototype.setUTCMinutes(min[, sec[, ms]])
-    proto->DefineOwnProperty(
-        this, Intern("setUTCMinutes"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCMinutes, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.34 Date.prototype.setHours(hour[, min[, sec[, ms]])
-    proto->DefineOwnProperty(
-        this, Intern("setHours"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetHours, 4>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.35 Date.prototype.setUTCHours(hour[, min[, sec[, ms]])
-    proto->DefineOwnProperty(
-        this, Intern("setUTCHours"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCHours, 4>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.36 Date.prototype.setDate(date)
-    proto->DefineOwnProperty(
-        this, Intern("setDate"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetDate, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.37 Date.prototype.setUTCDate(date)
-    proto->DefineOwnProperty(
-        this, Intern("setUTCDate"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCDate, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.38 Date.prototype.setMonth(month[, date])
-    proto->DefineOwnProperty(
-        this, Intern("setMonth"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetMonth, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.39 Date.prototype.setUTCMonth(month[, date])
-    proto->DefineOwnProperty(
-        this, Intern("setUTCMonth"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCMonth, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.40 Date.prototype.setFullYear(year[, month[, date]])
-    proto->DefineOwnProperty(
-        this, Intern("setFullYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetFullYear, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
-    proto->DefineOwnProperty(
-        this, Intern("setUTCFullYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetUTCFullYear, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        // section 15.9.5.2 Date.prototype.toString()
+        .def<&runtime::DateToString, 0>("toString")
+        // section 15.9.5.3 Date.prototype.toDateString()
+        .def<&runtime::DateToDateString, 0>("toDateString")
+        // section 15.9.5.4 Date.prototype.toTimeString()
+        .def<&runtime::DateToTimeString, 0>("toTimeString")
+        // section 15.9.5.5 Date.prototype.toLocaleString()
+        .def<&runtime::DateToLocaleString, 0>("toLocaleString")
+        // section 15.9.5.6 Date.prototype.toLocaleDateString()
+        .def<&runtime::DateToLocaleDateString, 0>("toLocaleDateString")
+        // section 15.9.5.7 Date.prototype.toLocaleTimeString()
+        .def<&runtime::DateToLocaleTimeString, 0>("toLocaleTimeString")
+        // section 15.9.5.8 Date.prototype.valueOf()
+        .def<&runtime::DateValueOf, 0>("valueOf")
+        // section 15.9.5.9 Date.prototype.getTime()
+        .def<&runtime::DateGetTime, 0>("getTime")
+        // section 15.9.5.10 Date.prototype.getFullYear()
+        .def<&runtime::DateGetFullYear, 0>("getFullYear")
+        // section 15.9.5.11 Date.prototype.getUTCFullYear()
+        .def<&runtime::DateGetUTCFullYear, 0>("getUTCFullYear")
+        // section 15.9.5.12 Date.prototype.getMonth()
+        .def<&runtime::DateGetMonth, 0>("getMonth")
+        // section 15.9.5.13 Date.prototype.getUTCMonth()
+        .def<&runtime::DateGetUTCMonth, 0>("getUTCMonth")
+        // section 15.9.5.14 Date.prototype.getDate()
+        .def<&runtime::DateGetDate, 0>("getDate")
+        // section 15.9.5.15 Date.prototype.getUTCDate()
+        .def<&runtime::DateGetUTCDate, 0>("getUTCDate")
+        // section 15.9.5.16 Date.prototype.getDay()
+        .def<&runtime::DateGetDay, 0>("getDay")
+        // section 15.9.5.17 Date.prototype.getUTCDay()
+        .def<&runtime::DateGetUTCDay, 0>("getUTCDay")
+        // section 15.9.5.18 Date.prototype.getHours()
+        .def<&runtime::DateGetHours, 0>("getHours")
+        // section 15.9.5.19 Date.prototype.getUTCHours()
+        .def<&runtime::DateGetUTCHours, 0>("getUTCHours")
+        // section 15.9.5.20 Date.prototype.getMinutes()
+        .def<&runtime::DateGetMinutes, 0>("getMinutes")
+        // section 15.9.5.21 Date.prototype.getUTCMinutes()
+        .def<&runtime::DateGetUTCMinutes, 0>("getUTCMinutes")
+        // section 15.9.5.22 Date.prototype.getSeconds()
+        .def<&runtime::DateGetSeconds, 0>("getSeconds")
+        // section 15.9.5.23 Date.prototype.getUTCSeconds()
+        .def<&runtime::DateGetUTCSeconds, 0>("getUTCSeconds")
+        // section 15.9.5.24 Date.prototype.getMilliseconds()
+        .def<&runtime::DateGetMilliseconds, 0>("getMilliseconds")
+        // section 15.9.5.25 Date.prototype.getUTCMilliseconds()
+        .def<&runtime::DateGetUTCMilliseconds, 0>("getUTCMilliseconds")
+        // section 15.9.5.26 Date.prototype.getTimezoneOffset()
+        .def<&runtime::DateGetTimezoneOffset, 0>("getTimezoneOffset")
+        // section 15.9.5.27 Date.prototype.setTime(time)
+        .def<&runtime::DateSetTime, 1>("setTime")
+        // section 15.9.5.28 Date.prototype.setMilliseconds(ms)
+        .def<&runtime::DateSetMilliseconds, 1>("setMilliseconds")
+        // section 15.9.5.29 Date.prototype.setUTCMilliseconds(ms)
+        .def<&runtime::DateSetUTCMilliseconds, 1>("setUTCMilliseconds")
+        // section 15.9.5.30 Date.prototype.setSeconds(sec[, ms])
+        .def<&runtime::DateSetSeconds, 2>("setSeconds")
+        // section 15.9.5.31 Date.prototype.setUTCSeconds(sec[, ms])
+        .def<&runtime::DateSetUTCSeconds, 2>("setUTCSeconds")
+        // section 15.9.5.32 Date.prototype.setMinutes(min[, sec[, ms]])
+        .def<&runtime::DateSetMinutes, 3>("setMinutes")
+        // section 15.9.5.33 Date.prototype.setUTCMinutes(min[, sec[, ms]])
+        .def<&runtime::DateSetUTCMinutes, 3>("setUTCMinutes")
+        // section 15.9.5.34 Date.prototype.setHours(hour[, min[, sec[, ms]])
+        .def<&runtime::DateSetHours, 4>("setHours")
+        // section 15.9.5.35 Date.prototype.setUTCHours(hour[, min[, sec[, ms]])
+        .def<&runtime::DateSetUTCHours, 4>("setUTCHours")
+        // section 15.9.5.36 Date.prototype.setDate(date)
+        .def<&runtime::DateSetDate, 1>("setDate")
+        // section 15.9.5.37 Date.prototype.setUTCDate(date)
+        .def<&runtime::DateSetUTCDate, 1>("setUTCDate")
+        // section 15.9.5.38 Date.prototype.setMonth(month[, date])
+        .def<&runtime::DateSetMonth, 2>("setMonth")
+        // section 15.9.5.39 Date.prototype.setUTCMonth(month[, date])
+        .def<&runtime::DateSetUTCMonth, 2>("setUTCMonth")
+        // section 15.9.5.40 Date.prototype.setFullYear(year[, month[, date]])
+        .def<&runtime::DateSetFullYear, 3>("setFullYear")
+        // section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
+        .def<&runtime::DateSetUTCFullYear, 3>("setUTCFullYear");
 
     JSFunction* const toUTCString =
         JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this);
