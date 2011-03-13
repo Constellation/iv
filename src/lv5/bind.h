@@ -7,6 +7,13 @@ namespace iv {
 namespace lv5 {
 namespace bind {
 
+enum Attribute {
+  NONE = PropertyDescriptor::NONE,
+  WRITABLE = PropertyDescriptor::WRITABLE,
+  ENUMERABLE = PropertyDescriptor::ENUMERABLE,
+  CONFIGURABLE = PropertyDescriptor::CONFIGURABLE
+};
+
 class Scope {
  public:
   Scope(Context* ctx) : ctx_(ctx) { }
@@ -62,8 +69,23 @@ class Object : public Scope {
       ctx_, name,
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
+          WRITABLE | CONFIGURABLE),
+      false, ctx_->error());
+    return *this;
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def(const core::StringPiece& string, int attr) {
+    return def<func, n>(context::Intern(ctx_, string), attr);
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def(const Symbol& name, int attr) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      DataDescriptor(
+          JSInlinedFunction<func, n>::New(ctx_, name),
+          attr),
       false, ctx_->error());
     return *this;
   }
@@ -75,7 +97,19 @@ class Object : public Scope {
   Object& def(const Symbol& name, const JSVal& val) {
     obj_->DefineOwnProperty(
       ctx_, name,
-      DataDescriptor(val, PropertyDescriptor::NONE),
+      DataDescriptor(val, NONE),
+      false, ctx_->error());
+    return *this;
+  }
+
+  Object& def(const core::StringPiece& string, const JSVal& val, int attr) {
+    return def(context::Intern(ctx_, string), val, attr);
+  }
+
+  Object& def(const Symbol& name, const JSVal& val, int attr) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      DataDescriptor(val, attr),
       false, ctx_->error());
     return *this;
   }

@@ -1419,6 +1419,10 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
+    JSFunction* const toUTCString =
+        JSInlinedFunction<&runtime::DateToUTCString, 0>::New(
+            this, Intern("toUTCString"));
+
     bind::Object(this, proto)
         // section 15.9.5.2 Date.prototype.toString()
         .def<&runtime::DateToString, 0>("toString")
@@ -1499,66 +1503,21 @@ void Context::Initialize() {
         // section 15.9.5.40 Date.prototype.setFullYear(year[, month[, date]])
         .def<&runtime::DateSetFullYear, 3>("setFullYear")
         // section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
-        .def<&runtime::DateSetUTCFullYear, 3>("setUTCFullYear");
-
-    JSFunction* const toUTCString =
-        JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this);
-
-    // section 15.9.5.42 Date.prototype.toUTCString()
-    proto->DefineOwnProperty(
-        this, Intern("toUTCString"),
-        DataDescriptor(
-            toUTCString,
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.43 Date.prototype.toISOString()
-    proto->DefineOwnProperty(
-        this, Intern("toISOString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToISOString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.5.44 Date.prototype.toJSON()
-    proto->DefineOwnProperty(
-        this, Intern("toJSON"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateToJSON, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.4 Date.prototype.getYear()
-    // this method is deprecated.
-    proto->DefineOwnProperty(
-        this, Intern("getYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateGetYear, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.5 Date.prototype.setYear(year)
-    // this method is deprecated.
-    proto->DefineOwnProperty(
-        this, Intern("setYear"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateSetYear, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.6 Date.prototype.toGMTString()
-    proto->DefineOwnProperty(
-        this, Intern("toGMTString"),
-        DataDescriptor(
-            toUTCString,
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+        .def<&runtime::DateSetUTCFullYear, 3>("setUTCFullYear")
+        // section 15.9.5.42 Date.prototype.toUTCString()
+        .def("toUTCString", toUTCString, bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.9.5.43 Date.prototype.toISOString()
+        .def<&runtime::DateToISOString, 0>("toISOString")
+        // section 15.9.5.44 Date.prototype.toJSON()
+        .def<&runtime::DateToJSON, 1>("toJSON")
+        // section B.2.4 Date.prototype.getYear()
+        // this method is deprecated.
+        .def<&runtime::DateGetYear, 0>("getYear")
+        // section B.2.5 Date.prototype.setYear(year)
+        // this method is deprecated.
+        .def<&runtime::DateSetYear, 1>("setYear")
+        // section B.2.6 Date.prototype.toGMTString()
+        .def("toGMTString", toUTCString, bind::WRITABLE | bind::CONFIGURABLE);
   }
 
   {
