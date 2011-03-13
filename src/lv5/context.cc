@@ -15,6 +15,7 @@
 #include "lv5/jsast.h"
 #include "lv5/jsscript.h"
 #include "lv5/jserror.h"
+#include "lv5/bind.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -1568,225 +1569,68 @@ void Context::Initialize() {
   {
     // section 15.8 Math
     JSObject* const math = JSObject::NewPlain(this);
-    math->set_prototype(obj_proto);
-    const Symbol name = Intern("Math");
-    math->set_class_name(name);
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, Intern("Math"),
         DataDescriptor(math,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.8.1.1 E
-    math->DefineOwnProperty(
-        this, Intern("E"),
-        DataDescriptor(std::exp(1.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.2 LN10
-    math->DefineOwnProperty(
-        this, Intern("LN10"),
-        DataDescriptor(std::log(10.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.3 LN2
-    math->DefineOwnProperty(
-        this, Intern("LN2"),
-        DataDescriptor(std::log(2.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.4 LOG2E
-    math->DefineOwnProperty(
-        this, Intern("LOG2E"),
-        DataDescriptor(1.0 / std::log(2.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.5 LOG10E
-    math->DefineOwnProperty(
-        this, Intern("LOG10E"),
-        DataDescriptor(1.0 / std::log(10.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.6 PI
-    math->DefineOwnProperty(
-        this, Intern("PI"),
-        DataDescriptor(std::acos(-1.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.7 SQRT1_2
-    math->DefineOwnProperty(
-        this, Intern("SQRT1_2"),
-        DataDescriptor(std::sqrt(0.5), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.1.8 SQRT2
-    math->DefineOwnProperty(
-        this, Intern("SQRT2"),
-        DataDescriptor(std::sqrt(2.0), PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.8.2.1 abs(x)
-    math->DefineOwnProperty(
-        this, Intern("abs"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathAbs, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.2 acos(x)
-    math->DefineOwnProperty(
-        this, Intern("acos"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathAcos, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.3 asin(x)
-    math->DefineOwnProperty(
-        this, Intern("asin"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathAsin, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.4 atan(x)
-    math->DefineOwnProperty(
-        this, Intern("atan"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathAtan, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.5 atan2(y, x)
-    math->DefineOwnProperty(
-        this, Intern("atan2"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathAtan2, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.6 ceil(x)
-    math->DefineOwnProperty(
-        this, Intern("ceil"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathCeil, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.7 cos(x)
-    math->DefineOwnProperty(
-        this, Intern("cos"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathCos, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.8 exp(x)
-    math->DefineOwnProperty(
-        this, Intern("exp"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathExp, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.9 floor(x)
-    math->DefineOwnProperty(
-        this, Intern("floor"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathFloor, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.10 log(x)
-    math->DefineOwnProperty(
-        this, Intern("log"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathLog, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.11 max([value1[, value2[, ... ]]])
-    math->DefineOwnProperty(
-        this, Intern("max"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathMax, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.12 min([value1[, value2[, ... ]]])
-    math->DefineOwnProperty(
-        this, Intern("min"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathMin, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.13 pow(x, y)
-    math->DefineOwnProperty(
-        this, Intern("pow"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathPow, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.14 random()
-    math->DefineOwnProperty(
-        this, Intern("random"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathRandom, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.15 round(x)
-    math->DefineOwnProperty(
-        this, Intern("round"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathRound, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.16 sin(x)
-    math->DefineOwnProperty(
-        this, Intern("sin"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathSin, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.17 sqrt(x)
-    math->DefineOwnProperty(
-        this, Intern("sqrt"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathSqrt, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.8.2.18 tan(x)
-    math->DefineOwnProperty(
-        this, Intern("tan"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::MathTan, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, math)
+        .class_name("Math")
+        .prototype(obj_proto)
+        // section 15.8.1.1 E
+        .def("E", std::exp(1.0))
+        // section 15.8.1.2 LN10
+        .def("LN10", std::log(10.0))
+        // section 15.8.1.3 LN2
+        .def("LN2", std::log(2.0))
+        // section 15.8.1.4 LOG2E
+        .def("LOG2E", 1.0 / std::log(2.0))
+        // section 15.8.1.5 LOG10E
+        .def("LOG10E", 1.0 / std::log(10.0))
+        // section 15.8.1.6 PI
+        .def("PI", std::acos(-1.0))
+        // section 15.8.1.7 SQRT1_2
+        .def("SQRT1_2", std::sqrt(0.5))
+        // section 15.8.1.8 SQRT2
+        .def("SQRT2", std::sqrt(2.0))
+        // section 15.8.2.1 abs(x)
+        .def<&runtime::MathAbs, 1>("abs")
+        // section 15.8.2.2 acos(x)
+        .def<&runtime::MathAcos, 1>("acos")
+        // section 15.8.2.3 asin(x)
+        .def<&runtime::MathAsin, 1>("asin")
+        // section 15.8.2.4 atan(x)
+        .def<&runtime::MathAtan, 1>("atan")
+        // section 15.8.2.5 atan2(y, x)
+        .def<&runtime::MathAtan2, 2>("atan2")
+        // section 15.8.2.6 ceil(x)
+        .def<&runtime::MathCeil, 1>("ceil")
+        // section 15.8.2.7 cos(x)
+        .def<&runtime::MathCos, 1>("cos")
+        // section 15.8.2.8 exp(x)
+        .def<&runtime::MathExp, 1>("exp")
+        // section 15.8.2.9 floor(x)
+        .def<&runtime::MathFloor, 1>("floor")
+        // section 15.8.2.10 log(x)
+        .def<&runtime::MathLog, 1>("log")
+        // section 15.8.2.11 max([value1[, value2[, ... ]]])
+        .def<&runtime::MathMax, 2>("max")
+        // section 15.8.2.12 min([value1[, value2[, ... ]]])
+        .def<&runtime::MathMin, 2>("min")
+        // section 15.8.2.13 pow(x, y)
+        .def<&runtime::MathPow, 2>("pow")
+        // section 15.8.2.14 random()
+        .def<&runtime::MathRandom, 0>("random")
+        // section 15.8.2.15 round(x)
+        .def<&runtime::MathRound, 1>("round")
+        // section 15.8.2.16 sin(x)
+        .def<&runtime::MathSin, 1>("sin")
+        // section 15.8.2.17 sqrt(x)
+        .def<&runtime::MathSqrt, 1>("sqrt")
+        // section 15.8.2.18 tan(x)
+        .def<&runtime::MathTan, 1>("tan");
   }
   {
     // section 15.9 Date
@@ -2342,153 +2186,56 @@ void Context::Initialize() {
   {
     // section 15.12 JSON
     JSObject* const json = JSObject::NewPlain(this);
-    json->set_prototype(obj_proto);
-    const Symbol name = Intern("JSON");
-    json->set_class_name(name);
     global_obj_.DefineOwnProperty(
-        this, name,
+        this, Intern("JSON"),
         DataDescriptor(json,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-
-    // section 15.12.2 parse(text[, reviver])
-    json->DefineOwnProperty(
-        this, Intern("parse"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::JSONParse, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.12.3 stringify(value[, replacer[, space]])
-    json->DefineOwnProperty(
-        this, Intern("stringify"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::JSONStringify, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, json)
+        .class_name("JSON")
+        .prototype(obj_proto)
+        // section 15.12.2 parse(text[, reviver])
+        .def<&runtime::JSONParse, 2>("parse")
+        // section 15.12.3 stringify(value[, replacer[, space]])
+        .def<&runtime::JSONStringify, 3>("stringify");
   }
 
   {
-    // Builtins
-    // section 15.1.1.1 NaN
-    global_obj_.DefineOwnProperty(
-        this, Intern("NaN"),
-        DataDescriptor(
-            JSValData::kNaN, PropertyDescriptor::NONE),
-        false, NULL);
-    // section 15.1.1.2 Infinity
-    global_obj_.DefineOwnProperty(
-        this, Intern("Infinity"),
-        DataDescriptor(
-            std::numeric_limits<double>::infinity(), PropertyDescriptor::NONE),
-        false, NULL);
-    // section 15.1.1.3 undefined
-    global_obj_.DefineOwnProperty(
-        this, Intern("undefined"),
-        DataDescriptor(JSUndefined, PropertyDescriptor::NONE),
-        false, NULL);
-    // section 15.1.2.1 eval(x)
-    global_obj_.DefineOwnProperty(
-        this, Intern("eval"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalEval, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-    // section 15.1.2.3 parseIng(string, radix)
-    global_obj_.DefineOwnProperty(
-        this, Intern("parseInt"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalParseInt, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-    // section 15.1.2.3 parseFloat(string)
-    global_obj_.DefineOwnProperty(
-        this, Intern("parseFloat"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalParseFloat, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-    // section 15.1.2.4 isNaN(number)
-    global_obj_.DefineOwnProperty(
-        this, Intern("isNaN"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalIsNaN, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-    // section 15.1.2.5 isFinite(number)
-    global_obj_.DefineOwnProperty(
-        this, Intern("isFinite"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalIsFinite, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.1.3.1 decodeURI(encodedURI)
-    global_obj_.DefineOwnProperty(
-        this, Intern("decodeURI"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalDecodeURI, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
-    global_obj_.DefineOwnProperty(
-        this, Intern("decodeURIComponent"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalDecodeURIComponent, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.1.3.3 encodeURI(uri)
-    global_obj_.DefineOwnProperty(
-        this, Intern("encodeURI"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalEncodeURI, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.1.3.4 encodeURIComponent(uriComponent)
-    global_obj_.DefineOwnProperty(
-        this, Intern("encodeURIComponent"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalEncodeURIComponent, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.1 escape(string)
-    // this method is deprecated.
-    global_obj_.DefineOwnProperty(
-        this, Intern("escape"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalEscape, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section B.2.2 unescape(string)
-    // this method is deprecated.
-    global_obj_.DefineOwnProperty(
-        this, Intern("unescape"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::GlobalUnescape, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    global_obj_.set_class_name(Intern("global"));
-    global_obj_.set_prototype(obj_proto);
+    // Global
+    bind::Object(this, &global_obj_)
+        .class_name("global")
+        .prototype(obj_proto)
+        // section 15.1.1.1 NaN
+        .def("NaN", JSValData::kNaN)
+        // section 15.1.1.2 Infinity
+        .def("Infinity", std::numeric_limits<double>::infinity())
+        // section 15.1.1.3 undefined
+        .def("undefined", JSUndefined)
+        // section 15.1.2.1 eval(x)
+        .def<&runtime::GlobalEval, 1>("eval")
+        // section 15.1.2.3 parseIng(string, radix)
+        .def<&runtime::GlobalParseInt, 2>("parseInt")
+        // section 15.1.2.3 parseFloat(string)
+        .def<&runtime::GlobalParseFloat, 1>("parseFloat")
+        // section 15.1.2.4 isNaN(number)
+        .def<&runtime::GlobalIsNaN, 1>("isNaN")
+        // section 15.1.2.5 isFinite(number)
+        .def<&runtime::GlobalIsFinite, 1>("isFinite")
+        // section 15.1.3.1 decodeURI(encodedURI)
+        .def<&runtime::GlobalDecodeURI, 1>("decodeURI")
+        // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
+        .def<&runtime::GlobalDecodeURIComponent, 1>("decodeURIComponent")
+        // section 15.1.3.3 encodeURI(uri)
+        .def<&runtime::GlobalEncodeURI, 1>("encodeURI")
+        // section 15.1.3.4 encodeURIComponent(uriComponent)
+        .def<&runtime::GlobalEncodeURIComponent, 1>("encodeURIComponent")
+        // section B.2.1 escape(string)
+        // this method is deprecated.
+        .def<&runtime::GlobalEscape, 1>("escape")
+        // section B.2.2 unescape(string)
+        // this method is deprecated.
+        .def<&runtime::GlobalUnescape, 1>("unescape");
   }
 
   {

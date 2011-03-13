@@ -41,14 +41,21 @@ struct NativeFunction {
   };
 
   template<SpecificationMode mode>
-  static JSString* ToString(Context* ctx, JSFunction* func,
+  static JSVal ToString(Context* ctx, JSFunction* func, Error* e,
       typename enable_if_c<mode == kSpecificationStrict>::type* = 0) {
     return JSString::NewAsciiString(ctx,
-                                    "function native() { /* native code */ }");
+                                    "function native() { [native code] }");
+//    const JSVal name = func->Get(ctx, context::Intern(ctx, "name"), ERROR(e));
+//    assert(name.IsString());
+//    StringBuilder builder;
+//    builder.Append(detail::kFunctionPrefix);
+//    builder.Append(*name.string());
+//    builder.Append("() { /* native code */ }");
+//    return builder.Build(ctx);
   }
 
   template<SpecificationMode mode>
-  static JSString* ToString(Context* ctx, JSFunction* func,
+  static JSVal ToString(Context* ctx, JSFunction* func, Error* e,
       typename enable_if_c<mode == kSpecificationCompatibility>::type* = 0) {
     return JSString::NewAsciiString(ctx,
                                     "function native() { [native code] }");
@@ -108,15 +115,15 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
-inline JSVal FunctionToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Function.prototype.toString", args, error);
+inline JSVal FunctionToString(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     if (!func->AsCodeFunction()) {
       return
           detail::NativeFunction::ToString<
-            detail::NativeFunction::kSpecificationStrict>(args.ctx(), func);
+            detail::NativeFunction::kSpecificationStrict>(args.ctx(), func, e);
     } else {
       StringBuilder builder;
       builder.Append(detail::kFunctionPrefix);
@@ -130,8 +137,8 @@ inline JSVal FunctionToString(const Arguments& args, Error* error) {
       return builder.Build(args.ctx());
     }
   }
-  error->Report(Error::Type,
-                "Function.prototype.toString is not generic function");
+  e->Report(Error::Type,
+            "Function.prototype.toString is not generic function");
   return JSUndefined;
 }
 

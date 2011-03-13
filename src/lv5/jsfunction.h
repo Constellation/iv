@@ -263,6 +263,26 @@ class JSInlinedFunction : public JSFunction {
         DataDescriptor(static_cast<double>(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
+    DefineOwnProperty(
+        ctx, context::Intern(ctx, "name"),
+        DataDescriptor(
+            JSString::NewEmptyString(ctx),
+            PropertyDescriptor::NONE),
+            false, NULL);
+  }
+
+  JSInlinedFunction(Context* ctx, const Symbol& name) {
+    DefineOwnProperty(
+        ctx, context::length_symbol(ctx),
+        DataDescriptor(static_cast<double>(n),
+                       PropertyDescriptor::NONE),
+                       false, NULL);
+    DefineOwnProperty(
+        ctx, context::Intern(ctx, "name"),
+        DataDescriptor(
+            JSString::New(ctx, context::GetSymbolString(ctx, name)),
+            PropertyDescriptor::NONE),
+            false, NULL);
   }
 
   JSVal Call(Arguments* args,
@@ -303,6 +323,12 @@ class JSInlinedFunction : public JSFunction {
 
   static this_type* New(Context* ctx) {
     this_type* const obj = new this_type(ctx);
+    obj->Initialize(ctx);
+    return obj;
+  }
+
+  static this_type* New(Context* ctx, const Symbol& name) {
+    this_type* const obj = new this_type(ctx, name);
     obj->Initialize(ctx);
     return obj;
   }
