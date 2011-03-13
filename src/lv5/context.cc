@@ -558,52 +558,41 @@ void Context::Initialize() {
   }
 
   {
-    // Array
+    // section 15.4 Array
     JSObject* const proto = JSArray::NewPlain(this);
     // section 15.4.2 The Array Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Array_symbol_,
       JSString::NewAsciiString(this, "Array"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
 
-    // section 15.4.3.2 Array.isArray(arg)
-    constructor->DefineOwnProperty(
-        this, Intern("isArray"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ArrayIsArray, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE)
+        // section 15.4.3.2 Array.isArray(arg)
+        .def<&runtime::ArrayIsArray, 1>("isArray");
 
     bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // section 15.5.4.1 String.prototype.constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.4.4.2 Array.prototype.toString()
         .def<&runtime::ArrayToString, 0>("toString")
         // section 15.4.4.3 Array.prototype.toLocaleString()
@@ -650,53 +639,41 @@ void Context::Initialize() {
   }
 
   {
-    // String
+    // section 15.5 String
     JSStringObject* const proto = JSStringObject::NewPlain(this);
-
     // section 15.5.2 The String Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Intern("String"),
       JSString::NewAsciiString(this, "String"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
 
-    // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
-    constructor->DefineOwnProperty(
-        this, Intern("fromCharCode"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::StringFromCharCode, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE)
+        // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
+        .def<&runtime::StringFromCharCode, 1>("fromCharCode");
 
     bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // section 15.5.4.1 String.prototype.constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.5.4.2 String.prototype.toString()
         .def<&runtime::StringToString, 0>("toString")
         // section 15.5.4.3 String.prototype.valueOf()
@@ -743,85 +720,58 @@ void Context::Initialize() {
   {
     // Boolean
     JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
-
     // section 15.5.2 The Boolean Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Intern("Boolean"),
       JSString::NewAsciiString(this, "Boolean"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
 
-    // section 15.6.4.2 Boolean.prototype.toString()
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::BooleanToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE);
 
-    // section 15.6.4.3 Boolean.prototype.valueOf()
-    proto->DefineOwnProperty(
-        this, valueOf_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::BooleanValueOf, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // section 15.6.4.1 Boolean.prototype.constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.6.4.2 Boolean.prototype.toString()
+        .def<&runtime::BooleanToString, 0>(toString_symbol_)
+        // section 15.6.4.3 Boolean.prototype.valueOf()
+        .def<&runtime::BooleanValueOf, 0>(valueOf_symbol_);
   }
 
   {
-    // Number
+    // 15.7 Number
     JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
-
     // section 15.7.3 The Number Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Intern("Number"),
       JSString::NewAsciiString(this, "Number"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
@@ -829,102 +779,40 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    // section 15.7.3.2 Number.MAX_VALUE
-    constructor->DefineOwnProperty(
-        this, Intern("MAX_VALUE"),
-        DataDescriptor(1.7976931348623157e+308,
-                       PropertyDescriptor::NONE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE)
+        // section 15.7.3.2 Number.MAX_VALUE
+        .def("MAX_VALUE", 1.7976931348623157e+308)
+        // section 15.7.3.3 Number.MIN_VALUE
+        .def("MIN_VALUE", 5e-324)
+        // section 15.7.3.4 Number.NaN
+        .def("NaN", JSValData::kNaN)
+        // section 15.7.3.5 Number.NEGATIVE_INFINITY
+        .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
+        // section 15.7.3.6 Number.POSITIVE_INFINITY
+        .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity());
 
-    // section 15.7.3.3 Number.MIN_VALUE
-    constructor->DefineOwnProperty(
-        this, Intern("MIN_VALUE"),
-        DataDescriptor(5e-324,
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.7.3.4 Number.NaN
-    constructor->DefineOwnProperty(
-        this, Intern("NaN"),
-        DataDescriptor(JSValData::kNaN,
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.7.3.5 Number.NEGATIVE_INFINITY
-    constructor->DefineOwnProperty(
-        this, Intern("NEGATIVE_INFINITY"),
-        DataDescriptor(-std::numeric_limits<double>::infinity(),
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.7.3.6 Number.POSITIVE_INFINITY
-    constructor->DefineOwnProperty(
-        this, Intern("POSITIVE_INFINITY"),
-        DataDescriptor(std::numeric_limits<double>::infinity(),
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.7.4.1 Number.prototype.constructor
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.2 Number.prototype.toString([radix])
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::NumberToString, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.3 Number.prototype.toLocaleString()
-    proto->DefineOwnProperty(
-        this, Intern("toLocaleString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::NumberToLocaleString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.4 Number.prototype.valueOf()
-    proto->DefineOwnProperty(
-        this, valueOf_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::NumberValueOf, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
-    proto->DefineOwnProperty(
-        this, Intern("toFixed"),
-        DataDescriptor(
-          JSInlinedFunction<&runtime::NumberToFixed, 1>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
-    proto->DefineOwnProperty(
-        this, Intern("toExponential"),
-        DataDescriptor(
-          JSInlinedFunction<&runtime::NumberToExponential, 1>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.7.4.7 Number.prototype.toPrecision(precision)
-    proto->DefineOwnProperty(
-        this, Intern("toPrecision"),
-        DataDescriptor(
-          JSInlinedFunction<&runtime::NumberToPrecision, 1>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // section 15.7.4.1 Number.prototype.constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.7.4.2 Number.prototype.toString([radix])
+        .def<&runtime::NumberToString, 1>(toString_symbol_)
+        // section 15.7.4.3 Number.prototype.toLocaleString()
+        .def<&runtime::NumberToLocaleString, 0>("toLocaleString")
+        // section 15.7.4.4 Number.prototype.valueOf()
+        .def<&runtime::NumberValueOf, 0>(valueOf_symbol_)
+        // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
+        .def<&runtime::NumberToFixed, 1>("toFixed")
+        // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
+        .def<&runtime::NumberToExponential, 1>("toExponential")
+        // section 15.7.4.7 Number.prototype.toPrecision(precision)
+        .def<&runtime::NumberToPrecision, 1>("toPrecision");
   }
 
   {
@@ -1353,29 +1241,20 @@ void Context::Initialize() {
         // section 15.8.2.18 tan(x)
         .def<&runtime::MathTan, 1>("tan");
   }
+
   {
     // section 15.9 Date
     JSObject* const proto = JSDate::NewPlain(this, JSValData::kNaN);
     // section 15.9.2.1 The Date Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Intern("Date"),
       JSString::NewAsciiString(this, "Date"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
 
     global_obj_.DefineOwnProperty(
@@ -1385,45 +1264,28 @@ void Context::Initialize() {
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.4.2 Date.parse(string)
-    constructor->DefineOwnProperty(
-        this, Intern("parse"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateParse, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.4.3 Date.UTC()
-    constructor->DefineOwnProperty(
-        this, Intern("UTC"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateUTC, 7>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.9.4.4 Date.now()
-    constructor->DefineOwnProperty(
-        this, Intern("now"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::DateNow, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE)
+        // section 15.9.4.2 Date.parse(string)
+        .def<&runtime::DateParse, 1>("parse")
+        // section 15.9.4.3 Date.UTC()
+        .def<&runtime::DateUTC, 7>("UTC")
+        // section 15.9.4.4 Date.now()
+        .def<&runtime::DateNow, 0>("now");
 
     JSFunction* const toUTCString =
         JSInlinedFunction<&runtime::DateToUTCString, 0>::New(
             this, Intern("toUTCString"));
 
     bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.9.5.2 Date.prototype.toString()
         .def<&runtime::DateToString, 0>("toString")
         // section 15.9.5.3 Date.prototype.toDateString()
@@ -1521,68 +1383,45 @@ void Context::Initialize() {
   }
 
   {
-    // RegExp
+    // section 15.10 RegExp
     JSObject* const proto = JSRegExp::NewPlain(this);
     // section 15.10.4 The RegExp Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
 
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, prototype_symbol_,
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
     struct Class cls = {
       Intern("RegExp"),
       JSString::NewAsciiString(this, "RegExp"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
-
     builtins_[cls.name] = cls;
+
     global_obj_.DefineOwnProperty(
         this, cls.name,
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
-    proto->DefineOwnProperty(
-        this, constructor_symbol_,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
 
-    // section 15.10.6.2 RegExp.prototype.exec(string)
-    proto->DefineOwnProperty(
-        this, Intern("exec"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::RegExpExec, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // prototype
+        .def(prototype_symbol_, proto, bind::NONE);
 
-    // section 15.10.6.3 RegExp.prototype.test(string)
-    proto->DefineOwnProperty(
-        this, Intern("test"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::RegExpTest, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.10.6.4 RegExp.prototype.toString()
-    proto->DefineOwnProperty(
-        this, toString_symbol_,
-        DataDescriptor(
-            JSInlinedFunction<&runtime::RegExpToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // constructor
+        .def(constructor_symbol_, constructor,
+             bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.10.6.2 RegExp.prototype.exec(string)
+        .def<&runtime::RegExpExec, 1>("exec")
+        // section 15.10.6.3 RegExp.prototype.test(string)
+        .def<&runtime::RegExpTest, 1>("test")
+        // section 15.10.6.4 RegExp.prototype.toString()
+        .def<&runtime::RegExpToString, 0>("toString");
   }
 
   {

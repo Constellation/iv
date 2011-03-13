@@ -11,7 +11,11 @@ enum Attribute {
   NONE = PropertyDescriptor::NONE,
   WRITABLE = PropertyDescriptor::WRITABLE,
   ENUMERABLE = PropertyDescriptor::ENUMERABLE,
-  CONFIGURABLE = PropertyDescriptor::CONFIGURABLE
+  CONFIGURABLE = PropertyDescriptor::CONFIGURABLE,
+  N = NONE,
+  W = WRITABLE,
+  E = ENUMERABLE,
+  C = CONFIGURABLE
 };
 
 class Scope {
