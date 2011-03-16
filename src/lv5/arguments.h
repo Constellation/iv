@@ -124,9 +124,16 @@ class Arguments : private core::Noncopyable<Arguments>::type {
   }
 
   ~Arguments() {
+    Release();
+  }
+
+  // this method is too primitive
+  // only use in like tail call proper
+  void Release() {
     if (stack_) {
       context::stack(ctx_)->Release(size_ + 1);
     }
+    stack_ = NULL;
   }
 
   Context* ctx() const {

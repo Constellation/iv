@@ -13,3 +13,4 @@ src/phonic/ext/include/
 src/phonic/Manifest.txt
 src/phonic/lib/iv/phonic.so
 src/phonic/ext/iv/phonic/third_party
+test/sputnik/sputniktests/
