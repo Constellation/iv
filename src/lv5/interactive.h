@@ -1,5 +1,5 @@
-#ifndef IV_LV5_INTERACTIVE_H_
-#define IV_LV5_INTERACTIVE_H_
+#ifndef _IV_LV5_INTERACTIVE_H_
+#define _IV_LV5_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>  // NOLINT
@@ -106,4 +106,4 @@ class Interactive {
 };
 
 } }  // namespace iv::lv5
-#endif  // IV_LV5_INTERACTIVE_H_
+#endif  // _IV_LV5_INTERACTIVE_H_

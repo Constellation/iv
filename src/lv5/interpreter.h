@@ -1,5 +1,5 @@
-#ifndef IV_LV5_INTERPRETER_H_
-#define IV_LV5_INTERPRETER_H_
+#ifndef _IV_LV5_INTERPRETER_H_
+#define _IV_LV5_INTERPRETER_H_
 #include <cmath>
 #include <tr1/cmath>
 #include "ast.h"
@@ -132,4 +132,4 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
 };
 
 } }  // namespace iv::lv5
-#endif  // IV_LV5_INTERPRETER_H_
+#endif  // _IV_LV5_INTERPRETER_H_
