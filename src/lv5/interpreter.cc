@@ -502,6 +502,23 @@ void Interpreter::Visit(const ForStatement* stmt) {
 
 
 void Interpreter::Visit(const ForInStatement* stmt) {
+  const Expression* lexpr;
+  if (stmt->each()->AsVariableStatement()) {
+    const Declaration* decl =
+        stmt->each()->AsVariableStatement()->decls().front();
+    const Identifier* const ident = decl->name();
+    EVAL_IN_STMT(ident);
+    const JSVal lhs = ctx_->ret();
+    if (const core::Maybe<const Expression> expr = decl->expr()) {
+      EVAL_IN_STMT(expr.Address());
+      const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
+      PutValue(lhs, val, CHECK_IN_STMT);
+    }
+    lexpr = ident;
+  } else {
+    assert(stmt->each()->AsExpressionStatement());
+    lexpr = stmt->each()->AsExpressionStatement()->expr();
+  }
   EVAL_IN_STMT(stmt->enumerable());
   const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
   if (expr.IsNull() || expr.IsUndefined()) {
@@ -511,18 +528,12 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   JSVal value = JSEmpty;
   std::vector<Symbol> keys;
   obj->GetPropertyNames(ctx_, &keys, JSObject::kExcludeNotEnumerable);
+
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
-    JSVal rhs(ctx_->ToString(*it));
-    if (stmt->each()->AsVariableStatement()) {
-      const Identifier* const ident =
-          stmt->each()->AsVariableStatement()->decls().front()->name();
-      EVAL_IN_STMT(ident);
-    } else {
-      assert(stmt->each()->AsExpressionStatement());
-      EVAL_IN_STMT(stmt->each()->AsExpressionStatement()->expr());
-    }
-    JSVal lhs = ctx_->ret();
+    const JSVal rhs(ctx_->ToString(*it));
+    EVAL_IN_STMT(lexpr);
+    const JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
     EVAL_IN_STMT(stmt->body());
     if (!ctx_->ret().IsEmpty()) {
