@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <tr1/array>
 #include <cstdlib>
-#include "chars.h"
 #include "conversions.h"
 #include "ustringpiece.h"
 #include "lv5/jsarray.h"
