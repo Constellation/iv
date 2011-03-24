@@ -6,14 +6,8 @@
 #include <tr1/cstdio>
 #include <tr1/array>
 #include <tr1/cstdint>
+#include "dtoa.h"
 #include "lv5/jsstring.h"
-
-extern "C" {
-extern char *dtoa(double d, int mode, int ndigits,
-                  int *decpt, int *sign, char **rve);
-extern void freedtoa(char* s);
-}
-
 namespace iv {
 namespace lv5 {
 namespace detail {
