@@ -154,7 +154,7 @@ class JSStringDToA : public DToA<JSStringDToA, JSString*> {
   explicit JSStringDToA(Context* ctx)
     : ctx_(ctx) { }
 
-  private:
+ private:
   JSString* Create(const char* str) const {
     return JSString::NewAsciiString(ctx_, str);
   }
