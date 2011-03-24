@@ -29,10 +29,11 @@ enum DTOAMode {
   DTOA_PRECISION
 };
 
+template<typename Derived, typename ResultType>
 class DToA {
  public:
-  template<typename Derived, DTOAMode m>
-  typename Derived::result_type DoubleToString(double x, int frac, int offset) {
+  template<DTOAMode m>
+  ResultType Build(double x, int frac, int offset) {
     std::tr1::array<char, 80> buf;
     const DTOAMode mode = (m == DTOA_FIXED && (x >= 1e21 || x <= -1e21))? DTOA_STD : m;
     int decpt;
@@ -45,12 +46,12 @@ class DToA {
       const char* const str = core::DoubleToCString(rounded,
                                                     buf.data(),
                                                     buf.size());
-      return static_cast<Derived*>(this)->Build(str);
+      return static_cast<Derived*>(this)->Create(str);
     }
     char* res = dtoa(x, detail::kDTOAModeList[mode],
                      precision, &decpt, &sign, &rev);
     if (!res) {
-      return static_cast<Derived*>(this)->Build("NaN");
+      return static_cast<Derived*>(this)->Create("NaN");
     }
     int digits = rev - res;
     assert(static_cast<std::size_t>(digits) <= (buf.size() - 2));
@@ -142,43 +143,31 @@ class DToA {
     if (x < 0) {
       *--begin = '-';
     }
-    return static_cast<Derived*>(this)->Build(begin);
+    return static_cast<Derived*>(this)->Create(begin);
   }
 };
 
-class JSStringDToA : public DToA {
+class JSStringDToA : public DToA<JSStringDToA, JSString*> {
  public:
-  friend class DToA;
-  typedef JSString* result_type;
+  friend class DToA<JSStringDToA, JSString*>;
 
   explicit JSStringDToA(Context* ctx)
     : ctx_(ctx) { }
 
-  template<DTOAMode m>
-  result_type Build(double x, int frac, int offset) {
-    return DoubleToString<JSStringDToA, m>(x, frac, offset);
-  }
-
- private:
-  JSString* Build(const char* str) const {
+  private:
+  JSString* Create(const char* str) const {
     return JSString::NewAsciiString(ctx_, str);
   }
 
   Context* ctx_;
 };
 
-class StringDToA : public DToA {
+class StringDToA : public DToA<StringDToA, std::string> {
  public:
-  friend class DToA;
-  typedef std::string result_type;
-
-  template<DTOAMode m>
-  result_type Build(double x, int frac, int offset) {
-    return DoubleToString<StringDToA, m>(x, frac, offset);
-  }
+  friend class DToA<StringDToA, std::string>;
 
  private:
-  std::string Build(const char* str) const {
+  std::string Create(const char* str) const {
     return std::string(str);
   }
 };
