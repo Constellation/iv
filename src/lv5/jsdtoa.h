@@ -3,6 +3,7 @@
 #ifndef _IV_LV5_JSDTOA_H_
 #define _IV_LV5_JSDTOA_H_
 #include <cstdlib>
+#include <string>
 #include <tr1/cstdio>
 #include <tr1/array>
 #include <tr1/cstdint>
