@@ -9,7 +9,6 @@
 #include "character.h"
 #include "noncopyable.h"
 #include "conversions.h"
-#include "chars.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

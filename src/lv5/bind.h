@@ -1,5 +1,5 @@
-#ifndef IV_LV5_BIND_H_
-#define IV_LV5_BIND_H_
+#ifndef _IV_LV5_BIND_H_
+#define _IV_LV5_BIND_H_
 #include "stringpiece.h"
 #include "lv5/jsobject.h"
 #include "lv5/context.h"
@@ -123,4 +123,4 @@ class Object : public Scope {
 };
 
 } } }  // namespace iv::lv5::bind
-#endif  // IV_LV5_BIND_H_
+#endif  // _IV_LV5_BIND_H_

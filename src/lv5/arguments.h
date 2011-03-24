@@ -1,5 +1,5 @@
-#ifndef IV_LV5_ARGUMENTS_H_
-#define IV_LV5_ARGUMENTS_H_
+#ifndef _IV_LV5_ARGUMENTS_H_
+#define _IV_LV5_ARGUMENTS_H_
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -164,4 +164,4 @@ class Arguments : private core::Noncopyable<Arguments>::type {
 };
 
 } }  // namespace iv::lv5
-#endif  // IV_LV5_ARGUMENTS_H_
+#endif  // _IV_LV5_ARGUMENTS_H_

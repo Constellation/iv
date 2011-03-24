@@ -731,7 +731,8 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
     regexp = JSRegExp::New(ctx);
   } else if (args[0].IsObject() &&
              (args[0].object()->class_name() == ctx->Intern("RegExp"))) {
-    regexp = static_cast<JSRegExp*>(args[0].object());
+    regexp = JSRegExp::New(
+        ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
     Arguments a(ctx, 1, ERROR(e));
     a[0] = args[0];
@@ -739,7 +740,6 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
   }
-  // TODO(Constellation) using raw regexp
   const int last_index = regexp->LastIndex(ctx, ERROR(e));
   regexp->SetLastIndex(ctx, 0, ERROR(e));
   const JSVal result = regexp->Exec(ctx, str, e);

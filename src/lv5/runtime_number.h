@@ -182,7 +182,6 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
                                                   buffer.size());
     return JSString::NewAsciiString(args.ctx(), str);
   } else {
-    // TODO(Constellation) (0.5).toFixed(0) === 1
     return DoubleToJSString<DTOA_FIXED>(ctx, x, core::DoubleToInt32(fd), 0);
   }
 }
