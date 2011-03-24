@@ -28,119 +28,159 @@ enum DTOAMode {
   DTOA_PRECISION
 };
 
-template<DTOAMode m>
-inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) {
-  std::tr1::array<char, 80> buf;
-  const DTOAMode mode = (m == DTOA_FIXED && (x >= 1e21 || x <= -1e21))? DTOA_STD : m;
-  int decpt;
-  int sign;
-  const int precision = frac + offset;
-  char* rev;
-  if (mode == DTOA_FIXED && precision == 0) {
-    // (0.5).toFixed(0) === 1
-    const double rounded = std::tr1::round(x);
-    const char* const str = core::DoubleToCString(rounded,
-                                                  buf.data(),
-                                                  buf.size());
-    return JSString::NewAsciiString(ctx, str);
-  }
-  char* res = dtoa(x, detail::kDTOAModeList[mode],
-                   precision, &decpt, &sign, &rev);
-  if (!res) {
-    return JSString::NewAsciiString(ctx, "NaN");
-  }
-  int digits = rev - res;
-  assert(static_cast<std::size_t>(digits) <= (buf.size() - 2));
-  char* begin = buf.data() + 2;
-  std::memcpy(begin, res, digits);
-  freedtoa(res);
-  char* end = begin + digits;
-  *end = '\0';
-  if (decpt != 9999) {
-    bool exp_notation = false;
-    int min = 0;
-    switch (mode) {
-      case DTOA_STD:
-        if (decpt < -5 || decpt > 21) {
-          exp_notation = true;
-        } else {
-          min = decpt;
-        }
-        break;
-
-      case DTOA_FIXED:
-        if (precision >= 0) {
-          min = decpt + precision;
-        } else {
-          min = decpt;
-        }
-        break;
-
-      case DTOA_EXPONENTIAL:
-        assert(precision > 0);
-        min = precision;
-        // fall through
-
-      case DTOA_STD_EXPONENTIAL:
-        exp_notation = true;
-        break;
-
-      case DTOA_PRECISION:
-        assert(precision > 0);
-        min = precision;
-        if (decpt < -5 || decpt > precision) {
-          exp_notation = true;
-        }
-        break;
+class DToA {
+ public:
+  template<typename Derived, DTOAMode m>
+  typename Derived::result_type DoubleToString(double x, int frac, int offset) {
+    std::tr1::array<char, 80> buf;
+    const DTOAMode mode = (m == DTOA_FIXED && (x >= 1e21 || x <= -1e21))? DTOA_STD : m;
+    int decpt;
+    int sign;
+    const int precision = frac + offset;
+    char* rev;
+    if (mode == DTOA_FIXED && precision == 0) {
+      // (0.5).toFixed(0) === 1
+      const double rounded = std::tr1::round(x);
+      const char* const str = core::DoubleToCString(rounded,
+                                                    buf.data(),
+                                                    buf.size());
+      return static_cast<Derived*>(this)->Build(str);
     }
-    if (digits < min) {
-      const char* p = begin + min;
-      digits = min;
-      do {
-        *end++ = '0';
-      } while (end != p);
-      *end = '\0';
+    char* res = dtoa(x, detail::kDTOAModeList[mode],
+                     precision, &decpt, &sign, &rev);
+    if (!res) {
+      return static_cast<Derived*>(this)->Build("NaN");
     }
-    if (exp_notation) {
-      if (digits != 1) {
-        // insert point (.)
-        --begin;
-        begin[0] = begin[1];
-        begin[1] = '.';
+    int digits = rev - res;
+    assert(static_cast<std::size_t>(digits) <= (buf.size() - 2));
+    char* begin = buf.data() + 2;
+    std::memcpy(begin, res, digits);
+    freedtoa(res);
+    char* end = begin + digits;
+    *end = '\0';
+    if (decpt != 9999) {
+      bool exp_notation = false;
+      int min = 0;
+      switch (mode) {
+        case DTOA_STD:
+          if (decpt < -5 || decpt > 21) {
+            exp_notation = true;
+          } else {
+            min = decpt;
+          }
+          break;
+
+        case DTOA_FIXED:
+          if (precision >= 0) {
+            min = decpt + precision;
+          } else {
+            min = decpt;
+          }
+          break;
+
+        case DTOA_EXPONENTIAL:
+          assert(precision > 0);
+          min = precision;
+          // fall through
+
+        case DTOA_STD_EXPONENTIAL:
+          exp_notation = true;
+          break;
+
+        case DTOA_PRECISION:
+          assert(precision > 0);
+          min = precision;
+          if (decpt < -5 || decpt > precision) {
+            exp_notation = true;
+          }
+          break;
       }
-      std::tr1::snprintf(end, buf.size() - (end - buf.data()),
-                         "e%+d", decpt - 1);
-    } else if (decpt != digits) {
-      assert(decpt <= digits);
-      if (decpt > 0) {
-        char* p = --begin;
+      if (digits < min) {
+        const char* p = begin + min;
+        digits = min;
         do {
-          *p = p[1];
-          ++p;
-        } while (--decpt);
-        *p = '.';
-      } else {
-        char* p = end;
-        end += (1 - decpt);
-        char* q = end;
-        assert(end < (buf.data() + buf.size()));
+          *end++ = '0';
+        } while (end != p);
         *end = '\0';
-        while (p != begin) {
-          *--q = *--p;
+      }
+      if (exp_notation) {
+        if (digits != 1) {
+          // insert point (.)
+          --begin;
+          begin[0] = begin[1];
+          begin[1] = '.';
         }
-        for (p = begin + 1; p != q; ++p) {
-          *p = '0';
+        std::tr1::snprintf(end, buf.size() - (end - buf.data()),
+                           "e%+d", decpt - 1);
+      } else if (decpt != digits) {
+        assert(decpt <= digits);
+        if (decpt > 0) {
+          char* p = --begin;
+          do {
+            *p = p[1];
+            ++p;
+          } while (--decpt);
+          *p = '.';
+        } else {
+          char* p = end;
+          end += (1 - decpt);
+          char* q = end;
+          assert(end < (buf.data() + buf.size()));
+          *end = '\0';
+          while (p != begin) {
+            *--q = *--p;
+          }
+          for (p = begin + 1; p != q; ++p) {
+            *p = '0';
+          }
+          *begin = '.';
+          *--begin = '0';
         }
-        *begin = '.';
-        *--begin = '0';
       }
     }
+    if (x < 0) {
+      *--begin = '-';
+    }
+    return static_cast<Derived*>(this)->Build(begin);
   }
-  if (x < 0) {
-    *--begin = '-';
+};
+
+class JSStringDToA : public DToA {
+ public:
+  friend class DToA;
+  typedef JSString* result_type;
+
+  explicit JSStringDToA(Context* ctx)
+    : ctx_(ctx) { }
+
+  template<DTOAMode m>
+  result_type Build(double x, int frac, int offset) {
+    return DoubleToString<JSStringDToA, m>(x, frac, offset);
   }
-  return JSString::NewAsciiString(ctx, begin);
-}
+
+ private:
+  JSString* Build(const char* str) const {
+    return JSString::NewAsciiString(ctx_, str);
+  }
+
+  Context* ctx_;
+};
+
+class StringDToA : public DToA {
+ public:
+  friend class DToA;
+  typedef std::string result_type;
+
+  template<DTOAMode m>
+  result_type Build(double x, int frac, int offset) {
+    return DoubleToString<StringDToA, m>(x, frac, offset);
+  }
+
+ private:
+  std::string Build(const char* str) const {
+    return std::string(str);
+  }
+};
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSDTOA_H_

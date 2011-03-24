@@ -182,7 +182,8 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
                                                   buffer.size());
     return JSString::NewAsciiString(args.ctx(), str);
   } else {
-    return DoubleToJSString<DTOA_FIXED>(ctx, x, core::DoubleToInt32(fd), 0);
+    JSStringDToA builder(ctx);
+    return builder.Build<DTOA_FIXED>(x, core::DoubleToInt32(fd), 0);
   }
 }
 
@@ -238,10 +239,11 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
   }
   const int f = core::DoubleToInt32(fd);
 
+  JSStringDToA builder(ctx);
   if (fractionDigits.IsUndefined()) {
-    return DoubleToJSString<DTOA_STD_EXPONENTIAL>(ctx, x, f, 1);
+    return builder.Build<DTOA_STD_EXPONENTIAL>(x, f, 1);
   } else {
-    return DoubleToJSString<DTOA_EXPONENTIAL>(ctx, x, f, 1);
+    return builder.Build<DTOA_EXPONENTIAL>(x, f, 1);
   }
 }
 
@@ -295,7 +297,8 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
     return JSUndefined;
   }
 
-  return DoubleToJSString<DTOA_PRECISION>(ctx, x, core::DoubleToInt32(p), 0);
+  JSStringDToA builder(ctx);
+  return builder.Build<DTOA_PRECISION>(x, core::DoubleToInt32(p), 0);
 }
 
 } } }  // namespace iv::lv5::runtime
