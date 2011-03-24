@@ -42,6 +42,14 @@ inline JSString* DoubleToJSString(Context* ctx, double x, int frac, int offset) 
   int sign;
   const int precision = frac + offset;
   char* rev;
+  if (mode == DTOA_FIXED && precision == 0) {
+    // (0.5).toFixed(0) === 1
+    const double rounded = std::tr1::round(x);
+    const char* const str = core::DoubleToCString(rounded,
+                                                  buf.data(),
+                                                  buf.size());
+    return JSString::NewAsciiString(ctx, str);
+  }
   char* res = dtoa(x, detail::kDTOAModeList[mode],
                    precision, &decpt, &sign, &rev);
   if (!res) {
