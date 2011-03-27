@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 #include <tr1/unordered_map>
-#include <boost/thread.hpp>
 #include "ustring.h"
 #include "conversions.h"
 #include "lv5/jsstring.h"
 #include "lv5/symbol.h"
+#include "lv5/thread.h"
 namespace iv {
 namespace lv5 {
 class Context;
@@ -33,7 +33,7 @@ class SymbolTable {
     std::size_t hash = StringToHash(str);
     core::UString target(str.begin(), str.end());
     {
-      boost::mutex::scoped_lock lock(sync_);
+      thread::ScopedLock<thread::Mutex> lock(&sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
         const Symbol sym = { strings_.size() };
@@ -64,7 +64,7 @@ class SymbolTable {
     std::size_t hash = StringToHash(str);
     core::UString target(str.begin(), str.end());
     {
-      boost::mutex::scoped_lock lock(sync_);
+      thread::ScopedLock<thread::Mutex> lock(&sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
         *found = false;
@@ -93,7 +93,7 @@ class SymbolTable {
   }
 
  private:
-  boost::mutex sync_;
+  thread::Mutex sync_;
   Table table_;
   Strings strings_;
 };
