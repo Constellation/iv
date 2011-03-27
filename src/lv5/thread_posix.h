@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_THREAD_POSIX_H_
 #define _IV_LV5_THREAD_POSIX_H_
+#include <cerrno>
 #include <cassert>
 #include <cstdlib>
 #include <pthread.h>

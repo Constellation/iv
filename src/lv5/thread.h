@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_THREAD_H_
 #define _IV_LV5_THREAD_H_
-#include <cerrno>
+#include <cassert>
 #include "os_defines.h"
 #include "noncopyable.h"
 namespace iv {
