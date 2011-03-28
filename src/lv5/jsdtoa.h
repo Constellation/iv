@@ -9,6 +9,7 @@
 #include <tr1/cstdint>
 #include "dtoa.h"
 #include "lv5/jsstring.h"
+#include "lv5/math.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -42,7 +43,7 @@ class DToA {
     char* rev;
     if (mode == DTOA_FIXED && precision == 0) {
       // (0.5).toFixed(0) === 1
-      const double rounded = std::tr1::round(x);
+      const double rounded = Round(x);
       const char* const str = core::DoubleToCString(rounded,
                                                     buf.data(),
                                                     buf.size());

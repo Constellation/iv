@@ -181,12 +181,17 @@ inline const char* LocalTimeZone(double t) {
   if (std::isnan(t)) {
     return kNaNTimeZone;
   }
+#ifdef __CYGWIN__
+  static const char* value = "";
+  return value;
+#else
   const std::time_t tv = static_cast<time_t>(std::floor(t/kMsPerSecond));
   const struct std::tm* const tmp = std::localtime(&tv);  // NOLINT
   if (NULL == tmp) {
     return kNaNTimeZone;
   }
   return tmp->tm_zone;
+#endif
 }
 
 inline double LocalTime(double t) {
