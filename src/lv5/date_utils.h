@@ -5,7 +5,7 @@
 #include <cstring>
 #include <tr1/cstdint>
 #include <tr1/array>
-#include "os_defines.h"
+#include "platform.h"
 #include "conversions.h"
 #include "utils.h"
 namespace iv {

@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_THREAD_H_
 #define _IV_LV5_THREAD_H_
 #include <cassert>
-#include "os_defines.h"
+#include "platform.h"
 #include "noncopyable.h"
 namespace iv {
 namespace lv5 {

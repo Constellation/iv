@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_OS_ALLOCATOR_H_
 #define _IV_LV5_OS_ALLOCATOR_H_
-#include "os_defines.h"
+#include "platform.h"
 namespace iv {
 namespace lv5 {
 

@@ -1,5 +1,5 @@
-#ifndef _IV_OS_DEFINES_H_
-#define _IV_OS_DEFINES_H_
+#ifndef _IV_PLATFORM_H_
+#define _IV_PLATFORM_H_
 
 #if defined(WIN32) || defined(WIN64)
 #ifndef OS_WIN
@@ -15,4 +15,4 @@
 #endif  // OS_LINUX
 #endif
 
-#endif  // _IV_OS_DEFINES_H_
+#endif  // _IV_PLATFORM_H_
