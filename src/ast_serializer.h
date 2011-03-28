@@ -556,21 +556,21 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
           if (val < 0x20) {
             if (val < 0x10) {
               Append("\\u000");
-              std::snprintf(buf, sizeof(buf), "%x", val);
+              snprintf(buf, sizeof(buf), "%x", val);
               Append(buf);
             } else if (0x10 <= val && val < 0x20) {
               Append("\\u00");
-              std::snprintf(buf, sizeof(buf), "%x", val);
+              snprintf(buf, sizeof(buf), "%x", val);
               Append(buf);
             }
           } else if (0x80 <= val) {
             if (0x80 <= val && val < 0x1000) {
               Append("\\u0");
-              std::snprintf(buf, sizeof(buf), "%x", val);
+              snprintf(buf, sizeof(buf), "%x", val);
               Append(buf);
             } else if (0x1000 <= val) {
               Append("\\u");
-              std::snprintf(buf, sizeof(buf), "%x", val);
+              snprintf(buf, sizeof(buf), "%x", val);
               Append(buf);
             }
           } else {

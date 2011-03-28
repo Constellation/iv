@@ -239,7 +239,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     if (exponent > 9999) {
       exponent = 9999;
     }
-    std::snprintf(buffer.data()+pos, 5, "%d", exponent);  // NOLINT
+    snprintf(buffer.data()+pos, 5, "%d", exponent);  // NOLINT
     pos+=4;
   }
 
