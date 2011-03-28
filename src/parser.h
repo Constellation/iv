@@ -2343,9 +2343,9 @@ class Parser
   void SetErrorHeader(std::size_t line) {
     std::tr1::array<char, 40> buf;
     error_.append(lexer_.filename());
-    const int num = std::snprintf(buf.data(), buf.size(),
-                                  ":%lu: SyntaxError: ",
-                                  static_cast<unsigned long>(line));  // NOLINT
+    const int num = snprintf(buf.data(), buf.size(),
+                             ":%lu: SyntaxError: ",
+                             static_cast<unsigned long>(line));  // NOLINT
     error_.append(buf.data(), num);
   }
 
