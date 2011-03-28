@@ -2,7 +2,7 @@
 #define _IV_LV5_FPU_H_
 #include "noncopyable.h"
 
-#if (defined __GNUC__ && defined __i386__ && defined __CYGWIN__)
+#if (defined(__GNUC__) && defined(__i386__) && !defined(__CYGWIN__))
 #include <fpu_control.h>
 namespace iv {
 namespace lv5 {
