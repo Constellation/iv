@@ -28,6 +28,7 @@ def Test(context, object_files):
   test_task = context.SConscript(
     'test/SConscript',
     variant_dir=join(root_dir, 'obj', 'test'),
+    src=join(root_dir, 'test'),
     duplicate=False,
     exports="context object_files"
   )
@@ -38,6 +39,7 @@ def TestLv5(context, object_files, libs):
   test_task = context.SConscript(
     'test/lv5/SConscript',
     variant_dir=join(root_dir, 'obj', 'test', 'lv5'),
+    src=join(root_dir, 'test', 'lv5'),
     duplicate=False,
     exports="context object_files libs"
   )
@@ -48,6 +50,7 @@ def Lv5(context, object_files):
   lv5_task, lv5_objs, lv5_libs = context.SConscript(
     'src/lv5/SConscript',
     variant_dir=join(root_dir, 'obj', 'lv5'),
+    src=join(root_dir, 'src', 'lv5'),
     duplicate=False,
     exports="context object_files root_dir"
   )
@@ -57,6 +60,7 @@ def Main(context, deps):
   return context.SConscript(
     'src/SConscript',
     variant_dir=join(root_dir, 'obj', 'src'),
+    src=join(root_dir, 'src'),
     duplicate=False,
     exports='root_dir context deps'
   )

@@ -5,8 +5,9 @@ from os.path import join, dirname, abspath, basename
 Import('context object_files root_dir')
 
 jscre = context.SConscript(
-  'third_party/jscre/SConscript',
+  join(root_dir, 'src', 'lv5', 'third_party', 'jscre', 'SConscript'),
   variant_dir=join(root_dir, 'obj', 'third_party', 'jscre'),
+  src=join(root_dir, 'src', 'lv5', 'third_party', 'jscre'),
   duplicate=False,
   exports="context"
 )

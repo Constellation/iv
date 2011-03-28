@@ -13,14 +13,16 @@ object_files = [join(root_dir, 'obj', 'src', os.path.splitext(x)[0]+'.o') for x 
 def Build():
   env = context.Clone()
   netlib_dtoa = context.SConscript(
-    'src/third_party/netlib_dtoa/SConscript',
+    join(root_dir, 'src', 'third_party', 'netlib_dtoa', 'SConscript'),
     variant_dir=join(root_dir, 'obj', 'third_party', 'netlib_dtoa'),
+    src=join(root_dir, 'src', 'third_party', 'netlib_dtoa'),
     duplicate=False,
     exports="context"
   )
   v8_dtoa = context.SConscript(
-    'src/third_party/v8-dtoa/SConscript',
+    join(root_dir, 'src', 'third_party', 'v8_dtoa', 'SConscript'),
     variant_dir=join(root_dir, 'obj', 'third_party', 'v8_dtoa'),
+    src=join(root_dir, 'src', 'third_party', 'v8_dtoa'),
     duplicate=False,
     exports="context"
   )
