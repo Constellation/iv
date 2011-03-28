@@ -195,7 +195,7 @@ Symbol Context::InternIndex(uint32_t index) {
   return table_.Lookup(
       core::StringPiece(
           buf.data(),
-          std::snprintf(
+          snprintf(
               buf.data(), buf.size(), "%lu",
               static_cast<unsigned long>(index))));  // NOLINT
 }
@@ -223,7 +223,7 @@ Symbol Context::CheckIntern(uint32_t index, bool* found) {
   return table_.LookupAndCheck(
       core::StringPiece(
           buf.data(),
-          std::snprintf(
+          snprintf(
               buf.data(), buf.size(), "%lu",
               static_cast<unsigned long>(index))), found);  // NOLINT
 }

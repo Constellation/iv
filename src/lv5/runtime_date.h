@@ -112,7 +112,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     tz_min %= 60;
 
     std::tr1::array<char, 50> buf;
-    int num = std::snprintf(
+    const int num = snprintf(
         buf.data(), buf.size(),
         "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
         date::WeekDayToString(time),
@@ -238,7 +238,7 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
       tz_min %= 60;
 
       std::tr1::array<char, 50> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
           date::WeekDayToString(time),
@@ -273,7 +273,7 @@ inline JSVal DateToDateString(const Arguments& args, Error* error) {
     } else {
       const double time = date::LocalTime(t);
       std::tr1::array<char, 20> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
           date::WeekDayToString(time),
@@ -314,7 +314,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* error) {
       tz_min %= 60;
 
       std::tr1::array<char, 40> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
           date::HourFromTime(time),
@@ -358,7 +358,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* error) {
       tz_min %= 60;
 
       std::tr1::array<char, 50> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
           date::WeekDayToString(time),
@@ -393,7 +393,7 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* error) {
     } else {
       const double time = date::LocalTime(t);
       std::tr1::array<char, 20> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
           date::WeekDayToString(time),
@@ -434,7 +434,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* error) {
       tz_min %= 60;
 
       std::tr1::array<char, 40> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
           date::HourFromTime(time),
@@ -1363,7 +1363,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* error) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::tr1::array<char, 32> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
           date::WeekDayToString(time),
@@ -1393,7 +1393,7 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::tr1::array<char, 32> buf;
-      int num = std::snprintf(
+      const int num = snprintf(
           buf.data(), buf.size(),
           "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
           date::YearFromTime(time),

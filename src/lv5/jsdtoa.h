@@ -112,8 +112,7 @@ class DToA {
           begin[0] = begin[1];
           begin[1] = '.';
         }
-        std::tr1::snprintf(end, buf.size() - (end - buf.data()),
-                           "e%+d", decpt - 1);
+        snprintf(end, buf.size() - (end - buf.data()), "e%+d", decpt - 1);
       } else if (decpt != digits) {
         assert(decpt <= digits);
         if (decpt > 0) {
