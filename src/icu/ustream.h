@@ -1,6 +1,9 @@
 #ifndef _IV_ICU_USTREAM_H_
 #define _IV_ICU_USTREAM_H_
 #include <iostream>  // NOLINT
+#include <vector>
+#include <iterator>
+#include <algorithm>
 #include <tr1/array>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
@@ -16,8 +19,11 @@ inline std::ostream& operator<<(std::ostream& os, const iv::core::UStringPiece& 
     if (U_FAILURE(error)) {
       ucnv_close(conv);
     } else {
-      const iv::uc16* start = str.data();
-      const iv::uc16* limit = start + str.size();
+      std::vector<UChar> vec;
+      vec.reserve(str.size());
+      std::copy(str.begin(), str.end(), std::back_inserter(vec));
+      const UChar* start = vec.data();
+      const UChar* limit = start + vec.size();
       char* s;
       const char* slimit = buffer.data() + buffer.size();
       do {

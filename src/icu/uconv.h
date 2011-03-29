@@ -25,13 +25,14 @@ inline void ConvertToUTF16(const core::StringPiece& str,
     const std::size_t source_length = str.size() + 1;
     const std::size_t target_length = source_length / ucnv_getMinCharSize(conv);
     const char* pointer = str.data();
-    std::vector<uc16> vec(target_length + 1);
-    uc16* utarget = vec.data();
+    std::vector<UChar> vec(target_length + 1);
+    UChar* utarget = vec.data();
     ucnv_toUnicode(conv, &utarget, utarget+target_length,
                    &pointer, str.data()+source_length, NULL, true, &error);
     if (U_FAILURE(error)) {
       out->clear();
     } else {
+      // UChar is wchar_t, but UTF-16, so UChar is in range of uint16_t
       out->assign(vec.data(), utarget-1);
     }
   }
