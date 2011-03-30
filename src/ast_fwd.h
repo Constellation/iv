@@ -39,7 +39,6 @@ V(Literal)\
 V(Identifier)\
 V(NumberLiteral)\
 V(StringLiteral)\
-V(Directivable)\
 V(RegExpLiteral)\
 V(FunctionLiteral)\
 V(ArrayLiteral)\

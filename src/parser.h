@@ -293,40 +293,66 @@ class Parser
                            Statements* body,
                            bool *res) {
     Statement* stmt;
-    bool recognize_directive = true;
     const StrictSwitcher strict_switcher(this);
+
+    // directive prologue
+    {
+      bool octal_escaped_directive_found = false;
+      std::size_t line;
+      while (token_ != end) {
+        if (token_ != Token::STRING) {
+          // this is not directive
+          break;
+        }
+        const typename lexer_type::State state = lexer_.StringEscapeType();
+        if (!octal_escaped_directive_found &&
+            state == lexer_type::OCTAL) {
+            // octal escaped string literal
+            octal_escaped_directive_found = true;
+            line = lexer_.line_number();
+        }
+        stmt = ParseStatement(CHECK);
+        if (stmt->AsExpressionStatement() &&
+            stmt->AsExpressionStatement()->expr()->AsStringLiteral()) {
+          Expression* const expr = stmt->AsExpressionStatement()->expr();
+          // expression is directive
+          if (!strict_switcher.IsStrict() &&
+              state == lexer_type::NONE &&
+              expr->AsStringLiteral()->value().compare(
+                  ParserData::kUseStrict.data()) == 0) {
+            strict_switcher.SwitchStrictMode();
+            if (octal_escaped_directive_found) {
+              RAISE_WITH_NUMBER(
+                  "octal excape sequence not allowed in strict code",
+                  line);
+            }
+            // and one token lexed is not in strict
+            // so rescan
+            if (token_ == Token::IDENTIFIER) {
+              typedef detail::Keyword<IdentifyReservedWords> KeywordChecker;
+              token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
+              break;
+            }
+          } else {
+            // other directive
+          }
+        } else {
+          // not directive, like
+          // "String", "Comma"
+          body->push_back(stmt);
+          break;
+        }
+      }
+    }
+
+    // statements
     while (token_ != end) {
       if (token_ == Token::FUNCTION) {
         // FunctionDeclaration
         stmt = ParseFunctionDeclaration(CHECK);
         body->push_back(stmt);
-        recognize_directive = false;
       } else {
         stmt = ParseStatement(CHECK);
-        // directive prologue
-        if (recognize_directive) {
-          if (stmt->AsExpressionStatement()) {
-            Expression* const expr = stmt->AsExpressionStatement()->expr();
-            if (expr->AsDirectivable()) {
-              // expression is directive
-              if (!strict_switcher.IsStrict() &&
-                  expr->AsStringLiteral()->value().compare(
-                      ParserData::kUseStrict.data()) == 0) {
-                strict_switcher.SwitchStrictMode();
-                // and one token lexed is not in strict
-                // so rescan
-                if (token_ == Token::IDENTIFIER) {
-                  typedef detail::Keyword<IdentifyReservedWords> KeywordChecker;
-                  token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
-                }
-              }
-            } else {
-              recognize_directive = false;
-            }
-          } else {
-            recognize_directive = false;
-          }
-        }
         body->push_back(stmt);
       }
     }
@@ -1760,15 +1786,9 @@ class Parser
         if (strict_ && state == lexer_type::OCTAL) {
           RAISE("octal excape sequence not allowed in strict code");
         }
-        if (state == lexer_type::NONE) {
-          result = factory_->NewDirectivable(lexer_.Buffer(),
-                                             lexer_.begin_position(),
-                                             lexer_.end_position());
-        } else {
-          result = factory_->NewStringLiteral(lexer_.Buffer(),
-                                              lexer_.begin_position(),
-                                              lexer_.end_position());
-        }
+        result = factory_->NewStringLiteral(lexer_.Buffer(),
+                                            lexer_.begin_position(),
+                                            lexer_.end_position());
         Next();
         break;
       }

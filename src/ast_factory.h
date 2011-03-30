@@ -71,12 +71,6 @@ class BasicAstFactory {
         StringLiteral(buffer, static_cast<Factory*>(this));
   }
 
-  Directivable* NewDirectivable(const std::vector<uc16>& buffer,
-                                std::size_t begin, std::size_t end) {
-    return new (static_cast<Factory*>(this))
-        Directivable(buffer, static_cast<Factory*>(this));
-  }
-
   RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
                                   const std::vector<uc16>& flags,
                                   std::size_t begin,

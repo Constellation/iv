@@ -929,23 +929,6 @@ class StringLiteral : public StringLiteralBase<Factory> {
   value_type value_;
 };
 
-// Directivable
-template<typename Factory>
-class Inherit<Factory, kDirectivable>
-  : public StringLiteral<Factory> {
-};
-INHERIT(Directivable);
-
-template<typename Factory>
-class Directivable : public DirectivableBase<Factory> {
- public:
-  explicit Directivable(const std::vector<uc16>& buffer,
-                        Factory* factory) {
-    InitializeStringLiteral(buffer, factory);
-  }
-  DECLARE_NODE_TYPE(Directivable)
-};
-
 // NumberLiteral
 template<typename Factory>
 class Inherit<Factory, kNumberLiteral>
