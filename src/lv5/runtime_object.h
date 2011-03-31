@@ -168,10 +168,14 @@ inline JSVal ObjectCreate(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Object.create", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
-    if (first.IsObject()) {
+    if (first.IsObject() || first.IsNull()) {
       JSObject* const res = JSObject::New(args.ctx());
-      JSObject* const obj = first.object();
-      res->set_prototype(obj);
+      if (first.IsObject()) {
+        JSObject* const obj = first.object();
+        res->set_prototype(obj);
+      } else {
+        res->set_prototype(NULL);
+      }
       if (args.size() > 1 && !args[1].IsUndefined()) {
         JSObject* const props = args[1].ToObject(args.ctx(), ERROR(error));
         detail::DefinePropertiesImpl(args.ctx(), res, props, ERROR(error));
@@ -180,7 +184,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* error) {
     }
   }
   error->Report(Error::Type,
-                "Object.create requires Object argument");
+                "Object.create requires Object or Null argument");
   return JSUndefined;
 }
 
