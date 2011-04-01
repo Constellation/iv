@@ -5,6 +5,7 @@
 #include "noncopyable.h"
 #include "character.h"
 #include "conversions.h"
+#include "unicode.h"
 #include "lv5/lv5.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -85,52 +86,6 @@ class Escape : core::Noncopyable<URI>::type {
   }
 };
 
-inline int UCS4ToUC8(uint32_t uc, uint8_t* buf) {
-  assert(uc <= 0x10FFFF);
-  if (uc < 0x80) {
-    // ASCII range
-    *buf = static_cast<uint8_t>(uc);
-    return 1;
-  } else {
-    uint32_t a = uc >> 11;
-    int len = 2;
-    while (a) {
-      a >>= 5;
-      ++len;
-    }
-    int i = len;
-    while (--i) {
-      buf[i] = static_cast<uint8_t>((uc & 0x3F) | 0x80);
-      uc >>= 6;
-    }
-    *buf = static_cast<uint8_t>(0x100 - (1 << (8 - len)) + uc);
-    return len;
-  }
-}
-
-inline uint32_t UC8ToUCS4(const uint8_t* buf, uint32_t size) {
-  static const std::tr1::array<uint32_t, 3> kMinTable = { {
-    0x00000080, 0x00000800, 0x00010000
-  } };
-  assert(size >= 1 && size <= 4);
-  if (size == 1) {
-    assert(!(*buf & 0x80));
-    return *buf;
-  } else {
-    assert((*buf & (0x100 - (1 << (7 - size)))) == (0x100 - (1 << (8 - size))));
-    uint32_t uc = (*buf++) & ((1 << (7 - size)) - 1);
-    const uint32_t min = kMinTable[size-2];
-    while (--size) {
-      assert((*buf & 0xC0) == 0x80);
-      uc = uc << 6 | (*buf++ & 0x3F);
-    }
-    if (uc < min) {
-      uc = UINT32_MAX;
-    }
-    return uc;
-  }
-}
-
 template<typename URITraits>
 JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
@@ -164,7 +119,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
         }
         v = (ch - 0xD800) * 0x400 + (k_char - 0xDC00) + 0x10000;
       }
-      for (int len = UCS4ToUC8(v, uc8buf.data()), i = 0;
+      for (int len = core::UCS4ToUTF8(v, uc8buf.data()), i = 0;
            i < len; ++i) {
         hexbuf[1] = kHexDigits[uc8buf[i] >> 4];
         hexbuf[2] = kHexDigits[uc8buf[i] & 0xf];
@@ -243,7 +198,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           }
           octets[j] = b1;
         }
-        uint32_t v = UC8ToUCS4(octets.begin(), n);
+        uint32_t v = core::UTF8ToUCS4(octets.begin(), n);
         if (v < 0x10000) {
           const uint16_t code = static_cast<uint16_t>(v);
           if (URITraits::ContainsInDecode(code)) {
