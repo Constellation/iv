@@ -3,12 +3,18 @@
 #include <cstddef>
 #include <utility>
 #include <tr1/type_traits>
+#include <gc/gc_allocator.h>
 #include "static_assert.h"
 namespace iv {
 namespace lv5 {
 
 struct Symbol {
   std::size_t value_as_index;
+
+  static Symbol FromSymbol(std::size_t value) {
+    Symbol sym = { value };
+    return sym;
+  }
 };
 
 inline bool operator==(const Symbol& x, const Symbol& y) {
@@ -40,6 +46,9 @@ IV_STATIC_ASSERT(std::tr1::is_pod<Symbol>::value);
 #endif
 
 } }  // namespace iv::lv5
+
+GC_DECLARE_PTRFREE(iv::lv5::Symbol);
+
 namespace std {
 namespace tr1 {
 // template specialization for Symbol in std::tr1::unordered_map
