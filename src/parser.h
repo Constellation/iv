@@ -312,6 +312,7 @@ class Parser
             line = lexer_.line_number();
         }
         stmt = ParseStatement(CHECK);
+        body->push_back(stmt);
         if (stmt->AsExpressionStatement() &&
             stmt->AsExpressionStatement()->expr()->AsStringLiteral()) {
           Expression* const expr = stmt->AsExpressionStatement()->expr();
@@ -339,7 +340,6 @@ class Parser
         } else {
           // not directive, like
           // "String", "Comma"
-          body->push_back(stmt);
           break;
         }
       }
