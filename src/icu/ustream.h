@@ -17,36 +17,7 @@ namespace icu {
 namespace detail {
 
 template<bool UCharIsUCS2>
-struct Convert { };
-
-template<>
-struct Convert<true> {
-  static void Output(std::ostream& os, const core::UStringPiece& str) {
-    std::tr1::array<char, 200> buffer;
-    UErrorCode error = U_ZERO_ERROR;
-    UConverter* conv = ucnv_open(NULL, &error);
-    if (U_FAILURE(error)) {
-      ucnv_close(conv);
-    } else {
-      const UChar* start = str.data();
-      const UChar* limit = start + str.size();
-      char* s;
-      const char* slimit = buffer.data() + buffer.size();
-      do {
-        error = U_ZERO_ERROR;
-        s = buffer.data();
-        ucnv_fromUnicode(conv, &s, slimit, &start, limit, 0, false, &error);
-        if (s > buffer.data()) {
-          os.write(buffer.data(), std::distance(buffer.data(), s));
-        }
-      } while (error == U_BUFFER_OVERFLOW_ERROR);
-      ucnv_close(conv);
-    }
-  }
-};
-
-template<>
-struct Convert<false> {
+struct Convert {
   static void Output(std::ostream& os, const core::UStringPiece& str) {
     std::tr1::array<char, 200> buffer;
     UErrorCode error = U_ZERO_ERROR;
@@ -73,6 +44,35 @@ struct Convert<false> {
     }
   }
 };
+
+#ifndef __CYGWIN__
+// in Cygwin, std::tr1::is_same<UChar, iv::uc16> is broken...
+template<>
+struct Convert<true> {
+  static void Output(std::ostream& os, const core::UStringPiece& str) {
+    std::tr1::array<char, 200> buffer;
+    UErrorCode error = U_ZERO_ERROR;
+    UConverter* conv = ucnv_open(NULL, &error);
+    if (U_FAILURE(error)) {
+      ucnv_close(conv);
+    } else {
+      const UChar* start = str.data();
+      const UChar* limit = start + str.size();
+      char* s;
+      const char* slimit = buffer.data() + buffer.size();
+      do {
+        error = U_ZERO_ERROR;
+        s = buffer.data();
+        ucnv_fromUnicode(conv, &s, slimit, &start, limit, 0, false, &error);
+        if (s > buffer.data()) {
+          os.write(buffer.data(), std::distance(buffer.data(), s));
+        }
+      } while (error == U_BUFFER_OVERFLOW_ERROR);
+      ucnv_close(conv);
+    }
+  }
+};
+#endif  // ifndef __CYGWIN___
 
 } } }  // namespace iv::icu::detail
 
