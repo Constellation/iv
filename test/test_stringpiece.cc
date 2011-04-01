@@ -32,19 +32,19 @@ TEST(StringPieceCase, CharTest) {
 
   joined.clear();
   JoinFilePathStr("/tmp", "hoge.c", &joined);
-  EXPECT_EQ(joined, result);
+  EXPECT_EQ(result, joined);
 
   joined.clear();
   JoinFilePathStr(dir, "hoge.c", &joined);
-  EXPECT_EQ(joined, result);
+  EXPECT_EQ(result, joined);
 
   joined.clear();
   JoinFilePathStr("/tmp", base, &joined);
-  EXPECT_EQ(joined, result);
+  EXPECT_EQ(result, joined);
 
   joined.clear();
   JoinFilePathStr(dir, base, &joined);
-  EXPECT_EQ(joined, result);
+  EXPECT_EQ(result, joined);
 }
 
 TEST(StringPieceCase, EqualTest) {

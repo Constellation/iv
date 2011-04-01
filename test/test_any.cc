@@ -26,6 +26,6 @@ TEST(AnyCase, VectorAnyTest) {
   int val2 = *(val1.As<int>());
   val1 = vec[1];
   std::string val3 = *(val1.As<std::string>());
-  EXPECT_EQ(val2, 10);
-  EXPECT_EQ(val3, test_val);
+  EXPECT_EQ(10, val2);
+  EXPECT_EQ(test_val, val3);
 }
