@@ -55,14 +55,6 @@ class AstFactory : public core::Space<2> {
     return str;
   }
 
-  Directivable* NewDirectivable(const std::vector<uc16>& buffer,
-                                std::size_t begin,
-                                std::size_t end) {
-    Directivable* directive = new (this) Directivable(buffer, this);
-    directive->Location(begin, end);
-    return directive;
-  }
-
   RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
                                   const std::vector<uc16>& flags,
                                   std::size_t begin,
