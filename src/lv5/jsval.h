@@ -47,6 +47,7 @@ struct Layout<4, true> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        JSVal* jsvalref_;
         void* pointer_;
       } payload_;
       uint32_t tag_;
@@ -71,6 +72,7 @@ struct Layout<8, true> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        JSVal* jsvalref_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -93,6 +95,7 @@ struct Layout<4, false> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        JSVal* jsvalref_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -116,6 +119,7 @@ struct Layout<8, false> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
+        JSVal* jsvalref_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -160,7 +164,9 @@ static const uint32_t kNullTag        = 0xfffffff9;
 static const uint32_t kBoolTag        = 0xfffffff8;
 static const uint32_t kStringTag      = 0xfffffff7;
 static const uint32_t kObjectTag      = 0xfffffff6;
-static const uint32_t kNumberTag      = 0xfffffff5;
+static const uint32_t kErrorTag       = 0xfffffff5;
+static const uint32_t kJSValRefTag    = 0xfffffff4;  // use VM only
+static const uint32_t kNumberTag      = 0xfffffff0;
 static const uint32_t kHighestTag     = kTrueTag;
 static const uint32_t kLowestTag      = kNumberTag;
 
@@ -448,7 +454,7 @@ class JSVal {
     }
   }
 
- private:
+ protected:  // for railgun::JSValRef
   value_type value_;
 };
 
