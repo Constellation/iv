@@ -1419,6 +1419,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
 void Interpreter::Visit(const FunctionCall* call) {
   EVAL(call->target());
   const JSVal target = ctx_->ret();
+  const JSVal func = GetValue(target, CHECK);
 
   Arguments args(ctx_, call->args().size(), CHECK);
   std::size_t n = 0;
@@ -1426,8 +1427,6 @@ void Interpreter::Visit(const FunctionCall* call) {
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }
-
-  const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
@@ -1463,7 +1462,7 @@ void Interpreter::Visit(const FunctionCall* call) {
 
 void Interpreter::Visit(const ConstructorCall* call) {
   EVAL(call->target());
-  const JSVal target = ctx_->ret();
+  const JSVal func = GetValue(ctx_->ret(), CHECK);
 
   Arguments args(ctx_, call->args().size(), CHECK);
   args.set_constructor_call(true);
@@ -1472,8 +1471,6 @@ void Interpreter::Visit(const ConstructorCall* call) {
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }
-
-  const JSVal func = GetValue(target, CHECK);
   if (!func.IsCallable()) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
