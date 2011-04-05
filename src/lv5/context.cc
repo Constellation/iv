@@ -102,6 +102,10 @@ Error* error(Context* ctx) {
   return ctx->error();
 }
 
+Symbol arguments_symbol(const Context* ctx) {
+  return ctx->arguments_symbol();
+}
+
 Symbol constructor_symbol(const Context* ctx) {
   return ctx->constructor_symbol();
 }
