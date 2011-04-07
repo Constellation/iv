@@ -93,15 +93,6 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     }
   }
 
-  Arguments(Context* ctx,
-            VMStack::pointer ptr,
-            std::size_t n)
-    : ctx_(ctx),
-      stack_(ptr),
-      size_(n),
-      constructor_call_(false) {
-  }
-
   Context* ctx() const {
     return ctx_;
   }
@@ -124,21 +115,24 @@ class Arguments : private core::Noncopyable<Arguments>::type {
 
  protected:
   // for ScopedArguments
-  Arguments(Context* ctx, Error* e)
-    : ctx_(ctx),
-      stack_(),
-      size_(0),
-      constructor_call_(false) { }
-
   Arguments(Context* ctx, std::size_t n, Error* e)
     : ctx_(ctx),
       stack_(),
       size_(n),
       constructor_call_(false) { }
 
+  // for VM
+  Arguments(Context* ctx,
+            pointer ptr,
+            std::size_t n)
+    : ctx_(ctx),
+      stack_(ptr),
+      size_(n),
+      constructor_call_(false) { }
+
   Context* ctx_;
-  VMStack::pointer stack_;
-  VMStack::size_type size_;
+  pointer stack_;
+  size_type size_;
   bool constructor_call_;
 };
 
@@ -162,6 +156,14 @@ class ScopedArguments : public Arguments {
     }
     stack_ = NULL;
   }
+};
+
+class VMArguments : public Arguments {
+ public:
+  VMArguments(Context* ctx,
+              pointer ptr,
+              std::size_t n)
+    : Arguments(ctx, ptr, n) { }
 };
 
 } }  // namespace iv::lv5
