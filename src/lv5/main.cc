@@ -28,6 +28,7 @@
 #include "lv5/interactive.h"
 #include "lv5/fpu.h"
 #include "lv5/program.h"
+#include "lv5/railgun.h"
 
 namespace {
 
@@ -49,6 +50,94 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
     std::perror(err.c_str());
     return false;
   }
+}
+
+template<typename Source>
+iv::lv5::railgun::Code* Compile(iv::lv5::Context* ctx, Source* src) {
+  iv::lv5::AstFactory factory(ctx);
+  iv::core::Parser<iv::lv5::AstFactory, Source, true, true>
+      parser(&factory, src);
+  const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
+  if (!global) {
+    std::cerr << parser.error() << std::endl;
+    return NULL;
+  }
+  return iv::lv5::railgun::Compile(ctx, *global);
+}
+
+int Execute(const iv::core::StringPiece& data,
+            const std::string& filename) {
+  iv::lv5::Context ctx;
+  iv::icu::Source src(data, filename);
+  iv::lv5::railgun::Code* code = Compile(&ctx, &src);
+  if (!code) {
+    return EXIT_FAILURE;
+  }
+  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  iv::lv5::railgun::VM vm(&ctx);
+  return vm.Run(code);
+}
+
+int DisAssemble(const iv::core::StringPiece& data,
+                const std::string& filename) {
+  iv::lv5::Context ctx;
+  iv::icu::Source src(data, filename);
+  iv::lv5::railgun::Code* code = Compile(&ctx, &src);
+  if (!code) {
+    return EXIT_FAILURE;
+  }
+  iv::lv5::railgun::CoutDisAssembler dis;
+  dis.DisAssemble(*code);
+  return EXIT_SUCCESS;
+}
+
+int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
+  iv::icu::Source src(data, filename);
+  iv::lv5::Context ctx;
+  iv::lv5::AstFactory factory(&ctx);
+  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true, true>
+      parser(&factory, &src);
+  const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
+
+  if (!global) {
+    std::cerr << parser.error() << std::endl;
+    return EXIT_FAILURE;
+  }
+  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  iv::lv5::JSInterpreterScript* const script =
+      iv::lv5::JSGlobalScript::New(&ctx, global, &factory, &src);
+  if (ctx.Run(script)) {
+    const iv::lv5::JSVal e = ctx.ErrorVal();
+    ctx.error()->Clear();
+    ctx.SetStatement(iv::lv5::Context::Context::NORMAL,
+                     iv::lv5::JSEmpty, NULL);
+    const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
+    if (!*ctx.error()) {
+      std::cerr << *str << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
+int Ast(const iv::core::StringPiece& data, const std::string& filename) {
+  iv::icu::Source src(data, filename);
+  iv::lv5::Context ctx;
+  iv::lv5::AstFactory factory(&ctx);
+  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true, true>
+      parser(&factory, &src);
+  const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
+
+  if (!global) {
+    std::cerr << parser.error() << std::endl;
+    return EXIT_FAILURE;
+  }
+  iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
+  global->Accept(&ser);
+  std::cout << ser.out() << std::endl;
+  return EXIT_SUCCESS;
 }
 
 }  // namespace
@@ -76,6 +165,12 @@ int main(int argc, char **argv) {
   cmd.Add("ast",
           "ast",
           0, "print ast");
+  cmd.Add("vm",
+          "vm",
+          0, "use virtual machine");
+  cmd.Add("dis",
+          "dis",
+          0, "print bytecode");
   cmd.Add("copyright",
           "copyright",
           0,   "print the copyright");
@@ -121,39 +216,15 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
     }
-
-    iv::icu::Source src(iv::core::StringPiece(res.data(), res.size()), filename);
-    iv::lv5::Context ctx;
-    iv::lv5::AstFactory factory(&ctx);
-    iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true, true>
-        parser(&factory, &src);
-    const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
-
-    if (!global) {
-      std::cerr << parser.error() << std::endl;
-      return EXIT_FAILURE;
-    }
-
+    iv::core::StringPiece src(res.data(), res.size());
     if (cmd.Exist("ast")) {
-      iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
-      global->Accept(&ser);
-      std::cout << ser.out() << std::endl;
+      return Ast(src, filename);
+    } else if (cmd.Exist("dis")) {
+      return DisAssemble(src, filename);
+    } else if (cmd.Exist("vm")) {
+      return Execute(src, filename);
     } else {
-      ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-      ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-      iv::lv5::JSScript* const script = iv::lv5::JSGlobalScript::New(
-          &ctx, global, &factory, &src);
-      if (ctx.Run(script)) {
-        const iv::lv5::JSVal e = ctx.ErrorVal();
-        ctx.error()->Clear();
-        ctx.SetStatement(iv::lv5::Context::Context::NORMAL,
-                         iv::lv5::JSEmpty, NULL);
-        const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
-        if (!*ctx.error()) {
-          std::cerr << *str << std::endl;
-          return EXIT_FAILURE;
-        }
-      }
+      return Interpret(src, filename);
     }
   } else {
     // Interactive Shell Mode
