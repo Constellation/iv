@@ -339,7 +339,7 @@ class JSRegExp : public JSObject {
              bind::NONE)
         .def(context::Intern(ctx, "lastIndex"),
              0.0,
-             bind::NONE);
+             bind::W);
   }
 
   const JSRegExpImpl* impl() const {
