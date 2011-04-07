@@ -31,7 +31,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
   const JSVal val = holder->Get(ctx, name, ERROR(e));
   if (val.IsObject()) {
     JSObject* const obj = val.object();
-    if (ctx->Cls("Array").name == obj->class_name()) {
+    if (ctx->IsArray(*obj)) {
       JSArray* const ary = static_cast<JSArray*>(obj);
       const JSVal length = ary->Get(ctx, context::length_symbol(ctx), ERROR(e));
       const double temp = length.ToNumber(ctx, ERROR(e));

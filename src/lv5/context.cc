@@ -44,11 +44,11 @@ const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
 }
 
 const Class& Cls(Context* ctx, const Symbol& name) {
-  return ctx->Cls(name);
+  return ctx->global_data()->GetClass(name);
 }
 
 const Class& Cls(Context* ctx, const core::StringPiece& str) {
-  return ctx->Cls(ctx->global_data()->Intern(str));
+  return ctx->global_data()->GetClass(str);
 }
 
 Symbol Intern(Context* ctx, const core::StringPiece& str) {
@@ -157,7 +157,6 @@ Context::Context()
     ret_(),
     target_(NULL),
     error_(),
-    builtins_(),
     strict_(false),
     generate_script_counter_(0),
     current_script_(NULL),
@@ -231,7 +230,7 @@ void Context::Initialize() {
       DataDescriptor(func_proto, PropertyDescriptor::NONE),
       false, NULL);
 
-  builtins_[func_cls.name] = func_cls;
+  global_data_.RegisterClass(func_cls.name, func_cls);
 
   bind::Object global_binder(this, global_obj());
   global_binder.def(func_cls.name, func_constructor, bind::W | bind::C);
@@ -254,7 +253,7 @@ void Context::Initialize() {
     obj_proto
   };
   obj_proto->set_class_name(obj_cls.name);
-  builtins_[obj_cls.name] = obj_cls;
+  global_data_.RegisterClass(obj_cls.name, obj_cls);
 
   // lazy initialization
   obj_constructor->set_class_name(func_cls.name);
@@ -497,7 +496,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
 
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
@@ -573,7 +572,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
 
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
@@ -647,7 +646,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
 
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
@@ -682,7 +681,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
 
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
@@ -743,7 +742,7 @@ void Context::Initialize() {
       proto
     };
     proto->set_class_name(cls.name);
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
     proto->DefineOwnProperty(
         this, context::constructor_symbol(this),
         DataDescriptor(constructor,
@@ -797,7 +796,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -841,7 +840,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
@@ -886,7 +885,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
@@ -931,7 +930,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
@@ -976,7 +975,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
@@ -1021,7 +1020,7 @@ void Context::Initialize() {
         sub_proto
       };
       sub_proto->set_class_name(sub_cls.name);
-      builtins_[sym] = sub_cls;
+      global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
@@ -1122,7 +1121,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
@@ -1256,7 +1255,7 @@ void Context::Initialize() {
       constructor,
       proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
@@ -1337,19 +1336,9 @@ void Context::Initialize() {
       NULL,
       obj_proto
     };
-    builtins_[cls.name] = cls;
+    global_data_.RegisterClass(cls.name, cls);
   }
   throw_type_error_.Initialize(this);
-}
-
-const Class& Context::Cls(Symbol name) {
-  assert(builtins_.find(name) != builtins_.end());
-  return builtins_[name];
-}
-
-const Class& Context::Cls(const core::StringPiece& str) {
-  assert(builtins_.find(context::Intern(this, str)) != builtins_.end());
-  return builtins_[context::Intern(this, str)];
 }
 
 } }  // namespace iv::lv5

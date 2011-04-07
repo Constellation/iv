@@ -238,9 +238,6 @@ class Context : private core::Noncopyable<Context>::type {
   bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
   bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const;
 
-  const Class& Cls(Symbol name);
-  const Class& Cls(const core::StringPiece& str);
-
   VMStack* stack() {
     return stack_resource_.stack();
   }
@@ -257,7 +254,6 @@ class Context : private core::Noncopyable<Context>::type {
   JSVal ret_;
   const BreakableStatement* target_;
   Error error_;
-  trace::HashMap<Symbol, Class>::type builtins_;
   bool strict_;
   std::size_t generate_script_counter_;
   JSScript* current_script_;

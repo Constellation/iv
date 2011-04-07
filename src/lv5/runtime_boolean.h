@@ -40,7 +40,7 @@ inline JSVal BooleanToString(const Arguments& args, Error* error) {
   bool b;
   if (!obj.IsBoolean()) {
     if (obj.IsObject() &&
-        args.ctx()->Cls("Boolean").name == obj.object()->class_name()) {
+        context::Cls(args.ctx(), "Boolean").name == obj.object()->class_name()) {
       b = static_cast<JSBooleanObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -60,7 +60,7 @@ inline JSVal BooleanValueOf(const Arguments& args, Error* error) {
   bool b;
   if (!obj.IsBoolean()) {
     if (obj.IsObject() &&
-        args.ctx()->Cls("Boolean").name == obj.object()->class_name()) {
+        context::Cls(args.ctx(), "Boolean").name == obj.object()->class_name()) {
       b = static_cast<JSBooleanObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,

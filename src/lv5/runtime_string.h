@@ -30,7 +30,7 @@ static inline JSVal StringToStringValueOfImpl(const Arguments& args,
   const JSVal& obj = args.this_binding();
   if (!obj.IsString()) {
     if (obj.IsObject() &&
-        args.ctx()->Cls("String").name == obj.object()->class_name()) {
+        context::Cls(args.ctx(), "String").name == obj.object()->class_name()) {
       return static_cast<JSStringObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type, msg);

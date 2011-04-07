@@ -20,8 +20,6 @@ const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym);
 const Class& Cls(Context* ctx, const Symbol& name);
 const Class& Cls(Context* ctx, const core::StringPiece& str);
 
-const Class& Cls(Context* ctx, const core::StringPiece& str);
-
 Symbol Intern(Context* ctx, const core::StringPiece& str);
 Symbol Intern(Context* ctx, const core::UStringPiece& str);
 Symbol Intern(Context* ctx, uint32_t index);

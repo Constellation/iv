@@ -46,6 +46,7 @@ class GlobalData {
                      random_distribution_type(0, 1)),
       global_obj_(),
       regs_(),
+      builtins_(),
       table_(),
       length_symbol_(Intern(detail::kLengthString)),
       eval_symbol_(Intern(detail::kEvalString)),
@@ -170,10 +171,25 @@ class GlobalData {
   void RegisterLiteralRegExp(JSRegExpImpl* reg) {
     regs_.push_back(reg);
   }
+
+  void RegisterClass(const Symbol& name, const Class& cls) {
+    builtins_[name] = cls;
+  }
+
+  const Class& GetClass(const Symbol& name) {
+    assert(builtins_.find(name) != builtins_.end());
+    return builtins_[name];
+  }
+
+  const Class& GetClass(const core::StringPiece& name) {
+    return GetClass(Intern(name));
+  }
+
  private:
   random_generator random_engine_;
   JSObject global_obj_;
   trace::Vector<JSRegExpImpl*>::type regs_;
+  trace::HashMap<Symbol, Class>::type builtins_;
   SymbolTable table_;
   Symbol length_symbol_;
   Symbol eval_symbol_;
