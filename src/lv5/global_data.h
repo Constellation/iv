@@ -8,6 +8,7 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
+#include "lv5/gc_template.h"
 #include "lv5/xorshift.h"
 #include "lv5/jsstring.h"
 #include "lv5/symboltable.h"
@@ -29,6 +30,7 @@ static const char* kArrayString = "Array";
 }  // namespace iv::lv5::detail
 
 class SymbolChecker;
+class JSRegExpImpl;
 
 // GlobalData has symboltable, global object
 class GlobalData {
@@ -42,6 +44,8 @@ class GlobalData {
   GlobalData()
     : random_engine_(random_engine_type(),
                      random_distribution_type(0, 1)),
+      global_obj_(),
+      regs_(),
       table_(),
       length_symbol_(Intern(detail::kLengthString)),
       eval_symbol_(Intern(detail::kEvalString)),
@@ -163,11 +167,13 @@ class GlobalData {
     return &global_obj_;
   }
 
+  void RegisterLiteralRegExp(JSRegExpImpl* reg) {
+    regs_.push_back(reg);
+  }
  private:
   random_generator random_engine_;
-
   JSObject global_obj_;
-
+  trace::Vector<JSRegExpImpl*>::type regs_;
   SymbolTable table_;
   Symbol length_symbol_;
   Symbol eval_symbol_;

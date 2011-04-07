@@ -223,10 +223,6 @@ class Context : private core::Noncopyable<Context>::type {
     return obj.class_name() == global_data_.Array_symbol();
   }
 
-  trace::Vector<JSRegExpImpl*>::type& regs() {
-    return regs_;
-  }
-
   double Random();
 
   GlobalData* global_data() {
@@ -263,7 +259,6 @@ class Context : private core::Noncopyable<Context>::type {
   JSVal ret_;
   const BreakableStatement* target_;
   Error error_;
-  trace::Vector<JSRegExpImpl*>::type regs_;
   trace::HashMap<Symbol, Class>::type builtins_;
   bool strict_;
   std::size_t generate_script_counter_;

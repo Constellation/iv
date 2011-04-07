@@ -140,7 +140,7 @@ VMStack* stack(Context* ctx) {
 }
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
-  ctx->regs().push_back(reg);
+  ctx->global_data()->RegisterLiteralRegExp(reg);
 }
 
 }  // namespace iv::lv5::context
@@ -157,7 +157,6 @@ Context::Context()
     ret_(),
     target_(NULL),
     error_(),
-    regs_(),
     builtins_(),
     strict_(false),
     generate_script_counter_(0),
