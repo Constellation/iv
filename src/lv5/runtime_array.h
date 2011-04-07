@@ -9,6 +9,7 @@
 #include "lv5/jsarray.h"
 #include "lv5/jsstring.h"
 #include "lv5/internal.h"
+#include "lv5/context_utils.h"
 #include "lv5/runtime_object.h"
 
 namespace iv {
@@ -102,12 +103,12 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   const JSVal join = obj->Get(args.ctx(),
-                              args.ctx()->Intern("join"), ERROR(e));
+                              context::Intern(args.ctx(), "join"), ERROR(e));
   if (join.IsCallable()) {
-    ScopedArguments a(args.ctx(), ERROR(e));
+    ScopedArguments a(args.ctx(), 0, ERROR(e));
     return join.object()->AsCallable()->Call(&a, obj, e);
   } else {
-    ScopedArguments a(args.ctx(), ERROR(e));
+    ScopedArguments a(args.ctx(), 0, ERROR(e));
     a.set_this_binding(obj);
     return ObjectToString(a, e);
   }
@@ -120,7 +121,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   JSObject* const array = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = array->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
@@ -129,8 +130,8 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
 
   // implementation depended locale based separator
   const char separator = ',';
-  const Symbol toLocaleString = ctx->Intern("toLocaleString");
-  ScopedArguments args_list(ctx, ERROR(e));
+  const Symbol toLocaleString = context::Intern(ctx, "toLocaleString");
+  ScopedArguments args_list(ctx, 0, ERROR(e));
   StringBuilder builder;
   {
     const JSVal first = array->GetWithIndex(ctx, 0, ERROR(e));
@@ -187,7 +188,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
     uint32_t k = 0;
     const JSVal length = elm->Get(
         ctx,
-        ctx->length_symbol(), ERROR(e));
+        context::length_symbol(ctx), ERROR(e));
     assert(length.IsNumber());  // Array always number
     const uint32_t len = core::DoubleToUInt32(length.number());
     while (k < len) {
@@ -224,7 +225,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       uint32_t k = 0;
       const JSVal length = elm->Get(
           ctx,
-          ctx->length_symbol(), ERROR(e));
+          context::length_symbol(ctx), ERROR(e));
       assert(length.IsNumber());  // Array always number
       const uint32_t len = core::DoubleToUInt32(length.number());
       while (k < len) {
@@ -254,7 +255,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++n;
     }
   }
-  ary->Put(ctx, ctx->length_symbol(),
+  ary->Put(ctx, context::length_symbol(ctx),
            n, false, ERROR(e));
   return ary;
 }
@@ -266,7 +267,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   JSString* separator;
@@ -309,17 +310,17 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
-    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(e));
+    obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
     const JSVal element = obj->GetWithIndex(ctx, index, ERROR(e));
     obj->DeleteWithIndex(ctx, index, true, ERROR(e));
-    obj->Put(ctx, ctx->length_symbol(),
+    obj->Put(ctx, context::length_symbol(ctx),
              index, true, ERROR(e));
     return element;
   }
@@ -332,7 +333,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   uint32_t n = core::DoubleToUInt32(val);
   bool index_over = false;
@@ -354,14 +355,14 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
     for (++len, ++it; it != last; ++it, ++len) {
       obj->Put(
           ctx,
-          ctx->InternDouble(len),
+          context::Intern(ctx, len),
           *it,
           true, ERROR(e));
     }
   }
   obj->Put(
       ctx,
-      ctx->length_symbol(),
+      context::length_symbol(ctx),
       len,
       true, ERROR(e));
   return len;
@@ -374,7 +375,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t middle = len >> 1;
@@ -413,14 +414,14 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   if (len == 0) {
-    obj->Put(ctx, ctx->length_symbol(), 0.0, true, ERROR(e));
+    obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
     return JSUndefined;
   }
-  const JSVal first = obj->Get(ctx, ctx->Intern("0"), ERROR(e));
+  const JSVal first = obj->Get(ctx, context::Intern(ctx, "0"), ERROR(e));
   uint32_t to = 0;
   uint32_t from = 0;
   for (uint32_t k = 1; k < len; ++k, to = from) {
@@ -433,7 +434,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
     }
   }
   obj->DeleteWithIndex(ctx, from, true, ERROR(e));
-  obj->Put(ctx, ctx->length_symbol(), len - 1, true, ERROR(e));
+  obj->Put(ctx, context::length_symbol(ctx), len - 1, true, ERROR(e));
   return first;
 }
 
@@ -445,7 +446,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   JSArray* const ary = JSArray::New(ctx);
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   uint32_t k;
@@ -500,7 +501,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   JSFunction* comparefn;
@@ -645,7 +646,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   JSArray* const ary = JSArray::New(ctx);
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t len = core::DoubleToUInt32(val);
   const uint32_t args_size = args.size();
@@ -727,7 +728,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   }
   obj->Put(
       ctx,
-      ctx->length_symbol(),
+      context::length_symbol(ctx),
       len - actual_delete_count + item_count, true, ERROR(e));
   return ary;
 }
@@ -739,7 +740,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -766,7 +767,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   }
   obj->Put(
       ctx,
-      ctx->length_symbol(),
+      context::length_symbol(ctx),
       len + arg_count,
       true, ERROR(e));
   return len + arg_count;
@@ -779,7 +780,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -833,7 +834,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -893,7 +894,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -933,7 +934,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -973,7 +974,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -1007,7 +1008,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -1053,7 +1054,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -1104,7 +1105,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);
@@ -1170,7 +1171,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
       ctx,
-      ctx->length_symbol(), ERROR(e));
+      context::length_symbol(ctx), ERROR(e));
   const double val = length.ToNumber(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
   const uint32_t len = core::DoubleToUInt32(val);

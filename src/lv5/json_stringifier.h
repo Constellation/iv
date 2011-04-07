@@ -155,7 +155,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
       const JSVal result = Str(
-          ctx_->Intern(core::UStringPiece((*it)->data(), (*it)->size())),
+          context::Intern(ctx_, core::UStringPiece((*it)->data(), (*it)->size())),
           value, ERROR(e));
       if (!result.IsUndefined()) {
         core::UString member;
@@ -227,11 +227,11 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
 
     const JSVal length = value->Get(
         ctx_,
-        ctx_->length_symbol(), ERROR(e));
+        context::length_symbol(ctx_), ERROR(e));
     const double val = length.ToNumber(ctx_, ERROR(e));
     const uint32_t len = core::DoubleToUInt32(val);
     for (uint32_t index = 0; index < len; ++index) {
-      JSVal str = Str(ctx_->InternIndex(index), value, ERROR(e));
+      JSVal str = Str(context::Intern(ctx_, index), value, ERROR(e));
       if (str.IsUndefined()) {
         partial.push_back(detail::kJSONNullString);
       } else {
@@ -289,7 +289,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     JSVal value = holder->Get(ctx_, key, ERROR(e));
     if (value.IsObject()) {
       JSObject* const target = value.object();
-      const JSVal method = target->Get(ctx_, ctx_->Intern("toJSON"), ERROR(e));
+      const JSVal method = target->Get(ctx_, context::Intern(ctx_, "toJSON"), ERROR(e));
       if (method.IsCallable()) {
         ScopedArguments args_list(ctx_, 1, ERROR(e));
         args_list[0] = ctx_->ToString(key);
@@ -304,11 +304,11 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     }
     if (value.IsObject()) {
       JSObject* const target = value.object();
-      if (target->class_name() == ctx_->Intern("Number")) {
+      if (target->class_name() == context::Intern(ctx_, "Number")) {
         value = value.ToNumber(ctx_, ERROR(e));
-      } else if (target->class_name() == ctx_->Intern("String")) {
+      } else if (target->class_name() == context::Intern(ctx_, "String")) {
         value = value.ToString(ctx_, ERROR(e));
-      } else if (target->class_name() == ctx_->Intern("Boolean")) {
+      } else if (target->class_name() == context::Intern(ctx_, "Boolean")) {
         value = JSVal::Bool(static_cast<JSBooleanObject*>(target)->value());
       }
     }

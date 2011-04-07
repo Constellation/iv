@@ -24,7 +24,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
     map_(NULL),
     dense_(true),
     length_(len) {
-  JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
+  JSObject::DefineOwnProperty(ctx, context::length_symbol(ctx),
                               DataDescriptor(len,
                                              PropertyDescriptor::WRITABLE),
                                              false, ctx->error());
@@ -102,7 +102,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
     return JSArray::DefineOwnPropertyWithIndex(ctx, index, desc, th, res);
   }
 
-  const Symbol length_symbol = ctx->length_symbol();
+  const Symbol length_symbol = context::length_symbol(ctx);
   PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, length_symbol);
   DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
   const JSVal& len_value = old_len_desc->value();
@@ -237,7 +237,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
                                          Error* res) {
   // array index
   PropertyDescriptor old_len_desc_prop =
-      JSArray::GetOwnProperty(ctx, ctx->length_symbol());
+      JSArray::GetOwnProperty(ctx, context::length_symbol(ctx));
   DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
   const double old_len = old_len_desc->value().ToNumber(ctx, res);
   if (*res) {
@@ -251,7 +251,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
   const bool descriptor_is_default_property = IsDefaultDescriptor(desc);
   if (descriptor_is_default_property &&
       (dense_ ||
-       JSObject::GetOwnProperty(ctx, ctx->InternIndex(index)).IsEmpty())) {
+       JSObject::GetOwnProperty(ctx, context::Intern(ctx, index)).IsEmpty())) {
     JSVal target;
     if (desc.IsDataDescriptor()) {
       target = desc.AsDataDescriptor()->value();
@@ -273,7 +273,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
     }
   } else {
     const bool succeeded = JSObject::DefineOwnProperty(ctx,
-                                                       ctx->InternIndex(index),
+                                                       context::Intern(ctx, index),
                                                        desc, false, res);
     if (*res) {
       return false;
@@ -299,7 +299,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
   }
   if (index >= old_len) {
     old_len_desc->set_value(index+1);
-    JSObject::DefineOwnProperty(ctx, ctx->length_symbol(),
+    JSObject::DefineOwnProperty(ctx, context::length_symbol(ctx),
                                 *old_len_desc, false, res);
   }
   return true;
@@ -358,14 +358,14 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
     for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
-        vec->push_back(ctx->InternIndex(index));
+        vec->push_back(context::Intern(ctx, index));
       }
     }
     if (map_) {
       for (Map::const_iterator it = map_->begin(),
            last = map_->end(); it != last; ++it) {
         if (!it->second.IsEmpty()) {
-          vec->push_back(ctx->InternIndex(it->first));
+          vec->push_back(context::Intern(ctx, it->first));
         }
       }
     }
@@ -374,7 +374,7 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
     for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
-        const Symbol sym = ctx->InternIndex(index);
+        const Symbol sym = context::Intern(ctx, index);
         if (find(vec->begin(), vec->end(), sym) == vec->end()) {
           vec->push_back(sym);
         }
@@ -384,7 +384,7 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
       for (Map::const_iterator it = map_->begin(),
            last = map_->end(); it != last; ++it) {
         if (!it->second.IsEmpty()) {
-          const Symbol sym = ctx->InternIndex(it->first);
+          const Symbol sym = context::Intern(ctx, it->first);
           if (find(vec->begin(), vec->end(), sym) == vec->end()) {
             vec->push_back(sym);
           }
@@ -397,7 +397,7 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
 
 JSArray* JSArray::New(Context* ctx) {
   JSArray* const ary = new JSArray(ctx, 0);
-  const Class& cls = ctx->Cls("Array");
+  const Class& cls = context::Cls(ctx, "Array");
   ary->set_class_name(cls.name);
   ary->set_prototype(cls.prototype);
   return ary;
@@ -405,7 +405,7 @@ JSArray* JSArray::New(Context* ctx) {
 
 JSArray* JSArray::New(Context* ctx, std::size_t n) {
   JSArray* const ary = new JSArray(ctx, n);
-  const Class& cls = ctx->Cls("Array");
+  const Class& cls = context::Cls(ctx, "Array");
   ary->set_class_name(cls.name);
   ary->set_prototype(cls.prototype);
   return ary;

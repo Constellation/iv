@@ -20,17 +20,6 @@ namespace iv {
 namespace lv5 {
 namespace {
 
-static const std::string length_string("length");
-static const std::string eval_string("eval");
-static const std::string arguments_string("arguments");
-static const std::string caller_string("caller");
-static const std::string callee_string("callee");
-static const std::string toString_string("toString");
-static const std::string valueOf_string("valueOf");
-static const std::string prototype_string("prototype");
-static const std::string constructor_string("constructor");
-static const std::string Array_string("Array");
-
 class ScriptScope : private core::Noncopyable<ScriptScope>::type {
  public:
   ScriptScope(Context* ctx, JSScript* script)
@@ -59,43 +48,39 @@ const Class& Cls(Context* ctx, const Symbol& name) {
 }
 
 const Class& Cls(Context* ctx, const core::StringPiece& str) {
-  return ctx->Cls(ctx->Intern(str));
+  return ctx->Cls(ctx->global_data()->Intern(str));
 }
 
 Symbol Intern(Context* ctx, const core::StringPiece& str) {
-  return ctx->Intern(str);
+  return ctx->global_data()->Intern(str);
 }
 
 Symbol Intern(Context* ctx, const core::UStringPiece& str) {
-  return ctx->Intern(str);
-}
-
-Symbol Intern(Context* ctx, const Identifier& ident) {
-  return ctx->Intern(ident);
+  return ctx->global_data()->Intern(str);
 }
 
 Symbol Intern(Context* ctx, uint32_t index) {
-  return ctx->InternIndex(index);
+  return ctx->global_data()->InternIndex(index);
 }
 
 Symbol Intern(Context* ctx, double number) {
-  return ctx->InternDouble(number);
+  return ctx->global_data()->InternDouble(number);
 }
 
 Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res) {
-  return ctx->CheckIntern(str, res);
+  return ctx->global_data()->CheckIntern(str, res);
 }
 
 Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res) {
-  return ctx->CheckIntern(str, res);
+  return ctx->global_data()->CheckIntern(str, res);
 }
 
 Symbol Lookup(Context* ctx, uint32_t index, bool* res) {
-  return ctx->CheckIntern(index, res);
+  return ctx->global_data()->CheckIntern(index, res);
 }
 
 Symbol Lookup(Context* ctx, double number, bool* res) {
-  return ctx->CheckIntern(number, res);
+  return ctx->global_data()->CheckIntern(number, res);
 }
 
 Error* error(Context* ctx) {
@@ -103,23 +88,47 @@ Error* error(Context* ctx) {
 }
 
 Symbol arguments_symbol(const Context* ctx) {
-  return ctx->arguments_symbol();
+  return ctx->global_data()->arguments_symbol();
 }
 
 Symbol constructor_symbol(const Context* ctx) {
-  return ctx->constructor_symbol();
+  return ctx->global_data()->constructor_symbol();
+}
+
+Symbol eval_symbol(const Context* ctx) {
+  return ctx->global_data()->eval_symbol();
 }
 
 Symbol caller_symbol(const Context* ctx) {
-  return ctx->caller_symbol();
+  return ctx->global_data()->caller_symbol();
+}
+
+Symbol callee_symbol(const Context* ctx) {
+  return ctx->global_data()->callee_symbol();
 }
 
 Symbol prototype_symbol(const Context* ctx) {
-  return ctx->prototype_symbol();
+  return ctx->global_data()->prototype_symbol();
 }
 
 Symbol length_symbol(const Context* ctx) {
-  return ctx->length_symbol();
+  return ctx->global_data()->length_symbol();
+}
+
+Symbol toString_symbol(const Context* ctx) {
+  return ctx->global_data()->toString_symbol();
+}
+
+Symbol valueOf_symbol(const Context* ctx) {
+  return ctx->global_data()->valueOf_symbol();
+}
+
+Symbol Array_symbol(const Context* ctx) {
+  return ctx->global_data()->Array_symbol();
+}
+
+JSFunction* throw_type_error(Context* ctx) {
+  return ctx->throw_type_error();
 }
 
 bool IsStrict(const Context* ctx) {
@@ -143,7 +152,6 @@ Context::Context()
     variable_env_(NULL),
     global_env_(NULL),
     binding_(&global_obj_),
-    table_(),
     interp_(),
     mode_(NORMAL),
     ret_(),
@@ -153,18 +161,7 @@ Context::Context()
     builtins_(),
     strict_(false),
     generate_script_counter_(0),
-    random_engine_(random_engine_type(),
-                   random_distribution_type(0, 1)),
-    length_symbol_(Intern(length_string)),
-    eval_symbol_(Intern(eval_string)),
-    arguments_symbol_(Intern(arguments_string)),
-    caller_symbol_(Intern(caller_string)),
-    callee_symbol_(Intern(callee_string)),
-    toString_symbol_(Intern(toString_string)),
-    valueOf_symbol_(Intern(valueOf_string)),
-    prototype_symbol_(Intern(prototype_string)),
-    constructor_symbol_(Intern(constructor_string)),
-    Array_symbol_(Intern(Array_string)),
+    global_data_(),
     current_script_(NULL),
     throw_type_error_(this) {
   JSObjectEnv* const env = Interpreter::NewObjectEnvironment(this,
@@ -177,79 +174,21 @@ Context::Context()
   interp_.set_context(this);
   // discard random
   for (std::size_t i = 0; i < 20; ++i) {
-    Random();
+    global_data_.Random();
   }
   Initialize();
 }
 
-Symbol Context::Intern(const core::StringPiece& str) {
-  return table_.Lookup(str);
-}
-
-Symbol Context::Intern(const core::UStringPiece& str) {
-  return table_.Lookup(str);
-}
-
-Symbol Context::Intern(const Identifier& ident) {
-  return ident.symbol();
-}
-
-Symbol Context::InternIndex(uint32_t index) {
-  std::tr1::array<char, 15> buf;
-  return table_.Lookup(
-      core::StringPiece(
-          buf.data(),
-          snprintf(
-              buf.data(), buf.size(), "%lu",
-              static_cast<unsigned long>(index))));  // NOLINT
-}
-
-Symbol Context::InternDouble(double number) {
-  std::tr1::array<char, 80> buffer;
-  const char* const str = core::DoubleToCString(number,
-                                                buffer.data(),
-                                                buffer.size());
-  return table_.Lookup(core::StringPiece(str));
-}
-
-Symbol Context::CheckIntern(const core::StringPiece& str,
-                            bool* found) {
-  return table_.LookupAndCheck(str, found);
-}
-
-Symbol Context::CheckIntern(const core::UStringPiece& str,
-                            bool* found) {
-  return table_.LookupAndCheck(str, found);
-}
-
-Symbol Context::CheckIntern(uint32_t index, bool* found) {
-  std::tr1::array<char, 15> buf;
-  return table_.LookupAndCheck(
-      core::StringPiece(
-          buf.data(),
-          snprintf(
-              buf.data(), buf.size(), "%lu",
-              static_cast<unsigned long>(index))), found);  // NOLINT
-}
-
-Symbol Context::CheckIntern(double number, bool* found) {
-  std::tr1::array<char, 80> buffer;
-  const char* const str = core::DoubleToCString(number,
-                                                buffer.data(),
-                                                buffer.size());
-  return table_.LookupAndCheck(core::StringPiece(str), found);
-}
-
 double Context::Random() {
-  return random_engine_();
+  return global_data_.Random();
 }
 
 JSString* Context::ToString(Symbol sym) {
-  return table_.ToString(this, sym);
+  return JSString::New(this, global_data_.GetSymbolString(sym));
 }
 
 const core::UString& Context::GetSymbolString(Symbol sym) const {
-  return table_.GetSymbolString(sym);
+  return global_data_.GetSymbolString(sym);
 }
 
 bool Context::InCurrentLabelSet(
@@ -285,7 +224,7 @@ void Context::Initialize() {
       JSInlinedFunction<&runtime::FunctionConstructor, 1>::NewPlain(this);
   func_proto->set_prototype(obj_proto);
   struct Class func_cls = {
-    Intern("Function"),
+    context::Intern(this, "Function"),
     JSString::NewAsciiString(this, "Function"),
     func_constructor,
     func_proto
@@ -295,7 +234,7 @@ void Context::Initialize() {
   func_constructor->set_prototype(func_cls.prototype);
   // set prototype
   func_constructor->DefineOwnProperty(
-      this, prototype_symbol_,
+      this, context::prototype_symbol(this),
       DataDescriptor(func_proto, PropertyDescriptor::NONE),
       false, NULL);
 
@@ -309,7 +248,7 @@ void Context::Initialize() {
       false, NULL);
 
   func_proto->DefineOwnProperty(
-      this, constructor_symbol_,
+      this, context::constructor_symbol(this),
       DataDescriptor(func_constructor,
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
@@ -320,7 +259,7 @@ void Context::Initialize() {
       JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
 
   struct Class obj_cls = {
-    Intern("Object"),
+    context::Intern(this, "Object"),
     JSString::NewAsciiString(this, "Object"),
     obj_constructor,
     obj_proto
@@ -332,18 +271,18 @@ void Context::Initialize() {
   obj_constructor->set_class_name(func_cls.name);
   obj_constructor->set_prototype(func_cls.prototype);
   obj_constructor->DefineOwnProperty(
-      this, prototype_symbol_,
+      this, context::prototype_symbol(this),
       DataDescriptor(obj_proto, PropertyDescriptor::NONE),
       false, NULL);
   obj_proto->DefineOwnProperty(
-      this, constructor_symbol_,
+      this, context::constructor_symbol(this),
       DataDescriptor(obj_constructor,
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
 
   func_proto->DefineOwnProperty(
-      this, toString_symbol_,
+      this, context::toString_symbol(this),
       DataDescriptor(
           JSInlinedFunction<&runtime::FunctionToString, 0>::New(this),
           PropertyDescriptor::WRITABLE |
@@ -352,7 +291,7 @@ void Context::Initialize() {
 
   // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
   func_proto->DefineOwnProperty(
-      this, Intern("apply"),
+      this, context::Intern(this, "apply"),
       DataDescriptor(
           JSInlinedFunction<&runtime::FunctionApply, 2>::New(this),
           PropertyDescriptor::WRITABLE |
@@ -361,7 +300,7 @@ void Context::Initialize() {
 
   // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
-      this, Intern("call"),
+      this, context::Intern(this, "call"),
       DataDescriptor(
           JSInlinedFunction<&runtime::FunctionCall, 1>::New(this),
           PropertyDescriptor::WRITABLE |
@@ -370,7 +309,7 @@ void Context::Initialize() {
 
   // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
   func_proto->DefineOwnProperty(
-      this, Intern("bind"),
+      this, context::Intern(this, "bind"),
       DataDescriptor(
           JSInlinedFunction<&runtime::FunctionBind, 1>::New(this),
           PropertyDescriptor::WRITABLE |
@@ -382,7 +321,7 @@ void Context::Initialize() {
 
     // section 15.2.3.2 Object.getPrototypeOf(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("getPrototypeOf"),
+        this, context::Intern(this, "getPrototypeOf"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectGetPrototypeOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -391,7 +330,7 @@ void Context::Initialize() {
 
     // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
     obj_constructor->DefineOwnProperty(
-        this, Intern("getOwnPropertyDescriptor"),
+        this, context::Intern(this, "getOwnPropertyDescriptor"),
         DataDescriptor(
             JSInlinedFunction<
               &runtime::ObjectGetOwnPropertyDescriptor, 2>::New(this),
@@ -401,7 +340,7 @@ void Context::Initialize() {
 
     // section 15.2.3.4 Object.getOwnPropertyNames(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("getOwnPropertyNames"),
+        this, context::Intern(this, "getOwnPropertyNames"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectGetOwnPropertyNames, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -410,7 +349,7 @@ void Context::Initialize() {
 
     // section 15.2.3.5 Object.create(O[, Properties])
     obj_constructor->DefineOwnProperty(
-        this, Intern("create"),
+        this, context::Intern(this, "create"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectCreate, 2>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -419,7 +358,7 @@ void Context::Initialize() {
 
     // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
     obj_constructor->DefineOwnProperty(
-        this, Intern("defineProperty"),
+        this, context::Intern(this, "defineProperty"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectDefineProperty, 3>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -428,7 +367,7 @@ void Context::Initialize() {
 
     // section 15.2.3.7 Object.defineProperties(O, Properties)
     obj_constructor->DefineOwnProperty(
-        this, Intern("defineProperties"),
+        this, context::Intern(this, "defineProperties"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectDefineProperties, 2>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -437,7 +376,7 @@ void Context::Initialize() {
 
     // section 15.2.3.8 Object.seal(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("seal"),
+        this, context::Intern(this, "seal"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectSeal, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -446,7 +385,7 @@ void Context::Initialize() {
 
     // section 15.2.3.9 Object.freeze(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("freeze"),
+        this, context::Intern(this, "freeze"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectFreeze, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -455,7 +394,7 @@ void Context::Initialize() {
 
     // section 15.2.3.10 Object.preventExtensions(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("preventExtensions"),
+        this, context::Intern(this, "preventExtensions"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectPreventExtensions, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -464,7 +403,7 @@ void Context::Initialize() {
 
     // section 15.2.3.11 Object.isSealed(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("isSealed"),
+        this, context::Intern(this, "isSealed"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectIsSealed, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -473,7 +412,7 @@ void Context::Initialize() {
 
     // section 15.2.3.12 Object.isFrozen(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("isFrozen"),
+        this, context::Intern(this, "isFrozen"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectIsFrozen, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -482,7 +421,7 @@ void Context::Initialize() {
 
     // section 15.2.3.13 Object.isExtensible(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("isExtensible"),
+        this, context::Intern(this, "isExtensible"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectIsExtensible, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -491,7 +430,7 @@ void Context::Initialize() {
 
     // section 15.2.3.14 Object.keys(O)
     obj_constructor->DefineOwnProperty(
-        this, Intern("keys"),
+        this, context::Intern(this, "keys"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectKeys, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -500,7 +439,7 @@ void Context::Initialize() {
 
     // section 15.2.4.2 Object.prototype.toString()
     obj_proto->DefineOwnProperty(
-        this, toString_symbol_,
+        this, context::toString_symbol(this),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -509,7 +448,7 @@ void Context::Initialize() {
 
     // section 15.2.4.3 Object.prototype.toLocaleString()
     obj_proto->DefineOwnProperty(
-        this, Intern("toLocaleString"),
+        this, context::Intern(this, "toLocaleString"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectToLocaleString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -518,7 +457,7 @@ void Context::Initialize() {
 
     // section 15.2.4.4 Object.prototype.valueOf()
     obj_proto->DefineOwnProperty(
-        this, Intern("valueOf"),
+        this, context::Intern(this, "valueOf"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectValueOf, 0>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -527,7 +466,7 @@ void Context::Initialize() {
 
     // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
     obj_proto->DefineOwnProperty(
-        this, Intern("hasOwnProperty"),
+        this, context::Intern(this, "hasOwnProperty"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectHasOwnProperty, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -536,7 +475,7 @@ void Context::Initialize() {
 
     // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
     obj_proto->DefineOwnProperty(
-        this, Intern("isPrototypeOf"),
+        this, context::Intern(this, "isPrototypeOf"),
         DataDescriptor(
             JSInlinedFunction<&runtime::ObjectIsPrototypeOf, 1>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -545,7 +484,7 @@ void Context::Initialize() {
 
     // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
     obj_proto->DefineOwnProperty(
-        this, Intern("propertyIsEnumerable"),
+        this, context::Intern(this, "propertyIsEnumerable"),
         DataDescriptor(
             JSInlinedFunction<
               &runtime::ObjectPropertyIsEnumerable, 1>::New(this),
@@ -569,7 +508,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
 
     struct Class cls = {
-      Array_symbol_,
+      context::Array_symbol(this),
       JSString::NewAsciiString(this, "Array"),
       constructor,
       proto
@@ -587,7 +526,7 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE)
+        .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.4.3.2 Array.isArray(arg)
         .def<&runtime::ArrayIsArray, 1>("isArray");
 
@@ -595,7 +534,7 @@ void Context::Initialize() {
         .class_name(cls.name)
         .prototype(obj_proto)
         // section 15.5.4.1 String.prototype.constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.4.4.2 Array.prototype.toString()
         .def<&runtime::ArrayToString, 0>("toString")
@@ -650,7 +589,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(this);
 
     struct Class cls = {
-      Intern("String"),
+      context::Intern(this, "String"),
       JSString::NewAsciiString(this, "String"),
       constructor,
       proto
@@ -668,7 +607,7 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE)
+        .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
         .def<&runtime::StringFromCharCode, 1>("fromCharCode");
 
@@ -676,7 +615,7 @@ void Context::Initialize() {
         .class_name(cls.name)
         .prototype(obj_proto)
         // section 15.5.4.1 String.prototype.constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.5.4.2 String.prototype.toString()
         .def<&runtime::StringToString, 0>("toString")
@@ -729,7 +668,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
 
     struct Class cls = {
-      Intern("Boolean"),
+      context::Intern(this, "Boolean"),
       JSString::NewAsciiString(this, "Boolean"),
       constructor,
       proto
@@ -747,18 +686,18 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE);
+        .def(context::prototype_symbol(this), proto, bind::NONE);
 
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
         // section 15.6.4.1 Boolean.prototype.constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.6.4.2 Boolean.prototype.toString()
-        .def<&runtime::BooleanToString, 0>(toString_symbol_)
+        .def<&runtime::BooleanToString, 0>(context::toString_symbol(this))
         // section 15.6.4.3 Boolean.prototype.valueOf()
-        .def<&runtime::BooleanValueOf, 0>(valueOf_symbol_);
+        .def<&runtime::BooleanValueOf, 0>(context::valueOf_symbol(this));
   }
 
   {
@@ -769,7 +708,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
 
     struct Class cls = {
-      Intern("Number"),
+      context::Intern(this, "Number"),
       JSString::NewAsciiString(this, "Number"),
       constructor,
       proto
@@ -787,7 +726,7 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE)
+        .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.7.3.2 Number.MAX_VALUE
         .def("MAX_VALUE", 1.7976931348623157e+308)
         // section 15.7.3.3 Number.MIN_VALUE
@@ -803,14 +742,14 @@ void Context::Initialize() {
         .class_name(cls.name)
         .prototype(obj_proto)
         // section 15.7.4.1 Number.prototype.constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.7.4.2 Number.prototype.toString([radix])
-        .def<&runtime::NumberToString, 1>(toString_symbol_)
+        .def<&runtime::NumberToString, 1>(context::toString_symbol(this))
         // section 15.7.4.3 Number.prototype.toLocaleString()
         .def<&runtime::NumberToLocaleString, 0>("toLocaleString")
         // section 15.7.4.4 Number.prototype.valueOf()
-        .def<&runtime::NumberValueOf, 0>(valueOf_symbol_)
+        .def<&runtime::NumberValueOf, 0>(context::valueOf_symbol(this))
         // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
         .def<&runtime::NumberToFixed, 1>("toFixed")
         // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
@@ -829,12 +768,12 @@ void Context::Initialize() {
     constructor->set_prototype(func_cls.prototype);
     // set prototype
     constructor->DefineOwnProperty(
-        this, prototype_symbol_,
+        this, context::prototype_symbol(this),
         DataDescriptor(proto, PropertyDescriptor::NONE),
         false, NULL);
     proto->set_prototype(obj_proto);
     struct Class cls = {
-      Intern("Error"),
+      context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "Error"),
       constructor,
       proto
@@ -842,7 +781,7 @@ void Context::Initialize() {
     proto->set_class_name(cls.name);
     builtins_[cls.name] = cls;
     proto->DefineOwnProperty(
-        this, constructor_symbol_,
+        this, context::constructor_symbol(this),
         DataDescriptor(constructor,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -850,7 +789,7 @@ void Context::Initialize() {
 
     // section 15.11.4.4 Error.prototype.toString()
     proto->DefineOwnProperty(
-        this, toString_symbol_,
+        this, context::toString_symbol(this),
         DataDescriptor(
             JSInlinedFunction<&runtime::ErrorToString, 0>::New(this),
             PropertyDescriptor::WRITABLE |
@@ -859,14 +798,14 @@ void Context::Initialize() {
 
     // section 15.11.4.2 Error.prototype.name
     proto->DefineOwnProperty(
-        this, Intern("name"),
+        this, context::Intern(this, "name"),
         DataDescriptor(JSString::NewAsciiString(this, "Error"),
                        PropertyDescriptor::NONE),
         false, NULL);
 
     // section 15.11.4.3 Error.prototype.message
     proto->DefineOwnProperty(
-        this, Intern("message"),
+        this, context::Intern(this, "message"),
         DataDescriptor(JSString::NewEmptyString(this),
                        PropertyDescriptor::NONE),
         false, NULL);
@@ -883,17 +822,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("EvalError");
+      const Symbol sym = context::Intern(this, "EvalError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "EvalError"),
         sub_constructor,
         sub_proto
@@ -907,21 +846,21 @@ void Context::Initialize() {
                          PropertyDescriptor::CONFIGURABLE),
           false, NULL);
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "EvalError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -932,17 +871,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("RangeError");
+      const Symbol sym = context::Intern(this, "RangeError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "RangeError"),
         sub_constructor,
         sub_proto
@@ -957,21 +896,21 @@ void Context::Initialize() {
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "RangeError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -982,17 +921,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("ReferenceError");
+      const Symbol sym = context::Intern(this, "ReferenceError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "ReferenceError"),
         sub_constructor,
         sub_proto
@@ -1007,21 +946,21 @@ void Context::Initialize() {
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "ReferenceError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1032,17 +971,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("SyntaxError");
+      const Symbol sym = context::Intern(this, "SyntaxError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "SyntaxError"),
         sub_constructor,
         sub_proto
@@ -1057,21 +996,21 @@ void Context::Initialize() {
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "SyntaxError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1082,17 +1021,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("TypeError");
+      const Symbol sym = context::Intern(this, "TypeError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "TypeError"),
         sub_constructor,
         sub_proto
@@ -1107,21 +1046,21 @@ void Context::Initialize() {
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "TypeError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1132,17 +1071,17 @@ void Context::Initialize() {
       JSObject* const sub_proto = JSObject::NewPlain(this);
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
-      const Symbol sym = Intern("URIError");
+      const Symbol sym = context::Intern(this, "URIError");
       sub_constructor->set_class_name(func_cls.name);
       sub_constructor->set_prototype(func_cls.prototype);
       // set prototype
       sub_constructor->DefineOwnProperty(
-          this, prototype_symbol_,
+          this, context::prototype_symbol(this),
           DataDescriptor(sub_proto, PropertyDescriptor::NONE),
           false, NULL);
       sub_proto->set_prototype(proto);
       struct Class sub_cls = {
-        Intern("Error"),
+        context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "URIError"),
         sub_constructor,
         sub_proto
@@ -1157,21 +1096,21 @@ void Context::Initialize() {
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("name"),
+          this, context::Intern(this, "name"),
           DataDescriptor(
               JSString::NewAsciiString(this, "URIError"),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, Intern("message"),
+          this, context::Intern(this, "message"),
           DataDescriptor(
               JSString::NewEmptyString(this),
               PropertyDescriptor::NONE),
           false, NULL);
 
       sub_proto->DefineOwnProperty(
-          this, constructor_symbol_,
+          this, context::constructor_symbol(this),
           DataDescriptor(sub_constructor,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -1183,7 +1122,7 @@ void Context::Initialize() {
     // section 15.8 Math
     JSObject* const math = JSObject::NewPlain(this);
     global_obj_.DefineOwnProperty(
-        this, Intern("Math"),
+        this, context::Intern(this, "Math"),
         DataDescriptor(math,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -1254,7 +1193,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
 
     struct Class cls = {
-      Intern("Date"),
+      context::Intern(this, "Date"),
       JSString::NewAsciiString(this, "Date"),
       constructor,
       proto
@@ -1272,7 +1211,7 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE)
+        .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.9.4.2 Date.parse(string)
         .def<&runtime::DateParse, 1>("parse")
         // section 15.9.4.3 Date.UTC()
@@ -1282,13 +1221,13 @@ void Context::Initialize() {
 
     JSFunction* const toUTCString =
         JSInlinedFunction<&runtime::DateToUTCString, 0>::New(
-            this, Intern("toUTCString"));
+            this, context::Intern(this, "toUTCString"));
 
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
         // constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.9.5.2 Date.prototype.toString()
         .def<&runtime::DateToString, 0>("toString")
@@ -1394,7 +1333,7 @@ void Context::Initialize() {
         JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
 
     struct Class cls = {
-      Intern("RegExp"),
+      context::Intern(this, "RegExp"),
       JSString::NewAsciiString(this, "RegExp"),
       constructor,
       proto
@@ -1412,13 +1351,13 @@ void Context::Initialize() {
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
         // prototype
-        .def(prototype_symbol_, proto, bind::NONE);
+        .def(context::prototype_symbol(this), proto, bind::NONE);
 
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
         // constructor
-        .def(constructor_symbol_, constructor,
+        .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.10.6.2 RegExp.prototype.exec(string)
         .def<&runtime::RegExpExec, 1>("exec")
@@ -1432,7 +1371,7 @@ void Context::Initialize() {
     // section 15.12 JSON
     JSObject* const json = JSObject::NewPlain(this);
     global_obj_.DefineOwnProperty(
-        this, Intern("JSON"),
+        this, context::Intern(this, "JSON"),
         DataDescriptor(json,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
@@ -1486,7 +1425,7 @@ void Context::Initialize() {
   {
     // Arguments
     struct Class cls = {
-      Intern("Arguments"),
+      context::Intern(this, "Arguments"),
       JSString::NewAsciiString(this, "Arguments"),
       NULL,
       obj_proto
@@ -1502,8 +1441,8 @@ const Class& Context::Cls(Symbol name) {
 }
 
 const Class& Context::Cls(const core::StringPiece& str) {
-  assert(builtins_.find(Intern(str)) != builtins_.end());
-  return builtins_[Intern(str)];
+  assert(builtins_.find(context::Intern(this, str)) != builtins_.end());
+  return builtins_[context::Intern(this, str)];
 }
 
 } }  // namespace iv::lv5

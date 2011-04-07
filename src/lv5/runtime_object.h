@@ -13,6 +13,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/jsarray.h"
 #include "lv5/error.h"
+#include "lv5/context_utils.h"
 #include "lv5/context.h"
 #include "lv5/internal.h"
 
@@ -120,9 +121,9 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
       Symbol name;
       if (args.size() > 1) {
         JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
-        name = args.ctx()->Intern(str->value());
+        name = context::Intern(args.ctx(), str->value());
       } else {
-        name = args.ctx()->Intern("undefined");
+        name = context::Intern(args.ctx(), "undefined");
       }
       const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);
       return FromPropertyDescriptor(args.ctx(), desc);
@@ -198,9 +199,9 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
       Symbol name;
       if (args.size() > 1) {
         const JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
-        name = args.ctx()->Intern(str->value());
+        name = context::Intern(args.ctx(), str->value());
       } else {
-        name = args.ctx()->Intern("undefined");
+        name = context::Intern(args.ctx(), "undefined");
       }
       JSVal attr = JSUndefined;
       if (args.size() > 2) {
@@ -436,24 +437,24 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
 }
 
 // section 15.2.4.3 Object.prototype.toLocaleString()
-inline JSVal ObjectToLocaleString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, error);
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
-  const JSVal toString = obj->Get(args.ctx(),
-                                  args.ctx()->toString_symbol(), ERROR(error));
+inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, e);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
+  Context* const ctx = args.ctx();
+  const JSVal toString = obj->Get(ctx,
+                                  context::toString_symbol(ctx), ERROR(e));
   if (!toString.IsCallable()) {
-    error->Report(Error::Type,
-                  "toString is not callable");
+    e->Report(Error::Type, "toString is not callable");
     return JSUndefined;
   }
-  ScopedArguments arguments(args.ctx(), 0);
-  return toString.object()->AsCallable()->Call(&arguments, obj, error);
+  ScopedArguments arguments(ctx, 0, ERROR(e));
+  return toString.object()->AsCallable()->Call(&arguments, obj, e);
 }
 
 // section 15.2.4.4 Object.prototype.valueOf()
-inline JSVal ObjectValueOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, error);
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, e);
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   if (obj->IsNativeObject()) {
     return obj;
   } else {
@@ -472,7 +473,7 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
     Context* const ctx = args.ctx();
     JSString* const str = val.ToString(ctx, ERROR(error));
     JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-    if (!obj->GetOwnProperty(ctx, ctx->Intern(str->value())).IsEmpty()) {
+    if (!obj->GetOwnProperty(ctx, context::Intern(ctx, str->value())).IsEmpty()) {
       return JSTrue;
     } else {
       return JSFalse;
@@ -509,9 +510,9 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* error) {
   Symbol name;
   if (args.size() > 0) {
     const JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
-    name = args.ctx()->Intern(str->value());
+    name = context::Intern(args.ctx(), str->value());
   } else {
-    name = args.ctx()->Intern("undefined");
+    name = context::Intern(args.ctx(), "undefined");
   }
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
   const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);

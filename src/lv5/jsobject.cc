@@ -48,16 +48,16 @@ JSObject::JSObject(JSObject* proto,
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint::Object hint, Error* e) {
-  ScopedArguments args(ctx, ERROR(e));
+  ScopedArguments args(ctx, 0, ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
-    TRY(ctx, ctx->toString_symbol(), args, e);
-    TRY(ctx, ctx->valueOf_symbol(), args, e);
+    TRY(ctx, context::toString_symbol(ctx), args, e);
+    TRY(ctx, context::valueOf_symbol(ctx), args, e);
   } else {
     // section 8.12.8
     // hint is NUMBER or NONE
-    TRY(ctx, ctx->valueOf_symbol(), args, e);
-    TRY(ctx, ctx->toString_symbol(), args, e);
+    TRY(ctx, context::valueOf_symbol(ctx), args, e);
+    TRY(ctx, context::toString_symbol(ctx), args, e);
   }
   e->Report(Error::Type, "invalid default value");
   return JSUndefined;
@@ -76,7 +76,7 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
-      ScopedArguments a(ctx, ERROR(e));
+      ScopedArguments a(ctx, 0, ERROR(e));
       return getter->AsCallable()->Call(&a, this, e);
     } else {
       return JSUndefined;
@@ -86,7 +86,7 @@ JSVal JSObject::Get(Context* ctx,
 
 JSVal JSObject::GetWithIndex(Context* ctx,
                              uint32_t index, Error* e) {
-  return Get(ctx, ctx->InternIndex(index), e);
+  return Get(ctx, context::Intern(ctx, index), e);
 }
 
 // not recursion
@@ -104,7 +104,7 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
 
 PropertyDescriptor JSObject::GetPropertyWithIndex(Context* ctx,
                                                   uint32_t index) const {
-  return GetProperty(ctx, ctx->InternIndex(index));
+  return GetProperty(ctx, context::Intern(ctx, index));
 }
 
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
@@ -153,7 +153,7 @@ bool JSObject::CanPut(Context* ctx, Symbol name) const {
 }
 
 bool JSObject::CanPutWithIndex(Context* ctx, uint32_t index) const {
-  return CanPut(ctx, ctx->InternIndex(index));
+  return CanPut(ctx, context::Intern(ctx, index));
 }
 
 #define REJECT(str)\
@@ -260,7 +260,7 @@ bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,
                                           bool th,
                                           Error* e) {
   return DefineOwnProperty(ctx,
-                           ctx->InternIndex(index),
+                           context::Intern(ctx, index),
                            desc, th, e);
 }
 
@@ -306,7 +306,7 @@ void JSObject::Put(Context* ctx,
 void JSObject::PutWithIndex(Context* ctx,
                             uint32_t index,
                             const JSVal& val, bool th, Error* e) {
-  Put(ctx, ctx->InternIndex(index), val, th, e);
+  Put(ctx, context::Intern(ctx, index), val, th, e);
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
@@ -314,7 +314,7 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
 }
 
 bool JSObject::HasPropertyWithIndex(Context* ctx, uint32_t index) const {
-  return HasProperty(ctx, ctx->InternIndex(index));
+  return HasProperty(ctx, context::Intern(ctx, index));
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
@@ -379,8 +379,7 @@ void JSObject::GetOwnPropertyNames(Context* ctx,
 
 JSObject* JSObject::New(Context* ctx) {
   JSObject* const obj = NewPlain(ctx);
-  const Symbol name = ctx->Intern("Object");
-  const Class& cls = ctx->Cls(name);
+  const Class& cls = context::Cls(ctx, "Object");
   obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
@@ -392,7 +391,7 @@ JSObject* JSObject::NewPlain(Context* ctx) {
 
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
   JSNumberObject* const obj = new JSNumberObject(value);
-  const Class& cls = ctx->Cls("Number");
+  const Class& cls = context::Cls(ctx, "Number");
   obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;
@@ -408,7 +407,7 @@ JSBooleanObject* JSBooleanObject::NewPlain(Context* ctx, bool value) {
 
 JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
   JSBooleanObject* const obj = new JSBooleanObject(value);
-  const Class& cls = ctx->Cls(ctx->Intern("Boolean"));
+  const Class& cls = context::Cls(ctx, "Boolean");
   obj->set_class_name(cls.name);
   obj->set_prototype(cls.prototype);
   return obj;

@@ -33,11 +33,13 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
     JSObject* const obj = val.object();
     if (ctx->Cls("Array").name == obj->class_name()) {
       JSArray* const ary = static_cast<JSArray*>(obj);
-      const JSVal length = ary->Get(ctx, ctx->length_symbol(), ERROR(e));
+      const JSVal length = ary->Get(ctx, context::length_symbol(ctx), ERROR(e));
       const double temp = length.ToNumber(ctx, ERROR(e));
       const uint32_t len = core::DoubleToUInt32(temp);
       for (uint32_t i = 0; i < len; ++i) {
-        const JSVal new_element = JSONWalk(ctx, ary, ctx->InternIndex(i),
+        const JSVal new_element = JSONWalk(ctx,
+                                           ary,
+                                           context::Intern(ctx, i),
                                            reviver, ERROR(e));
         if (new_element.IsUndefined()) {
           ary->DeleteWithIndex(ctx, i, false, ERROR(e));
@@ -103,7 +105,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
   const JSVal result = detail::ParseJSON(ctx, *text, ERROR(e));
   if (args_size > 1 && args[1].IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
-    const Symbol empty = ctx->Intern("");
+    const Symbol empty = context::Intern(ctx, "");
     root->DefineOwnProperty(
         ctx, empty,
         DataDescriptor(result,
@@ -145,7 +147,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       maybe = &property_list;
       const JSVal length = rep->Get(
           ctx,
-          ctx->length_symbol(), ERROR(e));
+          context::length_symbol(ctx), ERROR(e));
       const double val = length.ToNumber(ctx, ERROR(e));
       const uint32_t len = core::DoubleToUInt32(val);
       for (uint32_t i = 0; i < len; ++i) {
@@ -157,8 +159,8 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
           item = v.ToString(ctx, ERROR(e));
         } else if (v.IsObject()) {
           JSObject* target = v.object();
-          if (target->class_name() == ctx->Intern("String") ||
-              target->class_name() == ctx->Intern("Number")) {
+          if (target->class_name() == context::Intern(ctx, "String") ||
+              target->class_name() == context::Intern(ctx, "Number")) {
             item = v.ToString(ctx, ERROR(e));
           }
         }
@@ -178,9 +180,9 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   // step 5
   if (space.IsObject()) {
     JSObject* const target = space.object();
-    if (target->class_name() == ctx->Intern("Number")) {
+    if (target->class_name() == context::Intern(ctx, "Number")) {
       space = space.ToNumber(ctx, ERROR(e));
-    } else if (target->class_name() == ctx->Intern("String")) {
+    } else if (target->class_name() == context::Intern(ctx, "String")) {
       space = space.ToString(ctx, ERROR(e));
     }
   }
@@ -206,7 +208,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   JSObject* const wrapper = JSObject::New(ctx);
 
   // step 10
-  const Symbol empty = ctx->Intern("");
+  const Symbol empty = context::Intern(ctx, "");
   wrapper->DefineOwnProperty(
       ctx, empty,
       DataDescriptor(value,

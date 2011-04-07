@@ -617,7 +617,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
   JSRegExp* regexp;
   if (args_count == 0 ||
       !args[0].IsObject() ||
-      (args[0].object()->class_name() != ctx->Intern("RegExp"))) {
+      (args[0].object()->class_name() != context::Intern(ctx, "RegExp"))) {
     ScopedArguments a(ctx, 1, ERROR(e));
     if (args_count == 0) {
       a[0] = JSUndefined;
@@ -649,7 +649,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
   const bool search_value_is_regexp =
       args_count != 0 &&
       args[0].IsObject() &&
-      (args[0].object()->class_name() == ctx->Intern("RegExp"));
+      (args[0].object()->class_name() == context::Intern(ctx, "RegExp"));
 
   JSString* search_str = NULL;
 
@@ -730,7 +730,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
   if (args_count == 0) {
     regexp = JSRegExp::New(ctx);
   } else if (args[0].IsObject() &&
-             (args[0].object()->class_name() == ctx->Intern("RegExp"))) {
+             (args[0].object()->class_name() == context::Intern(ctx, "RegExp"))) {
     regexp = JSRegExp::New(
         ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
@@ -751,7 +751,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
     return static_cast<double>(-1);
   } else {
     assert(result.IsObject());
-    return result.object()->Get(ctx, ctx->Intern("index"), e);
+    return result.object()->Get(ctx, context::Intern(ctx, "index"), e);
   }
 }
 
@@ -820,7 +820,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   if (args_count > 0) {
     separator = args[0];
     if (separator.IsObject() &&
-        (ctx->Intern("RegExp") == separator.object()->class_name())) {
+        (context::Intern(ctx, "RegExp") == separator.object()->class_name())) {
       target = separator;
       regexp = true;
     } else {

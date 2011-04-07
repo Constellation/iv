@@ -3,14 +3,17 @@
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
+#include "lv5/railgun_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
   static const uint32_t kMaxVectorSize = 10000;
 }  // namespace iv::lv5::detail
 class Context;
+
 class JSArray : public JSObject {
  public:
+  friend class railgun::VM;
   typedef GCMap<uint32_t, JSVal>::type Map;
 
   JSArray(Context* ctx, std::size_t len);

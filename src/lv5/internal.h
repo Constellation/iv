@@ -41,14 +41,14 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     obj->DefineOwnProperty(
-        ctx, ctx->Intern("value"),
+        ctx, context::Intern(ctx, "value"),
         DataDescriptor(data->value(),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, NULL);
     obj->DefineOwnProperty(
-        ctx, ctx->Intern("writable"),
+        ctx, context::Intern(ctx, "writable"),
         DataDescriptor(JSVal::Bool(data->IsWritable()),
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -59,7 +59,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     const JSVal getter = (accs->get()) ? accs->get() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
-        ctx, ctx->Intern("get"),
+        ctx, context::Intern(ctx, "get"),
         DataDescriptor(getter,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -67,7 +67,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
         false, NULL);
     const JSVal setter = (accs->set()) ? accs->set() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
-        ctx, ctx->Intern("set"),
+        ctx, context::Intern(ctx, "set"),
         DataDescriptor(setter,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -75,14 +75,14 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
         false, NULL);
   }
   obj->DefineOwnProperty(
-      ctx, ctx->Intern("enumerable"),
+      ctx, context::Intern(ctx, "enumerable"),
       DataDescriptor(JSVal::Bool(desc.IsEnumerable()),
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::ENUMERABLE |
                      PropertyDescriptor::CONFIGURABLE),
       false, NULL);
   obj->DefineOwnProperty(
-      ctx, ctx->Intern("configurable"),
+      ctx, context::Intern(ctx, "configurable"),
       DataDescriptor(JSVal::Bool(desc.IsConfigurable()),
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::ENUMERABLE |
@@ -106,7 +106,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   JSObject* setter = NULL;
   {
     // step 3
-    const Symbol sym = ctx->Intern("enumerable");
+    const Symbol sym = context::Intern(ctx, "enumerable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool enumerable = r.ToBoolean(ERROR(error));
@@ -120,7 +120,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 4
-    const Symbol sym = ctx->Intern("configurable");
+    const Symbol sym = context::Intern(ctx, "configurable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool configurable = r.ToBoolean(ERROR(error));
@@ -134,7 +134,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 5
-    const Symbol sym = ctx->Intern("value");
+    const Symbol sym = context::Intern(ctx, "value");
     if (obj->HasProperty(ctx, sym)) {
       value = obj->Get(ctx, sym, ERROR(error));
       attr |= PropertyDescriptor::DATA;
@@ -143,7 +143,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 6
-    const Symbol sym = ctx->Intern("writable");
+    const Symbol sym = context::Intern(ctx, "writable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       const bool writable = r.ToBoolean(ERROR(error));
@@ -156,7 +156,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 7
-    const Symbol sym = ctx->Intern("get");
+    const Symbol sym = context::Intern(ctx, "get");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {
@@ -173,7 +173,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 8
-    const Symbol sym = ctx->Intern("set");
+    const Symbol sym = context::Intern(ctx, "set");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {

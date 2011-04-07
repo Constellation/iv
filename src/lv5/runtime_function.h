@@ -10,6 +10,7 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
+#include "lv5/context_utils.h"
 #include "lv5/error.h"
 
 namespace iv {
@@ -151,7 +152,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
-      ScopedArguments a(ctx, ERROR(e));
+      ScopedArguments a(ctx, 0, ERROR(e));
       if (args_size == 0) {
         return func->Call(&a, JSUndefined, e);
       } else {
@@ -166,7 +167,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
     JSObject* const arg_array = second.object();
-    const JSVal len = arg_array->Get(ctx, ctx->length_symbol(), ERROR(e));
+    const JSVal len = arg_array->Get(ctx, context::length_symbol(ctx), ERROR(e));
     if (len.IsUndefined() || len.IsNull()) {
       e->Report(
           Error::Type,

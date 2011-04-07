@@ -163,7 +163,7 @@ void Interpreter::CallCode(
     BOOST_FOREACH(const Identifier* const ident,
                   code->code()->params()) {
       ++n;
-      const Symbol arg_name = ctx_->Intern(*ident);
+      const Symbol arg_name = ident->symbol();
       if (!env->HasBinding(ctx_, arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name,
                                   configurable_bindings, CHECK_IN_STMT);
@@ -181,7 +181,7 @@ void Interpreter::CallCode(
   // step 5
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
-    const Symbol fn = ctx_->Intern(*(f->name()));
+    const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -195,19 +195,18 @@ void Interpreter::CallCode(
 
   // step 6, 7
   // TODO(Constellation) code check (function)
-  const Symbol arguments_symbol = ctx_->arguments_symbol();
+  const Symbol arguments_symbol = context::arguments_symbol(ctx_);
   if (!env->HasBinding(ctx_, arguments_symbol)) {
-    JSArguments* const args_obj = JSArguments::New(ctx_,
-                                                   code,
-                                                   code->code()->params(),
-                                                   args,
-                                                   env,
-                                                   ctx_->IsStrict());
+    JSArguments* const args_obj =
+        JSArguments::New(ctx_, code,
+                         code->code()->params(),
+                         args, env,
+                         ctx_->IsStrict(), CHECK_IN_STMT);
     if (ctx_->IsStrict()) {
       env->CreateImmutableBinding(arguments_symbol);
       env->InitializeImmutableBinding(arguments_symbol, args_obj);
     } else {
-      env->CreateMutableBinding(ctx_, ctx_->arguments_symbol(),
+      env->CreateMutableBinding(ctx_, context::arguments_symbol(ctx_),
                                 configurable_bindings, CHECK_IN_STMT);
       env->SetMutableBinding(ctx_, arguments_symbol,
                              args_obj, false, CHECK_IN_STMT);
@@ -216,7 +215,7 @@ void Interpreter::CallCode(
 
   // step 8
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
-    const Symbol dn = ctx_->Intern(*(var.first));
+    const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
@@ -229,7 +228,7 @@ void Interpreter::CallCode(
     const FunctionLiteral::DeclType type = code->code()->type();
     if (type == FunctionLiteral::STATEMENT ||
         (type == FunctionLiteral::EXPRESSION && code->name())) {
-      const Symbol name = ctx_->Intern(*(code->name()));
+      const Symbol name = code->name().Address()->symbol();
       if (!env->HasBinding(ctx_, name)) {
         env->CreateImmutableBinding(name);
         env->InitializeImmutableBinding(name, code);
@@ -260,7 +259,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   const bool is_global_env = (env->AsJSObjectEnv() == ctx_->global_env());
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
-    const Symbol fn = ctx_->Intern(*(f->name()));
+    const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -299,7 +298,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   }
 
   BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
-    const Symbol dn = ctx_->Intern(*(var.first));
+    const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
@@ -693,7 +692,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
       JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
-      const Symbol name = ctx_->Intern(*(stmt->catch_name()));
+      const Symbol name = stmt->catch_name().Address()->symbol();
       catch_env->CreateMutableBinding(ctx_, name, false, CHECK_IN_STMT);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
       {
@@ -1032,7 +1031,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
         const bool res = rhs.object()->HasProperty(ctx_,
-                                                   ctx_->Intern(name->value()));
+                                                   context::Intern(ctx_, name->value()));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1287,7 +1286,7 @@ void Interpreter::Visit(const Identifier* ident) {
   JSEnv* const env = ctx_->lexical_env();
   ctx_->Return(
       GetIdentifierReference(env,
-                             ctx_->Intern(*ident),
+                             ident->symbol(),
                              ctx_->IsStrict()));
 }
 
@@ -1336,7 +1335,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     }
     ++current;
   }
-  ary->Put(ctx_, ctx_->length_symbol(),
+  ary->Put(ctx_, context::length_symbol(ctx_),
            current, false, CHECK);
   ctx_->Return(ary);
 }
@@ -1350,7 +1349,7 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
   BOOST_FOREACH(const ObjectLiteral::Property& prop, literal->properties()) {
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
     const Identifier* const ident = get<1>(prop);
-    const Symbol name = ctx_->Intern(*(ident));
+    const Symbol name = ident->symbol();
     PropertyDescriptor desc;
     if (type == ObjectLiteral::DATA) {
       EVAL(get<2>(prop));
@@ -1395,7 +1394,7 @@ void Interpreter::Visit(const IdentifierAccess* prop) {
   EVAL(prop->target());
   const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   base_value.CheckObjectCoercible(CHECK);
-  const Symbol sym = ctx_->Intern(*(prop->key()));
+  const Symbol sym = prop->key()->symbol();
   ctx_->Return(
       JSReference::New(ctx_, base_value, sym, ctx_->IsStrict()));
 }
@@ -1411,7 +1410,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
   ctx_->Return(
       JSReference::New(ctx_,
                        base_value,
-                       ctx_->Intern(name->value()),
+                       context::Intern(ctx_, name->value()),
                        ctx_->IsStrict()));
 }
 
@@ -1446,7 +1445,7 @@ void Interpreter::Visit(const FunctionCall* call) {
           // this function is eval function
           const Identifier* const maybe_eval = call->target()->AsIdentifier();
           if (maybe_eval &&
-              maybe_eval->symbol() == ctx_->eval_symbol()) {
+              maybe_eval->symbol() == context::eval_symbol(ctx_)) {
             // direct call to eval point
             args.set_this_binding(this_binding);
             ctx_->ret() = runtime::DirectCallToEval(args, CHECK);
@@ -1521,7 +1520,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          ScopedArguments a(ctx_, error);
+          ScopedArguments a(ctx_, 0, error);
           if (*error) {
             return JSUndefined;
           }
@@ -1603,7 +1602,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, error);
+        ScopedArguments a(ctx_, 0, error);
         if (*error) {
           return;
         }

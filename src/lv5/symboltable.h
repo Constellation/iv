@@ -5,7 +5,6 @@
 #include <tr1/unordered_map>
 #include "ustring.h"
 #include "conversions.h"
-#include "lv5/jsstring.h"
 #include "lv5/symbol.h"
 #include "lv5/thread.h"
 namespace iv {
@@ -83,12 +82,7 @@ class SymbolTable {
     }
   }
 
-  inline JSString* ToString(Context* ctx, Symbol sym) const {
-    const core::UString& str = strings_[sym.value_as_index];
-    return JSString::New(ctx, str);
-  }
-
-  inline const core::UString& GetSymbolString(Symbol sym) const {
+  inline const core::UString& GetSymbolString(const Symbol& sym) const {
     return strings_[sym.value_as_index];
   }
 

@@ -144,18 +144,6 @@ class Arguments : private core::Noncopyable<Arguments>::type {
 
 class ScopedArguments : public Arguments {
  public:
-  ScopedArguments(Context* ctx, Error* e)
-    : Arguments(ctx, e) {
-    stack_ = context::stack(ctx_)->Gain(size_ + 1);
-    if (!stack_) {  // stack overflow
-      e->Report(Error::Range, "maximum call stack size exceeded");
-    } else {
-      assert(stack_);
-      // init
-      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
-    }
-  }
-
   ScopedArguments(Context* ctx, std::size_t n, Error* e)
     : Arguments(ctx, n, e) {
     stack_ = context::stack(ctx_)->Gain(size_ + 1);

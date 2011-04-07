@@ -50,7 +50,7 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     JSString* name;
     {
       const JSVal target = obj.object()->Get(ctx,
-                                             ctx->Intern("name"),
+                                             context::Intern(ctx, "name"),
                                              ERROR(error));
       if (target.IsUndefined()) {
         name = JSString::NewAsciiString(ctx, "Error");
@@ -61,7 +61,7 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     JSString* msg;
     {
       const JSVal target = obj.object()->Get(ctx,
-                                             ctx->Intern("message"),
+                                             context::Intern(ctx, "message"),
                                              ERROR(error));
       if (target.IsUndefined()) {
         msg = JSString::NewEmptyString(ctx);

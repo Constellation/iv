@@ -1,10 +1,15 @@
 #ifndef _IV_LV5_BIND_H_
 #define _IV_LV5_BIND_H_
 #include "stringpiece.h"
+#include "lv5/jsval.h"
+#include "lv5/error.h"
 #include "lv5/jsobject.h"
-#include "lv5/context.h"
+#include "lv5/jsfunction.h"
+#include "lv5/arguments.h"
+#include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
+
 namespace bind {
 
 enum Attribute {
@@ -20,7 +25,7 @@ enum Attribute {
 
 class Scope {
  public:
-  Scope(Context* ctx) : ctx_(ctx) { }
+  explicit Scope(Context* ctx) : ctx_(ctx) { }
 
  protected:
 
@@ -74,7 +79,7 @@ class Object : public Scope {
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
           WRITABLE | CONFIGURABLE),
-      false, ctx_->error());
+      false, context::error(ctx_));
     return *this;
   }
 
@@ -90,7 +95,7 @@ class Object : public Scope {
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
           attr),
-      false, ctx_->error());
+      false, context::error(ctx_));
     return *this;
   }
 
@@ -102,7 +107,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, NONE),
-      false, ctx_->error());
+      false, context::error(ctx_));
     return *this;
   }
 
@@ -114,8 +119,47 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, attr),
-      false, ctx_->error());
+      false, context::error(ctx_));
     return *this;
+  }
+
+  Object& def_accessor(const core::StringPiece& string,
+                       JSObject* getter,
+                       JSObject* setter, int attr) {
+    return def_accessor(context::Intern(ctx_, string), getter, setter, attr);
+  }
+
+  Object& def_accessor(const Symbol& name,
+                       JSObject* getter, JSObject* setter, int attr) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      AccessorDescriptor(getter,
+                         setter,
+                         attr),
+      false, context::error(ctx_));
+    return *this;
+  }
+
+  Object& def_getter(const core::StringPiece& string,
+                     JSObject* getter, int attr) {
+    return def_accessor(context::Intern(ctx_, string), getter, NULL, attr);
+  }
+
+  Object& def_getter(const Symbol& name, JSObject* getter, int attr) {
+    return def_accessor(name, getter, NULL, attr);
+  }
+
+  Object& def_setter(const core::StringPiece& string,
+                     JSObject* setter, int attr) {
+    return def_accessor(context::Intern(ctx_, string), NULL, setter, attr);
+  }
+
+  Object& def_setter(const Symbol& name, JSObject* setter, int attr) {
+    return def_accessor(name, NULL, setter, attr);
+  }
+
+  JSObject* content() const {
+    return obj_;
   }
 
  private:

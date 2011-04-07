@@ -1427,13 +1427,13 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 
   const JSVal toISO = obj->Get(
       ctx,
-      ctx->Intern("toISOString"), ERROR(e));
+      context::Intern(ctx, "toISOString"), ERROR(e));
 
   if (!toISO.IsCallable()) {
     e->Report(Error::Type, "toISOString is not function");
     return JSUndefined;
   }
-  ScopedArguments a(ctx, ERROR(e));
+  ScopedArguments a(ctx, 0, ERROR(e));
   return toISO.object()->AsCallable()->Call(&a, obj, e);
 }
 

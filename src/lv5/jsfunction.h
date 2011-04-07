@@ -7,6 +7,7 @@
 #include "lv5/arguments.h"
 #include "lv5/jsast.h"
 #include "lv5/lv5.h"
+#include "lv5/railgun_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -376,6 +377,54 @@ class JSInlinedFunction : public JSFunction {
     set_class_name(cls.name);
     set_prototype(cls.prototype);
   }
+};
+
+class JSVMFunction : public JSFunction {
+ public:
+  JSVMFunction(Context* ctx,
+               const railgun::Code* code,
+               JSScript* script,
+               JSEnv* env);
+
+  JSVal Call(Arguments* args,
+             const JSVal& this_binding,
+             Error* error);
+
+  JSVal Construct(Arguments* args, Error* error);
+
+  JSEnv* scope() const {
+    return env_;
+  }
+
+  static JSVMFunction* New(Context* ctx,
+                           const railgun::Code* code,
+                           JSScript* script,
+                           JSEnv* env) {
+    return new JSVMFunction(ctx, code, script, env);
+  }
+
+  JSCodeFunction* AsCodeFunction() {
+    return NULL;
+  }
+
+  JSNativeFunction* AsNativeFunction() {
+    return NULL;
+  }
+
+  JSBoundFunction* AsBoundFunction() {
+    return NULL;
+  }
+
+  core::UStringPiece GetSource() const;
+
+  bool IsStrict() const {
+    return false;
+  }
+
+ private:
+  const railgun::Code* code_;
+  JSScript* script_;
+  JSEnv* env_;
 };
 
 } }  // namespace iv::lv5

@@ -162,7 +162,7 @@ class JSONParser : private core::Noncopyable<JSONParser<Source> >::type {
       RAISE();
     }
     Next();
-    ary->Put(ctx_, ctx_->length_symbol(),
+    ary->Put(ctx_, context::length_symbol(ctx_),
              current, false, CHECK);
     return ary;
   }
@@ -183,7 +183,7 @@ class JSONParser : private core::Noncopyable<JSONParser<Source> >::type {
   }
 
   Symbol ParseSymbol(const std::vector<uc16>& range) {
-    const Symbol res = ctx_->Intern(core::UStringPiece(range.data(), range.size()));
+    const Symbol res = context::Intern(ctx_, core::UStringPiece(range.data(), range.size()));
     Next();
     return res;
   }
