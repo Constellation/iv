@@ -115,6 +115,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
+// section 15.3.4.2 Function.prototype.toString()
 inline JSVal FunctionToString(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
   const JSVal& obj = args.this_binding();

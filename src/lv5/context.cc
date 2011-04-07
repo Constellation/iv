@@ -206,45 +206,26 @@ JSVal Context::ErrorVal() {
 }
 
 void Context::Initialize() {
+  bind::Object global_binder(this, global_obj());
+
   // Object and Function
   JSObject* const obj_proto = JSObject::NewPlain(this);
+  JSFunction* const obj_constructor =
+      JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
 
   // Function
   JSFunction* const func_proto =
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
   JSFunction* const func_constructor =
       JSInlinedFunction<&runtime::FunctionConstructor, 1>::NewPlain(this);
-  func_proto->set_prototype(obj_proto);
+
   struct Class func_cls = {
     context::Intern(this, "Function"),
     JSString::NewAsciiString(this, "Function"),
     func_constructor,
     func_proto
   };
-  func_proto->set_class_name(func_cls.name);
-  func_constructor->set_class_name(func_cls.name);
-  func_constructor->set_prototype(func_cls.prototype);
-  // set prototype
-  func_constructor->DefineOwnProperty(
-      this, context::prototype_symbol(this),
-      DataDescriptor(func_proto, PropertyDescriptor::NONE),
-      false, NULL);
-
   global_data_.RegisterClass(func_cls.name, func_cls);
-
-  bind::Object global_binder(this, global_obj());
-  global_binder.def(func_cls.name, func_constructor, bind::W | bind::C);
-
-  func_proto->DefineOwnProperty(
-      this, context::constructor_symbol(this),
-      DataDescriptor(func_constructor,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
-
-  // section 15.2.2
-  JSFunction* const obj_constructor =
-      JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
 
   struct Class obj_cls = {
     context::Intern(this, "Object"),
@@ -252,236 +233,80 @@ void Context::Initialize() {
     obj_constructor,
     obj_proto
   };
-  obj_proto->set_class_name(obj_cls.name);
   global_data_.RegisterClass(obj_cls.name, obj_cls);
 
-  // lazy initialization
-  obj_constructor->set_class_name(func_cls.name);
-  obj_constructor->set_prototype(func_cls.prototype);
-  obj_constructor->DefineOwnProperty(
-      this, context::prototype_symbol(this),
-      DataDescriptor(obj_proto, PropertyDescriptor::NONE),
-      false, NULL);
-  obj_proto->DefineOwnProperty(
-      this, context::constructor_symbol(this),
-      DataDescriptor(obj_constructor,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
+  bind::Object(this, func_constructor)
+      .class_name(func_cls.name)
+      .prototype(func_cls.prototype)
+      // seciton 15.3.3.1 Function.prototype
+      .def(context::prototype_symbol(this), func_proto, bind::NONE);
 
-  func_proto->DefineOwnProperty(
-      this, context::toString_symbol(this),
-      DataDescriptor(
-          JSInlinedFunction<&runtime::FunctionToString, 0>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
+  bind::Object(this, obj_constructor)
+      .class_name(func_cls.name)
+      .prototype(func_cls.prototype)
+      // seciton 15.2.3.1 Object.prototype
+      .def(context::prototype_symbol(this), obj_proto, bind::NONE)
+      // section 15.2.3.2 Object.getPrototypeOf(O)
+      .def<&runtime::ObjectGetPrototypeOf, 1>("getPrototypeOf")
+      // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
+      .def<&runtime::ObjectGetOwnPropertyDescriptor, 2>("getOwnPropertyDescriptor")
+      // section 15.2.3.4 Object.getOwnPropertyNames(O)
+      .def<&runtime::ObjectGetOwnPropertyNames, 1>("getOwnPropertyNames")
+      // section 15.2.3.5 Object.create(O[, Properties])
+      .def<&runtime::ObjectCreate, 2>("create")
+      // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
+      .def<&runtime::ObjectDefineProperty, 3>("defineProperty")
+      // section 15.2.3.7 Object.defineProperties(O, Properties)
+      .def<&runtime::ObjectDefineProperties, 2>("defineProperties")
+      // section 15.2.3.8 Object.seal(O)
+      .def<&runtime::ObjectSeal, 1>("seal")
+      // section 15.2.3.9 Object.freeze(O)
+      .def<&runtime::ObjectFreeze, 1>("freeze")
+      // section 15.2.3.10 Object.preventExtensions(O)
+      .def<&runtime::ObjectPreventExtensions, 1>("preventExtensions")
+      // section 15.2.3.11 Object.isSealed(O)
+      .def<&runtime::ObjectIsSealed, 1>("isSealed")
+      // section 15.2.3.12 Object.isFrozen(O)
+      .def<&runtime::ObjectIsFrozen, 1>("isFrozen")
+      // section 15.2.3.13 Object.isExtensible(O)
+      .def<&runtime::ObjectIsExtensible, 1>("isExtensible")
+      // section 15.2.3.14 Object.keys(O)
+      .def<&runtime::ObjectKeys, 1>("keys");
 
-  // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
-  func_proto->DefineOwnProperty(
-      this, context::Intern(this, "apply"),
-      DataDescriptor(
-          JSInlinedFunction<&runtime::FunctionApply, 2>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
+  bind::Object(this, func_proto)
+      .class_name(func_cls.name)
+      .prototype(obj_proto)
+      // section 15.3.4.1 Function.prototype.constructor
+      .def(context::constructor_symbol(this), func_constructor, bind::W | bind::C)
+      // section 15.3.4.2 Function.prototype.toString()
+      .def<&runtime::FunctionToString, 0>(context::toString_symbol(this))
+      // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
+      .def<&runtime::FunctionApply, 2>("apply")
+      // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
+      .def<&runtime::FunctionCall, 1>("call")
+      // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
+      .def<&runtime::FunctionBind, 1>("bind");
 
-  // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
-  func_proto->DefineOwnProperty(
-      this, context::Intern(this, "call"),
-      DataDescriptor(
-          JSInlinedFunction<&runtime::FunctionCall, 1>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
+  bind::Object(this, obj_proto)
+      .class_name(obj_cls.name)
+      .prototype(NULL)
+      // section 15.2.4.1 Object.prototype.constructor
+      .def(context::constructor_symbol(this), obj_constructor, bind::W | bind::C)
+      // section 15.2.4.2 Object.prototype.toString()
+      .def<&runtime::ObjectToString, 0>(context::toString_symbol(this))
+      // section 15.2.4.3 Object.prototype.toLocaleString()
+      .def<&runtime::ObjectToLocaleString, 0>("toLocaleString")
+      // section 15.2.4.4 Object.prototype.valueOf()
+      .def<&runtime::ObjectValueOf, 0>("valueOf")
+      // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
+      .def<&runtime::ObjectHasOwnProperty, 1>("hasOwnProperty")
+      // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
+      .def<&runtime::ObjectIsPrototypeOf, 1>("isPrototypeOf")
+      // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
+      .def<&runtime::ObjectPropertyIsEnumerable, 1>("propertyIsEnumerable");
 
-  // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
-  func_proto->DefineOwnProperty(
-      this, context::Intern(this, "bind"),
-      DataDescriptor(
-          JSInlinedFunction<&runtime::FunctionBind, 1>::New(this),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
-
-  {
-    // Object Define
-
-    // section 15.2.3.2 Object.getPrototypeOf(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "getPrototypeOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectGetPrototypeOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "getOwnPropertyDescriptor"),
-        DataDescriptor(
-            JSInlinedFunction<
-              &runtime::ObjectGetOwnPropertyDescriptor, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.4 Object.getOwnPropertyNames(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "getOwnPropertyNames"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectGetOwnPropertyNames, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.5 Object.create(O[, Properties])
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "create"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectCreate, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "defineProperty"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectDefineProperty, 3>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.7 Object.defineProperties(O, Properties)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "defineProperties"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectDefineProperties, 2>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.8 Object.seal(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "seal"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectSeal, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.9 Object.freeze(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "freeze"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectFreeze, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.10 Object.preventExtensions(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "preventExtensions"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectPreventExtensions, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.11 Object.isSealed(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "isSealed"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectIsSealed, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.12 Object.isFrozen(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "isFrozen"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectIsFrozen, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.13 Object.isExtensible(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "isExtensible"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectIsExtensible, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.3.14 Object.keys(O)
-    obj_constructor->DefineOwnProperty(
-        this, context::Intern(this, "keys"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectKeys, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.2 Object.prototype.toString()
-    obj_proto->DefineOwnProperty(
-        this, context::toString_symbol(this),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.3 Object.prototype.toLocaleString()
-    obj_proto->DefineOwnProperty(
-        this, context::Intern(this, "toLocaleString"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectToLocaleString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.4 Object.prototype.valueOf()
-    obj_proto->DefineOwnProperty(
-        this, context::Intern(this, "valueOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectValueOf, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
-    obj_proto->DefineOwnProperty(
-        this, context::Intern(this, "hasOwnProperty"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectHasOwnProperty, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
-    obj_proto->DefineOwnProperty(
-        this, context::Intern(this, "isPrototypeOf"),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ObjectIsPrototypeOf, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
-    obj_proto->DefineOwnProperty(
-        this, context::Intern(this, "propertyIsEnumerable"),
-        DataDescriptor(
-            JSInlinedFunction<
-              &runtime::ObjectPropertyIsEnumerable, 1>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    global_binder.def(obj_cls.name, obj_constructor, bind::W | bind::C);
-  }
+  global_binder.def(func_cls.name, func_constructor, bind::W | bind::C);
+  global_binder.def(obj_cls.name, obj_constructor, bind::W | bind::C);
 
   {
     // section 15.4 Array
@@ -497,7 +322,6 @@ void Context::Initialize() {
       proto
     };
     global_data_.RegisterClass(cls.name, cls);
-
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
@@ -511,9 +335,8 @@ void Context::Initialize() {
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
-        // section 15.5.4.1 String.prototype.constructor
-        .def(context::constructor_symbol(this), constructor,
-             bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.5.4.1 Array.prototype.constructor
+        .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
         // section 15.4.4.2 Array.prototype.toString()
         .def<&runtime::ArrayToString, 0>("toString")
         // section 15.4.4.3 Array.prototype.toLocaleString()
@@ -573,7 +396,6 @@ void Context::Initialize() {
       proto
     };
     global_data_.RegisterClass(cls.name, cls);
-
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
@@ -647,13 +469,12 @@ void Context::Initialize() {
       proto
     };
     global_data_.RegisterClass(cls.name, cls);
-
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
-        // prototype
+        // section 15.6.3.1 Boolean.prototype
         .def(context::prototype_symbol(this), proto, bind::NONE);
 
     bind::Object(this, proto)
@@ -682,13 +503,12 @@ void Context::Initialize() {
       proto
     };
     global_data_.RegisterClass(cls.name, cls);
-
     global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
-        // prototype
+        // section 15.7.3.1 Number.prototype
         .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.7.3.2 Number.MAX_VALUE
         .def("MAX_VALUE", 1.7976931348623157e+308)
@@ -705,8 +525,7 @@ void Context::Initialize() {
         .class_name(cls.name)
         .prototype(obj_proto)
         // section 15.7.4.1 Number.prototype.constructor
-        .def(context::constructor_symbol(this), constructor,
-             bind::WRITABLE | bind::CONFIGURABLE)
+        .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
         // section 15.7.4.2 Number.prototype.toString([radix])
         .def<&runtime::NumberToString, 1>(context::toString_symbol(this))
         // section 15.7.4.3 Number.prototype.toLocaleString()
@@ -727,53 +546,34 @@ void Context::Initialize() {
     // section 15.11.2 The Error Constructor
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(this);
-    constructor->set_class_name(func_cls.name);
-    constructor->set_prototype(func_cls.prototype);
-    // set prototype
-    constructor->DefineOwnProperty(
-        this, context::prototype_symbol(this),
-        DataDescriptor(proto, PropertyDescriptor::NONE),
-        false, NULL);
-    proto->set_prototype(obj_proto);
+
     struct Class cls = {
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "Error"),
       constructor,
       proto
     };
-    proto->set_class_name(cls.name);
     global_data_.RegisterClass(cls.name, cls);
-    proto->DefineOwnProperty(
-        this, context::constructor_symbol(this),
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.11.4.4 Error.prototype.toString()
-    proto->DefineOwnProperty(
-        this, context::toString_symbol(this),
-        DataDescriptor(
-            JSInlinedFunction<&runtime::ErrorToString, 0>::New(this),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
-
-    // section 15.11.4.2 Error.prototype.name
-    proto->DefineOwnProperty(
-        this, context::Intern(this, "name"),
-        DataDescriptor(JSString::NewAsciiString(this, "Error"),
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
-    // section 15.11.4.3 Error.prototype.message
-    proto->DefineOwnProperty(
-        this, context::Intern(this, "message"),
-        DataDescriptor(JSString::NewEmptyString(this),
-                       PropertyDescriptor::NONE),
-        false, NULL);
-
     global_binder.def(cls.name, constructor, bind::W | bind::C);
+
+    bind::Object(this, constructor)
+        .class_name(func_cls.name)
+        .prototype(func_cls.prototype)
+        // section 15.11.3.1 Error.prototype
+        .def(context::prototype_symbol(this), proto, bind::NONE);
+
+
+    bind::Object(this, proto)
+        .class_name(cls.name)
+        .prototype(obj_proto)
+        // section 15.11.4.1 Error.prototype.constructor
+        .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
+        // section 15.11.4.2 Error.prototype.name
+        .def("name", JSString::NewAsciiString(this, "Error"), bind::NONE)
+        // section 15.11.4.3 Error.prototype.message
+        .def("message", JSString::NewEmptyString(this), bind::NONE)
+        // section 15.11.4.4 Error.prototype.toString()
+        .def<&runtime::ErrorToString, 0>(context::toString_symbol(this));
 
     {
       // section 15.11.6.1 EvalError
@@ -781,43 +581,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "EvalError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "EvalError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "EvalError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
     {
       // section 15.11.6.2 RangeError
@@ -825,44 +609,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "RangeError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "RangeError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "RangeError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
     {
       // section 15.11.6.3 ReferenceError
@@ -870,44 +637,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "ReferenceError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "ReferenceError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "ReferenceError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
     {
       // section 15.11.6.4 SyntaxError
@@ -915,44 +665,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "SyntaxError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "SyntaxError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "SyntaxError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
     {
       // section 15.11.6.5 TypeError
@@ -960,44 +693,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "TypeError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "TypeError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "TypeError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
     {
       // section 15.11.6.6 URIError
@@ -1005,44 +721,27 @@ void Context::Initialize() {
       JSFunction* const sub_constructor =
           JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
       const Symbol sym = context::Intern(this, "URIError");
-      sub_constructor->set_class_name(func_cls.name);
-      sub_constructor->set_prototype(func_cls.prototype);
-      // set prototype
-      sub_constructor->DefineOwnProperty(
-          this, context::prototype_symbol(this),
-          DataDescriptor(sub_proto, PropertyDescriptor::NONE),
-          false, NULL);
-      sub_proto->set_prototype(proto);
+      bind::Object(this, sub_constructor)
+          .class_name(func_cls.name)
+          .prototype(func_cls.prototype)
+          .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+
       struct Class sub_cls = {
         context::Intern(this, "Error"),
         JSString::NewAsciiString(this, "URIError"),
         sub_constructor,
         sub_proto
       };
-      sub_proto->set_class_name(sub_cls.name);
       global_data_.RegisterClass(sym, sub_cls);
       global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "name"),
-          DataDescriptor(
-              JSString::NewAsciiString(this, "URIError"),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::Intern(this, "message"),
-          DataDescriptor(
-              JSString::NewEmptyString(this),
-              PropertyDescriptor::NONE),
-          false, NULL);
-
-      sub_proto->DefineOwnProperty(
-          this, context::constructor_symbol(this),
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      bind::Object(this, sub_proto)
+          .class_name(sub_cls.name)
+          .prototype(proto)
+          .def(context::constructor_symbol(this),
+               sub_constructor, bind::W | bind::C)
+          .def("name", sub_cls.name_string, bind::NONE)
+          .def("message", JSString::NewEmptyString(this), bind::NONE);
     }
   }
 
@@ -1127,7 +826,7 @@ void Context::Initialize() {
     bind::Object(this, constructor)
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
-        // prototype
+        // section 15.9.4.1 Date.prototype
         .def(context::prototype_symbol(this), proto, bind::NONE)
         // section 15.9.4.2 Date.parse(string)
         .def<&runtime::DateParse, 1>("parse")
@@ -1143,9 +842,8 @@ void Context::Initialize() {
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
-        // constructor
-        .def(context::constructor_symbol(this), constructor,
-             bind::WRITABLE | bind::CONFIGURABLE)
+        // section 15.9.5.1 Date.prototype.constructor
+        .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
         // section 15.9.5.2 Date.prototype.toString()
         .def<&runtime::DateToString, 0>("toString")
         // section 15.9.5.3 Date.prototype.toDateString()
@@ -1261,13 +959,13 @@ void Context::Initialize() {
     bind::Object(this, constructor)
         .class_name(func_cls.name)
         .prototype(func_cls.prototype)
-        // prototype
+        // section 15.10.5.1 RegExp.prototype
         .def(context::prototype_symbol(this), proto, bind::NONE);
 
     bind::Object(this, proto)
         .class_name(cls.name)
         .prototype(obj_proto)
-        // constructor
+        // section 15.10.6.1 RegExp.prototype.constructor
         .def(context::constructor_symbol(this), constructor,
              bind::WRITABLE | bind::CONFIGURABLE)
         // section 15.10.6.2 RegExp.prototype.exec(string)
