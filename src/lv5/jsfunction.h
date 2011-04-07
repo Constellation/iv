@@ -20,6 +20,7 @@ class JSNativeFunction;
 class JSBoundFunction;
 class Error;
 class JSEnv;
+class JSInterpreterScript;
 class JSScript;
 
 class JSFunction : public JSObject {
@@ -99,7 +100,7 @@ class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(Context* ctx,
                  const FunctionLiteral* func,
-                 JSScript* script,
+                 JSInterpreterScript* script,
                  JSEnv* env);
   JSVal Call(Arguments* args,
              const JSVal& this_binding,
@@ -114,7 +115,7 @@ class JSCodeFunction : public JSFunction {
 
   static JSCodeFunction* New(Context* ctx,
                              const FunctionLiteral* func,
-                             JSScript* script,
+                             JSInterpreterScript* script,
                              JSEnv* env) {
     JSCodeFunction* const obj =
         new JSCodeFunction(ctx, func, script, env);
@@ -139,7 +140,7 @@ class JSCodeFunction : public JSFunction {
   }
  private:
   const FunctionLiteral* function_;
-  JSScript* script_;
+  JSInterpreterScript* script_;
   JSEnv* env_;
 };
 

@@ -22,7 +22,7 @@ namespace {
 
 class ScriptScope : private core::Noncopyable<ScriptScope>::type {
  public:
-  ScriptScope(Context* ctx, JSScript* script)
+  ScriptScope(Context* ctx, JSInterpreterScript* script)
     : ctx_(ctx),
       prev_(ctx->current_script()) {
     ctx_->set_current_script(script);
@@ -32,7 +32,7 @@ class ScriptScope : private core::Noncopyable<ScriptScope>::type {
   }
  private:
   Context* ctx_;
-  JSScript* prev_;
+  JSInterpreterScript* prev_;
 };
 
 }  // namespace
@@ -194,9 +194,9 @@ bool Context::InCurrentLabelSet(
   return stmt == target_;
 }
 
-bool Context::Run(JSScript* script) {
+bool Context::Run(JSInterpreterScript* script) {
   const ScriptScope scope(this, script);
-  interp_.Run(script->function(), script->type() == JSScript::kEval);
+  interp_.Run(script->function(), script->type() == JSInterpreterScript::kEval);
   assert(!ret_.IsEmpty() || error_);
   return error_;
 }

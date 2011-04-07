@@ -15,7 +15,7 @@ namespace lv5 {
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
                                const FunctionLiteral* func,
-                               JSScript* script,
+                               JSInterpreterScript* script,
                                JSEnv* env)
   : function_(func),
     script_(script),

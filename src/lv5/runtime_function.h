@@ -101,8 +101,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* error) {
     builder.Append("\n})");
   }
   JSString* const source = builder.Build(args.ctx());
-  JSScript* const script = CompileScript(args.ctx(), source,
-                                         false, ERROR(error));
+  JSInterpreterScript* const script = CompileScript(args.ctx(), source, false, ERROR(error));
   detail::CheckFunctionExpressionIsOne(*script->function(), ERROR(error));
   const Interpreter::ContextSwitcher switcher(ctx,
                                               ctx->global_env(),

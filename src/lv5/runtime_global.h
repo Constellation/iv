@@ -229,8 +229,8 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(),
-                                         false, ERROR(error));
+  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
+                                                    false, ERROR(error));
                                          //  ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
@@ -264,8 +264,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(),
-                                         ctx->IsStrict(), ERROR(error));
+  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
+                                                    ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
