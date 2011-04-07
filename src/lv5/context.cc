@@ -40,7 +40,7 @@ class ScriptScope : private core::Noncopyable<ScriptScope>::type {
 namespace context {
 
 const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
-  return ctx->GetSymbolString(sym);
+  return ctx->global_data()->GetSymbolString(sym);
 }
 
 const Class& Cls(Context* ctx, const Symbol& name) {
@@ -182,10 +182,6 @@ double Context::Random() {
 
 JSString* Context::ToString(Symbol sym) {
   return JSString::New(this, global_data_.GetSymbolString(sym));
-}
-
-const core::UString& Context::GetSymbolString(Symbol sym) const {
-  return global_data_.GetSymbolString(sym);
 }
 
 bool Context::InCurrentLabelSet(

@@ -246,8 +246,6 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
  private:
-  const core::UString& GetSymbolString(Symbol sym) const;
-
   GlobalData global_data_;
   StackResource stack_resource_;
   JSEnv* lexical_env_;
