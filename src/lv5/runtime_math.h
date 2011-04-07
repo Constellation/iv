@@ -7,6 +7,7 @@
 #include "lv5/jsval.h"
 #include "lv5/context.h"
 #include "lv5/error.h"
+#include "lv5/math.h"
 
 namespace iv {
 namespace lv5 {
@@ -164,12 +165,7 @@ inline JSVal MathRound(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Math.round", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
-    const double res = std::ceil(x);
-    if (res - x > 0.5) {
-      return res - 1;
-    } else {
-      return res;
-    }
+    return Round(x);
   }
   return JSNaN;
 }
