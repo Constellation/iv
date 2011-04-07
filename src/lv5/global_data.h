@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_GLOBAL_DATA_H_
 #define _IV_LV5_GLOBAL_DATA_H_
 #include <tr1/array>
+#include <tr1/cstdio>
 #include <boost/random.hpp>
 #include "dtoa.h"
 #include "conversions.h"
