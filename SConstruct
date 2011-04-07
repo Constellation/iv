@@ -164,8 +164,10 @@ def Build():
 
   (object_files, main_prog) = Main(env, [header])
   env.Alias('main', [main_prog])
+
   lv5_prog, lv5_objs, lv5_libs = Lv5(env, object_files)
   env.Alias('lv5', [lv5_prog])
+
   test_prog = Test(env, object_files)
   test_lv5_prog = TestLv5(env, lv5_objs, lv5_libs)
   test_alias = env.Alias('test', test_prog, test_prog[0].abspath)

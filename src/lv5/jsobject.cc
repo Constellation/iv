@@ -48,7 +48,7 @@ JSObject::JSObject(JSObject* proto,
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint::Object hint, Error* e) {
-  Arguments args(ctx, ERROR(e));
+  ScopedArguments args(ctx, ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
     TRY(ctx, ctx->toString_symbol(), args, e);
@@ -76,7 +76,7 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
-      Arguments a(ctx, ERROR(e));
+      ScopedArguments a(ctx, ERROR(e));
       return getter->AsCallable()->Call(&a, this, e);
     } else {
       return JSUndefined;
@@ -290,7 +290,7 @@ void JSObject::Put(Context* ctx,
   if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
-    Arguments args(ctx, 1, ERROR_VOID(e));
+    ScopedArguments args(ctx, 1, ERROR_VOID(e));
     args[0] = val;
     accs->set()->AsCallable()->Call(&args, this, e);
   } else {

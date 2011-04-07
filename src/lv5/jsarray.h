@@ -44,6 +44,12 @@ class JSArray : public JSObject {
   void CompactionToLength(uint32_t length);
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
 
+
+  // use VM only
+  void Set(uint32_t index, const JSVal& val) {
+    vector_[index] = val;
+  }
+
   JSVals vector_;
   Map* map_;
   bool dense_;

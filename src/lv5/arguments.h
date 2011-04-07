@@ -93,47 +93,13 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     }
   }
 
-  explicit Arguments(Context* ctx, Error* e)
+  Arguments(Context* ctx,
+            VMStack::pointer ptr,
+            std::size_t n)
     : ctx_(ctx),
-      stack_(),
-      size_(0),
-      constructor_call_(false) {
-    stack_ = context::stack(ctx_)->Gain(size_ + 1);
-    if (!stack_) {  // stack overflow
-      e->Report(Error::Range, "maximum call stack size exceeded");
-    } else {
-      assert(stack_);
-      // init
-      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
-    }
-  }
-
-  Arguments(Context* ctx, std::size_t n, Error* e)
-    : ctx_(ctx),
-      stack_(),
+      stack_(ptr),
       size_(n),
       constructor_call_(false) {
-    stack_ = context::stack(ctx_)->Gain(size_ + 1);
-    if (!stack_) {  // stack overflow
-      e->Report(Error::Range, "maximum call stack size exceeded");
-    } else {
-      assert(stack_);
-      // init
-      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
-    }
-  }
-
-  ~Arguments() {
-    Release();
-  }
-
-  // this method is too primitive
-  // only use in like tail call proper
-  void Release() {
-    if (stack_) {
-      context::stack(ctx_)->Release(size_ + 1);
-    }
-    stack_ = NULL;
   }
 
   Context* ctx() const {
@@ -156,11 +122,58 @@ class Arguments : private core::Noncopyable<Arguments>::type {
     return constructor_call_;
   }
 
- private:
+ protected:
+  // for ScopedArguments
+  Arguments(Context* ctx, Error* e)
+    : ctx_(ctx),
+      stack_(),
+      size_(0),
+      constructor_call_(false) { }
+
+  Arguments(Context* ctx, std::size_t n, Error* e)
+    : ctx_(ctx),
+      stack_(),
+      size_(n),
+      constructor_call_(false) { }
+
   Context* ctx_;
   VMStack::pointer stack_;
   VMStack::size_type size_;
   bool constructor_call_;
+};
+
+class ScopedArguments : public Arguments {
+ public:
+  ScopedArguments(Context* ctx, Error* e)
+    : Arguments(ctx, e) {
+    stack_ = context::stack(ctx_)->Gain(size_ + 1);
+    if (!stack_) {  // stack overflow
+      e->Report(Error::Range, "maximum call stack size exceeded");
+    } else {
+      assert(stack_);
+      // init
+      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    }
+  }
+
+  ScopedArguments(Context* ctx, std::size_t n, Error* e)
+    : Arguments(ctx, n, e) {
+    stack_ = context::stack(ctx_)->Gain(size_ + 1);
+    if (!stack_) {  // stack overflow
+      e->Report(Error::Range, "maximum call stack size exceeded");
+    } else {
+      assert(stack_);
+      // init
+      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+    }
+  }
+
+  ~ScopedArguments() {
+    if (stack_) {
+      context::stack(ctx_)->Release(size_ + 1);
+    }
+    stack_ = NULL;
+  }
 };
 
 } }  // namespace iv::lv5

@@ -104,10 +104,10 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
   const JSVal join = obj->Get(args.ctx(),
                               args.ctx()->Intern("join"), ERROR(e));
   if (join.IsCallable()) {
-    Arguments a(args.ctx(), ERROR(e));
+    ScopedArguments a(args.ctx(), ERROR(e));
     return join.object()->AsCallable()->Call(&a, obj, e);
   } else {
-    Arguments a(args.ctx(), ERROR(e));
+    ScopedArguments a(args.ctx(), ERROR(e));
     a.set_this_binding(obj);
     return ObjectToString(a, e);
   }
@@ -130,7 +130,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   // implementation depended locale based separator
   const char separator = ',';
   const Symbol toLocaleString = ctx->Intern("toLocaleString");
-  Arguments args_list(ctx, ERROR(e));
+  ScopedArguments args_list(ctx, ERROR(e));
   StringBuilder builder;
   {
     const JSVal first = array->GetWithIndex(ctx, 0, ERROR(e));
@@ -521,7 +521,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     std::tr1::array<int64_t, kStackSize> lstack, rstack;
     lstack[0] = 0;
     rstack[0] = len - 1;
-    Arguments a(ctx, 2, ERROR(e));
+    ScopedArguments a(ctx, 2, ERROR(e));
     while (sp > 0) {
       --sp;
       l = lstack[sp];
@@ -906,7 +906,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3, ERROR(e));
+  ScopedArguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
@@ -946,7 +946,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3, ERROR(e));
+  ScopedArguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
@@ -986,7 +986,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  Arguments arg_list(ctx, 3, ERROR(e));
+  ScopedArguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
@@ -1022,7 +1022,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
 
   JSArray* const ary = JSArray::New(ctx, len);
 
-  Arguments arg_list(ctx, 3, ERROR(e));
+  ScopedArguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
@@ -1068,7 +1068,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
 
   JSArray* const ary = JSArray::New(ctx);
 
-  Arguments arg_list(ctx, 3, ERROR(e));
+  ScopedArguments arg_list(ctx, 3, ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   arg_list[2] = obj;
 
@@ -1147,7 +1147,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
     }
   }
 
-  Arguments arg_list(ctx, 4, ERROR(e));
+  ScopedArguments arg_list(ctx, 4, ERROR(e));
   arg_list[3] = obj;
 
   for (;k < len; ++k) {
@@ -1213,7 +1213,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
     }
   }
 
-  Arguments arg_list(ctx, 4, ERROR(e));
+  ScopedArguments arg_list(ctx, 4, ERROR(e));
   arg_list[3] = obj;
 
   while (k--) {

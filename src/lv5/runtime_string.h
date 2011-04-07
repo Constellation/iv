@@ -346,7 +346,7 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
   template<typename Builder>
   void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
     using std::tr1::get;
-    Arguments a(ctx_, 3 + vec_.size(), ERROR_VOID(e));
+    ScopedArguments a(ctx_, 3 + vec_.size(), ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
                          str_->begin() + get<0>(res),
                          str_->begin() + get<1>(res));
@@ -618,7 +618,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
   if (args_count == 0 ||
       !args[0].IsObject() ||
       (args[0].object()->class_name() != ctx->Intern("RegExp"))) {
-    Arguments a(ctx, 1, ERROR(e));
+    ScopedArguments a(ctx, 1, ERROR(e));
     if (args_count == 0) {
       a[0] = JSUndefined;
     } else {
@@ -697,7 +697,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     builder.Append(str->begin(), str->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
-      Arguments a(ctx, 3, ERROR(e));
+      ScopedArguments a(ctx, 3, ERROR(e));
       a[0] = search_str;
       a[1] = static_cast<double>(loc);
       a[2] = str;
@@ -734,7 +734,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
     regexp = JSRegExp::New(
         ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
-    Arguments a(ctx, 1, ERROR(e));
+    ScopedArguments a(ctx, 1, ERROR(e));
     a[0] = args[0];
     const JSVal res = RegExpConstructor(a, ERROR(e));
     assert(res.IsObject());

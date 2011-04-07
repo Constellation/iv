@@ -1433,7 +1433,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
     e->Report(Error::Type, "toISOString is not function");
     return JSUndefined;
   }
-  Arguments a(ctx, ERROR(e));
+  ScopedArguments a(ctx, ERROR(e));
   return toISO.object()->AsCallable()->Call(&a, obj, e);
 }
 

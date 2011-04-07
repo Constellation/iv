@@ -138,6 +138,10 @@ class JSString : public gc {
     return lhs.string_ >= rhs.string_;
   }
 
+  inline int compare(const core::UStringPiece& piece) const {
+    return string_.compare(0, string_.size(), piece.data(), piece.size());
+  }
+
   inline std::size_t hash_value() const {
     return hash_value_;
   }

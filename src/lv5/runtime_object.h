@@ -446,7 +446,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* error) {
                   "toString is not callable");
     return JSUndefined;
   }
-  Arguments arguments(args.ctx(), 0);
+  ScopedArguments arguments(args.ctx(), 0);
   return toString.object()->AsCallable()->Call(&arguments, obj, error);
 }
 

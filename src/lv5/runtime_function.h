@@ -151,7 +151,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
-      Arguments a(ctx, ERROR(e));
+      ScopedArguments a(ctx, ERROR(e));
       if (args_size == 0) {
         return func->Call(&a, JSUndefined, e);
       } else {
@@ -182,7 +182,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
 
-    Arguments args_list(ctx, n, ERROR(e));
+    ScopedArguments args_list(ctx, n, ERROR(e));
     uint32_t index = 0;
     while (index < n) {
         args_list[index] = arg_array->GetWithIndex(
@@ -206,7 +206,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
 
-    Arguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, ERROR(e));
+    ScopedArguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, ERROR(e));
 
     if (args_size > 1) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());

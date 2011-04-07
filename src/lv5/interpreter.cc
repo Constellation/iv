@@ -1421,7 +1421,7 @@ void Interpreter::Visit(const FunctionCall* call) {
   const JSVal target = ctx_->ret();
   const JSVal func = GetValue(target, CHECK);
 
-  Arguments args(ctx_, call->args().size(), CHECK);
+  ScopedArguments args(ctx_, call->args().size(), CHECK);
   std::size_t n = 0;
   BOOST_FOREACH(const Expression* const expr, call->args()) {
     EVAL(expr);
@@ -1464,7 +1464,7 @@ void Interpreter::Visit(const ConstructorCall* call) {
   EVAL(call->target());
   const JSVal func = GetValue(ctx_->ret(), CHECK);
 
-  Arguments args(ctx_, call->args().size(), CHECK);
+  ScopedArguments args(ctx_, call->args().size(), CHECK);
   args.set_constructor_call(true);
   std::size_t n = 0;
   BOOST_FOREACH(const Expression* const expr, call->args()) {
@@ -1521,7 +1521,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          Arguments a(ctx_, error);
+          ScopedArguments a(ctx_, error);
           if (*error) {
             return JSUndefined;
           }
@@ -1603,7 +1603,7 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        Arguments a(ctx_, error);
+        ScopedArguments a(ctx_, error);
         if (*error) {
           return;
         }
