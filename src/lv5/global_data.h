@@ -155,8 +155,19 @@ class GlobalData {
     return random_engine_();
   }
 
+  const JSObject* global_obj() const {
+    return &global_obj_;
+  }
+
+  JSObject* global_obj() {
+    return &global_obj_;
+  }
+
  private:
   random_generator random_engine_;
+
+  JSObject global_obj_;
+
   SymbolTable table_;
   Symbol length_symbol_;
   Symbol eval_symbol_;

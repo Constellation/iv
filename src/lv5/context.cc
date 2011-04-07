@@ -146,12 +146,12 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 }  // namespace iv::lv5::context
 
 Context::Context()
-  : stack_resource_(),
-    global_obj_(),
+  : global_data_(),
+    stack_resource_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL),
-    binding_(&global_obj_),
+    binding_(global_data_.global_obj()),
     interp_(),
     mode_(NORMAL),
     ret_(),
@@ -161,12 +161,10 @@ Context::Context()
     builtins_(),
     strict_(false),
     generate_script_counter_(0),
-    global_data_(),
     current_script_(NULL),
     throw_type_error_(this) {
-  JSObjectEnv* const env = Interpreter::NewObjectEnvironment(this,
-                                                             &global_obj_,
-                                                             NULL);
+  JSObjectEnv* const env =
+      Interpreter::NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
@@ -240,12 +238,8 @@ void Context::Initialize() {
 
   builtins_[func_cls.name] = func_cls;
 
-  global_obj_.DefineOwnProperty(
-      this, func_cls.name,
-      DataDescriptor(func_constructor,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::CONFIGURABLE),
-      false, NULL);
+  bind::Object global_binder(this, global_obj());
+  global_binder.def(func_cls.name, func_constructor, bind::W | bind::C);
 
   func_proto->DefineOwnProperty(
       this, context::constructor_symbol(this),
@@ -492,12 +486,7 @@ void Context::Initialize() {
             PropertyDescriptor::CONFIGURABLE),
         false, NULL);
 
-    global_obj_.DefineOwnProperty(
-        this, obj_cls.name,
-        DataDescriptor(obj_constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(obj_cls.name, obj_constructor, bind::W | bind::C);
   }
 
   {
@@ -515,12 +504,7 @@ void Context::Initialize() {
     };
     builtins_[cls.name] = cls;
 
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -596,12 +580,7 @@ void Context::Initialize() {
     };
     builtins_[cls.name] = cls;
 
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -675,12 +654,7 @@ void Context::Initialize() {
     };
     builtins_[cls.name] = cls;
 
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -715,12 +689,7 @@ void Context::Initialize() {
     };
     builtins_[cls.name] = cls;
 
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -810,12 +779,7 @@ void Context::Initialize() {
                        PropertyDescriptor::NONE),
         false, NULL);
 
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     {
       // section 15.11.6.1 EvalError
@@ -839,12 +803,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
           DataDescriptor(
@@ -888,12 +847,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -938,12 +892,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -988,12 +937,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -1038,12 +982,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -1088,12 +1027,7 @@ void Context::Initialize() {
       };
       sub_proto->set_class_name(sub_cls.name);
       builtins_[sym] = sub_cls;
-      global_obj_.DefineOwnProperty(
-          this, sym,
-          DataDescriptor(sub_constructor,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::CONFIGURABLE),
-          false, NULL);
+      global_binder.def(sym, sub_constructor, bind::W | bind::C);
 
       sub_proto->DefineOwnProperty(
           this, context::Intern(this, "name"),
@@ -1121,12 +1055,7 @@ void Context::Initialize() {
   {
     // section 15.8 Math
     JSObject* const math = JSObject::NewPlain(this);
-    global_obj_.DefineOwnProperty(
-        this, context::Intern(this, "Math"),
-        DataDescriptor(math,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def("Math", math, bind::W | bind::C);
 
     bind::Object(this, math)
         .class_name("Math")
@@ -1199,13 +1128,7 @@ void Context::Initialize() {
       proto
     };
     builtins_[cls.name] = cls;
-
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -1339,13 +1262,7 @@ void Context::Initialize() {
       proto
     };
     builtins_[cls.name] = cls;
-
-    global_obj_.DefineOwnProperty(
-        this, cls.name,
-        DataDescriptor(constructor,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def(cls.name, constructor, bind::W | bind::C);
 
     bind::Object(this, constructor)
         .class_name(func_cls.name)
@@ -1370,12 +1287,7 @@ void Context::Initialize() {
   {
     // section 15.12 JSON
     JSObject* const json = JSObject::NewPlain(this);
-    global_obj_.DefineOwnProperty(
-        this, context::Intern(this, "JSON"),
-        DataDescriptor(json,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
-        false, NULL);
+    global_binder.def("JSON", json, bind::W | bind::C);
     bind::Object(this, json)
         .class_name("JSON")
         .prototype(obj_proto)
@@ -1387,7 +1299,7 @@ void Context::Initialize() {
 
   {
     // Global
-    bind::Object(this, &global_obj_)
+    global_binder
         .class_name("global")
         .prototype(obj_proto)
         // section 15.1.1.1 NaN

@@ -57,11 +57,11 @@ class Context : private core::Noncopyable<Context>::type {
   Context();
 
   const JSObject* global_obj() const {
-    return &global_obj_;
+    return global_data_.global_obj();
   }
 
   JSObject* global_obj() {
-    return &global_obj_;
+    return global_data_.global_obj();
   }
 
   JSEnv* lexical_env() const {
@@ -252,8 +252,8 @@ class Context : private core::Noncopyable<Context>::type {
  private:
   const core::UString& GetSymbolString(Symbol sym) const;
 
+  GlobalData global_data_;
   StackResource stack_resource_;
-  JSObject global_obj_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;
@@ -267,7 +267,6 @@ class Context : private core::Noncopyable<Context>::type {
   trace::HashMap<Symbol, Class>::type builtins_;
   bool strict_;
   std::size_t generate_script_counter_;
-  GlobalData global_data_;
   JSScript* current_script_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
 };
