@@ -48,6 +48,7 @@ struct Layout<4, true> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
+        uint32_t uint32_;
         void* pointer_;
       } payload_;
       uint32_t tag_;
@@ -73,6 +74,7 @@ struct Layout<8, true> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
+        uint32_t uint32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -96,6 +98,7 @@ struct Layout<4, false> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
+        uint32_t uint32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -120,6 +123,7 @@ struct Layout<8, false> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
+        uint32_t uint32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -166,9 +170,10 @@ static const uint32_t kStringTag      = 0xfffffff7;
 static const uint32_t kObjectTag      = 0xfffffff6;
 static const uint32_t kErrorTag       = 0xfffffff5;
 static const uint32_t kJSValRefTag    = 0xfffffff4;  // use VM only
-static const uint32_t kNumberTag      = 0xfffffff0;
-static const uint32_t kHighestTag     = kTrueTag;
-static const uint32_t kLowestTag      = kNumberTag;
+static const uint32_t kNumberTag      = 0xfffffff1;
+static const uint32_t kUInt32Tag      = 0xfffffff0;
+
+struct UInt32Tag { };
 
 }  // namespace iv::lv5::detail
 
@@ -262,9 +267,11 @@ class JSVal {
     : value_() {
     set_value(val);
   }
+
   JSVal(const value_type& val)  // NOLINT
     : value_(val) {
   }
+
   template<typename T>
   JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
     typedef std::tr1::is_same<bool, T> cond;
@@ -281,48 +288,66 @@ class JSVal {
   inline void set_value(double val) {
     value_.number_.as_ = (val == val) ? val : JSValData::kNaN;
   }
+
+  inline void set_value_uint32(uint32_t val) {
+    value_.struct_.payload_.uint32_ = val;
+    value_.struct_.tag_ = detail::kUInt32Tag;
+  }
+
   inline void set_value(JSObject* val) {
     value_.struct_.payload_.object_ = val;
     value_.struct_.tag_ = detail::kObjectTag;
   }
+
   inline void set_value(JSString* val) {
     value_.struct_.payload_.string_ = val;
     value_.struct_.tag_ = detail::kStringTag;
   }
+
   inline void set_value(JSReference* ref) {
     value_.struct_.payload_.reference_ = ref;
     value_.struct_.tag_ = detail::kReferenceTag;
   }
+
   inline void set_value(JSEnv* ref) {
     value_.struct_.payload_.environment_ = ref;
     value_.struct_.tag_ = detail::kEnvironmentTag;
   }
+
   inline void set_value(JSTrueKeywordType val) {
     value_.struct_.payload_.boolean_ = true;
     value_.struct_.tag_ = detail::kBoolTag;
   }
+
   inline void set_value(JSFalseKeywordType val) {
     value_.struct_.payload_.boolean_ = false;
     value_.struct_.tag_ = detail::kBoolTag;
   }
+
   inline void set_value(JSNullKeywordType val) {
     value_.struct_.tag_ = detail::kNullTag;
   }
+
   inline void set_value(JSUndefinedKeywordType val) {
     value_.struct_.tag_ = detail::kUndefinedTag;
   }
+
   inline void set_value(JSEmptyKeywordType val) {
     value_.struct_.tag_ = detail::kEmptyTag;
   }
+
   inline void set_value(JSNaNKeywordType val) {
     value_.number_.as_ = JSValData::kNaN;
   }
+
   inline void set_null() {
     value_.struct_.tag_ = detail::kNullTag;
   }
+
   inline void set_undefined() {
     value_.struct_.tag_ = detail::kUndefinedTag;
   }
+
   inline void set_empty() {
     value_.struct_.tag_ = detail::kEmptyTag;
   }
@@ -347,9 +372,18 @@ class JSVal {
     return value_.struct_.payload_.object_;
   }
 
-  inline const double& number() const {
+  inline double number() const {
     assert(IsNumber());
-    return value_.number_.as_;
+    if (IsUInt32()) {
+      return uint32();
+    } else {
+      return value_.number_.as_;
+    }
+  }
+
+  inline uint32_t uint32() const {
+    assert(IsUInt32());
+    return value_.struct_.payload_.uint32_;
   }
 
   inline bool boolean() const {
@@ -365,36 +399,51 @@ class JSVal {
   inline bool IsEmpty() const {
     return value_.struct_.tag_ == detail::kEmptyTag;
   }
+
   inline bool IsUndefined() const {
     return value_.struct_.tag_ == detail::kUndefinedTag;
   }
+
   inline bool IsNull() const {
     return value_.struct_.tag_ == detail::kNullTag;
   }
+
   inline bool IsBoolean() const {
     return value_.struct_.tag_ == detail::kBoolTag;
   }
+
   inline bool IsString() const {
     return value_.struct_.tag_ == detail::kStringTag;
   }
+
   inline bool IsObject() const {
     return value_.struct_.tag_ == detail::kObjectTag;
   }
-  inline bool IsNumber() const {
-    return value_.struct_.tag_ < detail::kLowestTag;
+
+  inline bool IsUInt32() const {
+    return value_.struct_.tag_ == detail::kUInt32Tag;
   }
+
+  inline bool IsNumber() const {
+    return value_.struct_.tag_ < detail::kNumberTag;
+  }
+
   inline bool IsReference() const {
     return value_.struct_.tag_ == detail::kReferenceTag;
   }
+
   inline bool IsEnvironment() const {
     return value_.struct_.tag_ == detail::kEnvironmentTag;
   }
+
   inline bool IsPrimitive() const {
     return IsNumber() || IsString() || IsBoolean();
   }
+
   inline bool IsPtr() const {
     return IsObject() || IsString() || IsReference() || IsEnvironment();
   }
+
   JSString* TypeOf(Context* ctx) const;
 
   inline uint32_t type() const {
@@ -454,7 +503,17 @@ class JSVal {
     }
   }
 
- protected:  // for railgun::JSValRef
+  static inline JSVal UInt32(const uint32_t& val) {
+    return JSVal(val, detail::UInt32Tag());
+  }
+
+ protected:
+  JSVal(const uint32_t& val, detail::UInt32Tag dummy)
+    : value_() {
+    set_value_uint32(val);
+  }
+
+  // protected is for railgun::JSValRef
   value_type value_;
 };
 
