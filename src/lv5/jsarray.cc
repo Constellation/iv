@@ -20,7 +20,7 @@ namespace lv5 {
 
 JSArray::JSArray(Context* ctx, std::size_t len)
   : JSObject(),
-    vector_((len < detail::kMaxVectorSize) ? len : 4, JSEmpty),
+    vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
     map_(NULL),
     dense_(true),
     length_(len) {
@@ -393,26 +393,6 @@ void JSArray::GetOwnPropertyNames(Context* ctx,
     }
   }
   JSObject::GetOwnPropertyNames(ctx, vec, mode);
-}
-
-JSArray* JSArray::New(Context* ctx) {
-  JSArray* const ary = new JSArray(ctx, 0);
-  const Class& cls = context::Cls(ctx, "Array");
-  ary->set_class_name(cls.name);
-  ary->set_prototype(cls.prototype);
-  return ary;
-}
-
-JSArray* JSArray::New(Context* ctx, std::size_t n) {
-  JSArray* const ary = new JSArray(ctx, n);
-  const Class& cls = context::Cls(ctx, "Array");
-  ary->set_class_name(cls.name);
-  ary->set_prototype(cls.prototype);
-  return ary;
-}
-
-JSArray* JSArray::NewPlain(Context* ctx) {
-  return new JSArray(ctx, 0);
 }
 
 bool JSArray::IsDefaultDescriptor(const PropertyDescriptor& desc) {

@@ -1135,16 +1135,16 @@ class Compiler
   void Visit(const ArrayLiteral* lit) {
     typedef ArrayLiteral::MaybeExpressions Items;
     const Items& items = lit->items();
+    Emit<OP::BUILD_ARRAY>(items.size());
+    uint16_t current = 0;
     for (Items::const_iterator it = items.begin(),
-         last = items.end(); it != last; ++it) {
+         last = items.end(); it != last; ++it, ++current) {
       const core::Maybe<const Expression>& expr = *it;
       if (expr) {
         expr.Address()->Accept(this);
-      } else {
-        Emit<OP::PUSH_EMPTY>();
+        Emit<OP::INIT_ARRAY_ELEMENT>(current);
       }
     }
-    Emit<OP::BUILD_ARRAY>(items.size());
   }
 
   void Visit(const ObjectLiteral* lit) {

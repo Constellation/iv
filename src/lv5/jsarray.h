@@ -3,6 +3,8 @@
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
+#include "lv5/class.h"
+#include "lv5/context_utils.h"
 #include "lv5/railgun_fwd.h"
 namespace iv {
 namespace lv5 {
@@ -38,19 +40,52 @@ class JSArray : public JSObject {
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const;
 
-  static JSArray* New(Context* ctx);
-  static JSArray* New(Context* ctx, std::size_t n);
-  static JSArray* NewPlain(Context* ctx);
+  static JSArray* New(Context* ctx) {
+    JSArray* const ary = new JSArray(ctx, 0);
+    const Class& cls = context::Cls(ctx, "Array");
+    ary->set_class_name(cls.name);
+    ary->set_prototype(cls.prototype);
+    return ary;
+  }
+
+  static JSArray* New(Context* ctx, std::size_t n) {
+    JSArray* const ary = new JSArray(ctx, n);
+    const Class& cls = context::Cls(ctx, "Array");
+    ary->set_class_name(cls.name);
+    ary->set_prototype(cls.prototype);
+    return ary;
+  }
+
+  static JSArray* NewPlain(Context* ctx) {
+    return new JSArray(ctx, 0);
+  }
 
   void Compaction(Context* ctx);
  private:
   void CompactionToLength(uint32_t length);
   static bool IsDefaultDescriptor(const PropertyDescriptor& desc);
 
-
   // use VM only
+  //   ReservedNew Reserve Set
+  static JSArray* ReservedNew(Context* ctx, uint32_t len) {
+    JSArray* ary = New(ctx, len);
+    ary->Reserve(len);
+    return ary;
+  }
+
+  void Reserve(uint32_t len) {
+    if (len > detail::kMaxVectorSize) {
+      // alloc map
+      map_ = new(GC)Map();
+    }
+  }
+
   void Set(uint32_t index, const JSVal& val) {
-    vector_[index] = val;
+    if (detail::kMaxVectorSize > index) {
+      vector_[index] = val;
+    } else {
+      (*map_)[index] = val;
+    }
   }
 
   JSVals vector_;

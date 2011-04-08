@@ -658,16 +658,19 @@ class VM {
         }
 
         case OP::BUILD_ARRAY: {
-          JSArray* x = JSArray::New(ctx_, oparg);
+          JSArray* x = JSArray::ReservedNew(ctx_, oparg);
           if (x) {
-            for (; --oparg <= 0;) {
-              const JSVal w = POP();
-              x->Set(oparg, w);
-            }
             PUSH(x);
             continue;
           }
           break;
+        }
+
+        case OP::INIT_ARRAY_ELEMENT: {
+          const JSVal w = POP();
+          JSArray* ary = static_cast<JSArray*>(TOP().object());
+          ary->Set(oparg, w);
+          continue;
         }
 
         case OP::BUILD_OBJECT: {
