@@ -189,7 +189,7 @@ V(BUILD_ARRAY)\
 V(ERROR)\
 \
 /* opcodes over this requres 2 argument */\
-V(EXTENDED_ARG)\
+V(HAVE_EX_ARGUMENT)\
 
 struct ERR {
   enum Type {
@@ -232,6 +232,10 @@ struct OP {
   static inline bool HasStrictOP(uint8_t opcode) {
     return IV_LV5_RAILGUN_HAS_STRICT_OP(opcode);
   }
+
+//  static inline bool HasExArg(uint8_t opcode) {
+//    return opcode >= HAVE_EX_ARGUMENT;
+//  }
 
   static inline bool HasArg(uint8_t opcode) {
     return opcode >= HAVE_ARGUMENT;

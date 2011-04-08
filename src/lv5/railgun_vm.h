@@ -102,7 +102,7 @@ class VM {
 
   void Execute(Frame* frame) {
     int opcode;
-    int oparg;
+    uint32_t oparg;
     const Code& code = frame->code();
     const uint8_t* const first_instr = frame->data();
     const uint8_t* instr = first_instr;
@@ -113,7 +113,9 @@ class VM {
 #define INSTR_OFFSET() reinterpret_cast<uint8_t*>(instr - first_instr)
 #define NEXTOP() (*instr++)
 #define NEXTARG() (instr += 2, (instr[-1] << 8) + instr[-2])
+// #define NEXTARGEX() (instr += 4, (instr[-1] << 24) + (instr[-2] << 16) + (instr[-3] << 8) + instr[-4])
 #define PEEKARG() ((instr[2] << 8) + instr[1])
+// #define PEEKARGEX() ((instr[4] << 24) + (instr[3] << 16) + (instr[2] << 8) + instr[1])
 #define JUMPTO(x) (instr = first_instr + (x))
 #define JUMPBY(x) (instr += (x))
 #define PUSH(x) (*sp++ = (x))
@@ -144,7 +146,7 @@ class VM {
     for (;;) {
       // fetch opcode
       opcode = NEXTOP();
-      oparg = (OP::HasArg(opcode)) ? NEXTARG() : 0;
+      oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
 
       // if ok, use continue.
       // if error, use break.
