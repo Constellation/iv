@@ -1,7 +1,6 @@
 #ifndef _IV_LV5_CONTEXT_H_
 #define _IV_LV5_CONTEXT_H_
-#include <tr1/unordered_map>
-#include <tr1/type_traits>
+#include <cstddef>
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
@@ -10,11 +9,10 @@
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsfunction.h"
-#include "lv5/global_data.h"
 #include "lv5/class.h"
 #include "lv5/error.h"
 #include "lv5/jsast.h"
-#include "lv5/gc_template.h"
+#include "lv5/global_data.h"
 #include "lv5/context_utils.h"
 #include "lv5/stack_resource.h"
 #include "lv5/vm_stack.h"

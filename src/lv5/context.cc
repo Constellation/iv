@@ -4,6 +4,7 @@
 #include <cstring>
 #include "ustring.h"
 #include "dtoa.h"
+#include "lv5/jsenv.h"
 #include "lv5/jsfunction.h"
 #include "lv5/arguments.h"
 #include "lv5/context.h"
