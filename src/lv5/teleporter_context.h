@@ -1,8 +1,10 @@
 #ifndef _IV_LV5_TELEPORTER_CONTEXT_H_
 #define _IV_LV5_TELEPORTER_CONTEXT_H_
 #include "lv5/context.h"
+#include "lv5/jserror.h"
 #include "lv5/teleporter_fwd.h"
 #include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter_jsscript.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -46,7 +48,14 @@ class Context : public iv::lv5::Context {
     teleporter::JSScript* prev_;
   };
 
-  bool Run(teleporter::JSScript* script);
+  bool Run(teleporter::JSScript* script) {
+    const ScriptScope scope(this, script);
+    interp_.Run(script->function(),
+                script->type() == teleporter::JSScript::kEval);
+    assert(!ret_.IsEmpty() || error_);
+    return error_;
+  }
+
 
   JSVal this_binding() const {
     return binding_;
@@ -73,7 +82,10 @@ class Context : public iv::lv5::Context {
     mode_ = mode;
   }
 
-  JSVal ErrorVal();
+  JSVal ErrorVal() {
+    return JSError::Detail(this, &error_);
+  }
+
 
   const Error& error() const {
     return error_;
