@@ -12,7 +12,7 @@ class JSStringObject : public JSObject {
   JSStringObject(Context* ctx, JSString* value)
     : value_(value) {
     DefineOwnProperty(ctx, context::length_symbol(ctx),
-                      DataDescriptor(value->size(),
+                      DataDescriptor(JSVal::UInt32(value->size()),
                                      PropertyDescriptor::NONE),
                                      false, NULL);
   }

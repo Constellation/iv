@@ -1317,7 +1317,7 @@ void Interpreter::Visit(const RegExpLiteral* regexp) {
 void Interpreter::Visit(const ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
   JSArray* const ary = JSArray::New(ctx_);
-  std::size_t current = 0;
+  uint32_t current = 0;
   BOOST_FOREACH(const core::Maybe<const Expression>& expr, literal->items()) {
     if (expr) {
       EVAL(expr.Address());
@@ -1332,7 +1332,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     ++current;
   }
   ary->Put(ctx_, context::length_symbol(ctx_),
-           current, false, CHECK);
+           JSVal::UInt32(current), false, CHECK);
   ctx_->Return(ary);
 }
 

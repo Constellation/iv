@@ -109,25 +109,25 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
     JSObject* const arg_array = second.object();
-    const JSVal len = arg_array->Get(ctx, context::length_symbol(ctx), ERROR(e));
-    if (len.IsUndefined() || len.IsNull()) {
+    const JSVal length = arg_array->Get(ctx, context::length_symbol(ctx), ERROR(e));
+    if (length.IsUndefined() || length.IsNull()) {
       e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
-    const double temp = len.ToNumber(ctx, ERROR(e));
-    const uint32_t n = core::DoubleToUInt32(temp);
-    if (n != temp) {
+    const double temp = length.ToNumber(ctx, ERROR(e));
+    const uint32_t len = core::DoubleToUInt32(temp);
+    if (len != temp) {
       e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
 
-    ScopedArguments args_list(ctx, n, ERROR(e));
+    ScopedArguments args_list(ctx, len, ERROR(e));
     uint32_t index = 0;
-    while (index < n) {
+    while (index < len) {
         args_list[index] = arg_array->GetWithIndex(
             ctx,
             index, ERROR(e));

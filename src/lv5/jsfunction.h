@@ -108,11 +108,11 @@ class JSNativeFunction : public JSFunction {
 
   JSNativeFunction() : func_() { }
 
-  JSNativeFunction(Context* ctx, value_type func, std::size_t n)
+  JSNativeFunction(Context* ctx, value_type func, uint32_t n)
     : func_(func) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
-        DataDescriptor(n,
+        DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
   }
@@ -237,19 +237,19 @@ class JSBoundFunction : public JSFunction {
       // target [[Class]] is "Function"
       const JSVal length = target_->Get(ctx, context::length_symbol(ctx), &e);
       assert(length.IsNumber());
-      const uint32_t target_param_size = core::DoubleToUInt32(length.number());
+      const uint32_t target_param_size = length.ToUInt32(ctx, &e);
       assert(target_param_size == length.number());
       const uint32_t len = (target_param_size >= bound_args_size) ?
           target_param_size - bound_args_size : 0;
       DefineOwnProperty(
           ctx, context::length_symbol(ctx),
-          DataDescriptor(len,
+          DataDescriptor(JSVal::UInt32(len),
                          PropertyDescriptor::NONE),
                          false, &e);
     } else {
       DefineOwnProperty(
           ctx, context::length_symbol(ctx),
-          DataDescriptor(0.0,
+          DataDescriptor(JSVal::UInt32(0),
                          PropertyDescriptor::NONE),
                          false, &e);
     }
@@ -271,7 +271,7 @@ class JSBoundFunction : public JSFunction {
   JSVals arguments_;
 };
 
-template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+template<JSVal (*func)(const Arguments&, Error*), uint32_t n>
 class JSInlinedFunction : public JSFunction {
  public:
   typedef JSVal(*value_type)(const Arguments&, Error*);
@@ -280,7 +280,7 @@ class JSInlinedFunction : public JSFunction {
   explicit JSInlinedFunction(Context* ctx) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
-        DataDescriptor(static_cast<double>(n),
+        DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
     DefineOwnProperty(
@@ -294,7 +294,7 @@ class JSInlinedFunction : public JSFunction {
   JSInlinedFunction(Context* ctx, const Symbol& name) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
-        DataDescriptor(static_cast<double>(n),
+        DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
     DefineOwnProperty(

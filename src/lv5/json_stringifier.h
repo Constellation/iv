@@ -228,8 +228,7 @@ class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
     const JSVal length = value->Get(
         ctx_,
         context::length_symbol(ctx_), ERROR(e));
-    const double val = length.ToNumber(ctx_, ERROR(e));
-    const uint32_t len = core::DoubleToUInt32(val);
+    const uint32_t len = length.ToUInt32(ctx_, ERROR(e));
     for (uint32_t index = 0; index < len; ++index) {
       JSVal str = Str(context::Intern(ctx_, index), value, ERROR(e));
       if (str.IsUndefined()) {

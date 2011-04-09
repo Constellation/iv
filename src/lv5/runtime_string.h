@@ -447,13 +447,14 @@ inline JSVal StringConstructor(const Arguments& args, Error* error) {
 }
 
 // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
-inline JSVal StringFromCharCode(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.fromCharCode", args, error);
+inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
+  CONSTRUCTOR_CHECK("String.fromCharCode", args, e);
+  Context* const ctx = args.ctx();
   StringBuilder builder;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    const double val = it->ToNumber(args.ctx(), ERROR(error));
-    builder.Append(core::DoubleToUInt32(val));
+    const uint32_t ch = it->ToUInt32(ctx, ERROR(e));
+    builder.Append(ch);
   }
   return builder.Build(args.ctx());
 }
@@ -810,8 +811,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   if (args_count < 2 || args[1].IsUndefined()) {
     lim = 4294967295UL;  // (1 << 32) - 1
   } else {
-    const double temp = args[1].ToNumber(ctx, ERROR(e));
-    lim = core::DoubleToUInt32(temp);
+    lim = args[1].ToUInt32(ctx, ERROR(e));
   }
 
   bool regexp = false;

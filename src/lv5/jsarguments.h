@@ -41,7 +41,8 @@ class JSArguments : public JSObject {
     binder
         .class_name(cls.name)
         .prototype(cls.prototype)
-        .def(context::length_symbol(ctx), len, bind::W | bind::C);
+        .def(context::length_symbol(ctx),
+             JSVal::UInt32(len), bind::W | bind::C);
 
     uint32_t index = len - 1;
     for (Arguments::const_reverse_iterator it = args.rbegin(),

@@ -24,7 +24,7 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
     env_(env) {
   DefineOwnProperty(
       ctx, context::length_symbol(ctx),
-      DataDescriptor(func->params().size(),
+      DataDescriptor(JSVal::UInt32(func->params().size()),
                      PropertyDescriptor::NONE),
                      false, NULL);
   // section 13.2 Creating Function Objects

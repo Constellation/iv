@@ -189,7 +189,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
         ctx,
         context::length_symbol(ctx), ERROR(e));
     assert(length.IsNumber());  // Array always number
-    const uint32_t len = core::DoubleToUInt32(length.number());
+    const uint32_t len = length.ToUInt32(ctx, ERROR(e));
     while (k < len) {
       if (elm->HasPropertyWithIndex(ctx, k)) {
         const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
@@ -226,7 +226,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
           ctx,
           context::length_symbol(ctx), ERROR(e));
       assert(length.IsNumber());  // Array always number
-      const uint32_t len = core::DoubleToUInt32(length.number());
+      const uint32_t len = length.ToUInt32(ctx, ERROR(e));
       while (k < len) {
         if (elm->HasPropertyWithIndex(ctx, k)) {
           const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
@@ -255,7 +255,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
     }
   }
   ary->Put(ctx, context::length_symbol(ctx),
-           n, false, ERROR(e));
+           JSVal::UInt32(n), false, ERROR(e));
   return ary;
 }
 
@@ -311,14 +311,15 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
       context::length_symbol(ctx), ERROR(e));
   const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
-    obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
+    obj->Put(ctx, context::length_symbol(ctx),
+             JSVal::UInt32(0), true, ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
     const JSVal element = obj->GetWithIndex(ctx, index, ERROR(e));
     obj->DeleteWithIndex(ctx, index, true, ERROR(e));
     obj->Put(ctx, context::length_symbol(ctx),
-             index, true, ERROR(e));
+             JSVal::UInt32(index), true, ERROR(e));
     return element;
   }
 }
@@ -331,7 +332,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  uint32_t n = length.ToUInt32(ctx, ERROR(e));
   bool index_over = false;
   Arguments::const_iterator it = args.begin();
   const Arguments::const_iterator last = args.end();
@@ -412,7 +413,8 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
       context::length_symbol(ctx), ERROR(e));
   const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
-    obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
+    obj->Put(ctx, context::length_symbol(ctx),
+             JSVal::UInt32(0), true, ERROR(e));
     return JSUndefined;
   }
   const JSVal first = obj->Get(ctx, context::Intern(ctx, "0"), ERROR(e));
@@ -428,7 +430,8 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
     }
   }
   obj->DeleteWithIndex(ctx, from, true, ERROR(e));
-  obj->Put(ctx, context::length_symbol(ctx), len - 1, true, ERROR(e));
+  obj->Put(ctx, context::length_symbol(ctx),
+           JSVal::UInt32(len - 1), true, ERROR(e));
   return first;
 }
 
@@ -720,7 +723,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   obj->Put(
       ctx,
       context::length_symbol(ctx),
-      len - actual_delete_count + item_count, true, ERROR(e));
+      JSVal::UInt32(len - actual_delete_count + item_count), true, ERROR(e));
   return ary;
 }
 
@@ -758,7 +761,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   obj->Put(
       ctx,
       context::length_symbol(ctx),
-      len + arg_count,
+      JSVal::UInt32(len + arg_count),
       true, ERROR(e));
   return len + arg_count;
 }
