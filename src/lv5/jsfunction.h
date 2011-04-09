@@ -224,6 +224,7 @@ class JSBoundFunction : public JSFunction {
     : target_(target),
       this_binding_(this_binding),
       arguments_(args.size() == 0 ? 0 : args.size() - 1) {
+    Error e;
     if (args.size() > 0) {
       std::copy(args.begin() + 1, args.end(), arguments_.begin());
     }
@@ -234,7 +235,7 @@ class JSBoundFunction : public JSFunction {
     // step 15
     if (target_->class_name() == cls.name) {
       // target [[Class]] is "Function"
-      const JSVal length = target_->Get(ctx, context::length_symbol(ctx), NULL);
+      const JSVal length = target_->Get(ctx, context::length_symbol(ctx), &e);
       assert(length.IsNumber());
       const uint32_t target_param_size = core::DoubleToUInt32(length.number());
       assert(target_param_size == length.number());
@@ -244,25 +245,25 @@ class JSBoundFunction : public JSFunction {
           ctx, context::length_symbol(ctx),
           DataDescriptor(len,
                          PropertyDescriptor::NONE),
-                         false, NULL);
+                         false, &e);
     } else {
       DefineOwnProperty(
           ctx, context::length_symbol(ctx),
           DataDescriptor(0.0,
                          PropertyDescriptor::NONE),
-                         false, NULL);
+                         false, &e);
     }
     JSFunction* const throw_type_error = context::throw_type_error(ctx);
     DefineOwnProperty(ctx, context::caller_symbol(ctx),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
-                      false, NULL);
+                      false, &e);
     DefineOwnProperty(ctx, context::arguments_symbol(ctx),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
-                      false, NULL);
+                      false, &e);
   }
 
   JSFunction* target_;

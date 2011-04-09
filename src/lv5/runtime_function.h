@@ -63,7 +63,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (!func->IsNativeFunction()) {
+    if (func->IsNativeFunction()) {
       return
           detail::NativeFunction::ToString<
             detail::NativeFunction::kSpecificationStrict>(args.ctx(), func, e);
