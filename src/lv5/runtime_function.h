@@ -98,7 +98,7 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
 
 }  // namespace iv::lv5::runtime::detail
 
-namespace interpreter {
+namespace teleporter {
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
@@ -119,7 +119,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   return ctx->ret();
 }
 
-}  // namespace iv::lv5::runtime::interpreter
+}  // namespace iv::lv5::runtime::teleporter
 
 inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Function.prototype", args, e);
