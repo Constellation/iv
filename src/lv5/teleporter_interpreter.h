@@ -11,7 +11,6 @@
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
 #include "lv5/teleporter_fwd.h"
-
 namespace iv {
 namespace lv5 {
 
@@ -21,6 +20,8 @@ class JSEnv;
 class JSDeclEnv;
 class JSObjectEnv;
 class JSReference;
+
+namespace teleporter {
 
 class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public AstVisitor {
@@ -130,5 +131,5 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   Context* ctx_;
 };
 
-} }  // namespace iv::lv5
+} } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_INTERPRETER_H_

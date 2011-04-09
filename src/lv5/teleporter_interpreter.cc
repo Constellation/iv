@@ -8,7 +8,6 @@
 #include "token.h"
 #include "hint.h"
 #include "maybe.h"
-#include "lv5/interpreter.h"
 #include "lv5/jsreference.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
@@ -21,11 +20,12 @@
 #include "lv5/jsarray.h"
 #include "lv5/context.h"
 #include "lv5/jsast.h"
-#include "lv5/runtime_global.h"
 #include "lv5/internal.h"
-
+#include "lv5/teleporter_interpreter.h"
+#include "lv5/runtime_teleporter.h"
 namespace iv {
 namespace lv5 {
+namespace teleporter {
 
 #define CHECK  ctx_->error());\
   if (ctx_->IsError()) {\
@@ -1445,7 +1445,7 @@ void Interpreter::Visit(const FunctionCall* call) {
               maybe_eval->symbol() == context::eval_symbol(ctx_)) {
             // direct call to eval point
             args.set_this_binding(this_binding);
-            ctx_->ret() = runtime::teleporter::DirectCallToEval(args, CHECK);
+            ctx_->ret() = teleporter::DirectCallToEval(args, CHECK);
             return;
           }
         }
@@ -1657,4 +1657,4 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
 #undef RETURN_STMT
 #undef ABRUPT
 
-} }  // namespace iv::lv5
+} } }  // namespace iv::lv5::teleporter

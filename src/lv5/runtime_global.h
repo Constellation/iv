@@ -14,6 +14,7 @@
 #include "lv5/error.h"
 #include "lv5/context.h"
 #include "lv5/internal.h"
+#include "lv5/runtime_teleporter.h"
 
 namespace iv {
 namespace lv5 {
@@ -220,74 +221,6 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
 }
 
 }  // iv::lv5::runtime::detail
-
-namespace teleporter {
-
-inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
-  if (!args.size()) {
-    return JSUndefined;
-  }
-  const JSVal& first = args[0];
-  if (!first.IsString()) {
-    return first;
-  }
-  Context* const ctx = args.ctx();
-  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
-                                                    false, ERROR(error));
-                                         //  ctx->IsStrict(), ERROR(error));
-  if (script->function()->strict()) {
-    JSDeclEnv* const env =
-        Interpreter::NewDeclarativeEnvironment(ctx, ctx->global_env());
-    const Interpreter::ContextSwitcher switcher(ctx,
-                                                env,
-                                                env,
-                                                ctx->global_obj(),
-                                                true);
-    ctx->Run(script);
-  } else {
-    const Interpreter::ContextSwitcher switcher(ctx,
-                                                ctx->global_env(),
-                                                ctx->global_env(),
-                                                ctx->global_obj(),
-                                                false);
-    ctx->Run(script);
-  }
-  if (ctx->IsShouldGC()) {
-    GC_gcollect();
-  }
-  return ctx->ret();
-}
-
-inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
-  if (!args.size()) {
-    return JSUndefined;
-  }
-  const JSVal& first = args[0];
-  if (!first.IsString()) {
-    return first;
-  }
-  Context* const ctx = args.ctx();
-  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
-                                                    ctx->IsStrict(), ERROR(error));
-  if (script->function()->strict()) {
-    JSDeclEnv* const env =
-        Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
-    const Interpreter::ContextSwitcher switcher(ctx,
-                                                env,
-                                                env,
-                                                ctx->this_binding(),
-                                                true);
-    ctx->Run(script);
-  } else {
-    ctx->Run(script);
-  }
-  if (ctx->IsShouldGC()) {
-    GC_gcollect();
-  }
-  return ctx->ret();
-}
-
-}  // iv::lv5::runtime::teleporter
 
 // section 15.1.2.3 parseIng(string, radix)
 inline JSVal GlobalEval(const Arguments& args, Error* error) {

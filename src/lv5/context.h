@@ -13,12 +13,12 @@
 #include "lv5/jsfunction.h"
 #include "lv5/global_data.h"
 #include "lv5/class.h"
-#include "lv5/interpreter.h"
 #include "lv5/error.h"
 #include "lv5/jsast.h"
 #include "lv5/gc_template.h"
 #include "lv5/context_utils.h"
 #include "lv5/stack_resource.h"
+#include "lv5/teleporter.h"
 #include "lv5/vm_stack.h"
 
 namespace iv {
@@ -96,7 +96,7 @@ class Context : private core::Noncopyable<Context>::type {
     binding_ = binding;
   }
 
-  Interpreter* interp() {
+  teleporter::Interpreter* interp() {
     return &interp_;
   }
 
@@ -249,7 +249,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSEnv* variable_env_;
   JSEnv* global_env_;
   JSVal binding_;
-  Interpreter interp_;
+  teleporter::Interpreter interp_;
   Mode mode_;
   JSVal ret_;
   const BreakableStatement* target_;

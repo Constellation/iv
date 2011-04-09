@@ -4,5 +4,6 @@
 
 #include "lv5/teleporter_fwd.h"
 #include "lv5/teleporter_jsfunction.h"
+#include "lv5/teleporter_interpreter.h"
 
 #endif  // _IV_LV5_TELEPORTER_H_

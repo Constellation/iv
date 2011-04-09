@@ -18,7 +18,6 @@
 #include "icu/ustream.h"
 #include "icu/source.h"
 #include "lv5/factory.h"
-#include "lv5/interpreter.h"
 #include "lv5/context.h"
 #include "lv5/jsast.h"
 #include "lv5/jsval.h"
@@ -29,6 +28,7 @@
 #include "lv5/fpu.h"
 #include "lv5/program.h"
 #include "lv5/railgun.h"
+#include "lv5/teleporter.h"
 
 namespace {
 

@@ -8,7 +8,6 @@
 #include "lv5/arguments.h"
 #include "lv5/context.h"
 #include "lv5/context_utils.h"
-#include "lv5/interpreter.h"
 #include "lv5/property.h"
 #include "lv5/class.h"
 #include "lv5/runtime.h"
@@ -16,6 +15,7 @@
 #include "lv5/jsscript.h"
 #include "lv5/jserror.h"
 #include "lv5/bind.h"
+#include "lv5/teleporter_interpreter.h"
 namespace iv {
 namespace lv5 {
 namespace {
@@ -162,7 +162,7 @@ Context::Context()
     current_script_(NULL),
     throw_type_error_(this) {
   JSObjectEnv* const env =
-      Interpreter::NewObjectEnvironment(this, global_obj(), NULL);
+      teleporter::Interpreter::NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
@@ -217,7 +217,7 @@ void Context::Initialize() {
   JSFunction* const func_proto =
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
   JSFunction* const func_constructor =
-      JSInlinedFunction<&runtime::teleporter::FunctionConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&teleporter::FunctionConstructor, 1>::NewPlain(this);
 
   struct Class func_cls = {
     context::Intern(this, "Function"),

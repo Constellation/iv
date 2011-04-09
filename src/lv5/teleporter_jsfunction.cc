@@ -5,13 +5,13 @@
 #include "lv5/jsfunction.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsval.h"
-#include "lv5/interpreter.h"
 #include "lv5/context.h"
 #include "lv5/context_utils.h"
 #include "lv5/arguments.h"
 #include "lv5/jsscript.h"
 #include "lv5/bind.h"
 #include "lv5/teleporter_jsfunction.h"
+#include "lv5/teleporter_interpreter.h"
 
 namespace iv {
 namespace lv5 {
