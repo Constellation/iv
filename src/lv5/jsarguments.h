@@ -8,6 +8,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/arguments.h"
 #include "lv5/bind.h"
+#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 
@@ -16,7 +17,6 @@ class JSObject;
 class Error;
 class JSDeclEnv;
 class AstFactory;
-class JSCodeFunction;
 
 class JSArguments : public JSObject {
  public:
@@ -27,7 +27,7 @@ class JSArguments : public JSObject {
       map_() { }
 
   static JSArguments* New(Context* ctx,
-                          JSCodeFunction* code,
+                          teleporter::JSCodeFunction* code,
                           const Identifiers& names,
                           const Arguments& args,
                           JSDeclEnv* env,

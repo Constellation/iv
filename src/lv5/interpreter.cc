@@ -132,7 +132,7 @@ Interpreter::~Interpreter() {
 
 // section 13.2.1 [[Call]]
 void Interpreter::CallCode(
-    JSCodeFunction* code,
+    teleporter::JSCodeFunction* code,
     const Arguments& args,
     Error* error) {
   // step 1
@@ -1385,8 +1385,10 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
 
 void Interpreter::Visit(const FunctionLiteral* func) {
   ctx_->Return(
-      JSCodeFunction::New(ctx_, func,
-                          ctx_->current_script(), ctx_->lexical_env()));
+      teleporter::JSCodeFunction::New(ctx_,
+                                      func,
+                                      ctx_->current_script(),
+                                      ctx_->lexical_env()));
 }
 
 

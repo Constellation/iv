@@ -11,6 +11,7 @@
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/context_utils.h"
+#include "lv5/teleporter_jsfunction.h"
 #include "lv5/error.h"
 
 namespace iv {

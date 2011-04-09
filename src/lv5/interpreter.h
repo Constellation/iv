@@ -10,6 +10,7 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
+#include "lv5/teleporter_fwd.h"
 
 namespace iv {
 namespace lv5 {
@@ -19,7 +20,6 @@ class Error;
 class JSEnv;
 class JSDeclEnv;
 class JSObjectEnv;
-class JSCodeFunction;
 class JSReference;
 
 class Interpreter : private core::Noncopyable<Interpreter>::type,
@@ -35,7 +35,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void set_context(Context* context) {
     ctx_ = context;
   }
-  void CallCode(JSCodeFunction* code, const Arguments& args,
+  void CallCode(teleporter::JSCodeFunction* code, const Arguments& args,
                 Error* error);
 
   static JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env);

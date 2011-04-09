@@ -11,9 +11,11 @@
 #include "lv5/arguments.h"
 #include "lv5/jsscript.h"
 #include "lv5/bind.h"
+#include "lv5/teleporter_jsfunction.h"
 
 namespace iv {
 namespace lv5 {
+namespace teleporter {
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
                                const FunctionLiteral* func,
@@ -94,4 +96,4 @@ core::UStringPiece JSCodeFunction::GetSource() const {
                             end_pos - start_pos);
 }
 
-} }  // namespace iv::lv5
+} } }  // namespace iv::lv5::teleporter

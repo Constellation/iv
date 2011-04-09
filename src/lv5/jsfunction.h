@@ -9,6 +9,7 @@
 #include "lv5/jsast.h"
 #include "lv5/lv5.h"
 #include "lv5/railgun_fwd.h"
+#include "lv5/teleporter_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -18,7 +19,6 @@ JSVal GlobalEval(const Arguments& args, Error* error);
 }  // namespace iv::lv5::runtime
 
 class Context;
-class JSCodeFunction;
 class JSNativeFunction;
 class JSBoundFunction;
 class Error;
@@ -88,7 +88,7 @@ class JSFunction : public JSObject {
 
   virtual JSNativeFunction* AsNativeFunction() = 0;
 
-  virtual JSCodeFunction* AsCodeFunction() = 0;
+  virtual teleporter::JSCodeFunction* AsCodeFunction() = 0;
 
   virtual JSBoundFunction* AsBoundFunction() = 0;
 
@@ -97,54 +97,6 @@ class JSFunction : public JSObject {
   virtual bool IsEvalFunction() const {
     return false;
   }
-};
-
-class JSCodeFunction : public JSFunction {
- public:
-  JSCodeFunction(Context* ctx,
-                 const FunctionLiteral* func,
-                 JSInterpreterScript* script,
-                 JSEnv* env);
-  JSVal Call(Arguments* args,
-             const JSVal& this_binding,
-             Error* error);
-  JSVal Construct(Arguments* args, Error* error);
-  JSEnv* scope() const {
-    return env_;
-  }
-  const FunctionLiteral* code() const {
-    return function_;
-  }
-
-  static JSCodeFunction* New(Context* ctx,
-                             const FunctionLiteral* func,
-                             JSInterpreterScript* script,
-                             JSEnv* env) {
-    JSCodeFunction* const obj =
-        new JSCodeFunction(ctx, func, script, env);
-    return obj;
-  }
-
-  JSCodeFunction* AsCodeFunction() {
-    return this;
-  }
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
-  }
-  core::UStringPiece GetSource() const;
-  const core::Maybe<Identifier> name() const {
-    return function_->name();
-  }
-  bool IsStrict() const {
-    return function_->strict();
-  }
- private:
-  const FunctionLiteral* function_;
-  JSInterpreterScript* script_;
-  JSEnv* env_;
 };
 
 class JSNativeFunction : public JSFunction {
@@ -174,7 +126,7 @@ class JSNativeFunction : public JSFunction {
     return func_(*args, error);
   }
 
-  JSCodeFunction* AsCodeFunction() {
+  teleporter::JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
 
@@ -224,7 +176,7 @@ class JSBoundFunction : public JSFunction {
     return false;
   }
 
-  JSCodeFunction* AsCodeFunction() {
+  teleporter::JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
 
@@ -377,7 +329,7 @@ class JSInlinedFunction : public JSFunction {
     return func(*args, error);
   }
 
-  JSCodeFunction* AsCodeFunction() {
+  teleporter::JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
 
@@ -448,7 +400,7 @@ class JSVMFunction : public JSFunction {
     return new JSVMFunction(ctx, code, script, env);
   }
 
-  JSCodeFunction* AsCodeFunction() {
+  teleporter::JSCodeFunction* AsCodeFunction() {
     return NULL;
   }
 
