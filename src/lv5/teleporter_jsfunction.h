@@ -40,21 +40,21 @@ class JSCodeFunction : public JSFunction {
     return new JSCodeFunction(ctx, func, script, env);
   }
 
-  JSCodeFunction* AsCodeFunction() {
-    return this;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
+  bool IsNativeFunction() const {
+    return false;
   }
 
   core::UStringPiece GetSource() const;
 
-  const core::Maybe<Identifier> name() const {
+  core::UStringPiece GetName() const {
+    if (const core::Maybe<const Identifier> name = function_->name()) {
+      return name.Address()->value();
+    } else {
+      return core::UStringPiece();
+    }
+  }
+
+  core::Maybe<const Identifier> name() const {
     return function_->name();
   }
 

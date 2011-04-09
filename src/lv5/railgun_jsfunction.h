@@ -34,16 +34,8 @@ class JSVMFunction : public JSFunction {
     return new JSVMFunction(ctx, code, script, env);
   }
 
-  teleporter::JSCodeFunction* AsCodeFunction() {
-    return NULL;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
+  bool IsNativeFunction() const {
+    return false;
   }
 
   core::UStringPiece GetSource() const;

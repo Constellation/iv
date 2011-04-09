@@ -63,20 +63,20 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (!func->AsCodeFunction()) {
+    if (!func->IsNativeFunction()) {
       return
           detail::NativeFunction::ToString<
             detail::NativeFunction::kSpecificationStrict>(args.ctx(), func, e);
     } else {
       StringBuilder builder;
       builder.Append(detail::kFunctionPrefix);
-      if (const core::Maybe<const Identifier> name =
-          func->AsCodeFunction()->name()) {
-        builder.Append((*name).value());
-      } else {
+      const core::UStringPiece name = func->GetName();
+      if (name.empty()) {
         builder.Append("anonymous");
+      } else {
+        builder.Append(name);
       }
-      builder.Append(func->AsCodeFunction()->GetSource());
+      builder.Append(func->GetSource());
       return builder.Build(args.ctx());
     }
   }

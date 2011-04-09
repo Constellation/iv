@@ -85,11 +85,15 @@ class JSFunction : public JSObject {
     return val;
   }
 
-  virtual JSNativeFunction* AsNativeFunction() = 0;
+  virtual bool IsNativeFunction() const = 0;
 
-  virtual teleporter::JSCodeFunction* AsCodeFunction() = 0;
+  virtual core::UStringPiece GetSource() const {
+    return core::UStringPiece();
+  }
 
-  virtual JSBoundFunction* AsBoundFunction() = 0;
+  virtual core::UStringPiece GetName() const {
+    return core::UStringPiece();
+  }
 
   virtual bool IsStrict() const = 0;
 
@@ -125,16 +129,8 @@ class JSNativeFunction : public JSFunction {
     return func_(*args, error);
   }
 
-  teleporter::JSCodeFunction* AsCodeFunction() {
-    return NULL;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return this;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
+  bool IsNativeFunction() const {
+    return true;
   }
 
   bool IsStrict() const {
@@ -175,16 +171,8 @@ class JSBoundFunction : public JSFunction {
     return false;
   }
 
-  teleporter::JSCodeFunction* AsCodeFunction() {
-    return NULL;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return this;
+  bool IsNativeFunction() const {
+    return true;
   }
 
   JSFunction* target() const {
@@ -328,16 +316,8 @@ class JSInlinedFunction : public JSFunction {
     return func(*args, error);
   }
 
-  teleporter::JSCodeFunction* AsCodeFunction() {
-    return NULL;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
+  bool IsNativeFunction() const {
+    return true;
   }
 
   bool IsStrict() const {
@@ -374,7 +354,6 @@ class JSInlinedFunction : public JSFunction {
     set_prototype(cls.prototype);
   }
 };
-
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSFUNCTION_H_
