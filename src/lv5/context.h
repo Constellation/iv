@@ -85,7 +85,7 @@ class Context : private core::Noncopyable<Context>::type {
     variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
     variable_env_->SetMutableBinding(this,
                                      name,
-                                     func, strict_, &error);
+                                     func, false, &error);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -95,21 +95,13 @@ class Context : private core::Noncopyable<Context>::type {
     const Symbol name = context::Intern(this, func_name);
     variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
     variable_env_->SetMutableBinding(this, name,
-                                     f, strict_, &error);
+                                     f, false, &error);
   }
 
   void Initialize();
 
   JSFunction* throw_type_error() {
     return &throw_type_error_;
-  }
-
-  bool IsStrict() const {
-    return strict_;
-  }
-
-  void set_strict(bool strict) {
-    strict_ = strict;
   }
 
   bool IsArray(const JSObject& obj) {
@@ -139,7 +131,6 @@ class Context : private core::Noncopyable<Context>::type {
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;
-  bool strict_;
 };
 
 } }  // namespace iv::lv5

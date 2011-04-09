@@ -108,10 +108,6 @@ JSFunction* throw_type_error(Context* ctx) {
   return ctx->throw_type_error();
 }
 
-bool IsStrict(const Context* ctx) {
-  return ctx->IsStrict();
-}
-
 VMStack* stack(Context* ctx) {
   return ctx->stack();
 }
@@ -128,8 +124,7 @@ Context::Context()
     stack_resource_(),
     lexical_env_(NULL),
     variable_env_(NULL),
-    global_env_(NULL),
-    strict_(false) {
+    global_env_(NULL) {
   JSObjectEnv* const env = NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;

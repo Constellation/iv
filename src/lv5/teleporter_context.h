@@ -25,7 +25,8 @@ class Context : public iv::lv5::Context {
       ret_(),
       target_(NULL),
       generate_script_counter_(0),
-      current_script_(NULL) {
+      current_script_(NULL),
+      strict_(false) {
     interp_.set_context(this);
     Initialize();
   }
@@ -144,6 +145,14 @@ class Context : public iv::lv5::Context {
     return stmt == target_;
   }
 
+  void set_strict(bool strict) {
+    strict_ = strict;
+  }
+
+  bool IsStrict() const {
+    return strict_;
+  }
+
  private:
   teleporter::Interpreter interp_;
   JSVal binding_;
@@ -153,6 +162,7 @@ class Context : public iv::lv5::Context {
   Error error_;
   std::size_t generate_script_counter_;
   teleporter::JSScript* current_script_;
+  bool strict_;
 };
 
 } } }  // namespace iv::lv5::teleporter
