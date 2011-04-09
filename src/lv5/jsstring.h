@@ -217,16 +217,22 @@ class StringBuilder : private core::Noncopyable<StringBuilder>::type {
     target_.insert(target_.end(), start, last);
   }
 
+  // for assignable object (like std::string)
 
-  // for assignable object
   void append(const core::UStringPiece& piece) {
     target_.insert(target_.end(), piece.begin(), piece.end());
   }
+
   void append(const core::StringPiece& piece) {
     target_.insert(target_.end(), piece.begin(), piece.end());
   }
+
   void append(const JSString& str) {
     target_.insert(target_.end(), str.begin(), str.end());
+  }
+
+  void push_back(uc16 ch) {
+    target_.push_back(ch);
   }
 
   template<typename Iter>

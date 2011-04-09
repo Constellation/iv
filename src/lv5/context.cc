@@ -217,7 +217,7 @@ void Context::Initialize() {
   JSFunction* const func_proto =
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
   JSFunction* const func_constructor =
-      JSInlinedFunction<&runtime::FunctionConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::interpreter::FunctionConstructor, 1>::NewPlain(this);
 
   struct Class func_cls = {
     context::Intern(this, "Function"),

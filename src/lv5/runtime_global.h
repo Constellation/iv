@@ -218,7 +218,10 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
   }
   return builder.Build(ctx);
 }
+
 }  // iv::lv5::runtime::detail
+
+namespace interpreter {
 
 inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
   if (!args.size()) {
@@ -284,10 +287,12 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
+}  // iv::lv5::runtime::interpreter
+
 // section 15.1.2.3 parseIng(string, radix)
 inline JSVal GlobalEval(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("eval", args, error);
-  return InDirectCallToEval(args, error);
+  return interpreter::InDirectCallToEval(args, error);
 }
 
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {

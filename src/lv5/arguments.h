@@ -10,7 +10,7 @@
 
 namespace iv {
 namespace lv5 {
-class Interpreter;
+
 class Context;
 
 class Arguments : private core::Noncopyable<Arguments>::type {
@@ -163,7 +163,8 @@ class VMArguments : public Arguments {
   VMArguments(Context* ctx,
               pointer ptr,
               std::size_t n)
-    : Arguments(ctx, ptr, n) { }
+    : Arguments(ctx, ptr, n) {
+  }
 };
 
 } }  // namespace iv::lv5

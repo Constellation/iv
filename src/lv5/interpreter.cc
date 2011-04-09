@@ -1448,7 +1448,7 @@ void Interpreter::Visit(const FunctionCall* call) {
               maybe_eval->symbol() == context::eval_symbol(ctx_)) {
             // direct call to eval point
             args.set_this_binding(this_binding);
-            ctx_->ret() = runtime::DirectCallToEval(args, CHECK);
+            ctx_->ret() = runtime::interpreter::DirectCallToEval(args, CHECK);
             return;
           }
         }
