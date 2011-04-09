@@ -122,8 +122,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   const JSVal length = array->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
@@ -268,8 +267,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   JSString* separator;
   if (args.size() > 0 && !args[0].IsUndefined()) {
     separator = args[0].ToString(ctx, ERROR(e));
@@ -311,8 +309,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
     return JSUndefined;
@@ -334,8 +331,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  uint32_t n = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   bool index_over = false;
   Arguments::const_iterator it = args.begin();
   const Arguments::const_iterator last = args.end();
@@ -376,8 +372,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t middle = len >> 1;
   for (uint32_t lower = 0; lower != middle; ++lower) {
     const uint32_t upper = len - lower - 1;
@@ -415,8 +410,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx), 0.0, true, ERROR(e));
     return JSUndefined;
@@ -447,8 +441,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   uint32_t k;
   if (args.size() > 0) {
     double relative_start = args[0].ToNumber(ctx, ERROR(e));
@@ -502,8 +495,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   JSFunction* comparefn;
   if (args.size() > 0 && args[0].IsCallable()) {
     comparefn = args[0].object()->AsCallable();
@@ -647,8 +639,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
-  const uint32_t len = core::DoubleToUInt32(val);
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t args_size = args.size();
   uint32_t actual_start;
   if (args_size > 0) {
@@ -741,9 +732,8 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   for (uint32_t k = len; k > 0; --k) {
     const uint32_t from = k - 1;
@@ -781,9 +771,8 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (len == 0) {
     return -1;
@@ -835,9 +824,8 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (len == 0) {
     return -1;
@@ -895,9 +883,8 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -935,9 +922,8 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -975,9 +961,8 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -1009,9 +994,8 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -1055,9 +1039,8 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -1106,9 +1089,8 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(
@@ -1172,9 +1154,8 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   const JSVal length = obj->Get(
       ctx,
       context::length_symbol(ctx), ERROR(e));
-  const double val = length.ToNumber(ctx, ERROR(e));
+  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   const uint32_t arg_count = args.size();
-  const uint32_t len = core::DoubleToUInt32(val);
 
   if (arg_count == 0 || !args[0].IsCallable()) {
     e->Report(

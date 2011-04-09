@@ -94,8 +94,7 @@ uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
   if (IsUInt32()) {
     return uint32();
   } else {
-    const double val = ToNumber(ctx, ERROR_WITH(e, 0));
-    return core::DoubleToUInt32(val);
+    return core::DoubleToUInt32(ToNumber(ctx, e));
   }
 }
 
