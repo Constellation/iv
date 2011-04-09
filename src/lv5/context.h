@@ -5,8 +5,7 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
-#include "enable_if.h"
-#include "ast.h"
+#include "lv5.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
@@ -24,7 +23,9 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
+
 JSVal ThrowTypeError(const Arguments& args, Error* error);
+
 }  // namespace iv::lv5::runtime
 
 class SymbolChecker;
@@ -182,16 +183,13 @@ class Context : private core::Noncopyable<Context>::type {
   void DefineFunction(const core::StringPiece& func_name) {
     JSFunction* const f = JSInlinedFunction<func, n>::New(this);
     const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, &error_);
-    if (error_) {
-      return;
-    }
-    variable_env_->SetMutableBinding(this,
-                                     name,
+    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error_));
+    variable_env_->SetMutableBinding(this, name,
                                      f, strict_, &error_);
   }
 
   void Initialize();
+
   bool Run(teleporter::JSScript* script);
 
   JSVal ErrorVal();
@@ -234,8 +232,14 @@ class Context : private core::Noncopyable<Context>::type {
 
   JSString* ToString(Symbol sym);
 
-  bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const;
-  bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const;
+  bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const {
+    // AnonymousBreakableStatement has empty label at first
+    return !target_ || stmt == target_;
+  }
+
+  bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const {
+    return stmt == target_;
+  }
 
   VMStack* stack() {
     return stack_resource_.stack();

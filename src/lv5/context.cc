@@ -182,20 +182,10 @@ JSString* Context::ToString(Symbol sym) {
   return JSString::New(this, global_data_.GetSymbolString(sym));
 }
 
-bool Context::InCurrentLabelSet(
-    const AnonymousBreakableStatement* stmt) const {
-  // AnonymousBreakableStatement has empty label at first
-  return !target_ || stmt == target_;
-}
-
-bool Context::InCurrentLabelSet(
-    const NamedOnlyBreakableStatement* stmt) const {
-  return stmt == target_;
-}
-
 bool Context::Run(teleporter::JSScript* script) {
   const ScriptScope scope(this, script);
-  interp_.Run(script->function(), script->type() == teleporter::JSScript::kEval);
+  interp_.Run(script->function(),
+              script->type() == teleporter::JSScript::kEval);
   assert(!ret_.IsEmpty() || error_);
   return error_;
 }
