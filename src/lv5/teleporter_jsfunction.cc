@@ -24,9 +24,10 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
     env_(env) {
   DefineOwnProperty(
       ctx, context::length_symbol(ctx),
-      DataDescriptor(JSVal::UInt32(func->params().size()),
-                     PropertyDescriptor::NONE),
-                     false, NULL);
+      DataDescriptor(
+          JSVal::UInt32(static_cast<uint32_t>(func->params().size())),
+          PropertyDescriptor::NONE),
+      false, NULL);
   // section 13.2 Creating Function Objects
   const Class& cls = context::Cls(ctx, "Function");
   set_class_name(cls.name);
