@@ -2,6 +2,7 @@
 #include <tr1/array>
 #include "dtoa.h"
 #include "conversions.h"
+#include "lv5/lv5.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
@@ -30,7 +31,7 @@ JSString* JSVal::TypeOf(Context* ctx) const {
   }
 }
 
-JSObject* JSVal::ToObject(Context* ctx, Error* res) const {
+JSObject* JSVal::ToObject(Context* ctx, Error* e) const {
   if (IsObject()) {
     return object();
   } else if (IsNumber()) {
@@ -40,17 +41,16 @@ JSObject* JSVal::ToObject(Context* ctx, Error* res) const {
   } else if (IsBoolean()) {
     return JSBooleanObject::New(ctx, boolean());
   } else if (IsNull()) {
-    res->Report(Error::Type, "null has no properties");
+    e->Report(Error::Type, "null has no properties");
     return NULL;
   } else {
     assert(IsUndefined());
-    res->Report(Error::Type, "undefined has no properties");
+    e->Report(Error::Type, "undefined has no properties");
     return NULL;
   }
 }
 
-JSString* JSVal::ToString(Context* ctx,
-                          Error* res) const {
+JSString* JSVal::ToString(Context* ctx, Error* e) const {
   if (IsString()) {
     return string();
   } else if (IsNumber()) {
@@ -67,15 +67,12 @@ JSString* JSVal::ToString(Context* ctx,
     return JSString::NewAsciiString(ctx, "undefined");
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::STRING, res);
-    if (*res) {
-      return NULL;
-    }
-    return prim.ToString(ctx, res);
+    JSVal prim = object()->DefaultValue(ctx, Hint::STRING, ERROR_WITH(e, NULL));
+    return prim.ToString(ctx, e);
   }
 }
 
-double JSVal::ToNumber(Context* ctx, Error* res) const {
+double JSVal::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
@@ -88,18 +85,23 @@ double JSVal::ToNumber(Context* ctx, Error* res) const {
     return JSValData::kNaN;
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER, res);
-    if (*res) {
-      return 0.0;
-    }
-    return prim.ToNumber(ctx, res);
+    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER, ERROR_WITH(e, 0.0));
+    return prim.ToNumber(ctx, e);
   }
 }
 
-JSVal JSVal::ToPrimitive(Context* ctx,
-                         Hint::Object hint, Error* res) const {
+uint32_t ToUInt32(Context* ctx, Error* e) const {
+  if (IsUInt32()) {
+    return uint32();
+  } else {
+    const double val = ToNumber(ctx, ERROR_WITH(e, 0));
+    return core::DoubleToUInt32(val);
+  }
+}
+
+JSVal JSVal::ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const {
   if (IsObject()) {
-    return object()->DefaultValue(ctx, hint, res);
+    return object()->DefaultValue(ctx, hint, e);
   } else {
     assert(!IsEnvironment() && !IsReference() && !IsEmpty());
     return *this;
@@ -110,12 +112,12 @@ bool JSVal::IsCallable() const {
   return IsObject() && object()->IsCallable();
 }
 
-void JSVal::CheckObjectCoercible(Error* res) const {
+void JSVal::CheckObjectCoercible(Error* e) const {
   assert(!IsEnvironment() && !IsReference() && !IsEmpty());
   if (IsNull()) {
-    res->Report(Error::Type, "null has no properties");
+    e->Report(Error::Type, "null has no properties");
   } else if (IsUndefined()) {
-    res->Report(Error::Type, "undefined has no properties");
+    e->Report(Error::Type, "undefined has no properties");
   }
 }
 

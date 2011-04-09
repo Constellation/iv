@@ -450,21 +450,21 @@ class JSVal {
     return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
   }
 
-  JSObject* ToObject(Context* ctx, Error* res) const;
+  JSObject* ToObject(Context* ctx, Error* e) const;
 
-  JSString* ToString(Context* ctx,
-                     Error* res) const;
+  JSString* ToString(Context* ctx, Error* e) const;
 
-  double ToNumber(Context* ctx, Error* res) const;
+  double ToNumber(Context* ctx, Error* e) const;
 
-  JSVal ToPrimitive(Context* ctx,
-                    Hint::Object hint, Error* res) const;
+  uint32_t ToUInt32(Context* ctx, Error* e) const;
+
+  JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
 
   bool IsCallable() const;
 
-  void CheckObjectCoercible(Error* res) const;
+  void CheckObjectCoercible(Error* e) const;
 
-  inline bool ToBoolean(Error* res) const {
+  inline bool ToBoolean(Error* e) const {
     if (IsNumber()) {
       const double& num = number();
       return num != 0 && !std::isnan(num);
