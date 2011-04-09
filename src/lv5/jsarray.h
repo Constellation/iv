@@ -18,7 +18,7 @@ class JSArray : public JSObject {
   friend class railgun::VM;
   typedef GCMap<uint32_t, JSVal>::type Map;
 
-  JSArray(Context* ctx, std::size_t len);
+  JSArray(Context* ctx, uint32_t len);
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
@@ -48,7 +48,7 @@ class JSArray : public JSObject {
     return ary;
   }
 
-  static JSArray* New(Context* ctx, std::size_t n) {
+  static JSArray* New(Context* ctx, uint32_t n) {
     JSArray* const ary = new JSArray(ctx, n);
     const Class& cls = context::Cls(ctx, "Array");
     ary->set_class_name(cls.name);
@@ -91,7 +91,6 @@ class JSArray : public JSObject {
   JSVals vector_;
   Map* map_;
   bool dense_;
-  uint32_t length_;
 };
 
 } }  // namespace iv::lv5

@@ -18,16 +18,16 @@
 namespace iv {
 namespace lv5 {
 
-JSArray::JSArray(Context* ctx, std::size_t len)
+JSArray::JSArray(Context* ctx, uint32_t len)
   : JSObject(),
     vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
     map_(NULL),
-    dense_(true),
-    length_(len) {
-  JSObject::DefineOwnProperty(ctx, context::length_symbol(ctx),
-                              DataDescriptor(len,
-                                             PropertyDescriptor::WRITABLE),
-                                             false, NULL);
+    dense_(true) {
+  JSObject::DefineOwnProperty(
+      ctx, context::length_symbol(ctx),
+      DataDescriptor(JSVal::UInt32(len),
+                     PropertyDescriptor::WRITABLE),
+      false, NULL);
 }
 
 PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {
@@ -106,7 +106,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
   PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, length_symbol);
   DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
   const JSVal& len_value = old_len_desc->value();
-  assert(len_value.IsNumber());
+  assert(len_value.IsUInt32());
 
   if (name == length_symbol) {
     if (desc.IsDataDescriptor()) {
@@ -127,11 +127,8 @@ bool JSArray::DefineOwnProperty(Context* ctx,
         res->Report(Error::Range, "invalid array length");
         return false;
       }
-      new_len_desc.set_value(new_len);
-      uint32_t old_len = core::DoubleToUInt32(len_value.number());
-      if (*res) {
-        return false;
-      }
+      new_len_desc.set_value(JSVal::UInt32(new_len));
+      uint32_t old_len = len_value.uint32();
       if (new_len >= old_len) {
         return JSObject::DefineOwnProperty(ctx, length_symbol,
                                            new_len_desc, th, res);
@@ -162,7 +159,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
               return false;
             }
             if (!delete_succeeded) {
-              new_len_desc.set_value(old_len + 1);
+              new_len_desc.set_value(JSVal::UInt32(old_len + 1));
               if (!new_writable) {
                 new_len_desc.set_writable(false);
               }
@@ -196,7 +193,7 @@ bool JSArray::DefineOwnProperty(Context* ctx,
             if (!delete_succeeded) {
               const uint32_t result_len = *it + 1;
               CompactionToLength(result_len);
-              new_len_desc.set_value(result_len);
+              new_len_desc.set_value(JSVal::UInt32(result_len));
               if (!new_writable) {
                 new_len_desc.set_writable(false);
               }
@@ -298,7 +295,7 @@ bool JSArray::DefineOwnPropertyWithIndex(Context* ctx,
     }
   }
   if (index >= old_len) {
-    old_len_desc->set_value(index+1);
+    old_len_desc->set_value(JSVal::UInt32(index+1));
     JSObject::DefineOwnProperty(ctx, context::length_symbol(ctx),
                                 *old_len_desc, false, res);
   }

@@ -90,7 +90,7 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   }
 }
 
-uint32_t ToUInt32(Context* ctx, Error* e) const {
+uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
   if (IsUInt32()) {
     return uint32();
   } else {
