@@ -1627,18 +1627,6 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
 
 #undef ERRCHECK
 
-JSDeclEnv* Interpreter::NewDeclarativeEnvironment(Context* ctx, JSEnv* env) {
-  return JSDeclEnv::New(ctx, env);
-}
-
-
-JSObjectEnv* Interpreter::NewObjectEnvironment(Context* ctx,
-                                               JSObject* val, JSEnv* env) {
-  assert(val);
-  return JSObjectEnv::New(ctx, env, val);
-}
-
-
 JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
                                                  Symbol name, bool strict) {
   JSEnv* env = lex;

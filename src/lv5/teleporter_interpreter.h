@@ -27,19 +27,18 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public AstVisitor {
  public:
   Interpreter();
+
   void Run(const FunctionLiteral* global, bool is_eval);
 
   Context* context() const {
     return ctx_;
   }
+
   void set_context(Context* context) {
     ctx_ = context;
   }
-  void CallCode(JSCodeFunction* code, const Arguments& args, Error* e);
 
-  static JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env);
-  static JSObjectEnv* NewObjectEnvironment(Context* ctx,
-                                           JSObject* val, JSEnv* env);
+  void CallCode(JSCodeFunction* code, const Arguments& args, Error* e);
 
   class ContextSwitcher : private core::Noncopyable<ContextSwitcher>::type {
    public:
@@ -124,7 +123,9 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   bool InCurrentLabelSet(const BreakableStatement* stmt);
 
   JSVal GetValue(const JSVal& val, Error* error);
+
   void PutValue(const JSVal& val, const JSVal& w, Error* error);
+
   JSReference* GetIdentifierReference(JSEnv* lex, Symbol name, bool strict);
 
   Context* ctx_;

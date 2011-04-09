@@ -88,10 +88,6 @@ class Context : private core::Noncopyable<Context>::type {
     return binding_;
   }
 
-  JSVal This() const {
-    return binding_;
-  }
-
   void set_this_binding(const JSVal& binding) {
     binding_ = binding;
   }
@@ -247,12 +243,15 @@ class Context : private core::Noncopyable<Context>::type {
 
  private:
   GlobalData global_data_;
+  JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
   StackResource stack_resource_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;
-  JSVal binding_;
+
+  // teleporter::Interpreter data
   teleporter::Interpreter interp_;
+  JSVal binding_;
   Mode mode_;
   JSVal ret_;
   const BreakableStatement* target_;
@@ -260,7 +259,6 @@ class Context : private core::Noncopyable<Context>::type {
   bool strict_;
   std::size_t generate_script_counter_;
   teleporter::JSScript* current_script_;
-  JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
 };
 
 } }  // namespace iv::lv5

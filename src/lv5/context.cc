@@ -14,6 +14,7 @@
 #include "lv5/jsast.h"
 #include "lv5/jserror.h"
 #include "lv5/bind.h"
+#include "lv5/internal.h"
 #include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
@@ -146,22 +147,21 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 
 Context::Context()
   : global_data_(),
+    throw_type_error_(this),
     stack_resource_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL),
-    binding_(global_data_.global_obj()),
     interp_(),
+    binding_(global_data_.global_obj()),
     mode_(NORMAL),
     ret_(),
     target_(NULL),
     error_(),
     strict_(false),
     generate_script_counter_(0),
-    current_script_(NULL),
-    throw_type_error_(this) {
-  JSObjectEnv* const env =
-      teleporter::Interpreter::NewObjectEnvironment(this, global_obj(), NULL);
+    current_script_(NULL) {
+  JSObjectEnv* const env = NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
