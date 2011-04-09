@@ -23,7 +23,6 @@ class JSNativeFunction;
 class JSBoundFunction;
 class Error;
 class JSEnv;
-class JSInterpreterScript;
 class JSScript;
 
 class JSFunction : public JSObject {
@@ -376,53 +375,6 @@ class JSInlinedFunction : public JSFunction {
   }
 };
 
-class JSVMFunction : public JSFunction {
- public:
-  JSVMFunction(Context* ctx,
-               const railgun::Code* code,
-               JSScript* script,
-               JSEnv* env);
-
-  JSVal Call(Arguments* args,
-             const JSVal& this_binding,
-             Error* error);
-
-  JSVal Construct(Arguments* args, Error* error);
-
-  JSEnv* scope() const {
-    return env_;
-  }
-
-  static JSVMFunction* New(Context* ctx,
-                           const railgun::Code* code,
-                           JSScript* script,
-                           JSEnv* env) {
-    return new JSVMFunction(ctx, code, script, env);
-  }
-
-  teleporter::JSCodeFunction* AsCodeFunction() {
-    return NULL;
-  }
-
-  JSNativeFunction* AsNativeFunction() {
-    return NULL;
-  }
-
-  JSBoundFunction* AsBoundFunction() {
-    return NULL;
-  }
-
-  core::UStringPiece GetSource() const;
-
-  bool IsStrict() const {
-    return false;
-  }
-
- private:
-  const railgun::Code* code_;
-  JSScript* script_;
-  JSEnv* env_;
-};
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSFUNCTION_H_

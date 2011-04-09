@@ -9,5 +9,7 @@ namespace teleporter {
 class JSCodeFunction;
 class Interpreter;
 
+class JSScript;
+
 } } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_TELEPORTER_FWD_H_

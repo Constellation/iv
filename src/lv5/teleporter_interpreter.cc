@@ -127,7 +127,7 @@ Interpreter::Interpreter()
 
 // section 13.2.1 [[Call]]
 void Interpreter::CallCode(
-    teleporter::JSCodeFunction* code,
+    JSCodeFunction* code,
     const Arguments& args,
     Error* error) {
   // step 1
@@ -1380,10 +1380,10 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
 
 void Interpreter::Visit(const FunctionLiteral* func) {
   ctx_->Return(
-      teleporter::JSCodeFunction::New(ctx_,
-                                      func,
-                                      ctx_->current_script(),
-                                      ctx_->lexical_env()));
+      JSCodeFunction::New(ctx_,
+                          func,
+                          ctx_->current_script(),
+                          ctx_->lexical_env()));
 }
 
 
@@ -1445,7 +1445,7 @@ void Interpreter::Visit(const FunctionCall* call) {
               maybe_eval->symbol() == context::eval_symbol(ctx_)) {
             // direct call to eval point
             args.set_this_binding(this_binding);
-            ctx_->ret() = teleporter::DirectCallToEval(args, CHECK);
+            ctx_->ret() = DirectCallToEval(args, CHECK);
             return;
           }
         }

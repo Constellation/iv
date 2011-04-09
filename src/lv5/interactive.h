@@ -11,10 +11,10 @@
 #include "icu/source.h"
 #include "lv5/context.h"
 #include "lv5/factory.h"
-#include "lv5/jsscript.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
+#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -46,7 +46,7 @@ class Interactive {
         break;
       }
       buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
-      JSEvalScript<icu::Source>* script =
+      teleporter::JSEvalScript<icu::Source>* script =
           Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (script) {
         buffer.clear();
@@ -83,7 +83,8 @@ class Interactive {
     return EXIT_SUCCESS;
   }
  private:
-  JSEvalScript<icu::Source>* Parse(const core::StringPiece& text, bool* recover) {
+  teleporter::JSEvalScript<icu::Source>* Parse(const core::StringPiece& text,
+                                               bool* recover) {
     std::tr1::shared_ptr<icu::Source> src(
         new icu::Source(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
@@ -99,7 +100,8 @@ class Interactive {
       delete factory;
       return NULL;
     } else {
-      return JSEvalScript<icu::Source>::New(&ctx_, eval, factory, src);
+      return teleporter::JSEvalScript<icu::Source>::New(&ctx_, eval,
+                                                        factory, src);
     }
   }
   Context ctx_;

@@ -28,7 +28,6 @@ JSVal ThrowTypeError(const Arguments& args, Error* error);
 }  // namespace iv::lv5::runtime
 
 class SymbolChecker;
-class JSInterpreterScript;
 class JSEnv;
 
 class Context : private core::Noncopyable<Context>::type {
@@ -193,7 +192,7 @@ class Context : private core::Noncopyable<Context>::type {
   }
 
   void Initialize();
-  bool Run(JSInterpreterScript* script);
+  bool Run(teleporter::JSScript* script);
 
   JSVal ErrorVal();
 
@@ -201,11 +200,11 @@ class Context : private core::Noncopyable<Context>::type {
     return &throw_type_error_;
   }
 
-  JSInterpreterScript* current_script() const {
+  teleporter::JSScript* current_script() const {
     return current_script_;
   }
 
-  void set_current_script(JSInterpreterScript* script) {
+  void set_current_script(teleporter::JSScript* script) {
     current_script_ = script;
   }
 
@@ -256,7 +255,7 @@ class Context : private core::Noncopyable<Context>::type {
   Error error_;
   bool strict_;
   std::size_t generate_script_counter_;
-  JSInterpreterScript* current_script_;
+  teleporter::JSScript* current_script_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
 };
 

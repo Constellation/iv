@@ -13,14 +13,13 @@ namespace iv {
 namespace lv5 {
 
 class JSEnv;
-class JSInterpreterScript;
 
 namespace teleporter {
 
 class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(Context* ctx, const FunctionLiteral* func,
-                 JSInterpreterScript* script, JSEnv* env);
+                 JSScript* script, JSEnv* env);
 
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e);
 
@@ -36,7 +35,7 @@ class JSCodeFunction : public JSFunction {
 
   static JSCodeFunction* New(Context* ctx,
                              const FunctionLiteral* func,
-                             JSInterpreterScript* script,
+                             JSScript* script,
                              JSEnv* env) {
     return new JSCodeFunction(ctx, func, script, env);
   }
@@ -65,7 +64,7 @@ class JSCodeFunction : public JSFunction {
 
  private:
   const FunctionLiteral* function_;
-  JSInterpreterScript* script_;
+  JSScript* script_;
   JSEnv* env_;
 };
 

@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
+#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -63,8 +64,8 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
-                                                    false, ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(), first.string(),
+                                         false, ERROR(error));
                                          //  ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
@@ -98,8 +99,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
     return first;
   }
   Context* const ctx = args.ctx();
-  JSInterpreterScript* const script = CompileScript(args.ctx(), first.string(),
-                                                    ctx->IsStrict(), ERROR(error));
+  JSScript* const script = CompileScript(args.ctx(), first.string(),
+                                         ctx->IsStrict(), ERROR(error));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         Interpreter::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
@@ -123,7 +124,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   StringBuilder builder;
   detail::BuildFunctionSource(&builder, args, ERROR(e));
   JSString* const source = builder.Build(ctx);
-  JSInterpreterScript* const script = CompileScript(ctx, source, false, ERROR(e));
+  JSScript* const script = CompileScript(ctx, source, false, ERROR(e));
   detail::CheckFunctionExpressionIsOne(*script->function(), ERROR(e));
   const Interpreter::ContextSwitcher switcher(ctx,
                                               ctx->global_env(),

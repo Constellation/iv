@@ -12,17 +12,16 @@
 #include "lv5/class.h"
 #include "lv5/runtime.h"
 #include "lv5/jsast.h"
-#include "lv5/jsscript.h"
 #include "lv5/jserror.h"
 #include "lv5/bind.h"
-#include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 namespace {
 
 class ScriptScope : private core::Noncopyable<ScriptScope>::type {
  public:
-  ScriptScope(Context* ctx, JSInterpreterScript* script)
+  ScriptScope(Context* ctx, teleporter::JSScript* script)
     : ctx_(ctx),
       prev_(ctx->current_script()) {
     ctx_->set_current_script(script);
@@ -32,7 +31,7 @@ class ScriptScope : private core::Noncopyable<ScriptScope>::type {
   }
  private:
   Context* ctx_;
-  JSInterpreterScript* prev_;
+  teleporter::JSScript* prev_;
 };
 
 }  // namespace
@@ -194,9 +193,9 @@ bool Context::InCurrentLabelSet(
   return stmt == target_;
 }
 
-bool Context::Run(JSInterpreterScript* script) {
+bool Context::Run(teleporter::JSScript* script) {
   const ScriptScope scope(this, script);
-  interp_.Run(script->function(), script->type() == JSInterpreterScript::kEval);
+  interp_.Run(script->function(), script->type() == teleporter::JSScript::kEval);
   assert(!ret_.IsEmpty() || error_);
   return error_;
 }

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_INTERPRETER_H_
-#define _IV_LV5_INTERPRETER_H_
+#ifndef _IV_LV5_TELEPORTER_INTERPRETER_H_
+#define _IV_LV5_TELEPORTER_INTERPRETER_H_
 #include <cmath>
 #include <tr1/cmath>
 #include "ast.h"
@@ -35,8 +35,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
   void set_context(Context* context) {
     ctx_ = context;
   }
-  void CallCode(teleporter::JSCodeFunction* code, const Arguments& args,
-                Error* error);
+  void CallCode(JSCodeFunction* code, const Arguments& args, Error* e);
 
   static JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env);
   static JSObjectEnv* NewObjectEnvironment(Context* ctx,
@@ -132,4 +131,4 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_INTERPRETER_H_
+#endif  // _IV_LV5_TELEPORTER_INTERPRETER_H_

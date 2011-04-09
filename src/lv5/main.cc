@@ -22,7 +22,6 @@
 #include "lv5/jsast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
-#include "lv5/jsscript.h"
 #include "lv5/command.h"
 #include "lv5/interactive.h"
 #include "lv5/fpu.h"
@@ -106,8 +105,8 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  iv::lv5::JSInterpreterScript* const script =
-      iv::lv5::JSGlobalScript::New(&ctx, global, &factory, &src);
+  iv::lv5::teleporter::JSScript* const script =
+      iv::lv5::teleporter::JSGlobalScript::New(&ctx, global, &factory, &src);
   if (ctx.Run(script)) {
     const iv::lv5::JSVal e = ctx.ErrorVal();
     ctx.error()->Clear();

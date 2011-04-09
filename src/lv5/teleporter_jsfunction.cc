@@ -8,10 +8,8 @@
 #include "lv5/context.h"
 #include "lv5/context_utils.h"
 #include "lv5/arguments.h"
-#include "lv5/jsscript.h"
 #include "lv5/bind.h"
-#include "lv5/teleporter_jsfunction.h"
-#include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter.h"
 
 namespace iv {
 namespace lv5 {
@@ -19,7 +17,7 @@ namespace teleporter {
 
 JSCodeFunction::JSCodeFunction(Context* ctx,
                                const FunctionLiteral* func,
-                               JSInterpreterScript* script,
+                               JSScript* script,
                                JSEnv* env)
   : function_(func),
     script_(script),

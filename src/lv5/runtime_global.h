@@ -10,7 +10,6 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
-#include "lv5/jsscript.h"
 #include "lv5/error.h"
 #include "lv5/context.h"
 #include "lv5/internal.h"
