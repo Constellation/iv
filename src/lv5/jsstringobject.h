@@ -14,7 +14,7 @@ class JSStringObject : public JSObject {
     DefineOwnProperty(ctx, context::length_symbol(ctx),
                       DataDescriptor(value->size(),
                                      PropertyDescriptor::NONE),
-                                     false, context::error(ctx));
+                                     false, NULL);
   }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
