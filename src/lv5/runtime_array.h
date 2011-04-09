@@ -312,7 +312,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx),
-             JSVal::UInt32(0), true, ERROR(e));
+             JSVal::UInt32(0u), true, ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
@@ -414,7 +414,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   const uint32_t len = length.ToUInt32(ctx, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx),
-             JSVal::UInt32(0), true, ERROR(e));
+             JSVal::UInt32(0u), true, ERROR(e));
     return JSUndefined;
   }
   const JSVal first = obj->Get(ctx, context::Intern(ctx, "0"), ERROR(e));

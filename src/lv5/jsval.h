@@ -503,7 +503,10 @@ class JSVal {
     }
   }
 
-  static inline JSVal UInt32(const uint32_t& val) {
+  template<typename T>
+  static inline JSVal UInt32(
+      const T& val,
+      typename enable_if<std::tr1::is_same<uint32_t, T> >::type* = 0) {
     return JSVal(val, detail::UInt32Tag());
   }
 

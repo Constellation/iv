@@ -249,7 +249,7 @@ class JSBoundFunction : public JSFunction {
     } else {
       DefineOwnProperty(
           ctx, context::length_symbol(ctx),
-          DataDescriptor(JSVal::UInt32(0),
+          DataDescriptor(JSVal::UInt32(0u),
                          PropertyDescriptor::NONE),
                          false, &e);
     }
