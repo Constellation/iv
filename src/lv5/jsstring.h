@@ -190,72 +190,69 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   return os << str.value();
 }
 
-class StringBuilder : private core::Noncopyable<StringBuilder>::type {
+class StringBuilder : protected std::vector<uc16> {
  public:
   typedef StringBuilder this_type;
-  StringBuilder()
-    : target_() {
-  }
+  typedef std::vector<uc16> container_type;
+
   void Append(const core::UStringPiece& piece) {
-    target_.insert(target_.end(), piece.begin(), piece.end());
+    insert(end(), piece.begin(), piece.end());
   }
+
   void Append(const core::StringPiece& piece) {
-    target_.insert(target_.end(), piece.begin(), piece.end());
+    insert(end(), piece.begin(), piece.end());
   }
+
   void Append(const JSString& str) {
-    target_.insert(target_.end(), str.begin(), str.end());
+    insert(end(), str.begin(), str.end());
   }
+
   void Append(uc16 ch) {
-    target_.push_back(ch);
+    push_back(ch);
   }
+
   template<typename Iter>
   void Append(Iter it, typename JSString::size_type size) {
-    target_.insert(target_.end(), it, it + size);
+    insert(end(), it, it + size);
   }
+
   template<typename Iter>
   void Append(Iter start, Iter last) {
-    target_.insert(target_.end(), start, last);
+    insert(end(), start, last);
   }
 
   // for assignable object (like std::string)
 
   void append(const core::UStringPiece& piece) {
-    target_.insert(target_.end(), piece.begin(), piece.end());
+    insert(end(), piece.begin(), piece.end());
   }
 
   void append(const core::StringPiece& piece) {
-    target_.insert(target_.end(), piece.begin(), piece.end());
+    insert(end(), piece.begin(), piece.end());
   }
 
   void append(const JSString& str) {
-    target_.insert(target_.end(), str.begin(), str.end());
+    insert(end(), str.begin(), str.end());
   }
 
-  void push_back(uc16 ch) {
-    target_.push_back(ch);
-  }
+  using container_type::push_back;
 
-  template<typename Iter>
-  this_type& assign(Iter start, Iter end) {
-    target_.assign(start, end);
-    return *this;
-  }
+  using container_type::assign;
 
   JSString* Build(Context* ctx) const {
-    return JSString::New(ctx, target_.begin(), target_.end());
+    return JSString::New(ctx, begin(), end());
   }
 
   core::UStringPiece BuildUStringPiece() const {
-    return core::UStringPiece(target_.data(), target_.size());
+    return core::UStringPiece(data(), size());
   }
 
   core::UString BuildUString() const {
-    return core::UString(target_.data(), target_.size());
+    return core::UString(data(), size());
   }
-
- private:
-  std::vector<uc16> target_;
 };
+
+
 
 } }  // namespace iv::lv5
 
