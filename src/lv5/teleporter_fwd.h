@@ -10,6 +10,7 @@ class JSCodeFunction;
 class Interpreter;
 
 class JSScript;
+class Context;
 
 } } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_TELEPORTER_FWD_H_

@@ -6,7 +6,7 @@ namespace iv {
 namespace lv5 {
 namespace teleporter {
 
-inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
+inline JSVal InDirectCallToEval(const Arguments& args, Error* e) {
   if (!args.size()) {
     return JSUndefined;
   }
@@ -14,10 +14,8 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
   if (!first.IsString()) {
     return first;
   }
-  Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(),
-                                         false, ERROR(error));
-                                         //  ctx->IsStrict(), ERROR(error));
+  Context* const ctx = static_cast<Context*>(args.ctx());
+  JSScript* const script = CompileScript(ctx, first.string(), false, ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env = NewDeclarativeEnvironment(ctx, ctx->global_env());
     const Interpreter::ContextSwitcher switcher(ctx,
@@ -40,7 +38,7 @@ inline JSVal InDirectCallToEval(const Arguments& args, Error* error) {
   return ctx->ret();
 }
 
-inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
+inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   if (!args.size()) {
     return JSUndefined;
   }
@@ -48,9 +46,9 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
   if (!first.IsString()) {
     return first;
   }
-  Context* const ctx = args.ctx();
-  JSScript* const script = CompileScript(args.ctx(), first.string(),
-                                         ctx->IsStrict(), ERROR(error));
+  Context* const ctx = static_cast<Context*>(args.ctx());
+  JSScript* const script = CompileScript(ctx, first.string(),
+                                         ctx->IsStrict(), ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env = NewDeclarativeEnvironment(ctx, ctx->lexical_env());
     const Interpreter::ContextSwitcher switcher(ctx,
@@ -69,7 +67,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* error) {
 }
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
-  Context* const ctx = args.ctx();
+  Context* const ctx = static_cast<Context*>(args.ctx());
   StringBuilder builder;
   BuildFunctionSource(&builder, args, ERROR(e));
   JSString* const source = builder.Build(ctx);

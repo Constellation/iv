@@ -9,8 +9,10 @@
 
 namespace iv {
 namespace lv5 {
+
 class AstFactory;
 class Context;
+
 namespace context {
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);

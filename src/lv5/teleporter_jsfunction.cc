@@ -61,7 +61,7 @@ JSCodeFunction::JSCodeFunction(Context* ctx,
 
 JSVal JSCodeFunction::Call(Arguments* args,
                            const JSVal& this_binding, Error* error) {
-  Context* const ctx = args->ctx();
+  Context* const ctx = static_cast<Context*>(args->ctx());
   Interpreter* const interp = ctx->interp();
   args->set_this_binding(this_binding);
   interp->CallCode(this, *args, error);
@@ -73,7 +73,7 @@ JSVal JSCodeFunction::Call(Arguments* args,
 }
 
 JSVal JSCodeFunction::Construct(Arguments* args, Error* e) {
-  Context* const ctx = args->ctx();
+  Context* const ctx = static_cast<Context*>(args->ctx());
   JSObject* const obj = JSObject::New(ctx);
   const JSVal proto = Get(ctx, context::prototype_symbol(ctx), ERROR(e));
   if (proto.IsObject()) {

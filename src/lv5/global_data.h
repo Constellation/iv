@@ -59,6 +59,10 @@ class GlobalData {
       prototype_symbol_(Intern(detail::kPrototypeString)),
       constructor_symbol_(Intern(detail::kConstructorString)),
       Array_symbol_(Intern(detail::kArrayString)) {
+    // discard random
+    for (std::size_t i = 0; i < 20; ++i) {
+      Random();
+    }
   }
 
   Symbol Intern(const core::StringPiece& str) {

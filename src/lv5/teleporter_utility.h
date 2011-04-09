@@ -8,13 +8,13 @@
 #include "lv5/jsstring.h"
 #include "lv5/error.h"
 #include "lv5/eval_source.h"
+#include "lv5/teleporter_context.h"
 #include "lv5/teleporter_jsscript.h"
 namespace iv {
 namespace lv5 {
+namespace teleporter {
 
 class Context;
-
-namespace teleporter {
 
 inline JSScript* CompileScript(Context* ctx, const JSString* str,
                                bool is_strict, Error* error) {

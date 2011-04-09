@@ -43,8 +43,6 @@ Symbol Array_symbol(const Context* ctx);
 
 JSFunction* throw_type_error(Context* ctx);
 
-Error* error(Context* ctx);
-
 bool IsStrict(const Context* ctx);
 
 VMStack* stack(Context* ctx);

@@ -6,6 +6,7 @@
 #include "lv5/teleporter_jsfunction.h"
 #include "lv5/teleporter_jsscript.h"
 #include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter_context.h"
 #include "lv5/teleporter_utility.h"
 
 #endif  // _IV_LV5_TELEPORTER_H_

@@ -14,7 +14,6 @@
 namespace iv {
 namespace lv5 {
 
-class Context;
 class Error;
 class JSEnv;
 class JSDeclEnv;
@@ -22,6 +21,8 @@ class JSObjectEnv;
 class JSReference;
 
 namespace teleporter {
+
+class Context;
 
 class Interpreter : private core::Noncopyable<Interpreter>::type,
                     public AstVisitor {

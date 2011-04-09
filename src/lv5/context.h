@@ -17,7 +17,6 @@
 #include "lv5/gc_template.h"
 #include "lv5/context_utils.h"
 #include "lv5/stack_resource.h"
-#include "lv5/teleporter.h"
 #include "lv5/vm_stack.h"
 
 namespace iv {
@@ -45,14 +44,6 @@ class Context : private core::Noncopyable<Context>::type {
   friend Symbol context::Intern(Context* ctx, double number);
 
   friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
-
-  enum Mode {
-    NORMAL,
-    BREAK,
-    CONTINUE,
-    RETURN,
-    THROW
-  };
 
   Context();
 
@@ -84,29 +75,33 @@ class Context : private core::Noncopyable<Context>::type {
     return global_env_;
   }
 
-  JSVal this_binding() const {
-    return binding_;
+  template<typename Func>
+  void DefineFunction(const Func& f,
+                      const core::StringPiece& func_name,
+                      std::size_t n) {
+    Error error;
+    JSFunction* const func = JSNativeFunction::New(this, f, n);
+    const Symbol name = context::Intern(this, func_name);
+    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
+    variable_env_->SetMutableBinding(this,
+                                     name,
+                                     func, strict_, &error);
   }
 
-  void set_this_binding(const JSVal& binding) {
-    binding_ = binding;
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  void DefineFunction(const core::StringPiece& func_name) {
+    Error error;
+    JSFunction* const f = JSInlinedFunction<func, n>::New(this);
+    const Symbol name = context::Intern(this, func_name);
+    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
+    variable_env_->SetMutableBinding(this, name,
+                                     f, strict_, &error);
   }
 
-  teleporter::Interpreter* interp() {
-    return &interp_;
-  }
+  void Initialize();
 
-  Mode mode() const {
-    return mode_;
-  }
-
-  template<Mode m>
-  bool IsMode() const {
-    return mode_ == m;
-  }
-
-  void set_mode(Mode mode) {
-    mode_ = mode;
+  JSFunction* throw_type_error() {
+    return &throw_type_error_;
   }
 
   bool IsStrict() const {
@@ -115,101 +110,6 @@ class Context : private core::Noncopyable<Context>::type {
 
   void set_strict(bool strict) {
     strict_ = strict;
-  }
-
-  const Error& error() const {
-    return error_;
-  }
-
-  Error* error() {
-    return &error_;
-  }
-
-  void set_error(const Error& error) {
-    error_ = error;
-  }
-
-  const JSVal& ret() const {
-    return ret_;
-  }
-
-  JSVal& ret() {
-    return ret_;
-  }
-
-  void set_ret(const JSVal& ret) {
-    ret_ = ret;
-  }
-
-  void Return(JSVal val) {
-    ret_ = val;
-  }
-
-  void SetStatement(Mode mode, const JSVal& val,
-                    const BreakableStatement* target) {
-    mode_ = mode;
-    ret_ = val;
-    target_ = target;
-  }
-
-  bool IsError() const {
-    return error_;
-  }
-
-  const BreakableStatement* target() const {
-    return target_;
-  }
-
-  template<typename Func>
-  void DefineFunction(const Func& f,
-                      const core::StringPiece& func_name,
-                      std::size_t n) {
-    JSFunction* const func = JSNativeFunction::New(this, f, n);
-    const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, &error_);
-    if (error_) {
-      return;
-    }
-    variable_env_->SetMutableBinding(this,
-                                     name,
-                                     func, strict_, &error_);
-  }
-
-  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  void DefineFunction(const core::StringPiece& func_name) {
-    JSFunction* const f = JSInlinedFunction<func, n>::New(this);
-    const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error_));
-    variable_env_->SetMutableBinding(this, name,
-                                     f, strict_, &error_);
-  }
-
-  void Initialize();
-
-  bool Run(teleporter::JSScript* script);
-
-  JSVal ErrorVal();
-
-  JSFunction* throw_type_error() {
-    return &throw_type_error_;
-  }
-
-  teleporter::JSScript* current_script() const {
-    return current_script_;
-  }
-
-  void set_current_script(teleporter::JSScript* script) {
-    current_script_ = script;
-  }
-
-  bool IsShouldGC() {
-    ++generate_script_counter_;
-    if (generate_script_counter_ > 30) {
-      generate_script_counter_ = 0;
-      return true;
-    } else {
-      return false;
-    }
   }
 
   bool IsArray(const JSObject& obj) {
@@ -228,15 +128,6 @@ class Context : private core::Noncopyable<Context>::type {
 
   JSString* ToString(Symbol sym);
 
-  bool InCurrentLabelSet(const AnonymousBreakableStatement* stmt) const {
-    // AnonymousBreakableStatement has empty label at first
-    return !target_ || stmt == target_;
-  }
-
-  bool InCurrentLabelSet(const NamedOnlyBreakableStatement* stmt) const {
-    return stmt == target_;
-  }
-
   VMStack* stack() {
     return stack_resource_.stack();
   }
@@ -248,17 +139,7 @@ class Context : private core::Noncopyable<Context>::type {
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;
-
-  // teleporter::Interpreter data
-  teleporter::Interpreter interp_;
-  JSVal binding_;
-  Mode mode_;
-  JSVal ret_;
-  const BreakableStatement* target_;
-  Error error_;
   bool strict_;
-  std::size_t generate_script_counter_;
-  teleporter::JSScript* current_script_;
 };
 
 } }  // namespace iv::lv5

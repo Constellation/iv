@@ -390,7 +390,9 @@ class VM {
         }
 
         case OP::PUSH_THIS: {
-          PUSH(ctx_->this_binding());
+          // TODO(Constellation) implement it
+          // PUSH(ctx_->this_binding());
+          PUSH(JSUndefined);
           continue;
         }
 

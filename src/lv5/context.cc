@@ -18,25 +18,6 @@
 #include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
-namespace {
-
-class ScriptScope : private core::Noncopyable<ScriptScope>::type {
- public:
-  ScriptScope(Context* ctx, teleporter::JSScript* script)
-    : ctx_(ctx),
-      prev_(ctx->current_script()) {
-    ctx_->set_current_script(script);
-  }
-  ~ScriptScope() {
-    ctx_->set_current_script(prev_);
-  }
- private:
-  Context* ctx_;
-  teleporter::JSScript* prev_;
-};
-
-}  // namespace
-
 namespace context {
 
 const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
@@ -81,10 +62,6 @@ Symbol Lookup(Context* ctx, uint32_t index, bool* res) {
 
 Symbol Lookup(Context* ctx, double number, bool* res) {
   return ctx->global_data()->CheckIntern(number, res);
-}
-
-Error* error(Context* ctx) {
-  return ctx->error();
 }
 
 Symbol arguments_symbol(const Context* ctx) {
@@ -152,26 +129,12 @@ Context::Context()
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL),
-    interp_(),
-    binding_(global_data_.global_obj()),
-    mode_(NORMAL),
-    ret_(),
-    target_(NULL),
-    error_(),
-    strict_(false),
-    generate_script_counter_(0),
-    current_script_(NULL) {
+    strict_(false) {
   JSObjectEnv* const env = NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
   env->set_provide_this(true);
-  interp_.set_context(this);
-  // discard random
-  for (std::size_t i = 0; i < 20; ++i) {
-    global_data_.Random();
-  }
-  Initialize();
 }
 
 double Context::Random() {
@@ -180,18 +143,6 @@ double Context::Random() {
 
 JSString* Context::ToString(Symbol sym) {
   return JSString::New(this, global_data_.GetSymbolString(sym));
-}
-
-bool Context::Run(teleporter::JSScript* script) {
-  const ScriptScope scope(this, script);
-  interp_.Run(script->function(),
-              script->type() == teleporter::JSScript::kEval);
-  assert(!ret_.IsEmpty() || error_);
-  return error_;
-}
-
-JSVal Context::ErrorVal() {
-  return JSError::Detail(this, &error_);
 }
 
 void Context::Initialize() {

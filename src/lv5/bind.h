@@ -51,10 +51,7 @@ class Scope {
 class Object : public Scope {
  public:
   Object(Context* ctx, JSObject* obj)
-      : Scope(ctx), obj_(obj), e_(context::error(ctx)) { }
-
-  Object(Context* ctx, JSObject* obj, Error* e)
-      : Scope(ctx), obj_(obj), e_(e) { }
+      : Scope(ctx), obj_(obj), e_() { }
 
   Object& class_name(const core::StringPiece& string) {
     return class_name(context::Intern(ctx_, string));
@@ -82,7 +79,7 @@ class Object : public Scope {
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
           WRITABLE | CONFIGURABLE),
-      false, e_);
+      false, &e_);
     return *this;
   }
 
@@ -98,7 +95,7 @@ class Object : public Scope {
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
           attr),
-      false, e_);
+      false, &e_);
     return *this;
   }
 
@@ -110,7 +107,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, NONE),
-      false, e_);
+      false, &e_);
     return *this;
   }
 
@@ -122,7 +119,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, attr),
-      false, e_);
+      false, &e_);
     return *this;
   }
 
@@ -139,7 +136,7 @@ class Object : public Scope {
       AccessorDescriptor(getter,
                          setter,
                          attr),
-      false, e_);
+      false, &e_);
     return *this;
   }
 
@@ -165,13 +162,13 @@ class Object : public Scope {
     return obj_;
   }
 
-  Error* error() const {
-    return e_;
+  Error* error() {
+    return &e_;
   }
 
  private:
   JSObject* obj_;
-  Error* e_;
+  Error e_;
 };
 
 } } }  // namespace iv::lv5::bind

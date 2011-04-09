@@ -27,7 +27,7 @@ JSArray::JSArray(Context* ctx, std::size_t len)
   JSObject::DefineOwnProperty(ctx, context::length_symbol(ctx),
                               DataDescriptor(len,
                                              PropertyDescriptor::WRITABLE),
-                                             false, ctx->error());
+                                             false, NULL);
 }
 
 PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {

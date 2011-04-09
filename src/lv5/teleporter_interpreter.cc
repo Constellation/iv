@@ -22,6 +22,7 @@
 #include "lv5/jsast.h"
 #include "lv5/internal.h"
 #include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter_context.h"
 #include "lv5/runtime_teleporter.h"
 namespace iv {
 namespace lv5 {
@@ -708,7 +709,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
     const BreakableStatement* const target = ctx_->target();
 
     ctx_->error()->Clear();
-    ctx_->SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
+    ctx_->SetStatement(Context::NORMAL, JSEmpty, NULL);
     (*block).Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
       if (mode == Context::THROW) {

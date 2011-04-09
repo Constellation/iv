@@ -9,6 +9,8 @@ namespace iv {
 namespace lv5 {
 namespace teleporter {
 
+class Context;
+
 class JSScript : public lv5::JSScript {
  public:
   typedef JSScript this_type;

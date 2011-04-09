@@ -54,7 +54,7 @@ class Interactive {
         if (ctx_.Run(script)) {
           val = ctx_.ErrorVal();
           ctx_.error()->Clear();
-          ctx_.SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
+          ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
         } else {
           val = ctx_.ret();
         }
@@ -65,13 +65,13 @@ class Interactive {
           } else {
             val = ctx_.ErrorVal();
             ctx_.error()->Clear();
-            ctx_.SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
+            ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
             const JSString* const str = val.ToString(&ctx_, ctx_.error());
             if (!ctx_.IsError()) {
               std::cout << *str << std::endl;
             } else {
               ctx_.error()->Clear();
-              ctx_.SetStatement(Context::Context::NORMAL, JSEmpty, NULL);
+              ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
               std::cout << "<STRING CONVERSION FAILED>" << std::endl;
             }
           }
@@ -104,7 +104,7 @@ class Interactive {
                                                         factory, src);
     }
   }
-  Context ctx_;
+  teleporter::Context ctx_;
 };
 
 } }  // namespace iv::lv5
