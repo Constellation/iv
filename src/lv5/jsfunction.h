@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_JSFUNCTION_H_
 #define _IV_LV5_JSFUNCTION_H_
+#include <algorithm>
 #include "ustringpiece.h"
 #include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
@@ -11,7 +12,9 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
+
 JSVal GlobalEval(const Arguments& args, Error* error);
+
 }  // namespace iv::lv5::runtime
 
 class Context;
@@ -271,16 +274,14 @@ class JSBoundFunction : public JSFunction {
   static JSBoundFunction* New(Context* ctx, JSFunction* target,
                               const JSVal& this_binding,
                               const Arguments& args) {
-    JSBoundFunction* const bound =
-        new JSBoundFunction(ctx, target, this_binding, args);
-    return bound;
+    return new JSBoundFunction(ctx, target, this_binding, args);
   }
 
  private:
   JSBoundFunction(Context* ctx,
-                   JSFunction* target,
-                   const JSVal& this_binding,
-                   const Arguments& args);
+                  JSFunction* target,
+                  const JSVal& this_binding,
+                  const Arguments& args);
 
   JSFunction* target_;
   JSVal this_binding_;

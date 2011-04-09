@@ -1,4 +1,5 @@
 #include <iostream>  // NOLINT
+#include <algorithm>
 #include "ast.h"
 #include "lv5/lv5.h"
 #include "lv5/jsfunction.h"
@@ -9,6 +10,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/arguments.h"
 #include "lv5/jsscript.h"
+#include "lv5/bind.h"
 
 namespace iv {
 namespace lv5 {
@@ -99,9 +101,8 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
   : target_(target),
     this_binding_(this_binding),
     arguments_(args.size() == 0 ? 0 : args.size() - 1) {
-  using std::copy;
   if (args.size() > 0) {
-    copy(args.begin() + 1, args.end(), arguments_.begin());
+    std::copy(args.begin() + 1, args.end(), arguments_.begin());
   }
   const uint32_t bound_args_size = arguments_.size();
   const Class& cls = context::Cls(ctx, "Function");
@@ -110,7 +111,7 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
   // step 15
   if (target_->class_name() == cls.name) {
     // target [[Class]] is "Function"
-    const JSVal length = target_->Get(ctx, context::length_symbol(ctx), ctx->error());
+    const JSVal length = target_->Get(ctx, context::length_symbol(ctx), NULL);
     assert(length.IsNumber());
     const uint32_t target_param_size = core::DoubleToUInt32(length.number());
     assert(target_param_size == length.number());
@@ -128,17 +129,17 @@ JSBoundFunction::JSBoundFunction(Context* ctx,
                        PropertyDescriptor::NONE),
                        false, NULL);
   }
-  JSFunction* const throw_type_error = ctx->throw_type_error();
+  JSFunction* const throw_type_error = context::throw_type_error(ctx);
   DefineOwnProperty(ctx, context::caller_symbol(ctx),
                     AccessorDescriptor(throw_type_error,
                                        throw_type_error,
                                        PropertyDescriptor::NONE),
-                    false, ctx->error());
+                    false, NULL);
   DefineOwnProperty(ctx, context::arguments_symbol(ctx),
                     AccessorDescriptor(throw_type_error,
                                        throw_type_error,
                                        PropertyDescriptor::NONE),
-                    false, ctx->error());
+                    false, NULL);
 }
 
 } }  // namespace iv::lv5
