@@ -8,8 +8,6 @@
 #include "lv5/arguments.h"
 #include "lv5/jsast.h"
 #include "lv5/lv5.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/teleporter_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace runtime {

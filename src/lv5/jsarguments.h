@@ -8,7 +8,6 @@
 #include "lv5/jsobject.h"
 #include "lv5/arguments.h"
 #include "lv5/bind.h"
-#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 
@@ -27,7 +26,7 @@ class JSArguments : public JSObject {
       map_() { }
 
   static JSArguments* New(Context* ctx,
-                          teleporter::JSCodeFunction* code,
+                          JSFunction* func,
                           const Identifiers& names,
                           const Arguments& args,
                           JSDeclEnv* env,
@@ -69,7 +68,7 @@ class JSArguments : public JSObject {
                         throw_type_error,
                         bind::NONE);
     } else {
-      binder.def(context::callee_symbol(ctx), code, bind::W | bind::C);
+      binder.def(context::callee_symbol(ctx), func, bind::W | bind::C);
     }
     return obj;
   }
