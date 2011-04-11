@@ -52,7 +52,7 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 }
 
 template<typename Source>
-iv::lv5::railgun::Code* Compile(iv::lv5::Context* ctx, Source* src) {
+iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx, Source* src) {
   iv::lv5::AstFactory factory(ctx);
   iv::core::Parser<iv::lv5::AstFactory, Source, true, true>
       parser(&factory, src);
@@ -66,7 +66,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::Context* ctx, Source* src) {
 
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
-  iv::lv5::Context ctx;
+  iv::lv5::railgun::Context ctx;
   iv::icu::Source src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, &src);
   if (!code) {
@@ -80,7 +80,7 @@ int Execute(const iv::core::StringPiece& data,
 
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
-  iv::lv5::Context ctx;
+  iv::lv5::railgun::Context ctx;
   iv::icu::Source src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, &src);
   if (!code) {

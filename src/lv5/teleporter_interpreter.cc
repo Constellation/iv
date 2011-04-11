@@ -1439,15 +1439,17 @@ void Interpreter::Visit(const FunctionCall* call) {
       this_binding = ref->base().environment()->ImplicitThisValue();
       // direct call to eval check
       {
-        if (callable->IsEvalFunction()) {
-          // this function is eval function
-          const Identifier* const maybe_eval = call->target()->AsIdentifier();
-          if (maybe_eval &&
-              maybe_eval->symbol() == context::eval_symbol(ctx_)) {
-            // direct call to eval point
-            args.set_this_binding(this_binding);
-            ctx_->ret() = DirectCallToEval(args, CHECK);
-            return;
+        if (JSAPI native = callable->NativeFunction()) {
+          if (native == &GlobalEval) {
+            // this function is eval function
+            const Identifier* const maybe_eval = call->target()->AsIdentifier();
+            if (maybe_eval &&
+                maybe_eval->symbol() == context::eval_symbol(ctx_)) {
+              // direct call to eval point
+              args.set_this_binding(this_binding);
+              ctx_->ret() = DirectCallToEval(args, CHECK);
+              return;
+            }
           }
         }
       }

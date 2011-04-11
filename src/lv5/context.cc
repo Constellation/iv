@@ -937,7 +937,7 @@ void Context::Initialize() {
         // section 15.1.1.3 undefined
         .def("undefined", JSUndefined)
         // section 15.1.2.1 eval(x)
-        .def<&runtime::GlobalEval, 1>("eval")
+        .def<&teleporter::GlobalEval, 1>("eval")
         // section 15.1.2.3 parseIng(string, radix)
         .def<&runtime::GlobalParseInt, 2>("parseInt")
         // section 15.1.2.3 parseFloat(string)

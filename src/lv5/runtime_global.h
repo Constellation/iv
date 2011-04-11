@@ -221,12 +221,6 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
 
 }  // iv::lv5::runtime::detail
 
-// section 15.1.2.3 parseIng(string, radix)
-inline JSVal GlobalEval(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("eval", args, error);
-  return teleporter::InDirectCallToEval(args, error);
-}
-
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("parseInt", args, error);
   if (args.size() > 0) {
@@ -343,9 +337,8 @@ inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
                                               *component_string, error);
 }
 
-inline JSVal ThrowTypeError(const Arguments& args, Error* error) {
-  error->Report(Error::Type,
-                "[[ThrowTypeError]] called");
+inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
+  e->Report(Error::Type, "[[ThrowTypeError]] called");
   return JSUndefined;
 }
 

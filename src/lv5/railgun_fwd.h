@@ -9,6 +9,7 @@ class CodeContext;
 class Code;
 
 class Compiler;
+class Context;
 
 template<typename Derived>
 class DisAssembler;

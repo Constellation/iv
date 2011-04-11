@@ -4,6 +4,7 @@
 // railgun is Virtual Machine in lv5(ECMAScript Engine)
 
 #include "lv5/railgun_op.h"
+#include "lv5/railgun_context.h"
 #include "lv5/railgun_vm.h"
 #include "lv5/railgun_code.h"
 #include "lv5/railgun_compiler.h"

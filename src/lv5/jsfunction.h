@@ -10,11 +10,8 @@
 #include "lv5/lv5.h"
 namespace iv {
 namespace lv5 {
-namespace runtime {
 
-JSVal GlobalEval(const Arguments& args, Error* error);
-
-}  // namespace iv::lv5::runtime
+typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class Context;
 class JSNativeFunction;
@@ -85,6 +82,10 @@ class JSFunction : public JSObject {
 
   virtual bool IsNativeFunction() const = 0;
 
+  virtual JSAPI NativeFunction() const {
+    return NULL;
+  }
+
   virtual core::UStringPiece GetSource() const {
     return core::UStringPiece();
   }
@@ -94,19 +95,13 @@ class JSFunction : public JSObject {
   }
 
   virtual bool IsStrict() const = 0;
-
-  virtual bool IsEvalFunction() const {
-    return false;
-  }
 };
 
 class JSNativeFunction : public JSFunction {
  public:
-  typedef JSVal(*value_type)(const Arguments&, Error*);
-
   JSNativeFunction() : func_() { }
 
-  JSNativeFunction(Context* ctx, value_type func, uint32_t n)
+  JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
     : func_(func) {
     DefineOwnProperty(
         ctx, context::length_symbol(ctx),
@@ -135,7 +130,7 @@ class JSNativeFunction : public JSFunction {
     return false;
   }
 
-  value_type function() const {
+  virtual JSAPI NativeFunction() const {
     return func_;
   }
 
@@ -159,7 +154,7 @@ class JSNativeFunction : public JSFunction {
   }
 
  private:
-  value_type func_;
+  JSAPI func_;
 };
 
 class JSBoundFunction : public JSFunction {
@@ -269,10 +264,9 @@ class JSBoundFunction : public JSFunction {
   JSVals arguments_;
 };
 
-template<JSVal (*func)(const Arguments&, Error*), uint32_t n>
+template<JSAPI func, uint32_t n>
 class JSInlinedFunction : public JSFunction {
  public:
-  typedef JSVal(*value_type)(const Arguments&, Error*);
   typedef JSInlinedFunction<func, n> this_type;
 
   explicit JSInlinedFunction(Context* ctx) {
@@ -323,11 +317,7 @@ class JSInlinedFunction : public JSFunction {
     return false;
   }
 
-  bool IsEvalFunction() const {
-    return func == &runtime::GlobalEval;
-  }
-
-  value_type function() const {
+  virtual JSAPI NativeFunction() const {
     return func;
   }
 
