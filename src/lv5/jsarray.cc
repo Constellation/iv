@@ -18,18 +18,6 @@
 namespace iv {
 namespace lv5 {
 
-JSArray::JSArray(Context* ctx, uint32_t len)
-  : JSObject(),
-    vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
-    map_(NULL),
-    dense_(true) {
-  JSObject::DefineOwnProperty(
-      ctx, context::length_symbol(ctx),
-      DataDescriptor(JSVal::UInt32(len),
-                     PropertyDescriptor::WRITABLE),
-      false, NULL);
-}
-
 PropertyDescriptor JSArray::GetOwnProperty(Context* ctx, Symbol name) const {
   uint32_t index;
   if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {

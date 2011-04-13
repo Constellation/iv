@@ -9,8 +9,11 @@
 namespace iv {
 namespace lv5 {
 namespace detail {
-  static const uint32_t kMaxVectorSize = 10000;
+
+static const uint32_t kMaxVectorSize = 10000;
+
 }  // namespace iv::lv5::detail
+
 class Context;
 
 class JSArray : public JSObject {
@@ -18,7 +21,17 @@ class JSArray : public JSObject {
   friend class railgun::VM;
   typedef GCMap<uint32_t, JSVal>::type Map;
 
-  JSArray(Context* ctx, uint32_t len);
+  JSArray(Context* ctx, uint32_t len)
+    : JSObject(),
+      vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
+      map_(NULL),
+      dense_(true) {
+    JSObject::DefineOwnProperty(
+        ctx, context::length_symbol(ctx),
+        DataDescriptor(JSVal::UInt32(len),
+                       PropertyDescriptor::WRITABLE),
+        false, NULL);
+  }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
