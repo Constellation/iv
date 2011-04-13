@@ -28,8 +28,7 @@ class JSStringObject : public JSObject {
 
   PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
                                              uint32_t index) const {
-    const SymbolChecker check(ctx, index);
-    if (check.Found()) {
+    if (const SymbolChecker check = SymbolChecker(ctx, index)) {
       PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, check.symbol());
       if (!desc.IsEmpty()) {
         return desc;

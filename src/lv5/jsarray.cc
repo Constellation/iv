@@ -63,8 +63,7 @@ PropertyDescriptor JSArray::GetOwnPropertyWithIndex(Context* ctx,
       return JSUndefined;
     }
   }
-  const SymbolChecker check(ctx, index);
-  if (check.Found()) {
+  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
     return JSObject::GetOwnProperty(ctx, check.symbol());
   } else {
     // property not defined
@@ -326,8 +325,7 @@ bool JSArray::DeleteWithIndex(Context* ctx,
       return true;
     }
   }
-  const SymbolChecker check(ctx, index);
-  if (check.Found()) {
+  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
     return JSObject::Delete(ctx, check.symbol(), th, res);
   } else {
     return true;

@@ -1,14 +1,15 @@
 #ifndef _IV_LV5_SYMBOL_CHECKER_H_
 #define _IV_LV5_SYMBOL_CHECKER_H_
 #include "stringpiece.h"
-#include "noncopyable.h"
 #include "lv5/symbol.h"
 #include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
 
-class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {
+class SymbolChecker {
  public:
+  typedef void (SymbolChecker::*bool_type)() const;
+
   SymbolChecker(Context* ctx, const core::StringPiece& str)
     : found_(false),
       sym_(context::Lookup(ctx, str, &found_)) {
@@ -29,8 +30,8 @@ class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {
       sym_(context::Lookup(ctx, number, &found_)) {
   }
 
-  bool Found() const {
-    return found_;
+  operator bool_type() const {
+    return found_ ? &SymbolChecker::this_type_does_not_support_comparisons : 0;
   }
 
   Symbol symbol() const {
@@ -38,6 +39,8 @@ class SymbolChecker : private core::Noncopyable<SymbolChecker>::type {
   }
 
  private:
+  void this_type_does_not_support_comparisons() const { }
+
   bool found_;
   Symbol sym_;
 };

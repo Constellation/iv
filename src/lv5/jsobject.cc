@@ -118,8 +118,7 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
 
 PropertyDescriptor JSObject::GetOwnPropertyWithIndex(Context* ctx,
                                                      uint32_t index) const {
-  const SymbolChecker check(ctx, index);
-  if (check.Found()) {
+  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
     return GetOwnProperty(ctx, check.symbol());
   } else {
     return JSUndefined;
@@ -335,9 +334,8 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
 
 bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
                                bool th, Error* e) {
-  const SymbolChecker checker(ctx, index);
-  if (checker.Found()) {
-    return Delete(ctx, checker.symbol(), th, e);
+  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
+    return Delete(ctx, check.symbol(), th, e);
   } else {
     return true;
   }
