@@ -927,17 +927,17 @@ class Compiler
             }
           } else {
             // IndexAccess
-            const IndexAccess& ac = *expr.AsIndexAccess();
+            const IndexAccess& idxac = *expr.AsIndexAccess();
             if (token == Token::INC) {
               EmitElement<OP::INCREMENT_PROP,
                           OP::INCREMENT_PROP_STRICT,
                           OP::INCREMENT_ELEMENT,
-                          OP::INCREMENT_ELEMENT_STRICT>(ac);
+                          OP::INCREMENT_ELEMENT_STRICT>(idxac);
             } else {
               EmitElement<OP::DECREMENT_PROP,
                           OP::DECREMENT_PROP_STRICT,
                           OP::DECREMENT_ELEMENT,
-                          OP::DECREMENT_ELEMENT_STRICT>(ac);
+                          OP::DECREMENT_ELEMENT_STRICT>(idxac);
             }
           }
         } else {
@@ -1027,17 +1027,17 @@ class Compiler
         }
       } else {
         // IndexAccess
-        const IndexAccess& ac = *expr.AsIndexAccess();
+        const IndexAccess& idxac = *expr.AsIndexAccess();
         if (token == Token::INC) {
           EmitElement<OP::POSTFIX_INCREMENT_PROP,
                       OP::POSTFIX_INCREMENT_PROP_STRICT,
                       OP::POSTFIX_INCREMENT_ELEMENT,
-                      OP::POSTFIX_INCREMENT_ELEMENT_STRICT>(ac);
+                      OP::POSTFIX_INCREMENT_ELEMENT_STRICT>(idxac);
         } else {
           EmitElement<OP::POSTFIX_DECREMENT_PROP,
                       OP::POSTFIX_DECREMENT_PROP_STRICT,
                       OP::POSTFIX_DECREMENT_ELEMENT,
-                      OP::POSTFIX_DECREMENT_ELEMENT_STRICT>(ac);
+                      OP::POSTFIX_DECREMENT_ELEMENT_STRICT>(idxac);
         }
       }
     } else {

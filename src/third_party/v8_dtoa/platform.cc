@@ -73,7 +73,9 @@ void OS::Abort() {
      * On Mac OS X, Breakpad ignores signals. Only real Mach exceptions are
      * trapped.
      */
+#if !defined(__clang__)
     *((int *) NULL) = 0;  /* To continue from here in GDB: "return" then "continue". */
+#endif
     raise(SIGABRT);  /* In case above statement gets nixed by the optimizer. */
 #else
     raise(SIGABRT);  /* To continue from here in GDB: "signal 0". */

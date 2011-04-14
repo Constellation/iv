@@ -71,7 +71,8 @@ def Build():
   var.AddVariables(
     BoolVariable('debug', '', 0),
     BoolVariable('gprof', '', 0),
-    BoolVariable('gcov', '', 0)
+    BoolVariable('gcov', '', 0),
+    BoolVariable('clang', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
@@ -134,6 +135,9 @@ def Build():
       CCFLAGS=["-coverage"],
       LINKFLAGS=["-coverage"]
     )
+
+  if env['clang']:
+    env.Replace(CXX='clang++', CC='clang')
 
 #  if env['debug']:
 #    env.Append(

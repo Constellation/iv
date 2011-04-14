@@ -120,6 +120,7 @@ class VM {
 #define JUMPBY(x) (instr += (x))
 #define PUSH(x) (*sp++ = (x))
 #define POP() (*--sp)
+#define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
 #define TOP() (sp[-1])
 #define SECOND() (sp[-2])
@@ -324,7 +325,7 @@ class VM {
         }
 
         case OP::POP_TOP: {
-          POP();
+          POP_UNUSED();
           continue;
         }
 

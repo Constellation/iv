@@ -908,23 +908,17 @@ class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
   StringLiteral(const std::vector<uc16>& buffer,
-                Factory* factory) {
-    InitializeStringLiteral(buffer, factory);
+                Factory* factory)
+    : value_(buffer.data(),
+             buffer.size(),
+             typename value_type::allocator_type(factory)) {
   }
 
   inline const value_type& value() const {
     return value_;
   }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
- protected:
-  StringLiteral() { }
-  void InitializeStringLiteral(const std::vector<uc16>& buffer,
-                               Factory* factory) {
-    value_ = value_type(
-        buffer.data(),
-        buffer.size(),
-        typename value_type::allocator_type(factory));
-  }
+
  private:
   value_type value_;
 };
@@ -1250,6 +1244,7 @@ class PropertyAccess : public PropertyAccessBase<Factory> {
   void InitializePropertyAccess(Expression<Factory>* obj) {
     target_ = obj;
   }
+
   Expression<Factory>* target_;
 };
 
@@ -1266,7 +1261,7 @@ class IdentifierAccess : public IdentifierAccessBase<Factory> {
   IdentifierAccess(Expression<Factory>* obj,
                    Identifier<Factory>* key)
     : key_(key) {
-    InitializePropertyAccess(obj);
+    PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
   inline Identifier<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
@@ -1287,7 +1282,7 @@ class IndexAccess : public IndexAccessBase<Factory> {
   IndexAccess(Expression<Factory>* obj,
               Expression<Factory>* key)
     : key_(key) {
-    InitializePropertyAccess(obj);
+    PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
   inline Expression<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IndexAccess)
