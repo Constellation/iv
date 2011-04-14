@@ -3,7 +3,6 @@
 #include <cmath>
 #include <algorithm>
 #include <tr1/cstdint>
-#include <tr1/cmath>
 #include <tr1/type_traits>
 #include "byteorder.h"
 #include "enable_if.h"

@@ -1,7 +1,6 @@
 #ifndef _IV_LV5_TELEPORTER_INTERPRETER_H_
 #define _IV_LV5_TELEPORTER_INTERPRETER_H_
 #include <cmath>
-#include <tr1/cmath>
 #include "ast.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
