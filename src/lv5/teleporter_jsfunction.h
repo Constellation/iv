@@ -22,7 +22,8 @@ class JSCodeFunction : public JSFunction {
  public:
   JSCodeFunction(Context* ctx,
                  const FunctionLiteral* func,
-                 JSScript* script, JSEnv* env)
+                 JSScript* script,
+                 JSEnv* env)
     : function_(func),
       script_(script),
       env_(env) {
@@ -44,12 +45,20 @@ class JSCodeFunction : public JSFunction {
         DataDescriptor(this,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
-                       false, &e);
+        false, &e);
     DefineOwnProperty(
         ctx, context::prototype_symbol(ctx),
         DataDescriptor(proto,
                        PropertyDescriptor::WRITABLE),
-                       false, &e);
+        false, &e);
+    core::UStringPiece name = GetName();
+    if (!name.empty()) {
+      DefineOwnProperty(
+          ctx, context::Intern(ctx, "name"),
+          DataDescriptor(JSString::New(ctx, name),
+                         PropertyDescriptor::NONE),
+          false, &e);
+    }
     if (ctx->IsStrict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();
       DefineOwnProperty(ctx, context::caller_symbol(ctx),
