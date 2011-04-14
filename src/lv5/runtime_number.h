@@ -2,7 +2,6 @@
 #define _IV_LV5_RUNTIME_NUMBER_H_
 #include <cstdlib>
 #include <tr1/array>
-#include <tr1/cmath>
 #include <tr1/cstdio>
 #include <tr1/cinttypes>
 #include "dtoa.h"
