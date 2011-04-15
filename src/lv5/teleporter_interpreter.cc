@@ -798,10 +798,9 @@ void Interpreter::Visit(const Assignment* assign) {
         break;
       }
       case Token::ASSIGN_SHR: {  // >>>=
-        const double left_num = lhs.ToNumber(ctx_, CHECK);
-        const double right_num = rhs.ToNumber(ctx_, CHECK);
-        const uint32_t res = core::DoubleToUInt32(left_num)
-            >> (core::DoubleToInt32(right_num) & 0x1f);
+        const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
+        const double right = rhs.ToNumber(ctx_, CHECK);
+        const uint32_t res = left >> (core::DoubleToInt32(right) & 0x1f);
         result.set_value(res);
         break;
       }
@@ -953,10 +952,9 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::SHR: {  // >>>
-        const double left_num = lhs.ToNumber(ctx_, CHECK);
-        const double right_num = rhs.ToNumber(ctx_, CHECK);
-        const uint32_t res = core::DoubleToUInt32(left_num)
-            >> (core::DoubleToInt32(right_num) & 0x1f);
+        const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
+        const double right = rhs.ToNumber(ctx_, CHECK);
+        const uint32_t res = left >> (core::DoubleToInt32(right) & 0x1f);
         ctx_->Return(res);
         return;
       }
