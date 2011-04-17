@@ -70,7 +70,8 @@
  * #define IBM for IBM mainframe-style floating-point arithmetic.
  * #define VAX for VAX-style floating-point arithmetic (D_floating).
  * #define No_leftright to omit left-right logic in fast floating-point
- *	computation of dtoa.
+ *	computation of dtoa.  This will cause dtoa modes 4 and 5 to be
+ *	treated the same as modes 2 and 3 for some inputs.
  * #define Honor_FLT_ROUNDS if FLT_ROUNDS can assume the values 2 or 3
  *	and strtod and dtoa should round accordingly.  Unless Trust_FLT_ROUNDS
  *	is also #defined, fegetround() will be queried for the rounding mode.
@@ -84,7 +85,12 @@
  * #define RND_PRODQUOT to use rnd_prod and rnd_quot (assembly routines
  *	that use extended-precision instructions to compute rounded
  *	products and quotients) with IBM.
- * #define ROUND_BIASED for IEEE-format with biased rounding.
+ * #define ROUND_BIASED for IEEE-format with biased rounding and arithmetic
+ *	that rounds toward +Infinity.
+ * #define ROUND_BIASED_without_Round_Up for IEEE-format with biased
+ *	rounding when the underlying floating-point arithmetic uses
+ *	unbiased rounding.  This prevent using ordinary floating-point
+ *	arithmetic when the result could be computed with one rounding error.
  * #define Inaccurate_Divide for IEEE-format with correctly rounded
  *	products but inaccurate quotients, e.g., for Intel i860.
  * #define NO_LONG_LONG on machines that do not have a "long long"
@@ -457,6 +463,11 @@ extern int strtod_diglim;
 
 #ifndef IEEE_Arith
 #define ROUND_BIASED
+#else
+#ifdef ROUND_BIASED_without_Round_Up
+#undef  ROUND_BIASED
+#define ROUND_BIASED
+#endif
 #endif
 
 #ifdef RND_PRODQUOT
@@ -516,7 +527,7 @@ BCinfo { int dp0, dp1, dplen, dsign, e0, inexact, nd, nd0, rounding, scale, uflc
 #define Kmax 7
 
 #ifdef __cplusplus
-// extern "C" double strtod(const char *s00, char **se);
+extern "C" double strtod(const char *s00, char **se);
 extern "C" char *dtoa(double d, int mode, int ndigits,
 			int *decpt, int *sign, char **rve);
 #endif
@@ -1531,7 +1542,7 @@ match
 #ifdef KR_headers
 	(sp, t) char **sp, *t;
 #else
-	(CONST char **sp, const char *t)
+	(CONST char **sp, char *t)
 #endif
 {
 	int c, d;
@@ -1729,7 +1740,7 @@ increment(Bigint *b)
 	return b;
 	}
 
-inline void
+ void
 #ifdef KR_headers
 gethex(sp, rvp, rounding, sign)
 	CONST char **sp; U *rvp; int rounding, sign;
@@ -2459,7 +2470,7 @@ retlow1:
 	}
 #endif /* NO_STRTOD_BIGCOMP */
 
-inline double
+ double
 strtod
 #ifdef KR_headers
 	(s00, se) CONST char *s00; char **se;
@@ -2580,6 +2591,8 @@ strtod
 			for(; c == '0'; c = *++s)
 				nz++;
 			if (c > '0' && c <= '9') {
+				bc.dp0 = s0 - s;
+				bc.dp1 = bc.dp0 + bc.dplen;
 				s0 = s;
 				nf += nz;
 				nz = 0;
@@ -2707,6 +2720,7 @@ strtod
 			) {
 		if (!e)
 			goto ret;
+#ifndef ROUND_BIASED_without_Round_Up
 		if (e > 0) {
 			if (e <= Ten_pmax) {
 #ifdef VAX
@@ -2767,6 +2781,7 @@ strtod
 			goto ret;
 			}
 #endif
+#endif /* ROUND_BIASED_without_Round_Up */
 		}
 	e1 += nd - k;
 
@@ -3543,7 +3558,7 @@ rv_alloc(int i)
 
 	j = sizeof(ULong);
 	for(k = 0;
-		(int)(sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j) <= i;
+		sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j <= i;
 		j <<= 1)
 			k++;
 	r = (int*)Balloc(k);
@@ -3559,7 +3574,7 @@ rv_alloc(int i)
 #ifdef KR_headers
 nrv_alloc(s, rve, n) char *s, **rve; int n;
 #else
-nrv_alloc(const char *s, char **rve, int n)
+nrv_alloc(char *s, char **rve, int n)
 #endif
 {
 	char *rv, *t;
@@ -3577,7 +3592,7 @@ nrv_alloc(const char *s, char **rve, int n)
  * when MULTIPLE_THREADS is not defined.
  */
 
-inline void
+ void
 #ifdef KR_headers
 freedtoa(s) char *s;
 #else
@@ -3627,7 +3642,7 @@ freedtoa(char *s)
  *	   calculation.
  */
 
-inline char *
+ char *
 dtoa
 #ifdef KR_headers
 	(dd, mode, ndigits, decpt, sign, rve)
@@ -3682,6 +3697,9 @@ dtoa
 	U d2, eps, u;
 	double ds;
 	char *s, *s0;
+#ifdef IEEE_Arith
+	U eps1;
+#endif
 #ifdef SET_INEXACT
 	int inexact, oldinexact;
 #endif
@@ -3945,14 +3963,26 @@ dtoa
 			 * generating digits needed.
 			 */
 			dval(&eps) = 0.5/tens[ilim-1] - dval(&eps);
+#ifdef IEEE_Arith
+			if (k0 < 0 && j1 >= 307) {
+				eps1.d = 1.01e256; /* 1.01 allows roundoff in the next few lines */
+				word0(&eps1) -= Exp_msk1 * (Bias+P-1);
+				dval(&eps1) *= tens[j1 & 0xf];
+				for(i = 0, j = (j1-256) >> 4; j; j >>= 1, i++)
+					if (j & 1)
+						dval(&eps1) *= bigtens[i];
+				if (eps.d < eps1.d)
+					eps.d = eps1.d;
+				}
+#endif
 			for(i = 0;;) {
 				L = dval(&u);
 				dval(&u) -= L;
 				*s++ = '0' + (int)L;
-				if (dval(&u) < dval(&eps))
-					goto ret1;
 				if (1. - dval(&u) < dval(&eps))
 					goto bump_up;
+				if (dval(&u) < dval(&eps))
+					goto ret1;
 				if (++i >= ilim)
 					break;
 				dval(&eps) *= 10.;
