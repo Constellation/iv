@@ -11,6 +11,7 @@ class FixedContainer {
  public:
   typedef T value_type;
   typedef typename std::tr1::add_pointer<T>::type pointer;
+  typedef typename std::tr1::add_const<pointer>::type const_pointer;
   typedef pointer iterator;
   typedef typename std::tr1::add_const<iterator>::type const_iterator;
   typedef typename std::tr1::add_reference<T>::type  reference;
@@ -22,6 +23,7 @@ class FixedContainer {
   FixedContainer(pointer buffer, size_type size)
     : buf_(buffer),
       size_(size) { }
+
   // iterator begin() { return buf_; }
   // iterator end() { return buf_+size_; }
   const_iterator begin() const { return buf_; }
