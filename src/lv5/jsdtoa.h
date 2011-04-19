@@ -8,8 +8,8 @@
 #include <tr1/array>
 #include <tr1/cstdint>
 #include "dtoa.h"
+#include "round.h"
 #include "lv5/jsstring.h"
-#include "lv5/math.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -43,7 +43,7 @@ class DToA {
     char* rev;
     if (mode == DTOA_FIXED && precision == 0) {
       // (0.5).toFixed(0) === 1
-      const double rounded = Round(x);
+      const double rounded = core::Round(x);
       const char* const str = core::DoubleToCString(rounded,
                                                     buf.data(),
                                                     buf.size());

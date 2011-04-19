@@ -1,8 +1,8 @@
-#ifndef _IV_LV5_MATH_H_
-#define _IV_LV5_MATH_H_
+#ifndef _IV_ROUND_H_
+#define _IV_ROUND_H_
 #include <cmath>
 namespace iv {
-namespace lv5 {
+namespace core {
 
 inline double Round(const double& value) {
   const double res = std::ceil(value);
@@ -13,5 +13,5 @@ inline double Round(const double& value) {
   }
 }
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_MATH_H_
+} }  // namespace iv::core
+#endif  // _IV_ROUND_H_

@@ -1,12 +1,12 @@
 #ifndef _IV_LV5_RUNTIME_MATH_H_
 #define _IV_LV5_RUNTIME_MATH_H_
 #include <cmath>
+#include "round.h"
 #include "lv5/lv5.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/context.h"
 #include "lv5/error.h"
-#include "lv5/math.h"
 
 namespace iv {
 namespace lv5 {
@@ -164,7 +164,7 @@ inline JSVal MathRound(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Math.round", args, error);
   if (args.size() > 0) {
     const double x = args[0].ToNumber(args.ctx(), ERROR(error));
-    return Round(x);
+    return core::Round(x);
   }
   return JSNaN;
 }
