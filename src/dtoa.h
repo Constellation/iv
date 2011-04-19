@@ -4,8 +4,8 @@
 #include <cassert>
 #include <cstdlib>
 #include <cfloat>
-#include <list>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <tr1/cstdint>
 #include <tr1/array>
@@ -1231,6 +1231,16 @@ class DToA {
   bool sign_;
   int exponent_;
   unsigned precision_;
+};
+
+class StringDToA : public DToA<StringDToA, std::string> {
+ public:
+  friend class DToA<StringDToA, std::string>;
+
+ private:
+  std::string Create(const char* str) const {
+    return std::string(str);
+  }
 };
 
 #undef Exp_shift

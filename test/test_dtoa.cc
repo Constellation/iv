@@ -19,16 +19,6 @@ static void TrimRepresentation(char* buf) {
   buf[i + 1] = '\0';
 }
 
-class StringDToA : public iv::core::dtoa::DToA<StringDToA, std::string> {
- public:
-  friend class DToA<StringDToA, std::string>;
-
- private:
-  std::string Create(const char* str) const {
-    return std::string(str);
-  }
-};
-
 }  // namespace anonymous
 
 TEST(DToACase, DToAGayFixed) {
@@ -103,4 +93,25 @@ TEST(DToACase, DToAGayShortest) {
     TrimRepresentation(buffer.data());
     EXPECT_STREQ(current_test.representation, buffer.data());
   }
+}
+
+TEST(DToACase, FixedTest) {
+  iv::core::dtoa::StringDToA builder;
+  EXPECT_EQ("0", builder.BuildFixed(0.2, 0, 0));
+  EXPECT_EQ("0.2", builder.BuildFixed(0.2, 1, 0));
+  EXPECT_EQ("0.20", builder.BuildFixed(0.2, 2, 0));
+  EXPECT_EQ("0.200", builder.BuildFixed(0.2, 3, 0));
+  EXPECT_EQ("0.2000", builder.BuildFixed(0.2, 4, 0));
+
+  EXPECT_EQ("1", builder.BuildFixed(0.5, 0, 0));
+  EXPECT_EQ("0.5", builder.BuildFixed(0.5, 1, 0));
+  EXPECT_EQ("0.50", builder.BuildFixed(0.5, 2, 0));
+  EXPECT_EQ("0.500", builder.BuildFixed(0.5, 3, 0));
+  EXPECT_EQ("0.5000", builder.BuildFixed(0.5, 4, 0));
+
+  EXPECT_EQ("1", builder.BuildFixed(1.05, 0, 0));
+  EXPECT_EQ("1.1", builder.BuildFixed(1.05, 1, 0));
+  EXPECT_EQ("1.05", builder.BuildFixed(1.05, 2, 0));
+  EXPECT_EQ("1.050", builder.BuildFixed(1.05, 3, 0));
+  EXPECT_EQ("1.0500", builder.BuildFixed(1.05, 4, 0));
 }

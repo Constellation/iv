@@ -4,7 +4,6 @@
 #include <tr1/array>
 #include <tr1/cstdio>
 #include <tr1/cinttypes>
-#include "dtoa.h"
 #include "conversions.h"
 #include "lv5/lv5.h"
 #include "lv5/arguments.h"
@@ -182,7 +181,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     return JSString::NewAsciiString(args.ctx(), str);
   } else {
     JSStringDToA builder(ctx);
-    return builder.Build<DTOA_FIXED>(x, core::DoubleToInt32(fd), 0);
+    return builder.BuildFixed(x, core::DoubleToInt32(fd), 0);
   }
 }
 
@@ -240,9 +239,9 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
 
   JSStringDToA builder(ctx);
   if (fractionDigits.IsUndefined()) {
-    return builder.Build<DTOA_STD_EXPONENTIAL>(x, f, 1);
+    return builder.BuildStandardExponential(x);
   } else {
-    return builder.Build<DTOA_EXPONENTIAL>(x, f, 1);
+    return builder.BuildExponential(x, f, 1);
   }
 }
 
@@ -297,7 +296,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
   }
 
   JSStringDToA builder(ctx);
-  return builder.Build<DTOA_PRECISION>(x, core::DoubleToInt32(p), 0);
+  return builder.BuildPrecision(x, core::DoubleToInt32(p), 0);
 }
 
 } } }  // namespace iv::lv5::runtime
