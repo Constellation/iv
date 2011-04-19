@@ -10,7 +10,7 @@ namespace lv5 {
 
 class JSStringDToA : public core::dtoa::DToA<JSStringDToA, JSString*> {
  public:
-  friend class DToA<JSStringDToA, JSString*>;
+  friend class core::dtoa::DToA<JSStringDToA, JSString*>;
 
   explicit JSStringDToA(Context* ctx)
     : ctx_(ctx) { }
