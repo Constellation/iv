@@ -4,14 +4,16 @@
 #include <cassert>
 #include <cstdlib>
 #include <cfloat>
+#include <list>
 #include <vector>
 #include <algorithm>
 #include <tr1/cstdint>
 #include <tr1/array>
+#include <tr1/memory>
 #include "round.h"
+#include "thread.h"
 #include "byteorder.h"
 #include "static_assert.h"
-
 
 extern "C" char* dtoa(double d, int mode, int ndigits,
                       int *decpt, int *sign, char **rve);
@@ -173,6 +175,12 @@ inline double ULP(U* x) {
   word1(&u) = 0;
   return dval(&u);
 }
+
+namespace detail {
+
+static thread::Mutex kBigIntMutex;
+
+}  // namespace iv::core::dtoa::detail
 
 class BigInt : protected std::vector<uint32_t> {
  public:
@@ -513,8 +521,10 @@ class BigInt : protected std::vector<uint32_t> {
   }
 
   void Pow5Multi(int k) {
+    // typedef std::vector<BigInt> vector_type;
+    typedef std::vector<BigInt> list_type;
     static const std::tr1::array<int, 3> p05 = { { 5, 25, 125 } };
-    static const BigInt kp5(625);
+    static list_type kList;
     int i = k & 3;
     if (i) {
       MultiAdd(p05[i-1], 0);
@@ -522,17 +532,29 @@ class BigInt : protected std::vector<uint32_t> {
     if (!(k >>= 2)) {
       return;
     }
-    BigInt p5 = kp5;
-    while (true) {
-      if (k & 1) {
-        (operator*(*this, p5)).swap(*this);
+    {
+      thread::ScopedLock<thread::Mutex> lock(&detail::kBigIntMutex);
+      list_type::const_iterator it = kList.begin();
+      if (it == kList.end()) {
+        kList.push_back(BigInt(625));
+        it = kList.begin();
       }
-      if (!(k >>= 1)) {
-        break;
+      while (true) {
+        if (k & 1) {
+          (operator*(*this, *it)).swap(*this);
+        }
+        if (!(k >>= 1)) {
+          break;
+        }
+        if ((it + 1) == kList.end()) {
+          kList.push_back(operator*(*it, *it));
+          it = kList.end() - 1;
+        } else {
+          ++it;
+        }
       }
-      p5 = operator*(p5, p5);
+      return;
     }
-    return;
   }
 
  private:
@@ -617,11 +639,10 @@ inline void DoubleToASCII(Buffer* buf,
   u.d = dd;
   int32_t L;
 
-  int m2, m5, spec_case, dig;
-  char* s;
-  char* s0;
+  int m2, m5, special_case, dig;
+  char* s = buf;
+  char* const s0 = buf;
   int ieps;
-  int k0;
   int j1;
 
   // reject Infinity or NaN 
@@ -725,13 +746,11 @@ inline void DoubleToASCII(Buffer* buf,
     }
   }
 
-  s = s0 = buf;
-
   BigInt S, mhi, mlo, delta;
   if (ilim >= 0 && ilim <= Quick_max) {
     i = 0;
     dval(&d2) = dval(&u);
-    k0 = k;
+    const int k0 = k;
     ilim0 = ilim;
     ieps = 2;
     if (k > 0) {
@@ -901,12 +920,12 @@ inline void DoubleToASCII(Buffer* buf,
     S.Pow5Multi(s5);
   }
 
-  spec_case = 0;
+  special_case = 0;
   if ((RoundingNone || LeftRight) && (!word1(&u) && !(word0(&u) & Bndry_mask) &&
                                       word0(&u) & (Exp_mask & ~Exp_msk1))) {
     b2 += Log2P;
     s2 += Log2P;
-    spec_case = 1;
+    special_case = 1;
   }
 
   if ((i = ((s5 ? 32 - Hi0Bits(S[S.size() - 1]) : 1) + s2) & 0x1f)) {
@@ -959,7 +978,7 @@ inline void DoubleToASCII(Buffer* buf,
     }
 
     mlo = mhi;
-    if (spec_case) {
+    if (special_case) {
       mhi <<= Log2P;
     }
 
@@ -987,12 +1006,8 @@ inline void DoubleToASCII(Buffer* buf,
         if ((b[0] || b.size() > 1) && (j1 > 0)) {
           b <<= 1;
           j1 = b.Compare(S);
-
-          if (j1 >= 0) {
-            if (dig == '9') {
-              goto round9up;
-            }
-            ++dig;
+          if ((j1 > 0 || (j1 == 0 && dig & 1)) && dig++ == '9') {
+            goto round9up;
           }
         }
         *s++ = dig;
@@ -1069,22 +1084,6 @@ template<typename Buffer>
 void dtoa(Buffer* buffer, double dd, bool* sign, int* exp, unsigned* precision) {
   DoubleToASCII<true, false, false, true>(buffer, dd, 0, sign, exp, precision);
 }
-
-static const std::tr1::array<uint8_t, 5> kDTOAModeList = { {
-  0,  // DTOA_STD
-  0,  // DTOA_STD_EXPONENTIAL
-  3,  // DTOA_FIXED
-  2,  // DTOA_EXPONENTIAL
-  2   // DTOA_PRECISION
-} };
-
-enum DTOAMode {
-  DTOA_STD = 0,
-  DTOA_STD_EXPONENTIAL,
-  DTOA_FIXED,
-  DTOA_EXPONENTIAL,
-  DTOA_PRECISION
-};
 
 // DToA not accept NaN or Infinity
 template<typename Derived, typename ResultType>

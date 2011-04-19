@@ -5,8 +5,8 @@
 #include <tr1/unordered_map>
 #include "ustring.h"
 #include "conversions.h"
+#include "thread.h"
 #include "lv5/symbol.h"
-#include "lv5/thread.h"
 namespace iv {
 namespace lv5 {
 class Context;
@@ -32,7 +32,7 @@ class SymbolTable {
     std::size_t hash = StringToHash(str);
     core::UString target(str.begin(), str.end());
     {
-      thread::ScopedLock<thread::Mutex> lock(&sync_);
+      core::thread::ScopedLock<core::thread::Mutex> lock(&sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
         const Symbol sym = { strings_.size() };
@@ -63,7 +63,7 @@ class SymbolTable {
     std::size_t hash = StringToHash(str);
     core::UString target(str.begin(), str.end());
     {
-      thread::ScopedLock<thread::Mutex> lock(&sync_);
+      core::thread::ScopedLock<core::thread::Mutex> lock(&sync_);
       Table::iterator it = table_.find(hash);
       if (it == table_.end()) {
         *found = false;
@@ -87,7 +87,7 @@ class SymbolTable {
   }
 
  private:
-  thread::Mutex sync_;
+  core::thread::Mutex sync_;
   Table table_;
   Strings strings_;
 };
