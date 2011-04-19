@@ -1,11 +1,15 @@
-#ifndef IV_FIXED_CONTAINE_H_
-#define IV_FIXED_CONTAINE_H_
+#ifndef IV_FIXED_CONTAINER_H_
+#define IV_FIXED_CONTAINER_H_
 #include <cstddef>
+#include <cassert>
 #include <iterator>
 #include <tr1/type_traits>
 namespace iv {
 namespace core {
 
+// FixedContainer
+// not have ownership to buffer.
+// this have external buffer and size and provide interface such as std::array
 template<typename T>
 class FixedContainer {
  public:
