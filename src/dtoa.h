@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include <cfloat>
 #include <vector>
 #include <string>
