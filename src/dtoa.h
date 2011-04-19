@@ -521,13 +521,11 @@ class BigInt : protected std::vector<uint32_t> {
   }
 
   void Pow5Multi(int k) {
-    // typedef std::vector<BigInt> vector_type;
     typedef std::vector<BigInt> list_type;
     static const std::tr1::array<int, 3> p05 = { { 5, 25, 125 } };
     static list_type kList;
-    int i = k & 3;
-    if (i) {
-      MultiAdd(p05[i-1], 0);
+    if (const int i = k & 3) {
+      MultiAdd(p05[i - 1], 0);
     }
     if (!(k >>= 2)) {
       return;
