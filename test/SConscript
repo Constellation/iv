@@ -1,11 +1,11 @@
-Import('context object_files')
+Import('context')
 
 def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
   conf.CheckLib(library='gtest', language='cxx')
   env = conf.Finish()
-  return env.Program('cctest', [Glob('*.cc'), object_files])
+  return env.Program('cctest', Glob('*.cc'))
 
 program = Build()
 Return('program')

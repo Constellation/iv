@@ -1,4 +1,4 @@
-Import('context object_files libs')
+Import('context libs object_files')
 
 def Build():
   conf = Configure(context.Clone())
@@ -9,7 +9,7 @@ def Build():
     LIBS=libs,
     CCFLAGS=["-fno-strict-aliasing"],
     CPPDEFINES=["__STDC_FORMAT_MACROS"])
-  return env.Program('cctest', [Glob('*.cc'), object_files])
+  return env.Program('cctest', [Glob('*.cc'), object_files, libs])
 
 program = Build()
 Return('program')

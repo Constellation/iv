@@ -24,13 +24,13 @@ def CheckEndian(ctx):
   ctx.Result('unknown')
   return 'unknown'
 
-def Test(context, object_files):
+def Test(context):
   test_task = context.SConscript(
     'test/SConscript',
     variant_dir=join(root_dir, 'obj', 'test'),
     src=join(root_dir, 'test'),
     duplicate=False,
-    exports="context object_files"
+    exports="context"
   )
   context.AlwaysBuild(test_task)
   return test_task
@@ -41,18 +41,18 @@ def TestLv5(context, object_files, libs):
     variant_dir=join(root_dir, 'obj', 'test', 'lv5'),
     src=join(root_dir, 'test', 'lv5'),
     duplicate=False,
-    exports="context object_files libs"
+    exports="context libs object_files"
   )
   context.AlwaysBuild(test_task)
   return test_task
 
-def Lv5(context, object_files):
+def Lv5(context):
   lv5_task, lv5_objs, lv5_libs = context.SConscript(
     'src/lv5/SConscript',
     variant_dir=join(root_dir, 'obj', 'lv5'),
     src=join(root_dir, 'src', 'lv5'),
     duplicate=False,
-    exports="context object_files root_dir"
+    exports="context root_dir"
   )
   return lv5_task, lv5_objs, lv5_libs
 
@@ -166,13 +166,10 @@ def Build():
   Help(var.GenerateHelpText(env))
   # env.ParseConfig('llvm-config all --ldflags --libs')
 
-  (object_files, main_prog) = Main(env, [header])
-  env.Alias('main', [main_prog])
-
-  lv5_prog, lv5_objs, lv5_libs = Lv5(env, object_files)
+  lv5_prog, lv5_objs, lv5_libs = Lv5(env)
   env.Alias('lv5', [lv5_prog])
 
-  test_prog = Test(env, object_files)
+  test_prog = Test(env)
   test_lv5_prog = TestLv5(env, lv5_objs, lv5_libs)
   test_alias = env.Alias('test', test_prog, test_prog[0].abspath)
   test_lv5_alias = env.Alias('testlv5', test_lv5_prog, test_lv5_prog[0].abspath)

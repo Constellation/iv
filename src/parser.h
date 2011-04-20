@@ -2234,11 +2234,11 @@ class Parser
       RAISE("octal integer literal not allowed in strict code");
     }
     const double val = lexer_.Numeric();
-    std::tr1::array<char, 80> buf;
-    DoubleToCString(val, buf.data(), 80);
+    dtoa::StringPieceDToA builder;
+    builder.Build(val);
     Identifier* const ident = factory_->NewIdentifier(
         Token::NUMBER,
-        core::StringPiece(buf.data(), std::strlen(buf.data())),
+        builder.buffer(),
         lexer_.begin_position(),
         lexer_.end_position());
     Next();
