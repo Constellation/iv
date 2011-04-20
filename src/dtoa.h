@@ -1096,9 +1096,9 @@ class DToA {
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
     if (exponent_ >= -6 && exponent_ < 21) {
-      return BuildStandard(x);
+      return ToStringDecimal(buf.data(), begin);
     } else {
-      return BuildStandardExponential(x);
+      return ToStringExponential(buf.data(), begin);
     }
   }
 
