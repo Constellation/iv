@@ -15,6 +15,7 @@
 #include "round.h"
 #include "thread.h"
 #include "byteorder.h"
+#include "stringpiece.h"
 #include "static_assert.h"
 
 extern "C" char* dtoa(double d, int mode, int ndigits,
@@ -1243,6 +1244,25 @@ class StringDToA : public DToA<StringDToA, std::string> {
   std::string Create(const char* str) const {
     return std::string(str);
   }
+};
+
+class StringPieceDToA : public DToA<StringPieceDToA, void> {
+ public:
+  friend class DToA<StringPieceDToA, void>;
+  typedef std::tr1::array<char, 80> buffer_type;
+
+  StringPiece buffer() const {
+    return StringPiece(buffer_.data(), size_);
+  }
+
+ private:
+  void Create(const char* str) {
+    size_ = std::strlen(str);
+    std::copy(str, str + size_, buffer_.begin());
+  }
+
+  buffer_type buffer_;
+  std::size_t size_;
 };
 
 #undef Exp_shift
