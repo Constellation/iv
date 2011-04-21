@@ -76,20 +76,21 @@ inline uint32_t UTF8ToUCS4(const uint8_t* buf, uint32_t size) {
   }
 }
 
-
 inline bool IsUTF8Malformed(uint8_t c) {
   return c == 0xc0 || c == 0xc1 || c >= 0xf5;
 }
 
 inline uint32_t UTF8ToUCS4Strict(const uint8_t* buf, uint32_t size, bool* e) {
   static const std::tr1::array<uint32_t, 3> kMinTable = { {
-    0x00000080, 0x00000800, 0x00010000
+    0x00000080,  // 2 bytes => 0000000010000000
+    0x00000800,  // 3 bytes => 0000100000000000
+    0x00010000   // 4 bytes => surrogate pair only
   } };
   // not accept size 5 or 6
   assert(size >= 1 && size <= 4);
   // 1st octet format is checked by Decode function in calculating size
   if (size == 1) {
-    *e = IsUTF8Malformed(*buf);
+    *e = (*buf & 0x80);
     return *buf;
   } else {
     // remove size bits from 1st
@@ -98,12 +99,11 @@ inline uint32_t UTF8ToUCS4Strict(const uint8_t* buf, uint32_t size, bool* e) {
     const uint32_t min = kMinTable[size - 2];
     while (--size) {
       const uint8_t current = *buf++;
-      // UTF8 String (not 1st) should be 10xxxxxx
+      // UTF8 String (not 1st) should be 10xxxxxx (UTF8-tail)
       // 0xC0 => (11000000) 0x80 => (10000000)
-      // and, not malformed utf8 octet
-      if (((current & 0xC0) != 0x80) || IsUTF8Malformed(current)) {
+      if ((current & 0xC0) != 0x80) {
         *e = true;
-        return *buf;
+        return current;
       }
       uc = uc << 6 | (current & 0x3F);
     }

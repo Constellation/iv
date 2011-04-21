@@ -165,12 +165,14 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
       }
       const uint8_t b0 = core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
       if (!(b0 & 0x80)) {
+        // b0 is 0xxxxxxx, in ascii range
         if (URITraits::ContainsInDecode(b0)) {
           builder.Append(buf.begin(), 3);
         } else {
           builder.Append(static_cast<uint16_t>(b0));
         }
       } else {
+        // b0 is 1xxxxxxx
         int n = 1;
         while (b0 & (0x80 >> n)) {
           ++n;
