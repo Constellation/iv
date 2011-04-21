@@ -107,7 +107,7 @@ inline uint32_t UTF8ToUCS4Strict(const uint8_t* buf, uint32_t size, bool* e) {
       }
       uc = uc << 6 | (current & 0x3F);
     }
-    *e = uc < min;
+    *e = uc < min || uc > 0x10FFFF;
     return uc;
   }
 }
