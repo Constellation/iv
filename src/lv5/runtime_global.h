@@ -200,19 +200,14 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           }
           const uint8_t b1 =
               core::HexValue(buf[1]) * 16 + core::HexValue(buf[2]);
-          // 0xC0 => (11000000)
-          // 0x80 => (10000000)
-          if ((b1 & 0xC0) != 0x80) {
-            e->Report(Error::URI, "invalid uri char");
-            return JSUndefined;
-          }
+          // section 15.1.3 decoding 4-b-7-7-e
+          // code point 10xxxxxx check is moved to core::UTF8ToUCS4Strict
           octets[j] = b1;
         }
-        uint32_t v = core::UTF8ToUCS4(octets.begin(), n);
+        bool error = false;
+        uint32_t v = core::UTF8ToUCS4Strict(octets.begin(), n, &error);
         // if octets utf8 sequence is not valid,
-        // core::UTF8ToUCS4 returns UINT32_MAX
-        if (v == UINT32_MAX) {
-          // invalid UTF8 code
+        if (error) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }

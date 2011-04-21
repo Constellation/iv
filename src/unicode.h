@@ -76,6 +76,42 @@ inline uint32_t UTF8ToUCS4(const uint8_t* buf, uint32_t size) {
   }
 }
 
+
+inline bool IsUTF8Malformed(uint8_t c) {
+  return c == 0xc0 || c == 0xc1 || c >= 0xf5;
+}
+
+inline uint32_t UTF8ToUCS4Strict(const uint8_t* buf, uint32_t size, bool* e) {
+  static const std::tr1::array<uint32_t, 3> kMinTable = { {
+    0x00000080, 0x00000800, 0x00010000
+  } };
+  // not accept size 5 or 6
+  assert(size >= 1 && size <= 4);
+  // 1st octet format is checked by Decode function in calculating size
+  if (size == 1) {
+    *e = IsUTF8Malformed(*buf);
+    return *buf;
+  } else {
+    // remove size bits from 1st
+    uint32_t uc = (*buf++) & ((1 << (7 - size)) - 1);
+    // select minimum size code point for size
+    const uint32_t min = kMinTable[size - 2];
+    while (--size) {
+      const uint8_t current = *buf++;
+      // UTF8 String (not 1st) should be 10xxxxxx
+      // 0xC0 => (11000000) 0x80 => (10000000)
+      // and, not malformed utf8 octet
+      if (((current & 0xC0) != 0x80) || IsUTF8Malformed(current)) {
+        *e = true;
+        return *buf;
+      }
+      uc = uc << 6 | (current & 0x3F);
+    }
+    *e = uc < min;
+    return uc;
+  }
+}
+
 static const uint32_t kSurrogateBits = 10;
 static const uint32_t kHighSurrogateMin = 0xD800;
 static const uint32_t kHighSurrogateMax = 0xDBFF;
