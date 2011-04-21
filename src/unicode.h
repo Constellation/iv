@@ -76,6 +76,22 @@ inline uint32_t UTF8ToUCS4(const uint8_t* buf, uint32_t size) {
   }
 }
 
+static const uint32_t kSurrogateBits = 10;
+static const uint32_t kHighSurrogateMin = 0xD800;
+static const uint32_t kHighSurrogateMax = 0xDBFF;
+static const uint32_t kHighSurrogateMask = (1 << kSurrogateBits) - 1;
+static const uint32_t kLowSurrogateMin = 0xDC00;
+static const uint32_t kLowSurrogateMax = 0xDFFF;
+static const uint32_t kLowSurrogateMask = (1 << kSurrogateBits) - 1;
+
+inline bool IsHighSurrogate(uint16_t uc) {
+  return (static_cast<uint32_t>(uc) & ~kHighSurrogateMask) == kHighSurrogateMin;
+}
+
+inline bool IsLowSurrogate(uint16_t uc) {
+  return (static_cast<uint32_t>(uc) & ~kLowSurrogateMask) == kLowSurrogateMin;
+}
+
 // This function takes an integer value in the range 0 - 0x7fffffff
 // and encodes it as a UTF-8 character in 0 to 6 bytes.
 //

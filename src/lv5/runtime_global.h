@@ -100,24 +100,32 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
       builder.Append(ch);
     } else {
       uint32_t v;
-      if ((ch >= 0xDC00) && (ch <= 0xDFFF)) {
+      if ((ch >= core::kLowSurrogateMin) && (ch <= core::kLowSurrogateMax)) {
+        // ch is low surrogate. but high is not found.
         e->Report(Error::URI, "invalid uri char");
         return JSUndefined;
       }
-      if (ch < 0xD800 || 0xDBFF < ch) {
+      if (ch < core::kHighSurrogateMin || core::kHighSurrogateMax < ch) {
+        // ch is not surrogate pair code point
         v = ch;
       } else {
+        // ch is high surrogate
         ++it;
         if (it == last) {
+          // high surrogate only is invalid
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
         const uint16_t k_char = *it;
-        if (k_char < 0xDC00 || 0xDFFF < k_char) {
+        if (k_char < core::kLowSurrogateMin ||
+            core::kLowSurrogateMax < k_char) {
+          // k_char is not low surrogate
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
-        v = (ch - 0xD800) * 0x400 + (k_char - 0xDC00) + 0x10000;
+        // construct surrogate pair to ucs4
+        v = (ch - core::kHighSurrogateMin) * 0x400 +
+            (k_char - core::kLowSurrogateMin) + 0x10000;
       }
       for (int len = core::UCS4ToUTF8(v, uc8buf.data()), i = 0;
            i < len; ++i) {
@@ -199,7 +207,13 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           octets[j] = b1;
         }
         uint32_t v = core::UTF8ToUCS4(octets.begin(), n);
+        if (v == UINT32_MAX) {
+          // invalid UTF8 code
+          e->Report(Error::URI, "invalid uri char");
+          return JSUndefined;
+        }
         if (v < 0x10000) {
+          // not surrogate pair
           const uint16_t code = static_cast<uint16_t>(v);
           if (URITraits::ContainsInDecode(code)) {
             builder.Append(str.begin() + start, (k - start + 1));
@@ -207,9 +221,13 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
             builder.Append(code);
           }
         } else {
+          // surrogate pair
           v -= 0x10000;
-          const uint16_t L = (v & 0x3FF) + 0xDC00;
-          const uint16_t H = ((v >> 10) & 0x3FF) + 0xD800;
+          const uint16_t L =
+              (v & core::kLowSurrogateMask) + core::kLowSurrogateMin;
+          const uint16_t H =
+              ((v >> core::kSurrogateBits) & core::kHighSurrogateMask) +
+              core::kHighSurrogateMin;
           builder.Append(H);
           builder.Append(L);
         }
@@ -219,7 +237,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
   return builder.Build(ctx);
 }
 
-}  // iv::lv5::runtime::detail
+}  // namespace iv::lv5::runtime::detail
 
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("parseInt", args, error);
@@ -347,7 +365,7 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
 inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("escape", args, e);
   Context* const ctx = args.ctx();
-  JSString* str = args.At(0).ToString(ctx ,ERROR(e));
+  JSString* str = args.At(0).ToString(ctx, ERROR(e));
   const std::size_t len = str->size();
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::tr1::array<uint16_t, 6> ubuf;
@@ -386,7 +404,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
 inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("unescape", args, e);
   Context* const ctx = args.ctx();
-  JSString* str = args.At(0).ToString(ctx ,ERROR(e));
+  JSString* str = args.At(0).ToString(ctx, ERROR(e));
   const std::size_t len = str->size();
   if (len == 0) {
     return str;  // empty string
