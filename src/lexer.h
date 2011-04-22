@@ -745,12 +745,19 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         break;
       }
 
+      case '1' :
+      case '2' :
+      case '3' : {
+        if (type_ != OCTAL) {
+          type_ = OCTAL;
+        }
+        // fall through
+      }
+
       case '0' : {
-        // if \0 only, this is not OctalEscape
+        uc16 uc = OctalValue(c_);
         Advance();
         if (Chars::IsDecimalDigit(c_)) {
-          // this is \0x. length is 2 or 3, and, this is OctalEscape
-          // and, x should be octal number
           if (!Chars::IsOctalDigit(c_)) {
             // invalid
             return false;
@@ -758,26 +765,41 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           if (type_ != OCTAL) {
             type_ = OCTAL;
           }
-          PushBack();
-          Record16(ScanOctalEscape());
-        } else {
-          Record16('\0');
+          uc = uc * 8 + OctalValue(c_);
+          Advance();
+          if (Chars::IsDecimalDigit(c_)) {
+            if (!Chars::IsOctalDigit(c_)) {
+              // invalid
+              return false;
+            }
+            uc = uc * 8 + OctalValue(c_);
+            Advance();
+          }
         }
+        Record16(uc);
         break;
       }
 
-      case '1' :
-      case '2' :
-      case '3' :
       case '4' :
       case '5' :
       case '6' :
-      case '7' :
+      case '7' : {
         if (type_ != OCTAL) {
           type_ = OCTAL;
         }
-        Record16(ScanOctalEscape());
+        uc16 uc = OctalValue(c_);
+        Advance();
+        if (Chars::IsDecimalDigit(c_)) {
+          if (!Chars::IsOctalDigit(c_)) {
+            // invalid
+            return false;
+          }
+          uc = uc * 8 + OctalValue(c_);
+          Advance();
+        }
+        Record16(uc);
         break;
+      }
 
       case '8' :
       case '9' :
