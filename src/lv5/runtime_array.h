@@ -479,6 +479,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   if (len == 0) {
     return obj;
   }
+
   {
     // non recursive quick sort
     int sp = 1;
@@ -498,31 +499,58 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
         if (r - l < 20) {
           // only 20 elements. using insertion sort
           for (int64_t i = l + 1; i <= r; ++i) {
+            const bool t_is_hole =
+                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
             const JSVal t =
                 obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
             int64_t j = i - 1;
             for (; j >= l; --j) {
-              const JSVal t2 =
-                  obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
-              a[0] = t2;
-              a[1] = t;
-              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
+              const bool t2_is_hole =
+                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(j));
+              JSVal res;
+              JSVal t2;
+              if (t_is_hole) {
+                break;
+              } else {
+                if (t2_is_hole) {
+                  res = JSVal(1.0);
+                  t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+                } else {
+                  t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+                  a[0] = t2;
+                  a[1] = t;
+                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                }
+              }
               const internal::CompareKind kind =
                   internal::Compare<false>(ctx, zero, res, ERROR(e));
               if (kind == internal::CMP_TRUE) {  // res > zero is true
-                obj->PutWithIndex(
-                    ctx,
-                    static_cast<uint32_t>(j + 1), t2, true, ERROR(e));
+                if (t2_is_hole) {
+                  obj->DeleteWithIndex(
+                      ctx,
+                      static_cast<uint32_t>(j + 1), true, ERROR(e));
+                } else {
+                  obj->PutWithIndex(
+                      ctx,
+                      static_cast<uint32_t>(j + 1), t2, true, ERROR(e));
+                }
               } else {
                 break;
               }
             }
-            obj->PutWithIndex(ctx,
-                              static_cast<uint32_t>(j + 1), t, true, ERROR(e));
+            if (t_is_hole) {
+              obj->DeleteWithIndex(ctx,
+                                   static_cast<uint32_t>(j + 1), true, ERROR(e));
+            } else {
+              obj->PutWithIndex(ctx,
+                                static_cast<uint32_t>(j + 1), t, true, ERROR(e));
+            }
           }
         } else {
           // quick sort
           const int64_t pivot = (l + r) >> 1;
+          const bool pivot_is_hole =
+              !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(pivot));
           const JSVal s = obj->GetWithIndex(ctx, pivot, ERROR(e));
           a[1] = s;
           int64_t i = l - 1;
@@ -536,11 +564,26 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               if (i == r) {
                 break;
               }
-              const JSVal target =
-                  obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
-              a[0] = target;
+              JSVal res;
+              const bool target_is_hole =
+                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+              if (target_is_hole) {
+                if (pivot_is_hole) {
+                  res = JSVal(0.0);
+                } else {
+                  break;
+                }
+              } else {
+                if (pivot_is_hole) {
+                  continue;
+                } else {
+                  const JSVal target =
+                      obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
+                  a[0] = target;
+                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                }
+              }
               // if res < 0, next
-              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
               const internal::CompareKind kind =
                   internal::Compare<true>(ctx, res, zero, ERROR(e));
               if (kind != internal::CMP_TRUE) {
@@ -555,11 +598,26 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               if (j == l) {
                 break;
               }
-              const JSVal target =
-                  obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
-              a[0] = target;
-              // if res > 0, next
-              const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
+
+              JSVal res;
+              const bool target_is_hole =
+                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(j));
+              if (target_is_hole) {
+                if (pivot_is_hole) {
+                  res = JSVal(0.0);
+                } else {
+                  continue;
+                }
+              } else {
+                if (pivot_is_hole) {
+                  break;
+                } else {
+                  const JSVal target =
+                      obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+                  a[0] = target;
+                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                }
+              }
               const internal::CompareKind kind =
                   internal::Compare<false>(ctx, zero, res, ERROR(e));
               if (kind != internal::CMP_TRUE) {  // target < s is true
@@ -572,14 +630,28 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
             }
 
             // swap
+            const bool i_is_hole =
+                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+            const bool j_is_hole =
+                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
             const JSVal ival =
                 obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
             const JSVal jval =
                 obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
-            obj->PutWithIndex(ctx,
-                              static_cast<uint32_t>(i), jval, true, ERROR(e));
-            obj->PutWithIndex(ctx,
-                              static_cast<uint32_t>(j), ival, true, ERROR(e));
+            if (j_is_hole) {
+              obj->DeleteWithIndex(ctx,
+                                   static_cast<uint32_t>(i), true, ERROR(e));
+            } else {
+              obj->PutWithIndex(ctx,
+                                static_cast<uint32_t>(i), jval, true, ERROR(e));
+            }
+            if (i_is_hole) {
+              obj->DeleteWithIndex(ctx,
+                                   static_cast<uint32_t>(j), true, ERROR(e));
+            } else {
+              obj->PutWithIndex(ctx,
+                                static_cast<uint32_t>(j), ival, true, ERROR(e));
+            }
           }
 
           if (sp + 2 > kStackSize) {
