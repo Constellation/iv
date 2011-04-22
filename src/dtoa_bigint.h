@@ -22,6 +22,8 @@ namespace iv {
 namespace core {
 namespace dtoa {
 
+static const std::size_t kDToABufferSize = 96;
+
 union U {
   double d;
   uint32_t L[2];
@@ -155,9 +157,8 @@ inline int Low0Bits(uint32_t* y) {
 }
 
 inline double ULP(U* x) {
-  int32_t L;
   U u;
-  L = (word0(x) & Exp_mask) -  (P - 1) * Exp_msk1;
+  const int32_t L = (word0(x) & Exp_mask) -  (P - 1) * Exp_msk1;
   word0(&u) = L;
   word1(&u) = 0;
   return dval(&u);
@@ -1078,7 +1079,7 @@ class DToA {
  public:
 
   ResultType Build(double x) {
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1090,7 +1091,7 @@ class DToA {
   }
 
   ResultType BuildStandard(double x) {
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1098,7 +1099,7 @@ class DToA {
   }
 
   ResultType BuildExponential(double x, int frac, int offset) {
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, true, false, false>(
@@ -1112,7 +1113,7 @@ class DToA {
   }
 
   ResultType BuildPrecision(double x, int frac, int offset) {
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, true, false, false>(
@@ -1126,7 +1127,7 @@ class DToA {
   }
 
   ResultType BuildStandardExponential(double x) {
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1137,7 +1138,7 @@ class DToA {
     if (x >= 1e21 || x <= -1e21) {
       return Build(x);
     }
-    std::tr1::array<char, 80> buf;
+    std::tr1::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, false, true, false>(
@@ -1235,7 +1236,7 @@ class StringDToA : public DToA<StringDToA, std::string> {
 class StringPieceDToA : public DToA<StringPieceDToA, void> {
  public:
   friend class DToA<StringPieceDToA, void>;
-  typedef std::tr1::array<char, 80> buffer_type;
+  typedef std::tr1::array<char, kDToABufferSize> buffer_type;
 
   StringPiece buffer() const {
     return StringPiece(buffer_.data(), size_);
