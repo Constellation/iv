@@ -746,10 +746,23 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       }
 
       case '0' : {
-        if (type_ != OCTAL) {
-          type_ = OCTAL;
+        // if \0 only, this is not OctalEscape
+        Advance();
+        if (Chars::IsDecimalDigit(c_)) {
+          // this is \0x. length is 2 or 3, and, this is OctalEscape
+          // and, x should be octal number
+          if (!Chars::IsOctalDigit(c_)) {
+            // invalid
+            return false;
+          }
+          if (type_ != OCTAL) {
+            type_ = OCTAL;
+          }
+          PushBack();
+          Record16(ScanOctalEscape());
+        } else {
+          Record16('\0');
         }
-        Record16(ScanOctalEscape());
         break;
       }
 
