@@ -126,7 +126,8 @@ Context::Context()
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL) {
-  JSObjectEnv* const env = NewObjectEnvironment(this, global_obj(), NULL);
+  JSObjectEnv* const env =
+      internal::NewObjectEnvironment(this, global_obj(), NULL);
   lexical_env_ = env;
   variable_env_ = env;
   global_env_ = env;
@@ -451,7 +452,7 @@ void Context::Initialize() {
         // section 15.7.3.3 Number.MIN_VALUE
         .def("MIN_VALUE", 5e-324)
         // section 15.7.3.4 Number.NaN
-        .def("NaN", JSValData::kNaN)
+        .def("NaN", JSNaN)
         // section 15.7.3.5 Number.NEGATIVE_INFINITY
         .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
         // section 15.7.3.6 Number.POSITIVE_INFINITY

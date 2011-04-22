@@ -33,8 +33,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
     JSObject* const obj = val.object();
     if (ctx->IsArray(*obj)) {
       JSArray* const ary = static_cast<JSArray*>(obj);
-      const JSVal length = ary->Get(ctx, context::length_symbol(ctx), ERROR(e));
-      const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+      const uint32_t len = internal::GetLength(ctx, ary, ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
         const JSVal new_element = JSONWalk(ctx,
                                            ary,
@@ -144,8 +143,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
     } else if (ctx->IsArray(*rep)) {  // 4-b
       using std::find_if;
       maybe = &property_list;
-      const JSVal length = rep->Get(ctx, context::length_symbol(ctx), ERROR(e));
-      const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+      const uint32_t len = internal::GetLength(ctx, rep, ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
         const JSVal v = rep->GetWithIndex(ctx, i, ERROR(e));
         JSString* item = NULL;

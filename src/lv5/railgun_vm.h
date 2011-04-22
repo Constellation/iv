@@ -937,26 +937,30 @@ class VM {
 
   JSVal BinaryCompareLT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(res == CMP_TRUE);
+    const internal::CompareKind res =
+        internal::Compare<true>(ctx_, lhs, rhs, CHECK);
+    return JSVal::Bool(res == internal::CMP_TRUE);
   }
 
   JSVal BinaryCompareLTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
-    return JSVal::Bool(res == CMP_FALSE);
+    const internal::CompareKind res =
+        internal::Compare<false>(ctx_, rhs, lhs, CHECK);
+    return JSVal::Bool(res == internal::CMP_FALSE);
   }
 
   JSVal BinaryCompareGT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
-    return JSVal::Bool(res == CMP_TRUE);
+    const internal::CompareKind res =
+        internal::Compare<false>(ctx_, rhs, lhs, CHECK);
+    return JSVal::Bool(res == internal::CMP_TRUE);
   }
 
   JSVal BinaryCompareGTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(res == CMP_FALSE);
+    const internal::CompareKind res =
+        internal::Compare<true>(ctx_, lhs, rhs, CHECK);
+    return JSVal::Bool(res == internal::CMP_FALSE);
   }
 
   JSVal BinaryInstanceof(const JSVal& lhs,
@@ -989,24 +993,24 @@ class VM {
 
   JSVal BinaryEqual(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
-    const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
+    const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(res);
   }
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
                           const JSVal& rhs) const {
-    return JSVal::Bool(StrictEqual(lhs, rhs));
+    return JSVal::Bool(internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryNotEqual(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
-    const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
+    const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(!res);
   }
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
                              const JSVal& rhs) const {
-    return JSVal::Bool(!StrictEqual(lhs, rhs));
+    return JSVal::Bool(!internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryBitAnd(const JSVal& lhs,

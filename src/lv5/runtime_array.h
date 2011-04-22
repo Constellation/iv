@@ -21,7 +21,7 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
   assert(args.size() == 2);  // always 2
   const JSVal& lhs = args[0];
   const JSVal& rhs = args[1];
-  if (StrictEqual(lhs, rhs)) {
+  if (internal::StrictEqual(lhs, rhs)) {
     return 0.0;
   } else if (lhs.IsNumber() && rhs.IsNumber()) {
     if (lhs.number() == rhs.number()) {
@@ -119,10 +119,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, e);
   Context* const ctx = args.ctx();
   JSObject* const array = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = array->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, array, ERROR(e));
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
@@ -185,11 +182,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
   if (ctx->IsArray(*obj)) {
     JSObject* const elm = obj;
     uint32_t k = 0;
-    const JSVal length = elm->Get(
-        ctx,
-        context::length_symbol(ctx), ERROR(e));
-    assert(length.IsNumber());  // Array always number
-    const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+    const uint32_t len = internal::GetLength(ctx, elm, ERROR(e));
     while (k < len) {
       if (elm->HasPropertyWithIndex(ctx, k)) {
         const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
@@ -222,11 +215,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
     if (it->IsObject() && ctx->IsArray(*it->object())) {
       JSObject* const elm = it->object();
       uint32_t k = 0;
-      const JSVal length = elm->Get(
-          ctx,
-          context::length_symbol(ctx), ERROR(e));
-      assert(length.IsNumber());  // Array always number
-      const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+      const uint32_t len = internal::GetLength(ctx, elm, ERROR(e));
       while (k < len) {
         if (elm->HasPropertyWithIndex(ctx, k)) {
           const JSVal subelm = elm->GetWithIndex(ctx, k, ERROR(e));
@@ -264,10 +253,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.join", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   JSString* separator;
   if (args.size() > 0 && !args[0].IsUndefined()) {
     separator = args[0].ToString(ctx, ERROR(e));
@@ -306,10 +292,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.pop", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx),
              JSVal::UInt32(0u), true, ERROR(e));
@@ -370,10 +353,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.reverse", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t middle = len >> 1;
   for (uint32_t lower = 0; lower != middle; ++lower) {
     const uint32_t upper = len - lower - 1;
@@ -408,10 +388,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.shift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   if (len == 0) {
     obj->Put(ctx, context::length_symbol(ctx),
              JSVal::UInt32(0u), true, ERROR(e));
@@ -441,10 +418,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   uint32_t k;
   if (args.size() > 0) {
     double relative_start = args[0].ToNumber(ctx, ERROR(e));
@@ -495,10 +469,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.sort", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   JSFunction* comparefn;
   if (args.size() > 0 && args[0].IsCallable()) {
     comparefn = args[0].object()->AsCallable();
@@ -527,23 +498,27 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
         if (r - l < 20) {
           // only 20 elements. using insertion sort
           for (int64_t i = l + 1; i <= r; ++i) {
-            const JSVal t = obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
+            const JSVal t =
+                obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
             int64_t j = i - 1;
             for (; j >= l; --j) {
-              const JSVal t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
+              const JSVal t2 =
+                  obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
               a[0] = t2;
               a[1] = t;
               const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
-              const CompareKind kind =
-                  Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
-              if (kind == CMP_TRUE) {  // res > zero is true
-                obj->PutWithIndex(ctx,
-                                  static_cast<uint32_t>(j + 1), t2, true, ERROR(e));
+              const internal::CompareKind kind =
+                  internal::Compare<false>(ctx, zero, res, ERROR(e));
+              if (kind == internal::CMP_TRUE) {  // res > zero is true
+                obj->PutWithIndex(
+                    ctx,
+                    static_cast<uint32_t>(j + 1), t2, true, ERROR(e));
               } else {
                 break;
               }
             }
-            obj->PutWithIndex(ctx, static_cast<uint32_t>(j + 1), t, true, ERROR(e));
+            obj->PutWithIndex(ctx,
+                              static_cast<uint32_t>(j + 1), t, true, ERROR(e));
           }
         } else {
           // quick sort
@@ -566,9 +541,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               a[0] = target;
               // if res < 0, next
               const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
-              const CompareKind kind =
-                  Compare<true>(ctx, res, zero, ERROR(e));
-              if (kind != CMP_TRUE) {
+              const internal::CompareKind kind =
+                  internal::Compare<true>(ctx, res, zero, ERROR(e));
+              if (kind != internal::CMP_TRUE) {
                 break;
               }
             }
@@ -585,9 +560,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               a[0] = target;
               // if res > 0, next
               const JSVal res = comparefn->Call(&a, JSUndefined, ERROR(e));
-              const CompareKind kind =
-                  Compare<false>(ctx, zero, res, ERROR(e));  // res > zero
-              if (kind != CMP_TRUE) {  // target < s is true
+              const internal::CompareKind kind =
+                  internal::Compare<false>(ctx, zero, res, ERROR(e));
+              if (kind != internal::CMP_TRUE) {  // target < s is true
                 break;
               }
             }
@@ -639,10 +614,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t args_size = args.size();
   uint32_t actual_start;
   if (args_size > 0) {
@@ -732,10 +704,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.unshift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   for (uint32_t k = len; k > 0; --k) {
@@ -771,10 +740,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (len == 0) {
@@ -811,7 +777,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   for (; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(e));
-      if (StrictEqual(search_element, element_k)) {
+      if (internal::StrictEqual(search_element, element_k)) {
         return k;
       }
     }
@@ -824,10 +790,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (len == 0) {
@@ -865,7 +828,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   while (true) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       const JSVal element_k = obj->GetWithIndex(ctx, k, ERROR(e));
-      if (StrictEqual(search_element, element_k)) {
+      if (internal::StrictEqual(search_element, element_k)) {
         return k;
       }
     }
@@ -883,10 +846,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.every", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -922,10 +882,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.some", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -961,10 +918,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.forEach", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -994,10 +948,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.map", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -1039,10 +990,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.filter", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -1089,10 +1037,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.reduce", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {
@@ -1154,10 +1099,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      context::length_symbol(ctx), ERROR(e));
-  const uint32_t len = length.ToUInt32(ctx, ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
   const uint32_t arg_count = args.size();
 
   if (arg_count == 0 || !args[0].IsCallable()) {

@@ -42,7 +42,7 @@ inline void DefinePropertiesImpl(Context* ctx,
     const JSVal desc_obj = props->Get(ctx, *it,
                                       ERROR_VOID(error));
     const PropertyDescriptor desc =
-        ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
+        internal::ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
     descriptors.push_back(std::make_pair(*it, desc));
   }
   for (Descriptors::const_iterator it = descriptors.begin(),
@@ -126,7 +126,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
         name = context::Intern(args.ctx(), "undefined");
       }
       const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);
-      return FromPropertyDescriptor(args.ctx(), desc);
+      return internal::FromPropertyDescriptor(args.ctx(), desc);
     }
   }
   error->Report(Error::Type,
@@ -207,9 +207,8 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
       if (args.size() > 2) {
         attr = args[2];
       }
-      const PropertyDescriptor desc = ToPropertyDescriptor(args.ctx(),
-                                                           attr,
-                                                           ERROR(error));
+      const PropertyDescriptor desc =
+          internal::ToPropertyDescriptor(args.ctx(), attr, ERROR(error));
       obj->DefineOwnProperty(args.ctx(), name, desc, true, ERROR(error));
       return obj;
     }
@@ -473,7 +472,8 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
     Context* const ctx = args.ctx();
     JSString* const str = val.ToString(ctx, ERROR(error));
     JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
-    if (!obj->GetOwnProperty(ctx, context::Intern(ctx, str->value())).IsEmpty()) {
+    if (!obj->GetOwnProperty(ctx,
+                             context::Intern(ctx, str->value())).IsEmpty()) {
       return JSTrue;
     } else {
       return JSFalse;

@@ -145,7 +145,8 @@ void Interpreter::CallCode(
   const Scope& scope = code->code()->scope();
 
   // step 1
-  JSDeclEnv* const env = NewDeclarativeEnvironment(ctx_, code->scope());
+  JSDeclEnv* const env =
+     internal::NewDeclarativeEnvironment(ctx_, code->scope());
   const ContextSwitcher switcher(ctx_, env, env, this_value,
                                  code->IsStrict());
 
@@ -580,7 +581,8 @@ void Interpreter::Visit(const WithStatement* stmt) {
   const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
   JSObject* const obj = val.ToObject(ctx_, CHECK_IN_STMT);
   JSEnv* const old_env = ctx_->lexical_env();
-  JSObjectEnv* const new_env = NewObjectEnvironment(ctx_, obj, old_env);
+  JSObjectEnv* const new_env =
+      internal::NewObjectEnvironment(ctx_, obj, old_env);
   new_env->set_provide_this(true);
   {
     const LexicalEnvSwitcher switcher(ctx_, new_env);
@@ -614,7 +616,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
         if (!found) {
           EVAL_IN_STMT(expr.Address());
           const JSVal res = GetValue(ctx_->ret(), CHECK_IN_STMT);
-          if (StrictEqual(cond, res)) {
+          if (internal::StrictEqual(cond, res)) {
             found = true;
           }
         }
@@ -687,7 +689,8 @@ void Interpreter::Visit(const TryStatement* stmt) {
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
-      JSEnv* const catch_env = NewDeclarativeEnvironment(ctx_, old_env);
+      JSEnv* const catch_env =
+          internal::NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = stmt->catch_name().Address()->symbol();
       catch_env->CreateMutableBinding(ctx_, name, false, CHECK_IN_STMT);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
@@ -960,42 +963,30 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::LT: {  // <
-        const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
-        if (res == CMP_TRUE) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        const internal::CompareKind res =
+            internal::Compare<true>(ctx_, lhs, rhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
         return;
       }
 
       case Token::GT: {  // >
-        const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
-        if (res == CMP_TRUE) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        const internal::CompareKind res =
+            internal::Compare<false>(ctx_, rhs, lhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
         return;
       }
 
       case Token::LTE: {  // <=
-        const CompareKind res = Compare<false>(ctx_, rhs, lhs, CHECK);
-        if (res == CMP_FALSE) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        const internal::CompareKind res =
+            internal::Compare<false>(ctx_, rhs, lhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
         return;
       }
 
       case Token::GTE: {  // >=
-        const CompareKind res = Compare<true>(ctx_, lhs, rhs, CHECK);
-        if (res == CMP_FALSE) {
-          ctx_->Return(JSTrue);
-        } else {
-          ctx_->Return(JSFalse);
-        }
+        const internal::CompareKind res =
+            internal::Compare<true>(ctx_, lhs, rhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
         return;
       }
 
@@ -1024,8 +1015,9 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           return;
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
-        const bool res = rhs.object()->HasProperty(ctx_,
-                                                   context::Intern(ctx_, name->value()));
+        const bool res =
+            rhs.object()->HasProperty(ctx_,
+                                      context::Intern(ctx_, name->value()));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1035,7 +1027,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::EQ: {  // ==
-        const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
+        const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1045,7 +1037,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::NE: {  // !=
-        const bool res = AbstractEqual(ctx_, lhs, rhs, CHECK);
+        const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (!res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1055,7 +1047,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::EQ_STRICT: {  // ===
-        if (StrictEqual(lhs, rhs)) {
+        if (internal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
           ctx_->Return(JSFalse);
@@ -1064,7 +1056,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::NE_STRICT: {  // !==
-        if (!StrictEqual(lhs, rhs)) {
+        if (!internal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
           ctx_->Return(JSFalse);

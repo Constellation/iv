@@ -11,6 +11,7 @@
 #include "lv5/error.h"
 namespace iv {
 namespace lv5 {
+namespace internal {
 
 inline JSVal FromPropertyDescriptor(Context* ctx,
                                     const PropertyDescriptor& desc) {
@@ -408,5 +409,11 @@ inline void IsOneFunctionExpression(const FunctionLiteral& func, Error* e) {
   e->Report(Error::Syntax, "Function Constructor with invalid arguments");
 }
 
-} }  // namespace iv::lv5
+inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
+  const JSVal length = obj->Get(ctx,
+                                context::length_symbol(ctx), ERROR_WITH(e, 0));
+  return length.ToUInt32(ctx, e);
+}
+
+} } }  // namespace iv::lv5::internal
 #endif  // _IV_LV5_INTERNAL_H_

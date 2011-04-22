@@ -20,7 +20,8 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   JSScript* const script = CompileScript(ctx, first.string(), false, ERROR(e));
   if (script->function()->strict()) {
-    JSDeclEnv* const env = NewDeclarativeEnvironment(ctx, ctx->global_env());
+    JSDeclEnv* const env =
+        internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
     const Interpreter::ContextSwitcher switcher(ctx,
                                                 env,
                                                 env,
@@ -54,7 +55,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   JSScript* const script = CompileScript(ctx, first.string(),
                                          ctx->IsStrict(), ERROR(e));
   if (script->function()->strict()) {
-    JSDeclEnv* const env = NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    JSDeclEnv* const env =
+        internal::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
     const Interpreter::ContextSwitcher switcher(ctx,
                                                 env,
                                                 env,
@@ -73,10 +75,10 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   StringBuilder builder;
-  BuildFunctionSource(&builder, args, ERROR(e));
+  internal::BuildFunctionSource(&builder, args, ERROR(e));
   JSString* const source = builder.Build(ctx);
   JSScript* const script = CompileScript(ctx, source, false, ERROR(e));
-  IsOneFunctionExpression(*script->function(), ERROR(e));
+  internal::IsOneFunctionExpression(*script->function(), ERROR(e));
   const Interpreter::ContextSwitcher switcher(ctx,
                                               ctx->global_env(),
                                               ctx->global_env(),
