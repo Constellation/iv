@@ -513,13 +513,21 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                 break;
               } else {
                 if (t2_is_hole) {
-                  res = JSVal(1.0);
+                  res = JSVal::UInt32(1u);
                   t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
                 } else {
                   t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
-                  a[0] = t2;
-                  a[1] = t;
-                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                  if (t.IsUndefined()) {
+                    break;
+                  } else {
+                    if (t2.IsUndefined()) {
+                      res = JSVal::UInt32(1u);
+                    } else {
+                      a[0] = t2;
+                      a[1] = t;
+                      res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                    }
+                  }
                 }
               }
               const internal::CompareKind kind =
@@ -569,7 +577,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
               if (target_is_hole) {
                 if (pivot_is_hole) {
-                  res = JSVal(0.0);
+                  res = JSVal::UInt32(0u);
                 } else {
                   break;
                 }
@@ -579,8 +587,20 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                 } else {
                   const JSVal target =
                       obj->GetWithIndex(ctx, static_cast<uint32_t>(i), ERROR(e));
-                  a[0] = target;
-                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                  if (target.IsUndefined()) {
+                    if (s.IsUndefined()) {
+                      res = JSVal::UInt32(0u);
+                    } else {
+                      res = JSVal::UInt32(1u);
+                    }
+                  } else {
+                    if (s.IsUndefined()) {
+                      continue;
+                    } else {
+                      a[0] = target;
+                      res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                    }
+                  }
                 }
               }
               // if res < 0, next
@@ -604,7 +624,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(j));
               if (target_is_hole) {
                 if (pivot_is_hole) {
-                  res = JSVal(0.0);
+                  res = JSVal::UInt32(0u);
                 } else {
                   continue;
                 }
@@ -614,8 +634,20 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                 } else {
                   const JSVal target =
                       obj->GetWithIndex(ctx, static_cast<uint32_t>(j), ERROR(e));
-                  a[0] = target;
-                  res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                  if (target.IsUndefined()) {
+                    if (s.IsUndefined()) {
+                      break;
+                    } else {
+                      res = JSVal::UInt32(1u);
+                    }
+                  } else {
+                    if (s.IsUndefined()) {
+                      break;
+                    } else {
+                      a[0] = target;
+                      res = comparefn->Call(&a, JSUndefined, ERROR(e));
+                    }
+                  }
                 }
               }
               const internal::CompareKind kind =
