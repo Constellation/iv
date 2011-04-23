@@ -23,11 +23,6 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
   const JSVal& rhs = args[1];
   if (internal::StrictEqual(lhs, rhs)) {
     return 0.0;
-  } else if (lhs.IsNumber() && rhs.IsNumber()) {
-    if (lhs.number() == rhs.number()) {
-      return 0.0;
-    }
-    return lhs.number() < rhs.number() ? -1.0 : 1.0;
   }
   const JSString* const lhs_str = lhs.ToString(args.ctx(), ERROR(e));
   const JSString* const rhs_str = rhs.ToString(args.ctx(), ERROR(e));
