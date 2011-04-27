@@ -82,61 +82,29 @@
 namespace iv {
 namespace core {
 namespace detail {
-template<typename T>
-class ParserData {
- private:
-  static const char* use_strict;
-  static const char* arguments;
-  static const char* eval;
-  static const char* get;
-  static const char* set;
- public:
-  static const UString kUseStrict;
-  static const UString kArguments;
-  static const UString kEval;
-  static const UString kGet;
-  static const UString kSet;
-};
 
-template<typename T>
-const char * ParserData<T>::use_strict = "use strict";
-
-template<typename T>
-const char * ParserData<T>::arguments = "arguments";
-
-template<typename T>
-const char * ParserData<T>::eval = "eval";
-
-template<typename T>
-const char * ParserData<T>::get = "get";
-
-template<typename T>
-const char * ParserData<T>::set = "set";
-
-template<typename T>
-const UString ParserData<T>::kUseStrict(
-    ParserData<T>::use_strict,
-    ParserData<T>::use_strict + std::strlen(ParserData<T>::use_strict));
-template<typename T>
-const UString ParserData<T>::kArguments(
-    ParserData<T>::arguments,
-    ParserData<T>::arguments + std::strlen(ParserData<T>::arguments));
-template<typename T>
-const UString ParserData<T>::kEval(
-    ParserData<T>::eval,
-    ParserData<T>::eval + std::strlen(ParserData<T>::eval));
-template<typename T>
-const UString ParserData<T>::kGet(
-    ParserData<T>::get,
-    ParserData<T>::get + std::strlen(ParserData<T>::get));
-template<typename T>
-const UString ParserData<T>::kSet(
-    ParserData<T>::set,
-    ParserData<T>::set + std::strlen(ParserData<T>::set));
+static const char* kLiteralUseStrict = "use strict";
+static const char* kLiteralArguments = "arguments";
+static const char* kLiteralEval = "eval";
+static const char* kLiteralGet = "get";
+static const char* kLiteralSet = "set";
+static const UString kUseStrict(
+    kLiteralUseStrict,
+    kLiteralUseStrict  + std::strlen(kLiteralUseStrict));
+static const UString kArguments(
+    kLiteralArguments,
+    kLiteralArguments + std::strlen(kLiteralArguments));
+static const UString kEval(
+    kLiteralEval,
+    kLiteralEval + std::strlen(kLiteralEval));
+static const UString kGet(
+    kLiteralGet,
+    kLiteralGet + std::strlen(kLiteralGet));
+static const UString kSet(
+    kLiteralSet,
+    kLiteralSet + std::strlen(kLiteralSet));
 
 }  // namespace iv::core::detail
-
-typedef detail::ParserData<None> ParserData;
 
 template<typename Factory,
          typename Source,
@@ -318,7 +286,7 @@ class Parser
           if (!strict_switcher.IsStrict() &&
               state == lexer_type::NONE &&
               expr->AsStringLiteral()->value().compare(
-                  ParserData::kUseStrict.data()) == 0) {
+                  detail::kUseStrict.data()) == 0) {
             strict_switcher.SwitchStrictMode();
             if (octal_escaped_directive_found) {
               RAISE_WITH_NUMBER(
@@ -1941,7 +1909,7 @@ class Parser
         if (token_ == Token::COLON) {
           // property
           ident = ParseIdentifierWithPosition(
-              is_get ? ParserData::kGet : ParserData::kSet,
+              is_get ? detail::kGet : detail::kSet,
               lexer_.previous_begin_position(),
               lexer_.previous_end_position());
           expr = ParseAssignmentExpression(true, CHECK);
@@ -2518,9 +2486,9 @@ class Parser
 
   static EvalOrArguments IsEvalOrArguments(const Identifier* ident) {
     const SpaceUString& str = ident->value();
-    if (str.compare(ParserData::kEval.data()) == 0) {
+    if (str.compare(detail::kEval.data()) == 0) {
       return kEval;
-    } else if (str.compare(ParserData::kArguments.data()) == 0) {
+    } else if (str.compare(detail::kArguments.data()) == 0) {
       return kArguments;
     } else {
       return kNone;
