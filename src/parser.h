@@ -289,9 +289,7 @@ class Parser
 // SourceElement
 //   : Statements
 //   | FunctionDeclaration
-  bool ParseSourceElements(Token::Type end,
-                           Statements* body,
-                           bool *res) {
+  bool ParseSourceElements(Token::Type end, Statements* body, bool *res) {
     Statement* stmt;
     const StrictSwitcher strict_switcher(this);
 
@@ -1110,7 +1108,7 @@ class Parser
     }
 
     if (!has_catch_or_finally) {
-      RAISE("missing catch or finally after try statement");
+      RAISE_RECOVERVABLE("missing catch or finally after try statement");
     }
 
     assert(try_block);
@@ -1316,8 +1314,7 @@ class Parser
 //    | MultiplicativeExpression MUL UnaryExpression
 //    | MultiplicativeExpression DIV UnaryExpression
 //    | MultiplicativeExpression MOD UnaryExpression
-  Expression* ParseBinaryExpression(bool contains_in,
-                                    int prec, bool *res) {
+  Expression* ParseBinaryExpression(bool contains_in, int prec, bool *res) {
     Expression *left, *right;
     Token::Type op;
     left = ParseUnaryExpression(CHECK);
@@ -2545,6 +2542,7 @@ class Parser
 #undef UNEXPECT
 #undef RAISE
 #undef RAISE_WITH_NUMBER
+#undef RAISE_RECOVERVABLE
 #undef CHECK
 } }  // namespace iv::core
 #endif  // _IV_PARSER_H_
