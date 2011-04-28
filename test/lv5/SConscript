@@ -9,7 +9,7 @@ def Build():
     LIBS=libs,
     CCFLAGS=["-fno-strict-aliasing"],
     CPPDEFINES=["__STDC_FORMAT_MACROS"])
-  return env.Program('cctest', [Glob('*.cc'), object_files, libs])
+  return env.Program('cctest', [Glob('*.cc'), object_files])
 
 program = Build()
 Return('program')
