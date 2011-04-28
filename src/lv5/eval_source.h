@@ -16,7 +16,7 @@ class EvalSource : public core::Noncopyable<EvalSource>::type {
     : source_(str) {
   }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline uc16 operator[](std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
   }

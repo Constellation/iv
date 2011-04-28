@@ -115,7 +115,7 @@ class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
     if (pos_ == end_) {
       c_ = -1;
     } else {
-      c_ = source_.Get(pos_++);
+      c_ = source_[pos_++];
     }
   }
 

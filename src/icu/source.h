@@ -22,16 +22,19 @@ class Source {
     ParseMagicComment(str);
   }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline uc16 operator[](std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
   }
+
   inline std::size_t size() const {
     return source_.size();
   }
+
   inline const std::string& filename() const {
     return filename_;
   }
+
   inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
     if (len == std::string::npos) {

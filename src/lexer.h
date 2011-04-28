@@ -518,7 +518,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     if (pos_ == end_) {
       c_ = -1;
     } else {
-      c_ = source_->Get(pos_++);
+      c_ = (*source_)[pos_++];
     }
   }
 
@@ -552,7 +552,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     if (pos_ < 2) {
       c_ = -1;
     } else {
-      c_ = source_->Get(pos_-2);
+      c_ = (*source_)[pos_-2];
       --pos_;
     }
   }
