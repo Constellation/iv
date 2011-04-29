@@ -4,12 +4,18 @@
 #include <functional>
 #include <tr1/functional>
 #include "uchar.h"
+#include "stringpiece.h"
 #include "conversions.h"
 namespace iv {
 namespace core {
 
 typedef std::basic_string<uc16,
                           std::char_traits<uc16> > UString;
+
+inline UString ToUString(StringPiece str) {
+  return UString(str.begin(), str.end());
+}
+
 } }  // namespace iv::core
 namespace std {
 namespace tr1 {

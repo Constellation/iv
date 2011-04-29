@@ -20,34 +20,6 @@ namespace detail {
 
 static const std::string kFunctionPrefix("function ");
 
-struct NativeFunction {
-  enum SpecificationMode {
-    kSpecificationStrict,
-    kSpecificationCompatibility
-  };
-
-  template<SpecificationMode mode>
-  static JSVal ToString(Context* ctx, JSFunction* func, Error* e,
-      typename enable_if_c<mode == kSpecificationStrict>::type* = 0) {
-    return JSString::NewAsciiString(ctx,
-                                    "function native() { [native code] }");
-//    const JSVal name = func->Get(ctx, context::Intern(ctx, "name"), ERROR(e));
-//    assert(name.IsString());
-//    StringBuilder builder;
-//    builder.Append(detail::kFunctionPrefix);
-//    builder.Append(*name.string());
-//    builder.Append("() { /* native code */ }");
-//    return builder.Build(ctx);
-  }
-
-  template<SpecificationMode mode>
-  static JSVal ToString(Context* ctx, JSFunction* func, Error* e,
-      typename enable_if_c<mode == kSpecificationCompatibility>::type* = 0) {
-    return JSString::NewAsciiString(ctx,
-                                    "function native() { [native code] }");
-  }
-};
-
 }  // namespace iv::lv5::runtime::detail
 
 inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
@@ -62,22 +34,16 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    if (func->IsNativeFunction()) {
-      return
-          detail::NativeFunction::ToString<
-            detail::NativeFunction::kSpecificationStrict>(args.ctx(), func, e);
+    StringBuilder builder;
+    builder.Append(detail::kFunctionPrefix);
+    const core::UStringPiece name = func->GetName();
+    if (name.empty()) {
+      builder.Append("anonymous");
     } else {
-      StringBuilder builder;
-      builder.Append(detail::kFunctionPrefix);
-      const core::UStringPiece name = func->GetName();
-      if (name.empty()) {
-        builder.Append("anonymous");
-      } else {
-        builder.Append(name);
-      }
-      builder.Append(func->GetSource());
-      return builder.Build(args.ctx());
+      builder.Append(name);
     }
+    builder.Append(func->GetSource());
+    return builder.Build(args.ctx());
   }
   e->Report(Error::Type,
             "Function.prototype.toString is not generic function");

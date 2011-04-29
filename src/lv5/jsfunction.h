@@ -87,7 +87,8 @@ class JSFunction : public JSObject {
   }
 
   virtual core::UStringPiece GetSource() const {
-    return core::UStringPiece();
+    static const core::UString kBlock = core::ToUString("() { \"[native code]\" }");
+    return kBlock;
   }
 
   virtual core::UStringPiece GetName() const {

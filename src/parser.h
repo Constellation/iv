@@ -83,26 +83,11 @@ namespace iv {
 namespace core {
 namespace detail {
 
-static const char* kLiteralUseStrict = "use strict";
-static const char* kLiteralArguments = "arguments";
-static const char* kLiteralEval = "eval";
-static const char* kLiteralGet = "get";
-static const char* kLiteralSet = "set";
-static const UString kUseStrict(
-    kLiteralUseStrict,
-    kLiteralUseStrict  + std::strlen(kLiteralUseStrict));
-static const UString kArguments(
-    kLiteralArguments,
-    kLiteralArguments + std::strlen(kLiteralArguments));
-static const UString kEval(
-    kLiteralEval,
-    kLiteralEval + std::strlen(kLiteralEval));
-static const UString kGet(
-    kLiteralGet,
-    kLiteralGet + std::strlen(kLiteralGet));
-static const UString kSet(
-    kLiteralSet,
-    kLiteralSet + std::strlen(kLiteralSet));
+static const UString kUseStrict = ToUString("use strict");
+static const UString kArguments = ToUString("arguments");
+static const UString kEval = ToUString("eval");
+static const UString kGet = ToUString("get");
+static const UString kSet = ToUString("set");
 
 }  // namespace iv::core::detail
 
