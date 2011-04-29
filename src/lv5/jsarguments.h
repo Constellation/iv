@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "lv5/symbol.h"
 #include "lv5/gc_template.h"
+#include "lv5/error.h"
 #include "lv5/property.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
@@ -12,9 +13,6 @@ namespace iv {
 namespace lv5 {
 
 class Context;
-class JSObject;
-class Error;
-class JSDeclEnv;
 class AstFactory;
 
 class JSArguments : public JSObject {
