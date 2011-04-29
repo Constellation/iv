@@ -15,20 +15,6 @@
 #include "lv5/symboltable.h"
 namespace iv {
 namespace lv5 {
-namespace detail {
-
-static const char* kLengthString = "length";
-static const char* kEvalString = "eval";
-static const char* kArgumentsString = "arguments";
-static const char* kCallerString = "caller";
-static const char* kCalleeString = "callee";
-static const char* kToStringString = "toString";
-static const char* kValueOfString = "valueOf";
-static const char* kPrototypeString = "prototype";
-static const char* kConstructorString = "constructor";
-static const char* kArrayString = "Array";
-
-}  // namespace iv::lv5::detail
 
 class SymbolChecker;
 class JSRegExpImpl;
@@ -49,16 +35,16 @@ class GlobalData {
       regs_(),
       builtins_(),
       table_(),
-      length_symbol_(Intern(detail::kLengthString)),
-      eval_symbol_(Intern(detail::kEvalString)),
-      arguments_symbol_(Intern(detail::kArgumentsString)),
-      caller_symbol_(Intern(detail::kCallerString)),
-      callee_symbol_(Intern(detail::kCalleeString)),
-      toString_symbol_(Intern(detail::kToStringString)),
-      valueOf_symbol_(Intern(detail::kValueOfString)),
-      prototype_symbol_(Intern(detail::kPrototypeString)),
-      constructor_symbol_(Intern(detail::kConstructorString)),
-      Array_symbol_(Intern(detail::kArrayString)) {
+      length_symbol_(Intern("length")),
+      eval_symbol_(Intern("eval")),
+      arguments_symbol_(Intern("arguments")),
+      caller_symbol_(Intern("caller")),
+      callee_symbol_(Intern("callee")),
+      toString_symbol_(Intern("toString")),
+      valueOf_symbol_(Intern("valueOf")),
+      prototype_symbol_(Intern("prototype")),
+      constructor_symbol_(Intern("constructor")),
+      Array_symbol_(Intern("Array")) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();
