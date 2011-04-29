@@ -6,19 +6,11 @@
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
 #include "lv5/arguments.h"
-#include "lv5/jsast.h"
 #include "lv5/lv5.h"
 namespace iv {
 namespace lv5 {
 
 typedef JSVal(*JSAPI)(const Arguments&, Error*);
-
-class Context;
-class JSNativeFunction;
-class JSBoundFunction;
-class Error;
-class JSEnv;
-class JSScript;
 
 class JSFunction : public JSObject {
  public:

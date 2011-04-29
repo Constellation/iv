@@ -15,6 +15,7 @@ namespace iv {
 namespace lv5 {
 
 class JSEnv;
+class JSScript;
 
 namespace teleporter {
 
