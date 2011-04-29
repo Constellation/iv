@@ -275,7 +275,7 @@ class Parser
             strict_switcher.SwitchStrictMode();
             if (octal_escaped_directive_found) {
               RAISE_WITH_NUMBER(
-                  "octal excape sequence not allowed in strict code",
+                  "octal escape sequence not allowed in strict code",
                   line);
             }
             // and one token lexed is not in strict
@@ -1734,7 +1734,7 @@ class Parser
       case Token::STRING: {
         const typename lexer_type::State state = lexer_.StringEscapeType();
         if (strict_ && state == lexer_type::OCTAL) {
-          RAISE("octal excape sequence not allowed in strict code");
+          RAISE("octal escape sequence not allowed in strict code");
         }
         result = factory_->NewStringLiteral(lexer_.Buffer(),
                                             lexer_.begin_position(),
@@ -2198,7 +2198,7 @@ class Parser
 
   Identifier* ParseIdentifierString(bool* res) {
     if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
-      RAISE("octal excape sequence not allowed in strict code");
+      RAISE("octal escape sequence not allowed in strict code");
     }
     Identifier* const ident = factory_->NewIdentifier(Token::STRING,
                                                       lexer_.Buffer(),
