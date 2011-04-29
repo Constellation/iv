@@ -1,15 +1,153 @@
 #ifndef _IV_STRINGPIECE_H_
 #define _IV_STRINGPIECE_H_
-#pragma once
-
+#include <climits>
 #include <algorithm>
+#include <functional>
 #include <iosfwd>
 #include <string>
 #include <iterator>
 #include <limits>
-
 namespace iv {
 namespace core {
+namespace detail {
+
+template<class CharT, class Piece>
+struct StringPieceFindOf {
+  typedef typename Piece::size_type size_type;
+
+  static size_type FindFirstOf(const Piece& that,
+                               const Piece& s, size_type pos) {
+    if (pos >= that.size()) {
+      return Piece::npos;
+    }
+    const typename Piece::const_iterator it =
+        std::find_first_of(that.begin() + pos, that.end(), s.begin(), s.end());
+    return (it == that.end()) ? Piece::npos : std::distance(that.begin(), it);
+  }
+
+  template<class Iter>
+  class NotFinder {
+   public:
+    NotFinder(const Iter& begin, const Iter& end)
+      : begin_(begin), end_(end) { }
+
+    template<class Val>
+    bool operator()(const Val& v) const {
+      return std::find(begin_, end_, v) == end_;
+    }
+
+   private:
+    const Iter begin_;
+    const Iter end_;
+  };
+
+  static size_type FindFirstNotOf(const Piece& that,
+                                  const Piece& s, size_type pos) {
+    if (pos >= that.size()) {
+      return Piece::npos;
+    }
+    const typename Piece::const_iterator it =
+        std::find_if(
+            that.begin() + pos, that.end(),
+            NotFinder<typename Piece::const_iterator>(s.begin(), s.end()));
+    return (it == that.end()) ? Piece::npos : std::distance(that.begin(), it);
+  }
+
+  static size_type FindLastOf(const Piece& that,
+                              const Piece& s, size_type pos) {
+    const size_type index = std::min(pos, that.size() - 1);
+    const typename Piece::const_reverse_iterator last = that.rend();
+    const typename Piece::const_reverse_iterator start = that.rbegin();
+    const typename Piece::const_reverse_iterator it =
+        std::find_first_of(start + ((that.size() - 1) - index),
+                           last,
+                           s.begin(), s.end());
+    return (it == last) ?
+        Piece::npos : (that.size() - 1) - std::distance(start, it);
+  }
+
+  static size_type FindLastNotOf(const Piece& that,
+                                 const Piece& s, size_type pos) {
+    const size_type index = std::min(pos, that.size() - 1);
+    const typename Piece::const_reverse_iterator last = that.rend();
+    const typename Piece::const_reverse_iterator start = that.rbegin();
+    const typename Piece::const_reverse_iterator it =
+        std::find_if(
+            start + ((that.size() - 1) - index), last,
+            NotFinder<typename Piece::const_iterator>(s.begin(), s.end()));
+    return (it == last) ?
+        Piece::npos : (that.size() - 1) - std::distance(start, it);
+  }
+};
+
+template<class Piece>
+struct StringPieceFindOf<char, Piece> {
+  typedef typename Piece::size_type size_type;
+
+  static size_type FindFirstOf(const Piece& that,
+                               const Piece& s, size_type pos) {
+    bool lookup[UCHAR_MAX + 1] = { false };
+    BuildLookupTable(s, lookup);
+    for (size_type i = pos, len = that.size(); i < len; ++i) {
+      if (lookup[static_cast<size_type>(that.data()[i])]) {
+        return i;
+      }
+    }
+    return Piece::npos;
+  }
+
+  static size_type FindFirstNotOf(const Piece& that,
+                                  const Piece& s, size_type pos) {
+    bool lookup[UCHAR_MAX + 1] = { false };
+    BuildLookupTable(s, lookup);
+    for (size_type i = pos, len = that.size(); i < len; ++i) {
+      if (!lookup[static_cast<size_type>(that.data()[i])]) {
+        return i;
+      }
+    }
+    return Piece::npos;
+  }
+
+  static size_type FindLastOf(const Piece& that,
+                              const Piece& s, size_type pos) {
+    bool lookup[UCHAR_MAX + 1] = { false };
+    BuildLookupTable(s, lookup);
+    for (size_type i = std::min(pos, that.size() - 1); ; --i) {
+      if (lookup[static_cast<size_type>(that.data()[i])]) {
+        return i;
+      }
+      if (i == 0) {
+        break;
+      }
+    }
+    return Piece::npos;
+  }
+
+  static size_type FindLastNotOf(const Piece& that,
+                                 const Piece& s, size_type pos) {
+    bool lookup[UCHAR_MAX + 1] = { false };
+    BuildLookupTable(s, lookup);
+    for (size_type i = std::min(pos, that.size() - 1); ; --i) {
+      if (!lookup[static_cast<size_type>(that.data()[i])]) {
+        return i;
+      }
+      if (i == 0) {
+        break;
+      }
+    }
+    return Piece::npos;
+  }
+
+  static void BuildLookupTable(const Piece& characters_wanted, bool* table) {
+    const size_type length = characters_wanted.length();
+    const typename Piece::const_pointer data = characters_wanted.data();
+    for (size_type i = 0; i < length; ++i) {
+      table[static_cast<size_type>(data[i])] = true;
+    }
+  }
+};
+
+}  // namespace detail
 
 template<class CharT, class Traits = std::char_traits<CharT> >
 class BasicStringPiece {
@@ -30,7 +168,8 @@ class BasicStringPiece {
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-  static const size_type npos = -1;
+  static const size_type npos;
+  // static const size_type npos = static_cast<size_type>(-1);
 
  public:
   // We provide non-explicit singleton constructors so users can pass
@@ -41,7 +180,7 @@ class BasicStringPiece {
   BasicStringPiece(const_pointer str)  // NOLINT
     : ptr_(str), length_((str == NULL) ? 0 : Traits::length(str)) { }
 
-  template<typename Alloc>
+  template<class Alloc>
   BasicStringPiece(const std::basic_string<CharT, Traits, Alloc>& str)  // NOLINT
     : ptr_(str.data()), length_(str.size()) { }
 
@@ -116,17 +255,18 @@ class BasicStringPiece {
     return r;
   }
 
-  operator std::basic_string<CharT, Traits>() const {
+  template<class Alloc>
+  operator std::basic_string<CharT, Traits, Alloc>() const {
     // std::basic_string<CharT> doesn't like to
     // take a NULL pointer even with a 0 size.
-    if (!empty()) {
-      return std::basic_string<CharT, Traits>(data(), size());
+    if (empty()) {
+      return std::basic_string<CharT, Traits, Alloc>();
     } else {
-      return std::basic_string<CharT, Traits>();
+      return std::basic_string<CharT, Traits, Alloc>(data(), size());
     }
   }
 
-  template<typename Alloc>
+  template<class Alloc>
   void CopyToString(std::basic_string<CharT, Traits, Alloc>* target) const {
     if (!empty()) {
       target->assign(data(), size());
@@ -135,7 +275,7 @@ class BasicStringPiece {
     }
   }
 
-  template<typename Alloc>
+  template<class Alloc>
   void AppendToString(std::basic_string<CharT, Traits, Alloc>* target) const {
     if (!empty())
       target->append(data(), size());
@@ -227,74 +367,65 @@ class BasicStringPiece {
     if (s.empty())
       return std::min(length_, pos);
 
-    const const_pointer last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
+    const const_pointer last =
+        ptr_ + std::min(length_ - s.length_, pos) + s.length_;
     const const_pointer result = std::find_end(ptr_, last,
                                                s.ptr_, s.ptr_ + s.length_);
-    return result != last ? static_cast<size_t>(result - ptr_) : npos;
+    return result != last ? static_cast<size_type>(result - ptr_) : npos;
   }
 
   size_type rfind(CharT c, size_type pos = npos) const {
-    if (length_ == 0)
+    if (empty()) {
       return npos;
-
-    for (size_type i = std::min(pos, length_ - 1); ; --i) {
-      if (ptr_[i] == c)
-        return i;
-      if (i == 0)
-        break;
     }
-    return npos;
+    const size_type index = std::min(pos, length_ - 1);
+    const const_reverse_iterator last = rend();
+    const const_reverse_iterator start = rbegin();
+    const const_reverse_iterator it =
+        std::find(start + ((length_ - 1) - index), last, c);
+    return (it == last) ? npos : ((length_ - 1) - (std::distance(start, it)));
   }
 
-  size_type find_first_of(const this_type& s,
-                          size_type pos) const {
-    if (length_ == 0 || s.length_ == 0)
+  size_type find_first_of(const this_type& s, size_type pos = 0) const {
+    if (empty() || s.empty()) {
       return npos;
+    }
 
-    // Avoid the cost of BuildLookupTable() for a single-character search.
-    if (s.length_ == 1)
+    if (s.size() == 1) {
       return find_first_of(s.ptr_[0], pos);
-
-    bool lookup[std::numeric_limits<CharT>::max() + 1] = { false };
-    BuildLookupTable(s, lookup);
-    for (size_type i = pos; i < length_; ++i) {
-      if (lookup[static_cast<CharT>(ptr_[i])]) {
-        return i;
-      }
     }
-    return npos;
-  }
 
+    return detail::StringPieceFindOf<
+        CharT,
+        this_type>::FindFirstOf(*this, s, pos);
+  }
 
   size_type find_first_of(CharT c, size_type pos = 0) const {
     return find(c, pos);
   }
 
-  size_type find_first_not_of(const this_type& s,
-                              size_type pos) const {
-    if (length_ == 0)
+  size_type find_first_not_of(const this_type& s, size_type pos = 0) const {
+    if (empty()) {
       return npos;
-
-    if (s.length_ == 0)
-      return 0;
-
-    // Avoid the cost of BuildLookupTable() for a single-character search.
-    if (s.length_ == 1)
-      return find_first_not_of(s.ptr_[0], pos);
-
-    bool lookup[std::numeric_limits<CharT>::max() + 1] = { false };
-    BuildLookupTable(s, lookup);
-    for (size_type i = pos; i < length_; ++i) {
-      if (!lookup[static_cast<CharT>(ptr_[i])]) {
-        return i;
-      }
     }
-    return npos;
+
+    if (s.empty()) {
+      return 0;
+    }
+
+    if (s.size() == 1) {
+      return find_first_not_of(s.ptr_[0], pos);
+    }
+
+    return detail::StringPieceFindOf<
+        CharT,
+        this_type>::FindFirstNotOf(*this, s, pos);
   }
 
-  size_type find_first_not_of(CharT c, size_type pos) const {
-    if (length_ == 0)
+  size_type find_first_not_of(CharT c, size_type pos = 0) const {
+    if (empty()) {
       return npos;
+    }
 
     for (; pos < length_; ++pos) {
       if (ptr_[pos] != c) {
@@ -304,64 +435,65 @@ class BasicStringPiece {
     return npos;
   }
 
-  size_type find_last_of(const this_type& s, size_type pos) const {
-    if (length_ == 0 || s.length_ == 0)
+  size_type find_last_of(const this_type& s, size_type pos = npos) const {
+    if (empty() || s.empty()) {
       return npos;
-
-    // Avoid the cost of BuildLookupTable() for a single-character search.
-    if (s.length_ == 1)
-      return find_last_of(s.ptr_[0], pos);
-
-    bool lookup[std::numeric_limits<CharT>::max() + 1] = { false };
-    BuildLookupTable(s, lookup);
-    for (size_type i = std::min(pos, length_ - 1); ; --i) {
-      if (lookup[static_cast<CharT>(ptr_[i])])
-        return i;
-      if (i == 0)
-        break;
     }
-    return npos;
+
+    if (s.size() == 1) {
+      return find_last_of(s.ptr_[0], pos);
+    }
+
+    return detail::StringPieceFindOf<
+        CharT,
+        this_type>::FindLastOf(*this, s, pos);
   }
 
   size_type find_last_of(CharT c, size_type pos = npos) const {
     return rfind(c, pos);
   }
 
-  size_type find_last_not_of(const this_type& s,
-                             size_type pos) const {
-    if (length_ == 0)
+  size_type find_last_not_of(const this_type& s, size_type pos = npos) const {
+    if (empty()) {
       return npos;
-
-    size_type i = std::min(pos, length_ - 1);
-    if (s.length_ == 0)
-      return i;
-
-    // Avoid the cost of BuildLookupTable() for a single-character search.
-    if (s.length_ == 1)
-      return find_last_not_of(s.ptr_[0], pos);
-
-    bool lookup[std::numeric_limits<CharT>::max() + 1] = { false };
-    BuildLookupTable(s, lookup);
-    for (; ; --i) {
-      if (!lookup[static_cast<CharT>(ptr_[i])])
-        return i;
-      if (i == 0)
-        break;
     }
-    return npos;
+
+    if (empty()) {
+      return std::min(pos, length_ - 1);
+    }
+
+    if (s.size() == 1) {
+      return find_last_not_of(s.ptr_[0], pos);
+    }
+    return detail::StringPieceFindOf<
+        CharT,
+        this_type>::FindLastNotOf(*this, s, pos);
   }
 
-  size_type find_last_not_of(CharT c, size_type pos) const {
-    if (length_ == 0)
-      return npos;
-
-    for (size_type i = std::min(pos, length_ - 1); ; --i) {
-      if (ptr_[i] != c)
-        return i;
-      if (i == 0)
-        break;
+ private:
+  class NotEqualer {
+   public:
+    explicit NotEqualer(const CharT& c) : c_(c) { }
+    template<class Val>
+    bool operator()(const Val& v) const {
+      return v != c_;
     }
-    return npos;
+   private:
+    CharT c_;
+  };
+
+ public:
+  size_type find_last_not_of(CharT c, size_type pos = npos) const {
+    if (empty()) {
+      return npos;
+    }
+    const size_type index = std::min(pos, length_ - 1);
+    const const_reverse_iterator it =
+        std::find_if(rbegin() + ((length_ - 1) - index),
+                     rend(),
+                     NotEqualer(c));
+    return (it == rend()) ?
+        npos : ((length_ - 1) - (std::distance(rbegin(), it)));
   }
 
   this_type substr(size_type pos = 0, size_type n = npos) const {
@@ -372,15 +504,6 @@ class BasicStringPiece {
       n = length_ - pos;
     }
     return this_type(ptr_ + pos, n);
-  }
-
-  static inline void BuildLookupTable(const this_type& characters_wanted,
-                                      bool* table) {
-    const size_type length = characters_wanted.length();
-    const const_pointer data = characters_wanted.data();
-    for (size_type i = 0; i < length; ++i) {
-      table[static_cast<CharT>(data[i])] = true;
-    }
   }
 
   friend bool operator==(const this_type& x, const this_type& y) {
@@ -413,12 +536,17 @@ class BasicStringPiece {
 };
 
 // allow StringPiece to be logged (needed for unit testing).
-template<class CharT>
+template<class CharT, class Traits>
 std::ostream& operator<<(std::ostream& o,
-                         const BasicStringPiece<CharT>& piece) {
+                         const BasicStringPiece<CharT, Traits>& piece) {
   o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
   return o;
 }
+
+template<class CharT, class Traits>
+const typename BasicStringPiece<CharT, Traits>::size_type
+BasicStringPiece<CharT, Traits>::npos =
+  static_cast<typename BasicStringPiece<CharT, Traits>::size_type>(-1);
 
 typedef BasicStringPiece<char, std::char_traits<char> > StringPiece;
 

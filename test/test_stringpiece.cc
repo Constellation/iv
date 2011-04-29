@@ -171,3 +171,170 @@ TEST(StringPieceCase, StringCastTest) {
   const string str = StringPiece("TEST");
   EXPECT_EQ(string("TEST"), str);
 }
+
+TEST(StringPieceCase, FindTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(0, StringPiece("TEST").find('T'));
+  EXPECT_EQ(1, StringPiece("TEST").find('E'));
+  EXPECT_EQ(2, StringPiece("TEST").find('S'));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find('O'));
+
+  EXPECT_EQ(3, StringPiece("TEST").find('T', 1));
+  EXPECT_EQ(1, StringPiece("TEST").find('E', 1));
+  EXPECT_EQ(3, StringPiece("TEST").find('T', 3));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find('S', 3));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find('S', 5));
+
+  EXPECT_EQ(0, StringPiece("TEST").find("TEST"));
+  EXPECT_EQ(1, StringPiece("TEST").find("EST"));
+  EXPECT_EQ(0, StringPiece("TEST").find("TE"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find("TESTING"));
+
+  EXPECT_EQ(1, StringPiece("TEST").find("EST", 1));
+  EXPECT_EQ(3, StringPiece("TEST").find("T", 2));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find("T", 1000));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find("TEST", 1));
+}
+
+TEST(StringPieceCase, RFindTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(3, StringPiece("TEST").rfind('T'));
+  EXPECT_EQ(1, StringPiece("TEST").rfind('E'));
+  EXPECT_EQ(2, StringPiece("TEST").rfind('S'));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").rfind('O'));
+
+  EXPECT_EQ(0, StringPiece("TEST").rfind('T', 1));
+  EXPECT_EQ(1, StringPiece("TEST").rfind('E', 1));
+  EXPECT_EQ(3, StringPiece("TEST").rfind('T', 3));
+  EXPECT_EQ(2, StringPiece("TEST").rfind('S', 100));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").rfind('S', 0));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").rfind('S', 1));
+
+  EXPECT_EQ(0, StringPiece("TEST").rfind("TEST"));
+  EXPECT_EQ(1, StringPiece("TEST").rfind("EST"));
+  EXPECT_EQ(0, StringPiece("TEST").rfind("TE"));
+  EXPECT_EQ(3, StringPiece("TEST").rfind("T"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").rfind("TESTING"));
+
+  EXPECT_EQ(1, StringPiece("TEST").rfind("EST", 1));
+  EXPECT_EQ(0, StringPiece("TEST").rfind("T", 2));
+  EXPECT_EQ(3, StringPiece("TEST").rfind("T", 1000));
+  EXPECT_EQ(0, StringPiece("TEST").rfind("TES", 1));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").rfind("ST", 1));
+}
+
+TEST(StringPieceCase, FindFirstOfTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(0, StringPiece("TEST").find_first_of('T'));
+  EXPECT_EQ(1, StringPiece("TEST").find_first_of('E'));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_of('S'));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of('O'));
+
+  EXPECT_EQ(0, StringPiece("TEST").find_first_of("TEST"));
+  EXPECT_EQ(1, StringPiece("TEST").find_first_of("ES"));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_of("S"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of("O"));
+
+  EXPECT_EQ(3, StringPiece("TEST").find_first_of('T', 1));
+  EXPECT_EQ(1, StringPiece("TEST").find_first_of('E', 1));
+  EXPECT_EQ(3, StringPiece("TEST").find_first_of('T', 3));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of('S', 100));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of('S', 3));
+
+  EXPECT_EQ(0, StringPiece("TEST").find_first_of("TEST", 0));
+  EXPECT_EQ(1, StringPiece("TEST").find_first_of("EST", 1));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_of("TE", 0));
+  EXPECT_EQ(3, StringPiece("TEST").find_first_of("TE", 2));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of("O", 2));
+}
+
+TEST(StringPieceCase, FindLastOfTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(3, StringPiece("TEST").find_last_of('T'));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_of('E'));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_of('S'));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_of('O'));
+
+  EXPECT_EQ(3, StringPiece("TEST").find_last_of("TEST"));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_of("ES"));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_of("S"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_of("O"));
+
+  EXPECT_EQ(0, StringPiece("TEST").find_last_of('T', 1));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_of('E', 1));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_of('T', 3));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_of('S', 100));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_of('S', 1));
+
+  EXPECT_EQ(0, StringPiece("TEST").find_last_of("TEST", 0));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_of("EST", 1));
+  EXPECT_EQ(0, StringPiece("TEST").find_last_of("TE", 0));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_of("TE", 2));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_of("O", 2));
+}
+
+
+TEST(StringPieceCase, FindFirstNotOfTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(1, StringPiece("TEST").find_first_not_of('T'));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of('E'));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of('S'));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of('O'));
+
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("TEST"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("TES"));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of("ES"));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of("S"));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_not_of("TE"));
+  EXPECT_EQ(0, StringPiece("TEST").find_first_not_of("O"));
+
+  EXPECT_EQ(1, StringPiece("TEST").find_first_not_of('T', 1));
+  EXPECT_EQ(3, StringPiece("TEST").find_first_not_of('S', 2));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_not_of('E', 2));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of('T', 3));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of('S', 100));
+  EXPECT_EQ(3, StringPiece("TEST").find_first_not_of('S', 2));
+  EXPECT_EQ(3, StringPiece("TEST").find_first_not_of('S', 3));
+
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("TEST", 0));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("EST", 1));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("TS", 2));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_first_not_of("ETS", 1));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_not_of("TE", 0));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_not_of("O", 2));
+  EXPECT_EQ(2, StringPiece("TEST").find_first_not_of("TE", 2));
+}
+
+TEST(StringPieceCase, FindLastNotOfTest) {
+  using iv::core::StringPiece;
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of('T'));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of('E'));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of('S'));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of('O'));
+
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("TEST"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("TES"));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("EST"));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of("ES"));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of("S"));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of("TE"));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of("O"));
+
+  EXPECT_EQ(1, StringPiece("TEST").find_last_not_of('T', 1));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_not_of('S', 2));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of('E', 2));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of('T', 3));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of('T', 0));
+  EXPECT_EQ(3, StringPiece("TEST").find_last_not_of('S', 100));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of('T', 100));
+  EXPECT_EQ(1, StringPiece("TEST").find_last_not_of('S', 1));
+  EXPECT_EQ(0, StringPiece("TEST").find_last_not_of('S', 0));
+
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("TEST", 0));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("EST", 1));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("TE", 1));
+  EXPECT_EQ(StringPiece::npos, StringPiece("TEST").find_last_not_of("ETS", 1));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of("TE", 3));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of("O", 2));
+  EXPECT_EQ(2, StringPiece("TEST").find_last_not_of("TE", 2));
+}
