@@ -10,17 +10,14 @@
 namespace iv {
 namespace lv5 {
 
-inline JSVal Print(const Arguments& args, Error* error) {
+inline JSVal Print(const Arguments& args, Error* e) {
   if (args.size() > 0) {
+    Context* const ctx = args.ctx();
     const std::size_t last_index = args.size() - 1;
     std::size_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it, ++index) {
-      const JSVal& val = *it;
-      const JSString* const str = val.ToString(args.ctx(), error);
-      if (*error) {
-        return JSUndefined;
-      }
+      const JSString* const str = it->ToString(ctx, ERROR(e));
       std::cout << *str << ((index == last_index) ? "\n" : " ");
     }
     std::cout << std::flush;
@@ -28,10 +25,10 @@ inline JSVal Print(const Arguments& args, Error* error) {
   return JSUndefined;
 }
 
-inline JSVal Quit(const Arguments& args, Error* error) {
+inline JSVal Quit(const Arguments& args, Error* e) {
   int code = 0;
   if (args.size() > 0) {
-    const double val = args[0].ToNumber(args.ctx(), ERROR(error));
+    const double val = args[0].ToNumber(args.ctx(), ERROR(e));
     code = core::DoubleToInt32(val);
   }
   std::exit(code);
