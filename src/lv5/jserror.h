@@ -30,9 +30,6 @@ class JSError : public JSObject {
   static JSVal Detail(Context* ctx, const Error* error) {
     assert(error && (error->code() != Error::Normal));
     switch (error->code()) {
-      case Error::Native:
-        return JSError::NewNativeError(
-            ctx, JSString::New(ctx, error->detail()));
       case Error::Eval:
         return JSError::NewEvalError(
             ctx, JSString::New(ctx, error->detail()));
@@ -63,15 +60,6 @@ class JSError : public JSObject {
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const error = new JSError(ctx, code, str);
     const Class& cls = context::Cls(ctx, "Error");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewNativeError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Native, str);
-    const Class& cls = context::Cls(ctx, "NativeError");
     error->set_class_name(cls.name);
     error->set_prototype(cls.prototype);
     return error;

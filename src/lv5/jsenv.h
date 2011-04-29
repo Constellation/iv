@@ -15,7 +15,6 @@ namespace lv5 {
 
 class JSDeclEnv;
 class JSObjectEnv;
-class Context;
 
 class JSEnv : public gc {
  public:

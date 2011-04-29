@@ -6,8 +6,6 @@
 namespace iv {
 namespace lv5 {
 
-class Context;
-
 class JSDate : public JSObject {
  public:
   JSDate(Context* ctx, double val)

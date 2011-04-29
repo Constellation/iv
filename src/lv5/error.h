@@ -15,7 +15,6 @@ class Error {
   typedef void (Error::*bool_type)() const;
   enum Code {
     Normal = 0,
-    Native,
     Eval,
     Range,
     Reference,
