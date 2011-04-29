@@ -264,7 +264,7 @@ namespace tr1 {
 template<>
 struct hash<iv::lv5::JSString>
   : public unary_function<iv::lv5::JSString, std::size_t> {
-  std::size_t operator()(const iv::lv5::JSString& x) const {
+  result_type operator()(const argument_type& x) const {
     return x.hash_value();
   }
 };

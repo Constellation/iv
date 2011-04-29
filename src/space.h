@@ -162,12 +162,18 @@ namespace tr1 {
 template<typename Factory>
 struct hash<std::basic_string<iv::uc16,
                               std::char_traits<iv::uc16>,
-                              iv::core::SpaceAllocator<Factory, iv::uc16> > > {
-  typedef std::basic_string<iv::uc16,
-                            std::char_traits<iv::uc16>,
-                            iv::core::SpaceAllocator<Factory, iv::uc16> >
-                            argument_type;
-  std::size_t operator()(const argument_type& x) const {
+                              iv::core::SpaceAllocator<Factory, iv::uc16> > >
+  : public std::unary_function<
+    std::basic_string<iv::uc16,
+                      std::char_traits<iv::uc16>,
+                      iv::core::SpaceAllocator<Factory, iv::uc16> >, std::size_t> {
+  typedef std::unary_function<
+    std::basic_string<iv::uc16,
+                      std::char_traits<iv::uc16>,
+                      iv::core::SpaceAllocator<Factory, iv::uc16> >, std::size_t> super_type;
+  using typename super_type::argument_type;
+  using typename super_type::result_type;
+  result_type operator()(const argument_type& x) const {
     return iv::core::StringToHash(x);
   }
 };
