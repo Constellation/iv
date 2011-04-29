@@ -277,8 +277,9 @@ class BasicStringPiece {
 
   template<class Alloc>
   void AppendToString(std::basic_string<CharT, Traits, Alloc>* target) const {
-    if (!empty())
+    if (!empty()) {
       target->append(data(), size());
+    }
   }
 
   // Does "this" start with "x"
@@ -357,15 +358,17 @@ class BasicStringPiece {
       return npos;
     }
     const const_pointer result = Traits::find(ptr_ + pos, length_ - pos, c);
-    return (result) ? (result - ptr_) : npos;
+    return (result) ? static_cast<size_type>(result - ptr_) : npos;
   }
 
   size_type rfind(const this_type& s, size_type pos = npos) const {
-    if (length_ < s.length_)
+    if (length_ < s.length_) {
       return npos;
+    }
 
-    if (s.empty())
+    if (s.empty()) {
       return std::min(length_, pos);
+    }
 
     const const_pointer last =
         ptr_ + std::min(length_ - s.length_, pos) + s.length_;
