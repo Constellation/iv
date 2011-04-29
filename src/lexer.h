@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 #include "uchar.h"
-#include "chars.h"
+#include "character.h"
 #include "token.h"
 #include "location.h"
 #include "noncopyable.h"
@@ -49,7 +49,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     has_line_terminator_before_next_ = false;
     StorePreviousLocation();
     do {
-      while (Chars::IsWhiteSpace(c_)) {
+      while (c_ >= 0 && character::IsWhiteSpace(c_)) {
         // white space
         Advance();
       }
@@ -262,7 +262,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         case '.':
           // . Number
           Advance();
-          if (Chars::IsDecimalDigit(c_)) {
+          if (c_ >= 0 && character::IsDecimalDigit(c_)) {
             // float number parse
             token = ScanNumber<true>();
           } else {
@@ -341,17 +341,17 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           }
 
         default:
-          if (Chars::IsIdentifierStart(c_)) {
+          if (c_ < 0) {
+            // EOS
+            token = Token::EOS;
+          } else if (character::IsIdentifierStart(c_)) {
             token = ScanIdentifier<LexType>(strict);
-          } else if (Chars::IsDecimalDigit(c_)) {
+          } else if (character::IsDecimalDigit(c_)) {
             token = ScanNumber<false>();
-          } else if (Chars::IsLineTerminator(c_)) {
+          } else if (character::IsLineTerminator(c_)) {
             SkipLineTerminator();
             has_line_terminator_before_next_ = true;
             token = Token::NOT_FOUND;
-          } else if (c_ < 0) {
-            // EOS
-            token = Token::EOS;
           } else {
             token = Token::ILLEGAL;
           }
@@ -442,13 +442,13 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     }
     while (c_ != '/' || character) {
       // invalid RegExp pattern
-      if (Chars::IsLineTerminator(c_) || c_ < 0) {
+      if (c_ < 0 || character::IsLineTerminator(c_)) {
         return false;
       }
       if (c_ == '\\') {
         // escape
         Record16Advance();
-        if (Chars::IsLineTerminator(c_) || c_ < 0) {
+        if (c_ < 0 || character::IsLineTerminator(c_)) {
           return false;
         }
         Record16Advance();
@@ -467,7 +467,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
   bool ScanRegExpFlags() {
     buffer16_.clear();
-    while (Chars::IsIdentifierPart(c_)) {
+    while (c_ >= 0 && character::IsIdentifierPart(c_)) {
       if (c_ == '\\') {
         Advance();
         if (c_ != 'u') {
@@ -560,7 +560,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   Token::Type SkipSingleLineComment() {
     Advance();
     // see ECMA-262 section 7.4
-    while (c_ >= 0 && !Chars::IsLineTerminator(c_)) {
+    while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
     return Token::NOT_FOUND;
@@ -576,7 +576,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       if (ch == '*' && c_ == '/') {
         c_ = ' ';
         return Token::NOT_FOUND;
-      } else if (Chars::IsLineTerminator(c_)) {
+      } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
         // see ECMA-262 section 7.4
         SkipLineTerminator();
         has_line_terminator_before_next_ = true;
@@ -605,7 +605,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   Token::Type ScanMagicComment() {
     Advance();
     // see ECMA-262 section 7.4
-    while (c_ >= 0 && !Chars::IsLineTerminator(c_)) {
+    while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
     return Token::NOT_FOUND;
@@ -623,7 +623,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       Advance();
       bool ng = false;
       const uc16 uc = ScanHexEscape('u', 4, &ng);
-      if (ng || uc == '\\' || !Chars::IsIdentifierStart(uc)) {
+      if (ng || uc == '\\' || !character::IsIdentifierStart(uc)) {
         return Token::ILLEGAL;
       }
       Record16(uc);
@@ -631,7 +631,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       Record16Advance();
     }
 
-    while (Chars::IsIdentifierPart(c_)) {
+    while (c_ >= 0 && character::IsIdentifierPart(c_)) {
       if (c_ == '\\') {
         Advance();
         if (c_ != 'u') {
@@ -640,7 +640,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Advance();
         bool ng = false;
         const uc16 uc = ScanHexEscape('u', 4, &ng);
-        if (ng || uc == '\\' || !Chars::IsIdentifierPart(uc)) {
+        if (ng || uc == '\\' || !character::IsIdentifierPart(uc)) {
           return Token::ILLEGAL;
         }
         Record16(uc);
@@ -657,7 +657,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     const uc16 quote = c_;
     buffer16_.clear();
     Advance();
-    while (c_ != quote && c_ >= 0 && !Chars::IsLineTerminator(c_)) {
+    while (c_ != quote && c_ >= 0 && !character::IsLineTerminator(c_)) {
       if (c_ == '\\') {
         Advance();
         // escape sequence
@@ -682,7 +682,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   }
 
   bool ScanEscape() {
-    if (Chars::IsLineTerminator(c_)) {
+    if (c_ >= 0 && character::IsLineTerminator(c_)) {
       SkipLineTerminator();
       return true;
     }
@@ -757,8 +757,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
       case '0' : {
         uc16 uc = OctalValue(c_);
         Advance();
-        if (Chars::IsDecimalDigit(c_)) {
-          if (!Chars::IsOctalDigit(c_)) {
+        if (c_ >= 0 && character::IsDecimalDigit(c_)) {
+          if (!character::IsOctalDigit(c_)) {
             // invalid
             return false;
           }
@@ -767,8 +767,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           }
           uc = uc * 8 + OctalValue(c_);
           Advance();
-          if (Chars::IsDecimalDigit(c_)) {
-            if (!Chars::IsOctalDigit(c_)) {
+          if (c_ >= 0 && character::IsDecimalDigit(c_)) {
+            if (!character::IsOctalDigit(c_)) {
               // invalid
               return false;
             }
@@ -789,8 +789,8 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         }
         uc16 uc = OctalValue(c_);
         Advance();
-        if (Chars::IsDecimalDigit(c_)) {
-          if (!Chars::IsOctalDigit(c_)) {
+        if (c_ >= 0 && character::IsDecimalDigit(c_)) {
+          if (!character::IsOctalDigit(c_)) {
             // invalid
             return false;
           }
@@ -829,13 +829,13 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
           // 0x (hex)
           type = HEX;
           Record8Advance();
-          if (!Chars::IsHexDigit(c_)) {
+          if (c_ < 0 || !character::IsHexDigit(c_)) {
             return Token::ILLEGAL;
           }
-          while (Chars::IsHexDigit(c_)) {
+          while (c_ >= 0 && character::IsHexDigit(c_)) {
             Record8Advance();
           }
-        } else if (Chars::IsOctalDigit(c_)) {
+        } else if (c_ >= 0 && character::IsOctalDigit(c_)) {
           // 0 (octal)
           // octal number cannot convert with strtod
           type = OCTAL;
@@ -866,7 +866,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         Record8Advance();
       }
       // more than 1 decimal digit required
-      if (!Chars::IsDecimalDigit(c_)) {
+      if (c_ < 0 || !character::IsDecimalDigit(c_)) {
         return Token::ILLEGAL;
       }
       ScanDecimalDigits();
@@ -875,7 +875,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
     // see ECMA-262 section 7.8.3
     // "immediately following a NumericLiteral must not be an IdentifierStart or
     // DecimalDigit."
-    if (Chars::IsDecimalDigit(c_) || Chars::IsIdentifierStart(c_)) {
+    if (c_ >= 0 && (character::IsDecimalDigit(c_) || character::IsIdentifierStart(c_))) {
       return Token::ILLEGAL;
     }
 
@@ -934,7 +934,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
   }
 
   void ScanDecimalDigits() {
-    while (Chars::IsDecimalDigit(c_)) {
+    while (c_ >= 0 && character::IsDecimalDigit(c_)) {
       Record8Advance();
     }
   }
