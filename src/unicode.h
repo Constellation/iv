@@ -113,12 +113,30 @@ inline uint32_t UTF8ToUCS4Strict(const uint8_t* buf, uint32_t size, bool* e) {
 }
 
 static const uint32_t kSurrogateBits = 10;
+
 static const uint32_t kHighSurrogateMin = 0xD800;
 static const uint32_t kHighSurrogateMax = 0xDBFF;
 static const uint32_t kHighSurrogateMask = (1 << kSurrogateBits) - 1;
+
 static const uint32_t kLowSurrogateMin = 0xDC00;
 static const uint32_t kLowSurrogateMax = 0xDFFF;
 static const uint32_t kLowSurrogateMask = (1 << kSurrogateBits) - 1;
+
+static const uint32_t kSurrogateMin = kHighSurrogateMin;
+static const uint32_t kSurrogateMax = kLowSurrogateMax;
+static const uint32_t kSurrogateMask = (1 << (kSurrogateBits + 1)) - 1;
+
+static const uint32_t kUnicodeMin = 0x000000;
+static const uint32_t kUnicodeMax = 0x10FFFF;
+
+static const uint32_t kUTF16Min = 0x0000;
+static const uint32_t kUTF16Max = 0xFFFF;
+
+static const uint32_t kUCS2Min = 0x0000;
+static const uint32_t kUCS2Max = 0xFFFF;
+
+static const uint32_t kUCS4Min = 0x00000000;
+static const uint32_t kUCS4Max = 0x7FFFFFFF;
 
 inline bool IsHighSurrogate(uint16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kHighSurrogateMask) == kHighSurrogateMin;
@@ -126,6 +144,23 @@ inline bool IsHighSurrogate(uint16_t uc) {
 
 inline bool IsLowSurrogate(uint16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kLowSurrogateMask) == kLowSurrogateMin;
+}
+
+template<typename CharT>
+inline bool IsSurrogate(CharT uc) {
+  return (uc & ~kSurrogateMask) == kSurrogateMin;
+}
+
+inline bool IsValidUnicode(uint32_t uc) {
+  return (uc <= kUnicodeMax) && !IsSurrogate(uc);
+}
+
+inline std::size_t UTF8ByteCount(uint8_t ch) {
+  std::size_t n = 0;
+  while (ch & (0x80u >> n)) {
+    ++n;
+  }
+  return (n == 0) ? 1 : (n > 4) ? 4 : n;
 }
 
 // This function takes an integer value in the range 0 - 0x7fffffff

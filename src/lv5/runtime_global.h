@@ -100,12 +100,12 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
       builder.Append(ch);
     } else {
       uint32_t v;
-      if ((ch >= core::kLowSurrogateMin) && (ch <= core::kLowSurrogateMax)) {
+      if (core::IsLowSurrogate(ch)) {
         // ch is low surrogate. but high is not found.
         e->Report(Error::URI, "invalid uri char");
         return JSUndefined;
       }
-      if (ch < core::kHighSurrogateMin || core::kHighSurrogateMax < ch) {
+      if (!core::IsHighSurrogate(ch)) {
         // ch is not surrogate pair code point
         v = ch;
       } else {
@@ -117,8 +117,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
           return JSUndefined;
         }
         const uint16_t k_char = *it;
-        if (k_char < core::kLowSurrogateMin ||
-            core::kLowSurrogateMax < k_char) {
+        if (!core::IsLowSurrogate(k_char)) {
           // k_char is not low surrogate
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
@@ -173,7 +172,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
         }
       } else {
         // b0 is 1xxxxxxx
-        int n = 1;
+        std::size_t n = 1;
         while (b0 & (0x80 >> n)) {
           ++n;
         }
@@ -186,7 +185,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
-        for (int j = 1; j < n; ++j) {
+        for (std::size_t j = 1; j < n; ++j) {
           ++k;
           if (str[k] != '%') {
             e->Report(Error::URI, "invalid uri char");
