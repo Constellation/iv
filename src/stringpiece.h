@@ -14,25 +14,40 @@ namespace core {
 template<class CharT, class Traits = std::char_traits<CharT> >
 class BasicStringPiece {
  public:
-  typedef size_t size_type;
   typedef BasicStringPiece<CharT, Traits> this_type;
 
- private:
-  const CharT*   ptr_;
-  size_type     length_;
+  // standard STL container boilerplate
+  typedef Traits traits_type;
+  typedef typename Traits::char_type value_type;
+  typedef const CharT* pointer;
+  typedef const CharT* const_pointer;
+  typedef const CharT& reference;
+  typedef const CharT& const_reference;
+  typedef typename std::size_t size_type;
+  typedef typename std::ptrdiff_t difference_type;
+  typedef pointer iterator;
+  typedef const_pointer const_iterator;
+  typedef std::reverse_iterator<iterator> reverse_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+  static const size_type npos = -1;
 
  public:
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
   BasicStringPiece() : ptr_(NULL), length_(0) { }
-  BasicStringPiece(const CharT* str)  // NOLINT
+
+  BasicStringPiece(const_pointer str)  // NOLINT
     : ptr_(str), length_((str == NULL) ? 0 : Traits::length(str)) { }
+
   template<typename Alloc>
   BasicStringPiece(const std::basic_string<CharT, Traits, Alloc>& str)  // NOLINT
     : ptr_(str.data()), length_(str.size()) { }
-  BasicStringPiece(const CharT* offset, size_type len)
+
+  BasicStringPiece(const_pointer offset, size_type len)
     : ptr_(offset), length_(len) { }
+
   BasicStringPiece(const BasicStringPiece& str)
     : ptr_(str.ptr_), length_(str.length_) { }
 
@@ -40,29 +55,45 @@ class BasicStringPiece {
   // returned buffer may or may not be null terminated.  Therefore it is
   // typically a mistake to pass data() to a routine that expects a NUL
   // terminated string.
-  const CharT* data() const { return ptr_; }
-  size_type size() const { return length_; }
-  size_type length() const { return length_; }
-  bool empty() const { return length_ == 0; }
+  const_pointer data() const {
+    return ptr_;
+  }
+
+  size_type size() const {
+    return length_;
+  }
+
+  size_type length() const {
+    return length_;
+  }
+
+  bool empty() const {
+    return length_ == 0;
+  }
 
   void clear() {
     ptr_ = NULL;
     length_ = 0;
   }
-  void set(const CharT* data, size_type len) {
+
+  void set(const_pointer data, size_type len) {
     ptr_ = data;
     length_ = len;
   }
-  void set(const CharT* str) {
+
+  void set(const_pointer str) {
     ptr_ = str;
     length_ = str ? Traits::length(str) : 0;
   }
+
   void set(const void* data, size_type len) {
-    ptr_ = reinterpret_cast<const CharT*>(data);
+    ptr_ = reinterpret_cast<const_pointer>(data);
     length_ = len;
   }
 
-  CharT operator[](size_type i) const { return ptr_[i]; }
+  const_reference operator[](size_type i) const {
+    return ptr_[i];
+  }
 
   void remove_prefix(size_type n) {
     ptr_ += n;
@@ -74,15 +105,18 @@ class BasicStringPiece {
   }
 
   int compare(const this_type& x) const {
-    int r = wordmemcmp(ptr_, x.ptr_, std::min(length_, x.length_));
+    const int r = Traits::compare(ptr_, x.ptr_, std::min(length_, x.length_));
     if (r == 0) {
-      if (length_ < x.length_) r = -1;
-      else if (length_ > x.length_) r = +1;
+      if (length_ < x.length_) {
+        return -1;
+      } else if (length_ > x.length_) {
+        return 1;
+      }
     }
     return r;
   }
 
-  std::basic_string<CharT, Traits> as_string() const {
+  operator std::basic_string<CharT, Traits>() const {
     // std::basic_string<CharT> doesn't like to
     // take a NULL pointer even with a 0 size.
     if (!empty()) {
@@ -110,60 +144,80 @@ class BasicStringPiece {
   // Does "this" start with "x"
   bool starts_with(const this_type& x) const {
     return ((length_ >= x.length_) &&
-            (wordmemcmp(ptr_, x.ptr_, x.length_) == 0));
+            (Traits::compare(ptr_, x.ptr_, x.length_) == 0));
   }
 
   // Does "this" end with "x"
   bool ends_with(const this_type& x) const {
     return ((length_ >= x.length_) &&
-            (wordmemcmp(ptr_ + (length_-x.length_), x.ptr_, x.length_) == 0));
+            (Traits::compare(ptr_ + (length_ - x.length_),
+                             x.ptr_,
+                             x.length_) == 0));
   }
 
-  // standard STL container boilerplate
-  typedef CharT value_type;
-  typedef const CharT* pointer;
-  typedef const CharT& reference;
-  typedef const CharT& const_reference;
-  typedef ptrdiff_t difference_type;
-  static const size_type npos = -1;
-  typedef const CharT* const_iterator;
-  typedef const CharT* iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-  typedef std::reverse_iterator<iterator> reverse_iterator;
-  iterator begin() const { return ptr_; }
-  iterator end() const { return ptr_ + length_; }
+  const_iterator begin() const {
+    return ptr_;
+  }
+
+  const_iterator cbegin() const {
+    return begin();
+  }
+
+  const_iterator end() const {
+    return ptr_ + length_;
+  }
+
+  const_iterator cend() const {
+    return end();
+  }
+
   const_reverse_iterator rbegin() const {
-    return const_reverse_iterator(ptr_ + length_);
+    return const_reverse_iterator(end());
   }
+
+  const_reverse_iterator crbegin() const {
+    return rbegin();
+  }
+
   const_reverse_iterator rend() const {
-    return const_reverse_iterator(ptr_);
+    return const_reverse_iterator(begin());
   }
 
-  size_type max_size() const { return length_; }
-  size_type capacity() const { return length_; }
+  const_reverse_iterator crend() const {
+    return rend();
+  }
 
-  size_type copy(CharT* buf, size_type n, size_type pos = 0) const {
-    size_type ret = std::min(length_ - pos, n);
-    memcpy(buf, ptr_ + pos, ret);
+  size_type max_size() const {
+    return length_;
+  }
+
+  size_type capacity() const {
+    return length_;
+  }
+
+  size_type copy(pointer buf, size_type n, size_type pos = 0) const {
+    const size_type ret = std::min(length_ - pos, n);
+    Traits::copy(buf, ptr_ + pos, ret);
     return ret;
   }
 
   size_type find(const this_type& s, size_type pos = 0) const {
-    if (pos > length_)
+    if (pos > length_) {
       return npos;
+    }
 
-    const CharT * result = std::search(ptr_ + pos, ptr_ + length_,
-                                     s.ptr_, s.ptr_ + s.length_);
+    const const_pointer result = std::search(ptr_ + pos, ptr_ + length_,
+                                             s.ptr_, s.ptr_ + s.length_);
     const size_type xpos = result - ptr_;
     return xpos + s.length_ <= length_ ? xpos : npos;
   }
 
   size_type find(CharT c, size_type pos = 0) const {
-    if (pos >= length_)
+    if (pos >= length_) {
       return npos;
-
-    const CharT * result = std::find(ptr_ + pos, ptr_ + length_, c);
-    return result != ptr_ + length_ ? static_cast<size_t>(result - ptr_) : npos;
+    }
+    const const_pointer result = Traits::find(ptr_ + pos, length_ - pos, c);
+    return (result) ? (result - ptr_) : npos;
   }
 
   size_type rfind(const this_type& s, size_type pos = npos) const {
@@ -173,9 +227,9 @@ class BasicStringPiece {
     if (s.empty())
       return std::min(length_, pos);
 
-    const CharT * last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
-    const CharT * result = std::find_end(ptr_, last,
-                                         s.ptr_, s.ptr_ + s.length_);
+    const const_pointer last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
+    const const_pointer result = std::find_end(ptr_, last,
+                                               s.ptr_, s.ptr_ + s.length_);
     return result != last ? static_cast<size_t>(result - ptr_) : npos;
   }
 
@@ -310,66 +364,53 @@ class BasicStringPiece {
     return npos;
   }
 
-  this_type substr(size_type pos, size_type n) const {
-    if (pos > length_) pos = length_;
-    if (n > length_ - pos) n = length_ - pos;
+  this_type substr(size_type pos = 0, size_type n = npos) const {
+    if (pos > length_) {
+      pos = length_;
+    }
+    if (n > length_ - pos) {
+      n = length_ - pos;
+    }
     return this_type(ptr_ + pos, n);
-  }
-
-  static int wordmemcmp(const CharT * p, const CharT * p2, size_type N) {
-    return memcmp(p, p2, N);
   }
 
   static inline void BuildLookupTable(const this_type& characters_wanted,
                                       bool* table) {
     const size_type length = characters_wanted.length();
-    const CharT * const data = characters_wanted.data();
+    const const_pointer data = characters_wanted.data();
     for (size_type i = 0; i < length; ++i) {
       table[static_cast<CharT>(data[i])] = true;
     }
   }
+
+  friend bool operator==(const this_type& x, const this_type& y) {
+    return x.compare(y) == 0;
+  }
+
+  friend bool operator!=(const this_type& x, const this_type& y) {
+    return !(x == y);
+  }
+
+  friend bool operator<(const this_type& x, const this_type& y) {
+    return x.compare(y) < 0;
+  }
+
+  friend bool operator>(const this_type& x, const this_type& y) {
+    return x.compare(y) > 0;
+  }
+
+  friend bool operator<=(const this_type& x, const this_type& y) {
+    return x.compare(y) <= 0;
+  }
+
+  friend bool operator>=(const this_type& x, const this_type& y) {
+    return x.compare(y) >= 0;
+  }
+
+ private:
+  const_pointer ptr_;
+  size_type length_;
 };
-
-template<class CharT>
-bool operator==(const BasicStringPiece<CharT>& x,
-                const BasicStringPiece<CharT>& y) {
-  if (x.size() != y.size())
-    return false;
-
-  return BasicStringPiece<CharT>::wordmemcmp(x.data(), y.data(), x.size()) == 0;
-}
-
-template<class CharT>
-inline bool operator!=(const BasicStringPiece<CharT>& x,
-                       const BasicStringPiece<CharT>& y) {
-  return !(x == y);
-}
-
-template<class CharT>
-inline bool operator<(const BasicStringPiece<CharT>& x,
-                      const BasicStringPiece<CharT>& y) {
-  const int r = BasicStringPiece<CharT>::wordmemcmp(x.data(), y.data(),
-                                               std::min(x.size(), y.size()));
-  return ((r < 0) || ((r == 0) && (x.size() < y.size())));
-}
-
-template<class CharT>
-inline bool operator>(const BasicStringPiece<CharT>& x,
-                      const BasicStringPiece<CharT>& y) {
-  return y < x;
-}
-
-template<class CharT>
-inline bool operator<=(const BasicStringPiece<CharT>& x,
-                       const BasicStringPiece<CharT>& y) {
-  return !(x > y);
-}
-
-template<class CharT>
-inline bool operator>=(const BasicStringPiece<CharT>& x,
-                       const BasicStringPiece<CharT>& y) {
-  return !(x < y);
-}
 
 // allow StringPiece to be logged (needed for unit testing).
 template<class CharT>
