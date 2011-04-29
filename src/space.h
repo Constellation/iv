@@ -171,8 +171,8 @@ struct hash<std::basic_string<iv::uc16,
     std::basic_string<iv::uc16,
                       std::char_traits<iv::uc16>,
                       iv::core::SpaceAllocator<Factory, iv::uc16> >, std::size_t> super_type;
-  using typename super_type::argument_type;
-  using typename super_type::result_type;
+  typedef typename super_type::argument_type argument_type;
+  typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
     return iv::core::StringToHash(x);
   }

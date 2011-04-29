@@ -1362,8 +1362,8 @@ template<class Factory>
 struct hash<iv::core::ast::IdentifierKey<Factory> >
   : public unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
   typedef unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
-  using typename super_type::argument_type;
-  using typename super_type::result_type;
+  typedef typename super_type::argument_type argument_type;
+  typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
     return hash<
         typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
