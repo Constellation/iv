@@ -57,8 +57,8 @@ class FixedStringBuilder {
     } while (n);
   }
 
-  void AddPading(char c, int count) {
-    for (int i = 0; i < count; ++i) {
+  void AddPading(char c, std::size_t count) {
+    for (std::size_t i = 0; i < count; ++i) {
       AddCharacter(c);
     }
   }
