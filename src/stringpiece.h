@@ -169,7 +169,6 @@ class BasicStringPiece {
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
   static const size_type npos;
-  // static const size_type npos = static_cast<size_type>(-1);
 
  public:
   // We provide non-explicit singleton constructors so users can pass

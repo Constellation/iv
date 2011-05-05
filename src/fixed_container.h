@@ -1,5 +1,5 @@
-#ifndef IV_FIXED_CONTAINER_H_
-#define IV_FIXED_CONTAINER_H_
+#ifndef _IV_FIXED_CONTAINER_H_
+#define _IV_FIXED_CONTAINER_H_
 #include <cstddef>
 #include <cassert>
 #include <iterator>
@@ -14,10 +14,10 @@ template<typename T>
 class FixedContainer {
  public:
   typedef T value_type;
-  typedef typename std::tr1::add_pointer<T>::type pointer;
-  typedef typename std::tr1::add_const<pointer>::type const_pointer;
+  typedef typename std::tr1::add_pointer<value_type>::type pointer;
+  typedef typename std::tr1::add_pointer<const value_type>::type const_pointer;
   typedef pointer iterator;
-  typedef typename std::tr1::add_const<iterator>::type const_iterator;
+  typedef const_pointer const_iterator;
   typedef typename std::tr1::add_reference<T>::type  reference;
   typedef typename std::tr1::add_const<reference>::type const_reference;
   typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -41,24 +41,40 @@ class FixedContainer {
     return buf_;
   }
 
+  const_iterator cbegin() const {
+    return buf_;
+  }
+
   const_iterator end() const {
     return buf_ + size_;
   }
 
+  const_iterator cend() const {
+    return buf_ + size_;
+  }
+
   reverse_iterator rbegin() {
-    reverse_iterator(end());
+    return reverse_iterator(end());
   }
 
   const_reverse_iterator rbegin() const {
-    const_reverse_iterator(end());
+    return const_reverse_iterator(end());
+  }
+
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator(cend());
   }
 
   reverse_iterator rend() {
-    reverse_iterator(begin());
+    return reverse_iterator(begin());
   }
 
   const_reverse_iterator rend() const {
-    const_reverse_iterator(begin());
+    return const_reverse_iterator(begin());
+  }
+
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator(cbegin());
   }
 
   reference operator[](size_type n) {
@@ -127,4 +143,4 @@ class FixedContainer {
 };
 
 } }  // namespace iv::core
-#endif  // IV_FIXED_CONTAINER_H_
+#endif  // _IV_FIXED_CONTAINER_H_
