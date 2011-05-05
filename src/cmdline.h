@@ -41,7 +41,6 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <cstring>
-#include <cxxabi.h>
 #include <cstdlib>
 #include <cassert>
 
@@ -108,24 +107,6 @@ Target lexical_cast(const Source &arg) {
   return lexical_cast_t<Target,
                         Source,
                         detail::is_same<Target, Source>::value>::cast(arg);
-}
-
-static inline std::string demangle(const std::string& name) {
-  int status = 0;
-  char *p = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-  std::string ret(p);
-  free(p);
-  return ret;
-}
-
-template <class T>
-std::string readable_typename() {
-  return demangle(typeid(T).name());
-}
-
-template <>
-std::string readable_typename<std::string>() {
-  return "string";
 }
 
 }  // namespace iv::cmdline::detail
@@ -436,14 +417,14 @@ class Parser {
     }
 
     std::string short_description() const {
-      return "--"+name_+"="+detail::readable_typename<T>();
+      return "--"+name_;
     }
 
    protected:
     std::string full_description(const std::string& desc) {
       return
-        desc + " (" + detail::readable_typename<T>() +
-        (need_ ? "" : " [="+detail::lexical_cast<std::string>(def_)+"]" )
+        desc + " (" +
+        (need_ ? "" : "[="+detail::lexical_cast<std::string>(def_)+"]" )
         +")";
     }
 
@@ -515,7 +496,7 @@ class Parser {
     }
 
     std::string short_description() const {
-      return "--"+name_+"="+detail::readable_typename<T>();
+      return "--"+name_;
     }
 
    protected:
