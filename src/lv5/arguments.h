@@ -3,8 +3,8 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
-#include "error.h"
 #include "noncopyable.h"
+#include "lv5/error.h"
 #include "lv5/jsval.h"
 #include "lv5/context_utils.h"
 

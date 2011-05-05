@@ -6,8 +6,8 @@
 #include <tr1/array>
 #include <boost/foreach.hpp>
 #include "token.h"
-#include "hint.h"
 #include "maybe.h"
+#include "lv5/hint.h"
 #include "lv5/jsreference.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
