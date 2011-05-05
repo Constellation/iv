@@ -24,7 +24,7 @@ struct StaticAssertTest {
 #endif  // IV_CONCAT
 #define IV_STATIC_ASSERT(cond)\
   typedef ::iv::detail::StaticAssertTest\
-    <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>(cond)>)>\
+    <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>((cond))>)>\
     IV_CONCAT(StaticAssertTypedef, __LINE__)
 
 #endif  // _IV_STATICASSERT_H_
