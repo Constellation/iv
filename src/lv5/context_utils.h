@@ -13,6 +13,7 @@ namespace lv5 {
 class Context;
 class JSRegExpImpl;
 class JSFunction;
+class GlobalData;
 
 namespace context {
 
@@ -29,6 +30,8 @@ Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res);
 Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res);
 Symbol Lookup(Context* ctx, uint32_t index, bool* res);
 Symbol Lookup(Context* ctx, double number, bool* res);
+
+GlobalData* Global(Context* ctx);
 
 Symbol arguments_symbol(const Context* ctx);
 Symbol constructor_symbol(const Context* ctx);

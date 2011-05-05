@@ -42,7 +42,7 @@ Symbol Intern(Context* ctx, const core::UStringPiece& str) {
 }
 
 Symbol Intern(Context* ctx, uint32_t index) {
-  return ctx->global_data()->InternIndex(index);
+  return ctx->global_data()->InternUInt32(index);
 }
 
 Symbol Intern(Context* ctx, double number) {
@@ -63,6 +63,10 @@ Symbol Lookup(Context* ctx, uint32_t index, bool* res) {
 
 Symbol Lookup(Context* ctx, double number, bool* res) {
   return ctx->global_data()->CheckIntern(number, res);
+}
+
+GlobalData* Global(Context* ctx) {
+  return ctx->global_data();
 }
 
 Symbol arguments_symbol(const Context* ctx) {
@@ -874,7 +878,7 @@ void Context::Initialize() {
         // this method is deprecated.
         .def<&runtime::DateSetYear, 1>("setYear")
         // section B.2.6 Date.prototype.toGMTString()
-        .def("toGMTString", toUTCString, bind::WRITABLE | bind::CONFIGURABLE);
+        .def("toGMTString", toUTCString, bind::W | bind::C);
   }
 
   {

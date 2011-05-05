@@ -22,7 +22,7 @@ namespace detail {
 
 static const uint32_t kMaxVectorSize = 10000;
 
-inline bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
+static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
   if (!desc.IsEnumerable()) {
     return false;
   }
@@ -408,7 +408,6 @@ class JSArray : public JSObject {
     return new JSArray(ctx, 0);
   }
 
-  void Compaction(Context* ctx);
  private:
   void CompactionToLength(uint32_t length) {
     if (length > detail::kMaxVectorSize) {

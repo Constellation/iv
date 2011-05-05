@@ -59,7 +59,7 @@ class GlobalData {
     return table_.Lookup(str);
   }
 
-  Symbol InternIndex(uint32_t index) {
+  Symbol InternUInt32(uint32_t index) {
     std::tr1::array<char, 15> buf;
     return table_.Lookup(
         core::StringPiece(
