@@ -10,9 +10,6 @@ lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Interpreter writt
 + expressions - done
 + builtin objects - working
 
-## TODO
-+ implement builtin objects
-
 ## TARGET
 Aims at the most precise interpreter of The ECMA262 5th Specification.
 
@@ -21,7 +18,7 @@ Aims at the most precise interpreter of The ECMA262 5th Specification.
 + scons
 + libgc (Boehm GC)
 + libicu (ICU: International Component for Unicode)
-+ libboost (boost.thread, boost.foreach)
++ libboost (boost.foreach)
 
 ## INSTALL
 
