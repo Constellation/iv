@@ -40,7 +40,7 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
         line_number_(1),
         previous_location_(),
         location_() {
-    Initialize();
+    Advance();
   }
 
   template<typename LexType>
@@ -494,21 +494,6 @@ class Lexer: private Noncopyable<Lexer<Source> >::type {
 
  private:
   static const std::size_t kInitialReadBufferCapacity = 32;
-
-  void Initialize() {
-    Advance();
-  }
-
-  void Initialize(const Source* src) {
-    using std::swap;
-    source_ = src;
-    pos_ = 0;
-    end_ = source_->size();
-    has_line_terminator_before_next_ = false;
-    has_shebang_ = false;
-    line_number_ = 1;
-    swap(location_, Location());
-  }
 
   inline void StorePreviousLocation() {
     previous_location_ = location_;
