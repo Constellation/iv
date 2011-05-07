@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cassert>
 #include <cmath>
-#include <iostream>  // NOLINT
 #include <tr1/tuple>
 #include <tr1/array>
 #include <boost/foreach.hpp>
