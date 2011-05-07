@@ -10,7 +10,7 @@ extern "C" {
 namespace iv {
 namespace lv5 {
 
-class StackResource : private core::Noncopyable<StackResource>::type {
+class StackResource : private core::Noncopyable<> {
  public:
   typedef struct GC_ms_entry GCMSEntry;
 

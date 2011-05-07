@@ -33,7 +33,7 @@ class Context : public iv::lv5::Context {
     Initialize();
   }
 
-  class ScriptScope : private core::Noncopyable<ScriptScope>::type {
+  class ScriptScope : private core::Noncopyable<> {
    public:
     ScriptScope(Context* ctx, teleporter::JSScript* script)
       : ctx_(ctx),

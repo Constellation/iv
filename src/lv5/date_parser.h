@@ -71,7 +71,7 @@ static const std::tr1::array<const Keyword, 27> kKeywords = { {
 
 static const int kNone = std::numeric_limits<int>::max();
 
-class KeywordChecker : private core::Noncopyable<KeywordChecker>::type {
+class KeywordChecker : private core::Noncopyable<> {
  public:
 
   template<typename char_type>
@@ -114,9 +114,9 @@ class KeywordChecker : private core::Noncopyable<KeywordChecker>::type {
   }
 };
 
-class DateParser : private core::Noncopyable<DateParser>::type {
+class DateParser : private core::Noncopyable<> {
  private:
-  class DateComponent : private core::Noncopyable<DateComponent>::type {
+  class DateComponent : private core::Noncopyable<> {
    public:
     DateComponent()
       : month_(kNone),
@@ -187,7 +187,7 @@ class DateParser : private core::Noncopyable<DateParser>::type {
     std::size_t pos_;
   };
 
-  class TimeComponent : private core::Noncopyable<TimeComponent>::type {
+  class TimeComponent : private core::Noncopyable<> {
    public:
     TimeComponent()
       : hour_(0),
@@ -267,7 +267,7 @@ class DateParser : private core::Noncopyable<DateParser>::type {
     int offset_;
   };
 
-  class TimezoneComponent : private core::Noncopyable<TimezoneComponent>::type {
+  class TimezoneComponent : private core::Noncopyable<> {
    public:
     TimezoneComponent()
       : hour_(0),

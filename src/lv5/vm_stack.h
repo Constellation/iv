@@ -7,7 +7,7 @@
 namespace iv {
 namespace lv5 {
 
-class VMStack : private core::Noncopyable<VMStack>::type {
+class VMStack : private core::Noncopyable<> {
  public:
   typedef VMStack this_type;
   typedef JSVal* iterator;

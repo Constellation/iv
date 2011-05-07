@@ -20,7 +20,7 @@ inline bool IsJSONWhiteSpace(uint16_t c) {
 }  // namespace iv::lv5::detail
 
 template<typename Source>
-class JSONLexer : private core::Noncopyable<JSONLexer<Source> >::type {
+class JSONLexer : private core::Noncopyable<> {
  public:
   explicit JSONLexer(const Source& source)
     : source_(source),

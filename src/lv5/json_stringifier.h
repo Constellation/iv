@@ -21,7 +21,7 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-class JSONStackScope : private core::Noncopyable<JSONStackScope>::type {
+class JSONStackScope : private core::Noncopyable<> {
  public:
   JSONStackScope(trace::Vector<JSObject*>::type* stack, JSObject* obj)
     : stack_(stack) {
@@ -40,7 +40,7 @@ static const core::UString kJSONNullString(kJSONNullStringPtr,
 
 }  // namespace iv::lv5::detail
 
-class JSONStringifier : private core::Noncopyable<JSONStringifier>::type {
+class JSONStringifier : private core::Noncopyable<> {
  public:
   JSONStringifier(Context* ctx,
                   JSFunction* replacer,

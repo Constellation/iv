@@ -96,8 +96,7 @@ template<typename Factory,
          bool UseFunctionStatement,
          bool ReduceExpressions>
 class Parser
-  : private Noncopyable<
-    Parser<Factory, Source, UseFunctionStatement, ReduceExpressions> >::type {
+  : private Noncopyable<> {
  public:
   typedef Parser<Factory, Source,
                  UseFunctionStatement, ReduceExpressions> this_type;
@@ -117,7 +116,7 @@ class Parser
     kNotRecoverable = 1
   };
 
-  class Target : private Noncopyable<Target>::type {
+  class Target : private Noncopyable<> {
    public:
     typedef typename SpaceVector<Factory, Identifier*>::type Identifiers;
     enum Type {
@@ -174,7 +173,7 @@ class Parser
     int type_;
   };
 
-  class TargetSwitcher : private Noncopyable<TargetSwitcher>::type {
+  class TargetSwitcher : private Noncopyable<> {
    public:
     explicit TargetSwitcher(parser_type* parser)
       : parser_(parser),
@@ -2410,7 +2409,7 @@ class Parser
   }
 
  protected:
-  class ScopeSwitcher : private Noncopyable<ScopeSwitcher>::type {
+  class ScopeSwitcher : private Noncopyable<> {
    public:
     ScopeSwitcher(parser_type* parser, Scope* scope)
       : parser_(parser) {
@@ -2425,7 +2424,7 @@ class Parser
     parser_type* parser_;
   };
 
-  class LabelSwitcher : private Noncopyable<LabelSwitcher>::type {
+  class LabelSwitcher : private Noncopyable<> {
    public:
     LabelSwitcher(parser_type* parser,
                   Identifiers* labels, bool exist_labels)
@@ -2443,7 +2442,7 @@ class Parser
     bool exist_labels_;
   };
 
-  class StrictSwitcher : private Noncopyable<StrictSwitcher>::type {
+  class StrictSwitcher : private Noncopyable<> {
    public:
     explicit StrictSwitcher(parser_type* parser)
       : parser_(parser),

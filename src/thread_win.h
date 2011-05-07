@@ -5,7 +5,7 @@ namespace iv {
 namespace core {
 namespace thread {
 
-class WinMutex : private Noncopyable<WinMutex>::type {
+class WinMutex : private Noncopyable<> {
  public:
   WinMutex() {
     ::InitializeCriticalSection(&mutex_);

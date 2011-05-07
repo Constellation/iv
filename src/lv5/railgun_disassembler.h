@@ -14,7 +14,7 @@ namespace lv5 {
 namespace railgun {
 
 template<typename Derived>
-class DisAssembler : private core::Noncopyable<DisAssembler<Derived> >::type {
+class DisAssembler : private core::Noncopyable<> {
  public:
   DisAssembler() { }
 

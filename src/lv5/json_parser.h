@@ -48,7 +48,7 @@ namespace lv5 {
   } while (0)
 
 template<typename Source>
-class JSONParser : private core::Noncopyable<JSONParser<Source> >::type {
+class JSONParser : private core::Noncopyable<> {
  public:
   typedef JSONLexer<Source> lexer_type;
   typedef core::Token Token;

@@ -48,7 +48,7 @@ inline bool IsEscapeTarget(uint16_t ch) {
       '/' == ch;
 }
 
-class URIComponent : core::Noncopyable<URIComponent>::type {
+class URIComponent : core::Noncopyable<> {
  public:
   static bool ContainsInEncode(uint16_t ch) {
     return core::character::IsASCII(ch) &&
@@ -60,7 +60,7 @@ class URIComponent : core::Noncopyable<URIComponent>::type {
   }
 };
 
-class URI : core::Noncopyable<URI>::type {
+class URI : core::Noncopyable<> {
  public:
   static bool ContainsInEncode(uint16_t ch) {
     return core::character::IsASCII(ch) &&
@@ -74,7 +74,7 @@ class URI : core::Noncopyable<URI>::type {
   }
 };
 
-class Escape : core::Noncopyable<URI>::type {
+class Escape : core::Noncopyable<> {
  public:
   static bool ContainsInEncode(uint16_t ch) {
     return core::character::IsASCII(ch) &&

@@ -22,7 +22,7 @@ namespace lv5 {
 namespace railgun {
 
 class Compiler
-    : private core::Noncopyable<Compiler>::type,
+    : private core::Noncopyable<Compiler>,
       public AstVisitor {
  public:
   typedef std::tr1::tuple<uint16_t,
@@ -110,7 +110,7 @@ class Compiler
   }
 
  private:
-  class BreakTarget : private core::Noncopyable<BreakTarget>::type {
+  class BreakTarget : private core::Noncopyable<> {
    public:
     BreakTarget(Compiler* compiler,
                 const BreakableStatement* stmt)
@@ -165,7 +165,7 @@ class Compiler
     std::vector<std::size_t> continues_;
   };
 
-  class TryTarget : public core::Noncopyable<TryTarget>::type {
+  class TryTarget : public core::Noncopyable<> {
    public:
     TryTarget(Compiler* compiler, bool has_finally)
       : compiler_(compiler),
@@ -1169,7 +1169,7 @@ class Compiler
     }
   }
 
-  class CodeContext : private core::Noncopyable<CodeContext>::type {
+  class CodeContext : private core::Noncopyable<> {
    public:
     CodeContext(Compiler* compiler, Code* code)
       : compiler_(compiler),

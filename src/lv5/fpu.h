@@ -11,7 +11,7 @@ namespace lv5 {
 // so fix to double
 // see http://code.google.com/p/v8/issues/detail?id=144
 //     https://bugzilla.mozilla.org/show_bug.cgi?id=264912
-class FPU : private core::Noncopyable<FPU>::type {
+class FPU : private core::Noncopyable<> {
  public:
   FPU() {
     fpu_control_t cw = 0x127f;
@@ -28,7 +28,7 @@ class FPU : private core::Noncopyable<FPU>::type {
 namespace iv {
 namespace lv5 {
 
-class FPU : private core::Noncopyable<FPU>::type {
+class FPU : private core::Noncopyable<> {
 };
 
 } }  // namespace iv::lv5

@@ -8,23 +8,33 @@ namespace core {
 // see http://ml.tietew.jp/cppll/cppll_novice/thread_articles/1652
 namespace noncopyable_ {
 
-template<typename T>
+template<class T = void>
 class Noncopyable {
  protected:
   Noncopyable() {}
   ~Noncopyable() {}
+
  private:
   Noncopyable(const Noncopyable&);
   const T& operator=(const T&);
 };
 
-}  // namespace iv::core::noncopyable_
+template<>
+class Noncopyable<void> {
+ protected:
+  Noncopyable() {}
+  ~Noncopyable() {}
 
-template<typename T>
-struct Noncopyable {
-  typedef noncopyable_::Noncopyable<T> type;
+ private:
+  Noncopyable(const Noncopyable&);
+  void operator=(const Noncopyable&);
 };
 
-} }  // namespace iv::core
 
+
+}  // namespace iv::core::noncopyable_
+
+using noncopyable_::Noncopyable;
+
+} }  // namespace iv::core
 #endif  // _IV_NONCOPYABLE_H_

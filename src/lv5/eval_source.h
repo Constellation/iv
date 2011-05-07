@@ -10,7 +10,7 @@ static const std::string kEvalSource = "(eval)";
 
 }  // namespace iv::lv5::detail
 
-class EvalSource : public core::Noncopyable<EvalSource>::type {
+class EvalSource : public core::Noncopyable<> {
  public:
   EvalSource(const JSString& str)
     : source_(str) {

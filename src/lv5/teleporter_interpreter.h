@@ -23,7 +23,7 @@ namespace teleporter {
 
 class Context;
 
-class Interpreter : private core::Noncopyable<Interpreter>::type,
+class Interpreter : private core::Noncopyable<Interpreter>,
                     public AstVisitor {
  public:
   Interpreter();
@@ -40,7 +40,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
 
   void CallCode(JSCodeFunction* code, const Arguments& args, Error* e);
 
-  class ContextSwitcher : private core::Noncopyable<ContextSwitcher>::type {
+  class ContextSwitcher : private core::Noncopyable<> {
    public:
     ContextSwitcher(Context* ctx,
                     JSEnv* lex,
@@ -56,8 +56,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     Context* ctx_;
   };
 
-  class LexicalEnvSwitcher
-      : private core::Noncopyable<LexicalEnvSwitcher>::type {
+  class LexicalEnvSwitcher : private core::Noncopyable<> {
    public:
     LexicalEnvSwitcher(Context* context, JSEnv* env);
     ~LexicalEnvSwitcher();
@@ -66,7 +65,7 @@ class Interpreter : private core::Noncopyable<Interpreter>::type,
     JSEnv* old_;
   };
 
-  class StrictSwitcher : private core::Noncopyable<StrictSwitcher>::type {
+  class StrictSwitcher : private core::Noncopyable<> {
    public:
     StrictSwitcher(Context* ctx, bool strict);
     ~StrictSwitcher();

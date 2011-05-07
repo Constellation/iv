@@ -9,7 +9,7 @@ namespace iv {
 namespace core {
 namespace thread {
 
-class PosixMutex : private Noncopyable<PosixMutex>::type {
+class PosixMutex : private Noncopyable<> {
  public:
   PosixMutex() {
     pthread_mutexattr_t attrs;

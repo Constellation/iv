@@ -8,7 +8,7 @@
 namespace iv {
 namespace lv5 {
 
-class Syslog : private core::Noncopyable<Syslog>::type {
+class Syslog : private core::Noncopyable<> {
  public:
   explicit Syslog(const std::string& ident) {
     openlog(ident.c_str(), LOG_CONS | LOG_PID, LOG_USER);

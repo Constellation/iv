@@ -13,7 +13,7 @@ namespace lv5 {
 
 class Context;
 
-class Arguments : private core::Noncopyable<Arguments>::type {
+class Arguments : private core::Noncopyable<> {
  public:
   typedef Arguments this_type;
 

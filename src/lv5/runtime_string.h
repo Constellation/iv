@@ -130,7 +130,7 @@ struct Replace {
 };
 
 template<typename T>
-class Replacer : private core::Noncopyable<Replacer<T> >::type {
+class Replacer : private core::Noncopyable<> {
  public:
 
   template<typename Builder>

@@ -28,7 +28,7 @@ JSVal ThrowTypeError(const Arguments& args, Error* error);
 class SymbolChecker;
 class JSEnv;
 
-class Context : private core::Noncopyable<Context>::type {
+class Context : private core::Noncopyable<> {
  public:
   friend class SymbolChecker;
   friend const core::UString& context::GetSymbolString(const Context* ctx,

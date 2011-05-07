@@ -18,7 +18,7 @@ namespace iv {
 namespace core {
 
 template<typename Source>
-class Lexer: private Noncopyable<Lexer<Source> >::type {
+class Lexer: private Noncopyable<> {
  public:
 
   enum State {

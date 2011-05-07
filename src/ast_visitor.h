@@ -29,7 +29,7 @@ struct AstVisitorTraits<false, T> {
 
 template<bool IsConst, typename Factory>
 class BasicAstVisitor
-  : private Noncopyable<BasicAstVisitor<IsConst, Factory> >::type {
+  : private Noncopyable<BasicAstVisitor<IsConst, Factory> > {
  private:
   template<typename T>
   struct add {

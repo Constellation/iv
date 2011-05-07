@@ -8,7 +8,7 @@ namespace core {
 namespace thread {
 
 template<typename Mutex>
-class ScopedLock : private Noncopyable<ScopedLock<Mutex> >::type {
+class ScopedLock : private Noncopyable<> {
  public:
   explicit ScopedLock(Mutex* mutex)
     : mutex_(mutex),
