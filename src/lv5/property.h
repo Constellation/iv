@@ -2,11 +2,8 @@
 #define _IV_LV5_PROPERTY_H_
 #include <cassert>
 #include "lv5/jsval.h"
-
 namespace iv {
 namespace lv5 {
-namespace detail {
-}  // namespace iv::lv5::detail
 
 class JSObject;
 class DataDescriptor;
