@@ -648,20 +648,16 @@ class Parser {
   const T& Get(const std::string& key) const {
     const OptionMap::const_iterator it = options_.find(key);
     assert(it != options_.end());
-    const option_with_value<T> *p = dynamic_cast<  //NOLINT
-        const option_with_value<T>*>(it->second);
-    assert(p != NULL);
-    return p->get();
+    // this cast is unsafe
+    return static_cast<const option_with_value<T>*>(it->second)->get();
   }
 
   template<typename T>
   const std::vector<T>& GetList(const std::string& key) const {
     const OptionMap::const_iterator it = options_.find(key);
     assert(it != options_.end());
-    const option_with_value_list<T> *p = dynamic_cast<  //NOLINT
-        const option_with_value_list<T>*>(it->second);
-    assert(p != NULL);
-    return p->get();
+    // this cast is unsafe
+    return static_cast<const option_with_value_list<T>*>(it->second)->get();
   }
 
   const std::vector<std::string>& rest() const {
