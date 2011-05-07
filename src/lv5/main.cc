@@ -187,12 +187,12 @@ int main(int argc, char **argv) {
   }
 
   if (cmd.Exist("version")) {
-    printf("lv5 %s (compiled %s %s)\n", IV_VERSION, __DATE__, __TIME__);
+    std::printf("lv5 %s (compiled %s %s)\n", IV_VERSION, __DATE__, __TIME__);
     return EXIT_SUCCESS;
   }
 
   if (cmd.Exist("copyright")) {
-    printf("lv5 - Copyright (C) 2010 %s\n", IV_DEVELOPER);
+    std::printf("lv5 - Copyright (C) 2010 %s\n", IV_DEVELOPER);
     return EXIT_SUCCESS;
   }
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
     }
-    iv::core::StringPiece src(res.data(), res.size());
+    const iv::core::StringPiece src(res.data(), res.size());
     if (cmd.Exist("ast")) {
       return Ast(src, filename);
     } else if (cmd.Exist("dis")) {
