@@ -13,7 +13,6 @@
 #include "lv5/error.h"
 #include "lv5/context.h"
 #include "lv5/internal.h"
-#include "lv5/runtime_teleporter.h"
 
 namespace iv {
 namespace lv5 {

@@ -1,5 +1,8 @@
 #ifndef _IV_LV5_TELEPORTER_FWD_H_
 #define _IV_LV5_TELEPORTER_FWD_H_
+#include "lv5/jsval.h"
+#include "lv5/arguments.h"
+#include "lv5/error.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -11,6 +14,8 @@ class Interpreter;
 
 class JSScript;
 class Context;
+
+JSVal FunctionConstructor(const Arguments& args, Error* e);
 
 } } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_TELEPORTER_FWD_H_

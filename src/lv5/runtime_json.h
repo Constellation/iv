@@ -10,6 +10,7 @@
 #include "lv5/jsstring.h"
 #include "lv5/internal.h"
 #include "lv5/gc_template.h"
+#include "lv5/eval_source.h"
 #include "lv5/json_lexer.h"
 #include "lv5/json_parser.h"
 #include "lv5/json_stringifier.h"

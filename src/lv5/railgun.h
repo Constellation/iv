@@ -9,5 +9,6 @@
 #include "lv5/railgun_code.h"
 #include "lv5/railgun_compiler.h"
 #include "lv5/railgun_disassembler.h"
+#include "lv5/railgun_runtime.h"
 
 #endif  // _IV_LV5_RAILGUN_H_

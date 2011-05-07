@@ -15,6 +15,5 @@
 #include "lv5/runtime_regexp.h"
 #include "lv5/runtime_error.h"
 #include "lv5/runtime_json.h"
-#include "lv5/runtime_teleporter.h"
 
 #endif  // _IV_LV5_RUNTIME_H_

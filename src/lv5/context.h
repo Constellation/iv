@@ -96,7 +96,7 @@ class Context : private core::Noncopyable<> {
                                      f, false, &error);
   }
 
-  void Initialize();
+  void Initialize(JSFunction* func_constructor);
 
   JSFunction* throw_type_error() {
     return &throw_type_error_;

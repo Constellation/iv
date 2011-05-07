@@ -8,5 +8,6 @@
 #include "lv5/teleporter_interpreter.h"
 #include "lv5/teleporter_context.h"
 #include "lv5/teleporter_utility.h"
+#include "lv5/teleporter_runtime.h"
 
 #endif  // _IV_LV5_TELEPORTER_H_

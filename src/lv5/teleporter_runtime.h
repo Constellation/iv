@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
 #include "lv5/lv5.h"
-#include "lv5/teleporter.h"
+#include "lv5/teleporter_fwd.h"
 #include "lv5/internal.h"
 namespace iv {
 namespace lv5 {
@@ -91,7 +91,5 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   return ctx->ret();
 }
 
-}  // iv::lv5::teleporter
-namespace runtime {
-} } }  // iv::lv5::runtime
+} } }  // iv::lv5::teleporter
 #endif  // _IV_LV5_RUNTIME_TELEPORTER_H_

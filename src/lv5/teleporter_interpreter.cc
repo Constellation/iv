@@ -21,9 +21,7 @@
 #include "lv5/context.h"
 #include "lv5/jsast.h"
 #include "lv5/internal.h"
-#include "lv5/teleporter_interpreter.h"
-#include "lv5/teleporter_context.h"
-#include "lv5/runtime_teleporter.h"
+#include "lv5/teleporter.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {

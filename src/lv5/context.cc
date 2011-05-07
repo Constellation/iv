@@ -146,7 +146,7 @@ JSString* Context::ToString(Symbol sym) {
   return JSString::New(this, global_data_.GetSymbolString(sym));
 }
 
-void Context::Initialize() {
+void Context::Initialize(JSFunction* func_constructor) {
   bind::Object global_binder(this, global_obj());
 
   // Object and Function
@@ -157,8 +157,6 @@ void Context::Initialize() {
   // Function
   JSFunction* const func_proto =
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
-  JSFunction* const func_constructor =
-      JSInlinedFunction<&teleporter::FunctionConstructor, 1>::NewPlain(this);
 
   struct Class func_cls = {
     context::Intern(this, "Function"),
