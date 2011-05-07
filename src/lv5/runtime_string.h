@@ -515,7 +515,8 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
   if (position < 0 || position >= str->size()) {
     return JSNaN;
   } else {
-    return (*str)[core::DoubleToUInt32(position)];
+    return JSVal::UInt32(
+        static_cast<uint32_t>((*str)[core::DoubleToUInt32(position)]));
   }
 }
 
