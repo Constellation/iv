@@ -6,7 +6,6 @@
 #include "lv5/teleporter/jsscript.h"
 #include "lv5/teleporter/interpreter.h"
 #include "lv5/teleporter/context.h"
-#include "lv5/teleporter/jsfunction_impl.h"
 #include "lv5/teleporter/interpreter_impl.h"
 #include "lv5/teleporter/utility.h"
 #include "lv5/internal.h"

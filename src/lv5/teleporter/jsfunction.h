@@ -11,6 +11,7 @@
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/jsscript.h"
 #include "lv5/teleporter/context.h"
+#include "lv5/teleporter/interpreter.h"
 namespace iv {
 namespace lv5 {
 
@@ -75,7 +76,17 @@ class JSCodeFunction : public JSFunction {
     }
   }
 
-  inline JSVal Call(Arguments* args, const JSVal& this_binding, Error* e);
+  JSVal Call(Arguments* args,
+             const JSVal& this_binding, Error* e) {
+    Context* const ctx = static_cast<Context*>(args->ctx());
+    args->set_this_binding(this_binding);
+    ctx->interp()->Invoke(this, *args, e);
+    if (ctx->mode() == Context::RETURN) {
+      ctx->set_mode(Context::NORMAL);
+    }
+    assert(!ctx->ret().IsEmpty() || *e);
+    return ctx->ret();
+  }
 
   JSVal Construct(Arguments* args, Error* e) {
     iv::lv5::Context* ctx = args->ctx();
