@@ -14,7 +14,70 @@ namespace iv {
 namespace lv5 {
 namespace teleporter {
 
-class Context;
+class ContextSwitcher : private core::Noncopyable<> {
+ public:
+  ContextSwitcher(Context* ctx,
+                  JSEnv* lex,
+                  JSEnv* var,
+                  const JSVal& binding,
+                  bool strict)
+    : prev_lex_(ctx->lexical_env()),
+      prev_var_(ctx->variable_env()),
+      prev_binding_(ctx->this_binding()),
+      prev_strict_(strict),
+      ctx_(ctx) {
+    ctx_->set_lexical_env(lex);
+    ctx_->set_variable_env(var);
+    ctx_->set_this_binding(binding);
+    ctx_->set_strict(strict);
+  }
+
+  ~ContextSwitcher() {
+    ctx_->set_lexical_env(prev_lex_);
+    ctx_->set_variable_env(prev_var_);
+    ctx_->set_this_binding(prev_binding_);
+    ctx_->set_strict(prev_strict_);
+  }
+
+ private:
+  JSEnv* prev_lex_;
+  JSEnv* prev_var_;
+  JSVal prev_binding_;
+  bool prev_strict_;
+  Context* ctx_;
+};
+
+class LexicalEnvSwitcher : private core::Noncopyable<> {
+ public:
+  LexicalEnvSwitcher(Context* context, JSEnv* env)
+    : ctx_(context),
+      old_(context->lexical_env()) {
+    ctx_->set_lexical_env(env);
+  }
+
+  ~LexicalEnvSwitcher() {
+    ctx_->set_lexical_env(old_);
+  }
+ private:
+  Context* ctx_;
+  JSEnv* old_;
+};
+
+class StrictSwitcher : private core::Noncopyable<> {
+ public:
+  StrictSwitcher(Context* ctx, bool strict)
+    : ctx_(ctx),
+      prev_(ctx->IsStrict()) {
+    ctx_->set_strict(strict);
+  }
+
+  ~StrictSwitcher() {
+    ctx_->set_strict(prev_);
+  }
+ private:
+  Context* ctx_;
+  bool prev_;
+};
 
 inline JSScript* CompileScript(Context* ctx, const JSString* str,
                                bool is_strict, Error* error) {

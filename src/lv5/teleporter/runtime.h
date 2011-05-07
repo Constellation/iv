@@ -2,11 +2,7 @@
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
 #include "lv5/lv5.h"
 #include "lv5/teleporter/fwd.h"
-#include "lv5/teleporter/jsfunction.h"
-#include "lv5/teleporter/jsscript.h"
-#include "lv5/teleporter/interpreter.h"
 #include "lv5/teleporter/context.h"
-#include "lv5/teleporter/interpreter_impl.h"
 #include "lv5/teleporter/utility.h"
 #include "lv5/internal.h"
 namespace iv {
@@ -28,18 +24,18 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
-    const detail::ContextSwitcher switcher(ctx,
-                                           env,
-                                           env,
-                                           ctx->global_obj(),
-                                           true);
+    const ContextSwitcher switcher(ctx,
+                                   env,
+                                   env,
+                                   ctx->global_obj(),
+                                   true);
     ctx->Run(script);
   } else {
-    const detail::ContextSwitcher switcher(ctx,
-                                           ctx->global_env(),
-                                           ctx->global_env(),
-                                           ctx->global_obj(),
-                                           false);
+    const ContextSwitcher switcher(ctx,
+                                   ctx->global_env(),
+                                   ctx->global_env(),
+                                   ctx->global_obj(),
+                                   false);
     ctx->Run(script);
   }
   if (ctx->IsShouldGC()) {
@@ -63,11 +59,11 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         internal::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
-    const detail::ContextSwitcher switcher(ctx,
-                                           env,
-                                           env,
-                                           ctx->this_binding(),
-                                           true);
+    const ContextSwitcher switcher(ctx,
+                                   env,
+                                   env,
+                                   ctx->this_binding(),
+                                   true);
     ctx->Run(script);
   } else {
     ctx->Run(script);
@@ -85,11 +81,11 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   JSString* const source = builder.Build(ctx);
   JSScript* const script = CompileScript(ctx, source, false, ERROR(e));
   internal::IsOneFunctionExpression(*script->function(), ERROR(e));
-  const detail::ContextSwitcher switcher(ctx,
-                                         ctx->global_env(),
-                                         ctx->global_env(),
-                                         ctx->global_obj(),
-                                         false);
+  const ContextSwitcher switcher(ctx,
+                                 ctx->global_env(),
+                                 ctx->global_env(),
+                                 ctx->global_obj(),
+                                 false);
   ctx->Run(script);
   if (ctx->IsShouldGC()) {
     GC_gcollect();
