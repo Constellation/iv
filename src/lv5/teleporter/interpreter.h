@@ -8,7 +8,7 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
-#include "lv5/teleporter_fwd.h"
+#include "lv5/teleporter/fwd.h"
 namespace iv {
 namespace lv5 {
 

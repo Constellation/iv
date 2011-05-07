@@ -8,9 +8,9 @@
 #include "lv5/jsast.h"
 #include "lv5/lv5.h"
 #include "lv5/jsfunction.h"
-#include "lv5/teleporter_fwd.h"
-#include "lv5/teleporter_jsscript.h"
-#include "lv5/teleporter_context.h"
+#include "lv5/teleporter/fwd.h"
+#include "lv5/teleporter/jsscript.h"
+#include "lv5/teleporter/context.h"
 namespace iv {
 namespace lv5 {
 

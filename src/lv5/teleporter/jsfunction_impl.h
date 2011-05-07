@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_TELEPORTER_JSFUNCTION_IMPL_H_
 #define _IV_LV5_TELEPORTER_JSFUNCTION_IMPL_H_
-#include "lv5/teleporter_jsfunction.h"
-#include "lv5/teleporter_interpreter.h"
+#include "lv5/teleporter/jsfunction.h"
+#include "lv5/teleporter/interpreter.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {

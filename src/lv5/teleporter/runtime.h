@@ -1,14 +1,14 @@
 #ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
 #include "lv5/lv5.h"
-#include "lv5/teleporter_fwd.h"
-#include "lv5/teleporter_jsfunction.h"
-#include "lv5/teleporter_jsscript.h"
-#include "lv5/teleporter_interpreter.h"
-#include "lv5/teleporter_context.h"
-#include "lv5/teleporter_jsfunction_impl.h"
-#include "lv5/teleporter_interpreter_impl.h"
-#include "lv5/teleporter_utility.h"
+#include "lv5/teleporter/fwd.h"
+#include "lv5/teleporter/jsfunction.h"
+#include "lv5/teleporter/jsscript.h"
+#include "lv5/teleporter/interpreter.h"
+#include "lv5/teleporter/context.h"
+#include "lv5/teleporter/jsfunction_impl.h"
+#include "lv5/teleporter/interpreter_impl.h"
+#include "lv5/teleporter/utility.h"
 #include "lv5/internal.h"
 namespace iv {
 namespace lv5 {

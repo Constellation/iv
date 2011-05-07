@@ -8,8 +8,8 @@
 #include "lv5/jsstring.h"
 #include "lv5/error.h"
 #include "lv5/eval_source.h"
-#include "lv5/teleporter_context.h"
-#include "lv5/teleporter_jsscript.h"
+#include "lv5/teleporter/context.h"
+#include "lv5/teleporter/jsscript.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {

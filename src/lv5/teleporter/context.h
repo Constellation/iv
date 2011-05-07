@@ -4,9 +4,9 @@
 #include "lv5/context.h"
 #include "lv5/jserror.h"
 #include "lv5/jsfunction.h"
-#include "lv5/teleporter_fwd.h"
-#include "lv5/teleporter_interpreter.h"
-#include "lv5/teleporter_jsscript.h"
+#include "lv5/teleporter/fwd.h"
+#include "lv5/teleporter/interpreter.h"
+#include "lv5/teleporter/jsscript.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
