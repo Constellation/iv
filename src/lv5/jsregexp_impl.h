@@ -16,9 +16,9 @@
 namespace iv {
 namespace lv5 {
 namespace detail {
-static const char* kEmptyPatternASCII = "(?:)";
-static const core::UString kEmptyPattern(kEmptyPatternASCII,
-                                         kEmptyPatternASCII + std::strlen(kEmptyPatternASCII));
+
+static const core::UString kEmptyPattern = core::ToUString("(?:)");
+
 } // namespace iv::lv5::detail
 class JSRegExpImpl : public gc_cleanup {
  public:
@@ -45,61 +45,8 @@ class JSRegExpImpl : public gc_cleanup {
     Initialize(detail::kEmptyPattern, core::UStringPiece());
   }
 
-  void Initialize(const core::UStringPiece& value,
-                  const core::UStringPiece& flags) {
-    bool state = false;
-    jscre::JSRegExpIgnoreCaseOption ignore = jscre::JSRegExpDoNotIgnoreCase;
-    jscre::JSRegExpMultilineOption multi = jscre::JSRegExpSingleLine;
-    for (core::UStringPiece::const_iterator it = flags.begin(),
-         last = flags.end(); it != last; ++it) {
-      const uc16 c = *it;
-      if (c == 'g') {
-        if (global()) {
-          state = true;
-          break;
-        } else {
-          flags_ |= GLOBAL;
-        }
-      } else if (c == 'm') {
-        if (multi == jscre::JSRegExpMultiline) {
-          state = true;
-          break;
-        } else {
-          multi = jscre::JSRegExpMultiline;
-          flags_ |= MULTILINE;
-        }
-      } else if (c == 'i') {
-        if (ignore == jscre::JSRegExpIgnoreCase) {
-          state = true;
-          break;
-        } else {
-          ignore = jscre::JSRegExpIgnoreCase;
-          flags_ |= IGNORECASE;
-        }
-      } else {
-        state = true;
-        break;
-      }
-    }
-    if (!state) {
-//      reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
-//                                    ignore,
-//                                    multi,
-//                                    &number_of_captures_,
-//                                    &error_,
-//                                    std::malloc,
-//                                    std::free);
-      reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
-                                    ignore,
-                                    multi,
-                                    &number_of_captures_,
-                                    &error_);
-    }
-  }
-
   ~JSRegExpImpl() {
     if (reg_) {
-//      jscre::jsRegExpFree(reg_, std::free);
       jscre::jsRegExpFree(reg_);
     }
   }
@@ -140,6 +87,51 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
  private:
+  void Initialize(const core::UStringPiece& value,
+                  const core::UStringPiece& flags) {
+    bool state = false;
+    jscre::JSRegExpIgnoreCaseOption ignore = jscre::JSRegExpDoNotIgnoreCase;
+    jscre::JSRegExpMultilineOption multi = jscre::JSRegExpSingleLine;
+    for (core::UStringPiece::const_iterator it = flags.begin(),
+         last = flags.end(); it != last; ++it) {
+      const uc16 c = *it;
+      if (c == 'g') {
+        if (global()) {
+          state = true;
+          break;
+        } else {
+          flags_ |= GLOBAL;
+        }
+      } else if (c == 'm') {
+        if (multi == jscre::JSRegExpMultiline) {
+          state = true;
+          break;
+        } else {
+          multi = jscre::JSRegExpMultiline;
+          flags_ |= MULTILINE;
+        }
+      } else if (c == 'i') {
+        if (ignore == jscre::JSRegExpIgnoreCase) {
+          state = true;
+          break;
+        } else {
+          ignore = jscre::JSRegExpIgnoreCase;
+          flags_ |= IGNORECASE;
+        }
+      } else {
+        state = true;
+        break;
+      }
+    }
+    if (!state) {
+      reg_ = jscre::jsRegExpCompile(value.data(), value.size(),
+                                    ignore,
+                                    multi,
+                                    &number_of_captures_,
+                                    &error_);
+    }
+  }
+
   jscre::JSRegExp* reg_;
   uint32_t number_of_captures_;
   int flags_;

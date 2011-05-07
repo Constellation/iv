@@ -15,7 +15,7 @@
 #include "lv5/bind.h"
 namespace iv {
 namespace lv5 {
-class Context;
+
 class JSRegExp : public JSObject {
  public:
   JSRegExp(Context* ctx,
