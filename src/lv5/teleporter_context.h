@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_TELEPORTER_CONTEXT_H_
 #define _IV_LV5_TELEPORTER_CONTEXT_H_
+#include <tr1/memory>
 #include "lv5/context.h"
 #include "lv5/jserror.h"
 #include "lv5/jsfunction.h"
@@ -22,7 +23,7 @@ class Context : public iv::lv5::Context {
 
   Context()
     : iv::lv5::Context(),
-      interp_(),
+      interp_(new Interpreter(this)),
       binding_(global_data()->global_obj()),
       mode_(NORMAL),
       ret_(),
@@ -30,14 +31,13 @@ class Context : public iv::lv5::Context {
       generate_script_counter_(0),
       current_script_(NULL),
       strict_(false) {
-    interp_.set_context(this);
     Initialize(
         JSInlinedFunction<&FunctionConstructor, 1>::NewPlain(this));
   }
 
   class ScriptScope : private core::Noncopyable<> {
    public:
-    ScriptScope(Context* ctx, teleporter::JSScript* script)
+    ScriptScope(Context* ctx, JSScript* script)
       : ctx_(ctx),
         prev_(ctx->current_script()) {
       ctx_->set_current_script(script);
@@ -47,17 +47,16 @@ class Context : public iv::lv5::Context {
     }
    private:
     Context* ctx_;
-    teleporter::JSScript* prev_;
+    JSScript* prev_;
   };
 
   bool Run(teleporter::JSScript* script) {
     const ScriptScope scope(this, script);
-    interp_.Run(script->function(),
-                script->type() == teleporter::JSScript::kEval);
+    interp_->Run(script->function(),
+                 script->type() == teleporter::JSScript::kEval);
     assert(!ret_.IsEmpty() || error_);
     return error_;
   }
-
 
   JSVal this_binding() const {
     return binding_;
@@ -67,8 +66,8 @@ class Context : public iv::lv5::Context {
     binding_ = binding;
   }
 
-  teleporter::Interpreter* interp() {
-    return &interp_;
+  std::tr1::shared_ptr<Interpreter> interp() {
+    return interp_;
   }
 
   Mode mode() const {
@@ -132,11 +131,11 @@ class Context : public iv::lv5::Context {
     return target_;
   }
 
-  teleporter::JSScript* current_script() const {
+  JSScript* current_script() const {
     return current_script_;
   }
 
-  void set_current_script(teleporter::JSScript* script) {
+  void set_current_script(JSScript* script) {
     current_script_ = script;
   }
 
@@ -168,14 +167,14 @@ class Context : public iv::lv5::Context {
   }
 
  private:
-  teleporter::Interpreter interp_;
+  std::tr1::shared_ptr<Interpreter> interp_;
   JSVal binding_;
   Mode mode_;
   JSVal ret_;
   const BreakableStatement* target_;
   Error error_;
   std::size_t generate_script_counter_;
-  teleporter::JSScript* current_script_;
+  JSScript* current_script_;
   bool strict_;
 };
 

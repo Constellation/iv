@@ -75,20 +75,10 @@ class JSCodeFunction : public JSFunction {
     }
   }
 
-  JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
-    Context* const ctx = static_cast<Context*>(args->ctx());
-    Interpreter* const interp = ctx->interp();
-    args->set_this_binding(this_binding);
-    interp->CallCode(this, *args, e);
-    if (ctx->mode() == Context::RETURN) {
-      ctx->set_mode(Context::NORMAL);
-    }
-    assert(!ctx->ret().IsEmpty() || *e);
-    return ctx->ret();
-  }
+  inline JSVal Call(Arguments* args, const JSVal& this_binding, Error* e);
 
   JSVal Construct(Arguments* args, Error* e) {
-    Context* const ctx = static_cast<Context*>(args->ctx());
+    iv::lv5::Context* ctx = args->ctx();
     JSObject* const obj = JSObject::New(ctx);
     const JSVal proto = Get(ctx, context::prototype_symbol(ctx), ERROR(e));
     if (proto.IsObject()) {

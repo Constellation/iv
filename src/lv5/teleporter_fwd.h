@@ -16,6 +16,8 @@ class JSScript;
 class Context;
 
 JSVal FunctionConstructor(const Arguments& args, Error* e);
+JSVal GlobalEval(const Arguments& args, Error* e);
+JSVal DirectCallToEval(const Arguments& args, Error* e);
 
 } } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_TELEPORTER_FWD_H_

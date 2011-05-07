@@ -1,3 +1,5 @@
+#ifndef _IV_LV5_TELEPORTER_INTERPRETER_IMPL_H_
+#define _IV_LV5_TELEPORTER_INTERPRETER_IMPL_H_
 #include <cstdio>
 #include <cassert>
 #include <cmath>
@@ -21,10 +23,79 @@
 #include "lv5/context.h"
 #include "lv5/jsast.h"
 #include "lv5/internal.h"
-#include "lv5/teleporter.h"
+#include "teleporter_interpreter.h"
+#include "teleporter_context.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
+namespace detail {
+
+class ContextSwitcher : private core::Noncopyable<> {
+ public:
+  ContextSwitcher(Context* ctx,
+                  JSEnv* lex,
+                  JSEnv* var,
+                  const JSVal& binding,
+                  bool strict)
+    : prev_lex_(ctx->lexical_env()),
+      prev_var_(ctx->variable_env()),
+      prev_binding_(ctx->this_binding()),
+      prev_strict_(strict),
+      ctx_(ctx) {
+    ctx_->set_lexical_env(lex);
+    ctx_->set_variable_env(var);
+    ctx_->set_this_binding(binding);
+    ctx_->set_strict(strict);
+  }
+
+  ~ContextSwitcher() {
+    ctx_->set_lexical_env(prev_lex_);
+    ctx_->set_variable_env(prev_var_);
+    ctx_->set_this_binding(prev_binding_);
+    ctx_->set_strict(prev_strict_);
+  }
+
+ private:
+  JSEnv* prev_lex_;
+  JSEnv* prev_var_;
+  JSVal prev_binding_;
+  bool prev_strict_;
+  Context* ctx_;
+};
+
+class LexicalEnvSwitcher : private core::Noncopyable<> {
+ public:
+  LexicalEnvSwitcher(Context* context, JSEnv* env)
+    : ctx_(context),
+      old_(context->lexical_env()) {
+    ctx_->set_lexical_env(env);
+  }
+
+  ~LexicalEnvSwitcher() {
+    ctx_->set_lexical_env(old_);
+  }
+ private:
+  Context* ctx_;
+  JSEnv* old_;
+};
+
+class StrictSwitcher : private core::Noncopyable<> {
+ public:
+  StrictSwitcher(Context* ctx, bool strict)
+    : ctx_(ctx),
+      prev_(ctx->IsStrict()) {
+    ctx_->set_strict(strict);
+  }
+
+  ~StrictSwitcher() {
+    ctx_->set_strict(prev_);
+  }
+ private:
+  Context* ctx_;
+  bool prev_;
+};
+
+}  // namespace iv::lv5::teleporter::detail
 
 #define CHECK  ctx_->error());\
   if (ctx_->IsError()) {\
@@ -76,59 +147,9 @@ namespace teleporter {
     RETURN_STMT(Context::THROW, JSEmpty, NULL);\
   }
 
-Interpreter::ContextSwitcher::ContextSwitcher(Context* ctx,
-                                              JSEnv* lex,
-                                              JSEnv* var,
-                                              const JSVal& binding,
-                                              bool strict)
-  : prev_lex_(ctx->lexical_env()),
-    prev_var_(ctx->variable_env()),
-    prev_binding_(ctx->this_binding()),
-    prev_strict_(strict),
-    ctx_(ctx) {
-  ctx_->set_lexical_env(lex);
-  ctx_->set_variable_env(var);
-  ctx_->set_this_binding(binding);
-  ctx_->set_strict(strict);
-}
-
-Interpreter::ContextSwitcher::~ContextSwitcher() {
-  ctx_->set_lexical_env(prev_lex_);
-  ctx_->set_variable_env(prev_var_);
-  ctx_->set_this_binding(prev_binding_);
-  ctx_->set_strict(prev_strict_);
-}
-
-Interpreter::LexicalEnvSwitcher::LexicalEnvSwitcher(Context* context,
-                                                    JSEnv* env)
-  : ctx_(context),
-    old_(context->lexical_env()) {
-  ctx_->set_lexical_env(env);
-}
-
-Interpreter::LexicalEnvSwitcher::~LexicalEnvSwitcher() {
-  ctx_->set_lexical_env(old_);
-}
-
-Interpreter::StrictSwitcher::StrictSwitcher(Context* ctx, bool strict)
-  : ctx_(ctx),
-    prev_(ctx->IsStrict()) {
-  ctx_->set_strict(strict);
-}
-
-Interpreter::StrictSwitcher::~StrictSwitcher() {
-  ctx_->set_strict(prev_);
-}
-
-Interpreter::Interpreter()
-  : ctx_(NULL) {
-}
-
 // section 13.2.1 [[Call]]
-void Interpreter::CallCode(
-    JSCodeFunction* code,
-    const Arguments& args,
-    Error* error) {
+void Interpreter::Invoke(JSCodeFunction* code,
+                         const Arguments& args, Error* error) {
   // step 1
   JSVal this_value = args.this_binding();
   if (!code->IsStrict()) {
@@ -145,8 +166,8 @@ void Interpreter::CallCode(
   // step 1
   JSDeclEnv* const env =
      internal::NewDeclarativeEnvironment(ctx_, code->scope());
-  const ContextSwitcher switcher(ctx_, env, env, this_value,
-                                 code->IsStrict());
+  const detail::ContextSwitcher switcher(ctx_, env, env, this_value,
+                                         code->IsStrict());
 
   // step 2
   const bool configurable_bindings = false;
@@ -250,7 +271,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   const bool configurable_bindings = is_eval;
   const Scope& scope = global->scope();
   JSEnv* const env = ctx_->variable_env();
-  const StrictSwitcher switcher(ctx_, global->strict());
+  const detail::StrictSwitcher switcher(ctx_, global->strict());
   const bool is_global_env = (env->AsJSObjectEnv() == ctx_->global_env());
   BOOST_FOREACH(const FunctionLiteral* const f,
                 scope.function_declarations()) {
@@ -583,7 +604,7 @@ void Interpreter::Visit(const WithStatement* stmt) {
       internal::NewObjectEnvironment(ctx_, obj, old_env);
   new_env->set_provide_this(true);
   {
-    const LexicalEnvSwitcher switcher(ctx_, new_env);
+    const detail::LexicalEnvSwitcher switcher(ctx_, new_env);
     EVAL_IN_STMT(stmt->body());  // RETURN_STMT is body's value
   }
 }
@@ -693,7 +714,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
       catch_env->CreateMutableBinding(ctx_, name, false, CHECK_IN_STMT);
       catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
       {
-        const LexicalEnvSwitcher switcher(ctx_, catch_env);
+        const detail::LexicalEnvSwitcher switcher(ctx_, catch_env);
         // evaluate with no error check (finally)
         (*block).Accept(this);
       }
@@ -1636,4 +1657,6 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
 #undef RETURN_STMT
 #undef ABRUPT
 
+
 } } }  // namespace iv::lv5::teleporter
+#endif  // _IV_LV5_TELEPORTER_INTERPRETER_H_
