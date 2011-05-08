@@ -344,7 +344,6 @@ bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
 void JSObject::GetPropertyNames(Context* ctx,
                                 std::vector<Symbol>* vec,
                                 EnumerationMode mode) const {
-  using std::find;
   GetOwnPropertyNames(ctx, vec, mode);
   const JSObject* obj = prototype_;
   while (obj) {
@@ -356,7 +355,6 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const {
-  using std::find;
   if (vec->empty()) {
     for (JSObject::Properties::const_iterator it = table_.begin(),
          last = table_.end(); it != last; ++it) {
@@ -368,7 +366,7 @@ void JSObject::GetOwnPropertyNames(Context* ctx,
     for (JSObject::Properties::const_iterator it = table_.begin(),
          last = table_.end(); it != last; ++it) {
       if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
-          (find(vec->begin(), vec->end(), it->first) == vec->end())) {
+          (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
         vec->push_back(it->first);
       }
     }

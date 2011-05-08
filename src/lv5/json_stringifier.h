@@ -125,8 +125,7 @@ class JSONStringifier : private core::Noncopyable<> {
   }
 
   void CyclicCheck(JSObject* value, Error* e) {
-    using std::find;
-    if (find(stack_.begin(), stack_.end(), value) != stack_.end()) {
+    if (std::find(stack_.begin(), stack_.end(), value) != stack_.end()) {
       e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
     }
   }
@@ -142,11 +141,11 @@ class JSONStringifier : private core::Noncopyable<> {
     if (property_list_) {
       k = property_list_;
     } else {
-      using std::transform;
       std::vector<Symbol> keys;
       value->GetOwnPropertyNames(ctx_, &keys, JSObject::kExcludeNotEnumerable);
       prop.resize(keys.size());
-      transform(keys.begin(), keys.end(), prop.begin(), SymbolToString(ctx_));
+      std::transform(keys.begin(), keys.end(),
+                     prop.begin(), SymbolToString(ctx_));
       k = &prop;
     }
 
@@ -155,7 +154,8 @@ class JSONStringifier : private core::Noncopyable<> {
     for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
       const JSVal result = Str(
-          context::Intern(ctx_, core::UStringPiece((*it)->data(), (*it)->size())),
+          context::Intern(ctx_,
+                          core::UStringPiece((*it)->data(), (*it)->size())),
           value, ERROR(e));
       if (!result.IsUndefined()) {
         core::UString member;
@@ -285,11 +285,14 @@ class JSONStringifier : private core::Noncopyable<> {
     JSVal value = holder->Get(ctx_, key, ERROR(e));
     if (value.IsObject()) {
       JSObject* const target = value.object();
-      const JSVal method = target->Get(ctx_, context::Intern(ctx_, "toJSON"), ERROR(e));
+      const JSVal method = target->Get(ctx_,
+                                       context::Intern(ctx_, "toJSON"),
+                                       ERROR(e));
       if (method.IsCallable()) {
         ScopedArguments args_list(ctx_, 1, ERROR(e));
         args_list[0] = ctx_->ToString(key);
-        value = method.object()->AsCallable()->Call(&args_list, target, ERROR(e));
+        value =
+            method.object()->AsCallable()->Call(&args_list, target, ERROR(e));
       }
     }
     if (replacer_) {

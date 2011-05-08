@@ -142,7 +142,6 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
     if (replacer.IsCallable()) {  // 4-a
       replacer_function = rep->AsCallable();
     } else if (ctx->IsArray(*rep)) {  // 4-b
-      using std::find_if;
       maybe = &property_list;
       const uint32_t len = internal::GetLength(ctx, rep, ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
@@ -160,7 +159,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
           }
         }
         if (item) {
-          if (find_if(
+          if (std::find_if(
                   property_list.begin(),
                   property_list.end(),
                   detail::PropertyListEqual<JSString>(item))

@@ -174,20 +174,20 @@ class JSBoundFunction : public JSFunction {
   }
 
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
-    using std::copy;
     ScopedArguments args_list(args->ctx(),
                               args->size() + arguments_.size(), ERROR(e));
-    copy(args->begin(), args->end(),
-         copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+    std::copy(args->begin(), args->end(),
+              std::copy(arguments_.begin(),
+                        arguments_.end(), args_list.begin()));
     return target_->Call(&args_list, this_binding_, e);
   }
 
   JSVal Construct(Arguments* args, Error* e) {
-    using std::copy;
     ScopedArguments args_list(args->ctx(),
                               args->size() + arguments_.size(), ERROR(e));
-    copy(args->begin(), args->end(),
-         copy(arguments_.begin(), arguments_.end(), args_list.begin()));
+    std::copy(args->begin(), args->end(),
+              std::copy(arguments_.begin(),
+                        arguments_.end(), args_list.begin()));
     return target_->Construct(&args_list, e);
   }
 
