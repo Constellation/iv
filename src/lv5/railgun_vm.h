@@ -110,6 +110,7 @@ class VM {
     JSEnv* env = frame->env();
     const JSVals& constants = frame->constants();
     const Code::Names& names = code.names();
+    const bool strict = code.strict();
 #define INSTR_OFFSET() reinterpret_cast<uint8_t*>(instr - first_instr)
 #define NEXTOP() (*instr++)
 #define NEXTARG() (instr += 2, (instr[-1] << 8) + instr[-2])
@@ -168,17 +169,7 @@ class VM {
 
         case OP::LOAD_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName<false>(env, s, &e);
-          if (e) {
-            break;
-          }
-          PUSH(w);
-          continue;
-        }
-
-        case OP::LOAD_NAME_STRICT: {
-          const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName<true>(env, s, &e);
+          const JSVal w = LoadName(env, s, strict, &e);
           if (e) {
             break;
           }
@@ -199,36 +190,7 @@ class VM {
           }
           const Symbol& s = context::Intern(ctx_, str->value());
           if (base.IsPrimitive()) {
-            const JSVal res = GetElement<false>(sp, base, s, &e);
-            if (e) {
-              break;
-            }
-            SET_TOP(res);
-            continue;
-          } else {
-            const JSVal res = base.object()->Get(ctx_, s, &e);
-            if (e) {
-              break;
-            }
-            SET_TOP(res);
-            continue;
-          }
-        }
-
-        case OP::LOAD_ELEMENT_STRICT: {
-          const JSVal element = POP();
-          const JSVal base = TOP();
-          base.CheckObjectCoercible(&e);
-          if (e) {
-            break;
-          }
-          const JSString* str = element.ToString(ctx_, &e);
-          if (e) {
-            break;
-          }
-          const Symbol& s = context::Intern(ctx_, str->value());
-          if (base.IsPrimitive()) {
-            const JSVal res = GetElement<true>(sp, base, s, &e);
+            const JSVal res = GetElement(sp, base, s, strict, &e);
             if (e) {
               break;
             }
@@ -252,32 +214,7 @@ class VM {
             break;
           }
           if (base.IsPrimitive()) {
-            const JSVal res = GetElement<false>(sp, base, s, &e);
-            if (e) {
-              break;
-            }
-            SET_TOP(res);
-            continue;
-          } else {
-            const JSVal res =
-                base.object()->Get(ctx_, s, &e);
-            if (e) {
-              break;
-            }
-            SET_TOP(res);
-            continue;
-          }
-        }
-
-        case OP::LOAD_PROP_STRICT: {
-          const JSVal base = TOP();
-          const Symbol& s = GETITEM(names, oparg);
-          base.CheckObjectCoercible(&e);
-          if (e) {
-            break;
-          }
-          if (base.IsPrimitive()) {
-            const JSVal res = GetElement<true>(sp, base, s, &e);
+            const JSVal res = GetElement(sp, base, s, strict, &e);
             if (e) {
               break;
             }
@@ -298,25 +235,15 @@ class VM {
           const Symbol& s = GETITEM(names, oparg);
           const JSVal v = POP();
           if (JSEnv* current = GetEnv(env, s)) {
-            current->SetMutableBinding(ctx_, s, v, false, &e);
+            current->SetMutableBinding(ctx_, s, v, strict, &e);
           } else {
-            ctx_->global_obj()->Put(ctx_, s, v, false, &e);
-          }
-          if (e) {
-            break;
-          }
-          continue;
-        }
-
-        case OP::STORE_NAME_STRICT: {
-          const Symbol& s = GETITEM(names, oparg);
-          const JSVal v = POP();
-          if (JSEnv* current = GetEnv(env, s)) {
-            current->SetMutableBinding(ctx_, s, v, true, &e);
-          } else {
-            e.Report(Error::Reference,
-                     "putting to unresolvable reference "
-                     "not allowed in strict reference");
+            if (strict) {
+              e.Report(Error::Reference,
+                       "putting to unresolvable reference "
+                       "not allowed in strict reference");
+            } else {
+              ctx_->global_obj()->Put(ctx_, s, v, strict, &e);
+            }
           }
           if (e) {
             break;
@@ -835,10 +762,9 @@ class VM {
     return NULL;
   }
 
-  template<bool Strict>
-  JSVal LoadName(JSEnv* env, const Symbol& name, Error* e) const {
+  JSVal LoadName(JSEnv* env, const Symbol& name, bool strict, Error* e) const {
     if (JSEnv* current = GetEnv(env, name)) {
-      return current->GetBindingValue(ctx_, name, Strict, e);
+      return current->GetBindingValue(ctx_, name, strict, e);
     }
     RaiseReferenceError(name, e);
     return JSEmpty;
@@ -846,10 +772,10 @@ class VM {
 
 #define CHECK ERROR_WITH(e, JSEmpty)
 
-  template<bool Strict>
   JSVal GetElement(JSVal* stack_pointer,
                    const JSVal& base,
                    const Symbol& name,
+                   bool strict,
                    Error* e) const {
     // section 8.7.1 special [[Get]]
     const JSObject* const o = base.ToObject(ctx_, CHECK);

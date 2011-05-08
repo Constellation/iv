@@ -1,6 +1,5 @@
 #ifndef _IV_LV5_RAILGUN_COMPILER_H_
 #define _IV_LV5_RAILGUN_COMPILER_H_
-#include <iostream>  // NOLINT
 #include <algorithm>
 #include <tr1/tuple>
 #include <tr1/unordered_map>
@@ -211,11 +210,7 @@ class Compiler
     assert(func.name());  // FunctionStatement must have name
     const uint16_t index = SymbolToNameIndex(func.name().Address()->symbol());
     Visit(&func);
-    if (code_->strict()) {
-      Emit<OP::STORE_NAME_STRICT>(index);
-    } else {
-      Emit<OP::STORE_NAME>(index);
-    }
+    Emit<OP::STORE_NAME>(index);
   }
 
   void Visit(const FunctionDeclaration* func) {
@@ -305,37 +300,23 @@ class Compiler
     if (const Identifier* ident = lhs.AsIdentifier()) {
       // Identifier
       const uint16_t index = SymbolToNameIndex(ident->symbol());
-      if (code_->strict()) {
-        Emit<OP::STORE_NAME_STRICT>(index);
-      } else {
-        Emit<OP::STORE_NAME>(index);
-      }
+      Emit<OP::STORE_NAME>(index);
     } else if (lhs.AsPropertyAccess()) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
         // IdentifierAccess
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-        if (code_->strict()) {
-          Emit<OP::STORE_PROP_STRICT>(index);
-        } else {
-          Emit<OP::STORE_PROP>(index);
-        }
+        Emit<OP::STORE_PROP>(index);
       } else {
         // IndexAccess
         EmitElement<OP::STORE_PROP,
-                    OP::STORE_PROP_STRICT,
-                    OP::STORE_ELEMENT,
-                    OP::STORE_ELEMENT_STRICT>(*lhs.AsIndexAccess());
+                    OP::STORE_ELEMENT>(*lhs.AsIndexAccess());
       }
     } else {
       // FunctionCall
       // ConstructorCall
       lhs.Accept(this);
-      if (code_->strict()) {
-        Emit<OP::STORE_CALL_RESULT_STRICT>();
-      } else {
-        Emit<OP::STORE_CALL_RESULT>();
-      }
+      Emit<OP::STORE_CALL_RESULT>();
     }
   }
 
@@ -593,37 +574,23 @@ class Compiler
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        if (code_->strict()) {
-          Emit<OP::STORE_NAME_STRICT>(index);
-        } else {
-          Emit<OP::STORE_NAME>(index);
-        }
+        Emit<OP::STORE_NAME>(index);
       } else if (lhs.AsPropertyAccess()) {
         // PropertyAccess
         if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
           // IdentifierAccess
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-          if (code_->strict()) {
-            Emit<OP::STORE_PROP_STRICT>(index);
-          } else {
-            Emit<OP::STORE_PROP>(index);
-          }
+          Emit<OP::STORE_PROP>(index);
         } else {
           // IndexAccess
           EmitElement<OP::STORE_PROP,
-                      OP::STORE_PROP_STRICT,
-                      OP::STORE_ELEMENT,
-                      OP::STORE_ELEMENT_STRICT>(*lhs.AsIndexAccess());
+                      OP::STORE_ELEMENT>(*lhs.AsIndexAccess());
         }
       } else {
         // FunctionCall
         // ConstructorCall
         Emit<OP::ROT_THREE>();
-        if (code_->strict()) {
-          Emit<OP::STORE_CALL_RESULT_STRICT>();
-        } else {
-          Emit<OP::STORE_CALL_RESULT>();
-        }
+        Emit<OP::STORE_CALL_RESULT>();
       }
     }
   }
@@ -840,25 +807,15 @@ class Compiler
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
               // IdentifierAccess
               const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-              if (code_->strict()) {
-                Emit<OP::DELETE_PROP_STRICT>(index);
-              } else {
-                Emit<OP::DELETE_PROP>(index);
-              }
+              Emit<OP::DELETE_PROP>(index);
             } else {
               // IndexAccess
               EmitElement<OP::DELETE_PROP,
-                          OP::DELETE_PROP_STRICT,
-                          OP::DELETE_ELEMENT,
-                          OP::DELETE_ELEMENT_STRICT>(*expr.AsIndexAccess());
+                          OP::DELETE_ELEMENT>(*expr.AsIndexAccess());
             }
           } else {
             expr.Accept(this);
-            if (code_->strict()) {
-              Emit<OP::DELETE_CALL_RESULT_STRICT>();
-            } else {
-              Emit<OP::DELETE_CALL_RESULT>();
-            }
+            Emit<OP::DELETE_CALL_RESULT>();
           }
         } else {
           // other case is no effect
@@ -895,65 +852,37 @@ class Compiler
         assert(expr.IsValidLeftHandSide());
         if (const Identifier* ident = expr.AsIdentifier()) {
           const uint16_t index = SymbolToNameIndex(ident->symbol());
-          if (code_->strict()) {
-            if (token == Token::INC) {
-              Emit<OP::INCREMENT_NAME_STRICT>(index);
-            } else {
-              Emit<OP::DECREMENT_NAME_STRICT>(index);
-            }
+          if (token == Token::INC) {
+            Emit<OP::INCREMENT_NAME>(index);
           } else {
-            if (token == Token::INC) {
-              Emit<OP::INCREMENT_NAME>(index);
-            } else {
-              Emit<OP::DECREMENT_NAME>(index);
-            }
+            Emit<OP::DECREMENT_NAME>(index);
           }
         } else if (expr.AsPropertyAccess()) {
           if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
             // IdentifierAccess
             const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-            if (code_->strict()) {
-              if (token == Token::INC) {
-                Emit<OP::INCREMENT_PROP_STRICT>(index);
-              } else {
-                Emit<OP::DECREMENT_PROP_STRICT>(index);
-              }
+            if (token == Token::INC) {
+              Emit<OP::INCREMENT_PROP>(index);
             } else {
-              if (token == Token::INC) {
-                Emit<OP::INCREMENT_PROP>(index);
-              } else {
-                Emit<OP::DECREMENT_PROP>(index);
-              }
+              Emit<OP::DECREMENT_PROP>(index);
             }
           } else {
             // IndexAccess
             const IndexAccess& idxac = *expr.AsIndexAccess();
             if (token == Token::INC) {
               EmitElement<OP::INCREMENT_PROP,
-                          OP::INCREMENT_PROP_STRICT,
-                          OP::INCREMENT_ELEMENT,
-                          OP::INCREMENT_ELEMENT_STRICT>(idxac);
+                          OP::INCREMENT_ELEMENT>(idxac);
             } else {
               EmitElement<OP::DECREMENT_PROP,
-                          OP::DECREMENT_PROP_STRICT,
-                          OP::DECREMENT_ELEMENT,
-                          OP::DECREMENT_ELEMENT_STRICT>(idxac);
+                          OP::DECREMENT_ELEMENT>(idxac);
             }
           }
         } else {
           expr.Accept(this);
-          if (code_->strict()) {
-            if (token == Token::INC) {
-              Emit<OP::INCREMENT_CALL_RESULT_STRICT>();
-            } else {
-              Emit<OP::DECREMENT_CALL_RESULT_STRICT>();
-            }
+          if (token == Token::INC) {
+            Emit<OP::INCREMENT_CALL_RESULT>();
           } else {
-            if (token == Token::INC) {
-              Emit<OP::INCREMENT_CALL_RESULT>();
-            } else {
-              Emit<OP::DECREMENT_CALL_RESULT>();
-            }
+            Emit<OP::DECREMENT_CALL_RESULT>();
           }
         }
         return;
@@ -995,65 +924,37 @@ class Compiler
     assert(expr.IsValidLeftHandSide());
     if (const Identifier* ident = expr.AsIdentifier()) {
       const uint16_t index = SymbolToNameIndex(ident->symbol());
-      if (code_->strict()) {
-        if (token == Token::INC) {
-          Emit<OP::POSTFIX_INCREMENT_NAME_STRICT>(index);
-        } else {
-          Emit<OP::POSTFIX_DECREMENT_NAME_STRICT>(index);
-        }
+      if (token == Token::INC) {
+        Emit<OP::POSTFIX_INCREMENT_NAME>(index);
       } else {
-        if (token == Token::INC) {
-          Emit<OP::POSTFIX_INCREMENT_NAME>(index);
-        } else {
-          Emit<OP::POSTFIX_DECREMENT_NAME>(index);
-        }
+        Emit<OP::POSTFIX_DECREMENT_NAME>(index);
       }
     } else if (expr.AsPropertyAccess()) {
       if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
         // IdentifierAccess
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-        if (code_->strict()) {
-          if (token == Token::INC) {
-            Emit<OP::POSTFIX_INCREMENT_PROP_STRICT>(index);
-          } else {
-            Emit<OP::POSTFIX_DECREMENT_PROP_STRICT>(index);
-          }
+        if (token == Token::INC) {
+          Emit<OP::POSTFIX_INCREMENT_PROP>(index);
         } else {
-          if (token == Token::INC) {
-            Emit<OP::POSTFIX_INCREMENT_PROP>(index);
-          } else {
-            Emit<OP::POSTFIX_DECREMENT_PROP>(index);
-          }
+          Emit<OP::POSTFIX_DECREMENT_PROP>(index);
         }
       } else {
         // IndexAccess
         const IndexAccess& idxac = *expr.AsIndexAccess();
         if (token == Token::INC) {
           EmitElement<OP::POSTFIX_INCREMENT_PROP,
-                      OP::POSTFIX_INCREMENT_PROP_STRICT,
-                      OP::POSTFIX_INCREMENT_ELEMENT,
-                      OP::POSTFIX_INCREMENT_ELEMENT_STRICT>(idxac);
+                      OP::POSTFIX_INCREMENT_ELEMENT>(idxac);
         } else {
           EmitElement<OP::POSTFIX_DECREMENT_PROP,
-                      OP::POSTFIX_DECREMENT_PROP_STRICT,
-                      OP::POSTFIX_DECREMENT_ELEMENT,
-                      OP::POSTFIX_DECREMENT_ELEMENT_STRICT>(idxac);
+                      OP::POSTFIX_DECREMENT_ELEMENT>(idxac);
         }
       }
     } else {
       expr.Accept(this);
-      if (code_->strict()) {
-        if (token == Token::INC) {
-          Emit<OP::POSTFIX_INCREMENT_CALL_RESULT_STRICT>();
-        } else {
-          Emit<OP::POSTFIX_DECREMENT_CALL_RESULT_STRICT>();
-        }
+      if (token == Token::INC) {
+        Emit<OP::POSTFIX_INCREMENT_CALL_RESULT>();
       } else {
-        if (token == Token::INC) {
-          Emit<OP::POSTFIX_INCREMENT_CALL_RESULT>();
-        } else {
-          Emit<OP::POSTFIX_DECREMENT_CALL_RESULT>();
-        }
+        Emit<OP::POSTFIX_DECREMENT_CALL_RESULT>();
       }
     }
   }
@@ -1094,19 +995,11 @@ class Compiler
     // directlly extract value and set to top version
     const Symbol name = lit->symbol();
     if (name == context::arguments_symbol(ctx_)) {
-      if (code_->strict()) {
-        Emit<OP::PUSH_ARGUMENTS_STRICT>();
-      } else {
-        Emit<OP::PUSH_ARGUMENTS>();
-      }
+      Emit<OP::PUSH_ARGUMENTS>();
       return;
     }
     const uint16_t index = SymbolToNameIndex(name);
-    if (code_->strict()) {
-      Emit<OP::LOAD_NAME_STRICT>(index);
-    } else {
-      Emit<OP::LOAD_NAME>(index);
-    }
+    Emit<OP::LOAD_NAME>(index);
   }
 
   void Visit(const ThisLiteral* lit) {
@@ -1205,51 +1098,31 @@ class Compiler
   void Visit(const IdentifierAccess* prop) {
     prop->target()->Accept(this);
     const uint16_t index = SymbolToNameIndex(prop->key()->symbol());
-    if (code_->strict()) {
-      Emit<OP::LOAD_PROP_STRICT>(index);
-    } else {
-      Emit<OP::LOAD_PROP>(index);
-    }
+    Emit<OP::LOAD_PROP>(index);
   }
 
   template<OP::Type PropOP,
-           OP::Type PropStrictOP,
-           OP::Type ElementOP,
-           OP::Type ElementStrictOP>
+           OP::Type ElementOP>
   void EmitElement(const IndexAccess& prop) {
     prop.target()->Accept(this);
     const Expression& key = *prop.key();
     if (const StringLiteral* str = key.AsStringLiteral()) {
       const uint16_t index =
           SymbolToNameIndex(context::Intern(ctx_, str->value()));
-      if (code_->strict()) {
-        Emit<PropStrictOP>(index);
-      } else {
-        Emit<PropOP>(index);
-      }
+      Emit<PropOP>(index);
     } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
       const uint16_t index =
           SymbolToNameIndex(context::Intern(ctx_, num->value()));
-      if (code_->strict()) {
-        Emit<PropStrictOP>(index);
-      } else {
-        Emit<PropOP>(index);
-      }
+      Emit<PropOP>(index);
     } else {
       prop.key()->Accept(this);
-      if (code_->strict()) {
-        Emit<ElementStrictOP>();
-      } else {
-        Emit<ElementOP>();
-      }
+      Emit<ElementOP>();
     }
   }
 
   void Visit(const IndexAccess* prop) {
     EmitElement<OP::LOAD_PROP,
-                OP::LOAD_PROP_STRICT,
-                OP::LOAD_ELEMENT,
-                OP::LOAD_ELEMENT_STRICT>(*prop);
+                OP::LOAD_ELEMENT>(*prop);
   }
 
   template<OP::Type op, typename Call>
@@ -1258,35 +1131,21 @@ class Compiler
     if (target.IsValidLeftHandSide()) {
       if (const Identifier* ident = target.AsIdentifier()) {
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        if (code_->strict()) {
-          Emit<OP::CALL_NAME_STRICT>(index);
-        } else {
-          Emit<OP::CALL_NAME>(index);
-        }
+        Emit<OP::CALL_NAME>(index);
       } else if (const PropertyAccess* prop = target.AsPropertyAccess()) {
         prop->target()->Accept(this);
         if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
           // IdentifierAccess
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-          if (code_->strict()) {
-            Emit<OP::CALL_PROP_STRICT>(index);
-          } else {
-            Emit<OP::CALL_PROP>(index);
-          }
+          Emit<OP::CALL_PROP>(index);
         } else {
           // IndexAccess
           EmitElement<OP::CALL_PROP,
-                      OP::CALL_PROP_STRICT,
-                      OP::CALL_ELEMENT,
-                      OP::CALL_ELEMENT_STRICT>(*prop->AsIndexAccess());
+                      OP::CALL_ELEMENT>(*prop->AsIndexAccess());
         }
       } else {
         target.Accept(this);
-        if (code_->strict()) {
-          Emit<OP::CALL_CALL_RESULT_STRICT>();
-        } else {
-          Emit<OP::CALL_CALL_RESULT>();
-        }
+        Emit<OP::CALL_CALL_RESULT>();
       }
     } else {
       target.Accept(this);
@@ -1311,11 +1170,7 @@ class Compiler
     const uint16_t index = SymbolToNameIndex(decl->name()->symbol());
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
-      if (code_->strict()) {
-        Emit<OP::STORE_NAME_STRICT>(index);
-      } else {
-        Emit<OP::STORE_NAME>(index);
-      }
+      Emit<OP::STORE_NAME>(index);
     }
   }
   void Visit(const CaseClause* dummy) { }
@@ -1343,11 +1198,7 @@ class Compiler
         Visit(func);
         const uint16_t index =
             SymbolToNameIndex(func->name().Address()->symbol());
-        if (code_->strict()) {
-          Emit<OP::STORE_NAME_STRICT>(index);
-        } else {
-          Emit<OP::STORE_NAME>(index);
-        }
+        Emit<OP::STORE_NAME>(index);
       }
     }
     {
