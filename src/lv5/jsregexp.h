@@ -11,7 +11,7 @@
 #include "lv5/jsstring.h"
 #include "lv5/jsregexp_impl.h"
 #include "lv5/context_utils.h"
-#include "lv5/matchresult.h"
+#include "lv5/match_result.h"
 #include "lv5/bind.h"
 namespace iv {
 namespace lv5 {

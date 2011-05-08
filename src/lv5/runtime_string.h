@@ -11,7 +11,7 @@
 #include "conversions.h"
 #include "lv5/lv5.h"
 #include "lv5/arguments.h"
-#include "lv5/matchresult.h"
+#include "lv5/match_result.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsstring.h"
