@@ -5,7 +5,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
 #include "lv5/arguments.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/lv5.h"
 #include "lv5/jsfunction.h"
 #include "lv5/teleporter/fwd.h"

@@ -4,7 +4,7 @@
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "utils.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"

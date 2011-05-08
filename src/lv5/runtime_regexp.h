@@ -11,9 +11,6 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace detail {
-
-}  // namespace iv::lv5::runtime::detail
 
 inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   const uint32_t args_count = args.size();

@@ -7,7 +7,7 @@
 #include "location.h"
 #include "ustringpiece.h"
 #include "lv5/context_utils.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 
 namespace iv {
 namespace lv5 {

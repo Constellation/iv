@@ -21,7 +21,7 @@ namespace detail {
 
 static const std::string kInteractiveOrigin = "(shell)";
 
-}  // namespace iv::lv5::detail
+}  // namespace detail
 
 
 class Interactive {

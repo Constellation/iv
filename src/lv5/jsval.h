@@ -174,7 +174,7 @@ static const uint32_t kUInt32Tag      = 0xfffffff0;
 
 struct UInt32Tag { };
 
-}  // namespace iv::lv5::detail
+}  // namespace detail
 
 typedef bool (*JSTrueKeywordType)(JSVal, detail::JSTrueType);
 typedef bool (*JSFalseKeywordType)(JSVal, detail::JSFalseType);

@@ -12,7 +12,7 @@
 #include "lv5/property.h"
 #include "lv5/class.h"
 #include "lv5/runtime.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/jserror.h"
 #include "lv5/bind.h"
 #include "lv5/internal.h"
@@ -121,7 +121,7 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
   ctx->global_data()->RegisterLiteralRegExp(reg);
 }
 
-}  // namespace iv::lv5::context
+}  // namespace context
 
 Context::Context()
   : global_data_(),

@@ -17,7 +17,7 @@ inline bool IsJSONWhiteSpace(uint16_t c) {
   return (c == ' ' || c == '\n' || c == '\t' || c == '\r');
 }
 
-}  // namespace iv::lv5::detail
+}  // namespace detail
 
 template<typename Source>
 class JSONLexer : private core::Noncopyable<> {

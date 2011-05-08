@@ -19,7 +19,7 @@
 #include "icu/source.h"
 #include "lv5/factory.h"
 #include "lv5/context.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
@@ -139,7 +139,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   return EXIT_SUCCESS;
 }
 
-}  // namespace
+}  // namespace anonymous
 
 int main(int argc, char **argv) {
   iv::lv5::FPU fpu;

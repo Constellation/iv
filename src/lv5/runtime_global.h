@@ -236,7 +236,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
   return builder.Build(ctx);
 }
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("parseInt", args, error);

@@ -20,7 +20,7 @@ namespace detail {
 
 static const std::string kFunctionPrefix("function ");
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
   CONSTRUCTOR_CHECK("Function.prototype", args, e);

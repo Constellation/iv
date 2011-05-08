@@ -20,7 +20,6 @@
 #include "lv5/jsenv.h"
 #include "lv5/jsarray.h"
 #include "lv5/context.h"
-#include "lv5/jsast.h"
 #include "lv5/internal.h"
 #include "lv5/teleporter/interpreter.h"
 #include "lv5/teleporter/context.h"

@@ -43,7 +43,7 @@ struct HashSet {
                                   traceable_allocator<T> > type;
 };
 
-}  // namespace iv::lv5::gc
+}  // namespace trace
 
 template<typename T>
 struct GCVector {

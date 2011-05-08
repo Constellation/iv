@@ -38,7 +38,7 @@ static const char* kJSONNullStringPtr = "null";
 static const core::UString kJSONNullString(kJSONNullStringPtr,
                                            kJSONNullStringPtr+4);
 
-}  // namespace iv::lv5::detail
+}  // namespace detail
 
 class JSONStringifier : private core::Noncopyable<> {
  public:

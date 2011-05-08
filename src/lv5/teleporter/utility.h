@@ -3,7 +3,7 @@
 #include <tr1/memory>
 #include "parser.h"
 #include "lv5/factory.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/error.h"

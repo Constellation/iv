@@ -15,7 +15,7 @@ namespace detail {
 
 static const double kMathInfinity = std::numeric_limits<double>::infinity();
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 inline JSVal MathAbs(const Arguments& args, Error* error) {
   CONSTRUCTOR_CHECK("Math.abs", args, error);

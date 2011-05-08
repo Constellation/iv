@@ -8,7 +8,7 @@ namespace detail {
 
 static const std::string kEvalSource = "(eval)";
 
-}  // namespace iv::lv5::detail
+}  // namespace detail
 
 class EvalSource : public core::Noncopyable<> {
  public:

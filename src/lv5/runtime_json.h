@@ -89,7 +89,7 @@ class PropertyListEqual {
   const T& target_;
 };
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 // section 15.12.2 parse(text[, reviver])
 inline JSVal JSONParse(const Arguments& args, Error* e) {

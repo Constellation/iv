@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSAST_H_
-#define _IV_LV5_JSAST_H_
+#ifndef _IV_LV5_SPECIALIZED_AST_H_
+#define _IV_LV5_SPECIALIZED_AST_H_
 #include <vector>
 #include <cassert>
 #include "uchar.h"
@@ -17,7 +17,7 @@ namespace context {
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
-} }  // namespace iv::lv5
+} }  // namespace lv5::context
 namespace core {
 namespace ast {
 
@@ -59,7 +59,7 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   iv::lv5::JSRegExpImpl* regexp_;
 };
 
-} }  // namespace iv::core::ast
+} }  // namespace core::ast
 namespace lv5 {
 class AstFactory;
 #define V(AST) typedef core::ast::AST<AstFactory> AST;
@@ -74,4 +74,4 @@ class AstFactory;
 typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSAST_H_
+#endif  // _IV_LV5_SPECIALIZED_AST_H_

@@ -51,7 +51,7 @@ inline void DefinePropertiesImpl(Context* ctx,
   }
 }
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 // section 15.2.1.1 Object([value])
 // section 15.2.2.1 new Object([value])

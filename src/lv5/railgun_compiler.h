@@ -6,7 +6,7 @@
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "static_assert.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsregexp.h"

@@ -32,7 +32,7 @@ static inline JSString* ErrorMessageString(const Arguments& args,
   }
 }
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 // section 15.11.1.1 Error(message)
 // section 15.11.2.1 new Error(message)

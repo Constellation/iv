@@ -32,7 +32,7 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
   return (*lhs_str < *rhs_str) ? -1.0 : 1.0;
 }
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 // section 15.4.1.1 Array([item0 [, item1 [, ...]]])
 // section 15.4.2.1 new Array([item0 [, item1 [, ...]]])

@@ -2,7 +2,7 @@
 #define _IV_LV5_JSSCRIPT_H_
 #include <tr1/memory>
 #include "lv5/jsscript.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "icu/source.h"
 #include "lv5/eval_source.h"
 namespace iv {

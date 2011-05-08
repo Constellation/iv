@@ -11,7 +11,7 @@
 #include "lv5/jsfunction.h"
 #include "lv5/class.h"
 #include "lv5/error.h"
-#include "lv5/jsast.h"
+#include "lv5/specialized_ast.h"
 #include "lv5/global_data.h"
 #include "lv5/context_utils.h"
 #include "lv5/stack_resource.h"
@@ -23,7 +23,7 @@ namespace runtime {
 
 JSVal ThrowTypeError(const Arguments& args, Error* error);
 
-}  // namespace iv::lv5::runtime
+}  // namespace runtime
 
 class SymbolChecker;
 class JSEnv;

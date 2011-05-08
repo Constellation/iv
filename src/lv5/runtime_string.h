@@ -425,7 +425,7 @@ inline void ReplaceOnce(Builder* builder,
   }
 }
 
-}  // namespace iv::lv5::runtime::detail
+}  // namespace detail
 
 // section 15.5.1
 inline JSVal StringConstructor(const Arguments& args, Error* error) {
