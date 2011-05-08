@@ -6,6 +6,7 @@
 #include <tr1/cinttypes>
 #include "conversions.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -36,7 +37,7 @@ inline JSVal NumberConstructor(const Arguments& args, Error* error) {
 
 // section 15.7.4.2 Number.prototype.toString([radix])
 inline JSVal NumberToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.toString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
@@ -96,7 +97,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
 
 // section 15.7.4.2 Number.prototype.toLocaleString()
 inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, error);
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
@@ -120,7 +121,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
 
 // section 15.7.4.4 Number.prototype.valueOf()
 inline JSVal NumberValueOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   if (!obj.IsNumber()) {
     if (obj.IsObject() &&
@@ -138,7 +139,7 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
 
 // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
 inline JSVal NumberToFixed(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.toFixed", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toFixed", args, error);
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
   double fd;
@@ -187,7 +188,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
 
 // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
 inline JSVal NumberToExponential(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, error);
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
 
@@ -247,7 +248,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
 
 // section 15.7.4.7 Number.prototype.toPrecision(precision)
 inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, error);
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
 

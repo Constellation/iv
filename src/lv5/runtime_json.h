@@ -3,6 +3,7 @@
 #include <vector>
 #include "conversions.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -93,7 +94,7 @@ class PropertyListEqual {
 
 // section 15.12.2 parse(text[, reviver])
 inline JSVal JSONParse(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("JSON.parse", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("JSON.parse", args, e);
   const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
   JSVal first;
@@ -120,7 +121,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
 
 // section 15.12.3 stringify(value[, replacer[, space]])
 inline JSVal JSONStringify(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("JSON.stringify", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("JSON.stringify", args, e);
   const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
   JSVal value, replacer, space;

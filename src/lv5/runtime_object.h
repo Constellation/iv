@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <tr1/array>
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
@@ -93,7 +94,7 @@ inline JSVal ObjectConstructor(const Arguments& args, Error* error) {
 
 // section 15.2.3.2 Object.getPrototypeOf(O)
 inline JSVal ObjectGetPrototypeOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.getPrototypeOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.getPrototypeOf", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -113,7 +114,7 @@ inline JSVal ObjectGetPrototypeOf(const Arguments& args, Error* error) {
 // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
 inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
                                             Error* error) {
-  CONSTRUCTOR_CHECK("Object.getOwnPropertyDescriptor", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyDescriptor", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -136,7 +137,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
 
 // section 15.2.3.4 Object.getOwnPropertyNames(O)
 inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.getOwnPropertyNames", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyNames", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -166,7 +167,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
 
 // section 15.2.3.5 Object.create(O[, Properties])
 inline JSVal ObjectCreate(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.create", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.create", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject() || first.IsNull()) {
@@ -191,7 +192,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* error) {
 
 // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
 inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.defineProperty", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperty", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -220,7 +221,7 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
 
 // section 15.2.3.7 Object.defineProperties(O, Properties)
 inline JSVal ObjectDefineProperties(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.defineProperties", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperties", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -243,7 +244,7 @@ inline JSVal ObjectDefineProperties(const Arguments& args, Error* error) {
 
 // section 15.2.3.8 Object.seal(O)
 inline JSVal ObjectSeal(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.seal", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.seal", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -271,7 +272,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
 
 // section 15.2.3.9 Object.freeze(O)
 inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.freeze", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.freeze", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -302,7 +303,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
 
 // section 15.2.3.10 Object.preventExtensions(O)
 inline JSVal ObjectPreventExtensions(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.preventExtensions", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.preventExtensions", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -318,7 +319,7 @@ inline JSVal ObjectPreventExtensions(const Arguments& args, Error* error) {
 
 // section 15.2.3.11 Object.isSealed(O)
 inline JSVal ObjectIsSealed(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.isSealed", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.isSealed", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -343,7 +344,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* error) {
 
 // section 15.2.3.12 Object.isFrozen(O)
 inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.isFrozen", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.isFrozen", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -373,7 +374,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* error) {
 
 // section 15.2.3.13 Object.isExtensible(O)
 inline JSVal ObjectIsExtensible(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.isExtensible", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.isExtensible", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -388,7 +389,7 @@ inline JSVal ObjectIsExtensible(const Arguments& args, Error* error) {
 
 // section 15.2.3.14 Object.keys(O)
 inline JSVal ObjectKeys(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.keys", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.keys", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -419,7 +420,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
 
 // section 15.2.4.2 Object.prototype.toString()
 inline JSVal ObjectToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, error);
   const JSVal& this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
     return JSString::NewAsciiString(args.ctx(), "[object Undefined]");
@@ -437,7 +438,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
 
 // section 15.2.4.3 Object.prototype.toLocaleString()
 inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, e);
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   Context* const ctx = args.ctx();
   const JSVal toString = obj->Get(ctx,
@@ -452,7 +453,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
 
 // section 15.2.4.4 Object.prototype.valueOf()
 inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, e);
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   if (obj->IsNativeObject()) {
     return obj;
@@ -466,7 +467,7 @@ inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
 
 // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
 inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, error);
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* const ctx = args.ctx();
@@ -485,7 +486,7 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
 
 // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
 inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.isPrototypeOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.isPrototypeOf", args, error);
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
@@ -506,7 +507,7 @@ inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* error) {
 
 // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
 inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, error);
   Symbol name;
   if (args.size() > 0) {
     const JSString* const str = args[0].ToString(args.ctx(), ERROR(error));

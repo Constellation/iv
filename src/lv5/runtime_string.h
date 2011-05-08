@@ -10,6 +10,7 @@
 #include "character.h"
 #include "conversions.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/match_result.h"
 #include "lv5/jsval.h"
@@ -157,7 +158,8 @@ class Replacer : private core::Noncopyable<> {
       if (!get<2>(res)) {
         break;
       }
-      builder->Append(str_->begin() + not_matched_index, str_->begin() + get<0>(res));
+      builder->Append(str_->begin() + not_matched_index,
+                      str_->begin() + get<0>(res));
       const int this_index = get<1>(res);
       not_matched_index = this_index;
       if (previous_index == this_index) {
@@ -287,7 +289,7 @@ class StringReplacer : public Replacer<StringReplacer> {
         assert(state == Replace::kDigitZero);
         if (core::character::IsDecimalDigit(ch)) {
           const std::size_t n =
-              core::Radix36Value(upper_digit_char) * 10 + core::Radix36Value(ch);
+              core::Radix36Value(upper_digit_char)*10 + core::Radix36Value(ch);
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
@@ -448,7 +450,7 @@ inline JSVal StringConstructor(const Arguments& args, Error* error) {
 
 // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
 inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("String.fromCharCode", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.fromCharCode", args, e);
   Context* const ctx = args.ctx();
   StringBuilder builder;
   for (Arguments::const_iterator it = args.begin(),
@@ -461,7 +463,7 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
 
 // section 15.5.4.2 String.prototype.toString()
 inline JSVal StringToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.toString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toString", args, error);
   return detail::StringToStringValueOfImpl(
       args, error,
       "String.prototype.toString is not generic function");
@@ -469,7 +471,7 @@ inline JSVal StringToString(const Arguments& args, Error* error) {
 
 // section 15.5.4.3 String.prototype.valueOf()
 inline JSVal StringValueOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.valueOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.valueOf", args, error);
   return detail::StringToStringValueOfImpl(
       args, error,
       "String.prototype.valueOf is not generic function");
@@ -477,7 +479,7 @@ inline JSVal StringValueOf(const Arguments& args, Error* error) {
 
 // section 15.5.4.4 String.prototype.charAt(pos)
 inline JSVal StringCharAt(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.charAt", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charAt", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -500,7 +502,7 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
 
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
 inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -522,7 +524,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
 
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
 inline JSVal StringConcat(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.concat", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.concat", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -537,7 +539,7 @@ inline JSVal StringConcat(const Arguments& args, Error* error) {
 
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
 inline JSVal StringIndexOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.indexOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -563,7 +565,7 @@ inline JSVal StringIndexOf(const Arguments& args, Error* error) {
 
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
 inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -594,7 +596,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
 
 // section 15.5.4.9 String.prototype.localeCompare(that)
 inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -610,7 +612,7 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
 
 // section 15.5.4.10 String.prototype.match(regexp)
 inline JSVal StringMatch(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("String.prototype.match", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.match", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
@@ -642,7 +644,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
 
 // section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
 inline JSVal StringReplace(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
@@ -722,7 +724,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
 
 // section 15.5.4.12 String.prototype.search(regexp)
 inline JSVal StringSearch(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("String.prototype.search", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.search", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
@@ -731,8 +733,9 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
   JSRegExp* regexp;
   if (args_count == 0) {
     regexp = JSRegExp::New(ctx);
-  } else if (args[0].IsObject() &&
-             (args[0].object()->class_name() == context::Intern(ctx, "RegExp"))) {
+  } else if (
+      args[0].IsObject() &&
+      (args[0].object()->class_name() == context::Intern(ctx, "RegExp"))) {
     regexp = JSRegExp::New(
         ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
@@ -759,7 +762,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
 
 // section 15.5.4.13 String.prototype.slice(start, end)
 inline JSVal StringSlice(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   Context* const ctx = args.ctx();
@@ -802,7 +805,7 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
 // section 15.5.4.14 String.prototype.split(separator, limit)
 inline JSVal StringSplit(const Arguments& args, Error* e) {
   using std::tr1::get;
-  CONSTRUCTOR_CHECK("String.prototype.split", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.split", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(e));
   Context* const ctx = args.ctx();
@@ -943,7 +946,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 
 // section 15.5.4.15 String.prototype.substring(start, end)
 inline JSVal StringSubstring(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   Context* const ctx = args.ctx();
@@ -981,7 +984,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
 
 // section 15.5.4.16 String.prototype.toLowerCase()
 inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -995,7 +998,7 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
 
 // section 15.5.4.17 String.prototype.toLocaleLowerCase()
 inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -1009,7 +1012,7 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
 
 // section 15.5.4.18 String.prototype.toUpperCase()
 inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -1023,7 +1026,7 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
 
 // section 15.5.4.19 String.prototype.toLocaleUpperCase()
 inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -1037,7 +1040,7 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
 
 // section 15.5.4.20 String.prototype.trim()
 inline JSVal StringTrim(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), ERROR(error));
@@ -1067,7 +1070,7 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
 // section B.2.3 String.prototype.substr(start, length)
 // this method is deprecated.
 inline JSVal StringSubstr(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("String.prototype.substr", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substr", args, e);
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), ERROR(e));

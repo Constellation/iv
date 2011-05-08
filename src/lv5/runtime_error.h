@@ -4,6 +4,7 @@
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -43,7 +44,7 @@ inline JSVal ErrorConstructor(const Arguments& args, Error* error) {
 
 // section 15.11.4.4 Error.prototype.toString()
 inline JSVal ErrorToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Error.prototype.toString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Error.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   Context* const ctx = args.ctx();
   if (obj.IsObject()) {

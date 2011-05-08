@@ -6,6 +6,7 @@
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/jsfunction.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -23,14 +24,14 @@ static const std::string kFunctionPrefix("function ");
 }  // namespace detail
 
 inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Function.prototype", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype", args, e);
   return JSUndefined;
 }
 
 
 // section 15.3.4.2 Function.prototype.toString()
 inline JSVal FunctionToString(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
@@ -52,7 +53,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
 
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
 inline JSVal FunctionApply(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
@@ -107,7 +108,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
 
 // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
 inline JSVal FunctionCall(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
@@ -130,7 +131,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
 
 // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
 inline JSVal FunctionBind(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Function.prototype.bind", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     const std::size_t args_size = args.size();

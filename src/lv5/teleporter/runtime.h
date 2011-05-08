@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/context.h"
 #include "lv5/teleporter/utility.h"
@@ -11,7 +12,7 @@ namespace teleporter {
 
 // GlobalEval is InDirectCallToEval
 inline JSVal GlobalEval(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("eval", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("eval", args, e);
   if (!args.size()) {
     return JSUndefined;
   }
@@ -45,7 +46,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("eval", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("eval", args, e);
   if (!args.size()) {
     return JSUndefined;
   }

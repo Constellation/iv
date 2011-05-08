@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_REGEXP_H_
 #define _IV_LV5_RUNTIME_REGEXP_H_
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/context.h"
@@ -57,7 +58,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
 
 // section 15.10.6.2 RegExp.prototype.exec(string)
 inline JSVal RegExpExec(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() &&
@@ -78,7 +79,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
 
 // section 15.10.6.3 RegExp.prototype.test(string)
 inline JSVal RegExpTest(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() &&
@@ -100,7 +101,7 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
 
 // section 15.10.6.4 RegExp.prototype.toString()
 inline JSVal RegExpToString(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() &&

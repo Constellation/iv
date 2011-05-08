@@ -2,6 +2,7 @@
 #define _IV_LV5_RUNTIME_ARRAY_H_
 #include "conversions.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/internal.h"
 #include "lv5/jsval.h"
@@ -95,7 +96,7 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
 
 // section 15.4.4.2 Array.prototype.toString()
 inline JSVal ArrayToString(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
   JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
   const JSVal join = obj->Get(args.ctx(),
                               context::Intern(args.ctx(), "join"), ERROR(e));
@@ -111,7 +112,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
 
 // section 15.4.4.3 Array.prototype.toLocaleString()
 inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, e);
   Context* const ctx = args.ctx();
   JSObject* const array = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, array, ERROR(e));
@@ -168,7 +169,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
 inline JSVal ArrayConcat(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.concat", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.concat", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
@@ -245,7 +246,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
 
 // section 15.4.4.5 Array.prototype.join(separator)
 inline JSVal ArrayJoin(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.join", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.join", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -284,7 +285,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
 
 // section 15.4.4.6 Array.prototype.pop()
 inline JSVal ArrayPop(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.pop", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.pop", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -304,7 +305,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
 
 // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
 inline JSVal ArrayPush(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const JSVal length = obj->Get(
@@ -345,7 +346,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
 
 // section 15.4.4.8 Array.prototype.reverse()
 inline JSVal ArrayReverse(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.reverse", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reverse", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -380,7 +381,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
 
 // section 15.4.4.9 Array.prototype.shift()
 inline JSVal ArrayShift(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.shift", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.shift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -409,7 +410,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
 
 // section 15.4.4.10 Array.prototype.slice(start, end)
 inline JSVal ArraySlice(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.slice", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.slice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
@@ -461,7 +462,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
 // section 15.4.4.11 Array.prototype.sort(comparefn)
 // non recursive quick sort
 inline JSVal ArraySort(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.sort", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.sort", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -709,7 +710,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
 // section 15.4.4.12
 // Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])
 inline JSVal ArraySplice(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   JSArray* const ary = JSArray::New(ctx);
@@ -800,7 +801,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
 
 // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
 inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.unshift", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.unshift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -836,7 +837,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
 
 // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
 inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -886,7 +887,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
 
 // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
 inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -942,7 +943,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
 
 // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
 inline JSVal ArrayEvery(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.every", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.every", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -978,7 +979,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
 
 // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
 inline JSVal ArraySome(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.some", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.some", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -1014,7 +1015,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
 
 // section 15.4.4.18 Array.prototype.forEach(callbackfn[, thisArg])
 inline JSVal ArrayForEach(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.forEach", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.forEach", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -1044,7 +1045,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
 
 // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
 inline JSVal ArrayMap(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.map", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.map", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -1086,7 +1087,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
 
 // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
 inline JSVal ArrayFilter(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.filter", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.filter", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -1133,7 +1134,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
 
 // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
 inline JSVal ArrayReduce(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.reduce", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reduce", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));
@@ -1195,7 +1196,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
 
 // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
 inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, ERROR(e));

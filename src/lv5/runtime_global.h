@@ -7,6 +7,7 @@
 #include "conversions.h"
 #include "unicode.h"
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
@@ -239,7 +240,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
 }  // namespace detail
 
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("parseInt", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("parseInt", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     int radix = 0;
@@ -268,7 +269,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
 
 // section 15.1.2.3 parseFloat(string)
 inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("parseFloat", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
     return core::StringToDouble(str->value(), true);
@@ -279,7 +280,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
 
 // section 15.1.2.4 isNaN(number)
 inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("isNaN", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), ERROR(error));
     if (std::isnan(number)) {
@@ -294,7 +295,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
 
 // section 15.1.2.5 isFinite(number)
 inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("isFinite", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), ERROR(error));
     return JSVal::Bool(std::isfinite(number));
@@ -306,7 +307,7 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
 // section 15.1.3 URI Handling Function Properties
 // section 15.1.3.1 decodeURI(encodedURI)
 inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("decodeURI", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -318,7 +319,7 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
 
 // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
 inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -331,7 +332,7 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
 
 // section 15.1.3.3 encodeURI(uri)
 inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -343,7 +344,7 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
 
 // section 15.1.3.4 encodeURIComponent(uriComponent)
 inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("encodeURI", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), ERROR(error));
@@ -362,7 +363,7 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
 // section B.2.1 escape(string)
 // this method is deprecated.
 inline JSVal GlobalEscape(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("escape", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("escape", args, e);
   Context* const ctx = args.ctx();
   JSString* str = args.At(0).ToString(ctx, ERROR(e));
   const std::size_t len = str->size();
@@ -401,7 +402,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
 // section B.2.2 unescape(string)
 // this method is deprecated.
 inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
-  CONSTRUCTOR_CHECK("unescape", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("unescape", args, e);
   Context* const ctx = args.ctx();
   JSString* str = args.At(0).ToString(ctx, ERROR(e));
   const std::size_t len = str->size();

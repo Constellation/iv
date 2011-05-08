@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_BOOLEAN_H_
 #define _IV_LV5_RUNTIME_BOOLEAN_H_
 #include "lv5/lv5.h"
+#include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -35,7 +36,7 @@ inline JSVal BooleanConstructor(const Arguments& args, Error* error) {
 
 // section 15.6.4.2 Boolean.prototype.toString()
 inline JSVal BooleanToString(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, error);
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
@@ -55,7 +56,7 @@ inline JSVal BooleanToString(const Arguments& args, Error* error) {
 
 // section 15.6.4.3 Boolean.prototype.valueOf()
 inline JSVal BooleanValueOf(const Arguments& args, Error* error) {
-  CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, error);
+  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
