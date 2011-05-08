@@ -2,7 +2,7 @@
 #define _IV_LV5_RUNTIME_JSON_H_
 #include <vector>
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -30,19 +30,19 @@ inline JSVal ParseJSON(Context* ctx, const JSString& str, Error* e) {
 
 inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                       Symbol name, JSFunction* reviver, Error* e) {
-  const JSVal val = holder->Get(ctx, name, ERROR(e));
+  const JSVal val = holder->Get(ctx, name, IV_LV5_ERROR(e));
   if (val.IsObject()) {
     JSObject* const obj = val.object();
     if (ctx->IsArray(*obj)) {
       JSArray* const ary = static_cast<JSArray*>(obj);
-      const uint32_t len = internal::GetLength(ctx, ary, ERROR(e));
+      const uint32_t len = internal::GetLength(ctx, ary, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
         const JSVal new_element = JSONWalk(ctx,
                                            ary,
                                            context::Intern(ctx, i),
-                                           reviver, ERROR(e));
+                                           reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          ary->DeleteWithIndex(ctx, i, false, ERROR(e));
+          ary->DeleteWithIndex(ctx, i, false, IV_LV5_ERROR(e));
         } else {
           ary->DefineOwnPropertyWithIndex(
               ctx, i,
@@ -50,7 +50,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, ERROR(e));
+              false, IV_LV5_ERROR(e));
         }
       }
     } else {
@@ -58,9 +58,9 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       obj->GetOwnPropertyNames(ctx, &keys, JSObject::kExcludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        const JSVal new_element = JSONWalk(ctx, obj, *it, reviver, ERROR(e));
+        const JSVal new_element = JSONWalk(ctx, obj, *it, reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          obj->Delete(ctx, *it, false, ERROR(e));
+          obj->Delete(ctx, *it, false, IV_LV5_ERROR(e));
         } else {
           obj->DefineOwnProperty(
               ctx, *it,
@@ -68,12 +68,12 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, ERROR(e));
+              false, IV_LV5_ERROR(e));
         }
       }
     }
   }
-  ScopedArguments args_list(ctx, 2, ERROR(e));
+  ScopedArguments args_list(ctx, 2, IV_LV5_ERROR(e));
   args_list[0] = ctx->ToString(name);
   args_list[1] = val;
   return reviver->Call(&args_list, holder, e);
@@ -101,8 +101,8 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
   if (args_size > 0) {
     first = args[0];
   }
-  const JSString* const text = first.ToString(ctx, ERROR(e));
-  const JSVal result = detail::ParseJSON(ctx, *text, ERROR(e));
+  const JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
+  const JSVal result = detail::ParseJSON(ctx, *text, IV_LV5_ERROR(e));
   if (args_size > 1 && args[1].IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
     const Symbol empty = context::Intern(ctx, "");
@@ -112,7 +112,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
                        PropertyDescriptor::CONFIGURABLE),
-        false, ERROR(e));
+        false, IV_LV5_ERROR(e));
     return detail::JSONWalk(ctx, root, empty,
                             args[1].object()->AsCallable(), e);
   }
@@ -144,19 +144,19 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       replacer_function = rep->AsCallable();
     } else if (ctx->IsArray(*rep)) {  // 4-b
       maybe = &property_list;
-      const uint32_t len = internal::GetLength(ctx, rep, ERROR(e));
+      const uint32_t len = internal::GetLength(ctx, rep, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
-        const JSVal v = rep->GetWithIndex(ctx, i, ERROR(e));
+        const JSVal v = rep->GetWithIndex(ctx, i, IV_LV5_ERROR(e));
         JSString* item = NULL;
         if (v.IsString()) {
           item = v.string();
         } else if (v.IsNumber()) {
-          item = v.ToString(ctx, ERROR(e));
+          item = v.ToString(ctx, IV_LV5_ERROR(e));
         } else if (v.IsObject()) {
           JSObject* target = v.object();
           if (target->class_name() == context::Intern(ctx, "String") ||
               target->class_name() == context::Intern(ctx, "Number")) {
-            item = v.ToString(ctx, ERROR(e));
+            item = v.ToString(ctx, IV_LV5_ERROR(e));
           }
         }
         if (item) {
@@ -176,9 +176,9 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   if (space.IsObject()) {
     JSObject* const target = space.object();
     if (target->class_name() == context::Intern(ctx, "Number")) {
-      space = space.ToNumber(ctx, ERROR(e));
+      space = space.ToNumber(ctx, IV_LV5_ERROR(e));
     } else if (target->class_name() == context::Intern(ctx, "String")) {
-      space = space.ToString(ctx, ERROR(e));
+      space = space.ToString(ctx, IV_LV5_ERROR(e));
     }
   }
 
@@ -209,7 +209,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       DataDescriptor(value,
                      PropertyDescriptor::WRITABLE |
                      PropertyDescriptor::ENUMERABLE |
-                     PropertyDescriptor::CONFIGURABLE), false, ERROR(e));
+                     PropertyDescriptor::CONFIGURABLE), false, IV_LV5_ERROR(e));
   JSONStringifier stringifier(ctx, replacer_function, gap, maybe);
   return stringifier.Stringify(empty, wrapper, e);
 }

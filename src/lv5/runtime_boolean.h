@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_BOOLEAN_H_
 #define _IV_LV5_RUNTIME_BOOLEAN_H_
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -17,12 +17,12 @@ inline JSVal BooleanConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     bool res = false;
     if (args.size() > 0) {
-      res = args[0].ToBoolean(ERROR(error));
+      res = args[0].ToBoolean(IV_LV5_ERROR(error));
     }
     return JSBooleanObject::New(args.ctx(), res);
   } else {
     if (args.size() > 0) {
-      const bool res = args[0].ToBoolean(ERROR(error));
+      const bool res = args[0].ToBoolean(IV_LV5_ERROR(error));
       if (res) {
         return JSTrue;
       } else {

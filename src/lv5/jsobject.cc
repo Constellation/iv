@@ -9,7 +9,7 @@
 #include "lv5/jsenv.h"
 #include "lv5/context.h"
 #include "lv5/class.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 
 namespace iv {
 namespace lv5 {
@@ -48,7 +48,7 @@ JSObject::JSObject(JSObject* proto,
   } while (0)
 JSVal JSObject::DefaultValue(Context* ctx,
                              Hint::Object hint, Error* e) {
-  ScopedArguments args(ctx, 0, ERROR(e));
+  ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
     TRY(ctx, context::toString_symbol(ctx), args, e);
@@ -76,7 +76,7 @@ JSVal JSObject::Get(Context* ctx,
     assert(desc.IsAccessorDescriptor());
     JSObject* const getter = desc.AsAccessorDescriptor()->get();
     if (getter) {
-      ScopedArguments a(ctx, 0, ERROR(e));
+      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
       return getter->AsCallable()->Call(&a, this, e);
     } else {
       return JSUndefined;
@@ -289,7 +289,7 @@ void JSObject::Put(Context* ctx,
   if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     assert(accs->set());
-    ScopedArguments args(ctx, 1, ERROR_VOID(e));
+    ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
     args[0] = val;
     accs->set()->AsCallable()->Call(&args, this, e);
   } else {

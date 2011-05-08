@@ -3,7 +3,7 @@
 #include "conversions.h"
 #include "ustring.h"
 #include "ustringpiece.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -24,7 +24,7 @@ static inline JSString* ErrorMessageString(const Arguments& args,
   if (args.size() > 0) {
     const JSVal& msg = args[0];
     if (!msg.IsUndefined()) {
-      return msg.ToString(args.ctx(), ERROR_WITH(error, NULL));
+      return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(error, NULL));
     } else {
       return NULL;
     }
@@ -38,7 +38,7 @@ static inline JSString* ErrorMessageString(const Arguments& args,
 // section 15.11.1.1 Error(message)
 // section 15.11.2.1 new Error(message)
 inline JSVal ErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::New(args.ctx(), Error::User, message);
 }
 
@@ -52,22 +52,22 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     {
       const JSVal target = obj.object()->Get(ctx,
                                              context::Intern(ctx, "name"),
-                                             ERROR(error));
+                                             IV_LV5_ERROR(error));
       if (target.IsUndefined()) {
         name = JSString::NewAsciiString(ctx, "Error");
       } else {
-        name = target.ToString(ctx, ERROR(error));
+        name = target.ToString(ctx, IV_LV5_ERROR(error));
       }
     }
     JSString* msg;
     {
       const JSVal target = obj.object()->Get(ctx,
                                              context::Intern(ctx, "message"),
-                                             ERROR(error));
+                                             IV_LV5_ERROR(error));
       if (target.IsUndefined()) {
         msg = JSString::NewEmptyString(ctx);
       } else {
-        msg = target.ToString(ctx, ERROR(error));
+        msg = target.ToString(ctx, IV_LV5_ERROR(error));
       }
     }
     if (name->empty() && msg->empty()) {
@@ -91,37 +91,37 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
 
 // section 15.11.6.1 EvalError
 inline JSVal EvalErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewEvalError(args.ctx(), message);
 }
 
 // section 15.11.6.2 RangeError
 inline JSVal RangeErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewRangeError(args.ctx(), message);
 }
 
 // section 15.11.6.3 ReferenceError
 inline JSVal ReferenceErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewReferenceError(args.ctx(), message);
 }
 
 // section 15.11.6.4 SyntaxError
 inline JSVal SyntaxErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewSyntaxError(args.ctx(), message);
 }
 
 // section 15.11.6.5 TypeError
 inline JSVal TypeErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewTypeError(args.ctx(), message);
 }
 
 // section 15.11.6.6 URIError
 inline JSVal URIErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, ERROR(error));
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
   return JSError::NewURIError(args.ctx(), message);
 }
 

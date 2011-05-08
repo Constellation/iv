@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_INTERNAL_H_
 #define _IV_LV5_INTERNAL_H_
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/factory.h"
 #include "lv5/property.h"
 #include "lv5/jsstring.h"
@@ -89,8 +89,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 3
     const Symbol sym = context::Intern(ctx, "enumerable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, ERROR(error));
-      const bool enumerable = r.ToBoolean(ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      const bool enumerable = r.ToBoolean(IV_LV5_ERROR(error));
       if (enumerable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
             PropertyDescriptor::ENUMERABLE;
@@ -103,8 +103,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 4
     const Symbol sym = context::Intern(ctx, "configurable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, ERROR(error));
-      const bool configurable = r.ToBoolean(ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      const bool configurable = r.ToBoolean(IV_LV5_ERROR(error));
       if (configurable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) |
             PropertyDescriptor::CONFIGURABLE;
@@ -117,7 +117,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 5
     const Symbol sym = context::Intern(ctx, "value");
     if (obj->HasProperty(ctx, sym)) {
-      value = obj->Get(ctx, sym, ERROR(error));
+      value = obj->Get(ctx, sym, IV_LV5_ERROR(error));
       attr |= PropertyDescriptor::DATA;
       attr &= ~PropertyDescriptor::UNDEF_VALUE;
     }
@@ -126,8 +126,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 6
     const Symbol sym = context::Intern(ctx, "writable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, ERROR(error));
-      const bool writable = r.ToBoolean(ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      const bool writable = r.ToBoolean(IV_LV5_ERROR(error));
       attr |= PropertyDescriptor::DATA;
       attr &= ~PropertyDescriptor::UNDEF_WRITABLE;
       if (writable) {
@@ -139,7 +139,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 7
     const Symbol sym = context::Intern(ctx, "get");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,
                       "property \"get\" is not callable");
@@ -156,7 +156,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 8
     const Symbol sym = context::Intern(ctx, "set");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,
                       "property \"set\" is not callable");
@@ -217,7 +217,7 @@ inline bool StrictEqual(const JSVal& lhs, const JSVal& rhs) {
 }
 
 #define ABSTRACT_CHECK\
-  ERROR_WITH(error, false)
+  IV_LV5_ERROR_WITH(error, false)
 inline bool AbstractEqual(Context* ctx,
                           const JSVal& lhs, const JSVal& rhs,
                           Error* error) {
@@ -372,7 +372,7 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
     builder->append("(function() { \n})");
   } else if (arg_count == 1) {
     builder->append("(function() { ");
-    JSString* const str = args[0].ToString(ctx, ERROR_VOID(e));
+    JSString* const str = args[0].ToString(ctx, IV_LV5_ERROR_VOID(e));
     builder->append(*str);
     builder->append("\n})");
   } else {
@@ -380,7 +380,7 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
     Arguments::const_iterator it = args.begin();
     const Arguments::const_iterator last = args.end() - 1;
     do {
-      JSString* const str = it->ToString(ctx, ERROR_VOID(e));
+      JSString* const str = it->ToString(ctx, IV_LV5_ERROR_VOID(e));
       builder->append(*str);
       ++it;
       if (it != last) {
@@ -390,7 +390,7 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
       }
     } while (true);
     builder->append(") { ");
-    JSString* const prog = last->ToString(ctx, ERROR_VOID(e));
+    JSString* const prog = last->ToString(ctx, IV_LV5_ERROR_VOID(e));
     builder->append(*prog);
     builder->append("\n})");
   }
@@ -411,7 +411,8 @@ inline void IsOneFunctionExpression(const FunctionLiteral& func, Error* e) {
 
 inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
   const JSVal length = obj->Get(ctx,
-                                context::length_symbol(ctx), ERROR_WITH(e, 0));
+                                context::length_symbol(ctx),
+                                IV_LV5_ERROR_WITH(e, 0));
   return length.ToUInt32(ctx, e);
 }
 

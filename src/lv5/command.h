@@ -3,7 +3,7 @@
 #include <iostream>  // NOLINT
 #include <cstdlib>
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/arguments.h"
@@ -17,7 +17,7 @@ inline JSVal Print(const Arguments& args, Error* e) {
     std::size_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it, ++index) {
-      const JSString* const str = it->ToString(ctx, ERROR(e));
+      const JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
       std::cout << *str << ((index == last_index) ? "\n" : " ");
     }
     std::cout << std::flush;
@@ -28,7 +28,7 @@ inline JSVal Print(const Arguments& args, Error* e) {
 inline JSVal Quit(const Arguments& args, Error* e) {
   int code = 0;
   if (args.size() > 0) {
-    const double val = args[0].ToNumber(args.ctx(), ERROR(e));
+    const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
     code = core::DoubleToInt32(val);
   }
   std::exit(code);

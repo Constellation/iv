@@ -8,7 +8,7 @@
 #include "noncopyable.h"
 #include "conversions.h"
 #include "ustring.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/property.h"
 #include "lv5/jsval.h"
 #include "lv5/jsarray.h"
@@ -131,7 +131,7 @@ class JSONStringifier : private core::Noncopyable<> {
   }
 
   JSVal JO(JSObject* value, Error* e) {
-    CyclicCheck(value, ERROR(e));
+    CyclicCheck(value, IV_LV5_ERROR(e));
     detail::JSONStackScope scope(&stack_, value);
     const core::UString stepback = indent_;
     indent_.append(gap_);
@@ -156,10 +156,10 @@ class JSONStringifier : private core::Noncopyable<> {
       const JSVal result = Str(
           context::Intern(ctx_,
                           core::UStringPiece((*it)->data(), (*it)->size())),
-          value, ERROR(e));
+          value, IV_LV5_ERROR(e));
       if (!result.IsUndefined()) {
         core::UString member;
-        JSString* ret = Quote(**it, ERROR(e));
+        JSString* ret = Quote(**it, IV_LV5_ERROR(e));
         member.append(ret->begin(), ret->end());
         member.push_back(':');
         if (!gap_.empty()) {
@@ -218,16 +218,16 @@ class JSONStringifier : private core::Noncopyable<> {
   }
 
   JSVal JA(JSArray* value, Error* e) {
-    CyclicCheck(value, ERROR(e));
+    CyclicCheck(value, IV_LV5_ERROR(e));
     detail::JSONStackScope scope(&stack_, value);
     const core::UString stepback = indent_;
     indent_.append(gap_);
 
     std::vector<core::UString> partial;
 
-    const uint32_t len = internal::GetLength(ctx_, value, ERROR(e));
+    const uint32_t len = internal::GetLength(ctx_, value, IV_LV5_ERROR(e));
     for (uint32_t index = 0; index < len; ++index) {
-      JSVal str = Str(context::Intern(ctx_, index), value, ERROR(e));
+      JSVal str = Str(context::Intern(ctx_, index), value, IV_LV5_ERROR(e));
       if (str.IsUndefined()) {
         partial.push_back(detail::kJSONNullString);
       } else {
@@ -282,31 +282,31 @@ class JSONStringifier : private core::Noncopyable<> {
   }
 
   JSVal Str(Symbol key, JSObject* holder, Error* e) {
-    JSVal value = holder->Get(ctx_, key, ERROR(e));
+    JSVal value = holder->Get(ctx_, key, IV_LV5_ERROR(e));
     if (value.IsObject()) {
       JSObject* const target = value.object();
       const JSVal method = target->Get(ctx_,
                                        context::Intern(ctx_, "toJSON"),
-                                       ERROR(e));
+                                       IV_LV5_ERROR(e));
       if (method.IsCallable()) {
-        ScopedArguments args_list(ctx_, 1, ERROR(e));
+        ScopedArguments args_list(ctx_, 1, IV_LV5_ERROR(e));
         args_list[0] = ctx_->ToString(key);
-        value =
-            method.object()->AsCallable()->Call(&args_list, target, ERROR(e));
+        value = method.object()->AsCallable()->Call(&args_list, target,
+                                                    IV_LV5_ERROR(e));
       }
     }
     if (replacer_) {
-      ScopedArguments args_list(ctx_, 2, ERROR(e));
+      ScopedArguments args_list(ctx_, 2, IV_LV5_ERROR(e));
       args_list[0] = ctx_->ToString(key);
       args_list[1] = value;
-      value = replacer_->Call(&args_list, holder, ERROR(e));
+      value = replacer_->Call(&args_list, holder, IV_LV5_ERROR(e));
     }
     if (value.IsObject()) {
       JSObject* const target = value.object();
       if (target->class_name() == context::Intern(ctx_, "Number")) {
-        value = value.ToNumber(ctx_, ERROR(e));
+        value = value.ToNumber(ctx_, IV_LV5_ERROR(e));
       } else if (target->class_name() == context::Intern(ctx_, "String")) {
-        value = value.ToString(ctx_, ERROR(e));
+        value = value.ToString(ctx_, IV_LV5_ERROR(e));
       } else if (target->class_name() == context::Intern(ctx_, "Boolean")) {
         value = JSVal::Bool(static_cast<JSBooleanObject*>(target)->value());
       }

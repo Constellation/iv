@@ -2,11 +2,11 @@
 #define _IV_LV5_JSFUNCTION_H_
 #include <algorithm>
 #include "ustringpiece.h"
+#include "lv5/error_check.h"
 #include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
 #include "lv5/arguments.h"
-#include "lv5/lv5.h"
 namespace iv {
 namespace lv5 {
 
@@ -79,7 +79,8 @@ class JSFunction : public JSObject {
   }
 
   virtual core::UStringPiece GetSource() const {
-    static const core::UString kBlock = core::ToUString("() { \"[native code]\" }");
+    static const core::UString kBlock =
+        core::ToUString("() { \"[native code]\" }");
     return kBlock;
   }
 
@@ -175,7 +176,8 @@ class JSBoundFunction : public JSFunction {
 
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     ScopedArguments args_list(args->ctx(),
-                              args->size() + arguments_.size(), ERROR(e));
+                              args->size() + arguments_.size(),
+                              IV_LV5_ERROR(e));
     std::copy(args->begin(), args->end(),
               std::copy(arguments_.begin(),
                         arguments_.end(), args_list.begin()));
@@ -184,7 +186,8 @@ class JSBoundFunction : public JSFunction {
 
   JSVal Construct(Arguments* args, Error* e) {
     ScopedArguments args_list(args->ctx(),
-                              args->size() + arguments_.size(), ERROR(e));
+                              args->size() + arguments_.size(),
+                              IV_LV5_ERROR(e));
     std::copy(args->begin(), args->end(),
               std::copy(arguments_.begin(),
                         arguments_.end(), args_list.begin()));

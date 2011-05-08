@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_REGEXP_H_
 #define _IV_LV5_RUNTIME_REGEXP_H_
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -37,14 +37,14 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
     if (first.IsUndefined()) {
       pattern = JSString::NewEmptyString(ctx);
     } else {
-      pattern = args[0].ToString(ctx, ERROR(e));
+      pattern = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
   }
   JSRegExp* reg;
   if (args_count == 1 || args[1].IsUndefined()) {
     reg = JSRegExp::New(ctx, pattern->piece(), core::UStringPiece());
   } else {
-    JSString* flags = args[1].ToString(ctx, ERROR(e));
+    JSString* flags = args[1].ToString(ctx, IV_LV5_ERROR(e));
     reg = JSRegExp::New(ctx, pattern->piece(), flags->piece());
   }
   if (reg->IsValid()) {
@@ -67,7 +67,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
     if (args.size() == 0) {
       string = JSString::NewAsciiString(ctx, "undefined");
     } else {
-      string = args[0].ToString(ctx, ERROR(e));
+      string = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     return reg->Exec(ctx, string, e);
@@ -88,10 +88,10 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
     if (args.size() == 0) {
       string = JSString::NewAsciiString(ctx, "undefined");
     } else {
-      string = args[0].ToString(ctx, ERROR(e));
+      string = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
-    const JSVal result = reg->Exec(ctx, string, ERROR(e));
+    const JSVal result = reg->Exec(ctx, string, IV_LV5_ERROR(e));
     return JSVal::Bool(!result.IsNull());
   }
   e->Report(Error::Type,

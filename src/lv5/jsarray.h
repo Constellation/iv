@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <tr1/array>
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/gc_template.h"
 #include "lv5/property.h"
 #include "lv5/jsval.h"
@@ -147,7 +147,7 @@ class JSArray : public JSObject {
         }
         DataDescriptor new_len_desc(*data);
         const double new_len_double =
-            new_len_desc.value().ToNumber(ctx, ERROR_WITH(e, false));
+            new_len_desc.value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
         // length must be uint32_t
         const uint32_t new_len = core::DoubleToUInt32(new_len_double);
         if (new_len != new_len_double) {
@@ -182,7 +182,7 @@ class JSArray : public JSObject {
               // see Eratta
               const bool delete_succeeded =
                   JSArray::DeleteWithIndex(ctx, old_len,
-                                           false, ERROR_WITH(e, false));
+                                           false, IV_LV5_ERROR_WITH(e, false));
               if (!delete_succeeded) {
                 new_len_desc.set_value(JSVal::UInt32(old_len + 1));
                 if (!new_writable) {
@@ -190,7 +190,7 @@ class JSArray : public JSObject {
                 }
                 JSObject::DefineOwnProperty(ctx, length_symbol,
                                             new_len_desc,
-                                            false, ERROR_WITH(e, false));
+                                            false, IV_LV5_ERROR_WITH(e, false));
                 REJECT("shrink array failed");
               }
             }
@@ -222,7 +222,7 @@ class JSArray : public JSObject {
                 }
                 JSObject::DefineOwnProperty(ctx, length_symbol,
                                             new_len_desc, false,
-                                            ERROR_WITH(e, false));
+                                            IV_LV5_ERROR_WITH(e, false));
                 REJECT("shrink array failed");
               }
             }
@@ -230,12 +230,13 @@ class JSArray : public JSObject {
           }
         }
         if (!new_writable) {
-          JSObject::DefineOwnProperty(ctx, length_symbol,
-                                      DataDescriptor(
-                                          PropertyDescriptor::WRITABLE |
-                                          PropertyDescriptor::UNDEF_ENUMERABLE |
-                                          PropertyDescriptor::UNDEF_CONFIGURABLE),
-                                      false, e);
+          JSObject::DefineOwnProperty(
+              ctx, length_symbol,
+              DataDescriptor(
+                  PropertyDescriptor::WRITABLE |
+                  PropertyDescriptor::UNDEF_ENUMERABLE |
+                  PropertyDescriptor::UNDEF_CONFIGURABLE),
+              false, e);
         }
         return true;
       } else {
@@ -258,16 +259,18 @@ class JSArray : public JSObject {
         JSArray::GetOwnProperty(ctx, context::length_symbol(ctx));
     DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
     const uint32_t old_len =
-        old_len_desc->value().ToUInt32(ctx, ERROR_WITH(e, false));
+        old_len_desc->value().ToUInt32(ctx, IV_LV5_ERROR_WITH(e, false));
     if (index >= old_len && !old_len_desc->IsWritable()) {
       return false;
     }
 
     // define step
-    const bool descriptor_is_default_property = detail::IsDefaultDescriptor(desc);
+    const bool descriptor_is_default_property =
+        detail::IsDefaultDescriptor(desc);
     if (descriptor_is_default_property &&
         (dense_ ||
-         JSObject::GetOwnProperty(ctx, context::Intern(ctx, index)).IsEmpty())) {
+         JSObject::GetOwnProperty(ctx,
+                                  context::Intern(ctx, index)).IsEmpty())) {
       JSVal target;
       if (desc.IsDataDescriptor()) {
         target = desc.AsDataDescriptor()->value();
@@ -291,7 +294,7 @@ class JSArray : public JSObject {
       const bool succeeded =
           JSObject::DefineOwnProperty(ctx,
                                       context::Intern(ctx, index),
-                                      desc, false, ERROR_WITH(e, false));
+                                      desc, false, IV_LV5_ERROR_WITH(e, false));
       if (succeeded) {
         dense_ = false;
         if (detail::kMaxVectorSize > index) {

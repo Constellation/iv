@@ -6,7 +6,7 @@
 #include "character.h"
 #include "conversions.h"
 #include "unicode.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -242,10 +242,10 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
 inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("parseInt", args, error);
   if (args.size() > 0) {
-    JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     int radix = 0;
     if (args.size() > 1) {
-      const double ret = args[1].ToNumber(args.ctx(), ERROR(error));
+      const double ret = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       radix = core::DoubleToInt32(ret);
     }
     bool strip_prefix = true;
@@ -271,7 +271,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
 inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
-    JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     return core::StringToDouble(str->value(), true);
   } else {
     return JSNaN;
@@ -282,7 +282,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
 inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, error);
   if (args.size() > 0) {
-    const double number = args[0].ToNumber(args.ctx(), ERROR(error));
+    const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     if (std::isnan(number)) {
       return JSTrue;
     } else {
@@ -297,7 +297,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
 inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
-    const double number = args[0].ToNumber(args.ctx(), ERROR(error));
+    const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     return JSVal::Bool(std::isfinite(number));
   } else {
     return JSFalse;
@@ -310,7 +310,7 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
-    uri_string = args[0].ToString(args.ctx(), ERROR(error));
+    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
   } else {
     uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -322,7 +322,7 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
-    component_string = args[0].ToString(args.ctx(), ERROR(error));
+    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -335,7 +335,7 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
   const JSString* uri_string;
   if (args.size() > 0) {
-    uri_string = args[0].ToString(args.ctx(), ERROR(error));
+    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
   } else {
     uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -347,7 +347,7 @@ inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, error);
   const JSString* component_string;
   if (args.size() > 0) {
-    component_string = args[0].ToString(args.ctx(), ERROR(error));
+    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -365,7 +365,7 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
 inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("escape", args, e);
   Context* const ctx = args.ctx();
-  JSString* str = args.At(0).ToString(ctx, ERROR(e));
+  JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   const std::size_t len = str->size();
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::tr1::array<uint16_t, 6> ubuf;
@@ -404,7 +404,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
 inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("unescape", args, e);
   Context* const ctx = args.ctx();
-  JSString* str = args.At(0).ToString(ctx, ERROR(e));
+  JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   const std::size_t len = str->size();
   if (len == 0) {
     return str;  // empty string

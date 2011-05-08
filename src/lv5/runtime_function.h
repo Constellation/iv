@@ -5,7 +5,7 @@
 #include "enable_if.h"
 #include "ustring.h"
 #include "ustringpiece.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/jsfunction.h"
 #include "lv5/arguments.h"
@@ -60,7 +60,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
-      ScopedArguments a(ctx, 0, ERROR(e));
+      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
       if (args_size == 0) {
         return func->Call(&a, JSUndefined, e);
       } else {
@@ -75,14 +75,14 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
     JSObject* const arg_array = second.object();
-    const JSVal length = arg_array->Get(ctx, context::length_symbol(ctx), ERROR(e));
+    const JSVal length = arg_array->Get(ctx, context::length_symbol(ctx), IV_LV5_ERROR(e));
     if (length.IsUndefined() || length.IsNull()) {
       e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
       return JSUndefined;
     }
-    const double temp = length.ToNumber(ctx, ERROR(e));
+    const double temp = length.ToNumber(ctx, IV_LV5_ERROR(e));
     const uint32_t len = core::DoubleToUInt32(temp);
     if (len != temp) {
       e->Report(
@@ -91,12 +91,12 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
 
-    ScopedArguments args_list(ctx, len, ERROR(e));
+    ScopedArguments args_list(ctx, len, IV_LV5_ERROR(e));
     uint32_t index = 0;
     while (index < len) {
         args_list[index] = arg_array->GetWithIndex(
             ctx,
-            index, ERROR(e));
+            index, IV_LV5_ERROR(e));
         ++index;
     }
     return func->Call(&args_list, args[0], e);
@@ -115,7 +115,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
 
-    ScopedArguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, ERROR(e));
+    ScopedArguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, IV_LV5_ERROR(e));
 
     if (args_size > 1) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());

@@ -5,7 +5,7 @@
 #include <string>
 #include <tr1/memory>
 #include <tr1/cstdint>
-#include "lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"
 #include "lv5/jsarray.h"
@@ -770,7 +770,7 @@ class VM {
     return JSEmpty;
   }
 
-#define CHECK ERROR_WITH(e, JSEmpty)
+#define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
   JSVal GetElement(JSVal* stack_pointer,
                    const JSVal& base,

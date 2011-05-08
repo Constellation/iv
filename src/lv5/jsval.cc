@@ -2,7 +2,7 @@
 #include <tr1/array>
 #include "dtoa.h"
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
@@ -67,7 +67,8 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
     return JSString::NewAsciiString(ctx, "undefined");
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::STRING, ERROR_WITH(e, NULL));
+    JSVal prim = object()->DefaultValue(ctx, Hint::STRING,
+                                        IV_LV5_ERROR_WITH(e, NULL));
     return prim.ToString(ctx, e);
   }
 }
@@ -85,7 +86,8 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
     return JSValData::kNaN;
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER, ERROR_WITH(e, 0.0));
+    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,
+                                        IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
   }
 }

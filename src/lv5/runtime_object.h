@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 #include <tr1/array>
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -41,14 +41,14 @@ inline void DefinePropertiesImpl(Context* ctx,
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
     const JSVal desc_obj = props->Get(ctx, *it,
-                                      ERROR_VOID(error));
+                                      IV_LV5_ERROR_VOID(error));
     const PropertyDescriptor desc =
-        internal::ToPropertyDescriptor(ctx, desc_obj, ERROR_VOID(error));
+        internal::ToPropertyDescriptor(ctx, desc_obj, IV_LV5_ERROR_VOID(error));
     descriptors.push_back(std::make_pair(*it, desc));
   }
   for (Descriptors::const_iterator it = descriptors.begin(),
        last = descriptors.end(); it != last; ++it) {
-    obj->DefineOwnProperty(ctx, it->first, it->second, true, ERROR_VOID(error));
+    obj->DefineOwnProperty(ctx, it->first, it->second, true, IV_LV5_ERROR_VOID(error));
   }
 }
 
@@ -121,7 +121,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
       JSObject* const obj = first.object();
       Symbol name;
       if (args.size() > 1) {
-        JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
+        JSString* const str = args[1].ToString(args.ctx(), IV_LV5_ERROR(error));
         name = context::Intern(args.ctx(), str->value());
       } else {
         name = context::Intern(args.ctx(), "undefined");
@@ -155,7 +155,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* error) {
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
-            false, ERROR(error));
+            false, IV_LV5_ERROR(error));
       }
       return ary;
     }
@@ -179,8 +179,8 @@ inline JSVal ObjectCreate(const Arguments& args, Error* error) {
         res->set_prototype(NULL);
       }
       if (args.size() > 1 && !args[1].IsUndefined()) {
-        JSObject* const props = args[1].ToObject(args.ctx(), ERROR(error));
-        detail::DefinePropertiesImpl(args.ctx(), res, props, ERROR(error));
+        JSObject* const props = args[1].ToObject(args.ctx(), IV_LV5_ERROR(error));
+        detail::DefinePropertiesImpl(args.ctx(), res, props, IV_LV5_ERROR(error));
       }
       return res;
     }
@@ -199,7 +199,7 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
       JSObject* const obj = first.object();
       Symbol name;
       if (args.size() > 1) {
-        const JSString* const str = args[1].ToString(args.ctx(), ERROR(error));
+        const JSString* const str = args[1].ToString(args.ctx(), IV_LV5_ERROR(error));
         name = context::Intern(args.ctx(), str->value());
       } else {
         name = context::Intern(args.ctx(), "undefined");
@@ -209,8 +209,8 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* error) {
         attr = args[2];
       }
       const PropertyDescriptor desc =
-          internal::ToPropertyDescriptor(args.ctx(), attr, ERROR(error));
-      obj->DefineOwnProperty(args.ctx(), name, desc, true, ERROR(error));
+          internal::ToPropertyDescriptor(args.ctx(), attr, IV_LV5_ERROR(error));
+      obj->DefineOwnProperty(args.ctx(), name, desc, true, IV_LV5_ERROR(error));
       return obj;
     }
   }
@@ -227,12 +227,12 @@ inline JSVal ObjectDefineProperties(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       if (args.size() > 1) {
-        JSObject* const props = args[1].ToObject(args.ctx(), ERROR(error));
-        detail::DefinePropertiesImpl(args.ctx(), obj, props, ERROR(error));
+        JSObject* const props = args[1].ToObject(args.ctx(), IV_LV5_ERROR(error));
+        detail::DefinePropertiesImpl(args.ctx(), obj, props, IV_LV5_ERROR(error));
         return obj;
       } else {
         // raise TypeError
-        JSVal(JSUndefined).ToObject(args.ctx(), ERROR(error));
+        JSVal(JSUndefined).ToObject(args.ctx(), IV_LV5_ERROR(error));
         return JSUndefined;
       }
     }
@@ -259,7 +259,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* error) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            ctx, *it, desc, true, ERROR(error));
+            ctx, *it, desc, true, IV_LV5_ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -290,7 +290,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* error) {
           desc.set_configurable(false);
         }
         obj->DefineOwnProperty(
-            ctx, *it, desc, true, ERROR(error));
+            ctx, *it, desc, true, IV_LV5_ERROR(error));
       }
       obj->set_extensible(false);
       return obj;
@@ -408,7 +408,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* error) {
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
-            false, ERROR(error));
+            false, IV_LV5_ERROR(error));
       }
       return ary;
     }
@@ -428,7 +428,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
   if (this_binding.IsNull()) {
     return JSString::NewAsciiString(args.ctx(), "[object Null]");
   }
-  JSObject* const obj = this_binding.ToObject(args.ctx(), ERROR(error));
+  JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(error));
   StringBuilder builder;
   builder.Append("[object ");
   builder.Append(context::GetSymbolString(args.ctx(), obj->class_name()));
@@ -439,22 +439,22 @@ inline JSVal ObjectToString(const Arguments& args, Error* error) {
 // section 15.2.4.3 Object.prototype.toLocaleString()
 inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, e);
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   const JSVal toString = obj->Get(ctx,
-                                  context::toString_symbol(ctx), ERROR(e));
+                                  context::toString_symbol(ctx), IV_LV5_ERROR(e));
   if (!toString.IsCallable()) {
     e->Report(Error::Type, "toString is not callable");
     return JSUndefined;
   }
-  ScopedArguments arguments(ctx, 0, ERROR(e));
+  ScopedArguments arguments(ctx, 0, IV_LV5_ERROR(e));
   return toString.object()->AsCallable()->Call(&arguments, obj, e);
 }
 
 // section 15.2.4.4 Object.prototype.valueOf()
 inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, e);
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(e));
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
   if (obj->IsNativeObject()) {
     return obj;
   } else {
@@ -471,8 +471,8 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* error) {
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* const ctx = args.ctx();
-    JSString* const str = val.ToString(ctx, ERROR(error));
-    JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(error));
+    JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
+    JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(error));
     if (!obj->GetOwnProperty(ctx,
                              context::Intern(ctx, str->value())).IsEmpty()) {
       return JSTrue;
@@ -492,7 +492,7 @@ inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* error) {
     if (first.IsObject()) {
       JSObject* const v = first.object();
       JSObject* const obj =
-          args.this_binding().ToObject(args.ctx(), ERROR(error));
+          args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(error));
       JSObject* proto = v->prototype();
       while (proto) {
         if (obj == proto) {
@@ -510,12 +510,12 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, error);
   Symbol name;
   if (args.size() > 0) {
-    const JSString* const str = args[0].ToString(args.ctx(), ERROR(error));
+    const JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     name = context::Intern(args.ctx(), str->value());
   } else {
     name = context::Intern(args.ctx(), "undefined");
   }
-  JSObject* const obj = args.this_binding().ToObject(args.ctx(), ERROR(error));
+  JSObject* const obj = args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(error));
   const PropertyDescriptor desc = obj->GetOwnProperty(args.ctx(), name);
   if (desc.IsEmpty()) {
     return JSFalse;

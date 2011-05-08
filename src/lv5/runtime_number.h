@@ -5,7 +5,7 @@
 #include <tr1/cstdio>
 #include <tr1/cinttypes>
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -23,7 +23,7 @@ inline JSVal NumberConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     double res = 0.0;
     if (args.size() > 0) {
-      res = args[0].ToNumber(args.ctx(), ERROR(error));
+      res = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     }
     return JSNumberObject::New(args.ctx(), res);
   } else {
@@ -58,7 +58,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     if (first.IsUndefined()) {
       radix = 10;
     } else {
-      radix = first.ToNumber(args.ctx(), ERROR(error));
+      radix = first.ToNumber(args.ctx(), IV_LV5_ERROR(error));
       radix = core::DoubleToInteger(radix);
     }
     if (2 <= radix && radix <= 36) {
@@ -150,7 +150,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
     if (first.IsUndefined()) {
       fd = 0.0;
     } else {
-      fd = first.ToNumber(ctx, ERROR(error));
+      fd = first.ToNumber(ctx, IV_LV5_ERROR(error));
       fd = core::DoubleToInteger(fd);
     }
   }
@@ -226,7 +226,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
     if (fractionDigits.IsUndefined()) {
       fd = 0.0;
     } else {
-      fd = fractionDigits.ToNumber(ctx, ERROR(error));
+      fd = fractionDigits.ToNumber(ctx, IV_LV5_ERROR(error));
       fd = core::DoubleToInteger(fd);
     }
   }
@@ -275,7 +275,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
     if (precision.IsUndefined()) {
       return obj.ToString(ctx, error);
     } else {
-      p = precision.ToNumber(ctx, ERROR(error));
+      p = precision.ToNumber(ctx, IV_LV5_ERROR(error));
       p = core::DoubleToInteger(p);
     }
   }

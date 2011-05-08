@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
 #define _IV_LV5_RUNTIME_TELEPORTER_H_
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/context.h"
@@ -21,7 +21,8 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     return first;
   }
   Context* const ctx = static_cast<Context*>(args.ctx());
-  JSScript* const script = CompileScript(ctx, first.string(), false, ERROR(e));
+  JSScript* const script = CompileScript(ctx, first.string(),
+                                         false, IV_LV5_ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
@@ -56,7 +57,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   }
   Context* const ctx = static_cast<Context*>(args.ctx());
   JSScript* const script = CompileScript(ctx, first.string(),
-                                         ctx->IsStrict(), ERROR(e));
+                                         ctx->IsStrict(), IV_LV5_ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
         internal::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
@@ -78,10 +79,10 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   StringBuilder builder;
-  internal::BuildFunctionSource(&builder, args, ERROR(e));
+  internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
   JSString* const source = builder.Build(ctx);
-  JSScript* const script = CompileScript(ctx, source, false, ERROR(e));
-  internal::IsOneFunctionExpression(*script->function(), ERROR(e));
+  JSScript* const script = CompileScript(ctx, source, false, IV_LV5_ERROR(e));
+  internal::IsOneFunctionExpression(*script->function(), IV_LV5_ERROR(e));
   const ContextSwitcher switcher(ctx,
                                  ctx->global_env(),
                                  ctx->global_env(),
@@ -94,5 +95,5 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   return ctx->ret();
 }
 
-} } }  // iv::lv5::teleporter
+} } }  // namespace iv::lv5::teleporter
 #endif  // _IV_LV5_RUNTIME_TELEPORTER_H_

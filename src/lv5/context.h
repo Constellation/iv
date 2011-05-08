@@ -4,7 +4,7 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
-#include "lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
@@ -77,23 +77,23 @@ class Context : private core::Noncopyable<> {
   void DefineFunction(const Func& f,
                       const core::StringPiece& func_name,
                       std::size_t n) {
-    Error error;
+    Error e;
     JSFunction* const func = JSNativeFunction::New(this, f, n);
     const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
+    variable_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
     variable_env_->SetMutableBinding(this,
                                      name,
-                                     func, false, &error);
+                                     func, false, &e);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   void DefineFunction(const core::StringPiece& func_name) {
-    Error error;
+    Error e;
     JSFunction* const f = JSInlinedFunction<func, n>::New(this);
     const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, ERROR_VOID(&error));
+    variable_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
     variable_env_->SetMutableBinding(this, name,
-                                     f, false, &error);
+                                     f, false, &e);
   }
 
   void Initialize(JSFunction* func_constructor);

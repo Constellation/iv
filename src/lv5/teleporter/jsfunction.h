@@ -6,7 +6,7 @@
 #include "lv5/error.h"
 #include "lv5/arguments.h"
 #include "lv5/specialized_ast.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/jsfunction.h"
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/jsscript.h"
@@ -91,11 +91,11 @@ class JSCodeFunction : public JSFunction {
   JSVal Construct(Arguments* args, Error* e) {
     iv::lv5::Context* ctx = args->ctx();
     JSObject* const obj = JSObject::New(ctx);
-    const JSVal proto = Get(ctx, context::prototype_symbol(ctx), ERROR(e));
+    const JSVal proto = Get(ctx, context::prototype_symbol(ctx), IV_LV5_ERROR(e));
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }
-    const JSVal result = Call(args, obj, ERROR(e));
+    const JSVal result = Call(args, obj, IV_LV5_ERROR(e));
     if (result.IsObject()) {
       return result;
     } else {

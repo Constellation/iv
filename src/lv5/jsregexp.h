@@ -4,7 +4,7 @@
 #include <utility>
 #include "stringpiece.h"
 #include "ustringpiece.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsarray.h"
@@ -103,14 +103,15 @@ class JSRegExp : public JSObject {
   }
 
   int LastIndex(Context* ctx, Error* e) {
-    const JSVal index = Get(ctx, context::Intern(ctx, "lastIndex"), ERROR_WITH(e, 0));
-    const double val = index.ToNumber(ctx, ERROR_WITH(e, 0));
+    const JSVal index = Get(ctx, context::Intern(ctx, "lastIndex"),
+                            IV_LV5_ERROR_WITH(e, 0));
+    const double val = index.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
     return core::DoubleToInt32(val);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
     Put(ctx, context::Intern(ctx, "lastIndex"),
-        static_cast<double>(i), true, ERROR_VOID(e));
+        static_cast<double>(i), true, IV_LV5_ERROR_VOID(e));
   }
 
   JSVal ExecuteOnce(Context* ctx,
@@ -139,7 +140,7 @@ class JSRegExp : public JSObject {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(e));
+          false, IV_LV5_ERROR(e));
       ary->DefineOwnPropertyWithIndex(
           ctx,
           i + 1,
@@ -147,7 +148,7 @@ class JSRegExp : public JSObject {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(e));
+          false, IV_LV5_ERROR(e));
     }
     return ary;
   }
@@ -156,7 +157,7 @@ class JSRegExp : public JSObject {
     const uint32_t num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
     JSArray* ary = JSArray::New(ctx);
-    SetLastIndex(ctx, 0, ERROR(e));
+    SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
     int previous_index = 0;
     int n = 0;
     const int start = previous_index;
@@ -191,7 +192,7 @@ class JSRegExp : public JSObject {
               PropertyDescriptor::WRITABLE |
               PropertyDescriptor::ENUMERABLE |
               PropertyDescriptor::CONFIGURABLE),
-          true, ERROR(e));
+          true, IV_LV5_ERROR(e));
       ++n;
     } while (true);
     if (n == 0) {
@@ -205,7 +206,7 @@ class JSRegExp : public JSObject {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::ENUMERABLE |
             PropertyDescriptor::CONFIGURABLE),
-        true, ERROR(e));
+        true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "input"),
@@ -214,14 +215,14 @@ class JSRegExp : public JSObject {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::ENUMERABLE |
             PropertyDescriptor::CONFIGURABLE),
-        true, ERROR(e));
+        true, IV_LV5_ERROR(e));
     return ary;
   }
 
   JSVal Exec(Context* ctx, JSString* str, Error* e) {
     const uint32_t num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
-    const int start = LastIndex(ctx, ERROR(e));  // for step 4
+    const int start = LastIndex(ctx, IV_LV5_ERROR(e));  // for step 4
     int previous_index = start;
     if (!global()) {
       previous_index = 0;
@@ -250,7 +251,7 @@ class JSRegExp : public JSObject {
     }
 
     if (global()) {
-      SetLastIndex(ctx, previous_index, ERROR(e));
+      SetLastIndex(ctx, previous_index, IV_LV5_ERROR(e));
     }
 
     JSArray* ary = JSArray::New(ctx, (num_of_captures + 1));
@@ -262,7 +263,7 @@ class JSRegExp : public JSObject {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::ENUMERABLE |
             PropertyDescriptor::CONFIGURABLE),
-        true, ERROR(e));
+        true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "input"),
@@ -271,7 +272,7 @@ class JSRegExp : public JSObject {
             PropertyDescriptor::WRITABLE |
             PropertyDescriptor::ENUMERABLE |
             PropertyDescriptor::CONFIGURABLE),
-        true, ERROR(e));
+        true, IV_LV5_ERROR(e));
     for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
       const int begin = offset_vector[i*2];
       const int end = offset_vector[i*2+1];
@@ -286,7 +287,7 @@ class JSRegExp : public JSObject {
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
-            true, ERROR(e));
+            true, IV_LV5_ERROR(e));
       } else {
         ary->DefineOwnPropertyWithIndex(
             ctx,
@@ -295,7 +296,7 @@ class JSRegExp : public JSObject {
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
-            true, ERROR(e));
+            true, IV_LV5_ERROR(e));
       }
     }
     return ary;
@@ -317,7 +318,8 @@ class JSRegExp : public JSObject {
       return std::tr1::make_tuple(0, 0, false);
     }
     for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
-      result->push_back(std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
+      result->push_back(
+          std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
     }
     return std::tr1::make_tuple(offset_vector[0], offset_vector[1], true);
   }

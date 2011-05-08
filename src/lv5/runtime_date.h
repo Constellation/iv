@@ -7,7 +7,7 @@
 #include <tr1/array>
 #include "utils.h"
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/jsdate.h"
 #include "lv5/jsstring.h"
@@ -35,51 +35,51 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
 
     if (args_size == 1) {
       // section 15.9.3.2 new Date(value)
-      const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, ERROR(error));
+      const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, IV_LV5_ERROR(error));
       if (v.IsString()) {
         return JSDate::New(ctx,
                            date::TimeClip(date::Parse(*v.string())));
       } else {
-        const double V = v.ToNumber(ctx, ERROR(error));
+        const double V = v.ToNumber(ctx, IV_LV5_ERROR(error));
         return JSDate::New(ctx, date::TimeClip(V));
       }
     }
 
     // following case, args_size > 1
-    double y = args[0].ToNumber(ctx, ERROR(error));
-    const double m = args[1].ToNumber(ctx, ERROR(error));
+    double y = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
+    const double m = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
 
     double dt;
     if (args_size > 2) {
-      dt = args[2].ToNumber(ctx, ERROR(error));
+      dt = args[2].ToNumber(ctx, IV_LV5_ERROR(error));
     } else {
       dt = 1;
     }
 
     double h;
     if (args_size > 3) {
-      h = args[3].ToNumber(ctx, ERROR(error));
+      h = args[3].ToNumber(ctx, IV_LV5_ERROR(error));
     } else {
       h = 0;
     }
 
     double min;
     if (args_size > 4) {
-      min = args[4].ToNumber(ctx, ERROR(error));
+      min = args[4].ToNumber(ctx, IV_LV5_ERROR(error));
     } else {
       min = 0;
     }
 
     double s;
     if (args_size > 5) {
-      s = args[5].ToNumber(ctx, ERROR(error));
+      s = args[5].ToNumber(ctx, IV_LV5_ERROR(error));
     } else {
       s = 0;
     }
 
     double milli;
     if (args_size > 6) {
-      milli = args[6].ToNumber(ctx, ERROR(error));
+      milli = args[6].ToNumber(ctx, IV_LV5_ERROR(error));
     } else {
       milli = 0;
     }
@@ -136,7 +136,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
 inline JSVal DateParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.parse", args, e);
   const JSVal first = (args.size() == 0) ? JSUndefined : args[0];
-  const JSString* target = first.ToString(args.ctx(), ERROR(e));
+  const JSString* target = first.ToString(args.ctx(), IV_LV5_ERROR(e));
   return date::Parse(*target);
 }
 
@@ -148,49 +148,49 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
   Context* const ctx = args.ctx();
   double y;
   if (args_size > 0) {
-    y = args[0].ToNumber(ctx, ERROR(error));
+    y = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     y = JSValData::kNaN;
   }
 
   double m;
   if (args_size > 1) {
-    m = args[1].ToNumber(ctx, ERROR(error));
+    m = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     m = JSValData::kNaN;
   }
 
   double dt;
   if (args_size > 2) {
-    dt = args[2].ToNumber(ctx, ERROR(error));
+    dt = args[2].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     dt = 1;
   }
 
   double h;
   if (args_size > 3) {
-    h = args[3].ToNumber(ctx, ERROR(error));
+    h = args[3].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     h = 0;
   }
 
   double min;
   if (args_size > 4) {
-    min = args[4].ToNumber(ctx, ERROR(error));
+    min = args[4].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     min = 0;
   }
 
   double s;
   if (args_size > 5) {
-    s = args[5].ToNumber(ctx, ERROR(error));
+    s = args[5].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     s = 0;
   }
 
   double milli;
   if (args_size > 6) {
-    milli = args[6].ToNumber(ctx, ERROR(error));
+    milli = args[6].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
     milli = 0;
   }
@@ -795,7 +795,7 @@ inline JSVal DateSetTime(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     double v;
     if (args.size() > 0) {
-      const double val = args[0].ToNumber(args.ctx(), ERROR(error));
+      const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       v = date::TimeClip(val);
     } else {
       v = JSValData::kNaN;
@@ -818,7 +818,7 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* error) {
         static_cast<JSDate*>(obj.object())->value());
     double ms;
     if (args.size() > 0) {
-      ms = args[0].ToNumber(args.ctx(), ERROR(error));
+      ms = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
       ms = JSValData::kNaN;
     }
@@ -847,7 +847,7 @@ inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* error) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     double ms;
     if (args.size() > 0) {
-      ms = args[0].ToNumber(args.ctx(), ERROR(error));
+      ms = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
       ms = JSValData::kNaN;
     }
@@ -878,9 +878,9 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      sec = args[0].ToNumber(args.ctx(), ERROR(error));
+      sec = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        ms = args[1].ToNumber(args.ctx(), ERROR(error));
+        ms = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       } else {
         ms = date::MsFromTime(t);
       }
@@ -915,9 +915,9 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      sec = args[0].ToNumber(args.ctx(), ERROR(error));
+      sec = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        ms = args[1].ToNumber(args.ctx(), ERROR(error));
+        ms = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       } else {
         ms = date::MsFromTime(t);
       }
@@ -953,11 +953,11 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      m = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        sec = args[1].ToNumber(args.ctx(), ERROR(error));
+        sec = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          ms = args[2].ToNumber(args.ctx(), ERROR(error));
+          ms = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         } else {
           ms = date::MsFromTime(t);
         }
@@ -998,11 +998,11 @@ inline JSVal DateSetUTCMinutes(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      m = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        sec = args[1].ToNumber(args.ctx(), ERROR(error));
+        sec = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          ms = args[2].ToNumber(args.ctx(), ERROR(error));
+          ms = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         } else {
           ms = date::MsFromTime(t);
         }
@@ -1044,13 +1044,13 @@ inline JSVal DateSetHours(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      h = args[0].ToNumber(args.ctx(), ERROR(error));
+      h = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          sec = args[2].ToNumber(args.ctx(), ERROR(error));
+          sec = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
           if (args_size > 3) {
-            ms = args[3].ToNumber(args.ctx(), ERROR(error));
+            ms = args[3].ToNumber(args.ctx(), IV_LV5_ERROR(error));
           } else {
             ms = date::MsFromTime(t);
           }
@@ -1095,13 +1095,13 @@ inline JSVal DateSetUTCHours(const Arguments& args, Error* error) {
     double sec;
     double ms;
     if (args_size > 0) {
-      h = args[0].ToNumber(args.ctx(), ERROR(error));
+      h = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          sec = args[2].ToNumber(args.ctx(), ERROR(error));
+          sec = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
           if (args_size > 3) {
-            ms = args[3].ToNumber(args.ctx(), ERROR(error));
+            ms = args[3].ToNumber(args.ctx(), IV_LV5_ERROR(error));
           } else {
             ms = date::MsFromTime(t);
           }
@@ -1143,7 +1143,7 @@ inline JSVal DateSetDate(const Arguments& args, Error* error) {
     const std::size_t args_size = args.size();
     double dt;
     if (args_size > 0) {
-      dt = args[0].ToNumber(args.ctx(), ERROR(error));
+      dt = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
       dt = JSValData::kNaN;
     }
@@ -1172,7 +1172,7 @@ inline JSVal DateSetUTCDate(const Arguments& args, Error* error) {
     const std::size_t args_size = args.size();
     double dt;
     if (args_size > 0) {
-      dt = args[0].ToNumber(args.ctx(), ERROR(error));
+      dt = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
       dt = JSValData::kNaN;
     }
@@ -1202,9 +1202,9 @@ inline JSVal DateSetMonth(const Arguments& args, Error* error) {
     double m;
     double dt;
     if (args_size > 0) {
-      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      m = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        dt = args[1].ToNumber(args.ctx(), ERROR(error));
+        dt = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       } else {
         dt = date::DateFromTime(t);
       }
@@ -1238,9 +1238,9 @@ inline JSVal DateSetUTCMonth(const Arguments& args, Error* error) {
     double m;
     double dt;
     if (args_size > 0) {
-      m = args[0].ToNumber(args.ctx(), ERROR(error));
+      m = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        dt = args[1].ToNumber(args.ctx(), ERROR(error));
+        dt = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       } else {
         dt = date::DateFromTime(t);
       }
@@ -1278,11 +1278,11 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
     double m;
     double dt;
     if (args_size > 0) {
-      y = args[0].ToNumber(args.ctx(), ERROR(error));
+      y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          dt = args[2].ToNumber(args.ctx(), ERROR(error));
+          dt = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         } else {
           dt = date::DateFromTime(t);
         }
@@ -1323,11 +1323,11 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
     double m;
     double dt;
     if (args_size > 0) {
-      y = args[0].ToNumber(args.ctx(), ERROR(error));
+      y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (args_size > 1) {
-        m = args[1].ToNumber(args.ctx(), ERROR(error));
+        m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         if (args_size > 2) {
-          dt = args[2].ToNumber(args.ctx(), ERROR(error));
+          dt = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(error));
         } else {
           dt = date::DateFromTime(t);
         }
@@ -1416,8 +1416,8 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
 inline JSVal DateToJSON(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toJSON", args, e);
   Context* const ctx = args.ctx();
-  JSObject* const obj = args.this_binding().ToObject(ctx, ERROR(e));
-  const JSVal tv = JSVal(obj).ToPrimitive(ctx, Hint::NUMBER, ERROR(e));
+  JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  const JSVal tv = JSVal(obj).ToPrimitive(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
 
   if (tv.IsNumber()) {
     const double& val = tv.number();
@@ -1428,13 +1428,13 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 
   const JSVal toISO = obj->Get(
       ctx,
-      context::Intern(ctx, "toISOString"), ERROR(e));
+      context::Intern(ctx, "toISOString"), IV_LV5_ERROR(e));
 
   if (!toISO.IsCallable()) {
     e->Report(Error::Type, "toISOString is not function");
     return JSUndefined;
   }
-  ScopedArguments a(ctx, 0, ERROR(e));
+  ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
   return toISO.object()->AsCallable()->Call(&a, obj, e);
 }
 
@@ -1472,7 +1472,7 @@ inline JSVal DateSetYear(const Arguments& args, Error* e) {
     const std::size_t args_size = args.size();
     double y = JSValData::kNaN;
     if (args_size > 0) {
-      y = args[0].ToNumber(args.ctx(), ERROR(e));
+      y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
     }
     if (std::isnan(y)) {
       d->set_value(y);

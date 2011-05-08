@@ -9,7 +9,7 @@
 #include "ustringpiece.h"
 #include "character.h"
 #include "conversions.h"
-#include "lv5/lv5.h"
+#include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
 #include "lv5/match_result.h"
@@ -167,7 +167,7 @@ class Replacer : private core::Noncopyable<> {
       } else {
         previous_index = this_index;
       }
-      static_cast<T*>(this)->DoReplace(builder, res, ERROR_VOID(e));
+      static_cast<T*>(this)->DoReplace(builder, res, IV_LV5_ERROR_VOID(e));
       if (previous_index > size || previous_index < 0) {
         break;
       }
@@ -348,7 +348,7 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
   template<typename Builder>
   void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
     using std::tr1::get;
-    ScopedArguments a(ctx_, 3 + vec_.size(), ERROR_VOID(e));
+    ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
                          str_->begin() + get<0>(res),
                          str_->begin() + get<1>(res));
@@ -363,8 +363,8 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     }
     a[i++] = get<0>(res);
     a[i++] = str_;
-    const JSVal result = function_->Call(&a, JSUndefined, ERROR_VOID(e));
-    const JSString* const replaced_str = result.ToString(ctx_, ERROR_VOID(e));
+    const JSVal result = function_->Call(&a, JSUndefined, IV_LV5_ERROR_VOID(e));
+    const JSString* const replaced_str = result.ToString(ctx_, IV_LV5_ERROR_VOID(e));
     builder->Append(*replaced_str);
   }
 
@@ -434,7 +434,7 @@ inline JSVal StringConstructor(const Arguments& args, Error* error) {
   if (args.IsConstructorCalled()) {
     JSString* str;
     if (args.size() > 0) {
-      str = args[0].ToString(args.ctx(), ERROR(error));
+      str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     } else {
       str = JSString::NewEmptyString(args.ctx());
     }
@@ -455,7 +455,7 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
   StringBuilder builder;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    const uint32_t ch = it->ToUInt32(ctx, ERROR(e));
+    const uint32_t ch = it->ToUInt32(ctx, IV_LV5_ERROR(e));
     builder.Append(ch);
   }
   return builder.Build(args.ctx());
@@ -481,11 +481,11 @@ inline JSVal StringValueOf(const Arguments& args, Error* error) {
 inline JSVal StringCharAt(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charAt", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   double position;
   if (args.size() > 0) {
-    position = args[0].ToNumber(args.ctx(), ERROR(error));
+    position = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     position = core::DoubleToInteger(position);
   } else {
     // undefined -> NaN -> 0
@@ -504,11 +504,11 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
 inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   double position;
   if (args.size() > 0) {
-    position = args[0].ToNumber(args.ctx(), ERROR(error));
+    position = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     position = core::DoubleToInteger(position);
   } else {
     // undefined -> NaN -> 0
@@ -526,12 +526,12 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
 inline JSVal StringConcat(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.concat", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   core::UString result(str->begin(), str->end());
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    const JSString* const r = it->ToString(args.ctx(), ERROR(error));
+    const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(error));
     result.append(r->begin(), r->end());
   }
   return JSString::New(args.ctx(), result);
@@ -541,15 +541,15 @@ inline JSVal StringConcat(const Arguments& args, Error* error) {
 inline JSVal StringIndexOf(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   const JSString* search_str;
   // undefined -> NaN -> 0
   double position = 0;
   if (args.size() > 0) {
-    search_str = args[0].ToString(args.ctx(), ERROR(error));
+    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     if (args.size() > 1) {
-      position = args[1].ToNumber(args.ctx(), ERROR(error));
+      position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       position = core::DoubleToInteger(position);
     }
   } else {
@@ -567,15 +567,15 @@ inline JSVal StringIndexOf(const Arguments& args, Error* error) {
 inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   const JSString* search_str;
   std::size_t target = str->size();
   if (args.size() > 0) {
-    search_str = args[0].ToString(args.ctx(), ERROR(error));
+    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
     // undefined -> NaN
     if (args.size() > 1) {
-      const double position = args[1].ToNumber(args.ctx(), ERROR(error));
+      const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       if (!std::isnan(position)) {
         const double integer = core::DoubleToInteger(position);
         if (integer < 0) {
@@ -598,11 +598,11 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
 inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   const JSString* that;
   if (args.size() > 0) {
-    that = args[0].ToString(args.ctx(), ERROR(error));
+    that = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
   } else {
     that = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -614,21 +614,21 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
 inline JSVal StringMatch(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.match", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(e));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  JSString* const str = val.ToString(ctx, ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t args_count = args.size();
   JSRegExp* regexp;
   if (args_count == 0 ||
       !args[0].IsObject() ||
       (args[0].object()->class_name() != context::Intern(ctx, "RegExp"))) {
-    ScopedArguments a(ctx, 1, ERROR(e));
+    ScopedArguments a(ctx, 1, IV_LV5_ERROR(e));
     if (args_count == 0) {
       a[0] = JSUndefined;
     } else {
       a[0] = args[0];
     }
-    const JSVal res = RegExpConstructor(a, ERROR(e));
+    const JSVal res = RegExpConstructor(a, IV_LV5_ERROR(e));
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
   } else {
@@ -646,9 +646,9 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
 inline JSVal StringReplace(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(e));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  JSString* const str = val.ToString(ctx, ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t args_count = args.size();
   const bool search_value_is_regexp =
       args_count != 0 &&
@@ -666,22 +666,22 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       JSFunction* const callable = args[1].object()->AsCallable();
       detail::FunctionReplacer replacer(str, *reg, callable, ctx);
       if (reg->global()) {
-        replacer.ReplaceGlobal(&builder, ERROR(e));
+        replacer.ReplaceGlobal(&builder, IV_LV5_ERROR(e));
       } else {
-        replacer.Replace(&builder, ERROR(e));
+        replacer.Replace(&builder, IV_LV5_ERROR(e));
       }
     } else {
       const JSString* replace_value;
       if (args_count > 1) {
-        replace_value = args[1].ToString(ctx, ERROR(e));
+        replace_value = args[1].ToString(ctx, IV_LV5_ERROR(e));
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
       detail::StringReplacer replacer(str, *reg, *replace_value);
       if (reg->global()) {
-        replacer.ReplaceGlobal(&builder, ERROR(e));
+        replacer.ReplaceGlobal(&builder, IV_LV5_ERROR(e));
       } else {
-        replacer.Replace(&builder, ERROR(e));
+        replacer.Replace(&builder, IV_LV5_ERROR(e));
       }
     }
     return builder.Build(ctx);
@@ -689,7 +689,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     if (args_count == 0) {
       search_str = JSString::NewAsciiString(args.ctx(), "undefined");
     } else {
-      search_str = args[0].ToString(ctx, ERROR(e));
+      search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
     const GCUString::size_type loc = str->value().find(search_str->value(), 0);
     if (loc == GCUString::npos) {
@@ -701,17 +701,17 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     builder.Append(str->begin(), str->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
-      ScopedArguments a(ctx, 3, ERROR(e));
+      ScopedArguments a(ctx, 3, IV_LV5_ERROR(e));
       a[0] = search_str;
       a[1] = static_cast<double>(loc);
       a[2] = str;
-      const JSVal result = callable->Call(&a, JSUndefined, ERROR(e));
-      const JSString* const res = result.ToString(ctx, ERROR(e));
+      const JSVal result = callable->Call(&a, JSUndefined, IV_LV5_ERROR(e));
+      const JSString* const res = result.ToString(ctx, IV_LV5_ERROR(e));
       builder.Append(*res);
     } else {
       const JSString* replace_value;
       if (args_count > 1) {
-        replace_value = args[1].ToString(ctx, ERROR(e));
+        replace_value = args[1].ToString(ctx, IV_LV5_ERROR(e));
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
@@ -726,9 +726,9 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
 inline JSVal StringSearch(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.search", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(e));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  JSString* const str = val.ToString(ctx, ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t args_count = args.size();
   JSRegExp* regexp;
   if (args_count == 0) {
@@ -739,16 +739,16 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
     regexp = JSRegExp::New(
         ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
-    ScopedArguments a(ctx, 1, ERROR(e));
+    ScopedArguments a(ctx, 1, IV_LV5_ERROR(e));
     a[0] = args[0];
-    const JSVal res = RegExpConstructor(a, ERROR(e));
+    const JSVal res = RegExpConstructor(a, IV_LV5_ERROR(e));
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
   }
-  const int last_index = regexp->LastIndex(ctx, ERROR(e));
-  regexp->SetLastIndex(ctx, 0, ERROR(e));
+  const int last_index = regexp->LastIndex(ctx, IV_LV5_ERROR(e));
+  regexp->SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
   const JSVal result = regexp->Exec(ctx, str, e);
-  regexp->SetLastIndex(ctx, last_index, ERROR(e));
+  regexp->SetLastIndex(ctx, last_index, IV_LV5_ERROR(e));
   if (!e) {
     return JSUndefined;
   }
@@ -764,13 +764,13 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
 inline JSVal StringSlice(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
-  const JSString* const str = val.ToString(ctx, ERROR(error));
+  const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
   const uint32_t len = str->size();
   uint32_t start;
   if (args.size() > 0) {
-    double relative_start = args[0].ToNumber(ctx, ERROR(error));
+    double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
     relative_start = core::DoubleToInteger(relative_start);
     if (relative_start < 0) {
       start = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
@@ -785,7 +785,7 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double relative_end = args[1].ToNumber(ctx, ERROR(error));
+      double relative_end = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
       relative_end = core::DoubleToInteger(relative_end);
       if (relative_end < 0) {
         end = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
@@ -807,15 +807,15 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   using std::tr1::get;
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.split", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(e));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  JSString* const str = val.ToString(ctx, ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
     lim = 4294967295UL;  // (1 << 32) - 1
   } else {
-    lim = args[1].ToUInt32(ctx, ERROR(e));
+    lim = args[1].ToUInt32(ctx, IV_LV5_ERROR(e));
   }
 
   bool regexp = false;
@@ -828,7 +828,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       target = separator;
       regexp = true;
     } else {
-      target = separator.ToString(ctx, ERROR(e));
+      target = separator.ToString(ctx, IV_LV5_ERROR(e));
     }
   } else {
     separator = JSUndefined;
@@ -845,7 +845,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-      false, ERROR(e));
+      false, IV_LV5_ERROR(e));
     return a;
   }
 
@@ -867,7 +867,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
                        PropertyDescriptor::CONFIGURABLE),
-        false, ERROR(e));
+        false, IV_LV5_ERROR(e));
     return ary;
   }
 
@@ -893,7 +893,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
-          false, ERROR(e));
+          false, IV_LV5_ERROR(e));
       ++length;
       if (length == lim) {
         return ary;
@@ -913,7 +913,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, ERROR(e));
+              false, IV_LV5_ERROR(e));
         } else {
           ary->DefineOwnPropertyWithIndex(
               ctx, length,
@@ -921,7 +921,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, ERROR(e));
+              false, IV_LV5_ERROR(e));
         }
         ++length;
         if (length == lim) {
@@ -940,7 +940,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
-      false, ERROR(e));
+      false, IV_LV5_ERROR(e));
   return ary;
 }
 
@@ -948,13 +948,13 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 inline JSVal StringSubstring(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
-  const JSString* const str = val.ToString(ctx, ERROR(error));
+  const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
   const uint32_t len = str->size();
   uint32_t start;
   if (args.size() > 0) {
-    double integer = args[0].ToNumber(ctx, ERROR(error));
+    double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
     integer = core::DoubleToInteger(integer);
     start = core::DoubleToUInt32(
         std::min<double>(std::max<double>(integer, 0.0), len));
@@ -967,7 +967,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double integer = args[1].ToNumber(ctx, ERROR(error));
+      double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
       integer = core::DoubleToInteger(integer);
       end = core::DoubleToUInt32(
           std::min<double>(std::max<double>(integer, 0.0), len));
@@ -986,8 +986,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
 inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
@@ -1000,8 +1000,8 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
 inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
@@ -1014,8 +1014,8 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
 inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
@@ -1028,8 +1028,8 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
 inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   StringBuilder builder;
   for (JSString::const_iterator it = str->begin(),
        last = str->end(); it != last; ++it) {
@@ -1042,8 +1042,8 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
 inline JSVal StringTrim(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
   JSString::const_iterator lit = str->begin();
   const JSString::const_iterator last = str->end();
   // trim leading space
@@ -1073,12 +1073,12 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substr", args, e);
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
-  const JSString* const str = val.ToString(args.ctx(), ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const double len = str->size();
 
   double start;
   if (args.size() > 0) {
-    double integer = args[0].ToNumber(ctx, ERROR(e));
+    double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(e));
     start = core::DoubleToInteger(integer);
   } else {
     start = 0.0;
@@ -1089,7 +1089,7 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
     if (args[1].IsUndefined()) {
       length = std::numeric_limits<double>::infinity();
     } else {
-      const double integer = args[1].ToNumber(ctx, ERROR(e));
+      const double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
       length = core::DoubleToInteger(integer);
     }
   } else {
