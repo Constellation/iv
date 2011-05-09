@@ -1,9 +1,10 @@
 #ifndef _IV_LV5_JSSCRIPT_H_
 #define _IV_LV5_JSSCRIPT_H_
 #include <tr1/memory>
+#include "source_traits.h"
+#include "icu/source.h"
 #include "lv5/jsscript.h"
 #include "lv5/specialized_ast.h"
-#include "icu/source.h"
 #include "lv5/eval_source.h"
 namespace iv {
 namespace lv5 {
@@ -64,7 +65,7 @@ class JSEvalScript : public JSScript {
 
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
-    return source_->SubString(start, len);
+    return core::SourceTraits<Source>::SubString(*source_, start, len);
   }
 
   static this_type* New(Context* ctx,
@@ -99,7 +100,7 @@ class JSGlobalScript : public JSScript {
 
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
-    return source_->SubString(start, len);
+    return core::SourceTraits<icu::Source>::SubString(*source_, start, len);
   }
 
   static this_type* New(Context* ctx,

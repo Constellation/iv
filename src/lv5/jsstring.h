@@ -63,7 +63,8 @@ class JSString : public gc {
       hash_value_(core::StringToHash(string_)) {
   }
 
-  core::UStringPiece ToPiece() const {
+  // UStringPiece cast
+  operator core::UStringPiece() const {
     return core::UStringPiece(data(), size());
   }
 

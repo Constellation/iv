@@ -26,14 +26,10 @@ class EvalSource : public core::Noncopyable<> {
     return source_.size();
   }
 
-  inline core::UStringPiece SubString(
-      std::size_t n, std::size_t len = std::string::npos) const {
-    if (len == std::string::npos) {
-      return core::UStringPiece((source_.data() + n), (source_.size() - n));
-    } else {
-      return core::UStringPiece((source_.data() + n), len);
-    }
+  core::UStringPiece GetData() const {
+    return source_;
   }
+
  private:
   const JSString& source_;
 };
@@ -45,6 +41,16 @@ template<>
 struct SourceTraits<lv5::EvalSource> {
   static std::string GetFileName(const lv5::EvalSource& src) {
     return lv5::detail::kEvalSource;
+  }
+
+  static core::UStringPiece SubString(const lv5::EvalSource& src,
+                                      std::size_t n, std::size_t len = std::string::npos) {
+    const UStringPiece data = src.GetData();
+    if (len == std::string::npos) {
+      return core::UStringPiece((data.data() + n), (data.size() - n));
+    } else {
+      return core::UStringPiece((data.data() + n), len);
+    }
   }
 };
 

@@ -35,13 +35,8 @@ class Source {
     return filename_;
   }
 
-  inline core::UStringPiece SubString(
-      std::size_t n, std::size_t len = std::string::npos) const {
-    if (len == std::string::npos) {
-      return core::UStringPiece((source_.data() + n), (source_.size() - n));
-    } else {
-      return core::UStringPiece((source_.data() + n), len);
-    }
+  core::UStringPiece GetData() const {
+    return source_;
   }
 
  private:
@@ -116,6 +111,16 @@ template<>
 struct SourceTraits<icu::Source> {
   static std::string GetFileName(const icu::Source& src) {
     return src.filename();
+  }
+
+  static core::UStringPiece SubString(const icu::Source& src,
+                                      std::size_t n, std::size_t len = std::string::npos) {
+    const UStringPiece data = src.GetData();
+    if (len == std::string::npos) {
+      return core::UStringPiece((data.data() + n), (data.size() - n));
+    } else {
+      return core::UStringPiece((data.data() + n), len);
+    }
   }
 };
 
