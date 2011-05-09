@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_EVAL_SOURCE_H_
 #define _IV_LV5_EVAL_SOURCE_H_
 #include "noncopyable.h"
+#include "source_traits.h"
 #include "lv5/jsstring.h"
 namespace iv {
 namespace lv5 {
@@ -25,10 +26,6 @@ class EvalSource : public core::Noncopyable<> {
     return source_.size();
   }
 
-  inline const std::string& filename() const {
-    return detail::kEvalSource;
-  }
-
   inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
     if (len == std::string::npos) {
@@ -41,5 +38,15 @@ class EvalSource : public core::Noncopyable<> {
   const JSString& source_;
 };
 
-} }  // namespace iv::lv5
+}  // namespace lv5
+namespace core {
+
+template<>
+struct SourceTraits<lv5::EvalSource> {
+  static std::string GetFileName(const lv5::EvalSource& src) {
+    return lv5::detail::kEvalSource;
+  }
+};
+
+} }  // namespace iv::core
 #endif  // _IV_LV5_EVAL_SOURCE_H_

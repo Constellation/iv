@@ -1,6 +1,5 @@
 #ifndef _IV_LEXER_H_
 #define _IV_LEXER_H_
-
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -13,6 +12,7 @@
 #include "noncopyable.h"
 #include "keyword.h"
 #include "conversions.h"
+#include "source_traits.h"
 
 namespace iv {
 namespace core {
@@ -400,8 +400,8 @@ class Lexer: private Noncopyable<> {
     return line_number_;
   }
 
-  const std::string& filename() const {
-    return source_->filename();
+  std::string filename() const {
+    return SourceTraits<Source>::GetFileName(*source_);
   }
 
   std::size_t pos() const {

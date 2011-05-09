@@ -6,7 +6,7 @@ namespace core {
 
 template<typename T>
 struct SourceTraits {
-  static std::string FileName(const T& src) {
+  static std::string GetFileName(const T& src) {
     return "<anonymous>";
   }
 };

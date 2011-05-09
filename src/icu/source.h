@@ -7,8 +7,8 @@
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
+#include "source_traits.h"
 #include "icu/uconv.h"
-
 namespace iv {
 namespace icu {
 
@@ -109,5 +109,15 @@ class Source {
   std::string filename_;
 };
 
-} }  // namespace iv::icu
+}  // namespace icu
+namespace core {
+
+template<>
+struct SourceTraits<icu::Source> {
+  static std::string GetFileName(const icu::Source& src) {
+    return src.filename();
+  }
+};
+
+} }  // namespace iv::core
 #endif  // _IV_ICU_SOURCE_H_
