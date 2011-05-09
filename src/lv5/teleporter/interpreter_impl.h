@@ -967,7 +967,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         const JSString* const name = lhs.ToString(ctx_, CHECK);
         const bool res =
             rhs.object()->HasProperty(ctx_,
-                                      context::Intern(ctx_, name->value()));
+                                      context::Intern(ctx_, *name));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1348,7 +1348,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
   ctx_->Return(
       JSReference::New(ctx_,
                        base_value,
-                       context::Intern(ctx_, name->value()),
+                       context::Intern(ctx_, *name),
                        ctx_->IsStrict()));
 }
 

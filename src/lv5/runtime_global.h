@@ -272,7 +272,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
-    return core::StringToDouble(str->value(), true);
+    return core::StringToDouble(*str, true);
   } else {
     return JSNaN;
   }
