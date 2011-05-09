@@ -45,12 +45,7 @@ struct SourceTraits<lv5::EvalSource> {
 
   static core::UStringPiece SubString(const lv5::EvalSource& src,
                                       std::size_t n, std::size_t len = std::string::npos) {
-    const UStringPiece data = src.GetData();
-    if (len == std::string::npos) {
-      return core::UStringPiece((data.data() + n), (data.size() - n));
-    } else {
-      return core::UStringPiece((data.data() + n), len);
-    }
+    return src.GetData().substr(n, len);
   }
 };
 

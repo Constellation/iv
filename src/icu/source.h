@@ -112,16 +112,6 @@ struct SourceTraits<icu::Source> {
   static std::string GetFileName(const icu::Source& src) {
     return src.filename();
   }
-
-  static core::UStringPiece SubString(const icu::Source& src,
-                                      std::size_t n, std::size_t len = std::string::npos) {
-    const UStringPiece data = src.GetData();
-    if (len == std::string::npos) {
-      return core::UStringPiece((data.data() + n), (data.size() - n));
-    } else {
-      return core::UStringPiece((data.data() + n), len);
-    }
-  }
 };
 
 } }  // namespace iv::core

@@ -65,7 +65,7 @@ class JSEvalScript : public JSScript {
 
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
-    return core::SourceTraits<Source>::SubString(*source_, start, len);
+    return source_->GetData().substr(start, len);
   }
 
   static this_type* New(Context* ctx,
@@ -100,7 +100,7 @@ class JSGlobalScript : public JSScript {
 
   core::UStringPiece SubString(std::size_t start,
                                std::size_t len) const {
-    return core::SourceTraits<icu::Source>::SubString(*source_, start, len);
+    return source_->GetData().substr(start, len);
   }
 
   static this_type* New(Context* ctx,
