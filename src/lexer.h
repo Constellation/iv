@@ -29,12 +29,12 @@ class Lexer: private Noncopyable<> {
     OCTAL
   };
 
-  explicit Lexer(const Source* src)
+  explicit Lexer(const Source& src)
       : source_(src),
         buffer8_(),
         buffer16_(kInitialReadBufferCapacity),
         pos_(0),
-        end_(source_->size()),
+        end_(source_.size()),
         has_line_terminator_before_next_(false),
         has_shebang_(false),
         line_number_(1),
@@ -401,14 +401,14 @@ class Lexer: private Noncopyable<> {
   }
 
   std::string filename() const {
-    return SourceTraits<Source>::GetFileName(*source_);
+    return SourceTraits<Source>::GetFileName(source_);
   }
 
   std::size_t pos() const {
     return pos_;
   }
 
-  inline const Source* source() const {
+  inline const Source& source() const {
     return source_;
   }
 
@@ -503,7 +503,7 @@ class Lexer: private Noncopyable<> {
     if (pos_ == end_) {
       c_ = -1;
     } else {
-      c_ = (*source_)[pos_++];
+      c_ = source_[pos_++];
     }
   }
 
@@ -537,7 +537,7 @@ class Lexer: private Noncopyable<> {
     if (pos_ < 2) {
       c_ = -1;
     } else {
-      c_ = (*source_)[pos_-2];
+      c_ = source_[pos_-2];
       --pos_;
     }
   }
@@ -933,7 +933,7 @@ class Lexer: private Noncopyable<> {
     ++line_number_;
   }
 
-  const Source* source_;
+  const Source& source_;
   std::vector<char> buffer8_;
   std::vector<uc16> buffer16_;
   double numeric_;

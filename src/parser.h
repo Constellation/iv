@@ -93,8 +93,8 @@ static const UString kSet = ToUString("set");
 
 template<typename Factory,
          typename Source,
-         bool UseFunctionStatement,
-         bool ReduceExpressions>
+         bool UseFunctionStatement = true,
+         bool ReduceExpressions = true>
 class Parser
   : private Noncopyable<> {
  public:
@@ -192,7 +192,7 @@ class Parser
     Identifiers* labels_;
   };
 
-  Parser(Factory* factory, const Source* source)
+  Parser(Factory* factory, const Source& source)
     : lexer_(source),
       error_(),
       strict_(false),

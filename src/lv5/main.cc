@@ -52,10 +52,10 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 }
 
 template<typename Source>
-iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx, Source* src) {
+iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
+                                const Source& src) {
   iv::lv5::AstFactory factory(ctx);
-  iv::core::Parser<iv::lv5::AstFactory, Source, true, true>
-      parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
   if (!global) {
     std::cerr << parser.error() << std::endl;
@@ -68,7 +68,7 @@ int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
   iv::lv5::railgun::Context ctx;
   iv::icu::Source src(data, filename);
-  iv::lv5::railgun::Code* code = Compile(&ctx, &src);
+  iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
   }
@@ -82,7 +82,7 @@ int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
   iv::lv5::railgun::Context ctx;
   iv::icu::Source src(data, filename);
-  iv::lv5::railgun::Code* code = Compile(&ctx, &src);
+  iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
   }
@@ -95,8 +95,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   iv::icu::Source src(data, filename);
   iv::lv5::teleporter::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true, true>
-      parser(&factory, &src);
+  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
@@ -125,8 +124,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   iv::icu::Source src(data, filename);
   iv::lv5::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source, true, true>
-      parser(&factory, &src);
+  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {

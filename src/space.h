@@ -13,6 +13,7 @@
 #include <tr1/unordered_map>
 #include <tr1/functional>
 #include "uchar.h"
+#include "utils.h"
 #include "conversions.h"
 
 namespace iv {
