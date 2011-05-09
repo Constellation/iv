@@ -31,8 +31,7 @@ class Context : public iv::lv5::Context {
       generate_script_counter_(0),
       current_script_(NULL),
       strict_(false) {
-    Initialize(
-        JSInlinedFunction<&FunctionConstructor, 1>::NewPlain(this));
+    Initialize<&FunctionConstructor, &GlobalEval>();
   }
 
   class ScriptScope : private core::Noncopyable<> {

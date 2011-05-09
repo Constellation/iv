@@ -89,6 +89,12 @@ class JSFunction : public JSObject {
   }
 
   virtual bool IsStrict() const = 0;
+
+  void Initialize(Context* ctx) {
+    const Class& cls = context::Cls(ctx, "Function");
+    set_class_name(cls.name);
+    set_prototype(cls.prototype);
+  }
 };
 
 class JSNativeFunction : public JSFunction {
@@ -139,12 +145,6 @@ class JSNativeFunction : public JSFunction {
   static JSNativeFunction* NewPlain(Context* ctx,
                                     const Func& func, std::size_t n) {
     return new JSNativeFunction(ctx, func, n);
-  }
-
-  void Initialize(Context* ctx) {
-    const Class& cls = context::Cls(ctx, "Function");
-    set_class_name(cls.name);
-    set_prototype(cls.prototype);
   }
 
  private:
@@ -331,12 +331,6 @@ class JSInlinedFunction : public JSFunction {
 
   static this_type* NewPlain(Context* ctx) {
     return new this_type(ctx);
-  }
-
-  void Initialize(Context* ctx) {
-    const Class& cls = context::Cls(ctx, "Function");
-    set_class_name(cls.name);
-    set_prototype(cls.prototype);
   }
 };
 

@@ -24,6 +24,9 @@ namespace runtime {
 JSVal ThrowTypeError(const Arguments& args, Error* error);
 
 }  // namespace runtime
+namespace bind {
+class Object;
+}  // namespace bind
 
 class SymbolChecker;
 class JSEnv;
@@ -96,7 +99,11 @@ class Context : private core::Noncopyable<> {
                                      f, false, &e);
   }
 
-  void Initialize(JSFunction* func_constructor);
+  template<JSAPI FunctionConstructor, JSAPI GlobalEval>
+  void Initialize() {
+    InitContext(JSInlinedFunction<FunctionConstructor, 1>::NewPlain(this),
+                JSInlinedFunction<GlobalEval, 1>::NewPlain(this));
+  }
 
   JSFunction* throw_type_error() {
     return &throw_type_error_;
@@ -123,6 +130,39 @@ class Context : private core::Noncopyable<> {
   }
 
  private:
+  void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
+
+  void InitGlobal(const Class& func_cls,
+                  JSObject* obj_proto, JSFunction* eval_function,
+                  bind::Object* global_binder);
+
+  void InitArray(const Class& func_cls,
+                 JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitString(const Class& func_cls,
+                 JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitBoolean(const Class& func_cls,
+                   JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitNumber(const Class& func_cls,
+                  JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitMath(const Class& func_cls,
+                JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitDate(const Class& func_cls,
+                JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitRegExp(const Class& func_cls,
+                 JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitError(const Class& func_cls,
+                 JSObject* obj_proto, bind::Object* global_binder);
+
+  void InitJSON(const Class& func_cls,
+                JSObject* obj_proto, bind::Object* global_binder);
+
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
   StackResource stack_resource_;

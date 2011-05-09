@@ -10,8 +10,7 @@ class Context : public lv5::Context {
  public:
   Context()
     : lv5::Context() {
-    Initialize(
-        JSInlinedFunction<&FunctionConstructor, 1>::NewPlain(this));
+    Initialize<&FunctionConstructor, &GlobalEval>();
   }
 };
 
