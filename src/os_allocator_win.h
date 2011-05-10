@@ -1,8 +1,8 @@
-#ifndef _IV_LV5_OS_ALLOCATOR_WIN_H_
-#define _IV_LV5_OS_ALLOCATOR_WIN_H_
+#ifndef _IV_OS_ALLOCATOR_WIN_H_
+#define _IV_OS_ALLOCATOR_WIN_H_
 #include "windows.h"
 namespace iv {
-namespace lv5 {
+namespace core {
 
 inline void* OSAllocator::Allocate(std::size_t bytes) {
   void* mem = VirtualAlloc(0, bytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -33,5 +33,5 @@ inline void OSAllocator::Decommit(void* addr, std::size_t bytes) {
   }
 }
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_OS_ALLOCATOR_WIN_H_
+} }  // namespace iv::core
+#endif  // _IV_OS_ALLOCATOR_WIN_H_

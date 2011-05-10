@@ -1,11 +1,11 @@
-#ifndef _IV_LV5_OS_ALLOCATOR_POSIX_H_
-#define _IV_LV5_OS_ALLOCATOR_POSIX_H_
+#ifndef _IV_OS_ALLOCATOR_POSIX_H_
+#define _IV_OS_ALLOCATOR_POSIX_H_
 #include <cerrno>
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/mman.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 
 inline void* OSAllocator::Allocate(std::size_t bytes) {
   int fd = -1;
@@ -41,5 +41,5 @@ inline void OSAllocator::Decommit(void* addr, std::size_t bytes) {
 #endif
 }
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_OS_ALLOCATOR_POSIX_H_
+} }  // namespace iv::core
+#endif  // _IV_OS_ALLOCATOR_POSIX_H_

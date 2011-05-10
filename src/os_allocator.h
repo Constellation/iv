@@ -1,8 +1,8 @@
-#ifndef _IV_LV5_OS_ALLOCATOR_H_
-#define _IV_LV5_OS_ALLOCATOR_H_
+#ifndef _IV_OS_ALLOCATOR_H_
+#define _IV_OS_ALLOCATOR_H_
 #include "platform.h"
 namespace iv {
-namespace lv5 {
+namespace core {
 
 class OSAllocator {
  public:
@@ -12,11 +12,11 @@ class OSAllocator {
   static void Decommit(void* addr, std::size_t bytes);
 };
 
-} }  // namespace iv::lv5
+} }  // namespace iv::core
 #ifdef OS_WIN
 #include "windows.h"
 #include "os_allocator_win.h"
 #else
 #include "os_allocator_posix.h"
 #endif  // OS_WIN
-#endif  // _IV_LV5_OS_ALLOCATOR_H_
+#endif  // _IV_OS_ALLOCATOR_H_

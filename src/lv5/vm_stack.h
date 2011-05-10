@@ -2,8 +2,8 @@
 #define _IV_LV5_VM_STACK_H_
 #include <iterator>
 #include "noncopyable.h"
+#include "os_allocator.h"
 #include "lv5/jsval.h"
-#include "lv5/os_allocator.h"
 namespace iv {
 namespace lv5 {
 
@@ -41,12 +41,12 @@ class VMStack : private core::Noncopyable<> {
       call_count_(0),
       pages_(1) {
     stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(
-        OSAllocator::Allocate(kStackBytes));
+        core::OSAllocator::Allocate(kStackBytes));
   }
 
   ~VMStack() {
-    OSAllocator::Decommit(stack_, kStackBytes);
-    OSAllocator::Deallocate(stack_, kStackBytes);
+    core::OSAllocator::Decommit(stack_, kStackBytes);
+    core::OSAllocator::Deallocate(stack_, kStackBytes);
   }
 
   pointer stack_pointer_begin() const {
