@@ -132,7 +132,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
     return EXIT_FAILURE;
   }
   iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
-  global->Accept(&ser);
+  ser.Visit(global);
   std::cout << ser.out() << std::endl;
   return EXIT_SUCCESS;
 }
