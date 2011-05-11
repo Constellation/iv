@@ -150,7 +150,6 @@ def Build():
 
   env.Append(CCFLAGS=["-g"])
   env.Append(
-    CXXFLAGS=["-fno-rtti"],
     CCFLAGS=[
       "-Wall", "-Wextra", "-Werror", '-pipe',
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type"],
