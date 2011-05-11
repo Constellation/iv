@@ -75,22 +75,8 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       return JSUndefined;
     }
     JSObject* const arg_array = second.object();
-    const JSVal length = arg_array->Get(ctx, context::length_symbol(ctx), IV_LV5_ERROR(e));
-    if (length.IsUndefined() || length.IsNull()) {
-      e->Report(
-          Error::Type,
-          "Function.prototype.apply requires Arraylike as 2nd arguments");
-      return JSUndefined;
-    }
-    const double temp = length.ToNumber(ctx, IV_LV5_ERROR(e));
-    const uint32_t len = core::DoubleToUInt32(temp);
-    if (len != temp) {
-      e->Report(
-          Error::Type,
-          "Function.prototype.apply requires Arraylike as 2nd arguments");
-      return JSUndefined;
-    }
-
+    // 15.3.4.3 Errata
+    const uint32_t len = internal::GetLength(ctx, arg_array, IV_LV5_ERROR(e));
     ScopedArguments args_list(ctx, len, IV_LV5_ERROR(e));
     uint32_t index = 0;
     while (index < len) {
