@@ -518,7 +518,7 @@ class Compiler
         }
 
         case Token::ASSIGN_SUB: {  // -=
-          Emit<OP::BINARY_SUBSTRACT>();
+          Emit<OP::BINARY_SUBTRACT>();
           break;
         }
 
@@ -627,7 +627,7 @@ class Compiler
       case Token::SUB: {  // -
         binary->left()->Accept(this);
         binary->right()->Accept(this);
-        Emit<OP::BINARY_SUBSTRACT>();
+        Emit<OP::BINARY_SUBTRACT>();
         return;
       }
 

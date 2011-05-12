@@ -375,7 +375,7 @@ class VM {
           continue;
         }
 
-        case OP::BINARY_SUBSTRACT: {
+        case OP::BINARY_SUBTRACT: {
           const JSVal w = POP();
           const JSVal v = TOP();
           const JSVal res = BinarySub(v, w, &e);
