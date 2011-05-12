@@ -55,7 +55,7 @@ inline double DaylightSavingTA(double utc) {
 inline double CurrentTime() {
   FILETIME ft;
   ::GetSystemTimeAsFileTime(&ft);
-  return FileTimeToUnixTime(ft);
+  return static_cast<double>(FileTimeToUnixTime(ft));
 }
 
 class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
@@ -85,8 +85,8 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
   double CalculateHiResTime() {
     LARGE_INTEGER i;
     ::QueryPerformanceCounter(&i);
-    lARGE_INTEGER ticks_elapsed;
-    ticks_elapesd.QuadPart = i.QuadPart - counter_.QuadPart;
+    LARGE_INTEGER ticks_elapsed;
+    ticks_elapsed.QuadPart = i.QuadPart - counter_.QuadPart;
     LARGE_INTEGER file_ticks;
 
     file_ticks.QuadPart =

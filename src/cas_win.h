@@ -5,9 +5,9 @@ namespace iv {
 namespace core {
 namespace thread {
 
-inline int CompareAndSwap(volatile int* target,
-                          int new_value, int old_value) {
-  return InterlockedCompareAndExchange(target, new_value, old_value);
+inline int CompareAndSwap(volatile LONG* target,
+                          LONG new_value, LONG old_value) {
+  return InterlockedCompareExchange(target, new_value, old_value);
 }
 
 } } }  // iv::core::thread
