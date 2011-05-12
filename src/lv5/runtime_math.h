@@ -148,7 +148,7 @@ inline JSVal MathPow(const Arguments& args, Error* error) {
     if (y == 0) {
       return 1.0;
     } else if (core::IsNaN(y) ||
-               ((x == 1 || x == -1) && std::isinf(y))) {
+               ((x == 1 || x == -1) && core::IsInf(y))) {
       return JSNaN;
     } else {
       return std::pow(x, y);

@@ -67,7 +67,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
       if (radix != 10) {
         if (core::IsNaN(num)) {
           return JSString::NewAsciiString(args.ctx(), "NaN");
-        } else if (std::isinf(num)) {
+        } else if (core::IsInf(num)) {
           if (num > 0) {
             return JSString::NewAsciiString(args.ctx(), "Infinity");
           } else {
@@ -210,7 +210,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
 
   if (core::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
-  } else if (std::isinf(x)) {
+  } else if (core::IsInf(x)) {
     if (x < 0) {
       return JSString::NewAsciiString(ctx, "-Infinity");
     } else {
@@ -283,7 +283,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
 
   if (core::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
-  } else if (std::isinf(x)) {
+  } else if (core::IsInf(x)) {
     if (x < 0) {
       return JSString::NewAsciiString(ctx, "-Infinity");
     } else {

@@ -622,7 +622,7 @@ inline void DoubleToASCII(Buffer* buf,
   IV_STATIC_ASSERT(
       RoundingNone + RoundingSignificantFigures + RoundingDecimalPlaces == 1);
   IV_STATIC_ASSERT(!RoundingNone || LeftRight);
-  assert(!IsNaN(dd) && !std::isinf(dd));
+  assert(!IsNaN(dd) && !core::IsInf(dd));
 
   U u;
   u.d = dd;
