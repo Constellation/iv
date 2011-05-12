@@ -14,6 +14,13 @@ inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
   return (i.QuadPart - kEpochTime) / 10 / 1000000;
 }
 
+inline double FileTimeToMs(const FILETIME& ft) {
+  LARGE_INTEGER i;
+  i.LowPart = ft.dwLowDateTime;
+  i.HighPart = ft.dwHighDateTime;
+  return (i.QuadPart - kEpochTime) / 10000.0;
+}
+
 inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
   FILETIME ft;
   ::SystemTimeToFileTime(&st, &ft);
@@ -56,7 +63,7 @@ inline double DaylightSavingTA(double utc) {
 inline double CurrentTime() {
   FILETIME ft;
   ::GetSystemTimeAsFileTime(&ft);
-  return static_cast<double>(FileTimeToUnixTime(ft));
+  return FileTimeToMs(ft);
 }
 
 class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
@@ -100,7 +107,7 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
     current.HighPart = start_.dwHighDateTime;
     current.LowPart = start_.dwLowDateTime;
     current.QuadPart += file_ticks.QuadPart;
-    return (current.QuadPart - kEpochTime) / 10.0 / 1000000.0;
+    return (current.QuadPart - kEpochTime) / 10000.0;
   }
 
   LARGE_INTEGER frequency_;
