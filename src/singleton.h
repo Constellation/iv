@@ -1,12 +1,13 @@
 #ifndef _IV_SINGLETON_H_
 #define _IV_SINGLETON_H_
 #include <cstdlib>
+#include "noncopyable.h"
 #include "callonce.h"
 namespace iv {
 namespace core {
 
 template<class T>
-class Singleton {
+class Singleton : core::Noncopyable<T> {
  public:
   static T* Instance() {
     thread::CallOnce(&once_, &Singleton<T>::Initialize);

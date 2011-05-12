@@ -76,43 +76,32 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
     if (::QueryPerformanceFrequency(&frequency_)) {
       query_performance_is_used_ = true;
       FILETIME ft;
+      FILETIME start;
       ::GetSystemTimeAsFileTime(&ft);
       do {
-        ::GetSystemTimeAsFileTime(&start_);
+        ::GetSystemTimeAsFileTime(&start);
         ::QueryPerformanceCounter(&counter_);
-      } while ((ft.dwHighDateTime == start_.dwHighDateTime) &&
-               (ft.dwLowDateTime == start_.dwLowDateTime));
+      } while ((ft.dwHighDateTime == start.dwHighDateTime) &&
+               (ft.dwLowDateTime == start.dwLowDateTime));
+      start_ = FileTimeToMs(start);
     }
   }
 
-  double GetHiResTime() {
+  double GetHiResTime() const {
     return (query_performance_is_used_) ? CalculateHiResTime() : CurrentTime();
   }
 
  private:
-  double CalculateHiResTime() {
+  double CalculateHiResTime() const {
     LARGE_INTEGER i;
     ::QueryPerformanceCounter(&i);
-    LARGE_INTEGER ticks_elapsed;
-    ticks_elapsed.QuadPart = i.QuadPart - counter_.QuadPart;
-    LARGE_INTEGER file_ticks;
-
-    file_ticks.QuadPart =
-        static_cast<uint64_t>(
-            static_cast<double>(
-                (ticks_elapsed.QuadPart / frequency_.QuadPart) * 10000000.0)
-            + 0.5);
-
-    LARGE_INTEGER current;
-    current.HighPart = start_.dwHighDateTime;
-    current.LowPart = start_.dwLowDateTime;
-    current.QuadPart += file_ticks.QuadPart;
-    return (current.QuadPart - kEpochTime) / 10000.0;
+    return start_ +
+        ((i.QuadPart - counter_.QuadPart) * 1000 / frequency_.QuadPart);
   }
 
   LARGE_INTEGER frequency_;
   bool query_performance_is_used_;
-  FILETIME start_;
+  double start_;
   LARGE_INTEGER counter_;
 };
 
