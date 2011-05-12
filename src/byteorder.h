@@ -1,6 +1,11 @@
 #ifndef _IV_BYTEORDER_H_
 #define _IV_BYTEORDER_H_
+#include "platform.h"
 
+#if defined(OS_WIN)
+// Windows is little endian only
+#define IV_IS_LITTLE_ENDIAN
+#else
 #include <sys/types.h>
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -21,14 +26,15 @@
 
 #endif
 
-#if !defined(__BYTE_ORDER) || (__BYTE_ORDER != __LITTLE_ENDIAN && __BYTE_ORDER != __BIG_ENDIAN)
-#error BYTE_ORDER not defined. you shoud define __LITTLE_ENDIAN or __BIG_ENDIAN
-#endif
-
 #if (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define IV_IS_LITTLE_ENDIAN
-#else
+#elif (__BYTE_ORDER == __BIG_ENDIAN)
 #define IV_IS_BIG_ENDIAN
+#endif
+#endif
+
+#if !defined(IV_IS_LITTLE_ENDIAN) && !defined(IV_IS_BIG_ENDIAN)
+#error BYTE_ORDER not defined. you shoud define __LITTLE_ENDIAN or __BIG_ENDIAN
 #endif
 
 #endif  // _IV_BYTEORDER_H_
