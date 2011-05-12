@@ -13,8 +13,7 @@ class OSAllocator {
 };
 
 } }  // namespace iv::core
-#ifdef OS_WIN
-#include <windows.h>
+#if defined(OS_WIN)
 #include "os_allocator_win.h"
 #else
 #include "os_allocator_posix.h"
