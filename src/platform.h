@@ -5,7 +5,7 @@
 #include <sys/param.h>
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #ifndef OS_WIN
 #define OS_WIN 1
 #endif  // OS_WIN
