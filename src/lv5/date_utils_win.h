@@ -68,7 +68,7 @@ inline double CurrentTime() {
 
 class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
  public:
-  friend classs core::Singleton<HiResTimeCounter>;
+  friend class core::Singleton<HiResTimeCounter>;
 
   double GetHiResTime() const {
     return (query_performance_is_used_) ? CalculateHiResTime() : CurrentTime();
