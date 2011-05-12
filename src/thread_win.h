@@ -12,16 +12,16 @@ class WinMutex : private Noncopyable<> {
   }
 
   ~WinMutex() {
-    ::DeleteCriticalSection(&mutex);
+    ::DeleteCriticalSection(&mutex_);
   }
 
   int Lock() {
-    ::EnterCriticalSection(&mutex);
+    ::EnterCriticalSection(&mutex_);
     return 0;
   }
 
   int Unlock() {
-    ::LeaveCriticalSection(&mutex);
+    ::LeaveCriticalSection(&mutex_);
     return 0;
   }
 
