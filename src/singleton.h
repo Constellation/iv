@@ -7,7 +7,7 @@ namespace iv {
 namespace core {
 
 template<class T>
-class Singleton : core::Noncopyable<T> {
+class Singleton : private core::Noncopyable<T> {
  public:
   static T* Instance() {
     thread::CallOnce(&once_, &Singleton<T>::Initialize);
