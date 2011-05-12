@@ -61,5 +61,9 @@ inline double CurrentTime() {
   return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
+inline double HighResTime() {
+  return CurrentTime();
+}
+
 } } }  // namespace iv::lv5::date
 #endif  // _IV_LV5_DATE_UTILS_POSIX_H_

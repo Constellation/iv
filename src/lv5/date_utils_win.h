@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_DATE_UTILS_WIN_H_
 #define _IV_LV5_DATE_UTILS_WIN_H_
 #include <windows.h>
+#include "singleton.h"
 namespace iv {
 namespace lv5 {
 namespace date {
@@ -55,6 +56,60 @@ inline double CurrentTime() {
   FILETIME ft;
   ::GetSystemTimeAsFileTime(&ft);
   return FileTimeToUnixTime(ft);
+}
+
+class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
+ public:
+  HiResTimeCounter()
+    : frequency_(),
+      query_performance_is_used_(false),
+      start_(),
+      counter_() {
+    if (::QueryPerformanceFrequency(&frequency_)) {
+      query_performance_is_used_ = true;
+      FILETIME ft;
+      ::GetSystemTimeAsFileTime(&ft);
+      do {
+        ::GetSystemTimeAsFileTime(&start_);
+        ::QueryPerformanceCounter(&counter_);
+      } while ((ft.dwHighDateTime == start_.dwHighDateTime) &&
+               (ft.dwLowDateTime == start_.dwLowDateTime));
+    }
+  }
+
+  double GetHiResTime() {
+    return (query_performance_is_used_) ? CalculateHiResTime() : CurrentTime();
+  }
+
+ private:
+  double CalculateHiResTime() {
+    LARGE_INTEGER i;
+    ::QueryPerformanceCounter(&i);
+    lARGE_INTEGER ticks_elapsed;
+    ticks_elapesd.QuadPart = i.QuadPart - counter_.QuadPart;
+    LARGE_INTEGER file_ticks;
+
+    file_ticks.QuadPart =
+        static_cast<uint64_t>(
+            static_cast<double>(
+                (ticks_elapsed.QuadPart / frequency_.QuadPart) * 10000000.0)
+            + 0.5);
+
+    LARGE_INTEGER current;
+    current.HighPart = start_.dwHighDateTime;
+    current.LowPart = start_.dwLowDateTime;
+    current.QuadPart += file_ticks.QuadPart;
+    return (current.QuadPart - kEpochTime) / 10.0 / 1000000.0;
+  }
+
+  LARGE_INTEGER frequency_;
+  bool query_performance_is_used_;
+  FILETIME start_;
+  LARGE_INTEGER counter_;
+};
+
+inline double HighResTime() {
+  return HiResTimeCounter::Instance()->GetHiResTime();
 }
 
 } } }  // namespace iv::lv5::date
