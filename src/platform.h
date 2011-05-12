@@ -8,6 +8,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #ifndef OS_WIN
 #define OS_WIN 1
+#define NOMINMAX
 #endif  // OS_WIN
 #elif defined(__APPLE__) || defined(__darwin__)
 #ifndef OS_MACOSX
