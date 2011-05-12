@@ -458,7 +458,7 @@ inline uint64_t DoubleToUInt64(double d) {
 }
 
 inline double DoubleToInteger(double d) {
-  if (std::isnan(d)) {
+  if (IsNaN(d)) {
     return 0;
   }
   if (!IsFinite(d) || d == 0) {

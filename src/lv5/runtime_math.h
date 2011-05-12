@@ -2,6 +2,7 @@
 #define _IV_LV5_RUNTIME_MATH_H_
 #include <cmath>
 #include "round.h"
+#include "platform_math.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
@@ -115,7 +116,7 @@ inline JSVal MathMax(const Arguments& args, Error* error) {
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(error));
-    if (std::isnan(x)) {
+    if (core::IsNaN(x)) {
       return x;
     } else if (x > max || (x == 0.0 && max == 0.0 && !std::signbit(x))) {
       max = x;
@@ -130,7 +131,7 @@ inline JSVal MathMin(const Arguments& args, Error* error) {
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(error));
-    if (std::isnan(x)) {
+    if (core::IsNaN(x)) {
       return x;
     } else if (x < min || (x == 0.0 && min == 0.0 && std::signbit(x))) {
       min = x;
@@ -146,7 +147,7 @@ inline JSVal MathPow(const Arguments& args, Error* error) {
     const double y = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     if (y == 0) {
       return 1.0;
-    } else if (std::isnan(y) ||
+    } else if (core::IsNaN(y) ||
                ((x == 1 || x == -1) && std::isinf(y))) {
       return JSNaN;
     } else {

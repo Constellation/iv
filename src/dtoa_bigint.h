@@ -12,6 +12,7 @@
 #include <tr1/cstdint>
 #include <tr1/array>
 #include <tr1/memory>
+#include "platform_math.h"
 #include "round.h"
 #include "thread.h"
 #include "byteorder.h"
@@ -621,7 +622,7 @@ inline void DoubleToASCII(Buffer* buf,
   IV_STATIC_ASSERT(
       RoundingNone + RoundingSignificantFigures + RoundingDecimalPlaces == 1);
   IV_STATIC_ASSERT(!RoundingNone || LeftRight);
-  assert(!std::isnan(dd) && !std::isinf(dd));
+  assert(!IsNaN(dd) && !std::isinf(dd));
 
   U u;
   u.d = dd;

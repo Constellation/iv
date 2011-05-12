@@ -2,6 +2,7 @@
 #define _IV_LV5_DATE_UTILS_WIN_H_
 #include <windows.h>
 #include "singleton.h"
+#include "platform_math.h"
 namespace iv {
 namespace lv5 {
 namespace date {
@@ -21,7 +22,7 @@ inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
 
 inline double DaylightSavingTA(double utc) {
   // http://msdn.microsoft.com/en-us/library/ms724421
-  if (std::isnan(utc)) {
+  if (core::IsNaN(utc)) {
     return utc;
   }
   TIME_ZONE_INFORMATION tzi;

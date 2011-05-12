@@ -85,7 +85,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
       milli = 0;
     }
 
-    if (!std::isnan(y)) {
+    if (!core::IsNaN(y)) {
       const double integer = core::DoubleToInteger(y);
       if (0 <= integer && integer <= 99) {
         y = 1900 + integer;
@@ -196,7 +196,7 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
     milli = 0;
   }
 
-  if (!std::isnan(y)) {
+  if (!core::IsNaN(y)) {
     const double integer = core::DoubleToInteger(y);
     if (0 <= integer && integer <= 99) {
       y = 1900 + integer;
@@ -222,7 +222,7 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
@@ -270,7 +270,7 @@ inline JSVal DateToDateString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
@@ -298,7 +298,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
@@ -342,7 +342,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
@@ -390,7 +390,7 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
@@ -418,7 +418,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
@@ -490,7 +490,7 @@ inline JSVal DateGetFullYear(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::YearFromTime(date::LocalTime(time));
@@ -508,7 +508,7 @@ inline JSVal DateGetUTCFullYear(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::YearFromTime(time);
@@ -526,7 +526,7 @@ inline JSVal DateGetMonth(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MonthFromTime(date::LocalTime(time));
@@ -544,7 +544,7 @@ inline JSVal DateGetUTCMonth(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MonthFromTime(time);
@@ -562,7 +562,7 @@ inline JSVal DateGetDate(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::DateFromTime(date::LocalTime(time));
@@ -580,7 +580,7 @@ inline JSVal DateGetUTCDate(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::DateFromTime(time);
@@ -598,7 +598,7 @@ inline JSVal DateGetDay(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::WeekDay(date::LocalTime(time));
@@ -616,7 +616,7 @@ inline JSVal DateGetUTCDay(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::WeekDay(time);
@@ -634,7 +634,7 @@ inline JSVal DateGetHours(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::HourFromTime(date::LocalTime(time));
@@ -652,7 +652,7 @@ inline JSVal DateGetUTCHours(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::HourFromTime(time);
@@ -670,7 +670,7 @@ inline JSVal DateGetMinutes(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MinFromTime(date::LocalTime(time));
@@ -688,7 +688,7 @@ inline JSVal DateGetUTCMinutes(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MinFromTime(time);
@@ -706,7 +706,7 @@ inline JSVal DateGetSeconds(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::SecFromTime(date::LocalTime(time));
@@ -724,7 +724,7 @@ inline JSVal DateGetUTCSeconds(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::SecFromTime(time);
@@ -742,7 +742,7 @@ inline JSVal DateGetMilliseconds(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MsFromTime(date::LocalTime(time));
@@ -760,7 +760,7 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::MsFromTime(time);
@@ -778,7 +778,7 @@ inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return (time - date::LocalTime(time)) / date::kMsPerMinute;
@@ -1271,7 +1271,7 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     double t = date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       t = +0.0;
     }
     const std::size_t args_size = args.size();
@@ -1316,7 +1316,7 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
   const Class& cls = context::Cls(args.ctx(), "Date");
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     double t = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       t = +0.0;
     }
     const std::size_t args_size = args.size();
@@ -1361,7 +1361,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::tr1::array<char, 32> buf;
@@ -1391,7 +1391,7 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::tr1::array<char, 32> buf;
@@ -1422,7 +1422,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 
   if (tv.IsNumber()) {
     const double& val = tv.number();
-    if (!IsFinite(val)) {
+    if (!core::IsFinite(val)) {
       return JSNull;
     }
   }
@@ -1448,7 +1448,7 @@ inline JSVal DateGetYear(const Arguments& args, Error* e) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
-    if (std::isnan(time)) {
+    if (core::IsNaN(time)) {
       return kNaN;
     }
     return date::YearFromTime(date::LocalTime(time)) - 1900;
@@ -1467,7 +1467,7 @@ inline JSVal DateSetYear(const Arguments& args, Error* e) {
   if (obj.IsObject() && cls.name == obj.object()->class_name()) {
     JSDate* d = static_cast<JSDate*>(obj.object());
     double t = date::LocalTime(d->value());
-    if (std::isnan(t)) {
+    if (core::IsNaN(t)) {
       t = +0.0;
     }
     const std::size_t args_size = args.size();
@@ -1475,7 +1475,7 @@ inline JSVal DateSetYear(const Arguments& args, Error* e) {
     if (args_size > 0) {
       y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
     }
-    if (std::isnan(y)) {
+    if (core::IsNaN(y)) {
       d->set_value(y);
       return y;
     }

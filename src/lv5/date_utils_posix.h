@@ -2,13 +2,14 @@
 #define _IV_LV5_DATE_UTILS_POSIX_H_
 #include <sys/time.h>
 #include <unistd.h>
+#include "platform_math.h"
 namespace iv {
 namespace lv5 {
 namespace date {
 
 inline double DaylightSavingTA(double utc) {
   // t is utc time
-  if (std::isnan(utc)) {
+  if (core::IsNaN(utc)) {
     return utc;
   }
 

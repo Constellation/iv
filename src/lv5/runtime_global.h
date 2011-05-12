@@ -284,7 +284,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
-    if (std::isnan(number)) {
+    if (core::IsNaN(number)) {
       return JSTrue;
     } else {
       return JSFalse;
@@ -299,7 +299,7 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, error);
   if (args.size() > 0) {
     const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
-    return JSVal::Bool(IsFinite(number));
+    return JSVal::Bool(core::IsFinite(number));
   } else {
     return JSFalse;
   }

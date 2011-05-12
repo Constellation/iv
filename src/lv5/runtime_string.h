@@ -9,6 +9,7 @@
 #include "ustringpiece.h"
 #include "character.h"
 #include "conversions.h"
+#include "platform_math.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
@@ -576,7 +577,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
     // undefined -> NaN
     if (args.size() > 1) {
       const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
-      if (!std::isnan(position)) {
+      if (!core::IsNaN(position)) {
         const double integer = core::DoubleToInteger(position);
         if (integer < 0) {
           target = 0;

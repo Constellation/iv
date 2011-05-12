@@ -5,6 +5,7 @@
 #include <tr1/cstdio>
 #include <tr1/cinttypes>
 #include "conversions.h"
+#include "platform_math.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
@@ -64,7 +65,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
-        if (std::isnan(num)) {
+        if (core::IsNaN(num)) {
           return JSString::NewAsciiString(args.ctx(), "NaN");
         } else if (std::isinf(num)) {
           if (num > 0) {
@@ -207,7 +208,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
     x = obj.number();
   }
 
-  if (std::isnan(x)) {
+  if (core::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
   } else if (std::isinf(x)) {
     if (x < 0) {
@@ -280,7 +281,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
     }
   }
 
-  if (std::isnan(x)) {
+  if (core::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
   } else if (std::isinf(x)) {
     if (x < 0) {

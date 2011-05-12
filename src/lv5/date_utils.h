@@ -180,7 +180,7 @@ double DaylightSavingTA(double t);
 
 static const char* kNaNTimeZone = "";
 inline const char* LocalTimeZone(double t) {
-  if (std::isnan(t)) {
+  if (core::IsNaN(t)) {
     return kNaNTimeZone;
   }
 #ifdef __CYGWIN__
@@ -242,10 +242,10 @@ inline int MsFromTime(double t) {
 }
 
 inline double MakeTime(double hour, double min, double sec, double ms) {
-  if (!IsFinite(hour) ||
-      !IsFinite(min) ||
-      !IsFinite(sec) ||
-      !IsFinite(ms)) {
+  if (!core::IsFinite(hour) ||
+      !core::IsFinite(min) ||
+      !core::IsFinite(sec) ||
+      !core::IsFinite(ms)) {
     return kNaN;
   } else {
     return
@@ -269,9 +269,9 @@ inline double DateToDays(int year, int month, int date) {
 }
 
 inline double MakeDay(double year, double month, double date) {
-  if (!IsFinite(year) ||
-      !IsFinite(month) ||
-      !IsFinite(date)) {
+  if (!core::IsFinite(year) ||
+      !core::IsFinite(month) ||
+      !core::IsFinite(date)) {
     return kNaN;
   } else {
     const int y = core::DoubleToInt32(year);
@@ -292,7 +292,7 @@ inline double MakeDate(double day, double time) {
 }
 
 inline double TimeClip(double time) {
-  if (!IsFinite(time)) {
+  if (!core::IsFinite(time)) {
     return kNaN;
   }
   if (std::abs(time) > kMaxTime) {

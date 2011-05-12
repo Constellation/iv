@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_INTERNAL_H_
 #define _IV_LV5_INTERNAL_H_
+#include "platform_math.h"
 #include "lv5/error_check.h"
 #include "lv5/factory.h"
 #include "lv5/property.h"
@@ -199,7 +200,7 @@ inline bool StrictEqual(const JSVal& lhs, const JSVal& rhs) {
   if (lhs.IsNumber()) {
     const double& lhsv = lhs.number();
     const double& rhsv = rhs.number();
-    if (std::isnan(lhsv) || std::isnan(rhsv)) {
+    if (core::IsNaN(lhsv) || core::IsNaN(rhsv)) {
       return false;
     }
     return lhsv == rhsv;
@@ -231,7 +232,7 @@ inline bool AbstractEqual(Context* ctx,
     if (lhs.IsNumber()) {
       const double& lhsv = lhs.number();
       const double& rhsv = rhs.number();
-      if (std::isnan(lhsv) || std::isnan(rhsv)) {
+      if (core::IsNaN(lhsv) || core::IsNaN(rhsv)) {
         return false;
       }
       return lhsv == rhsv;
@@ -329,7 +330,7 @@ CompareKind Compare(Context* ctx,
     if (*e) {
       return CMP_ERROR;
     }
-    if (std::isnan(nx) || std::isnan(ny)) {
+    if (core::IsNaN(nx) || core::IsNaN(ny)) {
       return CMP_UNDEFINED;
     }
     if (nx == ny) {

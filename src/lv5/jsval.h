@@ -7,6 +7,7 @@
 #include "byteorder.h"
 #include "enable_if.h"
 #include "static_assert.h"
+#include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "none.h"
 #include "utils.h"
@@ -446,7 +447,7 @@ class JSVal {
   inline bool ToBoolean(Error* e) const {
     if (IsNumber()) {
       const double& num = number();
-      return num != 0 && !std::isnan(num);
+      return num != 0 && !core::IsNaN(num);
     } else if (IsString()) {
       return !string()->empty();
     } else if (IsNull()) {
@@ -542,7 +543,7 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
   if (lhs.IsNumber()) {
     const double& lhsv = lhs.number();
     const double& rhsv = rhs.number();
-    if (std::isnan(lhsv) && std::isnan(rhsv)) {
+    if (core::IsNaN(lhsv) && core::IsNaN(rhsv)) {
       return true;
     }
     if (lhsv == rhsv) {
