@@ -7,6 +7,7 @@
 #include "byteorder.h"
 #include "enable_if.h"
 #include "static_assert.h"
+#include "canonicalized_nan.h"
 #include "none.h"
 #include "utils.h"
 #include "lv5/hint.h"
@@ -138,25 +139,6 @@ struct JSUndefinedType { };
 struct JSEmptyType { };
 struct JSNaNType { };
 
-union Trans64 {
-  uint64_t bits_;
-  double double_;
-};
-
-template<typename T>
-class JSValData {
- public:
-  static const Trans64 kTrans;
-  static const double kNaN;
-};
-
-// 111111111111000000000000000000000000000000000000000000000000000
-template<typename T>
-const Trans64 JSValData<T>::kTrans = { 0x7FF8000000000000LL };
-
-template<typename T>
-const double JSValData<T>::kNaN = JSValData<T>::kTrans.double_;
-
 static const uint32_t kTrueTag        = 0xffffffff;
 static const uint32_t kFalseTag       = 0xfffffffe;
 static const uint32_t kEmptyTag       = 0xfffffffd;
@@ -188,8 +170,6 @@ inline bool JSNull(JSVal x, detail::JSNullType dummy);
 inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
 inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy);
 inline bool JSNaN(JSVal x, detail::JSNaNType dummy);
-
-typedef detail::JSValData<core::None> JSValData;
 
 class JSVal {
  public:
@@ -285,7 +265,7 @@ class JSVal {
   }
 
   inline void set_value(double val) {
-    value_.number_.as_ = (val == val) ? val : JSValData::kNaN;
+    value_.number_.as_ = (val == val) ? val : kNaN;
   }
 
   inline void set_value_uint32(uint32_t val) {
@@ -336,7 +316,7 @@ class JSVal {
   }
 
   inline void set_value(JSNaNKeywordType val) {
-    value_.number_.as_ = JSValData::kNaN;
+    value_.number_.as_ = kNaN;
   }
 
   inline void set_null() {

@@ -153,7 +153,7 @@ class DateParser : private core::Noncopyable<> {
           return date::MakeDay(year, month_ - 1, day);
         } else {
           // invalid
-          return JSValData::kNaN;
+          return kNaN;
         }
       } else {
         // YMD
@@ -163,7 +163,7 @@ class DateParser : private core::Noncopyable<> {
         if (year != kNone && day != kNone && year != kNone) {
           return date::MakeDay(year, month - 1, day);
         } else {
-          return JSValData::kNaN;
+          return kNaN;
         }
       }
     }
@@ -219,21 +219,21 @@ class DateParser : private core::Noncopyable<> {
 
     double MakeTime() const {
       if (!IsHourExpecting(hour_)) {
-        return JSValData::kNaN;
+        return kNaN;
       }
       if (!IsMinExpecting(min_)) {
-        return JSValData::kNaN;
+        return kNaN;
       }
       if (!IsSecExpecting(sec_)) {
-        return JSValData::kNaN;
+        return kNaN;
       }
       if (!IsMSecExpecting(msec_)) {
-        return JSValData::kNaN;
+        return kNaN;
       }
       int hour = hour_;
       if (offset_ != kNone) {
         if (!IsOffsetHourExpecting(hour_)) {
-          return JSValData::kNaN;
+          return kNaN;
         }
         hour = hour_ % 12 + offset_;
       }

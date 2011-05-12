@@ -83,7 +83,7 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   } else if (IsNull()) {
     return +0;
   } else if (IsUndefined()) {
-    return JSValData::kNaN;
+    return kNaN;
   } else {
     assert(IsObject());
     JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,

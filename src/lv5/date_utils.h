@@ -8,6 +8,7 @@
 #include "platform.h"
 #include "conversions.h"
 #include "utils.h"
+#include "lv5/canonicalized_nan.h"
 namespace iv {
 namespace lv5 {
 namespace date {
@@ -166,7 +167,7 @@ inline int32_t GetLocalTZA() {
   local.tm_yday = 0;
   local.tm_isdst = 0;
   local.tm_year = 109;
-  return (1230768000 - std::mktime(&local)) * 1000;
+  return static_cast<int32_t>((1230768000 - std::mktime(&local)) * 1000);
 }
 
 inline int32_t LocalTZA() {
@@ -244,7 +245,7 @@ inline double MakeTime(double hour, double min, double sec, double ms) {
       !std::isfinite(min) ||
       !std::isfinite(sec) ||
       !std::isfinite(ms)) {
-    return JSValData::kNaN;
+    return kNaN;
   } else {
     return
         core::DoubleToInteger(hour) * kMsPerHour +
@@ -270,7 +271,7 @@ inline double MakeDay(double year, double month, double date) {
   if (!std::isfinite(year) ||
       !std::isfinite(month) ||
       !std::isfinite(date)) {
-    return JSValData::kNaN;
+    return kNaN;
   } else {
     const int y = core::DoubleToInt32(year);
     const int m = core::DoubleToInt32(month);
@@ -284,17 +285,17 @@ inline double MakeDay(double year, double month, double date) {
 inline double MakeDate(double day, double time) {
   double res = day * kMsPerDay + time;
   if (std::abs(res) > kMaxTime) {
-    return JSValData::kNaN;
+    return kNaN;
   }
   return res;
 }
 
 inline double TimeClip(double time) {
   if (!std::isfinite(time)) {
-    return JSValData::kNaN;
+    return kNaN;
   }
   if (std::abs(time) > kMaxTime) {
-    return JSValData::kNaN;
+    return kNaN;
   }
   return core::DoubleToInteger(time);
 }
