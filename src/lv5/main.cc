@@ -74,6 +74,7 @@ int Execute(const iv::core::StringPiece& data,
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   iv::lv5::railgun::VM vm(&ctx);
   return vm.Run(code);
 }
@@ -104,6 +105,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   iv::lv5::teleporter::JSScript* const script =
       iv::lv5::teleporter::JSGlobalScript::New(&ctx, global, &factory, &src);
   if (ctx.Run(script)) {

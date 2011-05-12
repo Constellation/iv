@@ -3,6 +3,7 @@
 #include <iostream>  // NOLINT
 #include <cstdlib>
 #include "conversions.h"
+#include "date_utils.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -33,6 +34,10 @@ inline JSVal Quit(const Arguments& args, Error* e) {
   }
   std::exit(code);
   return JSUndefined;
+}
+
+inline JSVal HiResTime(const Arguments& args, Error* e) {
+  return date::HighResTime();
 }
 
 } }  // namespace iv::lv5

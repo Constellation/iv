@@ -31,7 +31,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     if (args_size == 0) {
       // section 15.9.3.3 new Date()
       return JSDate::New(
-          ctx, date::TimeClip(date::CurrentTime() * 1000.0));
+          ctx, date::TimeClip(date::CurrentTime()));
     }
 
     if (args_size == 1) {
@@ -98,7 +98,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
             date::UTC(date::MakeDate(date::MakeDay(y, m, dt),
                                      date::MakeTime(h, min, s, milli)))));
   } else {
-    const double t = date::TimeClip(date::CurrentTime() * 1000.0);
+    const double t = date::TimeClip(date::CurrentTime());
     const double dst = date::DaylightSavingTA(t);
     double offset = date::LocalTZA() + dst;
     const double time = t + offset;
@@ -211,7 +211,7 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
 // section 15.9.4.4 Date.now()
 inline JSVal DateNow(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.now", args, error);
-  return std::floor(date::CurrentTime() * 1000.0);
+  return std::floor(date::CurrentTime());
 }
 
 // section 15.9.5.2 Date.prototype.toString()

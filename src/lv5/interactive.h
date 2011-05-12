@@ -30,6 +30,7 @@ class Interactive {
     : ctx_() {
     ctx_.DefineFunction<&lv5::Print, 1>("print");
     ctx_.DefineFunction<&lv5::Quit, 1>("quit");
+    ctx_.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   }
   int Run() {
     std::vector<char> buffer;

@@ -59,7 +59,7 @@ inline double DaylightSavingTA(double utc) {
 inline double CurrentTime() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
+  return (tv.tv_sec + tv.tv_usec / 1000000.0) * 1000.0;
 }
 
 inline double HighResTime() {
