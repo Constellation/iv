@@ -68,6 +68,13 @@ inline double CurrentTime() {
 
 class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
  public:
+  friend classs core::Singleton<HiResTimeCounter>;
+
+  double GetHiResTime() const {
+    return (query_performance_is_used_) ? CalculateHiResTime() : CurrentTime();
+  }
+
+ private:
   HiResTimeCounter()
     : frequency_(),
       query_performance_is_used_(false),
@@ -87,11 +94,6 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
     }
   }
 
-  double GetHiResTime() const {
-    return (query_performance_is_used_) ? CalculateHiResTime() : CurrentTime();
-  }
-
- private:
   double CalculateHiResTime() const {
     LARGE_INTEGER i;
     ::QueryPerformanceCounter(&i);
