@@ -7,7 +7,7 @@ namespace thread {
 
 inline int CompareAndSwap(volatile LONG* target,
                           LONG new_value, LONG old_value) {
-  return InterlockedCompareExchange(target, new_value, old_value);
+  return ::InterlockedCompareExchange(target, new_value, old_value);
 }
 
 } } }  // iv::core::thread
