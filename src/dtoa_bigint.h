@@ -296,10 +296,10 @@ class BigInt : protected std::vector<uint32_t> {
     } else {
       resize(size() + n);
     }
-    const container_type::const_iterator src_begin  = begin();
-    const container_type::iterator dst_begin = begin();
-    container_type::const_iterator src = src_begin + original - 1;
-    container_type::iterator dst = dst_begin + n1 - 1;
+    const container_type::const_pointer src_begin  = data();
+    const container_type::pointer dst_begin = data();
+    container_type::const_pointer src = src_begin + original - 1;
+    container_type::pointer dst = dst_begin + n1 - 1;
     if (k) {
       uint32_t hi_subword = 0;
       int s = 32 - k;
