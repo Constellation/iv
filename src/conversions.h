@@ -6,6 +6,7 @@
 #include <limits>
 #include <tr1/array>
 #include <tr1/cstdint>
+#include "platform_math.h"
 #include "character.h"
 #include "ustringpiece.h"
 #include "none.h"
@@ -419,7 +420,7 @@ inline int32_t DoubleToInt32(double d) {
   if (static_cast<double>(i) == d) {
     return i;
   }
-  if (!std::isfinite(d) || d == 0) {
+  if (!IsFinite(d) || d == 0) {
     return 0;
   }
   if (d < 0 || d >= Conversions::DoubleToInt32_Two32) {
@@ -440,7 +441,7 @@ inline int64_t DoubleToInt64(double d) {
   if (static_cast<double>(i) == d) {
     return i;
   }
-  if (!std::isfinite(d) || d == 0) {
+  if (!IsFinite(d) || d == 0) {
     return 0;
   }
   if (Conversions::DoubleToInt32_Two32 >= d) {
@@ -460,7 +461,7 @@ inline double DoubleToInteger(double d) {
   if (std::isnan(d)) {
     return 0;
   }
-  if (!std::isfinite(d) || d == 0) {
+  if (!IsFinite(d) || d == 0) {
     return d;
   }
   return std::floor(std::abs(d)) * (std::signbit(d) ? -1 : 1);

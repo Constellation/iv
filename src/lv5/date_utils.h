@@ -6,6 +6,7 @@
 #include <tr1/cstdint>
 #include <tr1/array>
 #include "platform.h"
+#include "platform_math.h"
 #include "conversions.h"
 #include "utils.h"
 #include "lv5/canonicalized_nan.h"
@@ -241,10 +242,10 @@ inline int MsFromTime(double t) {
 }
 
 inline double MakeTime(double hour, double min, double sec, double ms) {
-  if (!std::isfinite(hour) ||
-      !std::isfinite(min) ||
-      !std::isfinite(sec) ||
-      !std::isfinite(ms)) {
+  if (!IsFinite(hour) ||
+      !IsFinite(min) ||
+      !IsFinite(sec) ||
+      !IsFinite(ms)) {
     return kNaN;
   } else {
     return
@@ -268,9 +269,9 @@ inline double DateToDays(int year, int month, int date) {
 }
 
 inline double MakeDay(double year, double month, double date) {
-  if (!std::isfinite(year) ||
-      !std::isfinite(month) ||
-      !std::isfinite(date)) {
+  if (!IsFinite(year) ||
+      !IsFinite(month) ||
+      !IsFinite(date)) {
     return kNaN;
   } else {
     const int y = core::DoubleToInt32(year);
@@ -291,7 +292,7 @@ inline double MakeDate(double day, double time) {
 }
 
 inline double TimeClip(double time) {
-  if (!std::isfinite(time)) {
+  if (!IsFinite(time)) {
     return kNaN;
   }
   if (std::abs(time) > kMaxTime) {

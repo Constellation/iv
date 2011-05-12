@@ -6,6 +6,7 @@
 #include <tr1/cstdint>
 #include <tr1/array>
 #include "utils.h"
+#include "platform_math.h"
 #include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
@@ -1421,7 +1422,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 
   if (tv.IsNumber()) {
     const double& val = tv.number();
-    if (!std::isfinite(val)) {
+    if (!IsFinite(val)) {
       return JSNull;
     }
   }

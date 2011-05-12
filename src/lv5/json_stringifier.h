@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include "uchar.h"
+#include "platform_math.h"
 #include "noncopyable.h"
 #include "conversions.h"
 #include "ustring.h"
@@ -326,7 +327,7 @@ class JSONStringifier : private core::Noncopyable<> {
     }
     if (value.IsNumber()) {
       const double val = value.number();
-      if (std::isfinite(val)) {
+      if (IsFinite(val)) {
         return value.ToString(ctx_, e);
       } else {
         return JSString::NewAsciiString(ctx_, "null");
