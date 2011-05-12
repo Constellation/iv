@@ -464,7 +464,7 @@ inline double DoubleToInteger(double d) {
   if (!IsFinite(d) || d == 0) {
     return d;
   }
-  return std::floor(std::abs(d)) * (std::signbit(d) ? -1 : 1);
+  return std::floor(std::abs(d)) * (Signbit(d) ? -1 : 1);
 }
 
 template<typename Iter>

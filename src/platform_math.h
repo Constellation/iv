@@ -15,6 +15,10 @@ inline int IsFinite(const double& val) {
   return _finite(val);
 }
 
+inline int Signbit(const double& x) {
+  return (x == 0) ? (_fpclass(x) & _FPCLASS_NZ) : (x < 0);
+}
+
 } }  // namespace iv::core
 #else
 #include <cmath>
@@ -27,6 +31,10 @@ inline int IsNaN(const double& val) {
 
 inline int IsFinite(const double& val) {
   return std::isfinite(val);
+}
+
+inline int Signbit(const double& x) {
+  return std::signbit(x);
 }
 
 } }  // namespace iv::core

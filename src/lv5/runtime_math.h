@@ -118,7 +118,7 @@ inline JSVal MathMax(const Arguments& args, Error* error) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(error));
     if (core::IsNaN(x)) {
       return x;
-    } else if (x > max || (x == 0.0 && max == 0.0 && !std::signbit(x))) {
+    } else if (x > max || (x == 0.0 && max == 0.0 && !core::Signbit(x))) {
       max = x;
     }
   }
@@ -133,7 +133,7 @@ inline JSVal MathMin(const Arguments& args, Error* error) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(error));
     if (core::IsNaN(x)) {
       return x;
-    } else if (x < min || (x == 0.0 && min == 0.0 && std::signbit(x))) {
+    } else if (x < min || (x == 0.0 && min == 0.0 && core::Signbit(x))) {
       min = x;
     }
   }

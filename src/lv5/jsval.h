@@ -547,7 +547,7 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
       return true;
     }
     if (lhsv == rhsv) {
-      if (std::signbit(lhsv) && std::signbit(rhsv)) {
+      if (core::Signbit(lhsv) && core::Signbit(rhsv)) {
         return true;
       } else {
         return false;
