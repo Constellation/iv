@@ -27,4 +27,13 @@
 #endif  // OS_CYGWIN
 #endif
 
+// compiler
+#ifdef __GNUC__
+#ifdef __GNU_PATCHLEVEL__
+#define __GNUC_VERSION__ (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNU_PATCHLEVEL__)
+#else
+#define __GNUC_VERSION__ (__GNUC__ * 10000 + __GNUC_MINOR__ * 100)
+#endif
+#endif
+
 #endif  // _IV_PLATFORM_H_
