@@ -96,7 +96,7 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
     LARGE_INTEGER i;
     ::QueryPerformanceCounter(&i);
     return start_ +
-        ((i.QuadPart - counter_.QuadPart) * 1000 / frequency_.QuadPart);
+        ((i.QuadPart - counter_.QuadPart) * 1000.0 / frequency_.QuadPart);
   }
 
   LARGE_INTEGER frequency_;
