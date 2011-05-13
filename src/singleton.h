@@ -16,6 +16,7 @@ class Singleton : private core::Noncopyable<T> {
 
  private:
   static void Initialize() {
+    assert(instance_ == NULL);
     instance_ = new T;
     std::atexit(&Singleton<T>::Destroy);
   }

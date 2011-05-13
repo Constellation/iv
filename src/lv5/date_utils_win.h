@@ -94,6 +94,8 @@ class HiResTimeCounter : public core::Singleton<HiResTimeCounter> {
     }
   }
 
+  ~HiResTimeCounter() { }  // private destructor
+
   double CalculateHiResTime() const {
     LARGE_INTEGER i;
     ::QueryPerformanceCounter(&i);
