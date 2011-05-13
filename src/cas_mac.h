@@ -8,8 +8,14 @@ namespace thread {
 
 inline int CompareAndSwap(volatile int* target,
                           int new_value, int old_value) {
-  return OSAtomicCompareAndSwapInt(old_value, new_value, target) ?
-      old_value : *target;
+  int prev;
+  do {
+    if (OSAtomicCompareAndSwapInt(old_value, new_value, target)) {
+     return old_value;
+    }
+    prev = *target;
+  } while (prev == old_value);
+  return prev;
 }
 
 } } }  // iv::core::thread
