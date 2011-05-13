@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_VM_STACK_H_
 #define _IV_LV5_VM_STACK_H_
 #include <iterator>
+#include "platform.h"
 #include "noncopyable.h"
 #include "os_allocator.h"
 #include "lv5/jsval.h"
@@ -33,7 +34,13 @@ class VMStack : private core::Noncopyable<> {
 
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * 1024;
+
+// TODO(Constellation) this is patching...
+#if defined(OS_MACOSX)
+  static const size_type kMaxCallCount = 1024;
+#else
   static const size_type kMaxCallCount = 4096;
+#endif
 
   VMStack()
     : stack_(NULL),
