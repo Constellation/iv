@@ -23,8 +23,7 @@ namespace runtime {
 namespace detail {
 
 inline JSVal ParseJSON(Context* ctx, const JSString& str, Error* e) {
-  const EvalSource src(str);
-  JSONParser<EvalSource> parser(ctx, src);
+  JSONParser<JSString> parser(ctx, str);
   return parser.Parse(e);
 }
 
