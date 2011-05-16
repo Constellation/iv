@@ -162,8 +162,7 @@ class JSONLexer : private core::Noncopyable<> {
     buffer16_.clear();
     Advance();
     while (c_ != '"' &&
-           c_ >= 0 &&
-           !core::character::IsLineTerminator(c_)) {
+           c_ >= 0) {
       if (c_ == '\\') {
         Advance();
         // escape sequence
@@ -174,7 +173,7 @@ class JSONLexer : private core::Noncopyable<> {
           return core::Token::ILLEGAL;
         }
       } else {
-        if (0x0000 <= c_ && c_ <= 0x001F) {
+        if (0x0000u <= c_ && c_ <= 0x001Fu) {
           return core::Token::ILLEGAL;
         }
         Record16Advance();
