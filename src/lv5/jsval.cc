@@ -1,7 +1,6 @@
 #include <limits>
 #include <tr1/array>
 #include "dtoa.h"
-#include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -89,14 +88,6 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
     JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,
                                         IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
-  }
-}
-
-uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
-  if (IsUInt32()) {
-    return uint32();
-  } else {
-    return core::DoubleToUInt32(ToNumber(ctx, e));
   }
 }
 

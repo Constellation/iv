@@ -9,6 +9,7 @@
 #include "static_assert.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
+#include "conversions.h"
 #include "none.h"
 #include "utils.h"
 #include "lv5/hint.h"
@@ -436,7 +437,13 @@ class JSVal {
 
   double ToNumber(Context* ctx, Error* e) const;
 
-  uint32_t ToUInt32(Context* ctx, Error* e) const;
+  uint32_t ToUInt32(Context* ctx, Error* e) const {
+    if (IsUInt32()) {
+      return uint32();
+    } else {
+      return core::DoubleToUInt32(ToNumber(ctx, e));
+    }
+  }
 
   JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
 
