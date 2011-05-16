@@ -53,8 +53,7 @@ class JSONParser : private core::Noncopyable<> {
   typedef JSONLexer<Source, AcceptLineTerminator> lexer_type;
   typedef core::Token Token;
 
-  explicit JSONParser(Context* ctx,
-                      const Source& src)
+  JSONParser(Context* ctx, const Source& src)
     : ctx_(ctx),
       lexer_(src),
       token_() {
@@ -66,6 +65,7 @@ class JSONParser : private core::Noncopyable<> {
     IS(Token::EOS);
     return result;
   }
+
  private:
 
   Token::Type Next() {
