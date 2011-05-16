@@ -17,9 +17,19 @@ inline bool IsJSONWhiteSpace(uint16_t c) {
   return (c == ' ' || c == '\n' || c == '\t' || c == '\r');
 }
 
+template<bool AcceptLineTerminator>
+inline bool IsAcceptedLineTerminator(uint16_t c) {
+  return true;
+}
+
+template<>
+inline bool IsAcceptedLineTerminator<false>(uint16_t c) {
+  return !core::character::IsLineTerminator(c);
+}
+
 }  // namespace detail
 
-template<typename Source>
+template<typename Source, bool AcceptLineTerminator = true>
 class JSONLexer : private core::Noncopyable<> {
  public:
   explicit JSONLexer(const Source& source)
@@ -162,7 +172,8 @@ class JSONLexer : private core::Noncopyable<> {
     buffer16_.clear();
     Advance();
     while (c_ != '"' &&
-           c_ >= 0) {
+           c_ >= 0 &&
+           detail::IsAcceptedLineTerminator<AcceptLineTerminator>(c_)) {
       if (c_ == '\\') {
         Advance();
         // escape sequence
