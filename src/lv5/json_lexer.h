@@ -173,7 +173,7 @@ class JSONLexer : private core::Noncopyable<> {
           return core::Token::ILLEGAL;
         }
       } else {
-        if (0x0000u <= c_ && c_ <= 0x001Fu) {
+        if (0x0000 <= c_ && c_ <= 0x001F) {
           return core::Token::ILLEGAL;
         }
         Record16Advance();
