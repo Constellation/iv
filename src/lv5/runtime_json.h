@@ -12,20 +12,13 @@
 #include "lv5/internal.h"
 #include "lv5/gc_template.h"
 #include "lv5/eval_source.h"
-#include "lv5/json_lexer.h"
-#include "lv5/json_parser.h"
-#include "lv5/json_stringifier.h"
+#include "lv5/json.h"
 #include "lv5/runtime_object.h"
 
 namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail {
-
-inline JSVal ParseJSON(Context* ctx, const JSString& str, Error* e) {
-  JSONParser<JSString> parser(ctx, str);
-  return parser.Parse(e);
-}
 
 inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                       Symbol name, JSFunction* reviver, Error* e) {
@@ -101,7 +94,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
     first = args[0];
   }
   const JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
-  const JSVal result = detail::ParseJSON(ctx, *text, IV_LV5_ERROR(e));
+  const JSVal result = ParseJSON<true>(ctx, *text, IV_LV5_ERROR(e));
   if (args_size > 1 && args[1].IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
     const Symbol empty = context::Intern(ctx, "");

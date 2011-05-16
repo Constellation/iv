@@ -14,8 +14,6 @@ namespace lv5 {
 
 class Error;
 class JSEnv;
-class JSDeclEnv;
-class JSObjectEnv;
 class JSReference;
 
 namespace teleporter {

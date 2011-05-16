@@ -29,7 +29,7 @@ inline bool IsAcceptedLineTerminator<false>(uint16_t c) {
 
 }  // namespace detail
 
-template<typename Source, bool AcceptLineTerminator = true>
+template<typename Source, bool AcceptLineTerminator>
 class JSONLexer : private core::Noncopyable<> {
  public:
   explicit JSONLexer(const Source& source)

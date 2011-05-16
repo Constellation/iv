@@ -47,10 +47,10 @@ namespace lv5 {
     return JSUndefined;\
   } while (0)
 
-template<typename Source>
+template<typename Source, bool AcceptLineTerminator = true>
 class JSONParser : private core::Noncopyable<> {
  public:
-  typedef JSONLexer<Source> lexer_type;
+  typedef JSONLexer<Source, AcceptLineTerminator> lexer_type;
   typedef core::Token Token;
 
   explicit JSONParser(Context* ctx,

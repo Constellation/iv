@@ -6,6 +6,7 @@
 #include "lv5/teleporter/context.h"
 #include "lv5/teleporter/utility.h"
 #include "lv5/internal.h"
+#include "lv5/json.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -20,8 +21,23 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   if (!first.IsString()) {
     return first;
   }
+  JSString* str = first.string();
   Context* const ctx = static_cast<Context*>(args.ctx());
-  JSScript* const script = CompileScript(ctx, first.string(),
+  // if str is (...) expression,
+  // parse as JSON (RejectLineTerminator Pattern) at first
+  if (str->size() > 2 &&
+      (*str)[0] == '(' &&
+      (*str)[str->size() - 1] == ')') {
+    Error json_parse_error;
+    const JSVal result = ParseJSON<false>(ctx,
+                                          core::UStringPiece(str->data() + 1,
+                                                             str->size() - 2),
+                                          &json_parse_error);
+    if (!json_parse_error) {
+      return result;
+    }
+  }
+  JSScript* const script = CompileScript(ctx, str,
                                          false, IV_LV5_ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
@@ -55,8 +71,23 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   if (!first.IsString()) {
     return first;
   }
+  JSString* str = first.string();
   Context* const ctx = static_cast<Context*>(args.ctx());
-  JSScript* const script = CompileScript(ctx, first.string(),
+  // if str is (...) expression,
+  // parse as JSON (RejectLineTerminator Pattern) at first
+  if (str->size() > 2 &&
+      (*str)[0] == '(' &&
+      (*str)[str->size() - 1] == ')') {
+    Error json_parse_error;
+    const JSVal result = ParseJSON<false>(ctx,
+                                          core::UStringPiece(str->data() + 1,
+                                                             str->size() - 2),
+                                          &json_parse_error);
+    if (!json_parse_error) {
+      return result;
+    }
+  }
+  JSScript* const script = CompileScript(ctx, str,
                                          ctx->IsStrict(), IV_LV5_ERROR(e));
   if (script->function()->strict()) {
     JSDeclEnv* const env =
