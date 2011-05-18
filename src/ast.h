@@ -1370,4 +1370,9 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
   }
 };
 } }  // namespace std::tr1
+
+#undef ACCEPT_VISITOR
+#undef DECLARE_NODE_TYPE
+#undef DECLARE_DERIVED_NODE_TYPE
+#undef INHERIT
 #endif  // _IV_AST_H_
