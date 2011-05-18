@@ -103,13 +103,13 @@ class Parser
   typedef this_type parser_type;
   typedef Lexer<Source> lexer_type;
 #define V(AST) typedef typename ast::AST<Factory> AST;
-  AST_NODE_LIST(V)
+  IV_AST_NODE_LIST(V)
 #undef V
 #define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
-  AST_LIST_LIST(V)
+  IV_AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename SpaceUString<Factory>::type S;
-  AST_STRING(V)
+  IV_AST_STRING(V)
 #undef V
 
   enum ErrorState {

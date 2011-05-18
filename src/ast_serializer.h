@@ -21,13 +21,13 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   typedef void ReturnType;
 
 #define V(AST) typedef typename core::ast::AST<Factory> AST;
-  AST_NODE_LIST(V)
+  IV_AST_NODE_LIST(V)
 #undef V
 #define V(XS) typedef typename core::ast::AstNode<Factory>::XS XS;
-  AST_LIST_LIST(V)
+  IV_AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef typename core::SpaceUString<Factory>::type S;
-  AST_STRING(V)
+  IV_AST_STRING(V)
 #undef V
 
   AstSerializer() : out_() { }

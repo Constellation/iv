@@ -46,7 +46,7 @@ namespace ast {
 enum NodeType {
 #define V(type)\
   k##type,
-AST_NODE_LIST(V)
+IV_AST_NODE_LIST(V)
 #undef V
   kNodeCount
 };
@@ -127,8 +127,8 @@ class AstNode : public AstNodeBase<Factory> {
                                Declaration<Factory>*>::type Declarations;
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
 
-  STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
-  EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
+  IV_STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
+  IV_EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
 
   virtual void Accept(
       typename AstVisitor<Factory>::type* visitor) = 0;

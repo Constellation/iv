@@ -63,13 +63,13 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
 namespace lv5 {
 class AstFactory;
 #define V(AST) typedef core::ast::AST<AstFactory> AST;
-  AST_NODE_LIST(V)
+  IV_AST_NODE_LIST(V)
 #undef V
 #define V(XS) typedef core::ast::AstNode<AstFactory>::XS XS;
-  AST_LIST_LIST(V)
+  IV_AST_LIST_LIST(V)
 #undef V
 #define V(S) typedef core::SpaceUString<AstFactory>::type S;
-  AST_STRING(V)
+  IV_AST_STRING(V)
 #undef V
 typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;
 
