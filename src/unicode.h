@@ -495,31 +495,5 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter 
 }
 
 }  // namespace detail
-
-// This function takes an integer value in the range 0 - 0x7fffffff
-// and encodes it as a UTF-8 character in 0 to 6 bytes.
-//
-// Arguments:
-// cvalue     the character value
-// buffer     pointer to buffer for result - at least 6 bytes long
-//
-// Returns:     number of characters placed in the buffer
-template<typename OutputIter>
-inline int UTF16CodeToUTF8(int cvalue, OutputIter buffer) {
-  int i = 0;
-  for (const int len = detail::kUTF8Table1.size(); i < len; i++) {
-    if (cvalue <= detail::kUTF8Table1[i]) {
-      break;
-    }
-  }
-  buffer += i;
-  for (int j = i; j > 0; j--) {
-    *buffer-- = 0x80 | (cvalue & 0x3f);
-    cvalue >>= 6;
-  }
-  *buffer = detail::kUTF8Table2[i] | cvalue;
-  return i + 1;
-}
-
 } } }  // namespace iv::core::unicode
 #endif  // _IV_UNICODE_H_
