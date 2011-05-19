@@ -21,14 +21,6 @@ static const std::tr1::array<int, 6> kUTF8Table3 = { {
   0xff, 0x1f, 0x0f, 0x07, 0x03, 0x01
 } };
 
-// length table
-static const std::tr1::array<uint8_t, 0x40> kUTF8Table4 = { {
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-  3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5
-} };
-
 }  // namespace iv::core::detail
 
 template<typename OutputIter>
