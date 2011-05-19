@@ -1542,7 +1542,8 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w,
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, 0, error);
+        ScopedArguments a(ctx_, 1, error);
+        a[0] = w;
         if (*error) {
           return;
         }
