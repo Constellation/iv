@@ -122,6 +122,9 @@ static const uint32_t kSurrogateMin = kHighSurrogateMin;
 static const uint32_t kSurrogateMax = kLowSurrogateMax;
 static const uint32_t kSurrogateMask = (1 << (kSurrogateBits + 1)) - 1;
 
+static const uint32_t kHighSurrogateOffset = kHighSurrogateMin - (0x10000 >> 10);
+static const uint32_t kSurrogateOffset = 0x10000 - (kHighSurrogateMin << 10) - kLowSurrogateMin;
+
 static const uint32_t kUnicodeMin = 0x000000;
 static const uint32_t kUnicodeMax = 0x10FFFF;
 
@@ -151,7 +154,7 @@ struct BitMask {
 
 template<std::size_t N, typename CharT>
 inline CharT Mask(CharT ch) {
-  return BitMask<N, CharT>::lower & ch;
+  return BitMask<N, uint32_t>::lower & ch;
 }
 
 template<typename UC16>
@@ -370,6 +373,129 @@ struct UTF8ToCodePoint<4> {
     return 0;
   }
 };
+
+namespace detail {
+
+template<typename UC32OutputIter>
+inline UC32OutputIter Append(uint32_t uc, UC32OutputIter result) {
+
+  if (uc < 0x80) {
+    // 0000 0000-0000 007F | 0xxxxxxx
+    *result++ = static_cast<uint8_t>(uc);
+  } else if (uc < 0x800) {
+    // 0000 0080-0000 07FF | 110xxxxx 10xxxxxx
+    *result++ = static_cast<uint8_t>((uc >> 6) | 0xC0);
+    *result++ = static_cast<uint8_t>((uc & 0x3F) | 0x80);
+  } else if (uc < 0x10000) {
+    // 0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
+    *result++ = static_cast<uint8_t>((uc >> 12) | 0xE0);
+    *result++ = static_cast<uint8_t>(((uc >> 6) & 0x3F) | 0x80);
+    *result++ = static_cast<uint8_t>((uc & 0x3F) | 0x80);
+  } else {
+    // 0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+    *result++ = static_cast<uint8_t>((uc >> 18) | 0xF0);
+    *result++ = static_cast<uint8_t>(((uc >> 12) & 0x3F) | 0x80);
+    *result++ = static_cast<uint8_t>(((uc >> 6) & 0x3F) | 0x80);
+    *result++ = static_cast<uint8_t>((uc & 0x3F) | 0x80);
+  }
+  return result;
+}
+
+template<typename UC8InputIter>
+inline uint32_t NextCode(UC8InputIter* it, UC8InputIter last, UTF8Error* e) {
+  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_type;
+  const diff_type len = UTF8ByteCount(*it);
+  if (len == 0) {
+    *e = INVALID_SEQUENCE;
+    return 0;
+  }
+  uint32_t res;
+  switch (len) {
+    case 1:
+      res = UTF8ToCodePoint<1>::Get(*it, last, e);
+      break;
+
+    case 2:
+      res = UTF8ToCodePoint<2>::Get(*it, last, e);
+      break;
+
+    case 3:
+      res = UTF8ToCodePoint<3>::Get(*it, last, e);
+      break;
+
+    case 4:
+      res = UTF8ToCodePoint<4>::Get(*it, last, e);
+      break;
+  };
+  if (*e == NO_ERROR) {
+    std::advance(*it, len);
+  }
+  return res;
+}
+
+template<typename UC8InputIter, typename OutputIter>
+inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, OutputIter result) {
+  UTF8Error error = NO_ERROR;
+  while (it != last) {
+    const uint32_t res = NextCode(&it, last, &error);
+    if (error != NO_ERROR) {
+      return error;
+    } else {
+      *result++ = res;
+    }
+  }
+  return NO_ERROR;
+}
+
+template<typename UC8InputIter, typename OutputIter>
+inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter result) {
+  UTF8Error error = NO_ERROR;
+  while (it != last) {
+    const uint32_t res = NextCode(&it, last, &error);
+    if (error != NO_ERROR) {
+      return error;
+    } else {
+      if (res > 0xFFFF) {
+        // surrogate pair
+        *result++ = static_cast<uint16_t>((res >> kSurrogateBits) + kHighSurrogateOffset);
+        *result++ = static_cast<uint16_t>((res & 0x3FF) + kLowSurrogateMin);
+      } else {
+        *result++ = static_cast<uint16_t>(res);
+      }
+    }
+  }
+  return NO_ERROR;
+}
+
+template<typename UC32InputIter, typename OutputIter>
+inline UTF8Error UCS4ToUTF8(UC32InputIter it, UC32InputIter last, OutputIter result) {
+  while (it != last) {
+    result = Append(*it++, result);
+  }
+  return NO_ERROR;
+}
+
+template<typename UTF16InputIter, typename OutputIter>
+inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter result) {
+  while (it != last) {
+    uint32_t res = Mask<16>(*it++);
+    if (IsHighSurrogate(res)) {
+      ++it;
+      if (it == last) {
+        return INVALID_SEQUENCE;
+      }
+      const uint32_t low = Mask<16>(*it++);
+      if (!IsLowSurrogate(low)) {
+        return INVALID_SEQUENCE;
+      }
+      res = (res << kSurrogateBits) + low + kSurrogateOffset;
+    }
+    result = Append(res, result);
+  }
+  return NO_ERROR;
+}
+
+}  // namespace detail
 
 // This function takes an integer value in the range 0 - 0x7fffffff
 // and encodes it as a UTF-8 character in 0 to 6 bytes.
