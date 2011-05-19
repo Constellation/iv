@@ -378,7 +378,6 @@ namespace detail {
 
 template<typename UC32OutputIter>
 inline UC32OutputIter Append(uint32_t uc, UC32OutputIter result) {
-
   if (uc < 0x80) {
     // 0000 0000-0000 007F | 0xxxxxxx
     *result++ = static_cast<uint8_t>(uc);
