@@ -101,12 +101,12 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
       builder.Append(ch);
     } else {
       uint32_t v;
-      if (core::IsLowSurrogate(ch)) {
+      if (core::unicode::IsLowSurrogate(ch)) {
         // ch is low surrogate. but high is not found.
         e->Report(Error::URI, "invalid uri char");
         return JSUndefined;
       }
-      if (!core::IsHighSurrogate(ch)) {
+      if (!core::unicode::IsHighSurrogate(ch)) {
         // ch is not surrogate pair code point
         v = ch;
       } else {
@@ -118,16 +118,16 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
           return JSUndefined;
         }
         const uint16_t k_char = *it;
-        if (!core::IsLowSurrogate(k_char)) {
+        if (!core::unicode::IsLowSurrogate(k_char)) {
           // k_char is not low surrogate
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
         // construct surrogate pair to ucs4
-        v = (ch - core::kHighSurrogateMin) * 0x400 +
-            (k_char - core::kLowSurrogateMin) + 0x10000;
+        v = (ch - core::unicode::kHighSurrogateMin) * 0x400 +
+            (k_char - core::unicode::kLowSurrogateMin) + 0x10000;
       }
-      for (int len = core::UCS4ToUTF8(v, uc8buf.data()), i = 0;
+      for (int len = core::unicode::UCS4ToUTF8(v, uc8buf.data()), i = 0;
            i < len; ++i) {
         hexbuf[1] = kHexDigits[uc8buf[i] >> 4];
         hexbuf[2] = kHexDigits[uc8buf[i] & 0xf];
@@ -207,7 +207,7 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           octets[j] = b1;
         }
         bool error = false;
-        uint32_t v = core::UTF8ToUCS4Strict(octets.begin(), n, &error);
+        uint32_t v = core::unicode::UTF8ToUCS4Strict(octets.begin(), n, &error);
         // if octets utf8 sequence is not valid,
         if (error) {
           e->Report(Error::URI, "invalid uri char");
@@ -225,10 +225,12 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           // surrogate pair
           v -= 0x10000;
           const uint16_t L =
-              (v & core::kLowSurrogateMask) + core::kLowSurrogateMin;
+              (v & core::unicode::kLowSurrogateMask) +
+              core::unicode::kLowSurrogateMin;
           const uint16_t H =
-              ((v >> core::kSurrogateBits) & core::kHighSurrogateMask) +
-              core::kHighSurrogateMin;
+              ((v >> core::unicode::kSurrogateBits) &
+               core::unicode::kHighSurrogateMask) +
+              core::unicode::kHighSurrogateMin;
           builder.Append(H);
           builder.Append(L);
         }
