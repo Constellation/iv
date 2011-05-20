@@ -17,7 +17,6 @@ Aims at the most precise interpreter of The ECMA262 5th Specification.
 
 + scons
 + libgc (Boehm GC)
-+ libicu (ICU: International Component for Unicode)
 + libboost (boost.foreach)
 
 ## INSTALL
