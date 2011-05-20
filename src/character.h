@@ -107,19 +107,6 @@ static const int kDirectionalityRightToLeftEmbedding = 16;      // RLE
 static const int kDirectionalityRightToLeftOverride = 17;       // RLO
 static const int kDirectionalityPopDirectionalFormat = 18;      // PDF
 
-static const uint16_t kMinHighSurrogate = 0xD800;
-static const uint16_t kMaxHighSurrogate = 0xDBFF;
-
-static const uint16_t kMaxLowSurrogate = 0xDFFF;
-static const uint16_t kMinLowSurrogate = 0xD800;
-
-static const uint16_t kMinSurrogate = 0xD800;
-static const uint16_t kMaxSurrogate = 0xDFFF;
-
-static const int kMinSupplementaryCodePoint = 0x10000;
-static const int kMinCodePoint = 0x0000000;
-static const int kMaxCodePoint = 0x10FFFF;
-
 static const int kSize = 16;
 
 static const std::tr1::array<uint8_t, 1000> kCategoryCache = { {
