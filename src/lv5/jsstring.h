@@ -149,7 +149,7 @@ class JSString : public gc {
   static JSString* New(Context* ctx, const core::StringPiece& str) {
     std::vector<uint16_t> buffer;
     buffer.reserve(str.size());
-    if (core::unicode::detail::UTF8ToUTF16(
+    if (core::unicode::UTF8ToUTF16(
             str.begin(),
             str.end(),
             std::back_inserter(buffer)) != core::unicode::NO_ERROR) {
@@ -192,7 +192,7 @@ class JSString : public gc {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
-  return core::unicode::detail::OutputUTF16(os, str.value().begin(), str.value().end());
+  return core::unicode::OutputUTF16(os, str.value().begin(), str.value().end());
 }
 
 class StringBuilder : protected std::vector<uc16> {

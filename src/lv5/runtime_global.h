@@ -127,7 +127,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
         v = (ch - core::unicode::kHighSurrogateMin) * 0x400 +
             (k_char - core::unicode::kLowSurrogateMin) + 0x10000;
       }
-      for (int len = core::unicode::UCS4ToUTF8(v, uc8buf.data()), i = 0;
+      for (std::size_t len = core::unicode::UCS4OneCharToUTF8(v, uc8buf.begin()), i = 0;
            i < len; ++i) {
         hexbuf[1] = kHexDigits[uc8buf[i] >> 4];
         hexbuf[2] = kHexDigits[uc8buf[i] & 0xf];
@@ -206,10 +206,11 @@ JSVal Decode(Context* ctx, const JSString& str, Error* e) {
           // code point 10xxxxxx check is moved to core::UTF8ToUCS4Strict
           octets[j] = b1;
         }
-        bool error = false;
-        uint32_t v = core::unicode::UTF8ToUCS4Strict(octets.begin(), n, &error);
+        core::unicode::UTF8Error err = core::unicode::NO_ERROR;
+        uint32_t v;
+        core::unicode::NextUCS4FromUTF8(octets.begin(), octets.end(), &v, &err);
         // if octets utf8 sequence is not valid,
-        if (error) {
+        if (err != core::unicode::NO_ERROR) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }

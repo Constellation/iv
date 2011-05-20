@@ -65,7 +65,7 @@ class FileSource {
       } else {
         // not valid shebang
         source_.reserve(str.size());
-        if (unicode::detail::UTF8ToUTF16(
+        if (unicode::UTF8ToUTF16(
                 str.begin(),
                 str.end(),
                 std::back_inserter(source_)) != unicode::NO_ERROR) {
@@ -80,7 +80,7 @@ class FileSource {
         ++current;
         if (ch == '/' || ch == '*') {
           source_.reserve(str.size());
-          if (unicode::detail::UTF8ToUTF16(
+          if (unicode::UTF8ToUTF16(
                   str.begin(),
                   str.end(),
                   std::back_inserter(source_)) != unicode::NO_ERROR) {
@@ -92,7 +92,7 @@ class FileSource {
     }
 
     source_.reserve(str.size());
-    if (unicode::detail::UTF8ToUTF16(
+    if (unicode::UTF8ToUTF16(
             str.begin(),
             str.end(),
             std::back_inserter(source_)) != unicode::NO_ERROR) {

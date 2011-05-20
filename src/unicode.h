@@ -11,105 +11,9 @@
 namespace iv {
 namespace core {
 namespace unicode {
-namespace detail {
-
-static const std::tr1::array<int, 6> kUTF8Table1 = { {
-  0x7f, 0x7ff, 0xffff, 0x1fffff, 0x3ffffff, 0x7fffffff
-} };
-
-static const std::tr1::array<int, 6> kUTF8Table2 = { {
-  0,    0xc0, 0xe0, 0xf0, 0xf8, 0xfc
-} };
-
-static const std::tr1::array<int, 6> kUTF8Table3 = { {
-  0xff, 0x1f, 0x0f, 0x07, 0x03, 0x01
-} };
-
-}  // namespace iv::core::detail
-
-template<typename OutputIter>
-inline int UCS4ToUTF8(uint32_t uc, OutputIter buf) {
-  assert(uc <= 0x10FFFF);
-  if (uc < 0x80) {
-    // ASCII range
-    *buf = static_cast<uint8_t>(uc);
-    return 1;
-  } else {
-    uint32_t a = uc >> 11;
-    int len = 2;
-    while (a) {
-      a >>= 5;
-      ++len;
-    }
-    int i = len;
-    while (--i) {
-      buf[i] = static_cast<uint8_t>((uc & 0x3F) | 0x80);
-      uc >>= 6;
-    }
-    *buf = static_cast<uint8_t>(0x100 - (1 << (8 - len)) + uc);
-    return len;
-  }
-}
-
-template<typename InputIter>
-inline uint32_t UTF8ToUCS4(InputIter buf, uint32_t size) {
-  static const std::tr1::array<uint32_t, 3> kMinTable = { {
-    0x00000080, 0x00000800, 0x00010000
-  } };
-  assert(size >= 1 && size <= 4);
-  if (size == 1) {
-    assert(!(*buf & 0x80));
-    return *buf;
-  } else {
-    assert((*buf & (0x100 - (1 << (7 - size)))) == (0x100 - (1 << (8 - size))));
-    uint32_t uc = (*buf++) & ((1 << (7 - size)) - 1);
-    const uint32_t min = kMinTable[size-2];
-    while (--size) {
-      assert((*buf & 0xC0) == 0x80);
-      uc = uc << 6 | (*buf++ & 0x3F);
-    }
-    if (uc < min) {
-      uc = UINT32_MAX;
-    }
-    return uc;
-  }
-}
 
 inline bool IsUTF8Malformed(uint8_t c) {
   return c == 0xc0 || c == 0xc1 || c >= 0xf5;
-}
-
-template<typename InputIter>
-inline uint32_t UTF8ToUCS4Strict(InputIter buf, uint32_t size, bool* e) {
-  static const std::tr1::array<uint32_t, 3> kMinTable = { {
-    0x00000080,  // 2 bytes => 0000000010000000
-    0x00000800,  // 3 bytes => 0000100000000000
-    0x00010000   // 4 bytes => surrogate pair only
-  } };
-  // not accept size 5 or 6
-  assert(size >= 1 && size <= 4);
-  // 1st octet format is checked by Decode function in calculating size
-  if (size == 1) {
-    *e = (*buf & 0x80);
-    return *buf;
-  } else {
-    // remove size bits from 1st
-    uint32_t uc = (*buf++) & ((1 << (7 - size)) - 1);
-    // select minimum size code point for size
-    const uint32_t min = kMinTable[size - 2];
-    while (--size) {
-      const uint8_t current = *buf++;
-      // UTF8 String (not 1st) should be 10xxxxxx (UTF8-tail)
-      // 0xC0 => (11000000) 0x80 => (10000000)
-      if ((current & 0xC0) != 0x80) {
-        *e = true;
-        return current;
-      }
-      uc = uc << 6 | (current & 0x3F);
-    }
-    *e = uc < min || uc > 0x10FFFF;
-    return uc;
-  }
 }
 
 static const uint32_t kSurrogateBits = 10;
@@ -378,8 +282,6 @@ struct UTF8ToCodePoint<4> {
   }
 };
 
-namespace detail {
-
 template<typename UC32OutputIter>
 inline UC32OutputIter Append(uint32_t uc, UC32OutputIter result) {
   if (uc < 0x80) {
@@ -405,42 +307,44 @@ inline UC32OutputIter Append(uint32_t uc, UC32OutputIter result) {
 }
 
 template<typename UC8InputIter>
-inline uint32_t NextCode(UC8InputIter* it, UC8InputIter last, UTF8Error* e) {
+inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last, uint32_t* out, UTF8Error* e) {
   typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_type;
-  const diff_type len = UTF8ByteCount(*it);
+  const diff_type len = UTF8ByteCount(it);
   if (len == 0) {
     *e = INVALID_SEQUENCE;
-    return 0;
+    return it;
   }
   uint32_t res;
   switch (len) {
     case 1:
-      res = UTF8ToCodePoint<1>::Get(*it, last, e);
+      res = UTF8ToCodePoint<1>::Get(it, last, e);
       break;
 
     case 2:
-      res = UTF8ToCodePoint<2>::Get(*it, last, e);
+      res = UTF8ToCodePoint<2>::Get(it, last, e);
       break;
 
     case 3:
-      res = UTF8ToCodePoint<3>::Get(*it, last, e);
+      res = UTF8ToCodePoint<3>::Get(it, last, e);
       break;
 
     case 4:
-      res = UTF8ToCodePoint<4>::Get(*it, last, e);
+      res = UTF8ToCodePoint<4>::Get(it, last, e);
       break;
   };
   if (*e == NO_ERROR) {
-    std::advance(*it, len);
+    std::advance(it, len);
   }
-  return res;
+  *out = res;
+  return it;
 }
 
 template<typename UC8InputIter, typename OutputIter>
 inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, OutputIter result) {
   UTF8Error error = NO_ERROR;
+  uint32_t res;
   while (it != last) {
-    const uint32_t res = NextCode(&it, last, &error);
+    it = NextUCS4FromUTF8(it, last, &res, &error);
     if (error != NO_ERROR) {
       return error;
     } else {
@@ -453,8 +357,9 @@ inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, OutputIter resul
 template<typename UC8InputIter, typename OutputIter>
 inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter result) {
   UTF8Error error = NO_ERROR;
+  uint32_t res;
   while (it != last) {
-    const uint32_t res = NextCode(&it, last, &error);
+    it = NextUCS4FromUTF8(it, last, &res, &error);
     if (error != NO_ERROR) {
       return error;
     } else {
@@ -468,6 +373,13 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter resu
     }
   }
   return NO_ERROR;
+}
+
+// return wirte length
+template<typename OutputIter>
+inline std::size_t UCS4OneCharToUTF8(uint32_t uc, OutputIter result) {
+  OutputIter tmp = Append(uc, result);
+  return std::distance(result, tmp);
 }
 
 template<typename UC32InputIter, typename OutputIter>
@@ -514,6 +426,5 @@ inline std::ostream& OutputUTF16(std::ostream& os, UTF16InputIter it, UTF16Input
   return os << str;
 }
 
-}  // namespace detail
 } } }  // namespace iv::core::unicode
 #endif  // _IV_UNICODE_H_

@@ -50,4 +50,3 @@ TEST(UnicodeCase, UTF16ToUTF8) {
     EXPECT_EQ(expect, actual);
   }
 }
-

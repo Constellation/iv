@@ -135,7 +135,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
   ser.Visit(global);
   const iv::core::UString& str = ser.out();
-  iv::core::unicode::detail::FPutsUTF16(stdout, str.begin(), str.end());
+  iv::core::unicode::FPutsUTF16(stdout, str.begin(), str.end());
   return EXIT_SUCCESS;
 }
 
