@@ -147,7 +147,7 @@ class JSString : public gc {
   }
 
   static JSString* New(Context* ctx, const core::StringPiece& str) {
-    std::vector<uint16_t> buffer;
+    std::vector<uc16> buffer;
     buffer.reserve(str.size());
     if (core::unicode::UTF8ToUTF16(
             str.begin(),
@@ -177,15 +177,6 @@ class JSString : public gc {
   }
 
  private:
-  // ready to create
-  explicit JSString(size_type n)
-    : string_() {
-    string_.resize(n);
-  }
-
-  inline void ReCalcHash() {
-    hash_value_ = core::StringToHash(string_);
-  }
 
   GCUString string_;
   std::size_t hash_value_;
@@ -256,8 +247,6 @@ class StringBuilder : protected std::vector<uc16> {
     return core::UString(data(), size());
   }
 };
-
-
 
 } }  // namespace iv::lv5
 
