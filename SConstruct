@@ -96,17 +96,8 @@ def Build():
     if not conf.CheckFunc('snprintf'):
       print 'snprintf must be provided'
       Exit(1)
-    if options.get('noicu'):
-      # use iconv
-      conf.CheckLibWithHeader('iconv', 'iconv.h', 'cxx')
-      option_dict['%USE_ICU%'] = '0'
-    else:
+    if options.get('icu'):
       conf.env.ParseConfig('icu-config --cppflags --ldflags')
-      conf.env.Append(
-          CCFLAGS=[
-            "-pedantic", "-Wpointer-arith",
-            "-Wwrite-strings", "-Wno-long-long",
-            "-Wno-missing-field-initializers"])
       option_dict['%USE_ICU%'] = '1'
     conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
@@ -151,8 +142,10 @@ def Build():
   env.Append(CCFLAGS=["-g"])
   env.Append(
     CCFLAGS=[
+      "-pedantic",
       "-Wall", "-Wextra", "-Werror", '-pipe',
-      "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type"],
+      "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
+      "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
     CPPPATH=[join(root_dir, 'src'), join(root_dir, 'obj', 'src')],
     CPPDEFINES=[
       "_GNU_SOURCE",
