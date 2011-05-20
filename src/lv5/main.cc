@@ -15,8 +15,7 @@
 #include "ast.h"
 #include "ast_serializer.h"
 #include "parser.h"
-#include "icu/ustream.h"
-#include "icu/source.h"
+#include "file_source.h"
 #include "lv5/factory.h"
 #include "lv5/context.h"
 #include "lv5/specialized_ast.h"
@@ -67,7 +66,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
   iv::lv5::railgun::Context ctx;
-  iv::icu::Source src(data, filename);
+  iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
@@ -82,7 +81,7 @@ int Execute(const iv::core::StringPiece& data,
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
   iv::lv5::railgun::Context ctx;
-  iv::icu::Source src(data, filename);
+  iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
@@ -93,10 +92,10 @@ int DisAssemble(const iv::core::StringPiece& data,
 }
 
 int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
-  iv::icu::Source src(data, filename);
+  iv::core::FileSource src(data, filename);
   iv::lv5::teleporter::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory, iv::core::FileSource> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
@@ -123,10 +122,10 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
 }
 
 int Ast(const iv::core::StringPiece& data, const std::string& filename) {
-  iv::icu::Source src(data, filename);
+  iv::core::FileSource src(data, filename);
   iv::lv5::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::icu::Source> parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory, iv::core::FileSource> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
@@ -135,7 +134,8 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   }
   iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
   ser.Visit(global);
-  std::cout << ser.out() << std::endl;
+  const iv::core::UString& str = ser.out();
+  iv::core::unicode::detail::FPutsUTF16(stdout, str.begin(), str.end());
   return EXIT_SUCCESS;
 }
 

@@ -6,13 +6,12 @@
 #include <vector>
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
+#include "unicode.h"
 #include "conversions.h"
 #include "noncopyable.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
-#include "icu/uconv.h"
-#include "icu/ustream.h"
 #include "lv5/gc_template.h"
 
 namespace iv {
@@ -148,10 +147,15 @@ class JSString : public gc {
   }
 
   static JSString* New(Context* ctx, const core::StringPiece& str) {
-    JSString* const res = new JSString();
-    icu::ConvertToUTF16(str, &res->string_);
-    res->ReCalcHash();
-    return res;
+    std::vector<uint16_t> buffer;
+    buffer.reserve(str.size());
+    if (core::unicode::detail::UTF8ToUTF16(
+            str.begin(),
+            str.end(),
+            std::back_inserter(buffer)) != core::unicode::NO_ERROR) {
+      buffer.clear();
+    }
+    return new JSString(buffer.begin(), buffer.end());
   }
 
   static JSString* New(Context* ctx, const core::UStringPiece& str) {
@@ -188,7 +192,7 @@ class JSString : public gc {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
-  return os << str.value();
+  return core::unicode::detail::OutputUTF16(os, str.value().begin(), str.value().end());
 }
 
 class StringBuilder : protected std::vector<uc16> {

@@ -2,7 +2,6 @@
 #define _IV_LV5_JSSCRIPT_H_
 #include <tr1/memory>
 #include "source_traits.h"
-#include "icu/source.h"
 #include "lv5/jsscript.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/eval_source.h"
@@ -85,7 +84,7 @@ class JSGlobalScript : public JSScript {
   typedef JSGlobalScript this_type;
   JSGlobalScript(const FunctionLiteral* function,
                  AstFactory* factory,
-                 icu::Source* source)
+                 core::FileSource* source)
     : JSScript(function),
       source_(source) {
   }
@@ -94,7 +93,7 @@ class JSGlobalScript : public JSScript {
     return kGlobal;
   }
 
-  inline icu::Source* source() const {
+  inline core::FileSource* source() const {
     return source_;
   }
 
@@ -106,12 +105,12 @@ class JSGlobalScript : public JSScript {
   static this_type* New(Context* ctx,
                         const FunctionLiteral* function,
                         AstFactory* factory,
-                        icu::Source* source) {
+                        core::FileSource* source) {
     return new JSGlobalScript(function, factory, source);
   }
 
  private:
-  icu::Source* source_;
+  core::FileSource* source_;
 };
 
 } } }  // namespace iv::lv5::teleporter

@@ -1,7 +1,11 @@
 #ifndef _IV_UNICODE_H_
 #define _IV_UNICODE_H_
 #include <cassert>
+#include <cstdio>
+#include <iosfwd>
 #include <iterator>
+#include <string>
+#include <algorithm>
 #include <tr1/cstdint>
 #include <tr1/array>
 namespace iv {
@@ -492,6 +496,22 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter 
     result = Append(res, result);
   }
   return NO_ERROR;
+}
+
+template<typename UTF16InputIter>
+inline int FPutsUTF16(FILE* file, UTF16InputIter it, UTF16InputIter last) {
+  std::string str;
+  str.reserve(std::distance(it, last));
+  UTF16ToUTF8(it, last, std::back_inserter(str));
+  return std::fputs(str.c_str(), file);
+}
+
+template<typename UTF16InputIter>
+inline std::ostream& OutputUTF16(std::ostream& os, UTF16InputIter it, UTF16InputIter last) {
+  std::string str;
+  str.reserve(std::distance(it, last));
+  UTF16ToUTF8(it, last, std::back_inserter(str));
+  return os << str;
 }
 
 }  // namespace detail

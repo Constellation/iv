@@ -8,7 +8,6 @@
 #include "token.h"
 #include "parser.h"
 #include "stringpiece.h"
-#include "icu/source.h"
 #include "lv5/context.h"
 #include "lv5/factory.h"
 #include "lv5/jsval.h"
@@ -47,7 +46,7 @@ class Interactive {
         break;
       }
       buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
-      teleporter::JSEvalScript<icu::Source>* script =
+      teleporter::JSEvalScript<core::FileSource>* script =
           Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (script) {
         buffer.clear();
@@ -84,12 +83,12 @@ class Interactive {
     return EXIT_SUCCESS;
   }
  private:
-  teleporter::JSEvalScript<icu::Source>* Parse(const core::StringPiece& text,
+  teleporter::JSEvalScript<core::FileSource>* Parse(const core::StringPiece& text,
                                                bool* recover) {
-    std::tr1::shared_ptr<icu::Source> src(
-        new icu::Source(text, detail::kInteractiveOrigin));
+    std::tr1::shared_ptr<core::FileSource> src(
+        new core::FileSource(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
-    core::Parser<AstFactory, icu::Source> parser(factory, *src);
+    core::Parser<AstFactory, core::FileSource> parser(factory, *src);
     parser.set_strict(ctx_.IsStrict());
     const FunctionLiteral* const eval = parser.ParseProgram();
     if (!eval) {
@@ -101,8 +100,8 @@ class Interactive {
       delete factory;
       return NULL;
     } else {
-      return teleporter::JSEvalScript<icu::Source>::New(&ctx_, eval,
-                                                        factory, src);
+      return teleporter::JSEvalScript<core::FileSource>::New(&ctx_, eval,
+                                                             factory, src);
     }
   }
   teleporter::Context ctx_;
