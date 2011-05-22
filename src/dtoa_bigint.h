@@ -1,3 +1,22 @@
+// dtoa bigint Gay's algorithm
+/****************************************************************
+ *
+ * The author of this software is David M. Gay.
+ *
+ * Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose without fee is hereby granted, provided that this entire notice
+ * is included in all copies of any software which is or includes a copy
+ * or modification of this software and in all copies of the supporting
+ * documentation for such software.
+ *
+ * THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+ * WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR LUCENT MAKES ANY
+ * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
+ * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+ *
+ ***************************************************************/
 #ifndef _IV_DTOA_BIGINT_H_
 #define _IV_DTOA_BIGINT_H_
 #include <cmath>
@@ -389,6 +408,7 @@ class BigInt : protected std::vector<uint32_t> {
   }
 
   BigInt Diff(const BigInt& rhs) const {
+    using std::swap;
     const BigInt* a = this;
     const BigInt* b = &rhs;
     int i = Compare(rhs);
@@ -396,7 +416,7 @@ class BigInt : protected std::vector<uint32_t> {
       return BigInt(0);
     }
     if (i < 0) {
-      std::swap(a, b);
+      swap(a, b);
       i = 1;
     } else {
       i = 0;
@@ -618,7 +638,8 @@ template<bool RoundingNone,
          typename Buffer>
 inline void DoubleToASCII(Buffer* buf,
                           double dd, int ndigits,
-                          bool* sign_out, int* exponent_out, unsigned* precision_out) {
+                          bool* sign_out,
+                          int* exponent_out, unsigned* precision_out) {
   IV_STATIC_ASSERT(
       RoundingNone + RoundingSignificantFigures + RoundingDecimalPlaces == 1);
   IV_STATIC_ASSERT(!RoundingNone || LeftRight);
@@ -634,7 +655,7 @@ inline void DoubleToASCII(Buffer* buf,
   int ieps;
   int j1;
 
-  // reject Infinity or NaN 
+  // reject Infinity or NaN
   assert((word0(&u) & Exp_mask) != Exp_mask);
 
   if (!dval(&u)) {
@@ -647,8 +668,9 @@ inline void DoubleToASCII(Buffer* buf,
   }
 
   if (word0(&u) & Sign_bit) {
+		// set sign for everything, including 0's and NaNs
     *sign_out = true;
-    word0(&u) &= ~Sign_bit;
+    word0(&u) &= ~Sign_bit;  // clear sign bit
   } else {
     *sign_out = false;
   }
@@ -663,6 +685,28 @@ inline void DoubleToASCII(Buffer* buf,
     dval(&d2) = dval(&u);
     word0(&d2) &= Frac_mask1;
     word0(&d2) |= Exp_11;
+
+    //	log(x)	~=~ log(1.5) + (x-1.5)/1.5
+    //	log10(x)	 =  log(x) / log(10)
+    //	 	~=~ log(1.5)/log(10) + (x-1.5)/(1.5*log(10))
+    //	log10(d) = (i-Bias)*log(2)/log(10) + log10(d2)
+    //	
+    //	This suggests computing an approximation k to log10(d) by
+    //	
+    //	k = (i - Bias)*0.301029995663981
+    //	 + ( (d2-1.5)*0.289529654602168 + 0.176091259055681 );
+    //	
+    //	We want k to be too large rather than too small.
+    //	The error in the first-order Taylor series approximation
+    //	is in our favor, so we just round up the constant enough
+    //	to compensate for any error in the multiplication of
+    //	(i - Bias) by 0.301029995663981; since |i - Bias| <= 1077,
+    //	and 1077 * 0.30103 * 2^-52 ~=~ 7.2e-14,
+    //	adding 1e-13 to the constant term more than suffices.
+    //	Hence we adjust the constant term to 0.1760912590558.
+    //	(We could get a more accurate k by invoking log10,
+    //	 but this is probably not worthwhile.)
+
     i -= Bias;
     denorm = 0;
   } else {
@@ -672,7 +716,7 @@ inline void DoubleToASCII(Buffer* buf,
         (word0(&u) << (64 - i)) | (word1(&u) >> (i - 32)) :
         word1(&u) << (32 - i);
     dval(&d2) = x;
-    word0(&d2) -= 31 * Exp_msk1;
+    word0(&d2) -= 31 * Exp_msk1;  // adjust exponent
     i -= (Bias + (P - 1) - 1) + 1;
     denorm = 1;
   }
@@ -680,8 +724,7 @@ inline void DoubleToASCII(Buffer* buf,
       0.289529654602168 + 0.1760912590558 + i * 0.301029995663981;
   int k = static_cast<int>(ds);
   if (ds < 0.0 && ds != k) {
-    // k = floor(ds)
-    --k;
+    --k;  // want k = floor(ds)
   }
   int k_check = 1;
   if (k >= 0 && k <= static_cast<int>(kTens.size())) {
@@ -737,15 +780,17 @@ inline void DoubleToASCII(Buffer* buf,
 
   BigInt S, mhi, mlo, delta;
   if (ilim >= 0 && ilim <= Quick_max) {
+		// Try to get by with floating-point arithmetic.
     i = 0;
     dval(&d2) = dval(&u);
     const int k0 = k;
     ilim0 = ilim;
-    ieps = 2;
+    ieps = 2;  // conservative
     if (k > 0) {
       ds = kTens[k & 0xf];
       j = k >> 4;
       if (j & Bletch) {
+				// prevent overflows
         j &= Bletch - 1;
         dval(&u) /= kBigTens[kBigTens.size() - 1];
         ++ieps;
@@ -792,6 +837,8 @@ inline void DoubleToASCII(Buffer* buf,
     }
 
     if (LeftRight) {
+			// Use Steele & White method of only
+			// generating digits needed.
       dval(&eps) = (0.5 / kTens[ilim - 1]) - dval(&eps);
       for (i = 0;;) {
         L = static_cast<int32_t>(dval(&u));
@@ -810,6 +857,7 @@ inline void DoubleToASCII(Buffer* buf,
         dval(&u) *= 10.0;
       }
     } else {
+			// Generate ilim digits, then fix them up.
       dval(&eps) *= kTens[ilim - 1];
       for (i = 1;; ++i, dval(&u) *= 10.0) {
         L = static_cast<int32_t>(dval(&u));
@@ -838,7 +886,10 @@ inline void DoubleToASCII(Buffer* buf,
     ilim = ilim0;
   }
 
+	//  Do we have a "small" integer?
+
   if (be >= 0 && k <= Int_max) {
+		// Yes.
     ds = kTens[k];
     if (ndigits < 0 && ilim <= 0) {
       S.clear();
@@ -909,14 +960,22 @@ inline void DoubleToASCII(Buffer* buf,
     S.Pow5Multi(s5);
   }
 
+	// Check for special case that d is a normalized power of 2.
   special_case = 0;
   if ((RoundingNone || LeftRight) && (!word1(&u) && !(word0(&u) & Bndry_mask) &&
                                       word0(&u) & (Exp_mask & ~Exp_msk1))) {
+    // The special case
     b2 += Log2P;
     s2 += Log2P;
     special_case = 1;
   }
 
+	// Arrange for convenient computation of quotients:
+	// shift left if necessary so divisor has 4 leading 0 bits.
+	// 
+	// Perhaps we should just compute leading 28 bits of S once
+	// and for all and pass them and a shift to quorem, so it
+	// can do shifts and ors to compute the numerator for q.
   if ((i = ((s5 ? 32 - Hi0Bits(S[S.size() - 1]) : 1) + s2) & 0x1f)) {
     i = 32 - i;
   }
@@ -941,7 +1000,7 @@ inline void DoubleToASCII(Buffer* buf,
   if (k_check) {
     if (b.Compare(S) < 0) {
       --k;
-      b.MultiAdd(10, 0);
+      b.MultiAdd(10, 0);  // we botched the k estimate
       if (LeftRight) {
         mhi.MultiAdd(10, 0);
       }
@@ -950,6 +1009,7 @@ inline void DoubleToASCII(Buffer* buf,
   }
 
   if (ilim <= 0 && RoundingDecimalPlaces) {
+    // no digits, fcvt style
     if (ilim < 0) {
       goto noDigits;
     }
@@ -966,6 +1026,9 @@ inline void DoubleToASCII(Buffer* buf,
       mhi <<= m2;
     }
 
+		// Compute mlo -- check for special case
+		// that d is a normalized power of 2.
+
     mlo = mhi;
     if (special_case) {
       mhi <<= Log2P;
@@ -973,6 +1036,10 @@ inline void DoubleToASCII(Buffer* buf,
 
     for (i = 1;; ++i) {
       dig = Quorem(&b, &S) + '0';
+
+			// Do we yet have the shortest decimal string
+			// that will round to d?
+
       j = b.Compare(mlo);
       delta = S.Diff(mhi);
       j1 = delta.sign() ? 1 : b.Compare(delta);
@@ -1003,7 +1070,7 @@ inline void DoubleToASCII(Buffer* buf,
         goto ret;
       }
       if (j1 > 0) {
-        if (dig== '9') {
+        if (dig== '9') {  // possible if i == 1
  round9up:
           *s++ = '9';
           goto roundoff;
@@ -1031,6 +1098,8 @@ inline void DoubleToASCII(Buffer* buf,
       b.MultiAdd(10, 0);
     }
   }
+
+	// Round off last digit
 
   b <<= 1;
   j = b.Compare(S);
@@ -1070,7 +1139,8 @@ inline void DoubleToASCII(Buffer* buf,
 }
 
 template<typename Buffer>
-void dtoa(Buffer* buffer, double dd, bool* sign, int* exp, unsigned* precision) {
+void dtoa(Buffer* buffer, double dd,
+          bool* sign, int* exp, unsigned* precision) {
   DoubleToASCII<true, false, false, true>(buffer, dd, 0, sign, exp, precision);
 }
 
