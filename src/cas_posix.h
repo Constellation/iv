@@ -5,7 +5,6 @@
 namespace iv {
 namespace core {
 namespace thread {
-
 #if defined(__GNUC__) && (__GNUC_VERSION__ > 40100)
 
 inline int CompareAndSwap(volatile int* target,
@@ -15,10 +14,15 @@ inline int CompareAndSwap(volatile int* target,
 
 #else
 
+namespace detail {
+
+static Mutex kCASMutex;
+
+}  // namespace detail
+
 inline int CompareAndSwap(volatile int* target,
                           int new_value, int old_value) {
-  static Mutex mutex;
-  ScopedLock<Mutex> lock(&mutex);
+  ScopedLock<Mutex> lock(&detail::kCASMutex);
   const int result = *target;
   if (result == old_value) {
     *target = new_value;
