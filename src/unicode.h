@@ -85,6 +85,27 @@ inline bool IsValidUnicode(UC32 uc) {
   return (uc <= kUnicodeMax) && !IsSurrogate(uc);
 }
 
+template<typename UC8InputIter>
+inline bool IsBOM(UC8InputIter it, UC8InputIter end) {
+  return (
+      (it != end) && (Mask<8>(*it++) == kUTF8BOM[0]) &&
+      (it != end) && (Mask<8>(*it++) == kUTF8BOM[1]) &&
+      (it != end) && (Mask<8>(*it++) == kUTF8BOM[2]));
+}
+
+template<typename UC8>
+inline bool IsTrail(UC8 ch) {
+  // UTF8 String (not 1st) should be 10xxxxxx (UTF8-tail)
+  // 0xC0 => (11000000) 0x80 => (10000000)
+  return (ch & 0xC0) == 0x80;
+}
+
+enum UTF8Error {
+  NO_ERROR = 0,
+  NOT_ENOUGH_SPACE = 1,
+  INVALID_SEQUENCE = 2
+};
+
 // see RFC3629
 //
 // Char. number range  |        UTF-8 octet sequence
@@ -118,26 +139,23 @@ UTF8ByteCount(UC8InputIter it) {
   return 0;
 }
 
+// no check. but scan UTF-8 Bytes and returns length of code point
 template<typename UC8InputIter>
-inline bool IsBOM(UC8InputIter it, UC8InputIter end) {
-  return (
-      (it != end) && (Mask<8>(*it++) == kUTF8BOM[0]) &&
-      (it != end) && (Mask<8>(*it++) == kUTF8BOM[1]) &&
-      (it != end) && (Mask<8>(*it++) == kUTF8BOM[2]));
+inline typename std::iterator_traits<UC8InputIter>::difference_type
+UTF8ByteCharLength(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
+  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_type;
+  diff_type sum = 0;
+  while (it != last) {
+    const diff_type len = UTF8ByteCount(it);
+    if (len == 0) {
+      *e = INVALID_SEQUENCE;
+      return sum;
+    }
+    std::advance(it, len);
+    ++sum;
+  }
+  return sum;
 }
-
-template<typename UC8>
-inline bool IsTrail(UC8 ch) {
-  // UTF8 String (not 1st) should be 10xxxxxx (UTF8-tail)
-  // 0xC0 => (11000000) 0x80 => (10000000)
-  return (ch & 0xC0) == 0x80;
-}
-
-enum UTF8Error {
-  NO_ERROR = 0,
-  NOT_ENOUGH_SPACE = 1,
-  INVALID_SEQUENCE = 2
-};
 
 template<std::size_t N>
 struct UTF8ToCodePoint { };
