@@ -248,7 +248,7 @@ class Parser
     // directive prologue
     {
       bool octal_escaped_directive_found = false;
-      std::size_t line;
+      std::size_t line = 0;
       while (token_ != end) {
         if (token_ != Token::STRING) {
           // this is not directive
