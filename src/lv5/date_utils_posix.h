@@ -13,8 +13,6 @@ inline double DaylightSavingTA(double utc) {
     return utc;
   }
 
-  // use localtime
-  // but sputniktests not adopt this version
   const double local = utc + LocalTZA();
   const std::time_t current = core::DoubleToInt64(local);
   if (current == local) {
