@@ -4,6 +4,7 @@
 #include <cstring>
 #include "ustring.h"
 #include "dtoa.h"
+#include "canonicalized_nan.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsfunction.h"
 #include "lv5/arguments.h"
@@ -289,7 +290,7 @@ void Context::InitGlobal(const Class& func_cls,
   global_binder->class_name("global")
       .prototype(obj_proto)
       // section 15.1.1.1 NaN
-      .def("NaN", kNaN)
+      .def("NaN", core::kNaN)
       // section 15.1.1.2 Infinity
       .def("Infinity", std::numeric_limits<double>::infinity())
       // section 15.1.1.3 undefined
@@ -622,7 +623,7 @@ void Context::InitMath(const Class& func_cls,
 void Context::InitDate(const Class& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.9 Date
-  JSObject* const proto = JSDate::NewPlain(this, kNaN);
+  JSObject* const proto = JSDate::NewPlain(this, core::kNaN);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);

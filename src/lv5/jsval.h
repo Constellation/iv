@@ -267,7 +267,7 @@ class JSVal {
   }
 
   inline void set_value(double val) {
-    value_.number_.as_ = (val == val) ? val : kNaN;
+    value_.number_.as_ = (val == val) ? val : core::kNaN;
   }
 
   inline void set_value_uint32(uint32_t val) {
@@ -318,7 +318,7 @@ class JSVal {
   }
 
   inline void set_value(JSNaNKeywordType val) {
-    value_.number_.as_ = kNaN;
+    value_.number_.as_ = core::kNaN;
   }
 
   inline void set_null() {

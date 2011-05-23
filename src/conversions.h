@@ -7,38 +7,29 @@
 #include <tr1/array>
 #include <tr1/cstdint>
 #include "platform_math.h"
+#include "canonicalized_nan.h"
 #include "character.h"
 #include "ustringpiece.h"
 #include "none.h"
 namespace iv {
 namespace core {
 namespace detail {
+
 template<typename T>
 class Conversions {
  public:
-  static const double kNaN;
-  static const double kInf;
   static const int kMaxSignificantDigits = 772;
   static const std::string kInfinity;
-  static const double DoubleToInt32_Two32;
-  static const double DoubleToInt32_Two31;
   static const char* kHex;
   static const int kMaxDoubleToStringWithRadixBufferSize = 2200;
 };
-template<typename T>
-const double Conversions<T>::kNaN = std::numeric_limits<double>::quiet_NaN();
-
-template<typename T>
-const double Conversions<T>::kInf = std::numeric_limits<double>::infinity();
 
 template<typename T>
 const std::string Conversions<T>::kInfinity = "Infinity";
 
-template<typename T>
-const double Conversions<T>::DoubleToInt32_Two32 = 4294967296.0;
-
-template<typename T>
-const double Conversions<T>::DoubleToInt32_Two31 = 2147483648.0;
+static const double kInf = std::numeric_limits<double>::infinity();
+static const double kDoubleToInt32_Two32 = 4294967296.0;
+static const double kDoubleToInt32_Two31 = 2147483648.0;
 
 template<typename T>
 const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -60,7 +51,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
 
   // empty string ""
   if (it == last) {
-    return (parse_float) ? Conversions::kNaN : 0;
+    return (parse_float) ? kNaN : 0;
   }
 
   while (it != last &&
@@ -70,7 +61,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
 
   // white space only "  "
   if (it == last) {
-    return (parse_float) ? Conversions::kNaN : 0;
+    return (parse_float) ? kNaN : 0;
   }
 
   if (*it == '-') {
@@ -84,7 +75,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   }
 
   if (it == last) {
-    return Conversions::kNaN;
+    return kNaN;
   }
 
   if (character::IsDecimalDigit(*it)) {
@@ -96,7 +87,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       }
       if (!parse_float && (*it == 'x' || *it == 'X')) {
         if (is_sign_found) {
-          return Conversions::kNaN;
+          return kNaN;
         }
         is_decimal = false;
         buffer[pos++] = '0';
@@ -104,7 +95,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         ++it;
         ++significant_digits;
         if (it == last || !character::IsHexDigit(*it)) {
-          return Conversions::kNaN;
+          return kNaN;
         }
         // waste leading zero
         while (it != last && *it == '0') {
@@ -164,7 +155,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         ++it;
       }
       if (start == it) {
-        return Conversions::kNaN;
+        return kNaN;
       }
     } else {
       for (std::string::const_iterator inf_it = Conversions::kInfinity.begin(),
@@ -172,7 +163,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
            inf_it != inf_last; ++inf_it, ++it) {
         if (it == last ||
             (*inf_it) != (*it)) {
-          return Conversions::kNaN;
+          return kNaN;
         }
       }
       // infinity
@@ -188,7 +179,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
           return std::numeric_limits<double>::infinity();
         }
       } else {
-        return Conversions::kNaN;
+        return kNaN;
       }
     }
   }
@@ -196,7 +187,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   // exponent part
   if (it != last && (*it == 'e' || *it == 'E')) {
     if (!is_decimal) {
-      return Conversions::kNaN;
+      return kNaN;
     }
     buffer[pos++] = *it;
     ++it;
@@ -206,7 +197,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         --pos;
         goto exponent_pasing_done;
       }
-      return Conversions::kNaN;
+      return kNaN;
     }
     bool is_signed_exp = false;
     if (*it == '+' || *it == '-') {
@@ -224,7 +215,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         }
         goto exponent_pasing_done;
       }
-      return Conversions::kNaN;
+      return kNaN;
     }
     int exponent = 0;
     do {
@@ -254,13 +245,13 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   if (it == last || parse_float) {
     if (pos == 0) {
       // empty
-      return (parse_float && !is_found_zero) ? Conversions::kNaN : 0;
+      return (parse_float && !is_found_zero) ? kNaN : 0;
     } else {
       buffer[pos++] = '\0';
       return std::atof(buffer.data());
     }
   } else {
-    return Conversions::kNaN;
+    return kNaN;
   }
 }
 
@@ -316,7 +307,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
 
   // empty string ""
   if (it == last) {
-    return Conversions::kNaN;
+    return kNaN;
   }
 
   int sign = 1;
@@ -328,7 +319,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
   }
 
   if (it == last) {
-    return Conversions::kNaN;
+    return kNaN;
   }
 
   if (strip_prefix) {
@@ -346,7 +337,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
   }
 
   if (it == last) {
-    return Conversions::kNaN;
+    return kNaN;
   }
 
   // TODO(Constellation) precision version
@@ -357,7 +348,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
     if (val != -1 && val < radix) {
       result = result * radix + val;
     } else {
-      return (start == it) ? Conversions::kNaN : sign * result;
+      return (start == it) ? kNaN : sign * result;
     }
   }
   return sign * result;
@@ -380,9 +371,9 @@ inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
   double number = 0.0;
   double multiplier = 1.0;
   for (--it, --last; last != it; --last) {
-    if (multiplier == Conversions::kInf) {
+    if (multiplier == detail::kInf) {
       if (*last != '0') {
-        number = Conversions::kInf;
+        number = detail::kInf;
         break;
       }
     } else {
@@ -423,13 +414,13 @@ inline int32_t DoubleToInt32(double d) {
   if (!IsFinite(d) || d == 0) {
     return 0;
   }
-  if (d < 0 || d >= Conversions::DoubleToInt32_Two32) {
-    d = std::fmod(d, Conversions::DoubleToInt32_Two32);
+  if (d < 0 || d >= detail::kDoubleToInt32_Two32) {
+    d = std::fmod(d, detail::kDoubleToInt32_Two32);
   }
   d = (d >= 0) ?
-      std::floor(d) : std::ceil(d) + Conversions::DoubleToInt32_Two32;
-  return static_cast<int32_t>(d >= Conversions::DoubleToInt32_Two31 ?
-                              d - Conversions::DoubleToInt32_Two32 : d);
+      std::floor(d) : std::ceil(d) + detail::kDoubleToInt32_Two32;
+  return static_cast<int32_t>(d >= detail::kDoubleToInt32_Two31 ?
+                              d - detail::kDoubleToInt32_Two32 : d);
 }
 
 inline uint32_t DoubleToUInt32(double d) {
@@ -444,12 +435,12 @@ inline int64_t DoubleToInt64(double d) {
   if (!IsFinite(d) || d == 0) {
     return 0;
   }
-  if (Conversions::DoubleToInt32_Two32 >= d) {
+  if (detail::kDoubleToInt32_Two32 >= d) {
     return static_cast<int64_t>(DoubleToInt32(d));
   }
   const int32_t lo = DoubleToInt32(
-      std::fmod(d, Conversions::DoubleToInt32_Two32));
-  const int32_t hi = DoubleToInt32(d / Conversions::DoubleToInt32_Two32);
+      std::fmod(d, detail::kDoubleToInt32_Two32));
+  const int32_t hi = DoubleToInt32(d / detail::kDoubleToInt32_Two32);
   return hi * 4294967296ULL + lo;
 }
 

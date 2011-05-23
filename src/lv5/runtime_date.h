@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "platform_math.h"
 #include "conversions.h"
+#include "canonicalized_nan.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/jsdate.h"
@@ -151,14 +152,14 @@ inline JSVal DateUTC(const Arguments& args, Error* error) {
   if (args_size > 0) {
     y = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
-    y = kNaN;
+    y = core::kNaN;
   }
 
   double m;
   if (args_size > 1) {
     m = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
   } else {
-    m = kNaN;
+    m = core::kNaN;
   }
 
   double dt;
@@ -491,7 +492,7 @@ inline JSVal DateGetFullYear(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::YearFromTime(date::LocalTime(time));
   }
@@ -509,7 +510,7 @@ inline JSVal DateGetUTCFullYear(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::YearFromTime(time);
   }
@@ -527,7 +528,7 @@ inline JSVal DateGetMonth(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MonthFromTime(date::LocalTime(time));
   }
@@ -545,7 +546,7 @@ inline JSVal DateGetUTCMonth(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MonthFromTime(time);
   }
@@ -563,7 +564,7 @@ inline JSVal DateGetDate(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::DateFromTime(date::LocalTime(time));
   }
@@ -581,7 +582,7 @@ inline JSVal DateGetUTCDate(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::DateFromTime(time);
   }
@@ -599,7 +600,7 @@ inline JSVal DateGetDay(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::WeekDay(date::LocalTime(time));
   }
@@ -617,7 +618,7 @@ inline JSVal DateGetUTCDay(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::WeekDay(time);
   }
@@ -635,7 +636,7 @@ inline JSVal DateGetHours(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::HourFromTime(date::LocalTime(time));
   }
@@ -653,7 +654,7 @@ inline JSVal DateGetUTCHours(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::HourFromTime(time);
   }
@@ -671,7 +672,7 @@ inline JSVal DateGetMinutes(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MinFromTime(date::LocalTime(time));
   }
@@ -689,7 +690,7 @@ inline JSVal DateGetUTCMinutes(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MinFromTime(time);
   }
@@ -707,7 +708,7 @@ inline JSVal DateGetSeconds(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::SecFromTime(date::LocalTime(time));
   }
@@ -725,7 +726,7 @@ inline JSVal DateGetUTCSeconds(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::SecFromTime(time);
   }
@@ -743,7 +744,7 @@ inline JSVal DateGetMilliseconds(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MsFromTime(date::LocalTime(time));
   }
@@ -761,7 +762,7 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::MsFromTime(time);
   }
@@ -779,7 +780,7 @@ inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* error) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return (time - date::LocalTime(time)) / date::kMsPerMinute;
   }
@@ -799,7 +800,7 @@ inline JSVal DateSetTime(const Arguments& args, Error* error) {
       const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
       v = date::TimeClip(val);
     } else {
-      v = kNaN;
+      v = core::kNaN;
     }
     static_cast<JSDate*>(obj.object())->set_value(v);
     return v;
@@ -821,7 +822,7 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* error) {
     if (args.size() > 0) {
       ms = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
-      ms = kNaN;
+      ms = core::kNaN;
     }
     const double v = date::TimeClip(
         date::UTC(
@@ -850,7 +851,7 @@ inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* error) {
     if (args.size() > 0) {
       ms = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
-      ms = kNaN;
+      ms = core::kNaN;
     }
     const double v = date::TimeClip(
         date::MakeDate(
@@ -886,7 +887,7 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      sec = kNaN;
+      sec = core::kNaN;
       ms = date::MsFromTime(t);
     }
     const double v = date::TimeClip(
@@ -923,7 +924,7 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      sec = kNaN;
+      sec = core::kNaN;
       ms = date::MsFromTime(t);
     }
     const double v = date::TimeClip(
@@ -967,7 +968,7 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      m = kNaN;
+      m = core::kNaN;
       sec = date::SecFromTime(t);
       ms = date::MsFromTime(t);
     }
@@ -1012,7 +1013,7 @@ inline JSVal DateSetUTCMinutes(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      m = kNaN;
+      m = core::kNaN;
       sec = date::SecFromTime(t);
       ms = date::MsFromTime(t);
     }
@@ -1065,7 +1066,7 @@ inline JSVal DateSetHours(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      h = kNaN;
+      h = core::kNaN;
       m = date::MinFromTime(t);
       sec = date::SecFromTime(t);
       ms = date::MsFromTime(t);
@@ -1116,7 +1117,7 @@ inline JSVal DateSetUTCHours(const Arguments& args, Error* error) {
         ms = date::MsFromTime(t);
       }
     } else {
-      h = kNaN;
+      h = core::kNaN;
       m = date::MinFromTime(t);
       sec = date::SecFromTime(t);
       ms = date::MsFromTime(t);
@@ -1146,7 +1147,7 @@ inline JSVal DateSetDate(const Arguments& args, Error* error) {
     if (args_size > 0) {
       dt = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
-      dt = kNaN;
+      dt = core::kNaN;
     }
     const double v = date::TimeClip(
         date::UTC(
@@ -1175,7 +1176,7 @@ inline JSVal DateSetUTCDate(const Arguments& args, Error* error) {
     if (args_size > 0) {
       dt = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
     } else {
-      dt = kNaN;
+      dt = core::kNaN;
     }
     const double v = date::TimeClip(
         date::MakeDate(
@@ -1210,7 +1211,7 @@ inline JSVal DateSetMonth(const Arguments& args, Error* error) {
         dt = date::DateFromTime(t);
       }
     } else {
-      m = kNaN;
+      m = core::kNaN;
       dt = date::DateFromTime(t);
     }
     const double v = date::TimeClip(
@@ -1246,7 +1247,7 @@ inline JSVal DateSetUTCMonth(const Arguments& args, Error* error) {
         dt = date::DateFromTime(t);
       }
     } else {
-      m = kNaN;
+      m = core::kNaN;
       dt = date::DateFromTime(t);
     }
     const double v = date::TimeClip(
@@ -1292,7 +1293,7 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* error) {
         dt = date::DateFromTime(t);
       }
     } else {
-      y = kNaN;
+      y = core::kNaN;
       m = date::MonthFromTime(t);
       dt = date::DateFromTime(t);
     }
@@ -1337,7 +1338,7 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* error) {
         dt = date::DateFromTime(t);
       }
     } else {
-      y = kNaN;
+      y = core::kNaN;
       m = date::MonthFromTime(t);
       dt = date::DateFromTime(t);
     }
@@ -1449,7 +1450,7 @@ inline JSVal DateGetYear(const Arguments& args, Error* e) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return kNaN;
+      return core::kNaN;
     }
     return date::YearFromTime(date::LocalTime(time)) - 1900;
   }
@@ -1471,7 +1472,7 @@ inline JSVal DateSetYear(const Arguments& args, Error* e) {
       t = +0.0;
     }
     const std::size_t args_size = args.size();
-    double y = kNaN;
+    double y = core::kNaN;
     if (args_size > 0) {
       y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
     }

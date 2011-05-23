@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include "noncopyable.h"
+#include "canonicalized_nan.h"
 #include "stringpiece.h"
 #include "lv5/date_utils.h"
 namespace iv {
@@ -153,7 +154,7 @@ class DateParser : private core::Noncopyable<> {
           return date::MakeDay(year, month_ - 1, day);
         } else {
           // invalid
-          return kNaN;
+          return core::kNaN;
         }
       } else {
         // YMD
@@ -163,7 +164,7 @@ class DateParser : private core::Noncopyable<> {
         if (year != kNone && day != kNone && year != kNone) {
           return date::MakeDay(year, month - 1, day);
         } else {
-          return kNaN;
+          return core::kNaN;
         }
       }
     }
@@ -219,21 +220,21 @@ class DateParser : private core::Noncopyable<> {
 
     double MakeTime() const {
       if (!IsHourExpecting(hour_)) {
-        return kNaN;
+        return core::kNaN;
       }
       if (!IsMinExpecting(min_)) {
-        return kNaN;
+        return core::kNaN;
       }
       if (!IsSecExpecting(sec_)) {
-        return kNaN;
+        return core::kNaN;
       }
       if (!IsMSecExpecting(msec_)) {
-        return kNaN;
+        return core::kNaN;
       }
       int hour = hour_;
       if (offset_ != kNone) {
         if (!IsOffsetHourExpecting(hour_)) {
-          return kNaN;
+          return core::kNaN;
         }
         hour = hour_ % 12 + offset_;
       }

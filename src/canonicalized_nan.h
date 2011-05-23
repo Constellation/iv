@@ -1,7 +1,7 @@
-#ifndef _IV_LV5_CANONICALIZED_NAN_H_
-#define _IV_LV5_CANONICALIZED_NAN_H_
+#ifndef _IV_CANONICALIZED_NAN_H_
+#define _IV_CANONICALIZED_NAN_H_
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace detail {
 
 union Trans64 {
@@ -16,5 +16,5 @@ static const Trans64 kNaNTrans = { 0x7FF8000000000000LL };
 
 static const double kNaN = detail::kNaNTrans.double_;
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_CANONICALIZED_NAN_H_
+} }  // namespace iv::core
+#endif  // _IV_CANONICALIZED_NAN_H_

@@ -9,7 +9,7 @@
 #include "platform_math.h"
 #include "conversions.h"
 #include "utils.h"
-#include "lv5/canonicalized_nan.h"
+#include "canonicalized_nan.h"
 namespace iv {
 namespace lv5 {
 namespace date {
@@ -246,7 +246,7 @@ inline double MakeTime(double hour, double min, double sec, double ms) {
       !core::IsFinite(min) ||
       !core::IsFinite(sec) ||
       !core::IsFinite(ms)) {
-    return kNaN;
+    return core::kNaN;
   } else {
     return
         core::DoubleToInteger(hour) * kMsPerHour +
@@ -272,7 +272,7 @@ inline double MakeDay(double year, double month, double date) {
   if (!core::IsFinite(year) ||
       !core::IsFinite(month) ||
       !core::IsFinite(date)) {
-    return kNaN;
+    return core::kNaN;
   } else {
     const int y = core::DoubleToInt32(year);
     const int m = core::DoubleToInt32(month);
@@ -286,17 +286,17 @@ inline double MakeDay(double year, double month, double date) {
 inline double MakeDate(double day, double time) {
   double res = day * kMsPerDay + time;
   if (std::abs(res) > kMaxTime) {
-    return kNaN;
+    return core::kNaN;
   }
   return res;
 }
 
 inline double TimeClip(double time) {
   if (!core::IsFinite(time)) {
-    return kNaN;
+    return core::kNaN;
   }
   if (std::abs(time) > kMaxTime) {
-    return kNaN;
+    return core::kNaN;
   }
   return core::DoubleToInteger(time);
 }
