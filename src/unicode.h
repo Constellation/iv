@@ -395,7 +395,8 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter resu
 
 // return wirte length
 template<typename OutputIter>
-inline std::size_t UCS4OneCharToUTF8(uint32_t uc, OutputIter result) {
+inline typename std::iterator_traits<OutputIter>::difference_type
+UCS4OneCharToUTF8(uint32_t uc, OutputIter result) {
   OutputIter tmp = Append(uc, result);
   return std::distance(result, tmp);
 }
