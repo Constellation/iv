@@ -1,6 +1,5 @@
 #ifndef _IV_LV5_RAILGUN_DISASSEMBLER_H_
 #define _IV_LV5_RAILGUN_DISASSEMBLER_H_
-#include <iostream>  // NOLINT
 #include <vector>
 #include <tr1/array>
 #include <tr1/cstdio>
@@ -60,12 +59,17 @@ class DisAssembler : private core::Noncopyable<> {
   }
 };
 
-class CoutDisAssembler : public DisAssembler<CoutDisAssembler> {
+class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
  public:
+  OutputDisAssembler(FILE* file) : file_(file) { }
+
   void OutputLine(const core::StringPiece& str) {
-    std::cout.write(str.data(), str.size());
-    std::cout << std::endl;
+    std::fwrite(str.data(), str.size(), 1, file_);
+    std::fputc('\n', file_);
   }
+
+ private:
+  FILE* file_;
 };
 
 } } }  // namespace iv::lv5::railgun

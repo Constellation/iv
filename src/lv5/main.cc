@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <iostream>  // NOLINT
 #include <algorithm>
 #include <tr1/array>
 #include <gc/gc.h>
@@ -86,7 +85,7 @@ int DisAssemble(const iv::core::StringPiece& data,
   if (!code) {
     return EXIT_FAILURE;
   }
-  iv::lv5::railgun::CoutDisAssembler dis;
+  iv::lv5::railgun::OutputDisAssembler dis(stdout);
   dis.DisAssemble(*code);
   return EXIT_SUCCESS;
 }
@@ -182,7 +181,7 @@ int main(int argc, char **argv) {
   }
 
   if (cmd.Exist("help")) {
-    std::cout << cmd.usage();
+    std::fputs(cmd.usage().c_str(), stdout);
     return EXIT_SUCCESS;
   }
 
