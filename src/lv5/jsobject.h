@@ -29,6 +29,8 @@ class JSObject : public gc {
   JSObject();
   JSObject(JSObject* proto, Symbol class_name, bool extensible);
 
+  virtual ~JSObject() { }
+
   virtual JSVal DefaultValue(Context* ctx,
                              Hint::Object hint, Error* res);
   virtual JSVal Get(Context* ctx,
