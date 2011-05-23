@@ -1,9 +1,10 @@
 #ifndef _IV_LV5_COMMAND_H_
 #define _IV_LV5_COMMAND_H_
-#include <iostream>  // NOLINT
+#include <cstdio>
 #include <cstdlib>
 #include "conversions.h"
 #include "date_utils.h"
+#include "unicode.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -19,9 +20,13 @@ inline JSVal Print(const Arguments& args, Error* e) {
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it, ++index) {
       const JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
-      std::cout << *str << ((index == last_index) ? "\n" : " ");
+      core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
+      if (index == last_index) {
+        std::fputc('\n', stdout);
+      } else {
+        std::fputc(' ', stdout);
+      }
     }
-    std::cout << std::flush;
   }
   return JSUndefined;
 }

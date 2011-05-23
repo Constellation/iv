@@ -2,11 +2,11 @@
 #define _IV_LV5_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
-#include <iostream>  // NOLINT
 #include <tr1/memory>
 #include <tr1/array>
 #include "token.h"
 #include "parser.h"
+#include "unicode.h"
 #include "stringpiece.h"
 #include "lv5/context.h"
 #include "lv5/factory.h"
@@ -61,18 +61,20 @@ class Interactive {
         if (!val.IsUndefined()) {
           const JSString* const str = val.ToString(&ctx_, ctx_.error());
           if (!ctx_.IsError()) {
-            std::cout << *str << std::endl;
+            core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
+            std::fputc('\n', stdout);
           } else {
             val = ctx_.ErrorVal();
             ctx_.error()->Clear();
             ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
             const JSString* const str = val.ToString(&ctx_, ctx_.error());
             if (!ctx_.IsError()) {
-              std::cout << *str << std::endl;
+              core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
+              std::fputc('\n', stdout);
             } else {
               ctx_.error()->Clear();
               ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
-              std::cout << "<STRING CONVERSION FAILED>" << std::endl;
+              std::puts("<STRING CONVERSION FAILED>\n");
             }
           }
         }
