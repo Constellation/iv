@@ -650,8 +650,8 @@ inline void DoubleToASCII(Buffer* buf,
   int32_t L;
 
   int m2, m5, special_case, dig;
-  char* s = buf;
-  char* const s0 = buf;
+  Buffer* s = buf;
+  Buffer* const s0 = buf;
   int ieps;
   int j1;
 
