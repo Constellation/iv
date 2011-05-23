@@ -856,6 +856,21 @@ class VM {
           PUSH(base);
           continue;
         }
+
+        case OP::CALL_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          base.CheckObjectCoercible(ERR);
+          JSVal res;
+          if (base.IsPrimitive()) {
+            res = GetElement(sp, base, s, strict, ERR);
+          } else {
+            res = base.object()->Get(ctx_, s, ERR);
+          }
+          SET_TOP(res);
+          PUSH(base);
+          continue;
+        }
       }  // switch
 
       // error found

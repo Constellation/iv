@@ -1218,6 +1218,7 @@ class Compiler
       }
     } else {
       target.Accept(this);
+      Emit<OP::PUSH_UNDEFINED>();
     }
     const Expressions& args = call.args();
     for (Expressions::const_iterator it = args.begin(),
