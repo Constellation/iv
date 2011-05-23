@@ -211,6 +211,7 @@ class Compiler
     const uint16_t index = SymbolToNameIndex(func.name().Address()->symbol());
     Visit(&func);
     Emit<OP::STORE_NAME>(index);
+    Emit<OP::POP_TOP>();
   }
 
   void Visit(const FunctionDeclaration* func) {
@@ -273,20 +274,30 @@ class Compiler
 
   void Visit(const ForStatement* stmt) {
     ContinueTarget jump(this, stmt);
-    if (const core::Maybe<const Statement> init = stmt->init()) {
-      init.Address()->Accept(this);
+    if (const core::Maybe<const Statement> maybe = stmt->init()) {
+      const Statement& init = *(maybe.Address());
+      if (init.AsVariableStatement()) {
+        init.Accept(this);
+      } else {
+        assert(init.AsExpressionStatement());
+        // not evaluate as ExpressionStatement
+        // because ExpressionStatement returns statement value
+        init.AsExpressionStatement()->expr()->Accept(this);
+        Emit<OP::POP_TOP>();
+      }
     }
     const std::size_t start_index = CurrentSize();
     const core::Maybe<const Expression> cond = stmt->cond();
-    std::size_t arg_index;
+    std::size_t arg_index = 0;
     if (cond) {
       cond.Address()->Accept(this);
       arg_index = CurrentSize() + 1;
       Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
     }
     stmt->body()->Accept(this);
-    if (const core::Maybe<const Statement> next = stmt->next()) {
+    if (const core::Maybe<const Expression> next = stmt->next()) {
       next.Address()->Accept(this);
+      Emit<OP::POP_TOP>();
     }
     Emit<OP::JUMP_ABSOLUTE>(start_index);
     if (cond) {
@@ -295,27 +306,46 @@ class Compiler
     jump.EmitJumps(CurrentSize(), start_index);
   }
 
-  void EmitAssign(const Expression& lhs) {
+  void EmitAssign(const Expression& lhs, const Expression& rhs) {
     assert(lhs.IsValidLeftHandSide());
     if (const Identifier* ident = lhs.AsIdentifier()) {
       // Identifier
       const uint16_t index = SymbolToNameIndex(ident->symbol());
+      rhs.Accept(this);
       Emit<OP::STORE_NAME>(index);
     } else if (lhs.AsPropertyAccess()) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
         // IdentifierAccess
+        rhs.Accept(this);
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
         Emit<OP::STORE_PROP>(index);
       } else {
         // IndexAccess
-        EmitElement<OP::STORE_PROP,
-                    OP::STORE_ELEMENT>(*lhs.AsIndexAccess());
+        const IndexAccess& idx = *lhs.AsIndexAccess();
+        idx.target()->Accept(this);
+        const Expression& key = *idx.key();
+        if (const StringLiteral* str = key.AsStringLiteral()) {
+          const uint16_t index =
+              SymbolToNameIndex(context::Intern(ctx_, str->value()));
+          rhs.Accept(this);
+          Emit<OP::STORE_PROP>(index);
+        } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
+          const uint16_t index =
+              SymbolToNameIndex(context::Intern(ctx_, num->value()));
+          rhs.Accept(this);
+          Emit<OP::STORE_PROP>(index);
+        } else {
+          idx.key()->Accept(this);
+          rhs.Accept(this);
+          Emit<OP::STORE_ELEMENT>();
+        }
       }
     } else {
       // FunctionCall
       // ConstructorCall
       lhs.Accept(this);
+      rhs.Accept(this);
       Emit<OP::STORE_CALL_RESULT>();
     }
   }
@@ -339,7 +369,7 @@ class Compiler
     const std::size_t start_index = CurrentSize();
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::FORIN_ENUMERATE>(0);  // dummy index
-    EmitAssign(*lhs);
+    lhs->Accept(this);
     stmt->body()->Accept(this);
     Emit<OP::JUMP_ABSOLUTE>(start_index);
     const std::size_t end_index = CurrentSize();
@@ -455,7 +485,7 @@ class Compiler
     const std::size_t label_index = CurrentSize();
     Emit<OP::JUMP_FORWARD>(0);  // dummy index
 
-    std::size_t catch_return_label_index;
+    std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
       code_->RegisterHandler<Handler::CATCH>(0, try_start, CurrentSize());
       Emit<OP::TRY_CATCH_SETUP>(
@@ -493,24 +523,25 @@ class Compiler
 
   void Visit(const ExpressionStatement* stmt) {
     stmt->expr()->Accept(this);
-    Emit<OP::POP_TOP>();
+    Emit<OP::POP_TOP_AND_RET>();
   }
 
   void Visit(const Assignment* assign) {
     using core::Token;
     const Token::Type token = assign->op();
-    const Expression& lhs = *assign->left();
-    assert(lhs.IsValidLeftHandSide());
     if (token == Token::ASSIGN) {
-      assign->right()->Accept(this);
-      Emit<OP::DUP_TOP>();
-      EmitAssign(lhs);
+      EmitAssign(*assign->left(), *assign->right());
     } else {
+      const Expression& lhs = *assign->left();
+      // const Expression& rhs = *assign->right();
+      assert(lhs.IsValidLeftHandSide());
+
       lhs.Accept(this);
+
       if (lhs.AsCall()) {
         Emit<OP::DUP_TOP>();
       }
-      assign->right()->Accept(this);
+
       switch (token) {
         case Token::ASSIGN_ADD: {  // +=
           Emit<OP::BINARY_ADD>();
@@ -570,7 +601,6 @@ class Compiler
         default:
           UNREACHABLE();
       }
-      Emit<OP::DUP_TOP>();
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
@@ -1171,8 +1201,10 @@ class Compiler
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
       Emit<OP::STORE_NAME>(index);
+      Emit<OP::POP_TOP>();
     }
   }
+
   void Visit(const CaseClause* dummy) { }
 
   uint16_t SymbolToNameIndex(const Symbol& sym) {
@@ -1199,6 +1231,7 @@ class Compiler
         const uint16_t index =
             SymbolToNameIndex(func->name().Address()->symbol());
         Emit<OP::STORE_NAME>(index);
+        Emit<OP::POP_TOP>();
       }
     }
     {

@@ -11,6 +11,8 @@ class VM;
 class CodeContext;
 class Code;
 
+class Analyzer;
+
 class Compiler;
 class Context;
 

@@ -145,7 +145,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
       Append(",\"cond\":");
       (*cond).Accept(this);
     }
-    if (const Maybe<const Statement> next = forstmt->next()) {
+    if (const Maybe<const Expression> next = forstmt->next()) {
       Append(",\"next\":");
       (*next).Accept(this);
     }

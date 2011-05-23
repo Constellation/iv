@@ -225,7 +225,7 @@ class BasicAstFactory {
   ForStatement* NewForStatement(Statement* body,
                                 Maybe<Statement> init,
                                 Maybe<Expression> cond,
-                                Maybe<Statement> next,
+                                Maybe<Expression> next,
                                 std::size_t begin) {
     return new (static_cast<Factory*>(this)) ForStatement(body, init,
                                                           cond, next);

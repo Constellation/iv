@@ -467,7 +467,7 @@ class ForStatement : public ForStatementBase<Factory> {
   ForStatement(Statement<Factory>* body,
                Maybe<Statement<Factory> > init,
                Maybe<Expression<Factory> > cond,
-               Maybe<Statement<Factory> > next)
+               Maybe<Expression<Factory> > next)
     : body_(body),
       init_(init),
       cond_(cond),
@@ -476,13 +476,13 @@ class ForStatement : public ForStatementBase<Factory> {
   inline Statement<Factory>* body() const { return body_; }
   inline Maybe<Statement<Factory> > init() const { return init_; }
   inline Maybe<Expression<Factory> > cond() const { return cond_; }
-  inline Maybe<Statement<Factory> > next() const { return next_; }
+  inline Maybe<Expression<Factory> > next() const { return next_; }
   DECLARE_DERIVED_NODE_TYPE(ForStatement)
  private:
   Statement<Factory>* body_;
   Maybe<Statement<Factory> > init_;
   Maybe<Expression<Factory> > cond_;
-  Maybe<Statement<Factory> > next_;
+  Maybe<Expression<Factory> > next_;
 };
 
 // ForInStatement

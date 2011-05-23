@@ -756,14 +756,12 @@ class Parser
       EXPECT(Token::SEMICOLON);
     }
 
-    ExpressionStatement* next = NULL;
+    Expression* next = NULL;
     if (token_ == Token::RPAREN) {
       Next();
     } else {
-      Expression* const next_expr = ParseExpression(true, CHECK);
-      assert(next_expr);
-      next = factory_->NewExpressionStatement(next_expr,
-                                              lexer_.previous_end_position());
+      next = ParseExpression(true, CHECK);
+      assert(next);
       EXPECT(Token::RPAREN);
     }
 

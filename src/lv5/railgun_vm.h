@@ -101,8 +101,11 @@ class VM {
   }
 
   void Execute(Frame* frame) {
-    int opcode;
-    uint32_t oparg;
+    enum {
+      NORMAL,
+      RETURN,
+      THROW
+    } type = NORMAL;
     const Code& code = frame->code();
     const uint8_t* const first_instr = frame->data();
     const uint8_t* instr = first_instr;
@@ -111,6 +114,16 @@ class VM {
     const JSVals& constants = frame->constants();
     const Code::Names& names = code.names();
     const bool strict = code.strict();
+    JSVal ret = JSUndefined;
+#define ERR\
+  &e);\
+  if (e) {\
+    break;\
+  }\
+  ((void)0
+#define DUMMY )  // to make indentation work
+#undef DUMMY
+
 #define INSTR_OFFSET() reinterpret_cast<uint8_t*>(instr - first_instr)
 #define NEXTOP() (*instr++)
 #define NEXTARG() (instr += 2, (instr[-1] << 8) + instr[-2])
@@ -147,8 +160,8 @@ class VM {
     // main loop
     for (;;) {
       // fetch opcode
-      opcode = NEXTOP();
-      oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
+      const int opcode = NEXTOP();
+      const uint32_t oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
 
       // if ok, use continue.
       // if error, use break.
@@ -169,10 +182,7 @@ class VM {
 
         case OP::LOAD_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName(env, s, strict, &e);
-          if (e) {
-            break;
-          }
+          const JSVal w = LoadName(env, s, strict, ERR);
           PUSH(w);
           continue;
         }
@@ -180,27 +190,15 @@ class VM {
         case OP::LOAD_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          base.CheckObjectCoercible(&e);
-          if (e) {
-            break;
-          }
-          const JSString* str = element.ToString(ctx_, &e);
-          if (e) {
-            break;
-          }
-          const Symbol& s = context::Intern(ctx_, str->value());
+          base.CheckObjectCoercible(ERR);
+          const JSString* str = element.ToString(ctx_, ERR);
+          const Symbol s = context::Intern(ctx_, str->value());
           if (base.IsPrimitive()) {
-            const JSVal res = GetElement(sp, base, s, strict, &e);
-            if (e) {
-              break;
-            }
+            const JSVal res = GetElement(sp, base, s, strict, ERR);
             SET_TOP(res);
             continue;
           } else {
-            const JSVal res = base.object()->Get(ctx_, s, &e);
-            if (e) {
-              break;
-            }
+            const JSVal res = base.object()->Get(ctx_, s, ERR);
             SET_TOP(res);
             continue;
           }
@@ -209,23 +207,13 @@ class VM {
         case OP::LOAD_PROP: {
           const JSVal base = TOP();
           const Symbol& s = GETITEM(names, oparg);
-          base.CheckObjectCoercible(&e);
-          if (e) {
-            break;
-          }
+          base.CheckObjectCoercible(ERR);
           if (base.IsPrimitive()) {
-            const JSVal res = GetElement(sp, base, s, strict, &e);
-            if (e) {
-              break;
-            }
+            const JSVal res = GetElement(sp, base, s, strict, ERR);
             SET_TOP(res);
             continue;
           } else {
-            const JSVal res =
-                base.object()->Get(ctx_, s, &e);
-            if (e) {
-              break;
-            }
+            const JSVal res = base.object()->Get(ctx_, s, ERR);
             SET_TOP(res);
             continue;
           }
@@ -233,26 +221,148 @@ class VM {
 
         case OP::STORE_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal v = POP();
+          const JSVal v = TOP();
           if (JSEnv* current = GetEnv(env, s)) {
-            current->SetMutableBinding(ctx_, s, v, strict, &e);
+            current->SetMutableBinding(ctx_, s, v, strict, ERR);
           } else {
             if (strict) {
               e.Report(Error::Reference,
                        "putting to unresolvable reference "
                        "not allowed in strict reference");
+              break;
             } else {
-              ctx_->global_obj()->Put(ctx_, s, v, strict, &e);
+              ctx_->global_obj()->Put(ctx_, s, v, strict, ERR);
             }
           }
-          if (e) {
-            break;
+          continue;
+        }
+
+        case OP::STORE_ELEMENT: {
+          const JSVal w = POP();
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          base.CheckObjectCoercible(ERR);
+          const JSString* str = element.ToString(ctx_, ERR);
+          const Symbol s = context::Intern(ctx_, str->value());
+          if (base.IsPrimitive()) {
+            JSObject* const o = base.ToObject(ctx_, ERR);
+            if (!o->CanPut(ctx_, s)) {
+              if (strict) {
+                e.Report(Error::Type, "cannot put value to object");
+                break;
+              }
+              SET_TOP(w);
+              continue;
+            }
+            const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+            if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+              if (strict) {
+                e.Report(Error::Type,
+                         "value to symbol defined and not data descriptor");
+                break;
+              }
+              SET_TOP(w);
+              continue;
+            }
+            const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+            if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+              ScopedArguments a(ctx_, 1, ERR);
+              a[0] = w;
+              const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+              assert(ac->set());
+              ac->set()->AsCallable()->Call(&a, base, ERR);
+            } else {
+              if (strict) {
+                e.Report(Error::Type, "value to symbol in transient object");
+                break;
+              }
+            }
+          } else {
+            base.object()->Put(ctx_, s, w, strict, ERR);
           }
+          SET_TOP(w);
+          continue;
+        }
+
+        case OP::STORE_PROP: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal w = POP();
+          const JSVal base = TOP();
+          if (base.IsPrimitive()) {
+            JSObject* const o = base.ToObject(ctx_, ERR);
+            if (!o->CanPut(ctx_, s)) {
+              if (strict) {
+                e.Report(Error::Type, "cannot put value to object");
+                break;
+              }
+              SET_TOP(w);
+              continue;
+            }
+            const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+            if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+              if (strict) {
+                e.Report(Error::Type,
+                         "value to symbol defined and not data descriptor");
+                break;
+              }
+              SET_TOP(w);
+              continue;
+            }
+            const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+            if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+              ScopedArguments a(ctx_, 1, ERR);
+              a[0] = w;
+              const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+              assert(ac->set());
+              ac->set()->AsCallable()->Call(&a, base, ERR);
+            } else {
+              if (strict) {
+                e.Report(Error::Type, "value to symbol in transient object");
+                break;
+              }
+            }
+          } else {
+            base.object()->Put(ctx_, s, w, strict, ERR);
+          }
+          SET_TOP(w);
           continue;
         }
 
         case OP::POP_TOP: {
           POP_UNUSED();
+          continue;
+        }
+
+        case OP::POP_TOP_AND_RET: {
+          ret = POP();
+          continue;
+        }
+
+        case OP::POP_JUMP_IF_FALSE: {
+          const JSVal v = POP();
+          const bool x = v.ToBoolean(ERR);
+          if (!x) {
+            JUMPTO(oparg);
+          }
+          continue;
+        }
+
+        case OP::POP_JUMP_IF_TRUE: {
+          const JSVal v = POP();
+          const bool x = v.ToBoolean(ERR);
+          if (x) {
+            JUMPTO(oparg);
+          }
+          continue;
+        }
+
+        case OP::JUMP_FORWARD: {
+          JUMPBY(oparg - 3);
+          continue;
+        }
+
+        case OP::JUMP_ABSOLUTE: {
+          JUMPTO(oparg);
           continue;
         }
 
@@ -326,51 +436,82 @@ class VM {
 
         case OP::UNARY_POSITIVE: {
           const JSVal v = TOP();
-          const double x = v.ToNumber(ctx_, &e);
+          const double x = v.ToNumber(ctx_, ERR);
           SET_TOP(x);
-          if (e) {
-            break;
-          }
           continue;
         }
 
         case OP::UNARY_NEGATIVE: {
           const JSVal v = TOP();
-          const double x = v.ToNumber(ctx_, &e);
+          const double x = v.ToNumber(ctx_, ERR);
           SET_TOP(-x);
-          if (e) {
-            break;
-          }
           continue;
         }
 
         case OP::UNARY_NOT: {
           const JSVal v = TOP();
-          const bool x = v.ToBoolean(&e);
-          if (e) {
-            break;
-          }
+          const bool x = v.ToBoolean(ERR);
           SET_TOP(JSVal::Bool(!x));
           continue;
         }
 
         case OP::UNARY_BIT_NOT: {
           const JSVal v = TOP();
-          const double value = v.ToNumber(ctx_, &e);
-          if (e) {
-            break;
-          }
+          const double value = v.ToNumber(ctx_, ERR);
           SET_TOP(~core::DoubleToInt32(value));
+          continue;
+        }
+
+        case OP::DECREMENT_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal w = LoadName(env, s, strict, ERR);
+          const double old_value = w.ToNumber(ctx_, ERR);
+          const double new_value = old_value + 1;
+          JSEnv* current = GetEnv(env, s);
+          assert(current);
+          current->SetMutableBinding(ctx_, s, new_value, strict, ERR);
+          PUSH(new_value);
+          continue;
+        }
+
+        case OP::POSTFIX_DECREMENT_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal w = LoadName(env, s, strict, ERR);
+          const double old_value = w.ToNumber(ctx_, ERR);
+          JSEnv* current = GetEnv(env, s);
+          assert(current);
+          current->SetMutableBinding(ctx_, s, old_value - 1, strict, ERR);
+          PUSH(old_value);
+          continue;
+        }
+
+        case OP::INCREMENT_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal w = LoadName(env, s, strict, ERR);
+          const double old_value = w.ToNumber(ctx_, ERR);
+          const double new_value = old_value + 1;
+          JSEnv* current = GetEnv(env, s);
+          assert(current);
+          current->SetMutableBinding(ctx_, s, new_value, strict, ERR);
+          PUSH(new_value);
+          continue;
+        }
+
+        case OP::POSTFIX_INCREMENT_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal w = LoadName(env, s, strict, ERR);
+          const double old_value = w.ToNumber(ctx_, ERR);
+          JSEnv* current = GetEnv(env, s);
+          assert(current);
+          current->SetMutableBinding(ctx_, s, old_value + 1, strict, ERR);
+          PUSH(old_value);
           continue;
         }
 
         case OP::BINARY_ADD: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryAdd(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryAdd(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -378,10 +519,7 @@ class VM {
         case OP::BINARY_SUBTRACT: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinarySub(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinarySub(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -389,10 +527,7 @@ class VM {
         case OP::BINARY_MULTIPLY: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryMultiply(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryMultiply(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -400,10 +535,7 @@ class VM {
         case OP::BINARY_DIVIDE: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryDivide(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryDivide(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -411,10 +543,7 @@ class VM {
         case OP::BINARY_MODULO: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryModulo(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryModulo(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -422,10 +551,7 @@ class VM {
         case OP::BINARY_LSHIFT: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryLShift(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryLShift(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -433,10 +559,7 @@ class VM {
         case OP::BINARY_RSHIFT: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryRShift(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryRShift(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -444,10 +567,7 @@ class VM {
         case OP::BINARY_RSHIFT_LOGICAL: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryRShiftLogical(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryRShiftLogical(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -455,10 +575,7 @@ class VM {
         case OP::BINARY_LT: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryCompareLT(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryCompareLT(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -466,10 +583,7 @@ class VM {
         case OP::BINARY_LTE: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryCompareLTE(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryCompareLTE(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -477,10 +591,7 @@ class VM {
         case OP::BINARY_GT: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryCompareGT(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryCompareGT(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -488,10 +599,7 @@ class VM {
         case OP::BINARY_GTE: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryCompareGTE(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryCompareGTE(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -499,10 +607,7 @@ class VM {
         case OP::BINARY_INSTANCEOF: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryInstanceof(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryInstanceof(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -510,10 +615,7 @@ class VM {
         case OP::BINARY_IN: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryIn(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryIn(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -521,10 +623,7 @@ class VM {
         case OP::BINARY_EQ: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryEqual(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryEqual(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -540,10 +639,7 @@ class VM {
         case OP::BINARY_NE: {
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryNotEqual(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryNotEqual(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -559,10 +655,7 @@ class VM {
         case OP::BINARY_BIT_AND: {  // &
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryBitAnd(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryBitAnd(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -570,10 +663,7 @@ class VM {
         case OP::BINARY_BIT_XOR: {  // ^
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryBitXor(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryBitXor(v, w, ERR);
           SET_TOP(res);
           continue;
         }
@@ -581,12 +671,21 @@ class VM {
         case OP::BINARY_BIT_OR: {  // |
           const JSVal w = POP();
           const JSVal v = TOP();
-          const JSVal res = BinaryBitOr(v, w, &e);
-          if (e) {
-            break;
-          }
+          const JSVal res = BinaryBitOr(v, w, ERR);
           SET_TOP(res);
           continue;
+        }
+
+        case OP::RETURN: {
+          ret = POP();
+          type = RETURN;
+          break;
+        }
+
+        case OP::THROW: {
+          ret = POP();
+          type = THROW;
+          break;
         }
 
         case OP::BUILD_ARRAY: {
@@ -634,10 +733,7 @@ class VM {
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
-              false, &e);
-          if (e) {
-            break;
-          }
+              false, ERR);
           continue;
         }
 
@@ -651,10 +747,7 @@ class VM {
                                  PropertyDescriptor::ENUMERABLE |
                                  PropertyDescriptor::CONFIGURABLE |
                                  PropertyDescriptor::UNDEF_SETTER),
-              false, &e);
-          if (e) {
-            break;
-          }
+              false, ERR);
           continue;
         }
 
@@ -668,10 +761,7 @@ class VM {
                                  PropertyDescriptor::ENUMERABLE |
                                  PropertyDescriptor::CONFIGURABLE |
                                  PropertyDescriptor::UNDEF_SETTER),
-              false, &e);
-          if (e) {
-            break;
-          }
+              false, ERR);
           continue;
         }
 
@@ -690,10 +780,7 @@ class VM {
           const Symbol& s = GETITEM(names, oparg);
           JSVal res;
           if (JSEnv* target_env = GetEnv(env, s)) {
-            const JSVal w = target_env->GetBindingValue(ctx_, s, false, &e);
-            if (e) {
-              break;
-            }
+            const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
             PUSH(w);
             PUSH(target_env->ImplicitThisValue());
           } else {

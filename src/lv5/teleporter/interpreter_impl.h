@@ -439,7 +439,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
         ABRUPT();
       }
     }
-    if (const core::Maybe<const Statement> next = stmt->next()) {
+    if (const core::Maybe<const Expression> next = stmt->next()) {
       EVAL_IN_STMT(next.Address());
       GetValue(ctx_->ret(), CHECK_IN_STMT);
     }
