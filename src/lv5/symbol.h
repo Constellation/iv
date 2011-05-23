@@ -38,7 +38,7 @@ inline bool operator<=(const Symbol& x, const Symbol& y) {
 }
 
 inline bool operator>=(const Symbol& x, const Symbol& y) {
-  return x.value_as_index <= y.value_as_index;
+  return x.value_as_index >= y.value_as_index;
 }
 
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
