@@ -317,6 +317,7 @@ class Compiler
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
         // IdentifierAccess
+        ac->target()->Accept(this);
         rhs.Accept(this);
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
         Emit<OP::STORE_PROP>(index);
@@ -533,95 +534,132 @@ class Compiler
       EmitAssign(*assign->left(), *assign->right());
     } else {
       const Expression& lhs = *assign->left();
-      // const Expression& rhs = *assign->right();
+      const Expression& rhs = *assign->right();
       assert(lhs.IsValidLeftHandSide());
-
-      lhs.Accept(this);
-
-      if (lhs.AsCall()) {
-        Emit<OP::DUP_TOP>();
-      }
-
-      switch (token) {
-        case Token::ASSIGN_ADD: {  // +=
-          Emit<OP::BINARY_ADD>();
-          break;
-        }
-
-        case Token::ASSIGN_SUB: {  // -=
-          Emit<OP::BINARY_SUBTRACT>();
-          break;
-        }
-
-        case Token::ASSIGN_MUL: {  // *=
-          Emit<OP::BINARY_MULTIPLY>();
-          break;
-        }
-
-        case Token::ASSIGN_MOD: {  // %=
-          Emit<OP::BINARY_MODULO>();
-          break;
-        }
-
-        case Token::ASSIGN_DIV: {  // /=
-          Emit<OP::BINARY_DIVIDE>();
-          break;
-        }
-
-        case Token::ASSIGN_SAR: {  // >>=
-          Emit<OP::BINARY_RSHIFT>();
-          break;
-        }
-
-        case Token::ASSIGN_SHR: {  // >>>=
-          Emit<OP::BINARY_RSHIFT_LOGICAL>();
-          break;
-        }
-
-        case Token::ASSIGN_SHL: {  // <<=
-          Emit<OP::BINARY_LSHIFT>();
-          break;
-        }
-
-        case Token::ASSIGN_BIT_AND: {  // &=
-          Emit<OP::BINARY_BIT_AND>();
-          break;
-        }
-
-        case Token::ASSIGN_BIT_OR: {  // |=
-          Emit<OP::BINARY_BIT_OR>();
-          break;
-        }
-
-        case Token::ASSIGN_BIT_XOR: {  // ^=
-          Emit<OP::BINARY_BIT_XOR>();
-          break;
-        }
-
-        default:
-          UNREACHABLE();
-      }
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
+        if (ident->symbol() == context::arguments_symbol(ctx_)) {
+          Emit<OP::PUSH_ARGUMENTS>();
+        } else {
+          Emit<OP::LOAD_NAME>(index);
+        }
+        rhs.Accept(this);
+        EmitAssignedBinaryOperation(token);
         Emit<OP::STORE_NAME>(index);
       } else if (lhs.AsPropertyAccess()) {
         // PropertyAccess
         if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
           // IdentifierAccess
+          ac->target()->Accept(this);
+          Emit<OP::DUP_TOP>();
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+          Emit<OP::LOAD_PROP>(index);
+          rhs.Accept(this);
+          EmitAssignedBinaryOperation(token);
           Emit<OP::STORE_PROP>(index);
         } else {
           // IndexAccess
-          EmitElement<OP::STORE_PROP,
-                      OP::STORE_ELEMENT>(*lhs.AsIndexAccess());
+          const IndexAccess& idx = *lhs.AsIndexAccess();
+          idx.target()->Accept(this);
+          const Expression& key = *idx.key();
+          if (const StringLiteral* str = key.AsStringLiteral()) {
+            Emit<OP::DUP_TOP>();
+            const uint16_t index =
+                SymbolToNameIndex(context::Intern(ctx_, str->value()));
+            Emit<OP::LOAD_PROP>(index);
+            rhs.Accept(this);
+            EmitAssignedBinaryOperation(token);
+            Emit<OP::STORE_PROP>(index);
+          } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
+            Emit<OP::DUP_TOP>();
+            const uint16_t index =
+                SymbolToNameIndex(context::Intern(ctx_, num->value()));
+            Emit<OP::LOAD_PROP>(index);
+            rhs.Accept(this);
+            EmitAssignedBinaryOperation(token);
+            Emit<OP::STORE_PROP>(index);
+          } else {
+            key.Accept(this);
+            Emit<OP::DUP_TWO>();
+            Emit<OP::LOAD_ELEMENT>();
+            rhs.Accept(this);
+            EmitAssignedBinaryOperation(token);
+            Emit<OP::STORE_ELEMENT>();
+          }
         }
       } else {
         // FunctionCall
         // ConstructorCall
-        Emit<OP::ROT_THREE>();
+        lhs.Accept(this);
+        Emit<OP::DUP_TOP>();
+        rhs.Accept(this);
+        EmitAssignedBinaryOperation(token);
         Emit<OP::STORE_CALL_RESULT>();
       }
+    }
+  }
+
+  void EmitAssignedBinaryOperation(core::Token::Type token) {
+    using core::Token;
+    switch (token) {
+      case Token::ASSIGN_ADD: {  // +=
+        Emit<OP::BINARY_ADD>();
+        break;
+      }
+
+      case Token::ASSIGN_SUB: {  // -=
+        Emit<OP::BINARY_SUBTRACT>();
+        break;
+      }
+
+      case Token::ASSIGN_MUL: {  // *=
+        Emit<OP::BINARY_MULTIPLY>();
+        break;
+      }
+
+      case Token::ASSIGN_MOD: {  // %=
+        Emit<OP::BINARY_MODULO>();
+        break;
+      }
+
+      case Token::ASSIGN_DIV: {  // /=
+        Emit<OP::BINARY_DIVIDE>();
+        break;
+      }
+
+      case Token::ASSIGN_SAR: {  // >>=
+        Emit<OP::BINARY_RSHIFT>();
+        break;
+      }
+
+      case Token::ASSIGN_SHR: {  // >>>=
+        Emit<OP::BINARY_RSHIFT_LOGICAL>();
+        break;
+      }
+
+      case Token::ASSIGN_SHL: {  // <<=
+        Emit<OP::BINARY_LSHIFT>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_AND: {  // &=
+        Emit<OP::BINARY_BIT_AND>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_OR: {  // |=
+        Emit<OP::BINARY_BIT_OR>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_XOR: {  // ^=
+        Emit<OP::BINARY_BIT_XOR>();
+        break;
+      }
+
+      default:
+        UNREACHABLE();
     }
   }
 
@@ -1163,9 +1201,9 @@ class Compiler
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         Emit<OP::CALL_NAME>(index);
       } else if (const PropertyAccess* prop = target.AsPropertyAccess()) {
-        prop->target()->Accept(this);
         if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
           // IdentifierAccess
+          prop->target()->Accept(this);
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::CALL_PROP>(index);
         } else {

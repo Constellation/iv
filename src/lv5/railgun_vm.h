@@ -328,6 +328,14 @@ class VM {
           continue;
         }
 
+        case OP::STORE_CALL_RESULT: {
+          // lv5 reject func() = 20;
+          const JSVal w = POP();
+          e.Report(Error::Reference, "target is not reference");
+          SET_TOP(w);
+          break;
+        }
+
         case OP::POP_TOP: {
           POP_UNUSED();
           continue;
@@ -398,6 +406,14 @@ class VM {
 
         case OP::DUP_TOP: {
           const JSVal v = TOP();
+          PUSH(v);
+          continue;
+        }
+
+        case OP::DUP_TWO: {
+          const JSVal v = TOP();
+          const JSVal w = SECOND();
+          PUSH(w);
           PUSH(v);
           continue;
         }
@@ -787,6 +803,23 @@ class VM {
             RaiseReferenceError(s, &e);
             break;
           }
+          continue;
+        }
+
+        case OP::CALL_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          base.CheckObjectCoercible(ERR);
+          const JSString* str = element.ToString(ctx_, ERR);
+          const Symbol s = context::Intern(ctx_, str->value());
+          JSVal res;
+          if (base.IsPrimitive()) {
+            res = GetElement(sp, base, s, strict, ERR);
+          } else {
+            res = base.object()->Get(ctx_, s, ERR);
+          }
+          SET_TOP(res);
+          PUSH(base);
           continue;
         }
       }  // switch
