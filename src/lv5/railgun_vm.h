@@ -241,45 +241,7 @@ class VM {
           const JSVal w = POP();
           const JSVal element = POP();
           const JSVal base = TOP();
-          base.CheckObjectCoercible(ERR);
-          const JSString* str = element.ToString(ctx_, ERR);
-          const Symbol s = context::Intern(ctx_, str->value());
-          if (base.IsPrimitive()) {
-            JSObject* const o = base.ToObject(ctx_, ERR);
-            if (!o->CanPut(ctx_, s)) {
-              if (strict) {
-                e.Report(Error::Type, "cannot put value to object");
-                break;
-              }
-              SET_TOP(w);
-              continue;
-            }
-            const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-            if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-              if (strict) {
-                e.Report(Error::Type,
-                         "value to symbol defined and not data descriptor");
-                break;
-              }
-              SET_TOP(w);
-              continue;
-            }
-            const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-            if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-              ScopedArguments a(ctx_, 1, ERR);
-              a[0] = w;
-              const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-              assert(ac->set());
-              ac->set()->AsCallable()->Call(&a, base, ERR);
-            } else {
-              if (strict) {
-                e.Report(Error::Type, "value to symbol in transient object");
-                break;
-              }
-            }
-          } else {
-            base.object()->Put(ctx_, s, w, strict, ERR);
-          }
+          StoreElement(base, element, w, strict, ERR);
           SET_TOP(w);
           continue;
         }
@@ -288,42 +250,7 @@ class VM {
           const Symbol& s = GETITEM(names, oparg);
           const JSVal w = POP();
           const JSVal base = TOP();
-          if (base.IsPrimitive()) {
-            JSObject* const o = base.ToObject(ctx_, ERR);
-            if (!o->CanPut(ctx_, s)) {
-              if (strict) {
-                e.Report(Error::Type, "cannot put value to object");
-                break;
-              }
-              SET_TOP(w);
-              continue;
-            }
-            const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-            if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-              if (strict) {
-                e.Report(Error::Type,
-                         "value to symbol defined and not data descriptor");
-                break;
-              }
-              SET_TOP(w);
-              continue;
-            }
-            const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-            if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-              ScopedArguments a(ctx_, 1, ERR);
-              a[0] = w;
-              const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-              assert(ac->set());
-              ac->set()->AsCallable()->Call(&a, base, ERR);
-            } else {
-              if (strict) {
-                e.Report(Error::Type, "value to symbol in transient object");
-                break;
-              }
-            }
-          } else {
-            base.object()->Put(ctx_, s, w, strict, ERR);
-          }
+          StoreProp(base, s, w, strict, ERR);
           SET_TOP(w);
           continue;
         }
@@ -509,6 +436,25 @@ class VM {
           const JSVal& v = TOP();
           const double value = v.ToNumber(ctx_, ERR);
           SET_TOP(~core::DoubleToInt32(value));
+          continue;
+        }
+
+        case OP::TYPEOF: {
+          const JSVal& v = TOP();
+          const JSVal result = v.TypeOf(ctx_);
+          SET_TOP(result);
+          continue;
+        }
+
+        case OP::TYPEOF_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          if (JSEnv* current = GetEnv(env, s)) {
+            const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
+            PUSH(expr.TypeOf(ctx_));
+            continue;
+          }
+          // unresolvable reference
+          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
           continue;
         }
 
@@ -938,6 +884,89 @@ class VM {
     RaiseReferenceError(name, e);
     return JSEmpty;
   }
+
+#define CHECK IV_LV5_ERROR_VOID(e)
+  void StoreElement(const JSVal& base, const JSVal& element,
+                    const JSVal& stored, bool strict, Error* e) const {
+    base.CheckObjectCoercible(CHECK);
+    const JSString* str = element.ToString(ctx_, CHECK);
+    const Symbol s = context::Intern(ctx_, str->value());
+    if (base.IsPrimitive()) {
+      JSObject* const o = base.ToObject(ctx_, CHECK);
+      if (!o->CanPut(ctx_, s)) {
+        if (strict) {
+          e->Report(Error::Type, "cannot put value to object");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+        if (strict) {
+          e->Report(Error::Type,
+                    "value to symbol defined and not data descriptor");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        ScopedArguments a(ctx_, 1, CHECK);
+        a[0] = stored;
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        assert(ac->set());
+        ac->set()->AsCallable()->Call(&a, base, CHECK);
+      } else {
+        if (strict) {
+          e->Report(Error::Type, "value to symbol in transient object");
+          return;
+        }
+      }
+    } else {
+      base.object()->Put(ctx_, s, stored, strict, CHECK);
+    }
+  }
+#undef CHECK
+
+#define CHECK IV_LV5_ERROR_VOID(e)
+  void StoreProp(const JSVal& base, const Symbol& s,
+                 const JSVal& stored, bool strict, Error* e) const {
+    if (base.IsPrimitive()) {
+      JSObject* const o = base.ToObject(ctx_, CHECK);
+      if (!o->CanPut(ctx_, s)) {
+        if (strict) {
+          e->Report(Error::Type, "cannot put value to object");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+        if (strict) {
+          e->Report(Error::Type,
+                    "value to symbol defined and not data descriptor");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        ScopedArguments a(ctx_, 1, CHECK);
+        a[0] = stored;
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        assert(ac->set());
+        ac->set()->AsCallable()->Call(&a, base, CHECK);
+      } else {
+        if (strict) {
+          e->Report(Error::Type, "value to symbol in transient object");
+          return;
+        }
+      }
+    } else {
+      base.object()->Put(ctx_, s, stored, strict, CHECK);
+    }
+  }
+#undef CHECK
 
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
