@@ -1,5 +1,3 @@
-// code from SpiderMonkey jsdtoa.cpp
-// MPL 1.1
 #ifndef _IV_LV5_JSDTOA_H_
 #define _IV_LV5_JSDTOA_H_
 #include "dtoa.h"
