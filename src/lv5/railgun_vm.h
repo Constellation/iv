@@ -336,6 +336,40 @@ class VM {
           break;
         }
 
+        case OP::DELETE_NAME: {
+          const Symbol& s = GETITEM(names, oparg);
+          if (JSEnv* current = GetEnv(env, s)) {
+            const bool res = current->DeleteBinding(ctx_, s);
+            PUSH(JSVal::Bool(res));
+          } else {
+            // not found -> unresolvable reference
+            PUSH(JSTrue);
+          }
+          continue;
+        }
+
+        case OP::DELETE_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          base.CheckObjectCoercible(ERR);
+          const JSString* str = element.ToString(ctx_, ERR);
+          const Symbol s = context::Intern(ctx_, str->value());
+          JSObject* const obj = base.ToObject(ctx_, ERR);
+          const bool result = obj->Delete(ctx_, s, strict, ERR);
+          SET_TOP(JSVal::Bool(result));
+          continue;
+        }
+
+        case OP::DELETE_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          base.CheckObjectCoercible(ERR);
+          JSObject* const obj = base.ToObject(ctx_, ERR);
+          const bool result = obj->Delete(ctx_, s, strict, ERR);
+          SET_TOP(JSVal::Bool(result));
+          continue;
+        }
+
         case OP::POP_TOP: {
           POP_UNUSED();
           continue;
@@ -451,28 +485,28 @@ class VM {
         }
 
         case OP::UNARY_POSITIVE: {
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const double x = v.ToNumber(ctx_, ERR);
           SET_TOP(x);
           continue;
         }
 
         case OP::UNARY_NEGATIVE: {
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const double x = v.ToNumber(ctx_, ERR);
           SET_TOP(-x);
           continue;
         }
 
         case OP::UNARY_NOT: {
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const bool x = v.ToBoolean(ERR);
           SET_TOP(JSVal::Bool(!x));
           continue;
         }
 
         case OP::UNARY_BIT_NOT: {
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const double value = v.ToNumber(ctx_, ERR);
           SET_TOP(~core::DoubleToInt32(value));
           continue;
@@ -526,7 +560,7 @@ class VM {
 
         case OP::BINARY_ADD: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryAdd(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -534,7 +568,7 @@ class VM {
 
         case OP::BINARY_SUBTRACT: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinarySub(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -542,7 +576,7 @@ class VM {
 
         case OP::BINARY_MULTIPLY: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryMultiply(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -550,7 +584,7 @@ class VM {
 
         case OP::BINARY_DIVIDE: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryDivide(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -558,7 +592,7 @@ class VM {
 
         case OP::BINARY_MODULO: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryModulo(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -566,7 +600,7 @@ class VM {
 
         case OP::BINARY_LSHIFT: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryLShift(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -574,7 +608,7 @@ class VM {
 
         case OP::BINARY_RSHIFT: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryRShift(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -582,7 +616,7 @@ class VM {
 
         case OP::BINARY_RSHIFT_LOGICAL: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryRShiftLogical(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -590,7 +624,7 @@ class VM {
 
         case OP::BINARY_LT: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryCompareLT(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -598,7 +632,7 @@ class VM {
 
         case OP::BINARY_LTE: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryCompareLTE(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -606,7 +640,7 @@ class VM {
 
         case OP::BINARY_GT: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryCompareGT(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -614,7 +648,7 @@ class VM {
 
         case OP::BINARY_GTE: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryCompareGTE(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -622,7 +656,7 @@ class VM {
 
         case OP::BINARY_INSTANCEOF: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryInstanceof(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -630,7 +664,7 @@ class VM {
 
         case OP::BINARY_IN: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryIn(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -638,7 +672,7 @@ class VM {
 
         case OP::BINARY_EQ: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryEqual(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -646,7 +680,7 @@ class VM {
 
         case OP::BINARY_STRICT_EQ: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryStrictEqual(v, w);
           SET_TOP(res);
           continue;
@@ -654,7 +688,7 @@ class VM {
 
         case OP::BINARY_NE: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryNotEqual(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -662,7 +696,7 @@ class VM {
 
         case OP::BINARY_STRICT_NE: {
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryStrictNotEqual(v, w);
           SET_TOP(res);
           continue;
@@ -670,7 +704,7 @@ class VM {
 
         case OP::BINARY_BIT_AND: {  // &
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryBitAnd(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -678,7 +712,7 @@ class VM {
 
         case OP::BINARY_BIT_XOR: {  // ^
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryBitXor(v, w, ERR);
           SET_TOP(res);
           continue;
@@ -686,7 +720,7 @@ class VM {
 
         case OP::BINARY_BIT_OR: {  // |
           const JSVal w = POP();
-          const JSVal v = TOP();
+          const JSVal& v = TOP();
           const JSVal res = BinaryBitOr(v, w, ERR);
           SET_TOP(res);
           continue;

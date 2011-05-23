@@ -874,6 +874,7 @@ class Compiler
           } else if (expr.AsPropertyAccess()) {
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
               // IdentifierAccess
+              ac->target()->Accept(this);
               const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
               Emit<OP::DELETE_PROP>(index);
             } else {
