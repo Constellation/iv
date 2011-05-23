@@ -1,3 +1,10 @@
+// unicode functions
+// reference:
+//  RFC3629: UTF-8, a transformation format of ISO 10646
+//    http://www.ietf.org/rfc/rfc3629.txt
+//  RFC2781: UTF16, an encoding of ISO 10646
+//    http://www.ietf.org/rfc/rfc2781.txt
+//  http://www5d.biglobe.ne.jp/~noocyte/Programming/CharCode.html
 #ifndef _IV_UNICODE_H_
 #define _IV_UNICODE_H_
 #include <cassert>
@@ -77,7 +84,15 @@ inline bool IsLowSurrogate(UC16 uc) {
 
 template<typename UC16>
 inline bool IsSurrogate(UC16 uc) {
-  return (uc & ~kSurrogateMask) == kSurrogateMin;
+  return (static_cast<uint32_t>(uc) & ~kSurrogateMask) == kSurrogateMin;
+}
+
+inline uint16_t ToHighSurrogate(uint32_t uc) {
+  return static_cast<uint16_t>((uc >> kSurrogateBits) + kHighSurrogateOffset);
+}
+
+inline uint16_t ToLowSurrogate(uint32_t uc) {
+  return static_cast<uint16_t>((uc & kLowSurrogateMask) + kLowSurrogateMin);
 }
 
 template<typename UC32>
@@ -382,9 +397,10 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter resu
       return error;
     } else {
       if (res > 0xFFFF) {
-        // surrogate pair
-        *result++ = static_cast<uint16_t>((res >> kSurrogateBits) + kHighSurrogateOffset);
-        *result++ = static_cast<uint16_t>((res & 0x3FF) + kLowSurrogateMin);
+        // surrogate pair only ch > 0xFFFF
+        // because NextUCS4FromUTF8 checks code point is valid
+        *result++ = ToHighSurrogate(res);
+        *result++ = ToLowSurrogate(res);
       } else {
         *result++ = static_cast<uint16_t>(res);
       }
@@ -413,16 +429,21 @@ template<typename UTF16InputIter, typename OutputIter>
 inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter result) {
   while (it != last) {
     uint32_t res = Mask<16>(*it++);
-    if (IsHighSurrogate(res)) {
-      ++it;
-      if (it == last) {
+    if (IsSurrogate(res)) {
+      if (IsHighSurrogate(res)) {
+        ++it;
+        if (it == last) {
+          return INVALID_SEQUENCE;
+        }
+        const uint32_t low = Mask<16>(*it++);
+        if (!IsLowSurrogate(low)) {
+          return INVALID_SEQUENCE;
+        }
+        res = (res << kSurrogateBits) + low + kSurrogateOffset;
+      } else {
+        // starts with low surrogate is error
         return INVALID_SEQUENCE;
       }
-      const uint32_t low = Mask<16>(*it++);
-      if (!IsLowSurrogate(low)) {
-        return INVALID_SEQUENCE;
-      }
-      res = (res << kSurrogateBits) + low + kSurrogateOffset;
     }
     result = Append(res, result);
   }
