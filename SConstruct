@@ -72,7 +72,8 @@ def Build():
     BoolVariable('debug', '', 0),
     BoolVariable('gprof', '', 0),
     BoolVariable('gcov', '', 0),
-    BoolVariable('clang', '', 0)
+    BoolVariable('clang', '', 0),
+    BoolVariable('release', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
@@ -130,16 +131,13 @@ def Build():
   if env['clang']:
     env.Replace(CXX='clang++', CC='clang')
 
-#  if env['debug']:
-#    env.Append(
-#      CCFLAGS=["-g3"]
-#    )
-#  else:
-#    env.Append(
-#      #CPPDEFINES=["NDEBUG"]
-#    )
+  if env['debug']:
+    env.Append(CCFLAGS=["-g"])
+  else:
+    env.Append(
+        CCFLAGS=["-O3"],
+        CPPDEFINES=["NDEBUG"])
 
-  env.Append(CCFLAGS=["-g"])
   env.Append(
     CCFLAGS=[
       "-pedantic",
