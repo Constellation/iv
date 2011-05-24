@@ -141,6 +141,7 @@ class VM {
 #define POP() (*--sp)
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
+#define UNWIND_STACK() (sp = frame->stacktop())
 #define TOP() (sp[-1])
 #define SECOND() (sp[-2])
 #define THIRD() (sp[-3])
@@ -766,6 +767,23 @@ class VM {
           continue;
         }
 
+        case OP::TRY_CATCH_SETUP: {
+          const Symbol& s = GETITEM(names, oparg);
+          const JSVal error = POP();
+          JSEnv* const old_env = env;
+          JSEnv* const catch_env =
+              internal::NewDeclarativeEnvironment(ctx_, old_env);
+          catch_env->CreateMutableBinding(ctx_, s, false, ERR);
+          catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
+          env = catch_env;
+          continue;
+        }
+
+        case OP::TRY_CATCH_CLEANUP: {
+          env = env->outer();
+          continue;
+        }
+
         case OP::TRY_FINALLY: {
           // this is only the mark
           continue;
@@ -897,12 +915,14 @@ class VM {
         break;
       }
 
-      if (type == THROW) {
+      // error found
+      if (e) {
         // check exception handler
         typedef Code::ExceptionTable ExceptionTable;
         const ExceptionTable& table = code.exception_table();
+        bool handler_found = false;
         for (ExceptionTable::const_iterator it = table.begin(),
-             last = table.end(); it != last; ++it) {
+             last = table.end(); it != last, !handler_found; ++it) {
           if (std::tr1::get<0>(*it) == Handler::CATCH) {
             // in range
             const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
@@ -910,11 +930,16 @@ class VM {
               type = NORMAL;
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
+              UNWIND_STACK();
               PUSH(error);
               JUMPTO(std::tr1::get<3>(*it));
+              handler_found = true;
               continue;
             }
           }
+        }
+        if (handler_found) {
+          continue;
         }
       }
       break;
