@@ -88,9 +88,6 @@ V(POSTFIX_DECREMENT_CALL_RESULT)\
 \
 V(TYPEOF)\
 \
-V(STATEMENT_STORE)\
-V(STATEMENT_STORE_UNDEFINED)\
-\
 /* opcodes over this requres argument */\
 V(HAVE_ARGUMENT)\
 \
