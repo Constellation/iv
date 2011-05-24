@@ -5,6 +5,7 @@
 #include <string>
 #include <tr1/memory>
 #include <tr1/cstdint>
+#include <tr1/tuple>
 #include "lv5/error_check.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"
@@ -460,30 +461,58 @@ class VM {
 
         case OP::DECREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const double result = DecrementName(env, s, strict, ERR);
+          const double result = IncrementName<-1, 1>(env, s, strict, ERR);
           PUSH(result);
           continue;
         }
 
         case OP::POSTFIX_DECREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const double result = PostfixDecrementName(env, s, strict, ERR);
+          const double result = IncrementName<-1, 0>(env, s, strict, ERR);
           PUSH(result);
           continue;
         }
 
         case OP::INCREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const double result = IncrementName(env, s, strict, ERR);
+          const double result = IncrementName<1, 1>(env, s, strict, ERR);
           PUSH(result);
           continue;
         }
 
         case OP::POSTFIX_INCREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const double result = PostfixIncrementName(env, s, strict, ERR);
+          const double result = IncrementName<1, 0>(env, s, strict, ERR);
           PUSH(result);
           continue;
+        }
+
+        case OP::DECREMENT_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          const double result = IncrementElement<-1, 1>(sp, base, element, strict, ERR);
+          SET_TOP(result);
+        }
+
+        case OP::POSTFIX_DECREMENT_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          const double result = IncrementElement<-1, 0>(sp, base, element, strict, ERR);
+          SET_TOP(result);
+        }
+
+        case OP::INCREMENT_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          const double result = IncrementElement<1, 1>(sp, base, element, strict, ERR);
+          SET_TOP(result);
+        }
+
+        case OP::POSTFIX_INCREMENT_ELEMENT: {
+          const JSVal element = POP();
+          const JSVal base = TOP();
+          const double result = IncrementElement<1, 0>(sp, base, element, strict, ERR);
+          SET_TOP(result);
         }
 
         case OP::BINARY_ADD: {
@@ -868,51 +897,23 @@ class VM {
   }
 
 #define CHECK IV_LV5_ERROR_VOID(e)
+
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) const {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
-    if (base.IsPrimitive()) {
-      JSObject* const o = base.ToObject(ctx_, CHECK);
-      if (!o->CanPut(ctx_, s)) {
-        if (strict) {
-          e->Report(Error::Type, "cannot put value to object");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-        if (strict) {
-          e->Report(Error::Type,
-                    "value to symbol defined and not data descriptor");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, 1, CHECK);
-        a[0] = stored;
-        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-        assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, CHECK);
-      } else {
-        if (strict) {
-          e->Report(Error::Type, "value to symbol in transient object");
-          return;
-        }
-      }
-    } else {
-      base.object()->Put(ctx_, s, stored, strict, CHECK);
-    }
+    StorePropImpl(base, s, stored, strict ,e);
   }
-#undef CHECK
 
-#define CHECK IV_LV5_ERROR_VOID(e)
   void StoreProp(const JSVal& base, const Symbol& s,
                  const JSVal& stored, bool strict, Error* e) const {
+    base.CheckObjectCoercible(CHECK);
+    StorePropImpl(base, s, stored, strict, e);
+  }
+
+  void StorePropImpl(const JSVal& base, const Symbol& s,
+                     const JSVal& stored, bool strict, Error* e) const {
     if (base.IsPrimitive()) {
       JSObject* const o = base.ToObject(ctx_, CHECK);
       if (!o->CanPut(ctx_, s)) {
@@ -1145,52 +1146,36 @@ class VM {
 
 #define CHECK IV_LV5_ERROR_WITH(e, 0.0)
 
-  double DecrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
-    if (JSEnv* current = GetEnv(env, s)) {
-      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      const double old_value = w.ToNumber(ctx_, CHECK);
-      const double new_value = old_value - 1;
-      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
-      return new_value;
-    }
-    RaiseReferenceError(s, e);
-    return 0.0;
-  }
-
-  double PostfixDecrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
-    if (JSEnv* current = GetEnv(env, s)) {
-      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      const double old_value = w.ToNumber(ctx_, CHECK);
-      const double new_value = old_value - 1;
-      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
-      return old_value;
-    }
-    RaiseReferenceError(s, e);
-    return 0.0;
-  }
-
+  template<int Target, std::size_t Returned>
   double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
     if (JSEnv* current = GetEnv(env, s)) {
       const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      const double old_value = w.ToNumber(ctx_, CHECK);
-      const double new_value = old_value + 1;
-      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
-      return new_value;
+      std::tr1::tuple<double, double> results;
+      std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
+      current->SetMutableBinding(ctx_, s, std::tr1::get<1>(results), strict, CHECK);
+      return std::tr1::get<Returned>(results);
     }
     RaiseReferenceError(s, e);
     return 0.0;
   }
 
-  double PostfixIncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
-    if (JSEnv* current = GetEnv(env, s)) {
-      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      const double old_value = w.ToNumber(ctx_, CHECK);
-      const double new_value = old_value + 1;
-      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
-      return old_value;
+  template<int Target, std::size_t Returned>
+  double IncrementElement(JSVal* sp, const JSVal& base, const JSVal& element, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
+    const JSString* str = element.ToString(ctx_, CHECK);
+    const Symbol s = context::Intern(ctx_, str->value());
+    JSVal w;
+    if (base.IsPrimitive()) {
+      w = GetElement(sp, base, s, strict, CHECK);
+    } else {
+      w = base.object()->Get(ctx_, s, CHECK);
     }
-    RaiseReferenceError(s, e);
-    return 0.0;
+    std::tr1::tuple<double, double> results;
+    std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
+    std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
+    StorePropImpl(base, s, std::tr1::get<1>(results), strict, CHECK);
+    return std::tr1::get<Returned>(results);
   }
 
 #undef CHECK
