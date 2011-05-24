@@ -460,47 +460,29 @@ class VM {
 
         case OP::DECREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName(env, s, strict, ERR);
-          const double old_value = w.ToNumber(ctx_, ERR);
-          const double new_value = old_value + 1;
-          JSEnv* current = GetEnv(env, s);
-          assert(current);
-          current->SetMutableBinding(ctx_, s, new_value, strict, ERR);
-          PUSH(new_value);
+          const double result = DecrementName(env, s, strict, ERR);
+          PUSH(result);
           continue;
         }
 
         case OP::POSTFIX_DECREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName(env, s, strict, ERR);
-          const double old_value = w.ToNumber(ctx_, ERR);
-          JSEnv* current = GetEnv(env, s);
-          assert(current);
-          current->SetMutableBinding(ctx_, s, old_value - 1, strict, ERR);
-          PUSH(old_value);
+          const double result = PostfixDecrementName(env, s, strict, ERR);
+          PUSH(result);
           continue;
         }
 
         case OP::INCREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName(env, s, strict, ERR);
-          const double old_value = w.ToNumber(ctx_, ERR);
-          const double new_value = old_value + 1;
-          JSEnv* current = GetEnv(env, s);
-          assert(current);
-          current->SetMutableBinding(ctx_, s, new_value, strict, ERR);
-          PUSH(new_value);
+          const double result = IncrementName(env, s, strict, ERR);
+          PUSH(result);
           continue;
         }
 
         case OP::POSTFIX_INCREMENT_NAME: {
           const Symbol& s = GETITEM(names, oparg);
-          const JSVal w = LoadName(env, s, strict, ERR);
-          const double old_value = w.ToNumber(ctx_, ERR);
-          JSEnv* current = GetEnv(env, s);
-          assert(current);
-          current->SetMutableBinding(ctx_, s, old_value + 1, strict, ERR);
-          PUSH(old_value);
+          const double result = PostfixIncrementName(env, s, strict, ERR);
+          PUSH(result);
           continue;
         }
 
@@ -1156,6 +1138,59 @@ class VM {
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num) | (core::DoubleToInt32(right_num));
+  }
+
+#undef CHECK
+
+
+#define CHECK IV_LV5_ERROR_WITH(e, 0.0)
+
+  double DecrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
+    if (JSEnv* current = GetEnv(env, s)) {
+      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
+      const double old_value = w.ToNumber(ctx_, CHECK);
+      const double new_value = old_value - 1;
+      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
+      return new_value;
+    }
+    RaiseReferenceError(s, e);
+    return 0.0;
+  }
+
+  double PostfixDecrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
+    if (JSEnv* current = GetEnv(env, s)) {
+      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
+      const double old_value = w.ToNumber(ctx_, CHECK);
+      const double new_value = old_value - 1;
+      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
+      return old_value;
+    }
+    RaiseReferenceError(s, e);
+    return 0.0;
+  }
+
+  double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
+    if (JSEnv* current = GetEnv(env, s)) {
+      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
+      const double old_value = w.ToNumber(ctx_, CHECK);
+      const double new_value = old_value + 1;
+      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
+      return new_value;
+    }
+    RaiseReferenceError(s, e);
+    return 0.0;
+  }
+
+  double PostfixIncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
+    if (JSEnv* current = GetEnv(env, s)) {
+      const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
+      const double old_value = w.ToNumber(ctx_, CHECK);
+      const double new_value = old_value + 1;
+      current->SetMutableBinding(ctx_, s, new_value, strict, CHECK);
+      return old_value;
+    }
+    RaiseReferenceError(s, e);
+    return 0.0;
   }
 
 #undef CHECK
