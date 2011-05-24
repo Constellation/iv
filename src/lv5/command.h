@@ -15,18 +15,17 @@ namespace lv5 {
 inline JSVal Print(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     Context* const ctx = args.ctx();
-    const std::size_t last_index = args.size() - 1;
-    std::size_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
-         last = args.end(); it != last; ++it, ++index) {
+         last = args.end(); it != last;) {
       const JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
       core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
-      if (index == last_index) {
-        std::fputc('\n', stdout);
-      } else {
+      if (++it != last) {
         std::fputc(' ', stdout);
+      } else {
+        std::fputc('\n', stdout);
       }
     }
+    std::fflush(stdout);
   }
   return JSUndefined;
 }
