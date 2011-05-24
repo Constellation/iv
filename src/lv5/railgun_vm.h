@@ -190,34 +190,18 @@ class VM {
 
         case OP::LOAD_ELEMENT: {
           const JSVal element = POP();
-          const JSVal base = TOP();
-          base.CheckObjectCoercible(ERR);
-          const JSString* str = element.ToString(ctx_, ERR);
-          const Symbol s = context::Intern(ctx_, str->value());
-          if (base.IsPrimitive()) {
-            const JSVal res = GetElement(sp, base, s, strict, ERR);
-            SET_TOP(res);
-            continue;
-          } else {
-            const JSVal res = base.object()->Get(ctx_, s, ERR);
-            SET_TOP(res);
-            continue;
-          }
+          const JSVal& base = TOP();
+          const JSVal res = LoadElement(sp, base, element, strict, ERR);
+          SET_TOP(res);
+          continue;
         }
 
         case OP::LOAD_PROP: {
-          const JSVal base = TOP();
+          const JSVal& base = TOP();
           const Symbol& s = GETITEM(names, oparg);
-          base.CheckObjectCoercible(ERR);
-          if (base.IsPrimitive()) {
-            const JSVal res = GetElement(sp, base, s, strict, ERR);
-            SET_TOP(res);
-            continue;
-          } else {
-            const JSVal res = base.object()->Get(ctx_, s, ERR);
-            SET_TOP(res);
-            continue;
-          }
+          const JSVal res = LoadProp(sp, base, s, strict, ERR);
+          SET_TOP(res);
+          continue;
         }
 
         case OP::STORE_NAME: {
@@ -836,15 +820,7 @@ class VM {
         case OP::CALL_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          base.CheckObjectCoercible(ERR);
-          const JSString* str = element.ToString(ctx_, ERR);
-          const Symbol s = context::Intern(ctx_, str->value());
-          JSVal res;
-          if (base.IsPrimitive()) {
-            res = GetElement(sp, base, s, strict, ERR);
-          } else {
-            res = base.object()->Get(ctx_, s, ERR);
-          }
+          const JSVal res = LoadElement(sp, base, element, strict, ERR);
           SET_TOP(res);
           PUSH(base);
           continue;
@@ -853,13 +829,7 @@ class VM {
         case OP::CALL_PROP: {
           const JSVal base = TOP();
           const Symbol& s = GETITEM(names, oparg);
-          base.CheckObjectCoercible(ERR);
-          JSVal res;
-          if (base.IsPrimitive()) {
-            res = GetElement(sp, base, s, strict, ERR);
-          } else {
-            res = base.object()->Get(ctx_, s, ERR);
-          }
+          const JSVal res = LoadProp(sp, base, s, strict, ERR);
           SET_TOP(res);
           PUSH(base);
           continue;
@@ -924,7 +894,9 @@ class VM {
     return NULL;
   }
 
-  JSVal LoadName(JSEnv* env, const Symbol& name, bool strict, Error* e) const {
+#define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
+
+  JSVal LoadName(JSEnv* env, const Symbol& name, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, name)) {
       return current->GetBindingValue(ctx_, name, strict, e);
     }
@@ -932,10 +904,50 @@ class VM {
     return JSEmpty;
   }
 
+  JSVal LoadProp(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
+    return LoadPropImpl(sp, base, s, strict, e);
+  }
+
+  JSVal LoadElement(JSVal* sp, const JSVal& base, const JSVal& element, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
+    const JSString* str = element.ToString(ctx_, CHECK);
+    const Symbol s = context::Intern(ctx_, str->value());
+    return LoadPropImpl(sp, base, s, strict ,e);
+  }
+
+  JSVal LoadPropImpl(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+    if (base.IsPrimitive()) {
+      // section 8.7.1 special [[Get]]
+      const JSObject* const o = base.ToObject(ctx_, CHECK);
+      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+      if (desc.IsEmpty()) {
+        return JSUndefined;
+      }
+      if (desc.IsDataDescriptor()) {
+        return desc.AsDataDescriptor()->value();
+      } else {
+        assert(desc.IsAccessorDescriptor());
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        if (ac->get()) {
+          VMArguments args(ctx_, sp - 1, 0);
+          const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
+          return res;
+        } else {
+          return JSUndefined;
+        }
+      }
+    } else {
+      return base.object()->Get(ctx_, s, e);
+    }
+  }
+
+#undef CHECK
+
 #define CHECK IV_LV5_ERROR_VOID(e)
 
   void StoreElement(const JSVal& base, const JSVal& element,
-                    const JSVal& stored, bool strict, Error* e) const {
+                    const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
@@ -943,13 +955,13 @@ class VM {
   }
 
   void StoreProp(const JSVal& base, const Symbol& s,
-                 const JSVal& stored, bool strict, Error* e) const {
+                 const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     StorePropImpl(base, s, stored, strict, e);
   }
 
   void StorePropImpl(const JSVal& base, const Symbol& s,
-                     const JSVal& stored, bool strict, Error* e) const {
+                     const JSVal& stored, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       JSObject* const o = base.ToObject(ctx_, CHECK);
       if (!o->CanPut(ctx_, s)) {
@@ -988,32 +1000,6 @@ class VM {
 #undef CHECK
 
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
-
-  JSVal GetElement(JSVal* stack_pointer,
-                   const JSVal& base,
-                   const Symbol& name,
-                   bool strict,
-                   Error* e) const {
-    // section 8.7.1 special [[Get]]
-    const JSObject* const o = base.ToObject(ctx_, CHECK);
-    const PropertyDescriptor desc = o->GetProperty(ctx_, name);
-    if (desc.IsEmpty()) {
-      return JSUndefined;
-    }
-    if (desc.IsDataDescriptor()) {
-      return desc.AsDataDescriptor()->value();
-    } else {
-      assert(desc.IsAccessorDescriptor());
-      const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-      if (ac->get()) {
-        VMArguments args(ctx_, stack_pointer - 1, 0);
-        const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
-        return res;
-      } else {
-        return JSUndefined;
-      }
-    }
-  }
 
   JSVal BinaryAdd(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
@@ -1201,12 +1187,7 @@ class VM {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
-    JSVal w;
-    if (base.IsPrimitive()) {
-      w = GetElement(sp, base, s, strict, CHECK);
-    } else {
-      w = base.object()->Get(ctx_, s, CHECK);
-    }
+    const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tr1::tuple<double, double> results;
     std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
     std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
@@ -1216,13 +1197,7 @@ class VM {
 
   template<int Target, std::size_t Returned>
   double IncrementProp(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
-    base.CheckObjectCoercible(CHECK);
-    JSVal w;
-    if (base.IsPrimitive()) {
-      w = GetElement(sp, base, s, strict, CHECK);
-    } else {
-      w = base.object()->Get(ctx_, s, CHECK);
-    }
+    const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tr1::tuple<double, double> results;
     std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
     std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
