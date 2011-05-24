@@ -492,6 +492,7 @@ class VM {
           const JSVal base = TOP();
           const double result = IncrementElement<-1, 1>(sp, base, element, strict, ERR);
           SET_TOP(result);
+          continue;
         }
 
         case OP::POSTFIX_DECREMENT_ELEMENT: {
@@ -499,6 +500,7 @@ class VM {
           const JSVal base = TOP();
           const double result = IncrementElement<-1, 0>(sp, base, element, strict, ERR);
           SET_TOP(result);
+          continue;
         }
 
         case OP::INCREMENT_ELEMENT: {
@@ -506,6 +508,7 @@ class VM {
           const JSVal base = TOP();
           const double result = IncrementElement<1, 1>(sp, base, element, strict, ERR);
           SET_TOP(result);
+          continue;
         }
 
         case OP::POSTFIX_INCREMENT_ELEMENT: {
@@ -513,6 +516,39 @@ class VM {
           const JSVal base = TOP();
           const double result = IncrementElement<1, 0>(sp, base, element, strict, ERR);
           SET_TOP(result);
+          continue;
+        }
+
+        case OP::DECREMENT_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          const double result = IncrementProp<-1, 1>(sp, base, s, strict, ERR);
+          SET_TOP(result);
+          continue;
+        }
+
+        case OP::POSTFIX_DECREMENT_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          const double result = IncrementProp<-1, 0>(sp, base, s, strict, ERR);
+          SET_TOP(result);
+          continue;
+        }
+
+        case OP::INCREMENT_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          const double result = IncrementProp<1, 1>(sp, base, s, strict, ERR);
+          SET_TOP(result);
+          continue;
+        }
+
+        case OP::POSTFIX_INCREMENT_PROP: {
+          const JSVal base = TOP();
+          const Symbol& s = GETITEM(names, oparg);
+          const double result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
+          SET_TOP(result);
+          continue;
         }
 
         case OP::BINARY_ADD: {
@@ -1165,6 +1201,22 @@ class VM {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
+    JSVal w;
+    if (base.IsPrimitive()) {
+      w = GetElement(sp, base, s, strict, CHECK);
+    } else {
+      w = base.object()->Get(ctx_, s, CHECK);
+    }
+    std::tr1::tuple<double, double> results;
+    std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
+    std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
+    StorePropImpl(base, s, std::tr1::get<1>(results), strict, CHECK);
+    return std::tr1::get<Returned>(results);
+  }
+
+  template<int Target, std::size_t Returned>
+  double IncrementProp(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
     JSVal w;
     if (base.IsPrimitive()) {
       w = GetElement(sp, base, s, strict, CHECK);
