@@ -10,6 +10,7 @@
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"
 #include "lv5/jsarray.h"
+#include "lv5/jserror.h"
 #include "lv5/jsregexp.h"
 #include "lv5/property.h"
 #include "lv5/internal.h"
@@ -17,6 +18,7 @@
 #include "lv5/railgun_fwd.h"
 #include "lv5/railgun_op.h"
 #include "lv5/railgun_code.h"
+#include "lv5/railgun_context.h"
 
 namespace iv {
 namespace lv5 {
@@ -86,6 +88,12 @@ class Frame {
 
 class VM {
  public:
+  enum Status {
+    NORMAL,
+    RETURN,
+    THROW
+  };
+
   explicit VM(Context* ctx)
     : ctx_(ctx),
       stack_() {
@@ -101,12 +109,8 @@ class VM {
     return EXIT_SUCCESS;
   }
 
-  void Execute(Frame* frame) {
-    enum {
-      NORMAL,
-      RETURN,
-      THROW
-    } type = NORMAL;
+  std::pair<JSVal, Status> Execute(Frame* frame) {
+    Status type = NORMAL;
     const Code& code = frame->code();
     const uint8_t* const first_instr = frame->data();
     const uint8_t* instr = first_instr;
@@ -307,6 +311,36 @@ class VM {
           if (x) {
             JUMPTO(oparg);
           }
+          continue;
+        }
+
+        case OP::JUMP_IF_TRUE_OR_POP: {
+          const JSVal v = TOP();
+          const bool x = v.ToBoolean(ERR);
+          if (x) {
+            JUMPTO(oparg);
+          } else {
+            POP_UNUSED();
+          }
+          continue;
+        }
+
+        case OP::JUMP_IF_FALSE_OR_POP: {
+          const JSVal v = TOP();
+          const bool x = v.ToBoolean(ERR);
+          if (!x) {
+            JUMPTO(oparg);
+          } else {
+            POP_UNUSED();
+          }
+          continue;
+        }
+
+        case OP::JUMP_SUBROUTINE: {
+          const JSVal addr = JSVal::UInt32(
+              static_cast<uint32_t>(std::distance(first_instr, instr)));
+          PUSH(addr);
+          JUMPTO(oparg);
           continue;
         }
 
@@ -713,10 +747,28 @@ class VM {
           break;
         }
 
+        case OP::RETURN_SUBROUTINE: {
+          const JSVal v = POP();
+          const uint32_t addr = v.ToUInt32(ctx_, ERR);
+          JUMPTO(addr);
+          continue;
+        }
+
         case OP::THROW: {
           ret = POP();
+          e.Report(ret);
           type = THROW;
           break;
+        }
+
+        case OP::TRY: {
+          // this is only the mark
+          continue;
+        }
+
+        case OP::TRY_FINALLY: {
+          // this is only the mark
+          continue;
         }
 
         case OP::BUILD_ARRAY: {
@@ -840,9 +892,34 @@ class VM {
         }
       }  // switch
 
-      // error found
+      // exit loop
+      if (type == RETURN) {
+        break;
+      }
+
+      if (type == THROW) {
+        // check exception handler
+        typedef Code::ExceptionTable ExceptionTable;
+        const ExceptionTable& table = code.exception_table();
+        for (ExceptionTable::const_iterator it = table.begin(),
+             last = table.end(); it != last; ++it) {
+          if (std::tr1::get<0>(*it) == Handler::CATCH) {
+            // in range
+            const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
+            if (std::tr1::get<2>(*it) < offset && offset <= std::tr1::get<3>(*it)) {
+              type = NORMAL;
+              const JSVal error = JSError::Detail(ctx_, &e);
+              e.Clear();
+              PUSH(error);
+              JUMPTO(std::tr1::get<3>(*it));
+              continue;
+            }
+          }
+        }
+      }
       break;
     }  // for main loop
+    return std::make_pair(ret, type);
 #undef NEXTOP
 #undef NEXTARG
 #undef PEEKARG
@@ -922,7 +999,8 @@ class VM {
     return LoadPropImpl(sp, base, s, strict, e);
   }
 
-  JSVal LoadPropImpl(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+  JSVal LoadPropImpl(JSVal* sp, const JSVal& base,
+                     const Symbol& s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       // section 8.7.1 special [[Get]]
       const JSObject* const o = base.ToObject(ctx_, CHECK);
