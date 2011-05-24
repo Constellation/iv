@@ -18,14 +18,15 @@ inline bool IsJSONWhiteSpace(uint16_t c) {
 }
 
 template<bool AcceptLineTerminator>
-inline bool IsAcceptedLineTerminator(uint16_t c) {
-  return true;
+inline bool IsAcceptedChar(uint16_t c) {
+  return c > 0x001F;
 }
 
 template<>
-inline bool IsAcceptedLineTerminator<false>(uint16_t c) {
-  return !core::character::IsLineTerminator(c);
+inline bool IsAcceptedChar<false>(uint16_t c) {
+  return c > 0x001F && !core::character::IsLineTerminator(c);
 }
+
 
 }  // namespace detail
 
@@ -171,9 +172,7 @@ class JSONLexer : private core::Noncopyable<> {
     assert(c_ == '"');
     buffer16_.clear();
     Advance();
-    while (c_ != '"' &&
-           c_ >= 0 &&
-           detail::IsAcceptedLineTerminator<AcceptLineTerminator>(c_)) {
+    while (c_ != '"' && c_ >= 0) {
       if (c_ == '\\') {
         Advance();
         // escape sequence
@@ -183,11 +182,10 @@ class JSONLexer : private core::Noncopyable<> {
         if (!ScanEscape()) {
           return core::Token::ILLEGAL;
         }
-      } else {
-        if (0x0000 <= c_ && c_ <= 0x001F) {
-          return core::Token::ILLEGAL;
-        }
+      } else if (detail::IsAcceptedChar<AcceptLineTerminator>(c_)) {
         Record16Advance();
+      } else {
+        return core::Token::ILLEGAL;
       }
     }
     if (c_ != '"') {
