@@ -474,7 +474,8 @@ class VM {
         case OP::DECREMENT_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          const double result = IncrementElement<-1, 1>(sp, base, element, strict, ERR);
+          const double result =
+              IncrementElement<-1, 1>(sp, base, element, strict, ERR);
           SET_TOP(result);
           continue;
         }
@@ -482,7 +483,8 @@ class VM {
         case OP::POSTFIX_DECREMENT_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          const double result = IncrementElement<-1, 0>(sp, base, element, strict, ERR);
+          const double result =
+              IncrementElement<-1, 0>(sp, base, element, strict, ERR);
           SET_TOP(result);
           continue;
         }
@@ -490,7 +492,8 @@ class VM {
         case OP::INCREMENT_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          const double result = IncrementElement<1, 1>(sp, base, element, strict, ERR);
+          const double result =
+              IncrementElement<1, 1>(sp, base, element, strict, ERR);
           SET_TOP(result);
           continue;
         }
@@ -498,7 +501,8 @@ class VM {
         case OP::POSTFIX_INCREMENT_ELEMENT: {
           const JSVal element = POP();
           const JSVal base = TOP();
-          const double result = IncrementElement<1, 0>(sp, base, element, strict, ERR);
+          const double result =
+              IncrementElement<1, 0>(sp, base, element, strict, ERR);
           SET_TOP(result);
           continue;
         }
@@ -904,16 +908,18 @@ class VM {
     return JSEmpty;
   }
 
-  JSVal LoadProp(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+  JSVal LoadProp(JSVal* sp, const JSVal& base,
+                 const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     return LoadPropImpl(sp, base, s, strict, e);
   }
 
-  JSVal LoadElement(JSVal* sp, const JSVal& base, const JSVal& element, bool strict, Error* e) {
+  JSVal LoadElement(JSVal* sp, const JSVal& base,
+                    const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
-    return LoadPropImpl(sp, base, s, strict ,e);
+    return LoadPropImpl(sp, base, s, strict, e);
   }
 
   JSVal LoadPropImpl(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
@@ -951,7 +957,7 @@ class VM {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
-    StorePropImpl(base, s, stored, strict ,e);
+    StorePropImpl(base, s, stored, strict, e);
   }
 
   void StoreProp(const JSVal& base, const Symbol& s,
@@ -1169,13 +1175,14 @@ class VM {
 #define CHECK IV_LV5_ERROR_WITH(e, 0.0)
 
   template<int Target, std::size_t Returned>
-  double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) const {
+  double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, s)) {
       const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
       std::tr1::tuple<double, double> results;
       std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
       std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
-      current->SetMutableBinding(ctx_, s, std::tr1::get<1>(results), strict, CHECK);
+      current->SetMutableBinding(ctx_, s,
+                                 std::tr1::get<1>(results), strict, CHECK);
       return std::tr1::get<Returned>(results);
     }
     RaiseReferenceError(s, e);
@@ -1183,7 +1190,8 @@ class VM {
   }
 
   template<int Target, std::size_t Returned>
-  double IncrementElement(JSVal* sp, const JSVal& base, const JSVal& element, bool strict, Error* e) {
+  double IncrementElement(JSVal* sp, const JSVal& base,
+                          const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
@@ -1196,7 +1204,8 @@ class VM {
   }
 
   template<int Target, std::size_t Returned>
-  double IncrementProp(JSVal* sp, const JSVal& base, const Symbol& s, bool strict, Error* e) {
+  double IncrementProp(JSVal* sp, const JSVal& base,
+                       const Symbol& s, bool strict, Error* e) {
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tr1::tuple<double, double> results;
     std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
