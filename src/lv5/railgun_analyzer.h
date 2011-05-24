@@ -1,5 +1,9 @@
 // railgun analyzer
-//   analyze variable (global / local / heap) and eval, arguments, with
+//   analyze
+//     variable (global / local / heap)
+//     "eval", "arguments", "with"
+//     costness
+//     stack levels of functions
 #ifndef _IV_LV5_RAILGUN_ANALYZIER_H_
 #define _IV_LV5_RAILGUN_ANALYZIER_H_
 #include <utility>
