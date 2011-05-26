@@ -78,11 +78,20 @@ class Frame {
     return env_;
   }
 
+  void set_this_binding(const JSVal& this_binding) {
+    this_binding_ = this_binding;
+  }
+
+  const JSVal& this_binding() const {
+    return this_binding_;
+  }
+
  private:
   Code* code_;
   std::size_t lineno_;
   JSVal* stacktop_;
   JSEnv* env_;
+  JSVal this_binding_;
   Frame* back_;
 };
 
@@ -105,6 +114,7 @@ class VM {
     frame.stacktop_ = stack_.stack()->Gain(10000);
     frame.env_ = ctx_->variable_env();
     frame.back_ = NULL;
+    frame.set_this_binding(JSUndefined);
     Execute(&frame);
     return EXIT_SUCCESS;
   }
@@ -425,9 +435,7 @@ class VM {
         }
 
         case OP::PUSH_THIS: {
-          // TODO(Constellation) implement it
-          // PUSH(ctx_->this_binding());
-          PUSH(JSUndefined);
+          PUSH(frame->this_binding());
           continue;
         }
 
@@ -868,7 +876,7 @@ class VM {
 
         case OP::CALL: {
           JSVal* stack_pointer = sp;
-          const JSVal x = CallFunction(&stack_pointer, oparg, &e);
+          const JSVal x = Invoke(&stack_pointer, oparg, &e);
           sp = stack_pointer;
           PUSH(x);
           if (e) {
@@ -968,7 +976,7 @@ class VM {
 #undef GETITEM
   }
 
-  JSVal CallFunction(JSVal** stack_pointer, int argc, Error* e) {
+  JSVal Invoke(JSVal** stack_pointer, int argc, Error* e) {
     JSVal* sp = *stack_pointer;
     VMArguments args(ctx_, sp - argc - 1, argc);
     const JSVal func = sp[-(argc + 2)];
