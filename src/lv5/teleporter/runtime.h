@@ -77,7 +77,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2 &&
       (*str)[0] == '(' &&
-      (*str)[str->size() - 1] == ')') {
+      (*str)[str->size() - 1] == ')' &&
+      !ctx->IsStrict()) {
     Error json_parse_error;
     const JSVal result = ParseJSON<false>(ctx,
                                           core::UStringPiece(str->data() + 1,
