@@ -133,7 +133,7 @@ class Analyzer
     explicit EntrySwitcher(Analyzer* analyzer, const FunctionLiteral& func)
       : analyzer_(analyzer) {
       analyzer_->PushEntry(func);
-    };
+    }
     ~EntrySwitcher() {
       analyzer_->PopEntry();
     }
