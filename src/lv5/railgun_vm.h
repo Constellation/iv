@@ -120,6 +120,9 @@ class VM {
   }
 
   std::pair<JSVal, Status> Execute(Frame* frame) {
+    static const uint32_t kThrowFinally = 0u;
+    static const uint32_t kReturnFinally = 1u;
+    static const uint32_t kNormalFinally = 2u;
     Status type = NORMAL;
     const Code& code = frame->code();
     const uint8_t* const first_instr = frame->data();
@@ -351,6 +354,7 @@ class VM {
           const JSVal addr = JSVal::UInt32(
               static_cast<uint32_t>(std::distance(first_instr, instr)));
           PUSH(addr);
+          PUSH(JSVal::UInt32(kNormalFinally));
           JUMPTO(oparg);
           continue;
         }
@@ -757,10 +761,28 @@ class VM {
         }
 
         case OP::RETURN_SUBROUTINE: {
+          const JSVal flag_value = POP();
           const JSVal v = POP();
-          const uint32_t addr = v.ToUInt32(ctx_, ERR);
-          JUMPTO(addr);
-          continue;
+          const uint32_t flag = flag_value.ToUInt32(ctx_, ERR);
+          if (flag == kNormalFinally) {
+            // JUMP_SUBROUTINE
+            // return to caller
+            const uint32_t addr = v.ToUInt32(ctx_, ERR);
+            JUMPTO(addr);
+            continue;
+          } else if (flag == kThrowFinally) {
+            // ERROR FINALLY JUMP
+            // rethrow error
+            e.Report(v);
+            type = THROW;
+            break;
+          } else if (flag == kReturnFinally) {
+            // RETURN FINALLY JUMP
+            // re-return value
+            ret = v;
+            type = RETURN;
+            break;
+          }
         }
 
         case OP::THROW: {
@@ -918,37 +940,48 @@ class VM {
         }
       }  // switch
 
-      // exit loop
-      if (type == RETURN) {
-        break;
-      }
-
-      // error found
-      if (e) {
-        // check exception handler
-        typedef Code::ExceptionTable ExceptionTable;
-        const ExceptionTable& table = code.exception_table();
-        bool handler_found = false;
-        for (ExceptionTable::const_iterator it = table.begin(),
-             last = table.end(); it != last, !handler_found; ++it) {
-          if (std::tr1::get<0>(*it) == Handler::CATCH) {
-            // in range
-            const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
-            if (std::tr1::get<2>(*it) < offset && offset <= std::tr1::get<3>(*it)) {
-              type = NORMAL;
+      // search exception handler or finally handler.
+      // if finally handler found, set value to notify that RETURN_SUBROUTINE
+      // should rethrow exception.
+      typedef Code::ExceptionTable ExceptionTable;
+      const ExceptionTable& table = code.exception_table();
+      bool handler_found = false;
+      for (ExceptionTable::const_iterator it = table.begin(),
+           last = table.end(); it != last; ++it) {
+        const int handler = std::tr1::get<0>(*it);
+        const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
+        if (std::tr1::get<2>(*it) < offset && offset <= std::tr1::get<3>(*it)) {
+          if (handler == Handler::CATCH) {
+            if (e) {
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
               UNWIND_STACK();
               PUSH(error);
               JUMPTO(std::tr1::get<3>(*it));
               handler_found = true;
-              continue;
+              break;
             }
+          } else if (handler == Handler::FINALLY) {
+            // finally jump if return or error raised
+            if (e) {
+              const JSVal error = JSError::Detail(ctx_, &e);
+              e.Clear();
+              UNWIND_STACK();
+              PUSH(error);
+              PUSH(JSVal::UInt32(kThrowFinally));
+            } else if (type == RETURN) {
+              UNWIND_STACK();
+              PUSH(ret);
+              PUSH(JSVal::UInt32(kReturnFinally));
+            }
+            JUMPTO(std::tr1::get<3>(*it));
+            handler_found = true;
+            break;
           }
         }
-        if (handler_found) {
-          continue;
-        }
+      }
+      if (handler_found) {
+        continue;
       }
       break;
     }  // for main loop
