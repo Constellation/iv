@@ -174,12 +174,6 @@ class Compiler
       }
     }
 
-    ~TryTarget() {
-      if (has_finally_) {
-        compiler_->PopFinallyStack();
-      }
-    }
-
     void EmitJumps(std::size_t finally_target) {
       assert(has_finally_);
       const FinallyStack& stack = compiler_->finally_stack();
@@ -188,6 +182,7 @@ class Compiler
            last = vec.end(); it != last; ++it) {
         compiler_->EmitArgAt(finally_target, *it);
       }
+      compiler_->PopFinallyStack();
     }
 
    private:
@@ -505,10 +500,10 @@ class Compiler
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
       code_->RegisterHandler<Handler::FINALLY>(0, try_start, finally_start);
+      target.EmitJumps(finally_start);
       Emit<OP::TRY_FINALLY>();
       block.Address()->Accept(this);
       Emit<OP::RETURN_SUBROUTINE>();
-      target.EmitJumps(finally_start);
     }
     // try last
     EmitArgAt(CurrentSize() - label_index, label_index + 1);
