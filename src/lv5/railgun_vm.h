@@ -820,11 +820,6 @@ class VM {
           continue;
         }
 
-        case OP::TRY: {
-          // this is only the mark
-          continue;
-        }
-
         case OP::TRY_CATCH_SETUP: {
           const Symbol& s = GETITEM(names, oparg);
           const JSVal error = POP();
@@ -834,11 +829,6 @@ class VM {
           catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
           env = catch_env;
           ++dynamic_env_level;
-          continue;
-        }
-
-        case OP::TRY_FINALLY: {
-          // this is only the mark
           continue;
         }
 

@@ -505,7 +505,6 @@ class Compiler
     const bool has_catch = stmt->catch_block();
     const bool has_finally = stmt->finally_block();
     TryTarget target(this, has_finally);
-    Emit<OP::TRY>();
     stmt->body()->Accept(this);
     if (has_finally) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
@@ -538,7 +537,6 @@ class Compiler
       const std::size_t finally_start = CurrentSize();
       code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, CurrentLevel(), dynamic_env_level());
       target.EmitJumps(finally_start);
-      Emit<OP::TRY_FINALLY>();
       block.Address()->Accept(this);
       Emit<OP::RETURN_SUBROUTINE>();
     }
