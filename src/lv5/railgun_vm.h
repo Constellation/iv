@@ -814,9 +814,10 @@ class VM {
           continue;
         }
 
-        case OP::WITH_CLEANUP: {
+        case OP::POP_ENV: {
           env = env->outer();
           --dynamic_env_level;
+          continue;
         }
 
         case OP::TRY: {
@@ -833,12 +834,6 @@ class VM {
           catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
           env = catch_env;
           ++dynamic_env_level;
-          continue;
-        }
-
-        case OP::TRY_CATCH_CLEANUP: {
-          env = env->outer();
-          --dynamic_env_level;
           continue;
         }
 

@@ -446,7 +446,7 @@ class Compiler
       DynamicEnvLevelCounter counter(this);
       stmt->body()->Accept(this);
     }
-    Emit<OP::WITH_CLEANUP>();
+    Emit<OP::POP_ENV>();
   }
 
   void Visit(const LabelledStatement* stmt) {
@@ -524,7 +524,7 @@ class Compiler
         DynamicEnvLevelCounter counter(this);
         block.Address()->Accept(this);
       }
-      Emit<OP::TRY_CATCH_CLEANUP>();
+      Emit<OP::POP_ENV>();
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
