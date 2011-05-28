@@ -15,7 +15,7 @@
 #include "lv5/class.h"
 #include "lv5/context_utils.h"
 #include "lv5/symbol_checker.h"
-#include "lv5/railgun_fwd.h"
+#include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
 namespace detail {

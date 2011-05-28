@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_CONTEXT_H_
 #define _IV_LV5_RAILGUN_CONTEXT_H_
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_runtime.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/runtime.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {

@@ -15,11 +15,11 @@
 #include "lv5/property.h"
 #include "lv5/internal.h"
 #include "lv5/stack_resource.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_op.h"
-#include "lv5/railgun_code.h"
-#include "lv5/railgun_context.h"
-#include "lv5/railgun_jsfunction.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/op.h"
+#include "lv5/railgun/code.h"
+#include "lv5/railgun/context.h"
+#include "lv5/railgun/jsfunction.h"
 
 namespace iv {
 namespace lv5 {

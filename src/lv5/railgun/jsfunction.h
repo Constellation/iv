@@ -1,12 +1,13 @@
 #ifndef _IV_LV5_RAILGUN_JSFUNCTION_H_
 #define _IV_LV5_RAILGUN_JSFUNCTION_H_
 #include "ustringpiece.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_code.h"
 #include "lv5/arguments.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsscript.h"
 #include "lv5/jsfunction.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/code.h"
+#include "lv5/railgun/jsscript.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -86,7 +87,9 @@ class JSVMFunction : public JSFunction {
   }
 
   core::UStringPiece GetSource() const {
-    return core::UStringPiece();
+    const std::size_t start_pos = code_->start_position();
+    const std::size_t end_pos = code_->end_position();
+    return code_->script()->SubString(start_pos, end_pos - start_pos);
   }
 
   bool IsStrict() const {

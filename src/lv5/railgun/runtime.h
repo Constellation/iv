@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RUNTIME_RAILGUN_H_
 #define _IV_LV5_RUNTIME_RAILGUN_H_
 #include "lv5/error_check.h"
-#include "lv5/railgun_fwd.h"
 #include "lv5/internal.h"
+#include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {

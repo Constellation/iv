@@ -13,9 +13,9 @@
 #include "lv5/jsregexp.h"
 #include "lv5/gc_template.h"
 #include "lv5/context_utils.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_op.h"
-#include "lv5/railgun_code.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/op.h"
+#include "lv5/railgun/code.h"
 
 namespace iv {
 namespace lv5 {

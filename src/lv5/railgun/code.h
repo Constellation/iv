@@ -6,10 +6,10 @@
 #include <tr1/tuple>
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_op.h"
 #include "lv5/gc_template.h"
 #include "lv5/specialized_ast.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/op.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -37,6 +37,8 @@ class Code : public gc {
       has_eval_(false),
       has_arguments_(false),
       script_(script),
+      start_position_(func.start_position()),
+      end_position_(func.end_position()),
       data_(),
       codes_(),
       names_(),
@@ -113,12 +115,22 @@ class Code : public gc {
     has_arguments_ = true;
   }
 
+  std::size_t start_position() const {
+    return start_position_;
+  }
+
+  std::size_t end_position() const {
+    return end_position_;
+  }
+
  private:
   // TODO(Constellation) flag optimization
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
   JSScript* script_;
+  std::size_t start_position_;
+  std::size_t end_position_;
   Data data_;
   Codes codes_;
   Names names_;

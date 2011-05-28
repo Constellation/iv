@@ -5,9 +5,9 @@
 #include <tr1/cstdio>
 #include "noncopyable.h"
 #include "stringpiece.h"
-#include "lv5/railgun_fwd.h"
-#include "lv5/railgun_op.h"
-#include "lv5/railgun_code.h"
+#include "lv5/railgun/fwd.h"
+#include "lv5/railgun/op.h"
+#include "lv5/railgun/code.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
