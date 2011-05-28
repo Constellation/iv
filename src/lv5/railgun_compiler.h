@@ -36,13 +36,15 @@ class Compiler
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
+      script_(NULL),
       jump_table_(NULL),
       finally_stack_(),
       dynamic_env_level_(0) {
   }
 
-  Code* Compile(const FunctionLiteral& global) {
-    Code* code = new Code(global.strict());
+  Code* Compile(const FunctionLiteral& global, JSScript* script) {
+    script_ = script;
+    Code* code = new Code(script_, global);
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(global);
@@ -1189,7 +1191,7 @@ class Compiler
   };
 
   void Visit(const FunctionLiteral* lit) {
-    Code* const code = new Code(lit->strict());
+    Code* const code = new Code(script_, *lit);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
     {
@@ -1396,14 +1398,15 @@ class Compiler
 
   Context* ctx_;
   Code* code_;
+  JSScript* script_;
   JumpTable* jump_table_;
   FinallyStack finally_stack_;
   uint16_t dynamic_env_level_;
 };
 
-inline Code* Compile(Context* ctx, const FunctionLiteral& global) {
+inline Code* Compile(Context* ctx, const FunctionLiteral& global, JSScript* script) {
   Compiler compiler(ctx);
-  return compiler.Compile(global);
+  return compiler.Compile(global, script);
 }
 
 } } }  // namespace iv::lv5::railgun

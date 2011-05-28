@@ -23,5 +23,12 @@ JSVal FunctionConstructor(const Arguments& args, Error* e);
 JSVal GlobalEval(const Arguments& args, Error* e);
 JSVal DirectCallToEval(const Arguments& args, Error* e);
 
+class JSScript;
+
+template<typename Source>
+class JSEvalScript;
+
+class JSGlobalScript;
+
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_

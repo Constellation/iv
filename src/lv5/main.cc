@@ -51,15 +51,17 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 
 template<typename Source>
 iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
-                                const Source& src) {
+                                    const Source& src) {
   iv::lv5::AstFactory factory(ctx);
   iv::core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
+  iv::lv5::railgun::JSScript* script =
+      iv::lv5::railgun::JSGlobalScript::New(ctx, &src);
   if (!global) {
     std::cerr << parser.error() << std::endl;
     return NULL;
   }
-  return iv::lv5::railgun::Compile(ctx, *global);
+  return iv::lv5::railgun::Compile(ctx, *global, script);
 }
 
 int Execute(const iv::core::StringPiece& data,

@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RAILGUN_CODE_H_
 #define _IV_LV5_RAILGUN_CODE_H_
+#include <algorithm>
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
 #include <tr1/tuple>
@@ -8,6 +9,7 @@
 #include "lv5/railgun_fwd.h"
 #include "lv5/railgun_op.h"
 #include "lv5/gc_template.h"
+#include "lv5/specialized_ast.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -30,15 +32,21 @@ class Code : public gc {
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
-  explicit Code(bool strict)
-    : strict_(strict),
+  explicit Code(JSScript* script, const FunctionLiteral& func)
+    : strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
+      script_(script),
       data_(),
       codes_(),
       names_(),
       varnames_(),
+      params_(func.params().size()),
       constants_() {
+    std::transform(func.params().begin(),
+                   func.params().end(),
+                   params_.begin(),
+                   std::mem_fun(&Identifier::symbol));
   }
 
   const uint8_t* data() const {
@@ -65,6 +73,10 @@ class Code : public gc {
     return varnames_;
   }
 
+  const Names& params() const {
+    return params_;
+  }
+
   const ExceptionTable& exception_table() const {
     return exception_table_;
   }
@@ -85,6 +97,10 @@ class Code : public gc {
     return has_eval_;
   }
 
+  JSScript* script() const {
+    return script_;
+  }
+
   bool HasArguments() const {
     return has_arguments_;
   }
@@ -102,10 +118,12 @@ class Code : public gc {
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
+  JSScript* script_;
   Data data_;
   Codes codes_;
   Names names_;
   Names varnames_;
+  Names params_;
   JSVals constants_;
   ExceptionTable exception_table_;
 };

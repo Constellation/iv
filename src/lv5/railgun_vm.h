@@ -19,6 +19,7 @@
 #include "lv5/railgun_op.h"
 #include "lv5/railgun_code.h"
 #include "lv5/railgun_context.h"
+#include "lv5/railgun_jsfunction.h"
 
 namespace iv {
 namespace lv5 {
@@ -856,6 +857,16 @@ class VM {
 
         case OP::BUILD_OBJECT: {
           JSObject* x = JSObject::New(ctx_);
+          if (x) {
+            PUSH(x);
+            continue;
+          }
+          break;
+        }
+
+        case OP::MAKE_CLOSURE: {
+          Code* target = code.codes()[oparg];
+          JSFunction* x = JSVMFunction::New(ctx_, target, env);
           if (x) {
             PUSH(x);
             continue;
