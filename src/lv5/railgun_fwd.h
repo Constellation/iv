@@ -20,6 +20,8 @@ template<typename Derived>
 class DisAssembler;
 
 JSVal FunctionConstructor(const Arguments& args, Error* e);
+JSVal GlobalEval(const Arguments& args, Error* e);
+JSVal DirectCallToEval(const Arguments& args, Error* e);
 
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_

@@ -937,6 +937,18 @@ class VM {
           continue;
         }
 
+        case OP::EVAL: {
+          // maybe direct call to eval
+          JSVal* stack_pointer = sp;
+          const JSVal x = InvokeMaybeEval(&stack_pointer, oparg, &e);
+          sp = stack_pointer;
+          PUSH(x);
+          if (e) {
+            break;
+          }
+          continue;
+        }
+
         case OP::CALL_NAME: {
           const Symbol& s = GETITEM(names, oparg);
           JSVal res;
@@ -1060,6 +1072,25 @@ class VM {
     }
     *stack_pointer = sp - (argc + 2);
     return func.object()->AsCallable()->Call(&args, sp[-(argc + 1)], e);
+  }
+
+  JSVal InvokeMaybeEval(JSVal** stack_pointer, int argc, Error* e) {
+    JSVal* sp = *stack_pointer;
+    VMArguments args(ctx_, sp - argc - 1, argc);
+    const JSVal func = sp[-(argc + 2)];
+    if (!func.IsCallable()) {
+      e->Report(Error::Type, "not callable object");
+      return JSEmpty;
+    }
+    JSFunction* const callable = func.object()->AsCallable();
+    const JSAPI native = callable->NativeFunction();
+    *stack_pointer = sp - (argc + 2);
+    if (native && native == &GlobalEval) {
+      // direct call to eval point
+      args.set_this_binding(sp[-(argc + 1)]);
+      return DirectCallToEval(args, e);
+    }
+    return callable->AsCallable()->Call(&args, sp[-(argc + 1)], e);
   }
 
   JSVal Construct(JSVal** stack_pointer, int argc, Error* e) {

@@ -6,6 +6,7 @@
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "static_assert.h"
+#include "enable_if.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
@@ -1230,11 +1231,15 @@ class Compiler
 
   template<OP::Type op, typename Call>
   void EmitCall(const Call& call) {
+    bool direct_call_to_eval = false;
     const Expression& target = *call.target();
     if (target.IsValidLeftHandSide()) {
       if (const Identifier* ident = target.AsIdentifier()) {
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         Emit<OP::CALL_NAME>(index);
+        if (op == OP::CALL && ident->symbol() == context::eval_symbol(ctx_)) {
+          direct_call_to_eval = true;
+        }
       } else if (const PropertyAccess* prop = target.AsPropertyAccess()) {
         if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
           // IdentifierAccess
@@ -1254,12 +1259,19 @@ class Compiler
       target.Accept(this);
       Emit<OP::PUSH_UNDEFINED>();
     }
+
     const Expressions& args = call.args();
     for (Expressions::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it) {
       (*it)->Accept(this);
     }
-    Emit<op>(args.size());
+
+    if (direct_call_to_eval) {
+      Emit<OP::EVAL>(args.size());
+      code_->set_code_has_eval();
+    } else {
+      Emit<op>(args.size());
+    }
   }
 
   void Visit(const FunctionCall* call) {
@@ -1343,11 +1355,40 @@ class Compiler
   }
 
   template<OP::Type op>
-  void Emit(uint16_t arg) {
+  void Emit(uint16_t arg,
+            typename disable_if_c<
+              op == OP::LOAD_NAME ||
+              op == OP::DELETE_NAME ||
+              op == OP::CALL_NAME ||
+              op == OP::INCREMENT_NAME ||
+              op == OP::DECREMENT_NAME ||
+              op == OP::POSTFIX_INCREMENT_NAME ||
+              op == OP::POSTFIX_DECREMENT_NAME ||
+              op == OP::TYPEOF_NAME>::type* = 0) {
     IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
     code_->data_.push_back(op);
     code_->data_.push_back(arg & 0xff);
     code_->data_.push_back(arg >> 8);
+  }
+
+  template<OP::Type op>
+  void Emit(uint16_t arg,
+            typename enable_if_c<
+              op == OP::LOAD_NAME ||
+              op == OP::DELETE_NAME ||
+              op == OP::CALL_NAME ||
+              op == OP::INCREMENT_NAME ||
+              op == OP::DECREMENT_NAME ||
+              op == OP::POSTFIX_INCREMENT_NAME ||
+              op == OP::POSTFIX_DECREMENT_NAME ||
+              op == OP::TYPEOF_NAME>::type* = 0) {
+    IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
+    code_->data_.push_back(op);
+    code_->data_.push_back(arg & 0xff);
+    code_->data_.push_back(arg >> 8);
+    if (code_->names()[arg] == context::arguments_symbol(ctx_)) {
+      code_->set_code_has_arguments();
+    }
   }
 
   void Emit(OP::Type op) {

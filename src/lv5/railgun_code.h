@@ -32,6 +32,8 @@ class Code : public gc {
 
   explicit Code(bool strict)
     : strict_(strict),
+      has_eval_(false),
+      has_arguments_(false),
       data_(),
       codes_(),
       names_(),
@@ -79,8 +81,27 @@ class Code : public gc {
     return strict_;
   }
 
+  bool HasEval() const {
+    return has_eval_;
+  }
+
+  bool HasArguments() const {
+    return has_arguments_;
+  }
+
+  void set_code_has_eval() {
+    has_eval_ = true;
+  }
+
+  void set_code_has_arguments() {
+    has_arguments_ = true;
+  }
+
  private:
+  // TODO(Constellation) flag optimization
   bool strict_;
+  bool has_eval_;
+  bool has_arguments_;
   Data data_;
   Codes codes_;
   Names names_;

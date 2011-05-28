@@ -15,5 +15,9 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
+inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
+  return JSUndefined;
+}
+
 } } }  // iv::lv5::railgun
 #endif  // _IV_LV5_RUNTIME_RAILGUN_H_
