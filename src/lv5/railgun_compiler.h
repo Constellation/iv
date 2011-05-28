@@ -483,7 +483,7 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel(), 0);
+      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel() - 1, 0);
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       block.Address()->Accept(this);

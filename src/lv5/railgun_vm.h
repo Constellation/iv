@@ -155,6 +155,7 @@ class VM {
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
 #define UNWIND_STACK(n) (sp = (frame->stacktop() + ((n) * 2)))
+#define STACK_DEPTH() (sp - frame->stacktop())
 #define TOP() (sp[-1])
 #define SECOND() (sp[-2])
 #define THIRD() (sp[-3])
@@ -986,6 +987,7 @@ class VM {
       if (handler_found) {
         continue;
       }
+      // std::printf("stack depth: %d\n", STACK_DEPTH());
       break;
     }  // for main loop
     return std::make_pair(ret, type);
