@@ -173,7 +173,7 @@ struct OP {
 
   template<OP::Type op>
   struct IsNameLookupOP {
-    static const int value =
+    static const bool value =
         op == OP::LOAD_NAME ||
         op == OP::DELETE_NAME ||
         op == OP::CALL_NAME ||
