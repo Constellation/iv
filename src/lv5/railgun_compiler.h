@@ -1356,15 +1356,7 @@ class Compiler
 
   template<OP::Type op>
   void Emit(uint16_t arg,
-            typename disable_if_c<
-              op == OP::LOAD_NAME ||
-              op == OP::DELETE_NAME ||
-              op == OP::CALL_NAME ||
-              op == OP::INCREMENT_NAME ||
-              op == OP::DECREMENT_NAME ||
-              op == OP::POSTFIX_INCREMENT_NAME ||
-              op == OP::POSTFIX_DECREMENT_NAME ||
-              op == OP::TYPEOF_NAME>::type* = 0) {
+            typename disable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
     code_->data_.push_back(op);
     code_->data_.push_back(arg & 0xff);
@@ -1373,15 +1365,7 @@ class Compiler
 
   template<OP::Type op>
   void Emit(uint16_t arg,
-            typename enable_if_c<
-              op == OP::LOAD_NAME ||
-              op == OP::DELETE_NAME ||
-              op == OP::CALL_NAME ||
-              op == OP::INCREMENT_NAME ||
-              op == OP::DECREMENT_NAME ||
-              op == OP::POSTFIX_INCREMENT_NAME ||
-              op == OP::POSTFIX_DECREMENT_NAME ||
-              op == OP::TYPEOF_NAME>::type* = 0) {
+            typename enable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
     code_->data_.push_back(op);
     code_->data_.push_back(arg & 0xff);

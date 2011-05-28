@@ -171,6 +171,19 @@ struct OP {
     return opcode >= HAVE_ARGUMENT;
   }
 
+  template<OP::Type op>
+  struct IsNameLookupOP {
+    static const int value =
+        op == OP::LOAD_NAME ||
+        op == OP::DELETE_NAME ||
+        op == OP::CALL_NAME ||
+        op == OP::INCREMENT_NAME ||
+        op == OP::DECREMENT_NAME ||
+        op == OP::POSTFIX_INCREMENT_NAME ||
+        op == OP::POSTFIX_DECREMENT_NAME ||
+        op == OP::TYPEOF_NAME;
+  };
+
   static inline const char* String(int op);
 };
 
