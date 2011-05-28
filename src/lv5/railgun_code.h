@@ -26,7 +26,8 @@ class Code : public gc {
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<uint8_t>::type Data;
   typedef GCVector<Code*>::type Codes;
-  typedef std::tr1::tuple<uint8_t, uint16_t, uint16_t, uint16_t> ExceptionHandler;
+  typedef std::tr1::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
+          ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
   explicit Code(bool strict)
@@ -67,10 +68,11 @@ class Code : public gc {
   }
 
   template<Handler::Type type>
-  void RegisterHandler(uint16_t stack,
-                       uint16_t begin,
-                       uint16_t end) {
-    exception_table_.push_back(std::tr1::make_tuple(type, stack, begin, end));
+  void RegisterHandler(uint16_t begin, uint16_t end,
+                       uint16_t stack_base_level,
+                       uint16_t dynamic_scope_depth) {
+    exception_table_.push_back(
+        std::tr1::make_tuple(type, begin, end, stack_base_level, dynamic_scope_depth));
   }
 
   bool strict() const {

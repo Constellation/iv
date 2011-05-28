@@ -483,7 +483,7 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      code_->RegisterHandler<Handler::CATCH>(0, try_start, CurrentSize());
+      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel(), 0);
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       block.Address()->Accept(this);
@@ -499,7 +499,7 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      code_->RegisterHandler<Handler::FINALLY>(0, try_start, finally_start);
+      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, CurrentLevel(), 0);
       target.EmitJumps(finally_start);
       Emit<OP::TRY_FINALLY>();
       block.Address()->Accept(this);
@@ -1334,6 +1334,7 @@ class Compiler
   Code* code_;
   JumpTable* jump_table_;
   FinallyStack finally_stack_;
+  uint16_t stack_base_level_;
 };
 
 inline Code* Compile(Context* ctx, const FunctionLiteral& global) {

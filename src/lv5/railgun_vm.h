@@ -154,7 +154,7 @@ class VM {
 #define POP() (*--sp)
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
-#define UNWIND_STACK() (sp = frame->stacktop())
+#define UNWIND_STACK(n) (sp = (frame->stacktop() + ((n) * 2)))
 #define TOP() (sp[-1])
 #define SECOND() (sp[-2])
 #define THIRD() (sp[-3])
@@ -949,15 +949,18 @@ class VM {
       for (ExceptionTable::const_iterator it = table.begin(),
            last = table.end(); it != last; ++it) {
         const int handler = std::tr1::get<0>(*it);
+        const uint16_t begin = std::tr1::get<1>(*it);
+        const uint16_t end = std::tr1::get<2>(*it);
+        const uint16_t stack_base_level = std::tr1::get<3>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
-        if (std::tr1::get<2>(*it) < offset && offset <= std::tr1::get<3>(*it)) {
+        if (begin < offset && offset <= end) {
           if (handler == Handler::CATCH) {
             if (e) {
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
-              UNWIND_STACK();
+              UNWIND_STACK(stack_base_level);
               PUSH(error);
-              JUMPTO(std::tr1::get<3>(*it));
+              JUMPTO(end);
               handler_found = true;
               break;
             }
@@ -966,15 +969,15 @@ class VM {
             if (e) {
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
-              UNWIND_STACK();
+              UNWIND_STACK(stack_base_level);
               PUSH(error);
               PUSH(JSVal::UInt32(kThrowFinally));
             } else if (type == RETURN) {
-              UNWIND_STACK();
+              UNWIND_STACK(stack_base_level);
               PUSH(ret);
               PUSH(JSVal::UInt32(kReturnFinally));
             }
-            JUMPTO(std::tr1::get<3>(*it));
+            JUMPTO(end);
             handler_found = true;
             break;
           }
