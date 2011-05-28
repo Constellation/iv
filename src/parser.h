@@ -1176,8 +1176,7 @@ class Parser
       RAISE("invalid left-hand-side in assignment");
     }
     // section 11.13.1 throwing SyntaxError
-    if (strict_ &&
-        result->AsIdentifier()) {
+    if (strict_ && result->AsIdentifier()) {
       const EvalOrArguments val = IsEvalOrArguments(result->AsIdentifier());
       if (val) {
         if (val == kEval) {
@@ -1489,8 +1488,7 @@ class Parser
         // function argument, or function name
         Next();
         expr = ParseUnaryExpression(CHECK);
-        if (strict_ &&
-            expr->AsIdentifier()) {
+        if (strict_ && expr->AsIdentifier()) {
           RAISE("delete to direct identifier not allowed in strict code");
         }
         assert(expr);
@@ -1540,8 +1538,7 @@ class Parser
           RAISE("invalid left-hand-side in prefix expression");
         }
         // section 11.4.4, 11.4.5 throwing SyntaxError
-        if (strict_ &&
-            expr->AsIdentifier()) {
+        if (strict_ && expr->AsIdentifier()) {
           const EvalOrArguments val = IsEvalOrArguments(expr->AsIdentifier());
           if (val) {
             if (val == kEval) {
@@ -1577,8 +1574,7 @@ class Parser
         RAISE("invalid left-hand-side in postfix expression");
       }
       // section 11.3.1, 11.3.2 throwing SyntaxError
-      if (strict_ &&
-          expr->AsIdentifier()) {
+      if (strict_ && expr->AsIdentifier()) {
         const EvalOrArguments val = IsEvalOrArguments(expr->AsIdentifier());
         if (val) {
           if (val == kEval) {
