@@ -70,9 +70,9 @@ class Code : public gc {
   template<Handler::Type type>
   void RegisterHandler(uint16_t begin, uint16_t end,
                        uint16_t stack_base_level,
-                       uint16_t dynamic_scope_depth) {
+                       uint16_t dynamic_env_level) {
     exception_table_.push_back(
-        std::tr1::make_tuple(type, begin, end, stack_base_level, dynamic_scope_depth));
+        std::tr1::make_tuple(type, begin, end, stack_base_level, dynamic_env_level));
   }
 
   bool strict() const {

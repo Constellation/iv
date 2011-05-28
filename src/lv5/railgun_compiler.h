@@ -36,7 +36,9 @@ class Compiler
     : ctx_(ctx),
       code_(NULL),
       jump_table_(NULL),
-      finally_stack_() { }
+      finally_stack_(),
+      dynamic_env_level_(0) {
+  }
 
   Code* Compile(const FunctionLiteral& global) {
     Code* code = new Code(global.strict());
@@ -67,6 +69,22 @@ class Compiler
   // use for break / continue exile by executing finally block
   std::size_t CurrentLevel() const {
     return finally_stack_.size();
+  }
+
+  void DynamicEnvLevelUp() {
+    ++dynamic_env_level_;
+  }
+
+  void DynamicEnvLevelDown() {
+    --dynamic_env_level_;
+  }
+
+  uint16_t dynamic_env_level() const {
+    return dynamic_env_level_;
+  }
+
+  void set_dynamic_env_level(uint16_t dynamic_env_level) {
+    dynamic_env_level_ = dynamic_env_level;
   }
 
   void RegisterJumpTarget(const BreakableStatement* stmt,
@@ -164,7 +182,7 @@ class Compiler
     std::vector<std::size_t> continues_;
   };
 
-  class TryTarget : public core::Noncopyable<> {
+  class TryTarget : private core::Noncopyable<> {
    public:
     TryTarget(Compiler* compiler, bool has_finally)
       : compiler_(compiler),
@@ -188,6 +206,19 @@ class Compiler
    private:
     Compiler* compiler_;
     bool has_finally_;
+  };
+
+  class DynamicEnvLevelCounter : private core::Noncopyable<> {
+   public:
+    DynamicEnvLevelCounter(Compiler* compiler)
+      : compiler_(compiler) {
+      compiler_->DynamicEnvLevelUp();
+    }
+    ~DynamicEnvLevelCounter() {
+      compiler_->DynamicEnvLevelDown();
+    }
+   private:
+    Compiler* compiler_;
   };
 
   void Visit(const Block* block) {
@@ -411,7 +442,10 @@ class Compiler
   void Visit(const WithStatement* stmt) {
     stmt->context()->Accept(this);
     Emit<OP::WITH_SETUP>();
-    stmt->body()->Accept(this);
+    {
+      DynamicEnvLevelCounter counter(this);
+      stmt->body()->Accept(this);
+    }
     Emit<OP::WITH_CLEANUP>();
   }
 
@@ -483,10 +517,13 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel() - 1, 0);
+      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel(), dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
-      block.Address()->Accept(this);
+      {
+        DynamicEnvLevelCounter counter(this);
+        block.Address()->Accept(this);
+      }
       Emit<OP::TRY_CATCH_CLEANUP>();
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
@@ -499,7 +536,7 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, CurrentLevel(), 0);
+      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, CurrentLevel(), dynamic_env_level());
       target.EmitJumps(finally_start);
       Emit<OP::TRY_FINALLY>();
       block.Address()->Accept(this);
@@ -1132,20 +1169,24 @@ class Compiler
       : compiler_(compiler),
         jump_table_(),
         prev_code_(compiler_->code()),
-        prev_jump_table_(compiler_->jump_table()) {
+        prev_jump_table_(compiler_->jump_table()),
+        prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
+      compiler_->set_dynamic_env_level(0);
     }
 
     ~CodeContext() {
       compiler_->set_code(prev_code_);
       compiler_->set_jump_table(prev_jump_table_);
+      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
     }
    private:
     Compiler* compiler_;
     JumpTable jump_table_;
     Code* prev_code_;
     JumpTable* prev_jump_table_;
+    uint16_t prev_dynamic_env_level_;
   };
 
   void Visit(const FunctionLiteral* lit) {
@@ -1334,7 +1375,7 @@ class Compiler
   Code* code_;
   JumpTable* jump_table_;
   FinallyStack finally_stack_;
-  uint16_t stack_base_level_;
+  uint16_t dynamic_env_level_;
 };
 
 inline Code* Compile(Context* ctx, const FunctionLiteral& global) {

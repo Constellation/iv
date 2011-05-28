@@ -129,6 +129,7 @@ class VM {
     const uint8_t* instr = first_instr;
     JSVal* sp = frame->stacktop();
     JSEnv* env = frame->env();
+    uint32_t dynamic_env_level = 0;
     const JSVals& constants = frame->constants();
     const Code::Names& names = code.names();
     const bool strict = code.strict();
@@ -155,6 +156,15 @@ class VM {
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
 #define UNWIND_STACK(n) (sp = (frame->stacktop() + ((n) * 2)))
+#define UNWIND_DYNAMIC_ENV(n)\
+  do {\
+    const uint16_t dynamic_env_level_shrink = (n);\
+    assert(dynamic_env_level >= dynamic_env_level_shrink);\
+    for (uint16_t i = dynamic_env_level_shrink; i < dynamic_env_level; ++i) {\
+      env = env->outer();\
+    }\
+    dynamic_env_level = dynamic_env_level_shrink;\
+  } while (0)
 #define STACK_DEPTH() (sp - frame->stacktop())
 #define TOP() (sp[-1])
 #define SECOND() (sp[-2])
@@ -793,6 +803,22 @@ class VM {
           break;
         }
 
+        case OP::WITH_SETUP: {
+          const JSVal val = POP();
+          JSObject* const obj = val.ToObject(ctx_, ERR);
+          JSObjectEnv* const with_env =
+              internal::NewObjectEnvironment(ctx_, obj, env);
+          with_env->set_provide_this(true);
+          env = with_env;
+          ++dynamic_env_level;
+          continue;
+        }
+
+        case OP::WITH_CLEANUP: {
+          env = env->outer();
+          --dynamic_env_level;
+        }
+
         case OP::TRY: {
           // this is only the mark
           continue;
@@ -801,17 +827,18 @@ class VM {
         case OP::TRY_CATCH_SETUP: {
           const Symbol& s = GETITEM(names, oparg);
           const JSVal error = POP();
-          JSEnv* const old_env = env;
           JSEnv* const catch_env =
-              internal::NewDeclarativeEnvironment(ctx_, old_env);
+              internal::NewDeclarativeEnvironment(ctx_, env);
           catch_env->CreateMutableBinding(ctx_, s, false, ERR);
           catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
           env = catch_env;
+          ++dynamic_env_level;
           continue;
         }
 
         case OP::TRY_CATCH_CLEANUP: {
           env = env->outer();
+          --dynamic_env_level;
           continue;
         }
 
@@ -953,6 +980,7 @@ class VM {
         const uint16_t begin = std::tr1::get<1>(*it);
         const uint16_t end = std::tr1::get<2>(*it);
         const uint16_t stack_base_level = std::tr1::get<3>(*it);
+        const uint16_t env_level = std::tr1::get<4>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
         if (begin < offset && offset <= end) {
           if (handler == Handler::CATCH) {
@@ -960,6 +988,7 @@ class VM {
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
               UNWIND_STACK(stack_base_level);
+              UNWIND_DYNAMIC_ENV(env_level);
               PUSH(error);
               JUMPTO(end);
               handler_found = true;
@@ -971,10 +1000,12 @@ class VM {
               const JSVal error = JSError::Detail(ctx_, &e);
               e.Clear();
               UNWIND_STACK(stack_base_level);
+              UNWIND_DYNAMIC_ENV(env_level);
               PUSH(error);
               PUSH(JSVal::UInt32(kThrowFinally));
             } else if (type == RETURN) {
               UNWIND_STACK(stack_base_level);
+              UNWIND_DYNAMIC_ENV(env_level);
               PUSH(ret);
               PUSH(JSVal::UInt32(kReturnFinally));
             }
@@ -999,6 +1030,9 @@ class VM {
 #undef PUSH
 #undef POP
 #undef STACKADJ
+#undef UNWIND_STACK
+#undef UNWIND_DYNAMIC_ENV
+#undef STACK_DEPTH
 #undef TOP
 #undef SECOND
 #undef THIRD
