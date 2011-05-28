@@ -270,11 +270,17 @@ class VM {
         }
 
         case OP::STORE_CALL_RESULT: {
-          // lv5 reject func() = 20;
+          // lv5 reject `func() = 20`
           const JSVal w = POP();
           e.Report(Error::Reference, "target is not reference");
           SET_TOP(w);
           break;
+        }
+
+        case OP::DELETE_CALL_RESULT: {
+          // lv5 ignore `delete func()`
+          SET_TOP(JSTrue);
+          continue;
         }
 
         case OP::DELETE_NAME: {
@@ -920,6 +926,17 @@ class VM {
           continue;
         }
 
+        case OP::CONSTRUCT: {
+          JSVal* stack_pointer = sp;
+          const JSVal x = Construct(&stack_pointer, oparg, &e);
+          sp = stack_pointer;
+          PUSH(x);
+          if (e) {
+            break;
+          }
+          continue;
+        }
+
         case OP::CALL_NAME: {
           const Symbol& s = GETITEM(names, oparg);
           JSVal res;
@@ -1043,6 +1060,18 @@ class VM {
     }
     *stack_pointer = sp - (argc + 2);
     return func.object()->AsCallable()->Call(&args, sp[-(argc + 1)], e);
+  }
+
+  JSVal Construct(JSVal** stack_pointer, int argc, Error* e) {
+    JSVal* sp = *stack_pointer;
+    VMArguments args(ctx_, sp - argc - 1, argc);
+    const JSVal func = sp[-(argc + 2)];
+    if (!func.IsCallable()) {
+      e->Report(Error::Type, "not callable object");
+      return JSEmpty;
+    }
+    *stack_pointer = sp - (argc + 2);
+    return func.object()->AsCallable()->Construct(&args, e);
   }
 
   void RaiseReferenceError(const Symbol& name, Error* e) const {

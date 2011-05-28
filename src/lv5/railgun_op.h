@@ -148,8 +148,6 @@ V(LOAD_CLOSURE)\
 V(INIT_ARRAY_ELEMENT)\
 V(BUILD_ARRAY)\
 \
-V(ERROR)\
-\
 /* opcodes over this requres 2 argument */\
 V(HAVE_EX_ARGUMENT)\
 
