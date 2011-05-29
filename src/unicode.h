@@ -147,7 +147,7 @@ UTF8ByteCount(UC8InputIter it) {
     // 1110xxxx
     return 3;
   } else if ((ch >> 3) == 0x1E) {
-    // 1110xxx
+    // 11110xxx
     return 4;
   }
   // invalid utf8
@@ -173,7 +173,7 @@ UTF8ByteCharLength(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
 }
 
 template<std::size_t N>
-struct UTF8ToCodePoint { };
+struct UTF8ToCodePoint;
 
 template<>
 struct UTF8ToCodePoint<1> {
