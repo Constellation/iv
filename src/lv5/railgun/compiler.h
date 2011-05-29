@@ -585,6 +585,7 @@ class Compiler
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         if (ident->symbol() == context::arguments_symbol(ctx_)) {
+          code_->set_code_has_arguments();
           Emit<OP::PUSH_ARGUMENTS>();
         } else {
           Emit<OP::LOAD_NAME>(index);
@@ -1109,6 +1110,7 @@ class Compiler
     // directlly extract value and set to top version
     const Symbol name = lit->symbol();
     if (name == context::arguments_symbol(ctx_)) {
+      code_->set_code_has_arguments();
       Emit<OP::PUSH_ARGUMENTS>();
       return;
     }
