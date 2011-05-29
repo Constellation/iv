@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <tr1/array>
 #include <tr1/cstdio>
-#include <tr1/cinttypes>
+#include <tr1/cstdint>
 #include "conversions.h"
 #include "platform_math.h"
 #include "lv5/error_check.h"
