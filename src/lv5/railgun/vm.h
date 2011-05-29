@@ -776,7 +776,8 @@ class VM {
           if (flag.boolean()) {
             // JUMP_SUBROUTINE
             // return to caller
-            const uint32_t addr = v.ToUInt32(ctx_, ERR);
+            // v is always UInt32
+            const uint32_t addr = v.uint32();
             JUMPTO(addr);
             continue;
           } else {
