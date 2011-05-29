@@ -238,7 +238,12 @@ struct UTF8ToCodePoint<3> {
               // so no check out of range: max
               res = res | Mask<6>(*it);
               if (res >= kMin) {
-                return res;
+                // and if res in surrogate range, this code is invalid.
+                if (res < kSurrogateMin || kSurrogateMax < res) {
+                  return res;
+                } else {
+                  *e = INVALID_SEQUENCE;
+                }
               } else {
                 *e = INVALID_SEQUENCE;
               }
