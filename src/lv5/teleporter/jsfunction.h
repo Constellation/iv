@@ -61,7 +61,7 @@ class JSCodeFunction : public JSFunction {
                          PropertyDescriptor::NONE),
           false, &e);
     }
-    if (ctx->IsStrict()) {
+    if (function_.strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();
       DefineOwnProperty(ctx, context::caller_symbol(ctx),
                         AccessorDescriptor(throw_type_error,

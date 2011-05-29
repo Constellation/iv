@@ -93,7 +93,7 @@ class JSVMFunction : public JSFunction {
   }
 
   bool IsStrict() const {
-    return false;
+    return code_->strict();
   }
 
  private:
