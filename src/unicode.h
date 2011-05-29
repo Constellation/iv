@@ -38,7 +38,6 @@ static const uint32_t kSurrogateMax = kLowSurrogateMax;
 static const uint32_t kSurrogateMask = (1 << (kSurrogateBits + 1)) - 1;
 
 static const uint32_t kHighSurrogateOffset = kHighSurrogateMin - (0x10000 >> 10);
-static const uint32_t kSurrogateOffset = 0x10000 - (kHighSurrogateMin << 10) - kLowSurrogateMin;
 
 static const uint32_t kUnicodeMin = 0x000000;
 static const uint32_t kUnicodeMax = 0x10FFFF;
@@ -93,6 +92,11 @@ inline uint16_t ToHighSurrogate(uint32_t uc) {
 
 inline uint16_t ToLowSurrogate(uint32_t uc) {
   return static_cast<uint16_t>((uc & kLowSurrogateMask) + kLowSurrogateMin);
+}
+
+inline uint32_t DecodeSurrogatePair(uint16_t high, uint16_t low) {
+  return (static_cast<uint32_t>(high & kHighSurrogateMask) << kSurrogateBits) +
+      static_cast<uint32_t>(low & kLowSurrogateMask) + 0x10000;
 }
 
 template<typename UC32>
@@ -436,7 +440,6 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter 
     uint32_t res = Mask<16>(*it++);
     if (IsSurrogate(res)) {
       if (IsHighSurrogate(res)) {
-        ++it;
         if (it == last) {
           return INVALID_SEQUENCE;
         }
@@ -444,7 +447,7 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter 
         if (!IsLowSurrogate(low)) {
           return INVALID_SEQUENCE;
         }
-        res = (res << kSurrogateBits) + low + kSurrogateOffset;
+        res = DecodeSurrogatePair(res, low);
       } else {
         // starts with low surrogate is error
         return INVALID_SEQUENCE;

@@ -51,9 +51,17 @@ TEST(UnicodeCase, UTF16ToUTF8) {
   }
   {
     // surrogate pair test
+    const std::string expect = "𣧂";
+    std::string actual;
+    const std::tr1::array<uint16_t, 2> str = { { 55374, 56770 } };
+    EXPECT_EQ(c::NO_ERROR, c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual)));
+    EXPECT_EQ(expect, actual);
+  }
+  {
+    // surrogate pair test
     // invalid sequence, should be fail
     std::string actual;
     const std::tr1::array<uint16_t, 2> str = { { 56770, 55374 } };
-    EXPECT_EQ(c::INVALID_SEQUENCE, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
+    EXPECT_EQ(c::INVALID_SEQUENCE, c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual)));
   }
 }
