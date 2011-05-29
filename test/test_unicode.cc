@@ -19,7 +19,7 @@ TEST(UnicodeCase, UTF8ToUCS4) {
   const std::string str = "こんにちは";
   std::vector<uint32_t> actual;
   const std::tr1::array<uint32_t, 5> expect = { { 12371, 12435, 12395, 12385, 12399 } };
-  c::UTF8ToUCS4(str.begin(), str.end(), std::back_inserter(actual));
+  EXPECT_EQ(c::NO_ERROR, c::UTF8ToUCS4(str.begin(), str.end(), std::back_inserter(actual)));
   EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
 }
 
@@ -28,7 +28,7 @@ TEST(UnicodeCase, UTF8ToUTF16) {
     const std::string str = "こんにちは";
     std::vector<uint16_t> actual;
     const std::tr1::array<uint16_t, 5> expect = { { 12371, 12435, 12395, 12385, 12399 } };
-    c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual));
+    EXPECT_EQ(c::NO_ERROR, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
     EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
   }
   {
@@ -36,8 +36,14 @@ TEST(UnicodeCase, UTF8ToUTF16) {
     const std::string str = "𣧂";
     std::vector<uint16_t> actual;
     const std::tr1::array<uint16_t, 2> expect = { { 55374, 56770 } };
-    c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual));
+    EXPECT_EQ(c::NO_ERROR, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
     EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
+  }
+  {
+    // surrogate area test
+    const std::tr1::array<uint8_t, 3> str = { { 0xED, 0xA0, 0x80 } };
+    std::vector<uint16_t> actual;
+    EXPECT_EQ(c::INVALID_SEQUENCE, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
   }
 }
 
@@ -46,7 +52,7 @@ TEST(UnicodeCase, UTF16ToUTF8) {
     const std::string expect = "こんにちは";
     std::string actual;
     const std::tr1::array<uint16_t, 5> str = { { 12371, 12435, 12395, 12385, 12399 } };
-    c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual));
+    EXPECT_EQ(c::NO_ERROR, c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual)));
     EXPECT_EQ(expect, actual);
   }
   {

@@ -324,8 +324,8 @@ struct UTF8ToCodePoint<4> {
   }
 };
 
-template<typename UC32OutputIter>
-inline UC32OutputIter Append(uint32_t uc, UC32OutputIter result) {
+template<typename UC8OutputIter>
+inline UC8OutputIter Append(uint32_t uc, UC8OutputIter result) {
   if (uc < 0x80) {
     // 0000 0000-0000 007F | 0xxxxxxx
     *result++ = static_cast<uint8_t>(uc);
@@ -381,8 +381,8 @@ inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last, uint32_
   return it;
 }
 
-template<typename UC8InputIter, typename OutputIter>
-inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, OutputIter result) {
+template<typename UC8InputIter, typename UC32OutputIter>
+inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, UC32OutputIter result) {
   UTF8Error error = NO_ERROR;
   uint32_t res;
   while (it != last) {
@@ -396,8 +396,8 @@ inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, OutputIter resul
   return NO_ERROR;
 }
 
-template<typename UC8InputIter, typename OutputIter>
-inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter result) {
+template<typename UC8InputIter, typename UC16OutputIter>
+inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, UC16OutputIter result) {
   UTF8Error error = NO_ERROR;
   uint32_t res;
   while (it != last) {
@@ -419,23 +419,23 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, OutputIter resu
 }
 
 // return wirte length
-template<typename OutputIter>
-inline typename std::iterator_traits<OutputIter>::difference_type
-UCS4OneCharToUTF8(uint32_t uc, OutputIter result) {
-  OutputIter tmp = Append(uc, result);
+template<typename UC8OutputIter>
+inline typename std::iterator_traits<UC8OutputIter>::difference_type
+UCS4OneCharToUTF8(uint32_t uc, UC8OutputIter result) {
+  UC8OutputIter tmp = Append(uc, result);
   return std::distance(result, tmp);
 }
 
-template<typename UC32InputIter, typename OutputIter>
-inline UTF8Error UCS4ToUTF8(UC32InputIter it, UC32InputIter last, OutputIter result) {
+template<typename UC32InputIter, typename UC8OutputIter>
+inline UTF8Error UCS4ToUTF8(UC32InputIter it, UC32InputIter last, UC8OutputIter result) {
   while (it != last) {
     result = Append(*it++, result);
   }
   return NO_ERROR;
 }
 
-template<typename UTF16InputIter, typename OutputIter>
-inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, OutputIter result) {
+template<typename UTF16InputIter, typename UC8OutputIter>
+inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, UC8OutputIter result) {
   while (it != last) {
     uint32_t res = Mask<16>(*it++);
     if (IsSurrogate(res)) {
