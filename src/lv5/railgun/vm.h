@@ -121,10 +121,6 @@ class VM {
   }
 
   std::pair<JSVal, Status> Execute(Frame* frame) {
-    static const uint32_t kThrowFinally = 0u;
-    static const uint32_t kReturnFinally = 1u;
-    static const uint32_t kNormalFinally = 2u;
-    Status type = NORMAL;
     const Code& code = frame->code();
     const uint8_t* const first_instr = frame->data();
     const uint8_t* instr = first_instr;
@@ -237,18 +233,7 @@ class VM {
         case OP::STORE_NAME: {
           const Symbol& s = GETITEM(names, oparg);
           const JSVal v = TOP();
-          if (JSEnv* current = GetEnv(env, s)) {
-            current->SetMutableBinding(ctx_, s, v, strict, ERR);
-          } else {
-            if (strict) {
-              e.Report(Error::Reference,
-                       "putting to unresolvable reference "
-                       "not allowed in strict reference");
-              break;
-            } else {
-              ctx_->global_obj()->Put(ctx_, s, v, strict, ERR);
-            }
-          }
+          StoreName(env, s, v, strict, ERR);
           continue;
         }
 
@@ -372,7 +357,7 @@ class VM {
           const JSVal addr = JSVal::UInt32(
               static_cast<uint32_t>(std::distance(first_instr, instr)));
           PUSH(addr);
-          PUSH(JSVal::UInt32(kNormalFinally));
+          PUSH(JSTrue);
           JUMPTO(oparg);
           continue;
         }
@@ -773,32 +758,33 @@ class VM {
         }
 
         case OP::RETURN: {
+          ret = TOP();
+          return std::make_pair(ret, RETURN);
+        }
+
+        case OP::SET_RET_VALUE: {
           ret = POP();
-          type = RETURN;
-          break;
+          continue;
+        }
+
+        case OP::RETURN_RET_VALUE: {
+          return std::make_pair(ret, RETURN);
         }
 
         case OP::RETURN_SUBROUTINE: {
-          const JSVal flag_value = POP();
+          const JSVal flag = POP();
           const JSVal v = POP();
-          const uint32_t flag = flag_value.ToUInt32(ctx_, ERR);
-          if (flag == kNormalFinally) {
+          assert(flag.IsBoolean());
+          if (flag.boolean()) {
             // JUMP_SUBROUTINE
             // return to caller
             const uint32_t addr = v.ToUInt32(ctx_, ERR);
             JUMPTO(addr);
             continue;
-          } else if (flag == kThrowFinally) {
+          } else {
             // ERROR FINALLY JUMP
             // rethrow error
             e.Report(v);
-            type = THROW;
-            break;
-          } else if (flag == kReturnFinally) {
-            // RETURN FINALLY JUMP
-            // re-return value
-            ret = v;
-            type = RETURN;
             break;
           }
         }
@@ -806,7 +792,6 @@ class VM {
         case OP::THROW: {
           ret = POP();
           e.Report(ret);
-          type = THROW;
           break;
         }
 
@@ -841,11 +826,8 @@ class VM {
 
         case OP::BUILD_ARRAY: {
           JSArray* x = JSArray::ReservedNew(ctx_, oparg);
-          if (x) {
-            PUSH(x);
-            continue;
-          }
-          break;
+          PUSH(x);
+          continue;
         }
 
         case OP::INIT_ARRAY_ELEMENT: {
@@ -857,31 +839,22 @@ class VM {
 
         case OP::BUILD_OBJECT: {
           JSObject* x = JSObject::New(ctx_);
-          if (x) {
-            PUSH(x);
-            continue;
-          }
-          break;
+          PUSH(x);
+          continue;
         }
 
         case OP::MAKE_CLOSURE: {
           Code* target = code.codes()[oparg];
           JSFunction* x = JSVMFunction::New(ctx_, target, env);
-          if (x) {
-            PUSH(x);
-            continue;
-          }
-          break;
+          PUSH(x);
+          continue;
         }
 
         case OP::BUILD_REGEXP: {
           const JSVal w = POP();
           JSRegExp* x = JSRegExp::New(ctx_, static_cast<JSRegExp*>(w.object()));
-          if (x) {
-            PUSH(x);
-            continue;
-          }
-          break;
+          PUSH(x);
+          continue;
         }
 
         case OP::STORE_OBJECT_DATA: {
@@ -996,6 +969,7 @@ class VM {
       // search exception handler or finally handler.
       // if finally handler found, set value to notify that RETURN_SUBROUTINE
       // should rethrow exception.
+      assert(e);
       typedef Code::ExceptionTable ExceptionTable;
       const ExceptionTable& table = code.exception_table();
       bool handler_found = false;
@@ -1008,36 +982,18 @@ class VM {
         const uint16_t env_level = std::tr1::get<4>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
         if (begin < offset && offset <= end) {
-          if (handler == Handler::CATCH) {
-            if (e) {
-              const JSVal error = JSError::Detail(ctx_, &e);
-              e.Clear();
-              UNWIND_STACK(stack_base_level);
-              UNWIND_DYNAMIC_ENV(env_level);
-              PUSH(error);
-              JUMPTO(end);
-              handler_found = true;
-              break;
-            }
-          } else if (handler == Handler::FINALLY) {
+          const JSVal error = JSError::Detail(ctx_, &e);
+          e.Clear();
+          UNWIND_STACK(stack_base_level);
+          UNWIND_DYNAMIC_ENV(env_level);
+          PUSH(error);
+          if (handler == Handler::FINALLY) {
             // finally jump if return or error raised
-            if (e) {
-              const JSVal error = JSError::Detail(ctx_, &e);
-              e.Clear();
-              UNWIND_STACK(stack_base_level);
-              UNWIND_DYNAMIC_ENV(env_level);
-              PUSH(error);
-              PUSH(JSVal::UInt32(kThrowFinally));
-            } else if (type == RETURN) {
-              UNWIND_STACK(stack_base_level);
-              UNWIND_DYNAMIC_ENV(env_level);
-              PUSH(ret);
-              PUSH(JSVal::UInt32(kReturnFinally));
-            }
-            JUMPTO(end);
-            handler_found = true;
-            break;
+            PUSH(JSFalse);
           }
+          JUMPTO(end);
+          handler_found = true;
+          break;
         }
       }
       if (handler_found) {
@@ -1046,7 +1002,8 @@ class VM {
       // std::printf("stack depth: %d\n", STACK_DEPTH());
       break;
     }  // for main loop
-    return std::make_pair(ret, type);
+    const JSVal error = JSError::Detail(ctx_, &e);
+    return std::make_pair(error, THROW);
 #undef NEXTOP
 #undef NEXTARG
 #undef PEEKARG
@@ -1190,6 +1147,21 @@ class VM {
 #undef CHECK
 
 #define CHECK IV_LV5_ERROR_VOID(e)
+
+  void StoreName(JSEnv* env, const Symbol& name,
+                 const JSVal& stored, bool strict, Error* e) {
+    if (JSEnv* current = GetEnv(env, name)) {
+      current->SetMutableBinding(ctx_, name, stored, strict, e);
+    } else {
+      if (strict) {
+        e->Report(Error::Reference,
+                  "putting to unresolvable reference "
+                  "not allowed in strict reference");
+      } else {
+        ctx_->global_obj()->Put(ctx_, name, stored, strict, e);
+      }
+    }
+  }
 
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {

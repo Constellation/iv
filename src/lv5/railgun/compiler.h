@@ -439,7 +439,19 @@ class Compiler
     } else {
       Emit<OP::PUSH_UNDEFINED>();
     }
-    Emit<OP::RETURN>();
+    if (CurrentLevel() == 0) {
+      Emit<OP::RETURN>();
+    } else {
+      Emit<OP::SET_RET_VALUE>();
+      // nested finally has found
+      // set finally jump targets
+      for (uint16_t level = CurrentLevel(); level > 0; --level) {
+        const std::size_t finally_jump_index = CurrentSize() + 1;
+        Emit<OP::JUMP_SUBROUTINE>(0);
+        finally_stack_[level - 1].push_back(finally_jump_index);
+      }
+      Emit<OP::RETURN_RET_VALUE>();
+    }
   }
 
   void Visit(const WithStatement* stmt) {
