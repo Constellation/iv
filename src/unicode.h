@@ -291,7 +291,7 @@ struct UTF8ToCodePoint<4> {
                   // so must check this value is in surrogate pair range
                   res = res | Mask<6>(*it);
                   if (res >= kMin) {
-                    if (res <= 0x10FFFF) {
+                    if (res <= kUnicodeMax) {
                       return res;
                     } else {
                       *e = INVALID_SEQUENCE;
@@ -339,6 +339,7 @@ inline UC8OutputIter Append(uint32_t uc, UC8OutputIter result) {
     *result++ = static_cast<uint8_t>(((uc >> 6) & 0x3F) | 0x80);
     *result++ = static_cast<uint8_t>((uc & 0x3F) | 0x80);
   } else {
+    assert(uc <= kUnicodeMax);
     // 0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
     *result++ = static_cast<uint8_t>((uc >> 18) | 0xF0);
     *result++ = static_cast<uint8_t>(((uc >> 12) & 0x3F) | 0x80);
