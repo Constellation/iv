@@ -8,8 +8,8 @@ namespace lv5 {
 
 // i386 GNUC++'s double precision is extended
 // so fix to double
-// see http://code.google.com/p/v8/issues/detail?id=144
-//     https://bugzilla.mozilla.org/show_bug.cgi?id=264912
+// see https://bugzilla.mozilla.org/show_bug.cgi?id=264912
+//     http://www.vinc17.org/research/extended.en.html
 // 0x127f ?
 class FPU : private core::Noncopyable<> {
  public:
