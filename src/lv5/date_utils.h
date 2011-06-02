@@ -183,7 +183,7 @@ inline const char* LocalTimeZone(double t) {
   if (core::IsNaN(t)) {
     return kNaNTimeZone;
   }
-#ifdef __CYGWIN__
+#if defined(OS_WIN)
   static const char* value = "";
   return value;
 #else

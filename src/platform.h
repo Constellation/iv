@@ -42,4 +42,9 @@
 #define IV_COMPILER_CLANG __clang__
 #endif  // defined(__GNUC__)
 
+// snprintf
+#if defined(IV_COMPILER_MSVC)
+#define snprintf _snprintf
+#endif
+
 #endif  // _IV_PLATFORM_H_
