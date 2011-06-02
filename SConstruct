@@ -94,12 +94,9 @@ def Build():
 
   if not env.GetOption('clean'):
     conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
-    if not conf.CheckFunc('snprintf'):
-      print 'snprintf must be provided'
-      Exit(1)
-    if options.get('icu'):
-      conf.env.ParseConfig('icu-config --cppflags --ldflags')
-      option_dict['%USE_ICU%'] = '1'
+#    if not conf.CheckFunc('snprintf'):
+#      print 'snprintf must be provided'
+#      Exit(1)
     conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
 
