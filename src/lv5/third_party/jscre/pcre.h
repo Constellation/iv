@@ -48,7 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace iv { namespace lv5 { namespace jscre {
 
-typedef std::tr1::uint16_t UChar;
+typedef uint16_t UChar;
 
 struct JSRegExp;
 
