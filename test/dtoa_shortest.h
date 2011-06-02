@@ -30,7 +30,7 @@
 //          decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
 #ifndef _IV_TEST_DTOA_SHORTEST_H_
 #define _IV_TEST_DTOA_SHORTEST_H_
-#include <tr1/array>
+#include "detail/tr1/array.h"
 
 struct PrecomputedShortest {
   double v;

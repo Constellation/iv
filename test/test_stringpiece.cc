@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
-#include <unicode/uchar.h>
 #include "stringpiece.h"
-
-typedef iv::core::BasicStringPiece<UChar> UStringPiece;
-typedef std::basic_string<UChar> ustring;
+#include "ustringpiece.h"
+#include "ustring.h"
 
 void JoinFilePathStr(const iv::core::StringPiece& dir,
                      const iv::core::StringPiece& base,
@@ -13,9 +11,9 @@ void JoinFilePathStr(const iv::core::StringPiece& dir,
   base.AppendToString(out);
 }
 
-void JoinFilePathStr(const UStringPiece& dir,
-                     const UStringPiece& base,
-                     ustring* out) {
+void JoinFilePathStr(const iv::core::UStringPiece& dir,
+                     const iv::core::UStringPiece& base,
+                     iv::core::UString* out) {
   dir.CopyToString(out);
   out->push_back('/');
   base.AppendToString(out);

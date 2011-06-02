@@ -1,7 +1,7 @@
 #include <cstring>
 #include <iostream>
-#include <tr1/array>
 #include <gtest/gtest.h>
+#include "detail/tr1/array.h"
 #include "dtoa.h"
 #include "dtoa_fixed.h"
 #include "dtoa_precision.h"
