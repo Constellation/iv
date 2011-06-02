@@ -8,7 +8,7 @@ namespace lv5 {
 
 class Xor128 {
  public:
-  typedef std::tr1::uint32_t result_type;
+  typedef ::uint32_t result_type;
   Xor128()
     : x_(123456789),
       y_(362436069),
@@ -52,7 +52,7 @@ class Xor128 {
     return w_;
   }
  private:
-  typedef std::tr1::uint32_t int_t;
+  typedef ::uint32_t int_t;
   typedef std::numeric_limits<result_type> limits;
   static const std::size_t kIntBits =
       limits::digits + (limits::is_signed ? 1 : 0);
