@@ -49,12 +49,7 @@ IV_STATIC_ASSERT(std::tr1::is_pod<Symbol>::value);
 
 GC_DECLARE_PTRFREE(iv::lv5::Symbol);
 
-#ifdef BOOST_HAS_TR1_HASH
-namespace std {
-namespace tr1 {
-#else
-namespace boost {
-#endif  // ifdef BOOST_HAS_TR1_HASH
+namespace IV_TR1_HASH_NAMESPACE_START {
 
 // template specialization for Symbol in std::tr1::unordered_map
 template<>
@@ -65,10 +60,6 @@ struct hash<iv::lv5::Symbol>
   }
 };
 
-#ifdef BOOST_HAS_TR1_HASH
-} }  // namespace std::tr1
-#else
-}  // namespace boost
-#endif  // ifdef BOOST_HAS_TR1_HASH
+} IV_TR1_HASH_NAMESPACE_END
 
 #endif  // _IV_LV5_SYMBOL_H_

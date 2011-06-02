@@ -251,12 +251,7 @@ class StringBuilder : protected std::vector<uc16> {
 
 } }  // namespace iv::lv5
 
-#ifdef BOOST_HAS_TR1_HASH
-namespace std {
-namespace tr1 {
-#else
-namespace boost {
-#endif  // ifdef BOOST_HAS_TR1_HASH
+namespace IV_TR1_HASH_NAMESPACE_START {
 
 // template specialization for JSString in std::tr1::unordered_map
 // allowed in section 17.4.3.1
@@ -268,10 +263,6 @@ struct hash<iv::lv5::JSString>
   }
 };
 
-#ifdef BOOST_HAS_TR1_HASH
-} }  // namespace std::tr1
-#else
-}  // namespace boost
-#endif  // ifdef BOOST_HAS_TR1_HASH
+} IV_TR1_HASH_NAMESPACE_END
 
 #endif  // _IV_LV5_JSSTRING_H_

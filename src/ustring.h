@@ -17,12 +17,8 @@ inline UString ToUString(StringPiece str) {
 
 } }  // namespace iv::core
 
-#ifdef BOOST_HAS_TR1_HASH
-namespace std {
-namespace tr1 {
-#else
-namespace boost {
-#endif  // ifdef BOOST_HAS_TR1_HASH
+namespace IV_TR1_HASH_NAMESPACE_START {
+
 // template specialization for UString in std::tr1::unordered_map
 // allowed in section 17.4.3.1
 template<>
@@ -32,10 +28,7 @@ struct hash<iv::core::UString>
     return iv::core::StringToHash(x);
   }
 };
-#ifdef BOOST_HAS_TR1_HASH
-} }  // namespace std::tr1
-#else
-}  // namespace boost
-#endif  // ifdef BOOST_HAS_TR1_HASH
+
+} IV_TR1_HASH_NAMESPACE_END
 
 #endif  // _IV_USTRING_H_

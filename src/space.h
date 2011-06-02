@@ -157,12 +157,8 @@ struct SpaceUString {
 
 } }  // namespace iv::core
 
-#ifdef BOOST_HAS_TR1_HASH
-namespace std {
-namespace tr1 {
-#else
-namespace boost {
-#endif  // ifdef BOOST_HAS_TR1_HASH
+namespace IV_TR1_HASH_NAMESPACE_START {
+
 // template specialization for SpaceUString in std::tr1::unordered_map
 // allowed in section 17.4.3.1
 template<typename Factory>
@@ -183,10 +179,7 @@ struct hash<std::basic_string<iv::uc16,
     return iv::core::StringToHash(x);
   }
 };
-#ifdef BOOST_HAS_TR1_HASH
-} }  // namespace std::tr1
-#else
-}  // namespace boost
-#endif  // ifdef BOOST_HAS_TR1_HASH
+
+} IV_TR1_HASH_NAMESPACE_END
 
 #endif  // _IV_SPACE_H_

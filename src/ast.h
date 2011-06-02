@@ -1356,12 +1356,8 @@ class ConstructorCall : public ConstructorCallBase<Factory> {
 
 } } }  // namespace iv::core::ast
 
-#ifdef BOOST_HAS_TR1_HASH
-namespace std {
-namespace tr1 {
-#else
-namespace boost {
-#endif  // ifdef BOOST_HAS_TR1_HASH
+namespace IV_TR1_HASH_NAMESPACE_START {
+
 // template specialization
 // for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
 // allowed in section 17.4.3.1
@@ -1376,11 +1372,8 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
         typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
   }
 };
-#ifdef BOOST_HAS_TR1_HASH
-} }  // namespace std::tr1
-#else
-}  // namespace boost
-#endif  // ifdef BOOST_HAS_TR1_HASH
+
+} IV_TR1_HASH_NAMESPACE_END
 
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE
