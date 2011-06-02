@@ -1,8 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_DISASSEMBLER_H_
 #define _IV_LV5_RAILGUN_DISASSEMBLER_H_
 #include <vector>
-#include <tr1/array>
-#include <tr1/cstdio>
+#include "detail/tr1/array.h"
 #include "noncopyable.h"
 #include "stringpiece.h"
 #include "lv5/railgun/fwd.h"

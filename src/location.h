@@ -1,7 +1,7 @@
 #ifndef _IV_LOCATION_H_
 #define _IV_LOCATION_H_
 #include <cstddef>
-#include <tr1/type_traits>
+#include "detail/tr1/type_traits.h"
 #include "static_assert.h"
 namespace iv {
 namespace core {

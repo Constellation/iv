@@ -2,7 +2,7 @@
 #define _IV_USTRING_H_
 #include <string>
 #include <functional>
-#include <tr1/functional>
+#include "detail/tr1/functional.h"
 #include "uchar.h"
 #include "stringpiece.h"
 #include "conversions.h"

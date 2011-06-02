@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RAILGUN_OP_H_
 #define _IV_LV5_RAILGUN_OP_H_
 #include <cassert>
-#include <tr1/cstdint>
-#include <tr1/array>
+#include "detail/tr1/cstdint.h"
+#include "detail/tr1/array.h"
 #include "static_assert.h"
 namespace iv {
 namespace lv5 {

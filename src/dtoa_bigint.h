@@ -28,9 +28,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <tr1/cstdint>
-#include <tr1/array>
-#include <tr1/memory>
+#include "detail/tr1/cstdint.h"
+#include "detail/tr1/array.h"
+#include "detail/tr1/memory.h"
 #include "platform_math.h"
 #include "round.h"
 #include "thread.h"

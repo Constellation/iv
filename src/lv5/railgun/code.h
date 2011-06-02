@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
-#include <tr1/tuple>
+#include "detail/tr1/tuple.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
 #include "lv5/gc_template.h"

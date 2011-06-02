@@ -2,8 +2,8 @@
 #define _IV_LV5_SYMBOL_H_
 #include <cstddef>
 #include <utility>
-#include <tr1/type_traits>
 #include <gc/gc_allocator.h>
+#include "detail/tr1/type_traits.h"
 #include "static_assert.h"
 namespace iv {
 namespace lv5 {

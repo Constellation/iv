@@ -7,8 +7,8 @@
 #ifndef _IV_LV5_RAILGUN_ANALYZIER_H_
 #define _IV_LV5_RAILGUN_ANALYZIER_H_
 #include <utility>
-#include <tr1/unordered_map>
-#include <tr1/memory>
+#include "detail/tr1/unordered_map.h"
+#include "detail/tr1/memory.h"
 #include "ast.h"
 #include "ast_visitor.h"
 #include "lv5/specialized_ast.h"

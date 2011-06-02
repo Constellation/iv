@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <vector>
 #include <string>
-#include <tr1/memory>
-#include <tr1/cstdint>
-#include <tr1/tuple>
+#include "detail/tr1/memory.h"
+#include "detail/tr1/cstdint.h"
+#include "detail/tr1/tuple.h"
 #include "lv5/error_check.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsval.h"

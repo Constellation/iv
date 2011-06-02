@@ -4,7 +4,7 @@
 #include <vector>
 #include <limits>
 #include <utility>
-#include <tr1/tuple>
+#include "detail/tr1/tuple.h"
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "character.h"

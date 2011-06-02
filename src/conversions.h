@@ -4,8 +4,8 @@
 #include <cmath>
 #include <string>
 #include <limits>
-#include <tr1/array>
-#include <tr1/cstdint>
+#include "detail/tr1/array.h"
+#include "detail/tr1/cstdint.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "character.h"

@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
 #include <gc/gc_allocator.h>
+#include "detail/tr1/unordered_map.h"
+#include "detail/tr1/unordered_set.h"
 #include "uchar.h"
 
 namespace iv {

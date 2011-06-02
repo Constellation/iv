@@ -1,7 +1,7 @@
 #ifndef _IV_PLATFORM_MATH_H_
 #define _IV_PLATFORM_MATH_H_
 #include "platform.h"
-#if defined(COMPILER_MSVC)
+#if defined(IV_COMPILER_MSVC)
 namespace iv {
 namespace core {
 

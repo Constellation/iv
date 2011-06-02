@@ -46,7 +46,7 @@ supporting internal functions that are not used by other modules. */
 #include "pcre_internal.h"
 
 #include <string.h>
-#include <tr1/array>
+#include "array.h"
 #include "ASCIICType.h"
 
 /* Negative values for the firstchar and reqchar variables */

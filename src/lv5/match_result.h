@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_MATCH_RESULT_H_
 #define _IV_LV5_MATCH_RESULT_H_
-#include <tr1/tuple>
-#include <tr1/cstdint>
+#include "detail/tr1/tuple.h"
+#include "detail/tr1/cstdint.h"
 
 namespace iv {
 namespace lv5 {

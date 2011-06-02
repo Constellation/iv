@@ -2,7 +2,7 @@
 #define _IV_UTILS_H_
 #include <cstddef>
 #include <cassert>
-#include <tr1/cstdint>
+#include "detail/tr1/cstdint.h"
 
 #ifdef NDEBUG
 #undef DEBUG

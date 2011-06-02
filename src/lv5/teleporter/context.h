@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_TELEPORTER_CONTEXT_H_
 #define _IV_LV5_TELEPORTER_CONTEXT_H_
-#include <tr1/memory>
+#include "detail/tr1/memory.h"
 #include "lv5/context.h"
 #include "lv5/jserror.h"
 #include "lv5/jsfunction.h"

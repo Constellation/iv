@@ -1,9 +1,8 @@
 #ifndef _IV_LV5_RUNTIME_NUMBER_H_
 #define _IV_LV5_RUNTIME_NUMBER_H_
 #include <cstdlib>
-#include <tr1/array>
-#include <tr1/cstdio>
-#include <tr1/cstdint>
+#include "detail/tr1/array.h"
+#include "detail/tr1/cstdint.h"
 #include "conversions.h"
 #include "platform_math.h"
 #include "lv5/error_check.h"

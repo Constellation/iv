@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_DATE_PARSER_H_
 #define _IV_LV5_DATE_PARSER_H_
-#include <tr1/array>
 #include <algorithm>
 #include <limits>
+#include "detail/tr1/array.h"
 #include "noncopyable.h"
 #include "canonicalized_nan.h"
 #include "stringpiece.h"

@@ -1,9 +1,9 @@
 #ifndef _IV_AST_H_
 #define _IV_AST_H_
 #include <vector>
-#include <tr1/unordered_map>
-#include <tr1/tuple>
-#include <tr1/type_traits>
+#include "detail/tr1/unordered_map.h"
+#include "detail/tr1/tuple.h"
+#include "detail/tr1/type_traits.h"
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"

@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <ostream>  // NOLINT
 #include <sstream>
-#include <tr1/tuple>
+#include "detail/tr1/tuple.h"
 #include "uchar.h"
 #include "ast.h"
 #include "ast_visitor.h"

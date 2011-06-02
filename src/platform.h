@@ -29,12 +29,17 @@
 #endif
 
 // compiler
-#ifdef __GNUC__
-#ifdef __GNU_PATCHLEVEL__
-#define __GNUC_VERSION__ (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNU_PATCHLEVEL__)
+#if defined(__GNUC__)
+#if defined(__GNU_PATCHLEVEL__)
+#define IV_COMPILER_GCC (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNU_PATCHLEVEL__)
 #else
-#define __GNUC_VERSION__ (__GNUC__ * 10000 + __GNUC_MINOR__ * 100)
+#define IV_COMPILER_GCC (__GNUC__ * 10000 + __GNUC_MINOR__ * 100)
 #endif
-#endif
+#elif defined(_MSC_VER)
+#define IV_COMPILER_MSVC _MSC_VER
+#define IV_COMPILER_MSVC_10 (_MSC_VER >= 1600)
+#elif defined(__clang__)
+#define IV_COMPILER_CLANG __clang__
+#endif  // defined(__GNUC__)
 
 #endif  // _IV_PLATFORM_H_

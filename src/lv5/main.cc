@@ -5,8 +5,8 @@
 #include <vector>
 #include <algorithm>
 #include <algorithm>
-#include <tr1/array>
 #include <gc/gc.h>
+#include "detail/tr1/array.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "about.h"

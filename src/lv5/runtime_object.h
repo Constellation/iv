@@ -5,7 +5,7 @@
 #include <utility>
 #include <string>
 #include <algorithm>
-#include <tr1/array>
+#include "detail/tr1/array.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"

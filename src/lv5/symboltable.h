@@ -2,7 +2,7 @@
 #define _IV_LV5_SYMBOLTABLE_H_
 #include <string>
 #include <vector>
-#include <tr1/unordered_map>
+#include "detail/tr1/unordered_map.h"
 #include "ustring.h"
 #include "conversions.h"
 #include "thread.h"

@@ -5,7 +5,6 @@
 #include <vector>
 #include <set>
 #include <algorithm>
-#include <tr1/array>
 #include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/gc_template.h"
