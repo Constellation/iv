@@ -1,7 +1,6 @@
 #ifndef _IV_USTRING_H_
 #define _IV_USTRING_H_
 #include <string>
-#include <functional>
 #include "detail/tr1/functional.h"
 #include "uchar.h"
 #include "stringpiece.h"
@@ -17,18 +16,26 @@ inline UString ToUString(StringPiece str) {
 }
 
 } }  // namespace iv::core
+
+#ifdef BOOST_HAS_TR1_HASH
 namespace std {
 namespace tr1 {
-
+#else
+namespace boost {
+#endif  // ifdef BOOST_HAS_TR1_HASH
 // template specialization for UString in std::tr1::unordered_map
 // allowed in section 17.4.3.1
 template<>
 struct hash<iv::core::UString>
-  : public unary_function<iv::core::UString, std::size_t> {
+  : public std::unary_function<iv::core::UString, std::size_t> {
   result_type operator()(const argument_type& x) const {
     return iv::core::StringToHash(x);
   }
 };
-
+#ifdef BOOST_HAS_TR1_HASH
 } }  // namespace std::tr1
+#else
+}  // namespace boost
+#endif  // ifdef BOOST_HAS_TR1_HASH
+
 #endif  // _IV_USTRING_H_

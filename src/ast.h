@@ -1,9 +1,11 @@
 #ifndef _IV_AST_H_
 #define _IV_AST_H_
 #include <vector>
+#include <functional>
 #include "detail/tr1/unordered_map.h"
 #include "detail/tr1/tuple.h"
 #include "detail/tr1/type_traits.h"
+#include "detail/tr1/functional.h"
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
@@ -1353,15 +1355,20 @@ class ConstructorCall : public ConstructorCallBase<Factory> {
 };
 
 } } }  // namespace iv::core::ast
+
+#ifdef BOOST_HAS_TR1_HASH
 namespace std {
 namespace tr1 {
+#else
+namespace boost {
+#endif  // ifdef BOOST_HAS_TR1_HASH
 // template specialization
 // for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
 // allowed in section 17.4.3.1
-template<class Factory>
+template<typename Factory>
 struct hash<iv::core::ast::IdentifierKey<Factory> >
-  : public unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
-  typedef unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
+  : public std::unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
+  typedef std::unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
   typedef typename super_type::argument_type argument_type;
   typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
@@ -1369,7 +1376,11 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
         typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
   }
 };
+#ifdef BOOST_HAS_TR1_HASH
 } }  // namespace std::tr1
+#else
+}  // namespace boost
+#endif  // ifdef BOOST_HAS_TR1_HASH
 
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE

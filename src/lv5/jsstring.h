@@ -4,6 +4,7 @@
 #include <iterator>
 #include <cassert>
 #include <vector>
+#include <functional>
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
 #include "unicode.h"
@@ -250,18 +251,27 @@ class StringBuilder : protected std::vector<uc16> {
 
 } }  // namespace iv::lv5
 
+#ifdef BOOST_HAS_TR1_HASH
 namespace std {
 namespace tr1 {
+#else
+namespace boost {
+#endif  // ifdef BOOST_HAS_TR1_HASH
 
 // template specialization for JSString in std::tr1::unordered_map
 // allowed in section 17.4.3.1
 template<>
 struct hash<iv::lv5::JSString>
-  : public unary_function<iv::lv5::JSString, std::size_t> {
+  : public std::unary_function<iv::lv5::JSString, std::size_t> {
   result_type operator()(const argument_type& x) const {
     return x.hash_value();
   }
 };
 
+#ifdef BOOST_HAS_TR1_HASH
 } }  // namespace std::tr1
+#else
+}  // namespace boost
+#endif  // ifdef BOOST_HAS_TR1_HASH
+
 #endif  // _IV_LV5_JSSTRING_H_
