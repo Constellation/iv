@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <limits>
+#include "detail/tr1/array.h"
+#include "static_assert.h"
 #include "uchar.h"
 #include "utils.h"
 
@@ -42,11 +44,15 @@ class Pool {
     limit_ = start + Pool::kPoolSize + 1;
     next_ = next;
   }
-  Pool* Next() const { return next_; }
+
+  Pool* Next() const {
+    return next_;
+  }
+
   inline void* New(uintptr_t size) {
     if ((position_ + size) < limit_) {
       // in this pool
-      uintptr_t result = position_;
+      const uintptr_t result = position_;
       position_ += size;
       return reinterpret_cast<void*>(result);
     }
@@ -69,12 +75,11 @@ class Arena {
   Arena()
     : pools_(),
       result_(),
-      now_(&pools_[0]),
+      now_(pools_.data()),
       start_(now_),
       next_(NULL) {
-    uintptr_t address = reinterpret_cast<uintptr_t>(result_);
-
-    uintptr_t pool_address = AlignOffset(address, Pool::kPoolSize);
+    const uintptr_t address = reinterpret_cast<uintptr_t>(result_.data());
+    const uintptr_t pool_address = AlignOffset(address, Pool::kPoolSize);
     unsigned int c = 0;
     for (; c < kPoolNum-1; ++c) {
       pools_[c].Initialize(pool_address+c*Pool::kPoolSize, &pools_[c+1]);
@@ -84,7 +89,7 @@ class Arena {
   }
 
   inline void* New(std::size_t raw_size) {
-    uintptr_t size = AlignOffset(raw_size, kAlignment);
+    const uintptr_t size = AlignOffset(raw_size, kAlignment);
     void* result = now_->New(size);
     if (result == NULL) {
       now_ = now_->Next();
@@ -100,11 +105,18 @@ class Arena {
     }
     return result;
   }
-  inline void SetNext(Arena* next) { next_ = next; }
-  inline Arena* Next() const { return next_; }
+
+  inline void SetNext(Arena* next) {
+    next_ = next;
+  }
+
+  inline Arena* Next() const {
+    return next_;
+  }
+
  private:
-  Pool pools_[kPoolNum];
-  char result_[kArenaSize];
+  std::tr1::array<Pool, kPoolNum> pools_;
+  std::tr1::array<char, kArenaSize> result_;
   Pool* now_;
   const Pool* start_;
   Arena* next_;
@@ -113,6 +125,7 @@ class Arena {
 template<std::size_t N>
 class Space {
  public:
+  IV_STATIC_ASSERT(N > 0);
   Space()
     : arena_(&init_arenas_[0]),
       start_malloced_(NULL),
@@ -121,6 +134,7 @@ class Space {
       init_arenas_[c].SetNext(&init_arenas_[c+1]);
     }
   }
+
   ~Space() {
     if (start_malloced_) {
       Arena *now = start_malloced_, *next = start_malloced_;
@@ -132,6 +146,7 @@ class Space {
     }
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
   }
+
   inline void* New(std::size_t size) {
     if ((size - 1) < kThreshold) {
       // small memory allocator
@@ -161,7 +176,7 @@ class Space {
   }
 
   inline void Clear() {
-    arena_ = init_arenas_;
+    arena_ = init_arenas_.data();
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
     malloced_.clear();
   }
@@ -186,13 +201,15 @@ class Space {
     arena_ = arena;
     return arena;
   }
+
   inline const std::vector<void*>& malloced() const {
     return malloced_;
   }
-  Arena init_arenas_[kInitArenas];
+
+  std::tr1::array<Arena, kInitArenas> init_arenas_;
   Arena* arena_;
   Arena* start_malloced_;
-  std::vector<void*>malloced_;
+  std::vector<void*> malloced_;
 };
 
 // surpress compiler warning
