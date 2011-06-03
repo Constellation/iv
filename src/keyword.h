@@ -12,7 +12,7 @@ class IgnoreReservedWordsAndIdentifyGetterOrSetter { };
 
 namespace detail {
 template<typename LexType>
-class Keyword { };
+class Keyword;
 
 // detect which Identifier is Keyword, FutureReservedWord or not
 // Keyword and FutureReservedWord are defined in ECMA-262 5th.
