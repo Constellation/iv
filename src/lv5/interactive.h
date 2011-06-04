@@ -97,7 +97,7 @@ class Interactive {
       if (parser.RecoverableError()) {
         *recover = true;
       } else {
-        std::cerr << parser.error() << std::endl;
+        std::fprintf(stderr, "%s\n", parser.error().c_str());
       }
       delete factory;
       return NULL;

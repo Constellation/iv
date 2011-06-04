@@ -58,7 +58,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
   iv::lv5::railgun::JSScript* script =
       iv::lv5::railgun::JSGlobalScript::New(ctx, &src);
   if (!global) {
-    std::cerr << parser.error() << std::endl;
+    std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
   }
   return iv::lv5::railgun::Compile(ctx, *global, script);
@@ -100,7 +100,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
-    std::cerr << parser.error() << std::endl;
+    std::fprintf(stderr, "%s\n", parser.error().c_str());
     return EXIT_FAILURE;
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
@@ -115,7 +115,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
                      iv::lv5::JSEmpty, NULL);
     const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
     if (!*ctx.error()) {
-      std::cerr << *str << std::endl;
+      iv::core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
       return EXIT_FAILURE;
     }
   }
@@ -130,7 +130,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
-    std::cerr << parser.error() << std::endl;
+    std::fprintf(stderr, "%s\n", parser.error().c_str());
     return EXIT_FAILURE;
   }
   iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
@@ -182,7 +182,8 @@ int main(int argc, char **argv) {
 
   const bool cmd_parse_success = cmd.Parse(argc, argv);
   if (!cmd_parse_success) {
-    std::cerr << cmd.error() << std::endl << cmd.usage();
+    std::fprintf(stderr, "%s\n%s",
+                 cmd.error().c_str(), cmd.usage().c_str());
     return EXIT_FAILURE;
   }
 
