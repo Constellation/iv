@@ -91,10 +91,10 @@ class BlockBase<iv::lv5::AstFactory>
 
   virtual bool IsEffectiveStatement() const {
     return std::find_if(
-        static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().begin(),
-        static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().end(),
+        static_cast<const iv::core::ast::Block<iv::lv5::AstFactory>*>(this)->body().begin(),
+        static_cast<const iv::core::ast::Block<iv::lv5::AstFactory>*>(this)->body().end(),
         FindEffectiveStatement()
-        ) !=  static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().end();
+        ) !=  static_cast<const iv::core::ast::Block<iv::lv5::AstFactory>*>(this)->body().end();
   }
 };
 

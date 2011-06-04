@@ -135,7 +135,5 @@ struct Frame {
 
 #undef IV_ROUNDUP
 
-IV_STATIC_ASSERT(AlignOf(Frame) <= AlignOf(JSVal));
-
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FRAME_H_
