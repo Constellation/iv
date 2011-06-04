@@ -162,6 +162,10 @@ int main(int argc, char **argv) {
   cmd.Add("warning",
           "",
           'W', "set warning level 0 - 2", false, 0, iv::cmdline::range(0, 2));
+  cmd.Add<std::string>(
+      "execute",
+      "execute",
+      'e', "execute command", false);
   cmd.Add("ast",
           "ast",
           0, "print ast");
@@ -198,7 +202,7 @@ int main(int argc, char **argv) {
   }
 
   const std::vector<std::string>& rest = cmd.rest();
-  if (!rest.empty() || cmd.Exist("file")) {
+  if (!rest.empty() || cmd.Exist("file") || cmd.Exist("execute")) {
     std::vector<char> res;
     std::string filename;
     if (cmd.Exist("file")) {
@@ -210,6 +214,10 @@ int main(int argc, char **argv) {
           return EXIT_FAILURE;
         }
       }
+    } else if (cmd.Exist("execute")) {
+      const std::string& com = cmd.Get<std::string>("execute");
+      filename = "<command>";
+      res.insert(res.end(), com.begin(), com.end());
     } else {
       filename = rest.front();
       if (!ReadFile(filename, &res)) {
