@@ -34,7 +34,7 @@ class JSRegExp : public JSObject {
 
   explicit JSRegExp(Context* ctx)
     : impl_(new JSRegExpImpl()) {
-    InitializeProperty(ctx, JSString::NewEmptyString(ctx));
+    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }
 
   inline bool IsValid() const {
@@ -328,7 +328,8 @@ class JSRegExp : public JSObject {
   void InitializeProperty(Context* ctx, JSString* src) {
     bind::Object(ctx, this)
         .def(context::Intern(ctx, "source"),
-             src,
+             src->empty() ?
+               JSString::NewAsciiString(ctx, "(?:)") : src,
              bind::NONE)
         .def(context::Intern(ctx, "global"),
              JSVal::Bool(impl_->global()),
