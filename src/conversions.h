@@ -4,11 +4,13 @@
 #include <cmath>
 #include <string>
 #include <limits>
+#include <vector>
 #include "detail/tr1/array.h"
 #include "detail/tr1/cstdint.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "character.h"
+#include "conversions_digit.h"
 #include "ustringpiece.h"
 #include "none.h"
 namespace iv {
@@ -30,6 +32,9 @@ const std::string Conversions<T>::kInfinity = "Infinity";
 static const double kInf = std::numeric_limits<double>::infinity();
 static const double kDoubleToInt32_Two32 = 4294967296.0;
 static const double kDoubleToInt32_Two31 = 2147483648.0;
+static const Trans64 kDoubleIntegralPrecisionLimitTrans = {
+  static_cast<uint64_t>(1) << 53
+};
 
 template<typename T>
 const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -37,6 +42,9 @@ const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
 }  // namespace iv::core::detail
 
 typedef detail::Conversions<None> Conversions;
+
+static const double kDoubleIntegralPrecisionLimit
+  = detail::kDoubleIntegralPrecisionLimitTrans.double_;
 
 template<typename Iter>
 inline double StringToDouble(Iter it, Iter last, bool parse_float) {
@@ -261,39 +269,6 @@ inline double StringToDouble(const StringPiece& str, bool parse_float) {
 
 inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
-}
-
-inline int OctalValue(const int c) {
-  if ('0' <= c && c <= '8') {
-    return c - '0';
-  }
-  return -1;
-}
-
-inline int HexValue(const int c) {
-  if ('0' <= c && c <= '9') {
-    return c - '0';
-  }
-  if ('a' <= c && c <= 'f') {
-    return c - 'a' + 10;
-  }
-  if ('A' <= c && c <= 'F') {
-    return c - 'A' + 10;
-  }
-  return -1;
-}
-
-inline int Radix36Value(const int c) {
-  if ('0' <= c && c <= '9') {
-    return c - '0';
-  }
-  if ('a' <= c && c <= 'z') {
-    return c - 'a' + 10;
-  }
-  if ('A' <= c && c <= 'Z') {
-    return c - 'A' + 10;
-  }
-  return -1;
 }
 
 template<typename Iter>
