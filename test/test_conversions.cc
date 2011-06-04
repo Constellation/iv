@@ -131,3 +131,22 @@ TEST(ConversionsCase, ConvertToUInt32) {
   ASSERT_EQ(1000, target);
   ASSERT_FALSE(ConvertToUInt32("0100", &target));
 }
+
+TEST(ConversionsCase, BigRadix) {
+  {
+    const std::string str("0000001000000001001000110100010101100111100010011010101111011");
+    EXPECT_EQ(18054430506169724.0, iv::core::StringToIntegerWithRadix(str, 2, false));
+  }
+  {
+    const std::string str("123456789012345678");
+    EXPECT_EQ(123456789012345680.0, iv::core::StringToIntegerWithRadix(str, 10, false));
+  }
+  {
+    const std::string str("0x1000000000000081");
+    EXPECT_EQ(1152921504606847200.0, iv::core::StringToIntegerWithRadix(str, 16, true));
+  }
+  {
+    const std::string str("0xFFFFFFFFFFFFFB000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010");
+    EXPECT_EQ(std::numeric_limits<double>::infinity(), iv::core::StringToIntegerWithRadix(str, 16, true));
+  }
+}

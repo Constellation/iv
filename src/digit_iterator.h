@@ -19,6 +19,7 @@ class DigitIterator : public std::iterator <std::forward_iterator_tag, int> {
       mask_(0),
       digit_(0) {
     assert(radix > 0);
+    assert((radix & (radix - 1)) == 0);
     Next();
   }
 

@@ -11,6 +11,7 @@
 #include "canonicalized_nan.h"
 #include "character.h"
 #include "conversions_digit.h"
+#include "digit_iterator.h"
 #include "ustringpiece.h"
 #include "none.h"
 namespace iv {
@@ -32,9 +33,6 @@ const std::string Conversions<T>::kInfinity = "Infinity";
 static const double kInf = std::numeric_limits<double>::infinity();
 static const double kDoubleToInt32_Two32 = 4294967296.0;
 static const double kDoubleToInt32_Two31 = 2147483648.0;
-static const Trans64 kDoubleIntegralPrecisionLimitTrans = {
-  static_cast<uint64_t>(1) << 53
-};
 
 template<typename T>
 const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -43,8 +41,8 @@ const char* Conversions<T>::kHex = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 typedef detail::Conversions<None> Conversions;
 
-static const double kDoubleIntegralPrecisionLimit
-  = detail::kDoubleIntegralPrecisionLimitTrans.double_;
+static const double kDoubleIntegralPrecisionLimit =
+  static_cast<uint64_t>(1) << 53;
 
 template<typename Iter>
 inline double StringToDouble(Iter it, Iter last, bool parse_float) {
@@ -272,6 +270,25 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
 }
 
 template<typename Iter>
+inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
+  double number = 0.0;
+  double multiplier = 1.0;
+  for (--it, --last; last != it; --last) {
+    if (multiplier == detail::kInf) {
+      if (*last != '0') {
+        number = detail::kInf;
+        break;
+      }
+    } else {
+      const int digit = Radix36Value(*last);
+      number += digit * multiplier;
+    }
+    multiplier *= radix;
+  }
+  return number;
+}
+
+template<typename Iter>
 inline double StringToIntegerWithRadix(Iter it, Iter last,
                                        int radix, bool strip_prefix) {
   // remove leading white space
@@ -315,7 +332,6 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
     return kNaN;
   }
 
-  // TODO(Constellation) precision version
   double result = 0.0;
   const Iter start = it;
   for (; it != last; ++it) {
@@ -326,6 +342,22 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
       return (start == it) ? kNaN : sign * result;
     }
   }
+
+  if (result < kDoubleIntegralPrecisionLimit) {
+    // result is precise.
+    return sign * result;
+  }
+
+  if (radix == 10) {
+    std::vector<char> buffer;
+    buffer.insert(buffer.end(), start, last);
+    buffer.push_back('\0');
+    return sign * std::atof(buffer.data());
+  } else if ((radix & (radix - 1)) == 0) {
+    // binary radix
+    return sign * ParseIntegerOverflow(start, last, radix);
+  }
+
   return sign * result;
 }
 
@@ -339,25 +371,6 @@ inline double StringToIntegerWithRadix(const UStringPiece& range,
                                        int radix, bool strip_prefix) {
   return StringToIntegerWithRadix(range.begin(), range.end(),
                                   radix, strip_prefix);
-}
-
-template<typename Iter>
-inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
-  double number = 0.0;
-  double multiplier = 1.0;
-  for (--it, --last; last != it; --last) {
-    if (multiplier == detail::kInf) {
-      if (*last != '0') {
-        number = detail::kInf;
-        break;
-      }
-    } else {
-      const int digit = Radix36Value(*last);
-      number += digit * multiplier;
-    }
-    multiplier *= radix;
-  }
-  return number;
 }
 
 inline std::size_t StringToHash(const UStringPiece& x) {
