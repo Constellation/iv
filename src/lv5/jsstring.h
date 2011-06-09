@@ -14,6 +14,7 @@
 #include "ustringpiece.h"
 #include "ustring.h"
 #include "lv5/gc_template.h"
+#include "lv5/heap_object.h"
 
 namespace iv {
 namespace lv5 {
@@ -21,7 +22,7 @@ namespace lv5 {
 class Context;
 class StringBuilder;
 
-class JSString : public gc {
+class JSString : public HeapObject {
  public:
   friend class StringBuilder;
   typedef JSString this_type;

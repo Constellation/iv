@@ -9,6 +9,7 @@
 #include "lv5/property.h"
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
+#include "lv5/heap_object.h"
 
 namespace iv {
 namespace lv5 {
@@ -16,7 +17,7 @@ namespace lv5 {
 class JSDeclEnv;
 class JSObjectEnv;
 
-class JSEnv : public gc {
+class JSEnv : public HeapObject {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;

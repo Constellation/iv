@@ -8,7 +8,7 @@ namespace iv {
 namespace core {
 
 template<typename Iterator>
-class DigitIterator : public std::iterator <std::forward_iterator_tag, int> {
+class DigitIterator : public std::iterator<std::forward_iterator_tag, int> {
  public:
   typedef DigitIterator<Iterator> this_type;
 

@@ -7,6 +7,7 @@
 #include "lv5/property.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
+#include "lv5/heap_object.h"
 
 namespace iv {
 namespace lv5 {
@@ -18,7 +19,7 @@ class Context;
 class Error;
 class JSString;
 
-class JSObject : public gc {
+class JSObject : public HeapObject {
  public:
   enum EnumerationMode {
     kExcludeNotEnumerable,

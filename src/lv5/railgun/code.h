@@ -1,13 +1,12 @@
 #ifndef _IV_LV5_RAILGUN_CODE_H_
 #define _IV_LV5_RAILGUN_CODE_H_
 #include <algorithm>
-#include <gc/gc.h>
-#include <gc/gc_cpp.h>
 #include "detail/tr1/tuple.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
 #include "lv5/gc_template.h"
 #include "lv5/specialized_ast.h"
+#include "lv5/heap_object.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
 namespace iv {
@@ -22,7 +21,7 @@ struct Handler {
   };
 };
 
-class Code : public gc {
+class Code : public HeapObject {
  public:
   friend class Compiler;
   typedef GCVector<Symbol>::type Names;

@@ -3,10 +3,11 @@
 #include <gc/gc_cpp.h>
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
+#include "lv5/heap_object.h"
 namespace iv {
 namespace lv5 {
 
-class JSReference : public gc {
+class JSReference : public HeapObject {
  public:
   JSReference(JSVal base, Symbol name, bool is_strict)
     : base_(base),
