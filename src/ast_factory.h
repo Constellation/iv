@@ -376,5 +376,8 @@ class BasicAstFactory {
   FalseLiteral* false_instance_;
 };
 
+template<typename Derived>
+class AstFactory : public core::Space<1>, public BasicAstFactory<Derived> { };
+
 } } }  // namespace iv::core::ast
 #endif  // _IV_AST_FACTORY_H_
