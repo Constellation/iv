@@ -190,7 +190,7 @@ struct OP {
 };
 
 #define IV_LV5_RAILGUN_DEFINE_STRINGS(V) #V,
-static const std::tr1::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {
+static const std::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {
   IV_LV5_RAILGUN_OP_LIST(IV_LV5_RAILGUN_DEFINE_STRINGS)
   "NUM_OF_OP"
 } };

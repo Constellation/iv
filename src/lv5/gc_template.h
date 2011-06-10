@@ -27,9 +27,9 @@ struct Map {
 
 template<typename T1, typename T2>
 struct HashMap {
-  typedef std::tr1::unordered_map<T1,
+  typedef std::unordered_map<T1,
                                   T2,
-                                  std::tr1::hash<T1>,
+                                  std::hash<T1>,
                                   std::equal_to<T1>,
                                   traceable_allocator<
                                     std::pair<const T1, T2> > > type;
@@ -37,8 +37,8 @@ struct HashMap {
 
 template<typename T>
 struct HashSet {
-  typedef std::tr1::unordered_set<T,
-                                  std::tr1::hash<T>,
+  typedef std::unordered_set<T,
+                                  std::hash<T>,
                                   std::equal_to<T>,
                                   traceable_allocator<T> > type;
 };
@@ -60,9 +60,9 @@ struct GCMap {
 
 template<typename T1, typename T2>
 struct GCHashMap {
-  typedef std::tr1::unordered_map<T1,
+  typedef std::unordered_map<T1,
                                   T2,
-                                  std::tr1::hash<T1>,
+                                  std::hash<T1>,
                                   std::equal_to<T1>,
                                   gc_allocator<
                                     std::pair<const T1, T2> > > type;
@@ -70,8 +70,8 @@ struct GCHashMap {
 
 template<typename T>
 struct GCHashSet {
-  typedef std::tr1::unordered_set<T,
-                                  std::tr1::hash<T>,
+  typedef std::unordered_set<T,
+                                  std::hash<T>,
                                   std::equal_to<T>,
                                   gc_allocator<T> > type;
 };

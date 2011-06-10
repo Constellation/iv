@@ -114,7 +114,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
-    std::tr1::array<char, 50> buf;
+    std::array<char, 50> buf;
     const int num = snprintf(
         buf.data(), buf.size(),
         "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -240,7 +240,7 @@ inline JSVal DateToString(const Arguments& args, Error* error) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::tr1::array<char, 50> buf;
+      std::array<char, 50> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -275,7 +275,7 @@ inline JSVal DateToDateString(const Arguments& args, Error* error) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
-      std::tr1::array<char, 20> buf;
+      std::array<char, 20> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
@@ -316,7 +316,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* error) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::tr1::array<char, 40> buf;
+      std::array<char, 40> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -360,7 +360,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* error) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::tr1::array<char, 50> buf;
+      std::array<char, 50> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -395,7 +395,7 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* error) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
-      std::tr1::array<char, 20> buf;
+      std::array<char, 20> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d",
@@ -436,7 +436,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* error) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::tr1::array<char, 40> buf;
+      std::array<char, 40> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -1365,7 +1365,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* error) {
     if (core::IsNaN(time)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      std::tr1::array<char, 32> buf;
+      std::array<char, 32> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
@@ -1395,7 +1395,7 @@ inline JSVal DateToISOString(const Arguments& args, Error* error) {
     if (core::IsNaN(time)) {
       return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      std::tr1::array<char, 32> buf;
+      std::array<char, 32> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",

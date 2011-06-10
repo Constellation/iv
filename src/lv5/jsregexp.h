@@ -312,16 +312,16 @@ class JSRegExp : public JSObject {
                                       index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||
         rc == jscre::JSRegExpErrorHitLimit) {
-      return std::tr1::make_tuple(0, 0, false);
+      return std::make_tuple(0, 0, false);
     }
     if (rc < 0) {
-      return std::tr1::make_tuple(0, 0, false);
+      return std::make_tuple(0, 0, false);
     }
     for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
       result->push_back(
           std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
     }
-    return std::tr1::make_tuple(offset_vector[0], offset_vector[1], true);
+    return std::make_tuple(offset_vector[0], offset_vector[1], true);
   }
 
  private:

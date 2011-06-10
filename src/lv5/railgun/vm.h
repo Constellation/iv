@@ -974,11 +974,11 @@ class VM {
       bool handler_found = false;
       for (ExceptionTable::const_iterator it = table.begin(),
            last = table.end(); it != last; ++it) {
-        const int handler = std::tr1::get<0>(*it);
-        const uint16_t begin = std::tr1::get<1>(*it);
-        const uint16_t end = std::tr1::get<2>(*it);
-        const uint16_t stack_base_level = std::tr1::get<3>(*it);
-        const uint16_t env_level = std::tr1::get<4>(*it);
+        const int handler = std::get<0>(*it);
+        const uint16_t begin = std::get<1>(*it);
+        const uint16_t end = std::get<2>(*it);
+        const uint16_t stack_base_level = std::get<3>(*it);
+        const uint16_t env_level = std::get<4>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
         if (begin < offset && offset <= end) {
           const JSVal error = JSError::Detail(ctx_, &e);
@@ -1388,12 +1388,12 @@ class VM {
   double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, s)) {
       const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      std::tr1::tuple<double, double> results;
-      std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
-      std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
       current->SetMutableBinding(ctx_, s,
-                                 std::tr1::get<1>(results), strict, CHECK);
-      return std::tr1::get<Returned>(results);
+                                 std::get<1>(results), strict, CHECK);
+      return std::get<Returned>(results);
     }
     RaiseReferenceError(s, e);
     return 0.0;
@@ -1406,22 +1406,22 @@ class VM {
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str->value());
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
-    std::tr1::tuple<double, double> results;
-    std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
-    std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
-    StorePropImpl(base, s, std::tr1::get<1>(results), strict, CHECK);
-    return std::tr1::get<Returned>(results);
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+    std::get<1>(results) = std::get<0>(results) + Target;
+    StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
+    return std::get<Returned>(results);
   }
 
   template<int Target, std::size_t Returned>
   double IncrementProp(JSVal* sp, const JSVal& base,
                        const Symbol& s, bool strict, Error* e) {
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
-    std::tr1::tuple<double, double> results;
-    std::tr1::get<0>(results) = w.ToNumber(ctx_, CHECK);
-    std::tr1::get<1>(results) = std::tr1::get<0>(results) + Target;
-    StorePropImpl(base, s, std::tr1::get<1>(results), strict, CHECK);
-    return std::tr1::get<Returned>(results);
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+    std::get<1>(results) = std::get<0>(results) + Target;
+    StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
+    return std::get<Returned>(results);
   }
 
 #undef CHECK

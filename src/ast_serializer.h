@@ -390,7 +390,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   }
 
   void Visit(const ObjectLiteral* literal) {
-    using std::tr1::get;
+    using std::get;
     Append("{\"type\":\"object\",\"value\":[");
     typename ObjectLiteral::Properties::const_iterator
         it = literal->properties().begin();

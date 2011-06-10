@@ -90,17 +90,17 @@ union U {
 
 #define dval(x) (x)->d
 
-static const std::tr1::array<double, 23> kTens = { {
+static const std::array<double, 23> kTens = { {
   1e0,   1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,
   1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
   1e20, 1e21, 1e22
 } };
 
-static const std::tr1::array<double, 5> kBigTens = { {
+static const std::array<double, 5> kBigTens = { {
   1e16, 1e32, 1e64, 1e128, 1e256
 } };
 
-static const std::tr1::array<double, 5> kTinyTens = { {
+static const std::array<double, 5> kTinyTens = { {
   1e-16, 1e-32, 1e-64, 1e-128,
   9007199254740992. * 9007199254740992.e-256  // = 2^106 * 1e-256
 } };
@@ -529,11 +529,11 @@ class BigInt : protected std::vector<uint32_t> {
     }
   }
 
-  typedef std::tr1::array<BigInt, 30> array_type;
+  typedef std::array<BigInt, 30> array_type;
 
   void Pow5Multi(int k) {
     typedef std::vector<BigInt> list_type;
-    static const std::tr1::array<int, 3> p05 = { { 5, 25, 125 } };
+    static const std::array<int, 3> p05 = { { 5, 25, 125 } };
     static list_type kList;
     if (const int i = k & 3) {
       MultiAdd(p05[i - 1], 0);
@@ -1150,7 +1150,7 @@ class DToA {
  public:
 
   ResultType Build(double x) {
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1162,7 +1162,7 @@ class DToA {
   }
 
   ResultType BuildStandard(double x) {
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1170,7 +1170,7 @@ class DToA {
   }
 
   ResultType BuildExponential(double x, int frac, int offset) {
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, true, false, false>(
@@ -1184,7 +1184,7 @@ class DToA {
   }
 
   ResultType BuildPrecision(double x, int frac, int offset) {
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, true, false, false>(
@@ -1198,7 +1198,7 @@ class DToA {
   }
 
   ResultType BuildStandardExponential(double x) {
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
     DoubleToASCII<true, false, false, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
@@ -1209,7 +1209,7 @@ class DToA {
     if (x >= 1e21 || x <= -1e21) {
       return Build(x);
     }
-    std::tr1::array<char, kDToABufferSize> buf;
+    std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
     DoubleToASCII<false, false, true, false>(
@@ -1307,7 +1307,7 @@ class StringDToA : public DToA<StringDToA, std::string> {
 class StringPieceDToA : public DToA<StringPieceDToA, void> {
  public:
   friend class DToA<StringPieceDToA, void>;
-  typedef std::tr1::array<char, kDToABufferSize> buffer_type;
+  typedef std::array<char, kDToABufferSize> buffer_type;
 
   StringPiece buffer() const {
     return StringPiece(buffer_.data(), size_);

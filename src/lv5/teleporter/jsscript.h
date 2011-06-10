@@ -43,7 +43,7 @@ class JSEvalScript : public JSScript {
   typedef JSEvalScript<Source> this_type;
   JSEvalScript(const FunctionLiteral* function,
                AstFactory* factory,
-               std::tr1::shared_ptr<Source> source)
+               std::shared_ptr<Source> source)
     : JSScript(function),
       factory_(factory),
       source_(source) {
@@ -58,7 +58,7 @@ class JSEvalScript : public JSScript {
     return kEval;
   }
 
-  inline std::tr1::shared_ptr<Source> source() const {
+  inline std::shared_ptr<Source> source() const {
     return source_;
   }
 
@@ -70,13 +70,13 @@ class JSEvalScript : public JSScript {
   static this_type* New(Context* ctx,
                         const FunctionLiteral* function,
                         AstFactory* factory,
-                        std::tr1::shared_ptr<Source> source) {
+                        std::shared_ptr<Source> source) {
     return new JSEvalScript<Source>(function, factory, source);
   }
 
  private:
   AstFactory* factory_;
-  std::tr1::shared_ptr<Source> source_;
+  std::shared_ptr<Source> source_;
 };
 
 class JSGlobalScript : public JSScript {

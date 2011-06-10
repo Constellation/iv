@@ -53,7 +53,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   std::size_t pos = 0;
   int significant_digits = 0;
   int insignificant_digits = 0;
-  std::tr1::array<char, Conversions::kMaxSignificantDigits+10> buffer;
+  std::array<char, Conversions::kMaxSignificantDigits+10> buffer;
 
   // empty string ""
   if (it == last) {
@@ -492,7 +492,7 @@ inline bool ConvertToUInt32(const StringPiece& str, uint32_t* value) {
 template<typename T>
 inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
   static const int kMaxBufSize = 1100;
-  std::tr1::array<
+  std::array<
       char,
       Conversions::kMaxDoubleToStringWithRadixBufferSize> buffer;
   const bool is_negative = v < 0.0;

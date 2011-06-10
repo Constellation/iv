@@ -42,16 +42,16 @@ inline bool operator>=(const Symbol& x, const Symbol& y) {
 }
 
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
-IV_STATIC_ASSERT(std::tr1::is_pod<Symbol>::value);
+IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
 #endif
 
 } }  // namespace iv::lv5
 
 GC_DECLARE_PTRFREE(iv::lv5::Symbol);
 
-namespace IV_TR1_HASH_NAMESPACE_START {
+namespace IV_HASH_NAMESPACE_START {
 
-// template specialization for Symbol in std::tr1::unordered_map
+// template specialization for Symbol in std::unordered_map
 template<>
 struct hash<iv::lv5::Symbol>
   : public std::unary_function<iv::lv5::Symbol, std::size_t> {
@@ -60,6 +60,6 @@ struct hash<iv::lv5::Symbol>
   }
 };
 
-} IV_TR1_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END
 
 #endif  // _IV_LV5_SYMBOL_H_

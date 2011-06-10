@@ -252,9 +252,9 @@ class StringBuilder : protected std::vector<uc16> {
 
 } }  // namespace iv::lv5
 
-namespace IV_TR1_HASH_NAMESPACE_START {
+namespace IV_HASH_NAMESPACE_START {
 
-// template specialization for JSString in std::tr1::unordered_map
+// template specialization for JSString in std::unordered_map
 // allowed in section 17.4.3.1
 template<>
 struct hash<iv::lv5::JSString>
@@ -264,6 +264,6 @@ struct hash<iv::lv5::JSString>
   }
 };
 
-} IV_TR1_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END
 
 #endif  // _IV_LV5_JSSTRING_H_

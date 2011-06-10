@@ -15,14 +15,14 @@ struct AstVisitorTraits {
 
 template<typename T>
 struct AstVisitorTraits<true, T> {
-  typedef typename std::tr1::add_pointer<
-      typename std::tr1::add_const<T>::type>::type type;
+  typedef typename std::add_pointer<
+      typename std::add_const<T>::type>::type type;
 };
 
 template<typename T>
 struct AstVisitorTraits<false, T> {
-  typedef typename std::tr1::add_pointer<
-      typename std::tr1::add_const<T>::type>::type type;
+  typedef typename std::add_pointer<
+      typename std::add_const<T>::type>::type type;
 };
 
 }  // namespace iv::core::ast::detail

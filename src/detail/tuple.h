@@ -5,7 +5,7 @@
 #if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
 #include <tuple>
 
-#if !defined(IV_COMPILER_MSVC_10)
+#if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)
 namespace std { using namespace tr1; }
 #endif
 

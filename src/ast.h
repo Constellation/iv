@@ -1125,9 +1125,9 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
     GET  = 2,
     SET  = 4
   };
-  typedef std::tr1::tuple<PropertyDescriptorType,
-                          Identifier<Factory>*,
-                          Expression<Factory>*> Property;
+  typedef std::tuple<PropertyDescriptorType,
+                     Identifier<Factory>*,
+                     Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
   explicit ObjectLiteral(Properties* properties)
     : properties_(properties) {
@@ -1136,14 +1136,14 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
   static inline void AddDataProperty(Properties* prop,
                                      Identifier<Factory>* key,
                                      Expression<Factory>* val) {
-    prop->push_back(std::tr1::make_tuple(DATA, key, val));
+    prop->push_back(std::make_tuple(DATA, key, val));
   }
 
   static inline void AddAccessor(Properties* prop,
                                  PropertyDescriptorType type,
                                  Identifier<Factory>* key,
                                  Expression<Factory>* val) {
-    prop->push_back(std::tr1::make_tuple(type, key, val));
+    prop->push_back(std::make_tuple(type, key, val));
   }
 
   inline const Properties& properties() const {
@@ -1356,10 +1356,10 @@ class ConstructorCall : public ConstructorCallBase<Factory> {
 
 } } }  // namespace iv::core::ast
 
-namespace IV_TR1_HASH_NAMESPACE_START {
+namespace IV_HASH_NAMESPACE_START {
 
 // template specialization
-// for iv::core::Parser::IdentifierWrapper in std::tr1::unordered_map
+// for iv::core::Parser::IdentifierWrapper in std::unordered_map
 // allowed in section 17.4.3.1
 template<typename Factory>
 struct hash<iv::core::ast::IdentifierKey<Factory> >
@@ -1373,7 +1373,7 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
   }
 };
 
-} IV_TR1_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END
 
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE

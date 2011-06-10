@@ -88,7 +88,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     }
   }
   // radix 10 or no radix
-  std::tr1::array<char, 80> buffer;
+  std::array<char, 80> buffer;
   const char* const str = core::DoubleToCString(num,
                                                 buffer.data(),
                                                 buffer.size());
@@ -112,7 +112,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
   } else {
     num = obj.number();
   }
-  std::tr1::array<char, 80> buffer;
+  std::array<char, 80> buffer;
   const char* const str = core::DoubleToCString(num,
                                                 buffer.data(),
                                                 buffer.size());
@@ -175,7 +175,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
   }
   if (!(std::fabs(x) < 1e+21)) {
     // included NaN and Infinity
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(x,
                                                   buffer.data(),
                                                   buffer.size());

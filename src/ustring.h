@@ -17,9 +17,9 @@ inline UString ToUString(StringPiece str) {
 
 } }  // namespace iv::core
 
-namespace IV_TR1_HASH_NAMESPACE_START {
+namespace IV_HASH_NAMESPACE_START {
 
-// template specialization for UString in std::tr1::unordered_map
+// template specialization for UString in std::unordered_map
 // allowed in section 17.4.3.1
 template<>
 struct hash<iv::core::UString>
@@ -29,6 +29,6 @@ struct hash<iv::core::UString>
   }
 };
 
-} IV_TR1_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END
 
 #endif  // _IV_USTRING_H_

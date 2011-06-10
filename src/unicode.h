@@ -52,7 +52,7 @@ static const uint32_t kUCS4Min = 0x00000000;
 static const uint32_t kUCS4Max = 0x7FFFFFFF;
 
 // \uFEFF Byte Order Mark UTF-8 representation
-static const std::tr1::array<uint8_t, 3> kUTF8BOM = { {
+static const std::array<uint8_t, 3> kUTF8BOM = { {
   0xEF, 0xBB, 0xBF
 } };
 

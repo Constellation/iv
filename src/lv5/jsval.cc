@@ -53,7 +53,7 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
   if (IsString()) {
     return string();
   } else if (IsNumber()) {
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(number(),
                                                   buffer.data(),
                                                   buffer.size());

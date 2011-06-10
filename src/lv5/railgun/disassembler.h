@@ -23,7 +23,7 @@ class DisAssembler : private core::Noncopyable<> {
     const Code::Codes& codes = code.codes();
     std::vector<char> line;
     int index = 0;
-    std::tr1::array<char, 30> buf;
+    std::array<char, 30> buf;
     for (Data::const_iterator it = data.begin(),
          last = data.end(); it != last; ++it, ++index) {
       const uint8_t opcode = *it;

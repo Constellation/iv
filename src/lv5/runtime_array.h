@@ -482,7 +482,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     int64_t l = 0, r = 0;
     const JSVal zero(0.0);
     static const int32_t kStackSize = 32;
-    std::tr1::array<int64_t, kStackSize> lstack, rstack;
+    std::array<int64_t, kStackSize> lstack, rstack;
     lstack[0] = 0;
     rstack[0] = len - 1;
     ScopedArguments a(ctx, 2, IV_LV5_ERROR(e));

@@ -14,7 +14,7 @@ class SymbolTable {
  public:
   typedef std::vector<core::UString> Strings;
   typedef std::vector<Symbol> Indexes;
-  typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
+  typedef std::unordered_map<std::size_t, Indexes> Table;
   SymbolTable()
     : sync_(),
       table_(),

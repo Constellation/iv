@@ -7,7 +7,7 @@ namespace iv {
 namespace lv5 {
 namespace regexp {
 
-typedef std::tr1::tuple<uint32_t, uint32_t, bool> MatchResult;
+typedef std::tuple<uint32_t, uint32_t, bool> MatchResult;
 typedef std::vector<std::pair<int, int> > PairVector;
 
 } } }  // namespace iv::lv5

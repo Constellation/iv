@@ -27,7 +27,7 @@ class Code : public HeapObject {
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<uint8_t>::type Data;
   typedef GCVector<Code*>::type Codes;
-  typedef std::tr1::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
+  typedef std::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
@@ -87,7 +87,7 @@ class Code : public HeapObject {
                        uint16_t stack_base_level,
                        uint16_t dynamic_env_level) {
     exception_table_.push_back(
-        std::tr1::make_tuple(type, begin, end, stack_base_level, dynamic_env_level));
+        std::make_tuple(type, begin, end, stack_base_level, dynamic_env_level));
   }
 
   bool strict() const {

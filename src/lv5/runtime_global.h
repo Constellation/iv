@@ -90,8 +90,8 @@ class Escape : core::Noncopyable<> {
 template<typename URITraits>
 JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
-  std::tr1::array<uint8_t, 4> uc8buf;
-  std::tr1::array<uint16_t, 3> hexbuf;
+  std::array<uint8_t, 4> uc8buf;
+  std::array<uint16_t, 3> hexbuf;
   StringBuilder builder;
   hexbuf[0] = '%';
   for (JSString::const_iterator it = str.begin(),
@@ -142,8 +142,8 @@ template<typename URITraits>
 JSVal Decode(Context* ctx, const JSString& str, Error* e) {
   StringBuilder builder;
   const uint32_t length = str.size();
-  std::tr1::array<uint16_t, 3> buf;
-  std::tr1::array<uint8_t, 4> octets;
+  std::array<uint16_t, 3> buf;
+  std::array<uint8_t, 4> octets;
   buf[0] = '%';
   for (uint32_t k = 0; k < length; ++k) {
     const uint16_t ch = str[k];
@@ -372,8 +372,8 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   const std::size_t len = str->size();
   static const char kHexDigits[17] = "0123456789ABCDEF";
-  std::tr1::array<uint16_t, 6> ubuf;
-  std::tr1::array<uint16_t, 3> hexbuf;
+  std::array<uint16_t, 6> ubuf;
+  std::array<uint16_t, 3> hexbuf;
   ubuf[0] = '%';
   ubuf[1] = 'u';
   hexbuf[0] = '%';

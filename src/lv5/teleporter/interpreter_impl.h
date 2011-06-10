@@ -1278,7 +1278,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
 
 
 void Interpreter::Visit(const ObjectLiteral* literal) {
-  using std::tr1::get;
+  using std::get;
   JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5

@@ -5,7 +5,7 @@
 #if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
 #include <functional>
 
-#if !defined(IV_COMPILER_MSVC_10)
+#if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)
 namespace std { using namespace tr1; }
 #endif
 
@@ -15,11 +15,11 @@ namespace std { using namespace tr1; }
 #endif
 
 #if defined(IV_COMPILER_MSVC_10) || defined(__GXX_EXPERIMENTAL_CXX0X__)
-#define IV_TR1_HASH_NAMESPACE_START std
-#define IV_TR1_HASH_NAMESPACE_END
+#define IV_HASH_NAMESPACE_START std
+#define IV_HASH_NAMESPACE_END
 #else
-#define IV_TR1_HASH_NAMESPACE_START std { namespace tr1
-#define IV_TR1_HASH_NAMESPACE_END }
+#define IV_HASH_NAMESPACE_START std { namespace tr1
+#define IV_HASH_NAMESPACE_END }
 #endif
 
 #endif  // _IV_DETAIL_FUNCTIONAL_H_

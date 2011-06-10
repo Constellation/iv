@@ -22,7 +22,7 @@ class Maybe {
 
   template<class U>
   Maybe(const Maybe<U>& rhs,
-        typename enable_if<std::tr1::is_convertible<U*, T*> >::type* = 0)
+        typename enable_if<std::is_convertible<U*, T*> >::type* = 0)
     : ptr_(rhs.get_address_maybe_null()) {
   }
 

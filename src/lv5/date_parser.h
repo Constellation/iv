@@ -40,7 +40,7 @@ struct Keyword {
   }
 };
 
-static const std::tr1::array<const Keyword, 27> kKeywords = { {
+static const std::array<const Keyword, 27> kKeywords = { {
   { "jan", Keyword::MONTH, 1  },
   { "feb", Keyword::MONTH, 2  },
   { "mar", Keyword::MONTH, 3  },
@@ -78,7 +78,7 @@ class KeywordChecker : private core::Noncopyable<> {
   template<typename char_type>
   class Finder {
    public:
-    typedef std::tr1::array<char_type, 4> buf_type;
+    typedef std::array<char_type, 4> buf_type;
     Finder(const buf_type& buf, std::size_t len)
       : buf_(buf), len_(len) { }
 
@@ -100,7 +100,7 @@ class KeywordChecker : private core::Noncopyable<> {
   static const Keyword& Lookup(Iter* it, Iter last) {
     // fill buffer 4 chars
     typedef typename Iter::value_type char_type;
-    std::tr1::array<char_type, 4> buf = { { 0 } };
+    std::array<char_type, 4> buf = { { 0 } };
     std::size_t i = 0;
     for (;
          (*it != last) &&
@@ -184,7 +184,7 @@ class DateParser : private core::Noncopyable<> {
     }
 
     int month_;
-    std::tr1::array<int, 3> slots_;
+    std::array<int, 3> slots_;
     std::size_t pos_;
   };
 

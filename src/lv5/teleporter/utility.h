@@ -81,7 +81,7 @@ class StrictSwitcher : private core::Noncopyable<> {
 
 inline JSScript* CompileScript(Context* ctx, const JSString* str,
                                bool is_strict, Error* error) {
-  std::tr1::shared_ptr<EvalSource> const src(new EvalSource(*str));
+  std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory* const factory = new AstFactory(ctx);
   core::Parser<AstFactory, EvalSource> parser(factory, *src);
   parser.set_strict(is_strict);

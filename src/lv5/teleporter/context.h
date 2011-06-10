@@ -65,7 +65,7 @@ class Context : public iv::lv5::Context {
     binding_ = binding;
   }
 
-  std::tr1::shared_ptr<Interpreter> interp() {
+  std::shared_ptr<Interpreter> interp() {
     return interp_;
   }
 
@@ -166,7 +166,7 @@ class Context : public iv::lv5::Context {
   }
 
  private:
-  std::tr1::shared_ptr<Interpreter> interp_;
+  std::shared_ptr<Interpreter> interp_;
   JSVal binding_;
   Mode mode_;
   JSVal ret_;

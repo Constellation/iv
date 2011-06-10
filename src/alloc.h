@@ -115,8 +115,8 @@ class Arena {
   }
 
  private:
-  std::tr1::array<Pool, kPoolNum> pools_;
-  std::tr1::array<char, kArenaSize> result_;
+  std::array<Pool, kPoolNum> pools_;
+  std::array<char, kArenaSize> result_;
   Pool* now_;
   const Pool* start_;
   Arena* next_;
@@ -206,7 +206,7 @@ class Space {
     return malloced_;
   }
 
-  std::tr1::array<Arena, kInitArenas> init_arenas_;
+  std::array<Arena, kInitArenas> init_arenas_;
   Arena* arena_;
   Arena* start_malloced_;
   std::vector<void*> malloced_;
