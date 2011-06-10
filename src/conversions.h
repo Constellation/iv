@@ -5,8 +5,8 @@
 #include <string>
 #include <limits>
 #include <vector>
-#include "detail/tr1/array.h"
-#include "detail/tr1/cstdint.h"
+#include "detail/array.h"
+#include "detail/cstdint.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "character.h"

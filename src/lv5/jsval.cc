@@ -1,5 +1,5 @@
 #include <limits>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "dtoa.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"

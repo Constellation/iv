@@ -4,8 +4,8 @@
 #include <cassert>
 #include <cmath>
 #include <boost/foreach.hpp>
-#include "detail/tr1/tuple.h"
-#include "detail/tr1/array.h"
+#include "detail/tuple.h"
+#include "detail/array.h"
 #include "token.h"
 #include "maybe.h"
 #include "lv5/hint.h"

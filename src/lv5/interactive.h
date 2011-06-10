@@ -2,8 +2,8 @@
 #define _IV_LV5_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
-#include "detail/tr1/memory.h"
-#include "detail/tr1/array.h"
+#include "detail/memory.h"
+#include "detail/array.h"
 #include "token.h"
 #include "parser.h"
 #include "unicode.h"

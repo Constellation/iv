@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_GLOBAL_H_
 #define _IV_LV5_RUNTIME_GLOBAL_H_
 #include <cmath>
-#include "detail/tr1/cstdint.h"
+#include "detail/cstdint.h"
 #include "noncopyable.h"
 #include "character.h"
 #include "conversions.h"

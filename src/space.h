@@ -10,8 +10,8 @@
 #include <string>
 #include <limits>
 #include <functional>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/functional.h"
+#include "detail/unordered_map.h"
+#include "detail/functional.h"
 #include "uchar.h"
 #include "utils.h"
 #include "conversions.h"

@@ -3,10 +3,10 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/unordered_set.h"
-#include "detail/tr1/type_traits.h"
-#include "detail/tr1/array.h"
+#include "detail/unordered_map.h"
+#include "detail/unordered_set.h"
+#include "detail/type_traits.h"
+#include "detail/array.h"
 #include "static_assert.h"
 #include "maybe.h"
 #include "ast.h"

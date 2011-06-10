@@ -1,6 +1,6 @@
 #ifndef _IV_AST_FACTORY_H_
 #define _IV_AST_FACTORY_H_
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "functor.h"
 #include "location.h"
 #include "ast.h"

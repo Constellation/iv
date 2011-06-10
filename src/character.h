@@ -7,8 +7,8 @@
 #define _IV_CHARACTER_H_
 #include <cassert>
 #include <algorithm>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/array.h"
+#include "detail/cstdint.h"
+#include "detail/array.h"
 namespace iv {
 namespace core {
 namespace character {

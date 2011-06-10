@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <limits>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "static_assert.h"
 #include "uchar.h"
 #include "utils.h"

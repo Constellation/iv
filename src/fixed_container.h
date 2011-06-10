@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cassert>
 #include <iterator>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 namespace iv {
 namespace core {
 

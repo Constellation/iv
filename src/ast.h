@@ -2,10 +2,10 @@
 #define _IV_AST_H_
 #include <vector>
 #include <functional>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/tuple.h"
-#include "detail/tr1/type_traits.h"
-#include "detail/tr1/functional.h"
+#include "detail/unordered_map.h"
+#include "detail/tuple.h"
+#include "detail/type_traits.h"
+#include "detail/functional.h"
 #include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"

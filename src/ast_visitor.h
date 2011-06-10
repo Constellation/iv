@@ -1,6 +1,6 @@
 #ifndef _IV_AST_VISITOR_H_
 #define _IV_AST_VISITOR_H_
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "noncopyable.h"
 #include "ast_fwd.h"
 

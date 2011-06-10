@@ -2,7 +2,7 @@
 #define _IV_MAYBE_H_
 #include <cassert>
 #include <algorithm>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "enable_if.h"
 
 // Maybe NULL pointer wrapper class

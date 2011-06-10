@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <gc/gc_allocator.h>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "static_assert.h"
 namespace iv {
 namespace lv5 {

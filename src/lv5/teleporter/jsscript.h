@@ -1,6 +1,6 @@
 #ifndef _IV_LV5_TELEPORTER_JSSCRIPT_H_
 #define _IV_LV5_TELEPORTER_JSSCRIPT_H_
-#include "detail/tr1/memory.h"
+#include "detail/memory.h"
 #include "source_traits.h"
 #include "lv5/jsscript.h"
 #include "lv5/specialized_ast.h"

@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_CODE_H_
 #define _IV_LV5_RAILGUN_CODE_H_
 #include <algorithm>
-#include "detail/tr1/tuple.h"
+#include "detail/tuple.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
 #include "lv5/gc_template.h"

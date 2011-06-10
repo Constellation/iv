@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RAILGUN_COMPILER_H_
 #define _IV_LV5_RAILGUN_COMPILER_H_
 #include <algorithm>
-#include "detail/tr1/tuple.h"
-#include "detail/tr1/unordered_map.h"
+#include "detail/tuple.h"
+#include "detail/unordered_map.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "static_assert.h"

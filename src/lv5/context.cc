@@ -1,7 +1,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "ustring.h"
 #include "dtoa.h"
 #include "canonicalized_nan.h"

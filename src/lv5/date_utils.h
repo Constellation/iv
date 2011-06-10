@@ -3,8 +3,8 @@
 #include <ctime>
 #include <cmath>
 #include <cstring>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/array.h"
+#include "detail/cstdint.h"
+#include "detail/array.h"
 #include "platform.h"
 #include "platform_math.h"
 #include "conversions.h"

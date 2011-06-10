@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_GLOBAL_DATA_H_
 #define _IV_LV5_GLOBAL_DATA_H_
 #include <boost/random.hpp>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "dtoa.h"
 #include "conversions.h"
 #include "stringpiece.h"

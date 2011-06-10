@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <algorithm>
 #include <gc/gc.h>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "about.h"

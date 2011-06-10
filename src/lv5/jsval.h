@@ -2,8 +2,8 @@
 #define _IV_LV5_JSVAL_H_
 #include <cmath>
 #include <algorithm>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/type_traits.h"
+#include "detail/cstdint.h"
+#include "detail/type_traits.h"
 #include "byteorder.h"
 #include "enable_if.h"
 #include "static_assert.h"

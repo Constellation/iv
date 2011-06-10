@@ -1,7 +1,7 @@
 #ifndef _IV_USTRING_H_
 #define _IV_USTRING_H_
 #include <string>
-#include "detail/tr1/functional.h"
+#include "detail/functional.h"
 #include "uchar.h"
 #include "stringpiece.h"
 #include "conversions.h"
