@@ -21,8 +21,7 @@ struct AstVisitorTraits<true, T> {
 
 template<typename T>
 struct AstVisitorTraits<false, T> {
-  typedef typename std::add_pointer<
-      typename std::add_const<T>::type>::type type;
+  typedef typename std::add_pointer<T>::type type;
 };
 
 }  // namespace iv::core::ast::detail
