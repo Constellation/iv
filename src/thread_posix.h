@@ -4,6 +4,8 @@
 #include <cassert>
 #include <cstdlib>
 #include <pthread.h>
+#include <unistd.h>
+#include <sched.h>
 #include "noncopyable.h"
 namespace iv {
 namespace core {
@@ -49,6 +51,10 @@ class PosixMutex : private Noncopyable<> {
 };
 
 typedef PosixMutex Mutex;
+
+inline void YieldCPU() {
+  sched_yield();
+}
 
 } } }  // namespace iv::core::thread
 #endif  // _IV_THREAD_POSIX_H_

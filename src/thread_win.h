@@ -35,5 +35,9 @@ class WinMutex : private Noncopyable<> {
 
 typedef WinMutex Mutex;
 
+inline void YieldCPU() {
+  ::YieldProcessor();
+}
+
 } } }  // namespace iv::core::thread
 #endif  // _IV_THREAD_WIN_H_

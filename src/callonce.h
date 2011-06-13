@@ -35,9 +35,7 @@ inline void CallOnce(Once* once, Func func) {
   } else {
     // busy loop
     while (once->state_ == ONCE_INIT) {
-#ifdef OS_WIN
-      YieldProcessor();
-#endif
+      YieldCPU();
     }
   }
 }
