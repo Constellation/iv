@@ -32,6 +32,16 @@ namespace ast {
     visitor->Visit(this);\
   }
 
+#define ACCEPT_EXPRESSION_VISITOR \
+  inline void AcceptExpressionVisitor(\
+      typename ExpressionVisitor<Factory>::type* visitor) {\
+    visitor->Visit(this);\
+  }\
+  inline void AcceptExpressionVisitor(\
+      typename ExpressionVisitor<Factory>::const_type * visitor) const {\
+    visitor->Visit(this);\
+  }
+
 #define DECLARE_NODE_TYPE(type) \
   inline const type<Factory>* As##type() const { return this; }\
   inline type<Factory>* As##type() { return this; }\
@@ -172,6 +182,10 @@ template<typename Factory>
 class Expression : public ExpressionBase<Factory> {
  public:
   inline virtual bool IsValidLeftHandSide() const { return false; }
+  virtual void AcceptExpressionVisitor(
+      typename ExpressionVisitor<Factory>::type* visitor) = 0;
+  virtual void AcceptExpressionVisitor(
+      typename ExpressionVisitor<Factory>::const_type* visitor) const = 0;
   DECLARE_NODE_TYPE(Expression)
 };
 
@@ -797,6 +811,7 @@ class Assignment : public AssignmentBase<Factory> {
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
   DECLARE_DERIVED_NODE_TYPE(Assignment)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* left_;
@@ -823,6 +838,7 @@ class BinaryOperation : public BinaryOperationBase<Factory> {
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
   DECLARE_DERIVED_NODE_TYPE(BinaryOperation)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* left_;
@@ -848,6 +864,7 @@ class ConditionalExpression : public ConditionalExpressionBase<Factory> {
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
   DECLARE_DERIVED_NODE_TYPE(ConditionalExpression)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* cond_;
   Expression<Factory>* left_;
@@ -871,6 +888,7 @@ class UnaryOperation : public UnaryOperationBase<Factory> {
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(UnaryOperation)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
@@ -893,6 +911,7 @@ class PostfixExpression : public PostfixExpressionBase<Factory> {
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(PostfixExpression)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
@@ -920,6 +939,7 @@ class StringLiteral : public StringLiteralBase<Factory> {
     return value_;
   }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 
  private:
   value_type value_;
@@ -940,6 +960,7 @@ class NumberLiteral : public NumberLiteralBase<Factory> {
   }
   inline double value() const { return value_; }
   DECLARE_DERIVED_NODE_TYPE(NumberLiteral)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   double value_;
 };
@@ -966,6 +987,7 @@ class Identifier : public IdentifierBase<Factory> {
   }
   inline bool IsValidLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
+  ACCEPT_EXPRESSION_VISITOR
  protected:
   value_type value_;
 };
@@ -1016,6 +1038,7 @@ template<typename Factory>
 class ThisLiteral : public ThisLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(ThisLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 };
 
 // NullLiteral
@@ -1029,6 +1052,7 @@ template<typename Factory>
 class NullLiteral : public NullLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(NullLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 };
 
 // TrueLiteral
@@ -1042,6 +1066,7 @@ template<typename Factory>
 class TrueLiteral : public TrueLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(TrueLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 };
 
 // FalseLiteral
@@ -1055,6 +1080,7 @@ template<typename Factory>
 class FalseLiteral : public FalseLiteralBase<Factory> {
  public:
   DECLARE_DERIVED_NODE_TYPE(FalseLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 };
 
 // RegExpLiteral
@@ -1080,6 +1106,7 @@ class RegExpLiteral : public RegExpLiteralBase<Factory> {
   inline const value_type& value() const { return value_; }
   inline const value_type& flags() const { return flags_; }
   DECLARE_DERIVED_NODE_TYPE(RegExpLiteral)
+  ACCEPT_EXPRESSION_VISITOR
  protected:
   value_type value_;
   value_type flags_;
@@ -1106,6 +1133,7 @@ class ArrayLiteral : public ArrayLiteralBase<Factory> {
     return *items_;
   }
   DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   MaybeExpressions* items_;
 };
@@ -1150,6 +1178,7 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
     return *properties_;
   }
   DECLARE_DERIVED_NODE_TYPE(ObjectLiteral)
+  ACCEPT_EXPRESSION_VISITOR
 
  private:
   Properties* properties_;
@@ -1218,6 +1247,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
       end_position_(end_position) {
   }
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Maybe<Identifier<Factory> > name_;
   DeclType type_;
@@ -1267,6 +1297,7 @@ class IdentifierAccess : public IdentifierAccessBase<Factory> {
   }
   inline Identifier<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Identifier<Factory>* key_;
 };
@@ -1288,6 +1319,7 @@ class IndexAccess : public IndexAccessBase<Factory> {
   }
   inline Expression<Factory>* key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IndexAccess)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* key_;
 };
@@ -1325,6 +1357,7 @@ class FunctionCall : public FunctionCallBase<Factory> {
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return *args_; }
   DECLARE_DERIVED_NODE_TYPE(FunctionCall)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* target_;
   Expressions* args_;
@@ -1349,6 +1382,7 @@ class ConstructorCall : public ConstructorCallBase<Factory> {
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return *args_; }
   DECLARE_DERIVED_NODE_TYPE(ConstructorCall)
+  ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* target_;
   Expressions* args_;

@@ -118,5 +118,49 @@ struct AstVisitor {
   typedef BasicAstVisitor<true, Factory> const_type;
 };
 
+template<bool IsConst, typename Factory>
+class BasicExpressionVisitor
+  : private Noncopyable<BasicExpressionVisitor<IsConst, Factory> > {
+ private:
+  template<typename T>
+  struct add {
+    typedef typename detail::AstVisitorTraits<IsConst, T>::type type;
+  };
+
+ public:
+  virtual ~BasicExpressionVisitor() = 0;
+  virtual void Visit(typename add<Assignment<Factory> >::type assign) = 0;  //NOLINT
+  virtual void Visit(typename add<BinaryOperation<Factory> >::type binary) = 0;  //NOLINT
+  virtual void Visit(typename add<ConditionalExpression<Factory> >::type cond) = 0;  //NOLINT
+  virtual void Visit(typename add<UnaryOperation<Factory> >::type unary) = 0;  //NOLINT
+  virtual void Visit(typename add<PostfixExpression<Factory> >::type postfix) = 0;  //NOLINT
+
+  virtual void Visit(typename add<StringLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<NumberLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<Identifier<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<ThisLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<NullLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<TrueLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<FalseLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<RegExpLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<ArrayLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<ObjectLiteral<Factory> >::type literal) = 0;  //NOLINT
+  virtual void Visit(typename add<FunctionLiteral<Factory> >::type literal) = 0;  //NOLINT
+
+  virtual void Visit(typename add<IdentifierAccess<Factory> >::type prop) = 0;  //NOLINT
+  virtual void Visit(typename add<IndexAccess<Factory> >::type prop) = 0;  //NOLINT
+  virtual void Visit(typename add<FunctionCall<Factory> >::type call) = 0;  //NOLINT
+  virtual void Visit(typename add<ConstructorCall<Factory> >::type call) = 0;  //NOLINT
+};
+
+template<bool IsConst, typename Factory>
+inline BasicExpressionVisitor<IsConst, Factory>::~BasicExpressionVisitor() { }
+
+template<typename Factory>
+struct ExpressionVisitor {
+  typedef BasicExpressionVisitor<false, Factory> type;
+  typedef BasicExpressionVisitor<true, Factory> const_type;
+};
+
 } } }  // namespace iv::core::ast
 #endif  // _IV_AST_VISITOR_H_
