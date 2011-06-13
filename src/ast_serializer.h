@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <ostream>  // NOLINT
 #include <sstream>
-#include "detail/tr1/tuple.h"
+#include "detail/tuple.h"
 #include "uchar.h"
 #include "ast.h"
 #include "ast_visitor.h"
@@ -390,7 +390,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   }
 
   void Visit(const ObjectLiteral* literal) {
-    using std::tr1::get;
+    using std::get;
     Append("{\"type\":\"object\",\"value\":[");
     typename ObjectLiteral::Properties::const_iterator
         it = literal->properties().begin();

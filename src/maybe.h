@@ -2,7 +2,7 @@
 #define _IV_MAYBE_H_
 #include <cassert>
 #include <algorithm>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "enable_if.h"
 
 // Maybe NULL pointer wrapper class
@@ -22,7 +22,7 @@ class Maybe {
 
   template<class U>
   Maybe(const Maybe<U>& rhs,
-        typename enable_if<std::tr1::is_convertible<U*, T*> >::type* = 0)
+        typename enable_if<std::is_convertible<U*, T*> >::type* = 0)
     : ptr_(rhs.get_address_maybe_null()) {
   }
 

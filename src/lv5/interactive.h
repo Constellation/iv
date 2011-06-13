@@ -2,8 +2,8 @@
 #define _IV_LV5_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
-#include "detail/tr1/memory.h"
-#include "detail/tr1/array.h"
+#include "detail/memory.h"
+#include "detail/array.h"
 #include "token.h"
 #include "parser.h"
 #include "unicode.h"
@@ -34,7 +34,7 @@ class Interactive {
   int Run() {
     std::vector<char> buffer;
     while (true) {
-      std::tr1::array<char, 1024> line;
+      std::array<char, 1024> line;
       bool recover = false;
       if (buffer.empty()) {
         std::printf("> ");
@@ -87,7 +87,7 @@ class Interactive {
  private:
   teleporter::JSEvalScript<core::FileSource>* Parse(const core::StringPiece& text,
                                                bool* recover) {
-    std::tr1::shared_ptr<core::FileSource> src(
+    std::shared_ptr<core::FileSource> src(
         new core::FileSource(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
     core::Parser<AstFactory, core::FileSource> parser(factory, *src);

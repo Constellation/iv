@@ -1,7 +1,7 @@
 #ifndef _IV_LOCATION_H_
 #define _IV_LOCATION_H_
 #include <cstddef>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "static_assert.h"
 namespace iv {
 namespace core {
@@ -24,7 +24,7 @@ struct Location {
 };
 
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
-IV_STATIC_ASSERT(std::tr1::is_pod<Location>::value);
+IV_STATIC_ASSERT(std::is_pod<Location>::value);
 #endif
 
 } }  // namespace iv::core

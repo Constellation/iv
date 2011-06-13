@@ -73,6 +73,7 @@ def Build():
     BoolVariable('gprof', '', 0),
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
+    BoolVariable('cxx0x', '', 0),
     BoolVariable('release', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
@@ -127,6 +128,9 @@ def Build():
 
   if env['clang']:
     env.Replace(CXX='clang++', CC='clang')
+
+  if env['cxx0x']:
+    env.Append(CXXFLAGS=["-std=c++0x"])
 
   if env['debug']:
     env.Append(CCFLAGS=["-g"])

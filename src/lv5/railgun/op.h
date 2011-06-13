@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RAILGUN_OP_H_
 #define _IV_LV5_RAILGUN_OP_H_
 #include <cassert>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/array.h"
+#include "detail/cstdint.h"
+#include "detail/array.h"
 #include "static_assert.h"
 namespace iv {
 namespace lv5 {
@@ -190,7 +190,7 @@ struct OP {
 };
 
 #define IV_LV5_RAILGUN_DEFINE_STRINGS(V) #V,
-static const std::tr1::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {
+static const std::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {
   IV_LV5_RAILGUN_OP_LIST(IV_LV5_RAILGUN_DEFINE_STRINGS)
   "NUM_OF_OP"
 } };

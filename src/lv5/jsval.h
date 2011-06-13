@@ -2,8 +2,8 @@
 #define _IV_LV5_JSVAL_H_
 #include <cmath>
 #include <algorithm>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/type_traits.h"
+#include "detail/cstdint.h"
+#include "detail/type_traits.h"
 #include "byteorder.h"
 #include "enable_if.h"
 #include "static_assert.h"
@@ -182,7 +182,7 @@ class JSVal {
 
   IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
-  IV_STATIC_ASSERT(std::tr1::is_pod<value_type>::value);
+  IV_STATIC_ASSERT(std::is_pod<value_type>::value);
 #endif
 
   JSVal()
@@ -254,8 +254,8 @@ class JSVal {
   }
 
   template<typename T>
-  JSVal(T val, typename enable_if<std::tr1::is_same<bool, T> >::type* = 0) {
-    typedef std::tr1::is_same<bool, T> cond;
+  JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
+    typedef std::is_same<bool, T> cond;
     IV_STATIC_ASSERT(!(cond::value));
   }
 
@@ -493,7 +493,7 @@ class JSVal {
   template<typename T>
   static inline JSVal UInt32(
       const T& val,
-      typename enable_if<std::tr1::is_same<uint32_t, T> >::type* = 0) {
+      typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {
     return JSVal(val, detail::UInt32Tag());
   }
 

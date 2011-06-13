@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <algorithm>
 #include <gc/gc.h>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "about.h"
@@ -31,7 +31,7 @@ namespace {
 
 bool ReadFile(const std::string& filename, std::vector<char>* out) {
   if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
-    std::tr1::array<char, 1024> buf;
+    std::array<char, 1024> buf;
     while (const std::size_t len = std::fread(
             buf.data(),
             1,

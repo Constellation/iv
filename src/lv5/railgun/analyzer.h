@@ -7,8 +7,8 @@
 #ifndef _IV_LV5_RAILGUN_ANALYZIER_H_
 #define _IV_LV5_RAILGUN_ANALYZIER_H_
 #include <utility>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/memory.h"
+#include "detail/unordered_map.h"
+#include "detail/memory.h"
 #include "ast.h"
 #include "ast_visitor.h"
 #include "lv5/specialized_ast.h"
@@ -30,15 +30,15 @@ class Analyzer
     };
   };
 
-  typedef std::tr1::unordered_map<Symbol, Variable::Type> Map;
+  typedef std::unordered_map<Symbol, Variable::Type> Map;
   struct Entry : public std::pair<Map, Entry*> { };
-  typedef std::tr1::unordered_map<const FunctionLiteral*, std::tr1::shared_ptr<Entry> > Table;
-  typedef std::pair<std::tr1::shared_ptr<Table>, std::tr1::shared_ptr<Entry> > Root;
+  typedef std::unordered_map<const FunctionLiteral*, std::shared_ptr<Entry> > Table;
+  typedef std::pair<std::shared_ptr<Table>, std::shared_ptr<Entry> > Root;
 
-  static Entry* MakeEntry(std::tr1::shared_ptr<Table> table,
+  static Entry* MakeEntry(std::shared_ptr<Table> table,
                           const FunctionLiteral& func,
                           Entry* upper) {
-    std::tr1::shared_ptr<Entry> entry(new Entry);
+    std::shared_ptr<Entry> entry(new Entry);
     entry->second = upper;
     table->insert(std::make_pair(&func, entry));
     return entry.get();
@@ -47,7 +47,7 @@ class Analyzer
   Analyzer() : table_(), current_() { }
 
   Root Analyze(const FunctionLiteral& global) {
-    table_ = std::tr1::shared_ptr<Table>(new Table());
+    table_ = std::shared_ptr<Table>(new Table());
     current_ = MakeEntry(table_, global, NULL);
     VisitFunction(global, Variable::GLOBAL);
     return std::make_pair(table_, current_);
@@ -162,7 +162,7 @@ class Analyzer
     current_ = current_->second;
   }
 
-  std::tr1::shared_ptr<Table> table_;
+  std::shared_ptr<Table> table_;
   Entry* current_;
 };
 

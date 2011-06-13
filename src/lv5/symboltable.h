@@ -2,7 +2,7 @@
 #define _IV_LV5_SYMBOLTABLE_H_
 #include <string>
 #include <vector>
-#include "detail/tr1/unordered_map.h"
+#include "detail/unordered_map.h"
 #include "ustring.h"
 #include "conversions.h"
 #include "thread.h"
@@ -14,7 +14,7 @@ class SymbolTable {
  public:
   typedef std::vector<core::UString> Strings;
   typedef std::vector<Symbol> Indexes;
-  typedef std::tr1::unordered_map<std::size_t, Indexes> Table;
+  typedef std::unordered_map<std::size_t, Indexes> Table;
   SymbolTable()
     : sync_(),
       table_(),

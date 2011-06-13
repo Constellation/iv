@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RUNTIME_NUMBER_H_
 #define _IV_LV5_RUNTIME_NUMBER_H_
 #include <cstdlib>
-#include "detail/tr1/array.h"
-#include "detail/tr1/cstdint.h"
+#include "detail/array.h"
+#include "detail/cstdint.h"
 #include "conversions.h"
 #include "platform_math.h"
 #include "lv5/error_check.h"
@@ -88,7 +88,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
     }
   }
   // radix 10 or no radix
-  std::tr1::array<char, 80> buffer;
+  std::array<char, 80> buffer;
   const char* const str = core::DoubleToCString(num,
                                                 buffer.data(),
                                                 buffer.size());
@@ -112,7 +112,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
   } else {
     num = obj.number();
   }
-  std::tr1::array<char, 80> buffer;
+  std::array<char, 80> buffer;
   const char* const str = core::DoubleToCString(num,
                                                 buffer.data(),
                                                 buffer.size());
@@ -175,7 +175,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
   }
   if (!(std::fabs(x) < 1e+21)) {
     // included NaN and Infinity
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(x,
                                                   buffer.data(),
                                                   buffer.size());

@@ -3,8 +3,8 @@
 #include <ctime>
 #include <cmath>
 #include <cstring>
-#include "detail/tr1/cstdint.h"
-#include "detail/tr1/array.h"
+#include "detail/cstdint.h"
+#include "detail/array.h"
 #include "platform.h"
 #include "platform_math.h"
 #include "conversions.h"
@@ -97,7 +97,7 @@ static const int kMonthMap[2][12] = {
   {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
 };
 
-static const std::tr1::array<const char*, 12> kMonths = { {
+static const std::array<const char*, 12> kMonths = { {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 } };
@@ -138,7 +138,7 @@ inline int MonthToDaysInYear(int month, int is_leap) {
   return kMonthMap[is_leap][month];
 }
 
-static const std::tr1::array<const char*, 7> kWeekDays = { {
+static const std::array<const char*, 7> kWeekDays = { {
   "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 } };
 

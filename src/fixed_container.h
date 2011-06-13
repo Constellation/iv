@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cassert>
 #include <iterator>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 namespace iv {
 namespace core {
 
@@ -14,12 +14,12 @@ template<typename T>
 class FixedContainer {
  public:
   typedef T value_type;
-  typedef typename std::tr1::add_pointer<value_type>::type pointer;
-  typedef typename std::tr1::add_pointer<const value_type>::type const_pointer;
+  typedef typename std::add_pointer<value_type>::type pointer;
+  typedef typename std::add_pointer<const value_type>::type const_pointer;
   typedef pointer iterator;
   typedef const_pointer const_iterator;
-  typedef typename std::tr1::add_reference<T>::type  reference;
-  typedef typename std::tr1::add_const<reference>::type const_reference;
+  typedef typename std::add_reference<T>::type  reference;
+  typedef typename std::add_const<reference>::type const_reference;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
   typedef std::size_t size_type;

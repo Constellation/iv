@@ -1,7 +1,7 @@
 #ifndef _IV_DIGIT_ITERATOR_H_
 #define _IV_DIGIT_ITERATOR_H_
 #include <iterator>
-#include "detail/tr1/cstdint.h"
+#include "detail/cstdint.h"
 #include "character.h"
 #include "conversions_digit.h"
 namespace iv {

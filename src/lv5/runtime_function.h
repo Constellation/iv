@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_RUNTIME_FUNCTION_H_
 #define _IV_LV5_RUNTIME_FUNCTION_H_
 #include <algorithm>
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "enable_if.h"
 #include "ustring.h"
 #include "ustringpiece.h"

@@ -10,8 +10,8 @@
 #include <string>
 #include <limits>
 #include <functional>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/functional.h"
+#include "detail/unordered_map.h"
+#include "detail/functional.h"
 #include "uchar.h"
 #include "utils.h"
 #include "conversions.h"
@@ -134,13 +134,13 @@ struct SpaceMap {
 
 template<typename Factory, typename T1, typename T2>
 struct SpaceHashMap {
-  typedef std::tr1::unordered_map<T1,
-                                  T2,
-                                  std::tr1::hash<T1>,
-                                  std::equal_to<T1>,
-                                  SpaceAllocator<
-                                    Factory,
-                                    std::pair<const T1, T2> > > type;
+  typedef std::unordered_map<T1,
+                             T2,
+                             std::hash<T1>,
+                             std::equal_to<T1>,
+                             SpaceAllocator<
+                             Factory,
+                             std::pair<const T1, T2> > > type;
 };
 
 template<typename Factory, typename T>
@@ -157,9 +157,9 @@ struct SpaceUString {
 
 } }  // namespace iv::core
 
-namespace IV_TR1_HASH_NAMESPACE_START {
+namespace IV_HASH_NAMESPACE_START {
 
-// template specialization for SpaceUString in std::tr1::unordered_map
+// template specialization for SpaceUString in std::unordered_map
 // allowed in section 17.4.3.1
 template<typename Factory>
 struct hash<std::basic_string<iv::uc16,
@@ -180,6 +180,5 @@ struct hash<std::basic_string<iv::uc16,
   }
 };
 
-} IV_TR1_HASH_NAMESPACE_END
-
+} IV_HASH_NAMESPACE_END
 #endif  // _IV_SPACE_H_

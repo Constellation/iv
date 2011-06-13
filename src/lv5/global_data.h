@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_GLOBAL_DATA_H_
 #define _IV_LV5_GLOBAL_DATA_H_
 #include <boost/random.hpp>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "dtoa.h"
 #include "conversions.h"
 #include "stringpiece.h"
@@ -59,7 +59,7 @@ class GlobalData {
   }
 
   Symbol InternUInt32(uint32_t index) {
-    std::tr1::array<char, 15> buf;
+    std::array<char, 15> buf;
     return table_.Lookup(
         core::StringPiece(
             buf.data(),
@@ -69,7 +69,7 @@ class GlobalData {
   }
 
   Symbol InternDouble(double number) {
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(number,
                                                   buffer.data(),
                                                   buffer.size());
@@ -85,7 +85,7 @@ class GlobalData {
   }
 
   Symbol CheckIntern(uint32_t index, bool* found) {
-    std::tr1::array<char, 15> buf;
+    std::array<char, 15> buf;
     return table_.LookupAndCheck(
         core::StringPiece(
             buf.data(),
@@ -95,7 +95,7 @@ class GlobalData {
   }
 
   Symbol CheckIntern(double number, bool* found) {
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(number,
                                                   buffer.data(),
                                                   buffer.size());

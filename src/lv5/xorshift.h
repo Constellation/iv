@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_XORSHIFT_H_
 #define _IV_LV5_XORSHIFT_H_
 #include <ctime>
-#include "detail/tr1/cstdint.h"
+#include "detail/cstdint.h"
 
 namespace iv {
 namespace lv5 {

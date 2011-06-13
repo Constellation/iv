@@ -4,7 +4,7 @@
 #include <vector>
 #include <limits>
 #include <utility>
-#include "detail/tr1/tuple.h"
+#include "detail/tuple.h"
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "character.h"
@@ -137,7 +137,7 @@ class Replacer : private core::Noncopyable<> {
 
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
-    using std::tr1::get;
+    using std::get;
     const regexp::MatchResult res = RegExpMatch(*str_, 0, reg_, &vec_);
     if (get<2>(res)) {
       builder->Append(str_->begin(), str_->begin() + get<0>(res));
@@ -148,7 +148,7 @@ class Replacer : private core::Noncopyable<> {
 
   template<typename Builder>
   void ReplaceGlobal(Builder* builder, Error* e) {
-    using std::tr1::get;
+    using std::get;
     int previous_index = 0;
     int not_matched_index = previous_index;
     const int size = str_->size();
@@ -201,7 +201,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
   template<typename Builder>
   void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
-    using std::tr1::get;
+    using std::get;
     Replace::State state = Replace::kNormal;
     uc16 upper_digit_char = '\0';
     for (typename JSString::const_iterator it = replace_.begin(),
@@ -348,7 +348,7 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
 
   template<typename Builder>
   void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
-    using std::tr1::get;
+    using std::get;
     ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
                          str_->begin() + get<0>(res),
@@ -660,7 +660,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
 
   if (search_value_is_regexp) {
     // searchValue is RegExp
-    using std::tr1::get;
+    using std::get;
     const JSRegExp* reg = static_cast<JSRegExp*>(args[0].object());
     StringBuilder builder;
     if (args_count > 1 && args[1].IsCallable()) {
@@ -805,7 +805,7 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
 
 // section 15.5.4.14 String.prototype.split(separator, limit)
 inline JSVal StringSplit(const Arguments& args, Error* e) {
-  using std::tr1::get;
+  using std::get;
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.split", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));

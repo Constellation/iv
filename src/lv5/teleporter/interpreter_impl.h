@@ -4,8 +4,8 @@
 #include <cassert>
 #include <cmath>
 #include <boost/foreach.hpp>
-#include "detail/tr1/tuple.h"
-#include "detail/tr1/array.h"
+#include "detail/tuple.h"
+#include "detail/array.h"
 #include "token.h"
 #include "maybe.h"
 #include "lv5/hint.h"
@@ -1278,7 +1278,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
 
 
 void Interpreter::Visit(const ObjectLiteral* literal) {
-  using std::tr1::get;
+  using std::get;
   JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5

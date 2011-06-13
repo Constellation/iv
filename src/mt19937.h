@@ -12,7 +12,7 @@
 #ifndef _IV_MT19937_H_
 #define _IV_MT19937_H_
 #include <vector>
-#include "detail/tr1/cstdint.h"
+#include "detail/cstdint.h"
 
 namespace iv {
 namespace core {

@@ -1,8 +1,8 @@
 #ifndef _IV_LV5_RAILGUN_COMPILER_H_
 #define _IV_LV5_RAILGUN_COMPILER_H_
 #include <algorithm>
-#include "detail/tr1/tuple.h"
-#include "detail/tr1/unordered_map.h"
+#include "detail/tuple.h"
+#include "detail/unordered_map.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "static_assert.h"
@@ -25,10 +25,10 @@ class Compiler
     : private core::Noncopyable<Compiler>,
       public AstVisitor {
  public:
-  typedef std::tr1::tuple<uint16_t,
+  typedef std::tuple<uint16_t,
                           std::vector<std::size_t>*,
                           std::vector<std::size_t>*> JumpEntry;
-  typedef std::tr1::unordered_map<
+  typedef std::unordered_map<
               const BreakableStatement*,
               JumpEntry> JumpTable;
   typedef std::vector<std::vector<std::size_t> > FinallyStack;
@@ -95,7 +95,7 @@ class Compiler
     jump_table_->insert(
         std::make_pair(
             stmt,
-            std::tr1::make_tuple(
+            std::make_tuple(
                 CurrentLevel(),
                 breaks,
                 static_cast<std::vector<std::size_t>*>(NULL))));
@@ -107,7 +107,7 @@ class Compiler
     jump_table_->insert(
         std::make_pair(
             stmt,
-            std::tr1::make_tuple(
+            std::make_tuple(
                 CurrentLevel(),
                 breaks,
                 continues)));
@@ -410,27 +410,27 @@ class Compiler
   void Visit(const ContinueStatement* stmt) {
     const JumpEntry& entry = (*jump_table_)[stmt->target()];
     for (uint16_t level = CurrentLevel(),
-         last = std::tr1::get<0>(entry); level > last; --level) {
+         last = std::get<0>(entry); level > last; --level) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);
       finally_stack_[level - 1].push_back(finally_jump_index);
     }
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
-    std::tr1::get<2>(entry)->push_back(arg_index);
+    std::get<2>(entry)->push_back(arg_index);
   }
 
   void Visit(const BreakStatement* stmt) {
     const JumpEntry& entry = (*jump_table_)[stmt->target()];
     for (uint16_t level = CurrentLevel(),
-         last = std::tr1::get<0>(entry); level > last; --level) {
+         last = std::get<0>(entry); level > last; --level) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);
       finally_stack_[level - 1].push_back(finally_jump_index);
     }
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
-    std::tr1::get<1>(entry)->push_back(arg_index);
+    std::get<1>(entry)->push_back(arg_index);
   }
 
   void Visit(const ReturnStatement* stmt) {
@@ -1157,7 +1157,7 @@ class Compiler
   }
 
   void Visit(const ObjectLiteral* lit) {
-    using std::tr1::get;
+    using std::get;
     typedef ObjectLiteral::Properties Properties;
     Emit<OP::BUILD_OBJECT>();
     const Properties& properties = lit->properties();

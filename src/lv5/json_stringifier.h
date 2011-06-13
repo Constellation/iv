@@ -110,7 +110,7 @@ class JSONStringifier : private core::Noncopyable<> {
         }
       } else if (c < ' ') {
         uint16_t val = c;
-        std::tr1::array<char, 4> buf = { { '0', '0', '0', '0' } };
+        std::array<char, 4> buf = { { '0', '0', '0', '0' } };
         builder.Append("\\u");
         for (int i = 0; (i < 4) || val; i++) {
           buf[3 - i] = kHexDigits[val % 16];

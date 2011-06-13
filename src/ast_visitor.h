@@ -1,6 +1,6 @@
 #ifndef _IV_AST_VISITOR_H_
 #define _IV_AST_VISITOR_H_
-#include "detail/tr1/type_traits.h"
+#include "detail/type_traits.h"
 #include "noncopyable.h"
 #include "ast_fwd.h"
 
@@ -15,14 +15,13 @@ struct AstVisitorTraits {
 
 template<typename T>
 struct AstVisitorTraits<true, T> {
-  typedef typename std::tr1::add_pointer<
-      typename std::tr1::add_const<T>::type>::type type;
+  typedef typename std::add_pointer<
+      typename std::add_const<T>::type>::type type;
 };
 
 template<typename T>
 struct AstVisitorTraits<false, T> {
-  typedef typename std::tr1::add_pointer<
-      typename std::tr1::add_const<T>::type>::type type;
+  typedef typename std::add_pointer<T>::type type;
 };
 
 }  // namespace iv::core::ast::detail

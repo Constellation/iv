@@ -29,7 +29,7 @@ template<typename Source>
 class JSEvalScript : public JSScript {
  public:
   typedef JSEvalScript<Source> this_type;
-  explicit JSEvalScript(std::tr1::shared_ptr<Source> source)
+  explicit JSEvalScript(std::shared_ptr<Source> source)
     : source_(source) {
   }
 
@@ -37,7 +37,7 @@ class JSEvalScript : public JSScript {
     return kEval;
   }
 
-  inline std::tr1::shared_ptr<Source> source() const {
+  inline std::shared_ptr<Source> source() const {
     return source_;
   }
 
@@ -47,12 +47,12 @@ class JSEvalScript : public JSScript {
   }
 
   static this_type* New(Context* ctx,
-                        std::tr1::shared_ptr<Source> source) {
+                        std::shared_ptr<Source> source) {
     return new JSEvalScript<Source>(source);
   }
 
  private:
-  std::tr1::shared_ptr<Source> source_;
+  std::shared_ptr<Source> source_;
 };
 
 

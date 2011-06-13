@@ -1,5 +1,5 @@
 #include <limits>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "dtoa.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
@@ -53,7 +53,7 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
   if (IsString()) {
     return string();
   } else if (IsNumber()) {
-    std::tr1::array<char, 80> buffer;
+    std::array<char, 80> buffer;
     const char* const str = core::DoubleToCString(number(),
                                                   buffer.data(),
                                                   buffer.size());

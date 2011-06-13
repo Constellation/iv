@@ -3,10 +3,10 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include "detail/tr1/unordered_map.h"
-#include "detail/tr1/unordered_set.h"
-#include "detail/tr1/type_traits.h"
-#include "detail/tr1/array.h"
+#include "detail/unordered_map.h"
+#include "detail/unordered_set.h"
+#include "detail/type_traits.h"
+#include "detail/array.h"
 #include "static_assert.h"
 #include "maybe.h"
 #include "ast.h"
@@ -1868,7 +1868,7 @@ class Parser
 //  PropertySetParameterList
 //    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
-    typedef std::tr1::unordered_map<IdentifierKey, int> ObjectMap;
+    typedef std::unordered_map<IdentifierKey, int> ObjectMap;
     typedef typename ObjectLiteral::Property Property;
     typedef typename ObjectLiteral::Properties Properties;
     const std::size_t begin = lexer_.begin_position();
@@ -1992,7 +1992,7 @@ class Parser
       bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
-    std::tr1::unordered_set<IdentifierKey> param_set;
+    std::unordered_set<IdentifierKey> param_set;
     std::size_t throw_error_if_strict_code_line = 0;
     const std::size_t begin_position = lexer_.begin_position();
     enum {
@@ -2304,7 +2304,7 @@ class Parser
   }
 
   void SetErrorHeader(std::size_t line) {
-    std::tr1::array<char, 40> buf;
+    std::array<char, 40> buf;
     error_.append(lexer_.filename());
     const int num = snprintf(buf.data(), buf.size(),
                              ":%lu: SyntaxError: ",
