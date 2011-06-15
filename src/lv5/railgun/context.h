@@ -8,10 +8,18 @@ namespace railgun {
 
 class Context : public lv5::Context {
  public:
-  Context()
-    : lv5::Context() {
+  Context(VM* vm)
+    : lv5::Context(),
+      vm_(vm) {
     Initialize<&FunctionConstructor, &GlobalEval>();
   }
+
+  VM* vm() {
+    return vm_;
+  }
+
+ private:
+  VM* vm_;
 };
 
 } } }  // namespace iv::lv5::railgun

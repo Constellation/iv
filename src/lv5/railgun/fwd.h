@@ -10,6 +10,7 @@ namespace railgun {
 class VM;
 class CodeContext;
 class Code;
+class Frame;
 
 class Analyzer;
 

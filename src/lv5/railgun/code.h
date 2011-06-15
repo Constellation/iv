@@ -123,7 +123,6 @@ class Code : public HeapObject {
   }
 
  private:
-  // TODO(Constellation) flag optimization
   bool strict_;
   bool has_eval_;
   bool has_arguments_;

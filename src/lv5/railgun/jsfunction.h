@@ -8,6 +8,9 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/jsscript.h"
+#include "lv5/railgun/context.h"
+#include "lv5/railgun/vm_fwd.h"
+#include "lv5/railgun/frame.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -15,7 +18,7 @@ namespace railgun {
 class JSVMFunction : public JSFunction {
  public:
   JSVMFunction(Context* ctx,
-               const railgun::Code* code, JSEnv* env)
+               railgun::Code* code, JSEnv* env)
     : code_(code),
       env_(env) {
     Error e;
@@ -66,7 +69,21 @@ class JSVMFunction : public JSFunction {
   }
 
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
-    return JSUndefined;
+    Context* const ctx = static_cast<Context*>(args->ctx());
+    VM* const vm = ctx->vm();
+    Frame frame;
+    frame.code_ = code_;
+    frame.stacktop_ = args->end();
+    frame.env_ = internal::NewDeclarativeEnvironment(ctx, ctx->variable_env());
+    frame.back_ = NULL;
+    frame.set_this_binding(this_binding);
+    std::pair<JSVal, VM::Status> res = vm->Execute(&frame);
+    if (res.second == VM::THROW) {
+      e->Report(res.first);
+      return JSEmpty;
+    } else {
+      return res.first;
+    }
   }
 
   JSVal Construct(Arguments* args, Error* e) {
@@ -78,7 +95,7 @@ class JSVMFunction : public JSFunction {
   }
 
   static JSVMFunction* New(Context* ctx,
-                           const railgun::Code* code, JSEnv* env) {
+                           railgun::Code* code, JSEnv* env) {
     return new JSVMFunction(ctx, code, env);
   }
 
@@ -97,7 +114,7 @@ class JSVMFunction : public JSFunction {
   }
 
  private:
-  const Code* code_;
+  Code* code_;
   JSEnv* env_;
 };
 

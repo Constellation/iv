@@ -66,7 +66,8 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
-  iv::lv5::railgun::Context ctx;
+  iv::lv5::railgun::VM vm;
+  iv::lv5::railgun::Context ctx(&vm);
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
@@ -75,13 +76,13 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  iv::lv5::railgun::VM vm(&ctx);
-  return vm.Run(code);
+  return vm.Run(&ctx, code);
 }
 
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
-  iv::lv5::railgun::Context ctx;
+  iv::lv5::railgun::VM vm;
+  iv::lv5::railgun::Context ctx(&vm);
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
