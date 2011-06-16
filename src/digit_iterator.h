@@ -74,7 +74,7 @@ class DigitIterator : public std::iterator<std::forward_iterator_tag, int> {
         return;
       }
       const int c = *start_++;
-      assert(IsHexDigit(c));
+      assert(character::IsHexDigit(c));
       digit_ = HexValue(c);
       mask_ = radix_ >> 1;
     }
