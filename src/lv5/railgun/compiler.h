@@ -533,7 +533,7 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), GetStackBaseLevel(), dynamic_env_level());
+      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), stack_base_level(), dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       {
@@ -553,7 +553,7 @@ class Compiler
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
       stack_base_level_ += 2;
-      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, GetStackBaseLevel(), dynamic_env_level());
+      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, stack_base_level(), dynamic_env_level());
       target.EmitJumps(finally_start);
       block.Address()->Accept(this);
       stack_base_level_ -= 2;
@@ -1191,18 +1191,21 @@ class Compiler
         prev_code_(compiler_->code()),
         prev_jump_table_(compiler_->jump_table()),
         prev_finally_stack_(compiler->finally_stack()),
-        prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
+        prev_dynamic_env_level_(compiler_->dynamic_env_level()),
+        prev_stack_base_level_(compiler_->stack_base_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
-      compiler_->set_dynamic_env_level(0);
       compiler_->set_finally_stack(&finally_stack_);
+      compiler_->set_dynamic_env_level(0);
+      compiler_->set_stack_base_level(0);
     }
 
     ~CodeContext() {
       compiler_->set_code(prev_code_);
       compiler_->set_jump_table(prev_jump_table_);
-      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
       compiler_->set_finally_stack(prev_finally_stack_);
+      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
+      compiler_->set_stack_base_level(prev_stack_base_level_);
     }
    private:
     Compiler* compiler_;
@@ -1212,6 +1215,7 @@ class Compiler
     JumpTable* prev_jump_table_;
     FinallyStack* prev_finally_stack_;
     uint16_t prev_dynamic_env_level_;
+    uint16_t prev_stack_base_level_;
   };
 
   void Visit(const FunctionLiteral* lit) {
@@ -1420,8 +1424,12 @@ class Compiler
     code_->data_[index + 1] = (arg >> 8);
   }
 
-  uint16_t GetStackBaseLevel() const {
+  uint16_t stack_base_level() const {
     return stack_base_level_;
+  }
+
+  void set_stack_base_level(uint16_t level) {
+    stack_base_level_ = level;
   }
 
   Context* ctx_;
@@ -1429,8 +1437,8 @@ class Compiler
   JSScript* script_;
   JumpTable* jump_table_;
   FinallyStack* finally_stack_;
-  uint16_t stack_base_level_;
   uint16_t dynamic_env_level_;
+  uint16_t stack_base_level_;
 };
 
 inline Code* Compile(Context* ctx, const FunctionLiteral& global, JSScript* script) {

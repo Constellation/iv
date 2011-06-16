@@ -100,7 +100,7 @@ std::pair<JSVal, VM::Status> VM::Execute(OldFrame* frame) {
 #define POP() (*--sp)
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
-#define UNWIND_STACK(n) (sp = (frame->stacktop() + ((n) * 2)))
+#define UNWIND_STACK(n) (sp = (frame->stacktop() + (n)))
 #define UNWIND_DYNAMIC_ENV(n)\
 do {\
   const uint16_t dynamic_env_level_shrink = (n);\
