@@ -1,15 +1,8 @@
 #ifndef _IV_UTILS_H_
 #define _IV_UTILS_H_
 #include <cstddef>
-#include <cassert>
+#include "debug.h"
 #include "detail/cstdint.h"
-
-#ifdef NDEBUG
-#undef DEBUG
-#else
-#define DEBUG
-#endif
-
 namespace iv {
 namespace core {
 
