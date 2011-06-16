@@ -1202,6 +1202,7 @@ class Compiler
       compiler_->set_code(prev_code_);
       compiler_->set_jump_table(prev_jump_table_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
+      compiler_->set_finally_stack(prev_finally_stack_);
     }
    private:
     Compiler* compiler_;
