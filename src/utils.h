@@ -23,7 +23,7 @@ namespace core {
 // make struct using char (alignment 1 byte) + T (unknown alignment)
 // shift 1 byte using char and get struct offset (offsetof returns T alignment)
 template <typename T>
-class AlignOf {
+class AlignOfImpl {
  private:
   struct Helper {
     char a_;
@@ -33,7 +33,7 @@ class AlignOf {
   static const std::size_t value = offsetof(Helper, b_);
 };
 
-#define AlignOf(type) AlignOf<type>::value
+#define AlignOf(type) ::iv::core::AlignOfImpl<type>::value
 
 #define AlignOffset(offset, alignment) \
     ((size_t)((offset) + ((alignment) - 1)) & ~(size_t)((alignment) - 1))

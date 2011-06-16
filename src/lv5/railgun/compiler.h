@@ -28,9 +28,7 @@ class Compiler
   typedef std::tuple<uint16_t,
                           std::vector<std::size_t>*,
                           std::vector<std::size_t>*> JumpEntry;
-  typedef std::unordered_map<
-              const BreakableStatement*,
-              JumpEntry> JumpTable;
+  typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
   typedef std::vector<std::vector<std::size_t> > FinallyStack;
 
   explicit Compiler(Context* ctx)
@@ -68,10 +66,18 @@ class Compiler
     return jump_table_;
   }
 
+  void set_finally_stack(FinallyStack* finally_stack) {
+    finally_stack_ = finally_stack;
+  }
+
+  FinallyStack* finally_stack() const {
+    return finally_stack_;
+  }
+
   // try - catch - finally nest level
   // use for break / continue exile by executing finally block
   std::size_t CurrentLevel() const {
-    return finally_stack_.size();
+    return finally_stack_->size();
   }
 
   void DynamicEnvLevelUp() {
@@ -118,15 +124,11 @@ class Compiler
   }
 
   void PushFinallyStack() {
-    finally_stack_.push_back(FinallyStack::value_type());
+    finally_stack_->push_back(FinallyStack::value_type());
   }
 
   void PopFinallyStack() {
-    finally_stack_.pop_back();
-  }
-
-  const FinallyStack& finally_stack() const {
-    return finally_stack_;
+    finally_stack_->pop_back();
   }
 
  private:
@@ -197,7 +199,7 @@ class Compiler
 
     void EmitJumps(std::size_t finally_target) {
       assert(has_finally_);
-      const FinallyStack& stack = compiler_->finally_stack();
+      const FinallyStack& stack = *compiler_->finally_stack();
       const std::vector<std::size_t>& vec = stack[stack.size() - 1];
       for (std::vector<std::size_t>::const_iterator it = vec.begin(),
            last = vec.end(); it != last; ++it) {
@@ -413,7 +415,7 @@ class Compiler
          last = std::get<0>(entry); level > last; --level) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);
-      finally_stack_[level - 1].push_back(finally_jump_index);
+      (*finally_stack_)[level - 1].push_back(finally_jump_index);
     }
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
@@ -426,7 +428,7 @@ class Compiler
          last = std::get<0>(entry); level > last; --level) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);
-      finally_stack_[level - 1].push_back(finally_jump_index);
+      (*finally_stack_)[level - 1].push_back(finally_jump_index);
     }
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
@@ -448,7 +450,7 @@ class Compiler
       for (uint16_t level = CurrentLevel(); level > 0; --level) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);
-        finally_stack_[level - 1].push_back(finally_jump_index);
+        (*finally_stack_)[level - 1].push_back(finally_jump_index);
       }
       Emit<OP::RETURN_RET_VALUE>();
     }
@@ -524,14 +526,14 @@ class Compiler
     if (has_finally) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-      finally_stack_[CurrentLevel() - 1].push_back(finally_jump_index);
+      (*finally_stack_)[CurrentLevel() - 1].push_back(finally_jump_index);
     }
     const std::size_t label_index = CurrentSize();
     Emit<OP::JUMP_FORWARD>(0);  // dummy index
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), CurrentLevel(), dynamic_env_level());
+      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), GetStackBaseLevel(), dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       {
@@ -542,7 +544,7 @@ class Compiler
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-        finally_stack_[CurrentLevel() - 1].push_back(finally_jump_index);
+        (*finally_stack_)[CurrentLevel() - 1].push_back(finally_jump_index);
       }
       catch_return_label_index = CurrentSize();
       Emit<OP::JUMP_FORWARD>(0);  // dummy index
@@ -550,9 +552,11 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, CurrentLevel(), dynamic_env_level());
+      stack_base_level_ += 2;
+      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, GetStackBaseLevel(), dynamic_env_level());
       target.EmitJumps(finally_start);
       block.Address()->Accept(this);
+      stack_base_level_ -= 2;
       Emit<OP::RETURN_SUBROUTINE>();
     }
     // try last
@@ -1183,12 +1187,15 @@ class Compiler
     CodeContext(Compiler* compiler, Code* code)
       : compiler_(compiler),
         jump_table_(),
+        finally_stack_(),
         prev_code_(compiler_->code()),
         prev_jump_table_(compiler_->jump_table()),
+        prev_finally_stack_(compiler->finally_stack()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
       compiler_->set_dynamic_env_level(0);
+      compiler_->set_finally_stack(&finally_stack_);
     }
 
     ~CodeContext() {
@@ -1199,8 +1206,10 @@ class Compiler
    private:
     Compiler* compiler_;
     JumpTable jump_table_;
+    FinallyStack finally_stack_;
     Code* prev_code_;
     JumpTable* prev_jump_table_;
+    FinallyStack* prev_finally_stack_;
     uint16_t prev_dynamic_env_level_;
   };
 
@@ -1410,11 +1419,16 @@ class Compiler
     code_->data_[index + 1] = (arg >> 8);
   }
 
+  uint16_t GetStackBaseLevel() const {
+    return stack_base_level_;
+  }
+
   Context* ctx_;
   Code* code_;
   JSScript* script_;
   JumpTable* jump_table_;
-  FinallyStack finally_stack_;
+  FinallyStack* finally_stack_;
+  uint16_t stack_base_level_;
   uint16_t dynamic_env_level_;
 };
 

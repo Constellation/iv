@@ -71,7 +71,7 @@ class JSVMFunction : public JSFunction {
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
     VM* const vm = ctx->vm();
-    Frame frame;
+    OldFrame frame;
     frame.code_ = code_;
     frame.stacktop_ = args->end();
     frame.env_ = internal::NewDeclarativeEnvironment(ctx, ctx->variable_env());

@@ -129,6 +129,7 @@ class Code : public HeapObject {
   JSScript* script_;
   std::size_t start_position_;
   std::size_t end_position_;
+  std::size_t stack_depth_;
   Data data_;
   Codes codes_;
   Names names_;

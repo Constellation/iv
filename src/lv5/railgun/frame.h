@@ -1,13 +1,15 @@
 #ifndef _IV_LV5_RAILGUN_FRAME_H_
 #define _IV_LV5_RAILGUN_FRAME_H_
 #include <cstddef>
+#include "utils.h"
+#include "static_assert.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class Frame {
+class OldFrame {
  public:
   friend class VM;
   friend class JSVMFunction;
@@ -45,8 +47,25 @@ class Frame {
   JSVal* stacktop_;
   JSEnv* env_;
   JSVal this_binding_;
-  Frame* back_;
+  OldFrame* back_;
 };
+
+class Frame {
+  JSVal* GetFrameBase() {
+    return reinterpret_cast<JSVal*>(this + 1);
+  }
+
+  static std::size_t GetFrameSize(std::size_t n) {
+    return sizeof(JSVal) * n + sizeof(Frame);
+  }
+
+ private:
+  Frame* prev_;
+  uint8_t* prev_pc_;
+  JSVal ret_;
+};
+
+IV_STATIC_ASSERT(AlignOf(Frame) <= AlignOf(JSVal));
 
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FRAME_H_

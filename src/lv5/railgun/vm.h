@@ -59,7 +59,7 @@ class JSValRef : public JSVal {
 
 int VM::Run(Context* ctx, Code* code) {
   ctx_ = ctx;
-  Frame frame;
+  OldFrame frame;
   frame.code_ = code;
   frame.stacktop_ = stack_.stack()->Gain(10000);
   frame.env_ = ctx_->variable_env();
@@ -70,7 +70,7 @@ int VM::Run(Context* ctx, Code* code) {
   return EXIT_SUCCESS;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(Frame* frame) {
+std::pair<JSVal, VM::Status> VM::Execute(OldFrame* frame) {
   const Code& code = frame->code();
   const uint8_t* const first_instr = frame->data();
   const uint8_t* instr = first_instr;
@@ -849,6 +849,17 @@ do {\
       }
 
       case OP::CALL: {
+        const uint32_t argc = oparg;
+        const JSVal v = sp[-(argc + 2)];
+        if (!v.IsCallable()) {
+          e.Report(Error::Type, "not callable object");
+          break;
+        }
+        JSFunction* func = v.object()->AsCallable();
+        if (!func->IsNativeFunction()) {
+          // inline call
+        }
+        // Native Function, so use Invoke
         JSVal* stack_pointer = sp;
         const JSVal x = Invoke(&stack_pointer, oparg, &e);
         sp = stack_pointer;

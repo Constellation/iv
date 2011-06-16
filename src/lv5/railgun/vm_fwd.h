@@ -17,7 +17,7 @@ class VM {
   };
 
   inline int Run(Context* ctx, Code* code);
-  inline std::pair<JSVal, Status> Execute(Frame* frame);
+  inline std::pair<JSVal, Status> Execute(OldFrame* frame);
 
   JSVal Invoke(JSVal** stack_pointer, int argc, Error* e) {
     JSVal* sp = *stack_pointer;
