@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_DISASSEMBLER_H_
 #define _IV_LV5_RAILGUN_DISASSEMBLER_H_
 #include <vector>
+#include <sstream>
 #include "detail/array.h"
 #include "noncopyable.h"
 #include "stringpiece.h"
@@ -18,7 +19,12 @@ class DisAssembler : private core::Noncopyable<> {
 
   void DisAssemble(const Code& code) {
     typedef typename Code::Data Data;
-    OutputLine("[code]");
+    {
+      // code description
+      std::ostringstream ss;
+      ss << "[code] stack: " << code.stack_depth();
+      OutputLine(ss.str());
+    }
     const Data& data = code.Main();
     const Code::Codes& codes = code.codes();
     std::vector<char> line;

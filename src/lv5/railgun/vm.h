@@ -434,10 +434,10 @@ do {\
         if (JSEnv* current = GetEnv(env, s)) {
           const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
           PUSH(expr.TypeOf(ctx_));
-          continue;
+        } else {
+          // unresolvable reference
+          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
         }
-        // unresolvable reference
-        PUSH(JSString::NewAsciiString(ctx_, "undefined"));
         continue;
       }
 

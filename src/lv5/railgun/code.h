@@ -122,6 +122,14 @@ class Code : public HeapObject {
     return end_position_;
   }
 
+  std::size_t stack_depth() const {
+    return stack_depth_;
+  }
+
+  void set_stack_depth(std::size_t depth) {
+    stack_depth_ = depth;
+  }
+
  private:
   bool strict_;
   bool has_eval_;

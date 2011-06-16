@@ -21,6 +21,47 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+class StackDepth : private core::Noncopyable<StackDepth> {
+ public:
+  StackDepth()
+    : current_depth_(0),
+      max_depth_(0) {
+  }
+
+  void Up(std::size_t i = 1) {
+    current_depth_ += i;
+    Update();
+  }
+
+  void Down(std::size_t i = 1) {
+    assert(current_depth_ >= i);
+    current_depth_ -= i;
+  }
+
+  void Set(uint32_t current) {
+    current_depth_ = current;
+    Update();
+  }
+
+  uint32_t GetMaxDepth() const {
+    return max_depth_;
+  }
+
+  uint32_t GetCurrent() const {
+    return current_depth_;
+  }
+
+ private:
+  void Update() {
+    if (current_depth_ > max_depth_) {
+      max_depth_ = current_depth_;
+    }
+  }
+
+  uint32_t current_depth_;
+  uint32_t max_depth_;
+};
+
 class Compiler
     : private core::Noncopyable<Compiler>,
       public AstVisitor {
@@ -36,8 +77,10 @@ class Compiler
       code_(NULL),
       script_(NULL),
       jump_table_(NULL),
-      finally_stack_(),
-      dynamic_env_level_(0) {
+      finally_stack_(NULL),
+      stack_depth_(NULL),
+      dynamic_env_level_(0),
+      stack_base_level_(0) {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
@@ -46,6 +89,8 @@ class Compiler
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(global);
+      assert(stack_depth()->GetCurrent() == 0);
+      code->set_stack_depth(stack_depth()->GetMaxDepth());
     }
     return code;
   }
@@ -234,6 +279,7 @@ class Compiler
       (*it)->Accept(this);
     }
     jump.EmitJumps(CurrentSize());
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const FunctionStatement* stmt) {
@@ -243,9 +289,12 @@ class Compiler
     Visit(&func);
     Emit<OP::STORE_NAME>(index);
     Emit<OP::POP_TOP>();
+    stack_depth()->Down();
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const FunctionDeclaration* func) {
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const VariableStatement* var) {
@@ -254,9 +303,11 @@ class Compiler
          last = decls.end(); it != last; ++it) {
       Visit(*it);
     }
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const EmptyStatement* stmt) {
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const IfStatement* stmt) {
@@ -268,43 +319,71 @@ class Compiler
     // then, remove checker
     stmt->cond()->Accept(this);
     const std::size_t arg_index = CurrentSize() + 1;
+
     Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+    stack_depth()->Down();
+
     stmt->then_statement()->Accept(this);  // STMT
+    assert(stack_depth()->GetCurrent() == stack_base_level());
+
     if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
       const std::size_t second_label_index = CurrentSize();
       Emit<OP::JUMP_FORWARD>(0);  // dummy index
       EmitArgAt(CurrentSize(), arg_index);
+
       else_stmt.Address()->Accept(this);  // STMT
+      assert(stack_depth()->GetCurrent() == stack_base_level());
+
       EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
     } else {
       EmitArgAt(CurrentSize(), arg_index);
     }
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const DoWhileStatement* stmt) {
     ContinueTarget jump(this, stmt);
     const std::size_t start_index = CurrentSize();
+
     stmt->body()->Accept(this);  // STMT
+    assert(stack_depth()->GetCurrent() == stack_base_level());
+
     const std::size_t cond_index = CurrentSize();
+
     stmt->cond()->Accept(this);
+
     Emit<OP::POP_JUMP_IF_TRUE>(start_index);
+    stack_depth()->Down();
+
     jump.EmitJumps(CurrentSize(), cond_index);
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const WhileStatement* stmt) {
     ContinueTarget jump(this, stmt);
     const std::size_t start_index = CurrentSize();
+
     stmt->cond()->Accept(this);
+
     const std::size_t arg_index = CurrentSize() + 1;
+
     Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+    stack_depth()->Down();
+
     stmt->body()->Accept(this);  // STMT
+    assert(stack_depth()->GetCurrent() == stack_base_level());
+
     Emit<OP::JUMP_ABSOLUTE>(start_index);
     EmitArgAt(CurrentSize(), arg_index);
     jump.EmitJumps(CurrentSize(), start_index);
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ForStatement* stmt) {
     ContinueTarget jump(this, stmt);
+
     if (const core::Maybe<const Statement> maybe = stmt->init()) {
       const Statement& init = *(maybe.Address());
       if (init.AsVariableStatement()) {
@@ -315,75 +394,44 @@ class Compiler
         // because ExpressionStatement returns statement value
         init.AsExpressionStatement()->expr()->Accept(this);
         Emit<OP::POP_TOP>();
+        stack_depth()->Down();
       }
     }
+
     const std::size_t start_index = CurrentSize();
     const core::Maybe<const Expression> cond = stmt->cond();
     std::size_t arg_index = 0;
+
     if (cond) {
       cond.Address()->Accept(this);
       arg_index = CurrentSize() + 1;
       Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+      stack_depth()->Down();
     }
-    stmt->body()->Accept(this);
+
+    stmt->body()->Accept(this);  // STMT
+    assert(stack_depth()->GetCurrent() == stack_base_level());
+
     if (const core::Maybe<const Expression> next = stmt->next()) {
       next.Address()->Accept(this);
       Emit<OP::POP_TOP>();
+      stack_depth()->Down();
     }
+
     Emit<OP::JUMP_ABSOLUTE>(start_index);
+
     if (cond) {
       EmitArgAt(CurrentSize(), arg_index);
     }
-    jump.EmitJumps(CurrentSize(), start_index);
-  }
 
-  void EmitAssign(const Expression& lhs, const Expression& rhs) {
-    assert(lhs.IsValidLeftHandSide());
-    if (const Identifier* ident = lhs.AsIdentifier()) {
-      // Identifier
-      const uint16_t index = SymbolToNameIndex(ident->symbol());
-      rhs.Accept(this);
-      Emit<OP::STORE_NAME>(index);
-    } else if (lhs.AsPropertyAccess()) {
-      // PropertyAccess
-      if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
-        // IdentifierAccess
-        ac->target()->Accept(this);
-        rhs.Accept(this);
-        const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-        Emit<OP::STORE_PROP>(index);
-      } else {
-        // IndexAccess
-        const IndexAccess& idx = *lhs.AsIndexAccess();
-        idx.target()->Accept(this);
-        const Expression& key = *idx.key();
-        if (const StringLiteral* str = key.AsStringLiteral()) {
-          const uint16_t index =
-              SymbolToNameIndex(context::Intern(ctx_, str->value()));
-          rhs.Accept(this);
-          Emit<OP::STORE_PROP>(index);
-        } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
-          const uint16_t index =
-              SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          rhs.Accept(this);
-          Emit<OP::STORE_PROP>(index);
-        } else {
-          idx.key()->Accept(this);
-          rhs.Accept(this);
-          Emit<OP::STORE_ELEMENT>();
-        }
-      }
-    } else {
-      // FunctionCall
-      // ConstructorCall
-      lhs.Accept(this);
-      rhs.Accept(this);
-      Emit<OP::STORE_CALL_RESULT>();
-    }
+    jump.EmitJumps(CurrentSize(), start_index);
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ForInStatement* stmt) {
     ContinueTarget jump(this, stmt);
+
     const Expression* lhs;
     if (const VariableStatement* var = stmt->each()->AsVariableStatement()) {
       const Declaration* decl = var->decls().front();
@@ -395,18 +443,82 @@ class Compiler
       assert(stmt->each()->AsExpressionStatement());
       lhs = stmt->each()->AsExpressionStatement()->expr();
     }
+
     assert(lhs->IsValidLeftHandSide());
+
     stmt->enumerable()->Accept(this);
     Emit<OP::FORIN_SETUP>();
-    const std::size_t start_index = CurrentSize();
-    const std::size_t arg_index = CurrentSize() + 1;
-    Emit<OP::FORIN_ENUMERATE>(0);  // dummy index
-    lhs->Accept(this);
-    stmt->body()->Accept(this);
-    Emit<OP::JUMP_ABSOLUTE>(start_index);
-    const std::size_t end_index = CurrentSize();
-    EmitArgAt(end_index, arg_index);
-    jump.EmitJumps(end_index, start_index);
+    {
+      stack_base_level_ += 1;
+
+      const std::size_t start_index = CurrentSize();
+      const std::size_t arg_index = CurrentSize() + 1;
+
+      Emit<OP::FORIN_ENUMERATE>(0);  // dummy index
+      stack_depth()->Up();
+
+      // TODO(Constellation) abstraction...
+      if (const Identifier* ident = lhs->AsIdentifier()) {
+        // Identifier
+        const uint16_t index = SymbolToNameIndex(ident->symbol());
+        Emit<OP::STORE_NAME>(index);
+      } else if (lhs->AsPropertyAccess()) {
+        // PropertyAccess
+        if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
+          // IdentifierAccess
+          ac->target()->Accept(this);
+          Emit<OP::ROT_TWO>();
+          const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+          Emit<OP::STORE_PROP>(index);
+          stack_depth()->Down();
+        } else {
+          // IndexAccess
+          const IndexAccess& idx = *lhs->AsIndexAccess();
+          idx.target()->Accept(this);
+          const Expression& key = *idx.key();
+          if (const StringLiteral* str = key.AsStringLiteral()) {
+            Emit<OP::ROT_TWO>();
+            const uint16_t index =
+                SymbolToNameIndex(context::Intern(ctx_, str->value()));
+            Emit<OP::STORE_PROP>(index);
+            stack_depth()->Down();
+          } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
+            Emit<OP::ROT_TWO>();
+            const uint16_t index =
+                SymbolToNameIndex(context::Intern(ctx_, num->value()));
+            Emit<OP::STORE_PROP>(index);
+            stack_depth()->Down();
+          } else {
+            Emit<OP::ROT_TWO>();
+            idx.key()->Accept(this);
+            Emit<OP::ROT_TWO>();
+            Emit<OP::STORE_ELEMENT>();
+            stack_depth()->Down(2);
+          }
+        }
+      } else {
+        // FunctionCall
+        // ConstructorCall
+        lhs->Accept(this);
+        Emit<OP::ROT_TWO>();
+        Emit<OP::STORE_CALL_RESULT>();
+        stack_depth()->Down();
+      }
+      Emit<OP::POP_TOP>();
+      stack_depth()->Down();
+
+      stmt->body()->Accept(this);  // STMT
+
+      Emit<OP::JUMP_ABSOLUTE>(start_index);
+      const std::size_t end_index = CurrentSize();
+      EmitArgAt(end_index, arg_index);
+
+      stack_base_level_ -= 1;
+      stack_depth()->Down();
+      jump.EmitJumps(end_index, start_index);
+    }
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ContinueStatement* stmt) {
@@ -420,6 +532,8 @@ class Compiler
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
     std::get<2>(entry)->push_back(arg_index);
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const BreakStatement* stmt) {
@@ -433,6 +547,8 @@ class Compiler
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
     std::get<1>(entry)->push_back(arg_index);
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ReturnStatement* stmt) {
@@ -440,11 +556,16 @@ class Compiler
       expr.Address()->Accept(this);
     } else {
       Emit<OP::PUSH_UNDEFINED>();
+      stack_depth()->Up();
     }
+
     if (CurrentLevel() == 0) {
       Emit<OP::RETURN>();
+      stack_depth()->Down();
     } else {
       Emit<OP::SET_RET_VALUE>();
+      stack_depth()->Down();
+
       // nested finally has found
       // set finally jump targets
       for (uint16_t level = CurrentLevel(); level > 0; --level) {
@@ -452,28 +573,34 @@ class Compiler
         Emit<OP::JUMP_SUBROUTINE>(0);
         (*finally_stack_)[level - 1].push_back(finally_jump_index);
       }
+
       Emit<OP::RETURN_RET_VALUE>();
     }
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const WithStatement* stmt) {
     stmt->context()->Accept(this);
     Emit<OP::WITH_SETUP>();
+    stack_depth()->Down();
     {
       DynamicEnvLevelCounter counter(this);
-      stmt->body()->Accept(this);
+      stmt->body()->Accept(this);  // STMT
     }
     Emit<OP::POP_ENV>();
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const LabelledStatement* stmt) {
-    stmt->body()->Accept(this);
+    stmt->body()->Accept(this);  // STMT
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const SwitchStatement* stmt) {
     BreakTarget jump(this, stmt);
     stmt->expr()->Accept(this);
-    Emit<OP::SWITCH_SETUP>();
     typedef SwitchStatement::CaseClauses CaseClauses;
     const CaseClauses& clauses = stmt->clauses();
     std::vector<std::size_t> indexes(clauses.size());
@@ -487,6 +614,7 @@ class Compiler
           expr.Address()->Accept(this);
           *idx = CurrentSize() + 1;
           Emit<OP::SWITCH_CASE>(0);  // dummy index
+          stack_depth()->Down();
         } else {
           // default
           default_it = idx;
@@ -497,6 +625,7 @@ class Compiler
         Emit<OP::SWITCH_DEFAULT>(0);  // dummy index
       }
     }
+    stack_depth()->Down();
     {
       std::vector<std::size_t>::const_iterator idx = indexes.begin();
       for (CaseClauses::const_iterator it = clauses.begin(),
@@ -510,11 +639,15 @@ class Compiler
       }
     }
     jump.EmitJumps(CurrentSize());
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ThrowStatement* stmt) {
     stmt->expr()->Accept(this);
     Emit<OP::THROW>();
+    stack_depth()->Down();
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const TryStatement* stmt) {
@@ -522,7 +655,7 @@ class Compiler
     const bool has_catch = stmt->catch_block();
     const bool has_finally = stmt->finally_block();
     TryTarget target(this, has_finally);
-    stmt->body()->Accept(this);
+    stmt->body()->Accept(this);  // STMT
     if (has_finally) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
@@ -533,12 +666,14 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
+      stack_depth()->Up();  // for error
       code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), stack_base_level(), dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
+      stack_depth()->Down();
       {
         DynamicEnvLevelCounter counter(this);
-        block.Address()->Accept(this);
+        block.Address()->Accept(this);  // STMT
       }
       Emit<OP::POP_ENV>();
       if (has_finally) {
@@ -553,11 +688,16 @@ class Compiler
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
       stack_base_level_ += 2;
+      stack_depth()->Up(2);
+
       code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, stack_base_level(), dynamic_env_level());
       target.EmitJumps(finally_start);
-      block.Address()->Accept(this);
-      stack_base_level_ -= 2;
+
+      block.Address()->Accept(this);  // STMT
+
       Emit<OP::RETURN_SUBROUTINE>();
+      stack_base_level_ -= 2;
+      stack_depth()->Down(2);
     }
     // try last
     EmitArgAt(CurrentSize() - label_index, label_index + 1);
@@ -566,14 +706,19 @@ class Compiler
       EmitArgAt(CurrentSize() - catch_return_label_index,
                 catch_return_label_index + 1);
     }
+
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const DebuggerStatement* stmt) {
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const ExpressionStatement* stmt) {
     stmt->expr()->Accept(this);
     Emit<OP::POP_TOP_AND_RET>();
+    stack_depth()->Down();
+    assert(stack_depth()->GetCurrent() == stack_base_level());
   }
 
   void Visit(const Assignment* assign) {
@@ -591,8 +736,10 @@ class Compiler
         if (ident->symbol() == context::arguments_symbol(ctx_)) {
           code_->set_code_has_arguments();
           Emit<OP::PUSH_ARGUMENTS>();
+          stack_depth()->Up();
         } else {
           Emit<OP::LOAD_NAME>(index);
+          stack_depth()->Up();
         }
         rhs.Accept(this);
         EmitAssignedBinaryOperation(token);
@@ -602,12 +749,16 @@ class Compiler
         if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
           // IdentifierAccess
           ac->target()->Accept(this);
+
           Emit<OP::DUP_TOP>();
+          stack_depth()->Up();
+
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::LOAD_PROP>(index);
           rhs.Accept(this);
           EmitAssignedBinaryOperation(token);
           Emit<OP::STORE_PROP>(index);
+          stack_depth()->Down();
         } else {
           // IndexAccess
           const IndexAccess& idx = *lhs.AsIndexAccess();
@@ -615,27 +766,34 @@ class Compiler
           const Expression& key = *idx.key();
           if (const StringLiteral* str = key.AsStringLiteral()) {
             Emit<OP::DUP_TOP>();
+            stack_depth()->Up();
             const uint16_t index =
                 SymbolToNameIndex(context::Intern(ctx_, str->value()));
             Emit<OP::LOAD_PROP>(index);
             rhs.Accept(this);
             EmitAssignedBinaryOperation(token);
             Emit<OP::STORE_PROP>(index);
+            stack_depth()->Down();
           } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
             Emit<OP::DUP_TOP>();
+            stack_depth()->Up();
             const uint16_t index =
                 SymbolToNameIndex(context::Intern(ctx_, num->value()));
             Emit<OP::LOAD_PROP>(index);
             rhs.Accept(this);
             EmitAssignedBinaryOperation(token);
             Emit<OP::STORE_PROP>(index);
+            stack_depth()->Down();
           } else {
             key.Accept(this);
             Emit<OP::DUP_TWO>();
+            stack_depth()->Up(2);
             Emit<OP::LOAD_ELEMENT>();
+            stack_depth()->Down();
             rhs.Accept(this);
             EmitAssignedBinaryOperation(token);
             Emit<OP::STORE_ELEMENT>();
+            stack_depth()->Down(2);
           }
         }
       } else {
@@ -643,9 +801,11 @@ class Compiler
         // ConstructorCall
         lhs.Accept(this);
         Emit<OP::DUP_TOP>();
+        stack_depth()->Up();
         rhs.Accept(this);
         EmitAssignedBinaryOperation(token);
         Emit<OP::STORE_CALL_RESULT>();
+        stack_depth()->Down();
       }
     }
   }
@@ -711,6 +871,7 @@ class Compiler
       default:
         UNREACHABLE();
     }
+    stack_depth()->Down();
   }
 
   void Visit(const BinaryOperation* binary) {
@@ -721,6 +882,7 @@ class Compiler
         binary->left()->Accept(this);
         const std::size_t arg_index = CurrentSize() + 1;
         Emit<OP::JUMP_IF_FALSE_OR_POP>(0);  // dummy index
+        stack_depth()->Down();
         binary->right()->Accept(this);
         EmitArgAt(CurrentSize(), arg_index);
         return;
@@ -730,6 +892,7 @@ class Compiler
         binary->left()->Accept(this);
         const std::size_t arg_index = CurrentSize() + 1;
         Emit<OP::JUMP_IF_TRUE_OR_POP>(0);  // dummy index
+        stack_depth()->Down();
         binary->right()->Accept(this);
         EmitArgAt(CurrentSize(), arg_index);
         return;
@@ -739,6 +902,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_ADD>();
+        stack_depth()->Down();
         return;
       }
 
@@ -746,6 +910,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_SUBTRACT>();
+        stack_depth()->Down();
         return;
       }
 
@@ -753,6 +918,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT_LOGICAL>();
+        stack_depth()->Down();
         return;
       }
 
@@ -760,6 +926,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT>();
+        stack_depth()->Down();
         return;
       }
 
@@ -767,6 +934,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LSHIFT>();
+        stack_depth()->Down();
         return;
       }
 
@@ -774,6 +942,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_MULTIPLY>();
+        stack_depth()->Down();
         return;
       }
 
@@ -781,6 +950,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_DIVIDE>();
+        stack_depth()->Down();
         return;
       }
 
@@ -788,6 +958,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_MODULO>();
+        stack_depth()->Down();
         return;
       }
 
@@ -795,6 +966,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LT>();
+        stack_depth()->Down();
         return;
       }
 
@@ -802,6 +974,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_GT>();
+        stack_depth()->Down();
         return;
       }
 
@@ -809,6 +982,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LTE>();
+        stack_depth()->Down();
         return;
       }
 
@@ -816,6 +990,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_GTE>();
+        stack_depth()->Down();
         return;
       }
 
@@ -823,6 +998,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_INSTANCEOF>();
+        stack_depth()->Down();
         return;
       }
 
@@ -830,6 +1006,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_IN>();
+        stack_depth()->Down();
         return;
       }
 
@@ -837,6 +1014,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_EQ>();
+        stack_depth()->Down();
         return;
       }
 
@@ -844,6 +1022,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_NE>();
+        stack_depth()->Down();
         return;
       }
 
@@ -851,6 +1030,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_EQ>();
+        stack_depth()->Down();
         return;
       }
 
@@ -858,6 +1038,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_NE>();
+        stack_depth()->Down();
         return;
       }
 
@@ -865,6 +1046,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_AND>();
+        stack_depth()->Down();
         return;
       }
 
@@ -872,6 +1054,7 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_XOR>();
+        stack_depth()->Down();
         return;
       }
 
@@ -879,12 +1062,14 @@ class Compiler
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_OR>();
+        stack_depth()->Down();
         return;
       }
 
       case Token::COMMA: {  // ,
         binary->left()->Accept(this);
         Emit<OP::POP_TOP>();
+        stack_depth()->Down();
         binary->right()->Accept(this);
         return;
       }
@@ -898,7 +1083,9 @@ class Compiler
     cond->cond()->Accept(this);
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+    stack_depth()->Down();
     cond->left()->Accept(this);
+    stack_depth()->Down();
     const std::size_t second_label_index = CurrentSize();
     Emit<OP::JUMP_FORWARD>(0);  // dummy index
     EmitArgAt(CurrentSize(), arg_index);
@@ -921,6 +1108,7 @@ class Compiler
             // DELETE_NAME_STRICT is already rejected in parser
             assert(!code_->strict());
             Emit<OP::DELETE_NAME>(SymbolToNameIndex(ident->symbol()));
+            stack_depth()->Up();
           } else if (expr.AsPropertyAccess()) {
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
               // IdentifierAccess
@@ -941,7 +1129,9 @@ class Compiler
           // but accept expr
           expr.Accept(this);
           Emit<OP::POP_TOP>();
+          stack_depth()->Down();
           Emit<OP::PUSH_TRUE>();
+          stack_depth()->Up();
         }
         return;
       }
@@ -949,7 +1139,9 @@ class Compiler
       case Token::VOID: {
         unary->expr()->Accept(this);
         Emit<OP::POP_TOP>();
+        stack_depth()->Down();
         Emit<OP::PUSH_UNDEFINED>();
+        stack_depth()->Up();
         return;
       }
 
@@ -958,6 +1150,7 @@ class Compiler
         if (const Identifier* ident = expr.AsIdentifier()) {
           // maybe Global Reference
           Emit<OP::TYPEOF_NAME>(SymbolToNameIndex(ident->symbol()));
+          stack_depth()->Up();
         } else {
           unary->expr()->Accept(this);
           Emit<OP::TYPEOF>();
@@ -973,12 +1166,15 @@ class Compiler
           const uint16_t index = SymbolToNameIndex(ident->symbol());
           if (token == Token::INC) {
             Emit<OP::INCREMENT_NAME>(index);
+            stack_depth()->Up();
           } else {
             Emit<OP::DECREMENT_NAME>(index);
+            stack_depth()->Up();
           }
         } else if (expr.AsPropertyAccess()) {
           if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
             // IdentifierAccess
+            ac->target()->Accept(this);
             const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
             if (token == Token::INC) {
               Emit<OP::INCREMENT_PROP>(index);
@@ -1045,12 +1241,15 @@ class Compiler
       const uint16_t index = SymbolToNameIndex(ident->symbol());
       if (token == Token::INC) {
         Emit<OP::POSTFIX_INCREMENT_NAME>(index);
+        stack_depth()->Up();
       } else {
         Emit<OP::POSTFIX_DECREMENT_NAME>(index);
+        stack_depth()->Up();
       }
     } else if (expr.AsPropertyAccess()) {
       if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
         // IdentifierAccess
+        ac->target()->Accept(this);
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
         if (token == Token::INC) {
           Emit<OP::POSTFIX_INCREMENT_PROP>(index);
@@ -1087,11 +1286,14 @@ class Compiler
         if (str.compare(lit->value()) == 0) {
           // duplicate constant pool
           Emit<OP::LOAD_CONST>(i);
-          return; }
+          stack_depth()->Up();
+          return;
+        }
       }
     }
     // new constant value
     Emit<OP::LOAD_CONST>(code_->constants_.size());
+    stack_depth()->Up();
     code_->constants_.push_back(JSString::New(ctx_, lit->value()));
   }
 
@@ -1102,11 +1304,13 @@ class Compiler
       if (it->IsNumber() && it->number() == lit->value()) {
         // duplicate constant pool
         Emit<OP::LOAD_CONST>(i);
+        stack_depth()->Up();
         return;
       }
     }
     // new constant value
     Emit<OP::LOAD_CONST>(code_->constants_.size());
+    stack_depth()->Up();
     code_->constants_.push_back(lit->value());
   }
 
@@ -1116,30 +1320,37 @@ class Compiler
     if (name == context::arguments_symbol(ctx_)) {
       code_->set_code_has_arguments();
       Emit<OP::PUSH_ARGUMENTS>();
+      stack_depth()->Up();
       return;
     }
     const uint16_t index = SymbolToNameIndex(name);
     Emit<OP::LOAD_NAME>(index);
+    stack_depth()->Up();
   }
 
   void Visit(const ThisLiteral* lit) {
     Emit<OP::PUSH_THIS>();
+    stack_depth()->Up();
   }
 
   void Visit(const NullLiteral* lit) {
     Emit<OP::PUSH_NULL>();
+    stack_depth()->Up();
   }
 
   void Visit(const TrueLiteral* lit) {
     Emit<OP::PUSH_TRUE>();
+    stack_depth()->Up();
   }
 
   void Visit(const FalseLiteral* lit) {
     Emit<OP::PUSH_FALSE>();
+    stack_depth()->Up();
   }
 
   void Visit(const RegExpLiteral* lit) {
     Emit<OP::LOAD_CONST>(code_->constants_.size());
+    stack_depth()->Up();
     Emit<OP::BUILD_REGEXP>();
     code_->constants_.push_back(
         JSRegExp::New(ctx_, lit->value(), lit->regexp()));
@@ -1149,6 +1360,7 @@ class Compiler
     typedef ArrayLiteral::MaybeExpressions Items;
     const Items& items = lit->items();
     Emit<OP::BUILD_ARRAY>(items.size());
+    stack_depth()->Up();
     uint16_t current = 0;
     for (Items::const_iterator it = items.begin(),
          last = items.end(); it != last; ++it, ++current) {
@@ -1156,6 +1368,7 @@ class Compiler
       if (expr) {
         expr.Address()->Accept(this);
         Emit<OP::INIT_ARRAY_ELEMENT>(current);
+        stack_depth()->Down();
       }
     }
   }
@@ -1164,6 +1377,7 @@ class Compiler
     using std::get;
     typedef ObjectLiteral::Properties Properties;
     Emit<OP::BUILD_OBJECT>();
+    stack_depth()->Up();
     const Properties& properties = lit->properties();
     for (Properties::const_iterator it = properties.begin(),
          last = properties.end(); it != last; ++it) {
@@ -1174,10 +1388,13 @@ class Compiler
       get<2>(prop)->Accept(this);
       if (type == ObjectLiteral::DATA) {
         Emit<OP::STORE_OBJECT_DATA>(index);
+        stack_depth()->Down();
       } else if (type == ObjectLiteral::GET) {
         Emit<OP::STORE_OBJECT_GET>(index);
+        stack_depth()->Down();
       } else {
         Emit<OP::STORE_OBJECT_SET>(index);
+        stack_depth()->Down();
       }
     }
   }
@@ -1188,14 +1405,17 @@ class Compiler
       : compiler_(compiler),
         jump_table_(),
         finally_stack_(),
+        stack_depth_(),
         prev_code_(compiler_->code()),
         prev_jump_table_(compiler_->jump_table()),
         prev_finally_stack_(compiler->finally_stack()),
+        prev_stack_depth_(compiler_->stack_depth()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()),
         prev_stack_base_level_(compiler_->stack_base_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
       compiler_->set_finally_stack(&finally_stack_);
+      compiler_->set_stack_depth(&stack_depth_);
       compiler_->set_dynamic_env_level(0);
       compiler_->set_stack_base_level(0);
     }
@@ -1204,6 +1424,7 @@ class Compiler
       compiler_->set_code(prev_code_);
       compiler_->set_jump_table(prev_jump_table_);
       compiler_->set_finally_stack(prev_finally_stack_);
+      compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
       compiler_->set_stack_base_level(prev_stack_base_level_);
     }
@@ -1211,9 +1432,11 @@ class Compiler
     Compiler* compiler_;
     JumpTable jump_table_;
     FinallyStack finally_stack_;
+    StackDepth stack_depth_;
     Code* prev_code_;
     JumpTable* prev_jump_table_;
     FinallyStack* prev_finally_stack_;
+    StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
     uint16_t prev_stack_base_level_;
   };
@@ -1225,14 +1448,22 @@ class Compiler
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(*lit);
+      assert(stack_depth()->GetCurrent() == 0);
+      code->set_stack_depth(stack_depth()->GetMaxDepth());
     }
     Emit<OP::MAKE_CLOSURE>(index);
+    stack_depth()->Up();
   }
 
   void Visit(const IdentifierAccess* prop) {
     prop->target()->Accept(this);
     const uint16_t index = SymbolToNameIndex(prop->key()->symbol());
     Emit<OP::LOAD_PROP>(index);
+  }
+
+  void Visit(const IndexAccess* prop) {
+    EmitElement<OP::LOAD_PROP,
+                OP::LOAD_ELEMENT>(*prop);
   }
 
   template<OP::Type PropOP,
@@ -1251,12 +1482,58 @@ class Compiler
     } else {
       prop.key()->Accept(this);
       Emit<ElementOP>();
+      stack_depth()->Down();
     }
   }
 
-  void Visit(const IndexAccess* prop) {
-    EmitElement<OP::LOAD_PROP,
-                OP::LOAD_ELEMENT>(*prop);
+  void EmitAssign(const Expression& lhs, const Expression& rhs) {
+    assert(lhs.IsValidLeftHandSide());
+    if (const Identifier* ident = lhs.AsIdentifier()) {
+      // Identifier
+      const uint16_t index = SymbolToNameIndex(ident->symbol());
+      rhs.Accept(this);
+      Emit<OP::STORE_NAME>(index);
+    } else if (lhs.AsPropertyAccess()) {
+      // PropertyAccess
+      if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
+        // IdentifierAccess
+        ac->target()->Accept(this);
+        rhs.Accept(this);
+        const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+        Emit<OP::STORE_PROP>(index);
+        stack_depth()->Down();
+      } else {
+        // IndexAccess
+        const IndexAccess& idx = *lhs.AsIndexAccess();
+        idx.target()->Accept(this);
+        const Expression& key = *idx.key();
+        if (const StringLiteral* str = key.AsStringLiteral()) {
+          const uint16_t index =
+              SymbolToNameIndex(context::Intern(ctx_, str->value()));
+          rhs.Accept(this);
+          Emit<OP::STORE_PROP>(index);
+          stack_depth()->Down();
+        } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
+          const uint16_t index =
+              SymbolToNameIndex(context::Intern(ctx_, num->value()));
+          rhs.Accept(this);
+          Emit<OP::STORE_PROP>(index);
+          stack_depth()->Down();
+        } else {
+          idx.key()->Accept(this);
+          rhs.Accept(this);
+          Emit<OP::STORE_ELEMENT>();
+          stack_depth()->Down(2);
+        }
+      }
+    } else {
+      // FunctionCall
+      // ConstructorCall
+      lhs.Accept(this);
+      rhs.Accept(this);
+      Emit<OP::STORE_CALL_RESULT>();
+      stack_depth()->Down();
+    }
   }
 
   template<OP::Type op, typename Call>
@@ -1267,6 +1544,7 @@ class Compiler
       if (const Identifier* ident = target.AsIdentifier()) {
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         Emit<OP::CALL_NAME>(index);
+        stack_depth()->Up(2);
         if (op == OP::CALL && ident->symbol() == context::eval_symbol(ctx_)) {
           direct_call_to_eval = true;
         }
@@ -1276,18 +1554,23 @@ class Compiler
           prop->target()->Accept(this);
           const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::CALL_PROP>(index);
+          stack_depth()->Up();
         } else {
           // IndexAccess
+          // TODO(Constellation) this is patching ->Up()
           EmitElement<OP::CALL_PROP,
                       OP::CALL_ELEMENT>(*prop->AsIndexAccess());
+          stack_depth()->Up();
         }
       } else {
         target.Accept(this);
         Emit<OP::CALL_CALL_RESULT>();
+        stack_depth()->Up();
       }
     } else {
       target.Accept(this);
       Emit<OP::PUSH_UNDEFINED>();
+      stack_depth()->Up();
     }
 
     const Expressions& args = call.args();
@@ -1298,9 +1581,11 @@ class Compiler
 
     if (direct_call_to_eval) {
       Emit<OP::EVAL>(args.size());
+      stack_depth()->Down(args.size() + 1);
       code_->set_code_has_eval();
     } else {
       Emit<op>(args.size());
+      stack_depth()->Down(args.size() + 1);
     }
   }
 
@@ -1318,6 +1603,7 @@ class Compiler
       expr.Address()->Accept(this);
       Emit<OP::STORE_NAME>(index);
       Emit<OP::POP_TOP>();
+      stack_depth()->Down();
     }
   }
 
@@ -1348,6 +1634,7 @@ class Compiler
             SymbolToNameIndex(func->name().Address()->symbol());
         Emit<OP::STORE_NAME>(index);
         Emit<OP::POP_TOP>();
+        stack_depth()->Down();
       }
     }
     {
@@ -1370,7 +1657,9 @@ class Compiler
       }
     }
     Emit<OP::PUSH_UNDEFINED>();
+    stack_depth()->Up();
     Emit<OP::RETURN>();
+    stack_depth()->Down();
     Emit<OP::STOP_CODE>();
   }
 
@@ -1432,11 +1721,20 @@ class Compiler
     stack_base_level_ = level;
   }
 
+  StackDepth* stack_depth() const {
+    return stack_depth_;
+  }
+
+  void set_stack_depth(StackDepth* depth) {
+    stack_depth_ = depth;
+  }
+
   Context* ctx_;
   Code* code_;
   JSScript* script_;
   JumpTable* jump_table_;
   FinallyStack* finally_stack_;
+  StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
   uint16_t stack_base_level_;
 };
