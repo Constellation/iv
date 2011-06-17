@@ -21,11 +21,12 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class StackDepth : private core::Noncopyable<StackDepth> {
+class StackDepth : private core::Noncopyable<> {
  public:
   StackDepth()
     : current_depth_(0),
-      max_depth_(0) {
+      max_depth_(0),
+      base_(0) {
   }
 
   void Up(std::size_t i = 1) {
@@ -38,9 +39,12 @@ class StackDepth : private core::Noncopyable<StackDepth> {
     current_depth_ -= i;
   }
 
-  void Set(uint32_t current) {
-    current_depth_ = current;
-    Update();
+  void BaseUp(std::size_t i) {
+    base_ += i;
+  }
+
+  void BaseDown(std::size_t i) {
+    base_ -= i;
   }
 
   uint32_t GetMaxDepth() const {
@@ -49,6 +53,14 @@ class StackDepth : private core::Noncopyable<StackDepth> {
 
   uint32_t GetCurrent() const {
     return current_depth_;
+  }
+
+  uint32_t GetStackBase() const {
+    return base_;
+  }
+
+  bool IsBaseLine() const {
+    return current_depth_ == base_;
   }
 
  private:
@@ -60,6 +72,28 @@ class StackDepth : private core::Noncopyable<StackDepth> {
 
   uint32_t current_depth_;
   uint32_t max_depth_;
+  uint32_t base_;
+};
+
+class DepthPoint : private core::Noncopyable<> {
+ public:
+  DepthPoint(StackDepth* depth)
+#ifdef DEBUG
+    : depth_(depth),
+      current_(depth->GetCurrent())
+#endif  // DEBUG
+  {
+  }
+
+  void LevelCheck(std::size_t i) {
+    assert(depth_->GetCurrent() == (current_ + i));
+  }
+
+ private:
+#ifdef DEBUG
+  StackDepth* depth_;
+  uint32_t current_;
+#endif  // DEBUG
 };
 
 class Compiler
@@ -79,8 +113,7 @@ class Compiler
       jump_table_(NULL),
       finally_stack_(NULL),
       stack_depth_(NULL),
-      dynamic_env_level_(0),
-      stack_base_level_(0) {
+      dynamic_env_level_(0) {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
@@ -95,88 +128,45 @@ class Compiler
     return code;
   }
 
-  void set_code(Code* code) {
-    code_ = code;
-  }
-
-  Code* code() const {
-    return code_;
-  }
-
-  void set_jump_table(JumpTable* jump_table) {
-    jump_table_ = jump_table;
-  }
-
-  JumpTable* jump_table() const {
-    return jump_table_;
-  }
-
-  void set_finally_stack(FinallyStack* finally_stack) {
-    finally_stack_ = finally_stack;
-  }
-
-  FinallyStack* finally_stack() const {
-    return finally_stack_;
-  }
-
-  // try - catch - finally nest level
-  // use for break / continue exile by executing finally block
-  std::size_t CurrentLevel() const {
-    return finally_stack_->size();
-  }
-
-  void DynamicEnvLevelUp() {
-    ++dynamic_env_level_;
-  }
-
-  void DynamicEnvLevelDown() {
-    --dynamic_env_level_;
-  }
-
-  uint16_t dynamic_env_level() const {
-    return dynamic_env_level_;
-  }
-
-  void set_dynamic_env_level(uint16_t dynamic_env_level) {
-    dynamic_env_level_ = dynamic_env_level;
-  }
-
-  void RegisterJumpTarget(const BreakableStatement* stmt,
-                          std::vector<std::size_t>* breaks) {
-    jump_table_->insert(
-        std::make_pair(
-            stmt,
-            std::make_tuple(
-                CurrentLevel(),
-                breaks,
-                static_cast<std::vector<std::size_t>*>(NULL))));
-  }
-
-  void RegisterJumpTarget(const IterationStatement* stmt,
-                          std::vector<std::size_t>* breaks,
-                          std::vector<std::size_t>* continues) {
-    jump_table_->insert(
-        std::make_pair(
-            stmt,
-            std::make_tuple(
-                CurrentLevel(),
-                breaks,
-                continues)));
-  }
-
-  void UnRegisterJumpTarget(const BreakableStatement* stmt) {
-    jump_table_->erase(stmt);
-  }
-
-  void PushFinallyStack() {
-    finally_stack_->push_back(FinallyStack::value_type());
-  }
-
-  void PopFinallyStack() {
-    finally_stack_->pop_back();
-  }
-
  private:
+  class CodeContext : private core::Noncopyable<> {
+   public:
+    CodeContext(Compiler* compiler, Code* code)
+      : compiler_(compiler),
+        jump_table_(),
+        finally_stack_(),
+        stack_depth_(),
+        prev_code_(compiler_->code()),
+        prev_jump_table_(compiler_->jump_table()),
+        prev_finally_stack_(compiler->finally_stack()),
+        prev_stack_depth_(compiler_->stack_depth()),
+        prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
+      compiler_->set_code(code);
+      compiler_->set_jump_table(&jump_table_);
+      compiler_->set_finally_stack(&finally_stack_);
+      compiler_->set_stack_depth(&stack_depth_);
+      compiler_->set_dynamic_env_level(0);
+    }
+
+    ~CodeContext() {
+      compiler_->set_code(prev_code_);
+      compiler_->set_jump_table(prev_jump_table_);
+      compiler_->set_finally_stack(prev_finally_stack_);
+      compiler_->set_stack_depth(prev_stack_depth_);
+      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
+    }
+   private:
+    Compiler* compiler_;
+    JumpTable jump_table_;
+    FinallyStack finally_stack_;
+    StackDepth stack_depth_;
+    Code* prev_code_;
+    JumpTable* prev_jump_table_;
+    FinallyStack* prev_finally_stack_;
+    StackDepth* prev_stack_depth_;
+    uint16_t prev_dynamic_env_level_;
+  };
+
   class BreakTarget : private core::Noncopyable<> {
    public:
     BreakTarget(Compiler* compiler,
@@ -279,7 +269,7 @@ class Compiler
       (*it)->Accept(this);
     }
     jump.EmitJumps(CurrentSize());
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const FunctionStatement* stmt) {
@@ -290,11 +280,11 @@ class Compiler
     Emit<OP::STORE_NAME>(index);
     Emit<OP::POP_TOP>();
     stack_depth()->Down();
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const FunctionDeclaration* func) {
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const VariableStatement* var) {
@@ -303,11 +293,11 @@ class Compiler
          last = decls.end(); it != last; ++it) {
       Visit(*it);
     }
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const EmptyStatement* stmt) {
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const IfStatement* stmt) {
@@ -324,7 +314,7 @@ class Compiler
     stack_depth()->Down();
 
     stmt->then_statement()->Accept(this);  // STMT
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
 
     if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
       const std::size_t second_label_index = CurrentSize();
@@ -332,13 +322,13 @@ class Compiler
       EmitArgAt(CurrentSize(), arg_index);
 
       else_stmt.Address()->Accept(this);  // STMT
-      assert(stack_depth()->GetCurrent() == stack_base_level());
+      assert(stack_depth()->IsBaseLine());
 
       EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
     } else {
       EmitArgAt(CurrentSize(), arg_index);
     }
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const DoWhileStatement* stmt) {
@@ -346,7 +336,7 @@ class Compiler
     const std::size_t start_index = CurrentSize();
 
     stmt->body()->Accept(this);  // STMT
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
 
     const std::size_t cond_index = CurrentSize();
 
@@ -357,7 +347,7 @@ class Compiler
 
     jump.EmitJumps(CurrentSize(), cond_index);
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const WhileStatement* stmt) {
@@ -372,13 +362,13 @@ class Compiler
     stack_depth()->Down();
 
     stmt->body()->Accept(this);  // STMT
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
 
     Emit<OP::JUMP_ABSOLUTE>(start_index);
     EmitArgAt(CurrentSize(), arg_index);
     jump.EmitJumps(CurrentSize(), start_index);
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ForStatement* stmt) {
@@ -410,7 +400,7 @@ class Compiler
     }
 
     stmt->body()->Accept(this);  // STMT
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
 
     if (const core::Maybe<const Expression> next = stmt->next()) {
       next.Address()->Accept(this);
@@ -426,7 +416,7 @@ class Compiler
 
     jump.EmitJumps(CurrentSize(), start_index);
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ForInStatement* stmt) {
@@ -446,11 +436,10 @@ class Compiler
 
     assert(lhs->IsValidLeftHandSide());
 
-    stmt->enumerable()->Accept(this);
-    Emit<OP::FORIN_SETUP>();
     {
-      stack_base_level_ += 1;
-
+      stmt->enumerable()->Accept(this);
+      stack_depth()->BaseUp(1);
+      Emit<OP::FORIN_SETUP>();
       const std::size_t start_index = CurrentSize();
       const std::size_t arg_index = CurrentSize() + 1;
 
@@ -513,12 +502,12 @@ class Compiler
       const std::size_t end_index = CurrentSize();
       EmitArgAt(end_index, arg_index);
 
-      stack_base_level_ -= 1;
+      stack_depth()->BaseDown(1);
       stack_depth()->Down();
       jump.EmitJumps(end_index, start_index);
     }
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ContinueStatement* stmt) {
@@ -533,7 +522,7 @@ class Compiler
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
     std::get<2>(entry)->push_back(arg_index);
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const BreakStatement* stmt) {
@@ -548,7 +537,7 @@ class Compiler
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
     std::get<1>(entry)->push_back(arg_index);
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ReturnStatement* stmt) {
@@ -577,7 +566,7 @@ class Compiler
       Emit<OP::RETURN_RET_VALUE>();
     }
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const WithStatement* stmt) {
@@ -590,12 +579,12 @@ class Compiler
     }
     Emit<OP::POP_ENV>();
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const LabelledStatement* stmt) {
     stmt->body()->Accept(this);  // STMT
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const SwitchStatement* stmt) {
@@ -640,14 +629,14 @@ class Compiler
     }
     jump.EmitJumps(CurrentSize());
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ThrowStatement* stmt) {
     stmt->expr()->Accept(this);
     Emit<OP::THROW>();
     stack_depth()->Down();
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const TryStatement* stmt) {
@@ -666,8 +655,12 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      stack_depth()->Up();  // for error
-      code_->RegisterHandler<Handler::CATCH>(try_start, CurrentSize(), stack_base_level(), dynamic_env_level());
+      stack_depth()->Up();  // exception handler
+      code_->RegisterHandler<Handler::CATCH>(
+          try_start,
+          CurrentSize(),
+          stack_depth()->GetStackBase(),
+          dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       stack_depth()->Down();
@@ -687,17 +680,21 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      stack_base_level_ += 2;
-      stack_depth()->Up(2);
+      stack_depth()->BaseUp(2);
+      stack_depth()->Up(2);  // JUMP_SUBROUTINE or exception handler
 
-      code_->RegisterHandler<Handler::FINALLY>(try_start, finally_start, stack_base_level(), dynamic_env_level());
+      code_->RegisterHandler<Handler::FINALLY>(
+          try_start,
+          finally_start,
+          stack_depth()->GetStackBase(),
+          dynamic_env_level());
       target.EmitJumps(finally_start);
 
       block.Address()->Accept(this);  // STMT
 
       Emit<OP::RETURN_SUBROUTINE>();
-      stack_base_level_ -= 2;
-      stack_depth()->Down(2);
+      stack_depth()->BaseDown(2);
+      stack_depth()->Down(2);  // RETURN_SUBROUTINE
     }
     // try last
     EmitArgAt(CurrentSize() - label_index, label_index + 1);
@@ -707,22 +704,23 @@ class Compiler
                 catch_return_label_index + 1);
     }
 
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const DebuggerStatement* stmt) {
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const ExpressionStatement* stmt) {
     stmt->expr()->Accept(this);
     Emit<OP::POP_TOP_AND_RET>();
     stack_depth()->Down();
-    assert(stack_depth()->GetCurrent() == stack_base_level());
+    assert(stack_depth()->IsBaseLine());
   }
 
   void Visit(const Assignment* assign) {
     using core::Token;
+    DepthPoint point(stack_depth());
     const Token::Type token = assign->op();
     if (token == Token::ASSIGN) {
       EmitAssign(*assign->left(), *assign->right());
@@ -808,74 +806,12 @@ class Compiler
         stack_depth()->Down();
       }
     }
-  }
-
-  void EmitAssignedBinaryOperation(core::Token::Type token) {
-    using core::Token;
-    switch (token) {
-      case Token::ASSIGN_ADD: {  // +=
-        Emit<OP::BINARY_ADD>();
-        break;
-      }
-
-      case Token::ASSIGN_SUB: {  // -=
-        Emit<OP::BINARY_SUBTRACT>();
-        break;
-      }
-
-      case Token::ASSIGN_MUL: {  // *=
-        Emit<OP::BINARY_MULTIPLY>();
-        break;
-      }
-
-      case Token::ASSIGN_MOD: {  // %=
-        Emit<OP::BINARY_MODULO>();
-        break;
-      }
-
-      case Token::ASSIGN_DIV: {  // /=
-        Emit<OP::BINARY_DIVIDE>();
-        break;
-      }
-
-      case Token::ASSIGN_SAR: {  // >>=
-        Emit<OP::BINARY_RSHIFT>();
-        break;
-      }
-
-      case Token::ASSIGN_SHR: {  // >>>=
-        Emit<OP::BINARY_RSHIFT_LOGICAL>();
-        break;
-      }
-
-      case Token::ASSIGN_SHL: {  // <<=
-        Emit<OP::BINARY_LSHIFT>();
-        break;
-      }
-
-      case Token::ASSIGN_BIT_AND: {  // &=
-        Emit<OP::BINARY_BIT_AND>();
-        break;
-      }
-
-      case Token::ASSIGN_BIT_OR: {  // |=
-        Emit<OP::BINARY_BIT_OR>();
-        break;
-      }
-
-      case Token::ASSIGN_BIT_XOR: {  // ^=
-        Emit<OP::BINARY_BIT_XOR>();
-        break;
-      }
-
-      default:
-        UNREACHABLE();
-    }
-    stack_depth()->Down();
+    point.LevelCheck(1);
   }
 
   void Visit(const BinaryOperation* binary) {
     using core::Token;
+    DepthPoint point(stack_depth());
     const Token::Type token = binary->op();
     switch (token) {
       case Token::LOGICAL_AND: {  // &&
@@ -885,7 +821,7 @@ class Compiler
         stack_depth()->Down();
         binary->right()->Accept(this);
         EmitArgAt(CurrentSize(), arg_index);
-        return;
+        break;
       }
 
       case Token::LOGICAL_OR: {  // ||
@@ -895,7 +831,7 @@ class Compiler
         stack_depth()->Down();
         binary->right()->Accept(this);
         EmitArgAt(CurrentSize(), arg_index);
-        return;
+        break;
       }
 
       case Token::ADD: {  // +
@@ -903,7 +839,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_ADD>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::SUB: {  // -
@@ -911,7 +847,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_SUBTRACT>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::SHR: {  // >>>
@@ -919,7 +855,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT_LOGICAL>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::SAR: {  // >>
@@ -927,7 +863,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::SHL: {  // <<
@@ -935,7 +871,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_LSHIFT>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::MUL: {  // *
@@ -943,7 +879,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_MULTIPLY>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::DIV: {  // /
@@ -951,7 +887,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_DIVIDE>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::MOD: {  // %
@@ -959,7 +895,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_MODULO>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::LT: {  // <
@@ -967,7 +903,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_LT>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::GT: {  // >
@@ -975,7 +911,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_GT>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::LTE: {  // <=
@@ -983,7 +919,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_LTE>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::GTE: {  // >=
@@ -991,7 +927,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_GTE>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::INSTANCEOF: {  // instanceof
@@ -999,7 +935,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_INSTANCEOF>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::IN: {  // in
@@ -1007,7 +943,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_IN>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::EQ: {  // ==
@@ -1015,7 +951,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_EQ>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::NE: {  // !=
@@ -1023,7 +959,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_NE>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::EQ_STRICT: {  // ===
@@ -1031,7 +967,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_EQ>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::NE_STRICT: {  // !==
@@ -1039,7 +975,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_NE>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::BIT_AND: {  // &
@@ -1047,7 +983,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_AND>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::BIT_XOR: {  // ^
@@ -1055,7 +991,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_XOR>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::BIT_OR: {  // |
@@ -1063,7 +999,7 @@ class Compiler
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_OR>();
         stack_depth()->Down();
-        return;
+        break;
       }
 
       case Token::COMMA: {  // ,
@@ -1071,15 +1007,17 @@ class Compiler
         Emit<OP::POP_TOP>();
         stack_depth()->Down();
         binary->right()->Accept(this);
-        return;
+        break;
       }
 
       default:
         UNREACHABLE();
     }
+    point.LevelCheck(1);
   }
 
   void Visit(const ConditionalExpression* cond) {
+    DepthPoint point(stack_depth());
     cond->cond()->Accept(this);
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
@@ -1091,11 +1029,13 @@ class Compiler
     EmitArgAt(CurrentSize(), arg_index);
     cond->right()->Accept(this);  // STMT
     EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
+    point.LevelCheck(1);
   }
 
   void Visit(const UnaryOperation* unary) {
     using core::Token;
     const Token::Type token = unary->op();
+    DepthPoint point(stack_depth());
     switch (token) {
       case Token::DELETE: {
         const Expression& expr = *unary->expr();
@@ -1133,7 +1073,7 @@ class Compiler
           Emit<OP::PUSH_TRUE>();
           stack_depth()->Up();
         }
-        return;
+        break;
       }
 
       case Token::VOID: {
@@ -1142,7 +1082,7 @@ class Compiler
         stack_depth()->Down();
         Emit<OP::PUSH_UNDEFINED>();
         stack_depth()->Up();
-        return;
+        break;
       }
 
       case Token::TYPEOF: {
@@ -1155,7 +1095,7 @@ class Compiler
           unary->expr()->Accept(this);
           Emit<OP::TYPEOF>();
         }
-        return;
+        break;
       }
 
       case Token::INC:
@@ -1200,40 +1140,42 @@ class Compiler
             Emit<OP::DECREMENT_CALL_RESULT>();
           }
         }
-        return;
+        break;
       }
 
       case Token::ADD: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_POSITIVE>();
-        return;
+        break;
       }
 
       case Token::SUB: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_NEGATIVE>();
-        return;
+        break;
       }
 
       case Token::BIT_NOT: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_BIT_NOT>();
-        return;
+        break;
       }
 
       case Token::NOT: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_NOT>();
-        return;
+        break;
       }
 
       default:
         UNREACHABLE();
     }
+    point.LevelCheck(1);
   }
 
   void Visit(const PostfixExpression* postfix) {
     using core::Token;
+    DepthPoint point(stack_depth());
     const Expression& expr = *postfix->expr();
     const Token::Type token = postfix->op();
     assert(expr.IsValidLeftHandSide());
@@ -1275,9 +1217,11 @@ class Compiler
         Emit<OP::POSTFIX_DECREMENT_CALL_RESULT>();
       }
     }
+    point.LevelCheck(1);
   }
 
   void Visit(const StringLiteral* lit) {
+    DepthPoint point(stack_depth());
     uint16_t i = 0;
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
@@ -1287,6 +1231,7 @@ class Compiler
           // duplicate constant pool
           Emit<OP::LOAD_CONST>(i);
           stack_depth()->Up();
+          point.LevelCheck(1);
           return;
         }
       }
@@ -1295,9 +1240,11 @@ class Compiler
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth()->Up();
     code_->constants_.push_back(JSString::New(ctx_, lit->value()));
+    point.LevelCheck(1);
   }
 
   void Visit(const NumberLiteral* lit) {
+    DepthPoint point(stack_depth());
     uint16_t i = 0;
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
@@ -1305,6 +1252,7 @@ class Compiler
         // duplicate constant pool
         Emit<OP::LOAD_CONST>(i);
         stack_depth()->Up();
+        point.LevelCheck(1);
         return;
       }
     }
@@ -1312,52 +1260,66 @@ class Compiler
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth()->Up();
     code_->constants_.push_back(lit->value());
+    point.LevelCheck(1);
   }
 
   void Visit(const Identifier* lit) {
     // directlly extract value and set to top version
+    DepthPoint point(stack_depth());
     const Symbol name = lit->symbol();
     if (name == context::arguments_symbol(ctx_)) {
       code_->set_code_has_arguments();
       Emit<OP::PUSH_ARGUMENTS>();
       stack_depth()->Up();
-      return;
+    } else {
+      const uint16_t index = SymbolToNameIndex(name);
+      Emit<OP::LOAD_NAME>(index);
+      stack_depth()->Up();
     }
-    const uint16_t index = SymbolToNameIndex(name);
-    Emit<OP::LOAD_NAME>(index);
-    stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const ThisLiteral* lit) {
+    DepthPoint point(stack_depth());
     Emit<OP::PUSH_THIS>();
     stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const NullLiteral* lit) {
+    DepthPoint point(stack_depth());
     Emit<OP::PUSH_NULL>();
     stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const TrueLiteral* lit) {
+    DepthPoint point(stack_depth());
     Emit<OP::PUSH_TRUE>();
     stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const FalseLiteral* lit) {
+    DepthPoint point(stack_depth());
     Emit<OP::PUSH_FALSE>();
     stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const RegExpLiteral* lit) {
+    DepthPoint point(stack_depth());
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth()->Up();
     Emit<OP::BUILD_REGEXP>();
     code_->constants_.push_back(
         JSRegExp::New(ctx_, lit->value(), lit->regexp()));
+    point.LevelCheck(1);
   }
 
   void Visit(const ArrayLiteral* lit) {
     typedef ArrayLiteral::MaybeExpressions Items;
+    DepthPoint point(stack_depth());
     const Items& items = lit->items();
     Emit<OP::BUILD_ARRAY>(items.size());
     stack_depth()->Up();
@@ -1371,11 +1333,13 @@ class Compiler
         stack_depth()->Down();
       }
     }
+    point.LevelCheck(1);
   }
 
   void Visit(const ObjectLiteral* lit) {
     using std::get;
     typedef ObjectLiteral::Properties Properties;
+    DepthPoint point(stack_depth());
     Emit<OP::BUILD_OBJECT>();
     stack_depth()->Up();
     const Properties& properties = lit->properties();
@@ -1397,51 +1361,11 @@ class Compiler
         stack_depth()->Down();
       }
     }
+    point.LevelCheck(1);
   }
 
-  class CodeContext : private core::Noncopyable<> {
-   public:
-    CodeContext(Compiler* compiler, Code* code)
-      : compiler_(compiler),
-        jump_table_(),
-        finally_stack_(),
-        stack_depth_(),
-        prev_code_(compiler_->code()),
-        prev_jump_table_(compiler_->jump_table()),
-        prev_finally_stack_(compiler->finally_stack()),
-        prev_stack_depth_(compiler_->stack_depth()),
-        prev_dynamic_env_level_(compiler_->dynamic_env_level()),
-        prev_stack_base_level_(compiler_->stack_base_level()) {
-      compiler_->set_code(code);
-      compiler_->set_jump_table(&jump_table_);
-      compiler_->set_finally_stack(&finally_stack_);
-      compiler_->set_stack_depth(&stack_depth_);
-      compiler_->set_dynamic_env_level(0);
-      compiler_->set_stack_base_level(0);
-    }
-
-    ~CodeContext() {
-      compiler_->set_code(prev_code_);
-      compiler_->set_jump_table(prev_jump_table_);
-      compiler_->set_finally_stack(prev_finally_stack_);
-      compiler_->set_stack_depth(prev_stack_depth_);
-      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
-      compiler_->set_stack_base_level(prev_stack_base_level_);
-    }
-   private:
-    Compiler* compiler_;
-    JumpTable jump_table_;
-    FinallyStack finally_stack_;
-    StackDepth stack_depth_;
-    Code* prev_code_;
-    JumpTable* prev_jump_table_;
-    FinallyStack* prev_finally_stack_;
-    StackDepth* prev_stack_depth_;
-    uint16_t prev_dynamic_env_level_;
-    uint16_t prev_stack_base_level_;
-  };
-
   void Visit(const FunctionLiteral* lit) {
+    DepthPoint point(stack_depth());
     Code* const code = new Code(script_, *lit);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
@@ -1453,17 +1377,59 @@ class Compiler
     }
     Emit<OP::MAKE_CLOSURE>(index);
     stack_depth()->Up();
+    point.LevelCheck(1);
   }
 
   void Visit(const IdentifierAccess* prop) {
+    DepthPoint point(stack_depth());
     prop->target()->Accept(this);
     const uint16_t index = SymbolToNameIndex(prop->key()->symbol());
     Emit<OP::LOAD_PROP>(index);
+    point.LevelCheck(1);
   }
 
   void Visit(const IndexAccess* prop) {
+    DepthPoint point(stack_depth());
     EmitElement<OP::LOAD_PROP,
                 OP::LOAD_ELEMENT>(*prop);
+    point.LevelCheck(1);
+  }
+
+  void Visit(const FunctionCall* call) {
+    DepthPoint point(stack_depth());
+    EmitCall<OP::CALL>(*call);
+    point.LevelCheck(1);
+  }
+
+  void Visit(const ConstructorCall* call) {
+    DepthPoint point(stack_depth());
+    EmitCall<OP::CONSTRUCT>(*call);
+    point.LevelCheck(1);
+  }
+
+  void Visit(const Declaration* decl) {
+    DepthPoint point(stack_depth());
+    const uint16_t index = SymbolToNameIndex(decl->name()->symbol());
+    if (const core::Maybe<const Expression> expr = decl->expr()) {
+      expr.Address()->Accept(this);
+      Emit<OP::STORE_NAME>(index);
+      Emit<OP::POP_TOP>();
+      stack_depth()->Down();
+    }
+    point.LevelCheck(0);
+  }
+
+  void Visit(const CaseClause* dummy) { }
+
+  uint16_t SymbolToNameIndex(const Symbol& sym) {
+    const Code::Names::const_iterator it =
+        std::find(code_->names_.begin(), code_->names_.end(), sym);
+    if (it != code_->names_.end()) {
+      return std::distance<
+          Code::Names::const_iterator>(code_->names_.begin(), it);
+    }
+    code_->names_.push_back(sym);
+    return code_->names_.size() - 1;
   }
 
   template<OP::Type PropOP,
@@ -1589,37 +1555,6 @@ class Compiler
     }
   }
 
-  void Visit(const FunctionCall* call) {
-    EmitCall<OP::CALL>(*call);
-  }
-
-  void Visit(const ConstructorCall* call) {
-    EmitCall<OP::CONSTRUCT>(*call);
-  }
-
-  void Visit(const Declaration* decl) {
-    const uint16_t index = SymbolToNameIndex(decl->name()->symbol());
-    if (const core::Maybe<const Expression> expr = decl->expr()) {
-      expr.Address()->Accept(this);
-      Emit<OP::STORE_NAME>(index);
-      Emit<OP::POP_TOP>();
-      stack_depth()->Down();
-    }
-  }
-
-  void Visit(const CaseClause* dummy) { }
-
-  uint16_t SymbolToNameIndex(const Symbol& sym) {
-    const Code::Names::const_iterator it =
-        std::find(code_->names_.begin(), code_->names_.end(), sym);
-    if (it != code_->names_.end()) {
-      return std::distance<
-          Code::Names::const_iterator>(code_->names_.begin(), it);
-    }
-    code_->names_.push_back(sym);
-    return code_->names_.size() - 1;
-  }
-
   void EmitFunctionCode(const FunctionLiteral& lit) {
     const Scope& scope = lit.scope();
     {
@@ -1661,6 +1596,70 @@ class Compiler
     Emit<OP::RETURN>();
     stack_depth()->Down();
     Emit<OP::STOP_CODE>();
+  }
+
+  void EmitAssignedBinaryOperation(core::Token::Type token) {
+    using core::Token;
+    switch (token) {
+      case Token::ASSIGN_ADD: {  // +=
+        Emit<OP::BINARY_ADD>();
+        break;
+      }
+
+      case Token::ASSIGN_SUB: {  // -=
+        Emit<OP::BINARY_SUBTRACT>();
+        break;
+      }
+
+      case Token::ASSIGN_MUL: {  // *=
+        Emit<OP::BINARY_MULTIPLY>();
+        break;
+      }
+
+      case Token::ASSIGN_MOD: {  // %=
+        Emit<OP::BINARY_MODULO>();
+        break;
+      }
+
+      case Token::ASSIGN_DIV: {  // /=
+        Emit<OP::BINARY_DIVIDE>();
+        break;
+      }
+
+      case Token::ASSIGN_SAR: {  // >>=
+        Emit<OP::BINARY_RSHIFT>();
+        break;
+      }
+
+      case Token::ASSIGN_SHR: {  // >>>=
+        Emit<OP::BINARY_RSHIFT_LOGICAL>();
+        break;
+      }
+
+      case Token::ASSIGN_SHL: {  // <<=
+        Emit<OP::BINARY_LSHIFT>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_AND: {  // &=
+        Emit<OP::BINARY_BIT_AND>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_OR: {  // |=
+        Emit<OP::BINARY_BIT_OR>();
+        break;
+      }
+
+      case Token::ASSIGN_BIT_XOR: {  // ^=
+        Emit<OP::BINARY_BIT_XOR>();
+        break;
+      }
+
+      default:
+        UNREACHABLE();
+    }
+    stack_depth()->Down();
   }
 
   std::size_t CurrentSize() const {
@@ -1713,12 +1712,85 @@ class Compiler
     code_->data_[index + 1] = (arg >> 8);
   }
 
-  uint16_t stack_base_level() const {
-    return stack_base_level_;
+  void set_code(Code* code) {
+    code_ = code;
   }
 
-  void set_stack_base_level(uint16_t level) {
-    stack_base_level_ = level;
+  Code* code() const {
+    return code_;
+  }
+
+  void set_jump_table(JumpTable* jump_table) {
+    jump_table_ = jump_table;
+  }
+
+  JumpTable* jump_table() const {
+    return jump_table_;
+  }
+
+  void set_finally_stack(FinallyStack* finally_stack) {
+    finally_stack_ = finally_stack;
+  }
+
+  FinallyStack* finally_stack() const {
+    return finally_stack_;
+  }
+
+  // try - catch - finally nest level
+  // use for break / continue exile by executing finally block
+  std::size_t CurrentLevel() const {
+    return finally_stack_->size();
+  }
+
+  void DynamicEnvLevelUp() {
+    ++dynamic_env_level_;
+  }
+
+  void DynamicEnvLevelDown() {
+    --dynamic_env_level_;
+  }
+
+  uint16_t dynamic_env_level() const {
+    return dynamic_env_level_;
+  }
+
+  void set_dynamic_env_level(uint16_t dynamic_env_level) {
+    dynamic_env_level_ = dynamic_env_level;
+  }
+
+  void RegisterJumpTarget(const BreakableStatement* stmt,
+                          std::vector<std::size_t>* breaks) {
+    jump_table_->insert(
+        std::make_pair(
+            stmt,
+            std::make_tuple(
+                CurrentLevel(),
+                breaks,
+                static_cast<std::vector<std::size_t>*>(NULL))));
+  }
+
+  void RegisterJumpTarget(const IterationStatement* stmt,
+                          std::vector<std::size_t>* breaks,
+                          std::vector<std::size_t>* continues) {
+    jump_table_->insert(
+        std::make_pair(
+            stmt,
+            std::make_tuple(
+                CurrentLevel(),
+                breaks,
+                continues)));
+  }
+
+  void UnRegisterJumpTarget(const BreakableStatement* stmt) {
+    jump_table_->erase(stmt);
+  }
+
+  void PushFinallyStack() {
+    finally_stack_->push_back(FinallyStack::value_type());
+  }
+
+  void PopFinallyStack() {
+    finally_stack_->pop_back();
   }
 
   StackDepth* stack_depth() const {
@@ -1736,7 +1808,6 @@ class Compiler
   FinallyStack* finally_stack_;
   StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
-  uint16_t stack_base_level_;
 };
 
 inline Code* Compile(Context* ctx, const FunctionLiteral& global, JSScript* script) {
