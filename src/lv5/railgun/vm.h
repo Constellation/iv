@@ -1044,7 +1044,7 @@ MAIN_LOOP_START:
             AccessorDescriptor(NULL, value.object(),
                                PropertyDescriptor::ENUMERABLE |
                                PropertyDescriptor::CONFIGURABLE |
-                               PropertyDescriptor::UNDEF_SETTER),
+                               PropertyDescriptor::UNDEF_GETTER),
             false, ERR);
         continue;
       }
