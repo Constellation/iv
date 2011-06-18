@@ -802,6 +802,7 @@ class Lexer: private Noncopyable<> {
   Token::Type ScanNumber() {
     buffer8_.clear();
     State type = DECIMAL;
+    bool is_decimal_integer = !period;
     if (period) {
       Record8('0');
       Record8('.');
@@ -836,6 +837,7 @@ class Lexer: private Noncopyable<> {
         ScanDecimalDigits();
       }
       if (type == DECIMAL && c_ == '.') {
+        is_decimal_integer = false;
         Record8Advance();
         ScanDecimalDigits();
       }
@@ -843,6 +845,7 @@ class Lexer: private Noncopyable<> {
 
     // exponent part
     if (c_ == 'e' || c_ == 'E') {
+      is_decimal_integer = false;
       if (type != DECIMAL) {
         return Token::ILLEGAL;
       }
@@ -866,8 +869,14 @@ class Lexer: private Noncopyable<> {
 
 
     if (type == DECIMAL) {
-      const std::string buf(buffer8_.begin(), buffer8_.end());
-      numeric_ = std::atof(buf.c_str());
+      if (is_decimal_integer) {
+        numeric_ = ParseIntegerOverflow(buffer8_.begin(),
+                                        buffer8_.end(),
+                                        10);
+      } else {
+        const std::string buf(buffer8_.begin(), buffer8_.end());
+        numeric_ = std::atof(buf.c_str());
+      }
     } else if (type == HEX) {
       assert(buffer8_.size() > 2);  // first 0x
       numeric_ = ParseIntegerOverflow(buffer8_.begin() + 2,
