@@ -802,7 +802,7 @@ class Compiler
     using core::Token;
     DepthPoint point(stack_depth());
     const Token::Type token = assign->op();
-    if (token == Token::ASSIGN) {
+    if (token == Token::TK_ASSIGN) {
       EmitAssign(*assign->left(), *assign->right());
     } else {
       const Expression& lhs = *assign->left();
@@ -894,7 +894,7 @@ class Compiler
     DepthPoint point(stack_depth());
     const Token::Type token = binary->op();
     switch (token) {
-      case Token::LOGICAL_AND: {  // &&
+      case Token::TK_LOGICAL_AND: {  // &&
         binary->left()->Accept(this);
         const std::size_t arg_index = CurrentSize() + 1;
         Emit<OP::JUMP_IF_FALSE_OR_POP>(0);  // dummy index
@@ -904,7 +904,7 @@ class Compiler
         break;
       }
 
-      case Token::LOGICAL_OR: {  // ||
+      case Token::TK_LOGICAL_OR: {  // ||
         binary->left()->Accept(this);
         const std::size_t arg_index = CurrentSize() + 1;
         Emit<OP::JUMP_IF_TRUE_OR_POP>(0);  // dummy index
@@ -914,7 +914,7 @@ class Compiler
         break;
       }
 
-      case Token::ADD: {  // +
+      case Token::TK_ADD: {  // +
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_ADD>();
@@ -922,7 +922,7 @@ class Compiler
         break;
       }
 
-      case Token::SUB: {  // -
+      case Token::TK_SUB: {  // -
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_SUBTRACT>();
@@ -930,7 +930,7 @@ class Compiler
         break;
       }
 
-      case Token::SHR: {  // >>>
+      case Token::TK_SHR: {  // >>>
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT_LOGICAL>();
@@ -938,7 +938,7 @@ class Compiler
         break;
       }
 
-      case Token::SAR: {  // >>
+      case Token::TK_SAR: {  // >>
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_RSHIFT>();
@@ -946,7 +946,7 @@ class Compiler
         break;
       }
 
-      case Token::SHL: {  // <<
+      case Token::TK_SHL: {  // <<
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LSHIFT>();
@@ -954,7 +954,7 @@ class Compiler
         break;
       }
 
-      case Token::MUL: {  // *
+      case Token::TK_MUL: {  // *
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_MULTIPLY>();
@@ -962,7 +962,7 @@ class Compiler
         break;
       }
 
-      case Token::DIV: {  // /
+      case Token::TK_DIV: {  // /
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_DIVIDE>();
@@ -970,7 +970,7 @@ class Compiler
         break;
       }
 
-      case Token::MOD: {  // %
+      case Token::TK_MOD: {  // %
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_MODULO>();
@@ -978,7 +978,7 @@ class Compiler
         break;
       }
 
-      case Token::LT: {  // <
+      case Token::TK_LT: {  // <
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LT>();
@@ -986,7 +986,7 @@ class Compiler
         break;
       }
 
-      case Token::GT: {  // >
+      case Token::TK_GT: {  // >
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_GT>();
@@ -994,7 +994,7 @@ class Compiler
         break;
       }
 
-      case Token::LTE: {  // <=
+      case Token::TK_LTE: {  // <=
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_LTE>();
@@ -1002,7 +1002,7 @@ class Compiler
         break;
       }
 
-      case Token::GTE: {  // >=
+      case Token::TK_GTE: {  // >=
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_GTE>();
@@ -1010,7 +1010,7 @@ class Compiler
         break;
       }
 
-      case Token::INSTANCEOF: {  // instanceof
+      case Token::TK_INSTANCEOF: {  // instanceof
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_INSTANCEOF>();
@@ -1018,7 +1018,7 @@ class Compiler
         break;
       }
 
-      case Token::IN: {  // in
+      case Token::TK_IN: {  // in
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_IN>();
@@ -1026,7 +1026,7 @@ class Compiler
         break;
       }
 
-      case Token::EQ: {  // ==
+      case Token::TK_EQ: {  // ==
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_EQ>();
@@ -1034,7 +1034,7 @@ class Compiler
         break;
       }
 
-      case Token::NE: {  // !=
+      case Token::TK_NE: {  // !=
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_NE>();
@@ -1042,7 +1042,7 @@ class Compiler
         break;
       }
 
-      case Token::EQ_STRICT: {  // ===
+      case Token::TK_EQ_STRICT: {  // ===
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_EQ>();
@@ -1050,7 +1050,7 @@ class Compiler
         break;
       }
 
-      case Token::NE_STRICT: {  // !==
+      case Token::TK_NE_STRICT: {  // !==
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_STRICT_NE>();
@@ -1058,7 +1058,7 @@ class Compiler
         break;
       }
 
-      case Token::BIT_AND: {  // &
+      case Token::TK_BIT_AND: {  // &
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_AND>();
@@ -1066,7 +1066,7 @@ class Compiler
         break;
       }
 
-      case Token::BIT_XOR: {  // ^
+      case Token::TK_BIT_XOR: {  // ^
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_XOR>();
@@ -1074,7 +1074,7 @@ class Compiler
         break;
       }
 
-      case Token::BIT_OR: {  // |
+      case Token::TK_BIT_OR: {  // |
         binary->left()->Accept(this);
         binary->right()->Accept(this);
         Emit<OP::BINARY_BIT_OR>();
@@ -1082,7 +1082,7 @@ class Compiler
         break;
       }
 
-      case Token::COMMA: {  // ,
+      case Token::TK_COMMA: {  // ,
         binary->left()->Accept(this);
         Emit<OP::POP_TOP>();
         stack_depth()->Down();
@@ -1117,7 +1117,7 @@ class Compiler
     const Token::Type token = unary->op();
     DepthPoint point(stack_depth());
     switch (token) {
-      case Token::DELETE: {
+      case Token::TK_DELETE: {
         const Expression& expr = *unary->expr();
         if (expr.IsValidLeftHandSide()) {
           // Identifier
@@ -1156,7 +1156,7 @@ class Compiler
         break;
       }
 
-      case Token::VOID: {
+      case Token::TK_VOID: {
         unary->expr()->Accept(this);
         Emit<OP::POP_TOP>();
         stack_depth()->Down();
@@ -1165,7 +1165,7 @@ class Compiler
         break;
       }
 
-      case Token::TYPEOF: {
+      case Token::TK_TYPEOF: {
         const Expression& expr = *unary->expr();
         if (const Identifier* ident = expr.AsIdentifier()) {
           // maybe Global Reference
@@ -1178,13 +1178,13 @@ class Compiler
         break;
       }
 
-      case Token::INC:
-      case Token::DEC: {
+      case Token::TK_INC:
+      case Token::TK_DEC: {
         const Expression& expr = *unary->expr();
         assert(expr.IsValidLeftHandSide());
         if (const Identifier* ident = expr.AsIdentifier()) {
           const uint16_t index = SymbolToNameIndex(ident->symbol());
-          if (token == Token::INC) {
+          if (token == Token::TK_INC) {
             Emit<OP::INCREMENT_NAME>(index);
             stack_depth()->Up();
           } else {
@@ -1196,7 +1196,7 @@ class Compiler
             // IdentifierAccess
             ac->target()->Accept(this);
             const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-            if (token == Token::INC) {
+            if (token == Token::TK_INC) {
               Emit<OP::INCREMENT_PROP>(index);
             } else {
               Emit<OP::DECREMENT_PROP>(index);
@@ -1204,7 +1204,7 @@ class Compiler
           } else {
             // IndexAccess
             const IndexAccess& idxac = *expr.AsIndexAccess();
-            if (token == Token::INC) {
+            if (token == Token::TK_INC) {
               EmitElement<OP::INCREMENT_PROP,
                           OP::INCREMENT_ELEMENT>(idxac);
             } else {
@@ -1214,7 +1214,7 @@ class Compiler
           }
         } else {
           expr.Accept(this);
-          if (token == Token::INC) {
+          if (token == Token::TK_INC) {
             Emit<OP::INCREMENT_CALL_RESULT>();
           } else {
             Emit<OP::DECREMENT_CALL_RESULT>();
@@ -1223,25 +1223,25 @@ class Compiler
         break;
       }
 
-      case Token::ADD: {
+      case Token::TK_ADD: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_POSITIVE>();
         break;
       }
 
-      case Token::SUB: {
+      case Token::TK_SUB: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_NEGATIVE>();
         break;
       }
 
-      case Token::BIT_NOT: {
+      case Token::TK_BIT_NOT: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_BIT_NOT>();
         break;
       }
 
-      case Token::NOT: {
+      case Token::TK_NOT: {
         unary->expr()->Accept(this);
         Emit<OP::UNARY_NOT>();
         break;
@@ -1261,7 +1261,7 @@ class Compiler
     assert(expr.IsValidLeftHandSide());
     if (const Identifier* ident = expr.AsIdentifier()) {
       const uint16_t index = SymbolToNameIndex(ident->symbol());
-      if (token == Token::INC) {
+      if (token == Token::TK_INC) {
         Emit<OP::POSTFIX_INCREMENT_NAME>(index);
         stack_depth()->Up();
       } else {
@@ -1273,7 +1273,7 @@ class Compiler
         // IdentifierAccess
         ac->target()->Accept(this);
         const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
-        if (token == Token::INC) {
+        if (token == Token::TK_INC) {
           Emit<OP::POSTFIX_INCREMENT_PROP>(index);
         } else {
           Emit<OP::POSTFIX_DECREMENT_PROP>(index);
@@ -1281,7 +1281,7 @@ class Compiler
       } else {
         // IndexAccess
         const IndexAccess& idxac = *expr.AsIndexAccess();
-        if (token == Token::INC) {
+        if (token == Token::TK_INC) {
           EmitElement<OP::POSTFIX_INCREMENT_PROP,
                       OP::POSTFIX_INCREMENT_ELEMENT>(idxac);
         } else {
@@ -1291,7 +1291,7 @@ class Compiler
       }
     } else {
       expr.Accept(this);
-      if (token == Token::INC) {
+      if (token == Token::TK_INC) {
         Emit<OP::POSTFIX_INCREMENT_CALL_RESULT>();
       } else {
         Emit<OP::POSTFIX_DECREMENT_CALL_RESULT>();
@@ -1683,57 +1683,57 @@ class Compiler
   void EmitAssignedBinaryOperation(core::Token::Type token) {
     using core::Token;
     switch (token) {
-      case Token::ASSIGN_ADD: {  // +=
+      case Token::TK_ASSIGN_ADD: {  // +=
         Emit<OP::BINARY_ADD>();
         break;
       }
 
-      case Token::ASSIGN_SUB: {  // -=
+      case Token::TK_ASSIGN_SUB: {  // -=
         Emit<OP::BINARY_SUBTRACT>();
         break;
       }
 
-      case Token::ASSIGN_MUL: {  // *=
+      case Token::TK_ASSIGN_MUL: {  // *=
         Emit<OP::BINARY_MULTIPLY>();
         break;
       }
 
-      case Token::ASSIGN_MOD: {  // %=
+      case Token::TK_ASSIGN_MOD: {  // %=
         Emit<OP::BINARY_MODULO>();
         break;
       }
 
-      case Token::ASSIGN_DIV: {  // /=
+      case Token::TK_ASSIGN_DIV: {  // /=
         Emit<OP::BINARY_DIVIDE>();
         break;
       }
 
-      case Token::ASSIGN_SAR: {  // >>=
+      case Token::TK_ASSIGN_SAR: {  // >>=
         Emit<OP::BINARY_RSHIFT>();
         break;
       }
 
-      case Token::ASSIGN_SHR: {  // >>>=
+      case Token::TK_ASSIGN_SHR: {  // >>>=
         Emit<OP::BINARY_RSHIFT_LOGICAL>();
         break;
       }
 
-      case Token::ASSIGN_SHL: {  // <<=
+      case Token::TK_ASSIGN_SHL: {  // <<=
         Emit<OP::BINARY_LSHIFT>();
         break;
       }
 
-      case Token::ASSIGN_BIT_AND: {  // &=
+      case Token::TK_ASSIGN_BIT_AND: {  // &=
         Emit<OP::BINARY_BIT_AND>();
         break;
       }
 
-      case Token::ASSIGN_BIT_OR: {  // |=
+      case Token::TK_ASSIGN_BIT_OR: {  // |=
         Emit<OP::BINARY_BIT_OR>();
         break;
       }
 
-      case Token::ASSIGN_BIT_XOR: {  // ^=
+      case Token::TK_ASSIGN_BIT_XOR: {  // ^=
         Emit<OP::BINARY_BIT_XOR>();
         break;
       }

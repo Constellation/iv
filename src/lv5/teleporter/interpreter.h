@@ -694,7 +694,7 @@ void Interpreter::Visit(const Assignment* assign) {
   EVAL(assign->left());
   const JSVal lref(ctx_->ret());
   JSVal result;
-  if (assign->op() == Token::ASSIGN) {  // =
+  if (assign->op() == Token::TK_ASSIGN) {  // =
     EVAL(assign->right());
     const JSVal rhs = GetValue(ctx_->ret(), CHECK);
     result = rhs;
@@ -703,7 +703,7 @@ void Interpreter::Visit(const Assignment* assign) {
     EVAL(assign->right());
     const JSVal rhs = GetValue(ctx_->ret(), CHECK);
     switch (assign->op()) {
-      case Token::ASSIGN_ADD: {  // +=
+      case Token::TK_ASSIGN_ADD: {  // +=
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
@@ -720,66 +720,66 @@ void Interpreter::Visit(const Assignment* assign) {
         result.set_value(left_num + right_num);
         break;
       }
-      case Token::ASSIGN_SUB: {  // -=
+      case Token::TK_ASSIGN_SUB: {  // -=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(left_num - right_num);
         break;
       }
-      case Token::ASSIGN_MUL: {  // *=
+      case Token::TK_ASSIGN_MUL: {  // *=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(left_num * right_num);
         break;
       }
-      case Token::ASSIGN_MOD: {  // %=
+      case Token::TK_ASSIGN_MOD: {  // %=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(std::fmod(left_num, right_num));
         break;
       }
-      case Token::ASSIGN_DIV: {  // /=
+      case Token::TK_ASSIGN_DIV: {  // /=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(left_num / right_num);
         break;
       }
-      case Token::ASSIGN_SAR: {  // >>=
+      case Token::TK_ASSIGN_SAR: {  // >>=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(core::DoubleToInt32(left_num)
                          >> (core::DoubleToInt32(right_num) & 0x1f));
         break;
       }
-      case Token::ASSIGN_SHR: {  // >>>=
+      case Token::TK_ASSIGN_SHR: {  // >>>=
         const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
         const double right = rhs.ToNumber(ctx_, CHECK);
         const uint32_t res = left >> (core::DoubleToInt32(right) & 0x1f);
         result.set_value(res);
         break;
       }
-      case Token::ASSIGN_SHL: {  // <<=
+      case Token::TK_ASSIGN_SHL: {  // <<=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(core::DoubleToInt32(left_num)
                          << (core::DoubleToInt32(right_num) & 0x1f));
         break;
       }
-      case Token::ASSIGN_BIT_AND: {  // &=
+      case Token::TK_ASSIGN_BIT_AND: {  // &=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(core::DoubleToInt32(left_num)
                          & (core::DoubleToInt32(right_num)));
         break;
       }
-      case Token::ASSIGN_BIT_OR: {  // |=
+      case Token::TK_ASSIGN_BIT_OR: {  // |=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(core::DoubleToInt32(left_num)
                          | (core::DoubleToInt32(right_num)));
         break;
       }
-      case Token::ASSIGN_BIT_XOR: {  // ^=
+      case Token::TK_ASSIGN_BIT_XOR: {  // ^=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         result.set_value(core::DoubleToInt32(left_num)
@@ -807,7 +807,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
   const JSVal lhs = GetValue(ctx_->ret(), CHECK);
   {
     switch (token) {
-      case Token::LOGICAL_AND: {  // &&
+      case Token::TK_LOGICAL_AND: {  // &&
         const bool cond = lhs.ToBoolean(CHECK);
         if (!cond) {
           ctx_->Return(lhs);
@@ -819,7 +819,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         }
       }
 
-      case Token::LOGICAL_OR: {  // ||
+      case Token::TK_LOGICAL_OR: {  // ||
         const bool cond = lhs.ToBoolean(CHECK);
         if (cond) {
           ctx_->Return(lhs);
@@ -841,28 +841,28 @@ void Interpreter::Visit(const BinaryOperation* binary) {
     EVAL(binary->right());
     const JSVal rhs = GetValue(ctx_->ret(), CHECK);
     switch (token) {
-      case Token::MUL: {  // *
+      case Token::TK_MUL: {  // *
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(left_num * right_num);
         return;
       }
 
-      case Token::DIV: {  // /
+      case Token::TK_DIV: {  // /
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(left_num / right_num);
         return;
       }
 
-      case Token::MOD: {  // %
+      case Token::TK_MOD: {  // %
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(std::fmod(left_num, right_num));
         return;
       }
 
-      case Token::ADD: {  // +
+      case Token::TK_ADD: {  // +
         // section 11.6.1 NOTE
         // no hint is provided in the calls to ToPrimitive
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
@@ -882,14 +882,14 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::SUB: {  // -
+      case Token::TK_SUB: {  // -
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(left_num - right_num);
         return;
       }
 
-      case Token::SHL: {  // <<
+      case Token::TK_SHL: {  // <<
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(core::DoubleToInt32(left_num)
@@ -897,7 +897,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::SAR: {  // >>
+      case Token::TK_SAR: {  // >>
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(core::DoubleToInt32(left_num)
@@ -905,7 +905,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::SHR: {  // >>>
+      case Token::TK_SHR: {  // >>>
         const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
         const double right = rhs.ToNumber(ctx_, CHECK);
         const uint32_t res = left >> (core::DoubleToInt32(right) & 0x1f);
@@ -913,35 +913,35 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::LT: {  // <
+      case Token::TK_LT: {  // <
         const internal::CompareKind res =
             internal::Compare<true>(ctx_, lhs, rhs, CHECK);
         ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
         return;
       }
 
-      case Token::GT: {  // >
+      case Token::TK_GT: {  // >
         const internal::CompareKind res =
             internal::Compare<false>(ctx_, rhs, lhs, CHECK);
         ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
         return;
       }
 
-      case Token::LTE: {  // <=
+      case Token::TK_LTE: {  // <=
         const internal::CompareKind res =
             internal::Compare<false>(ctx_, rhs, lhs, CHECK);
         ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
         return;
       }
 
-      case Token::GTE: {  // >=
+      case Token::TK_GTE: {  // >=
         const internal::CompareKind res =
             internal::Compare<true>(ctx_, lhs, rhs, CHECK);
         ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
         return;
       }
 
-      case Token::INSTANCEOF: {  // instanceof
+      case Token::TK_INSTANCEOF: {  // instanceof
         if (!rhs.IsObject()) {
           ctx_->error()->Report(Error::Type, "instanceof requires object");
           return;
@@ -960,7 +960,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::IN: {  // in
+      case Token::TK_IN: {  // in
         if (!rhs.IsObject()) {
           ctx_->error()->Report(Error::Type, "in requires object");
           return;
@@ -977,7 +977,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::EQ: {  // ==
+      case Token::TK_EQ: {  // ==
         const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (res) {
           ctx_->Return(JSTrue);
@@ -987,7 +987,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::NE: {  // !=
+      case Token::TK_NE: {  // !=
         const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (!res) {
           ctx_->Return(JSTrue);
@@ -997,7 +997,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::EQ_STRICT: {  // ===
+      case Token::TK_EQ_STRICT: {  // ===
         if (internal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
@@ -1006,7 +1006,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::NE_STRICT: {  // !==
+      case Token::TK_NE_STRICT: {  // !==
         if (!internal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
@@ -1016,7 +1016,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       // bitwise op
-      case Token::BIT_AND: {  // &
+      case Token::TK_BIT_AND: {  // &
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(core::DoubleToInt32(left_num)
@@ -1024,7 +1024,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::BIT_XOR: {  // ^
+      case Token::TK_BIT_XOR: {  // ^
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(core::DoubleToInt32(left_num)
@@ -1032,7 +1032,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::BIT_OR: {  // |
+      case Token::TK_BIT_OR: {  // |
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
         ctx_->Return(core::DoubleToInt32(left_num)
@@ -1040,7 +1040,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         return;
       }
 
-      case Token::COMMA:  // ,
+      case Token::TK_COMMA:  // ,
         ctx_->Return(rhs);
         return;
 
@@ -1070,7 +1070,7 @@ void Interpreter::Visit(const ConditionalExpression* cond) {
 void Interpreter::Visit(const UnaryOperation* unary) {
   using core::Token;
   switch (unary->op()) {
-    case Token::DELETE: {
+    case Token::TK_DELETE: {
       EVAL(unary->expr());
       if (!ctx_->ret().IsReference()) {
         ctx_->Return(JSTrue);
@@ -1101,14 +1101,14 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::VOID: {
+    case Token::TK_VOID: {
       EVAL(unary->expr());
       GetValue(ctx_->ret(), CHECK);
       ctx_->ret().set_undefined();
       return;
     }
 
-    case Token::TYPEOF: {
+    case Token::TK_TYPEOF: {
       EVAL(unary->expr());
       if (ctx_->ret().IsReference()) {
         if (ctx_->ret().reference()->base().IsUndefined()) {
@@ -1122,7 +1122,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::INC: {
+    case Token::TK_INC: {
       EVAL(unary->expr());
       const JSVal expr = ctx_->ret();
       // when parser find eval / arguments identifier in strict code,
@@ -1136,7 +1136,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::DEC: {
+    case Token::TK_DEC: {
       EVAL(unary->expr());
       const JSVal expr = ctx_->ret();
       // when parser find eval / arguments identifier in strict code,
@@ -1150,7 +1150,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::ADD: {
+    case Token::TK_ADD: {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const double val = expr.ToNumber(ctx_, CHECK);
@@ -1158,7 +1158,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::SUB: {
+    case Token::TK_SUB: {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const double old_value = expr.ToNumber(ctx_, CHECK);
@@ -1166,7 +1166,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::BIT_NOT: {
+    case Token::TK_BIT_NOT: {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const double value = expr.ToNumber(ctx_, CHECK);
@@ -1174,7 +1174,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       return;
     }
 
-    case Token::NOT: {
+    case Token::TK_NOT: {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
       const bool value = expr.ToBoolean(CHECK);
@@ -1202,7 +1202,7 @@ void Interpreter::Visit(const PostfixExpression* postfix) {
   const JSVal old = GetValue(lref, CHECK);
   const double value = old.ToNumber(ctx_, CHECK);
   const double new_value = value +
-      ((postfix->op() == core::Token::INC) ? 1 : -1);
+      ((postfix->op() == core::Token::TK_INC) ? 1 : -1);
   PutValue(lref, new_value, CHECK);
   ctx_->Return(value);
 }

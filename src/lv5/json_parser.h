@@ -61,7 +61,7 @@ class JSONParser : private core::Noncopyable<> {
   JSVal Parse(Error* e) {
     Next();
     const JSVal result = ParseJSONValue(CHECK);
-    IS(Token::EOS);
+    IS(Token::TK_EOS);
     return result;
   }
 
@@ -73,28 +73,28 @@ class JSONParser : private core::Noncopyable<> {
 
   JSVal ParseJSONValue(Error* e) {
     switch (token_) {
-      case Token::NULL_LITERAL:
+      case Token::TK_NULL_LITERAL:
         Next();
         return JSNull;
 
-      case Token::TRUE_LITERAL:
+      case Token::TK_TRUE_LITERAL:
         Next();
         return JSTrue;
 
-      case Token::FALSE_LITERAL:
+      case Token::TK_FALSE_LITERAL:
         Next();
         return JSFalse;
 
-      case Token::LBRACE:
+      case Token::TK_LBRACE:
         return ParseJSONObject(CHECK);
 
-      case Token::LBRACK:
+      case Token::TK_LBRACK:
         return ParseJSONArray(CHECK);
 
-      case Token::STRING:
+      case Token::TK_STRING:
         return ParseJSONString();
 
-      case Token::NUMBER:
+      case Token::TK_NUMBER:
         return ParseJSONNumber();
 
       default:
@@ -103,14 +103,14 @@ class JSONParser : private core::Noncopyable<> {
   }
 
   JSVal ParseJSONObject(Error* e) {
-    assert(token_ == Token::LBRACE);
+    assert(token_ == Token::TK_LBRACE);
     Next();
     JSObject* const obj = JSObject::New(ctx_);
     bool trailing_comma = false;
-    while (token_ != Token::RBRACE) {
-      IS(Token::STRING);
+    while (token_ != Token::TK_RBRACE) {
+      IS(Token::TK_STRING);
       const Symbol key = ParseSymbol(lexer_.Buffer());
-      EXPECT(Token::COLON);
+      EXPECT(Token::TK_COLON);
       const JSVal target = ParseJSONValue(CHECK);
       obj->DefineOwnProperty(
           ctx_, key,
@@ -119,14 +119,14 @@ class JSONParser : private core::Noncopyable<> {
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, CHECK);
-      if (token_ != Token::RBRACE) {
-        EXPECT(Token::COMMA);
+      if (token_ != Token::TK_RBRACE) {
+        EXPECT(Token::TK_COMMA);
         trailing_comma = true;
       } else {
         trailing_comma = false;
       }
     }
-    assert(token_ == Token::RBRACE);
+    assert(token_ == Token::TK_RBRACE);
     if (trailing_comma) {
       RAISE();
     }
@@ -135,12 +135,12 @@ class JSONParser : private core::Noncopyable<> {
   }
 
   JSVal ParseJSONArray(Error* e) {
-    assert(token_ == Token::LBRACK);
+    assert(token_ == Token::TK_LBRACK);
     JSArray* const ary = JSArray::New(ctx_);
     uint32_t current = 0;
     Next();
     bool trailing_comma = false;
-    while (token_ != Token::RBRACK) {
+    while (token_ != Token::TK_RBRACK) {
       const JSVal target = ParseJSONValue(CHECK);
       ary->DefineOwnPropertyWithIndex(
           ctx_, current,
@@ -148,15 +148,15 @@ class JSONParser : private core::Noncopyable<> {
                                  PropertyDescriptor::ENUMERABLE |
                                  PropertyDescriptor::CONFIGURABLE),
           false, CHECK);
-      if (token_ != Token::RBRACK) {
-        EXPECT(Token::COMMA);
+      if (token_ != Token::TK_RBRACK) {
+        EXPECT(Token::TK_COMMA);
         trailing_comma = true;
       } else {
         trailing_comma = false;
       }
       ++current;
     }
-    assert(token_ == Token::RBRACK);
+    assert(token_ == Token::TK_RBRACK);
     if (trailing_comma) {
       RAISE();
     }
@@ -167,7 +167,7 @@ class JSONParser : private core::Noncopyable<> {
   }
 
   JSVal ParseJSONString() {
-    assert(token_ == Token::STRING);
+    assert(token_ == Token::TK_STRING);
     const std::vector<uint16_t>& vec = lexer_.Buffer();
     JSString* string = JSString::New(ctx_, vec.begin(), vec.end());
     Next();
@@ -175,7 +175,7 @@ class JSONParser : private core::Noncopyable<> {
   }
 
   JSVal ParseJSONNumber() {
-    assert(token_ == Token::NUMBER);
+    assert(token_ == Token::TK_NUMBER);
     const double number = lexer_.Numeric();
     Next();
     return number;

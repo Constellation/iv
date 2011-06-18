@@ -66,19 +66,19 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '=') {
             Advance();
-            token = Token::LTE;
+            token = Token::TK_LTE;
           } else if (c_ == '<') {
             Advance();
             if (c_ == '=') {
               Advance();
-              token = Token::ASSIGN_SHL;
+              token = Token::TK_ASSIGN_SHL;
             } else {
-              token = Token::SHL;
+              token = Token::TK_SHL;
             }
           } else if (c_ == '!') {
             token = SkipHtmlComment();
           } else {
-            token = Token::LT;
+            token = Token::TK_LT;
           }
           break;
 
@@ -87,25 +87,25 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '=') {
             Advance();
-            token = Token::GTE;
+            token = Token::TK_GTE;
           } else if (c_ == '>') {
             Advance();
             if (c_ == '=') {
               Advance();
-              token = Token::ASSIGN_SAR;
+              token = Token::TK_ASSIGN_SAR;
             } else if (c_ == '>') {
               Advance();
               if (c_ == '=') {
                 Advance();
-                token = Token::ASSIGN_SHR;
+                token = Token::TK_ASSIGN_SHR;
               } else {
-                token = Token::SHR;
+                token = Token::TK_SHR;
               }
             } else {
-              token = Token::SAR;
+              token = Token::TK_SAR;
             }
           } else {
-            token = Token::GT;
+            token = Token::TK_GT;
           }
           break;
 
@@ -116,12 +116,12 @@ class Lexer: private Noncopyable<> {
             Advance();
             if (c_ == '=') {
               Advance();
-              token = Token::EQ_STRICT;
+              token = Token::TK_EQ_STRICT;
             } else {
-              token = Token::EQ;
+              token = Token::TK_EQ;
             }
           } else {
-            token = Token::ASSIGN;
+            token = Token::TK_ASSIGN;
           }
           break;
 
@@ -132,12 +132,12 @@ class Lexer: private Noncopyable<> {
             Advance();
             if (c_ == '=') {
               Advance();
-              token = Token::NE_STRICT;
+              token = Token::TK_NE_STRICT;
             } else {
-              token = Token::NE;
+              token = Token::TK_NE;
             }
           } else {
-            token = Token::NOT;
+            token = Token::TK_NOT;
           }
           break;
 
@@ -146,12 +146,12 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '+') {
             Advance();
-            token = Token::INC;
+            token = Token::TK_INC;
           } else if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_ADD;
+            token = Token::TK_ASSIGN_ADD;
           } else {
-            token = Token::ADD;
+            token = Token::TK_ADD;
           }
           break;
 
@@ -163,13 +163,13 @@ class Lexer: private Noncopyable<> {
             if (c_ == '>' && has_line_terminator_before_next_) {
               token = SkipSingleLineComment<false>();
             } else {
-              token = Token::DEC;
+              token = Token::TK_DEC;
             }
           } else if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_SUB;
+            token = Token::TK_ASSIGN_SUB;
           } else {
-            token = Token::SUB;
+            token = Token::TK_SUB;
           }
           break;
 
@@ -178,9 +178,9 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_MUL;
+            token = Token::TK_ASSIGN_MUL;
           } else {
-            token = Token::MUL;
+            token = Token::TK_MUL;
           }
           break;
 
@@ -189,9 +189,9 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_MOD;
+            token = Token::TK_ASSIGN_MOD;
           } else {
-            token = Token::MOD;
+            token = Token::TK_MOD;
           }
           break;
 
@@ -208,10 +208,10 @@ class Lexer: private Noncopyable<> {
           } else if (c_ == '=') {
             // ASSIGN_DIV
             Advance();
-            token = Token::ASSIGN_DIV;
+            token = Token::TK_ASSIGN_DIV;
           } else {
             // DIV
-            token = Token::DIV;
+            token = Token::TK_DIV;
           }
           break;
 
@@ -220,12 +220,12 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '&') {
             Advance();
-            token = Token::LOGICAL_AND;
+            token = Token::TK_LOGICAL_AND;
           } else if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_BIT_AND;
+            token = Token::TK_ASSIGN_BIT_AND;
           } else {
-            token = Token::BIT_AND;
+            token = Token::TK_BIT_AND;
           }
           break;
 
@@ -234,12 +234,12 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '|') {
             Advance();
-            token = Token::LOGICAL_OR;
+            token = Token::TK_LOGICAL_OR;
           } else if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_BIT_OR;
+            token = Token::TK_ASSIGN_BIT_OR;
           } else {
-            token = Token::BIT_OR;
+            token = Token::TK_BIT_OR;
           }
           break;
 
@@ -248,9 +248,9 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '=') {
             Advance();
-            token = Token::ASSIGN_BIT_XOR;
+            token = Token::TK_ASSIGN_BIT_XOR;
           } else {
-            token = Token::BIT_XOR;
+            token = Token::TK_BIT_XOR;
           }
           break;
 
@@ -261,69 +261,69 @@ class Lexer: private Noncopyable<> {
             // float number parse
             token = ScanNumber<true>();
           } else {
-            token = Token::PERIOD;
+            token = Token::TK_PERIOD;
           }
           break;
 
         case ':':
           Advance();
-          token = Token::COLON;
+          token = Token::TK_COLON;
           break;
 
         case ';':
           Advance();
-          token = Token::SEMICOLON;
+          token = Token::TK_SEMICOLON;
           break;
 
         case ',':
           Advance();
-          token = Token::COMMA;
+          token = Token::TK_COMMA;
           break;
 
         case '(':
           Advance();
-          token = Token::LPAREN;
+          token = Token::TK_LPAREN;
           break;
 
         case ')':
           Advance();
-          token = Token::RPAREN;
+          token = Token::TK_RPAREN;
           break;
 
         case '[':
           Advance();
-          token = Token::LBRACK;
+          token = Token::TK_LBRACK;
           break;
 
         case ']':
           Advance();
-          token = Token::RBRACK;
+          token = Token::TK_RBRACK;
           break;
 
         case '{':
           Advance();
-          token = Token::LBRACE;
+          token = Token::TK_LBRACE;
           break;
 
         case '}':
           Advance();
-          token = Token::RBRACE;
+          token = Token::TK_RBRACE;
           break;
 
         case '?':
           Advance();
-          token = Token::CONDITIONAL;
+          token = Token::TK_CONDITIONAL;
           break;
 
         case '~':
           Advance();
-          token = Token::BIT_NOT;
+          token = Token::TK_BIT_NOT;
           break;
 
         default:
           if (c_ < 0) {
             // EOS
-            token = Token::EOS;
+            token = Token::TK_EOS;
           } else if (character::IsIdentifierStart(c_)) {
             token = ScanIdentifier<LexType>(strict);
           } else if (character::IsDecimalDigit(c_)) {
@@ -331,13 +331,13 @@ class Lexer: private Noncopyable<> {
           } else if (character::IsLineTerminator(c_)) {
             SkipLineTerminator();
             has_line_terminator_before_next_ = true;
-            token = Token::NOT_FOUND;
+            token = Token::TK_NOT_FOUND;
           } else {
-            token = Token::ILLEGAL;
+            token = Token::TK_ILLEGAL;
           }
           break;
       }
-    } while (token == Token::NOT_FOUND);
+    } while (token == Token::TK_NOT_FOUND);
     if (c_ == -1) {
       location_.set_end_position(pos());
     } else {
@@ -525,7 +525,7 @@ class Lexer: private Noncopyable<> {
     while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
-    return Token::NOT_FOUND;
+    return Token::TK_NOT_FOUND;
   }
 
   template<bool Val>
@@ -535,7 +535,7 @@ class Lexer: private Noncopyable<> {
     while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
-    return Token::SINGLE_LINE_COMMENT;
+    return Token::TK_SINGLE_LINE_COMMENT;
   }
 
   template<bool Val>
@@ -548,7 +548,7 @@ class Lexer: private Noncopyable<> {
       Advance();
       if (ch == '*' && c_ == '/') {
         c_ = ' ';
-        return Token::NOT_FOUND;
+        return Token::TK_NOT_FOUND;
       } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
         // see ECMA-262 section 7.4
         SkipLineTerminator();
@@ -556,7 +556,7 @@ class Lexer: private Noncopyable<> {
         ch = '\n';
       }
     }
-    return Token::ILLEGAL;
+    return Token::TK_ILLEGAL;
   }
 
   template<bool Val>
@@ -569,7 +569,7 @@ class Lexer: private Noncopyable<> {
       Advance();
       if (ch == '*' && c_ == '/') {
         c_ = ' ';
-        return Token::MULTI_LINE_COMMENT;
+        return Token::TK_MULTI_LINE_COMMENT;
       } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
         // see ECMA-262 section 7.4
         SkipLineTerminator();
@@ -577,7 +577,7 @@ class Lexer: private Noncopyable<> {
         ch = '\n';
       }
     }
-    return Token::ILLEGAL;
+    return Token::TK_ILLEGAL;
   }
 
   Token::Type SkipHtmlComment() {
@@ -593,7 +593,7 @@ class Lexer: private Noncopyable<> {
     }
     // <! is LT and NOT
     PushBack();
-    return Token::LT;
+    return Token::TK_LT;
   }
 
   template<typename LexType>
@@ -603,13 +603,13 @@ class Lexer: private Noncopyable<> {
     if (c_ == '\\') {
       Advance();
       if (c_ != 'u') {
-        return Token::ILLEGAL;
+        return Token::TK_ILLEGAL;
       }
       Advance();
       bool ng = false;
       const uint16_t uc = ScanHexEscape('u', 4, &ng);
       if (ng || uc == '\\' || !character::IsIdentifierStart(uc)) {
-        return Token::ILLEGAL;
+        return Token::TK_ILLEGAL;
       }
       Record16(uc);
     } else {
@@ -620,13 +620,13 @@ class Lexer: private Noncopyable<> {
       if (c_ == '\\') {
         Advance();
         if (c_ != 'u') {
-          return Token::ILLEGAL;
+          return Token::TK_ILLEGAL;
         }
         Advance();
         bool ng = false;
         const uint16_t uc = ScanHexEscape('u', 4, &ng);
         if (ng || uc == '\\' || !character::IsIdentifierPart(uc)) {
-          return Token::ILLEGAL;
+          return Token::TK_ILLEGAL;
         }
         Record16(uc);
       } else {
@@ -646,12 +646,12 @@ class Lexer: private Noncopyable<> {
       if (c_ == '\\') {
         Advance();
         // escape sequence
-        if (c_ < 0) return Token::ILLEGAL;
+        if (c_ < 0) return Token::TK_ILLEGAL;
         if (type_ == NONE) {
           type_ = ESCAPE;
         }
         if (!ScanEscape()) {
-          return Token::ILLEGAL;
+          return Token::TK_ILLEGAL;
         }
       } else {
         Record16Advance();
@@ -659,11 +659,11 @@ class Lexer: private Noncopyable<> {
     }
     if (c_ != quote) {
       // not closed
-      return Token::ILLEGAL;
+      return Token::TK_ILLEGAL;
     }
     Advance();
 
-    return Token::STRING;
+    return Token::TK_STRING;
   }
 
   bool ScanEscape() {
@@ -816,7 +816,7 @@ class Lexer: private Noncopyable<> {
           type = HEX;
           Record8Advance();
           if (c_ < 0 || !character::IsHexDigit(c_)) {
-            return Token::ILLEGAL;
+            return Token::TK_ILLEGAL;
           }
           while (c_ >= 0 && character::IsHexDigit(c_)) {
             Record8Advance();
@@ -847,7 +847,7 @@ class Lexer: private Noncopyable<> {
     if (c_ == 'e' || c_ == 'E') {
       is_decimal_integer = false;
       if (type != DECIMAL) {
-        return Token::ILLEGAL;
+        return Token::TK_ILLEGAL;
       }
       Record8Advance();
       if (c_ == '+' || c_ == '-') {
@@ -855,7 +855,7 @@ class Lexer: private Noncopyable<> {
       }
       // more than 1 decimal digit required
       if (c_ < 0 || !character::IsDecimalDigit(c_)) {
-        return Token::ILLEGAL;
+        return Token::TK_ILLEGAL;
       }
       ScanDecimalDigits();
     }
@@ -864,7 +864,7 @@ class Lexer: private Noncopyable<> {
     // "immediately following a NumericLiteral must not be an IdentifierStart or
     // DecimalDigit."
     if (c_ >= 0 && (character::IsDecimalDigit(c_) || character::IsIdentifierStart(c_))) {
-      return Token::ILLEGAL;
+      return Token::TK_ILLEGAL;
     }
 
 
@@ -890,7 +890,7 @@ class Lexer: private Noncopyable<> {
                                       8);
     }
     type_ = type;
-    return Token::NUMBER;
+    return Token::TK_NUMBER;
   }
 
   uint16_t ScanOctalEscape() {

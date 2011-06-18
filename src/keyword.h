@@ -28,19 +28,19 @@ class Keyword<IdentifyReservedWords> {
   template<typename Buffer>
   static Token::Type Detect(const Buffer& buf, bool strict) {
     const std::size_t len = buf.size();
-    Token::Type token = Token::IDENTIFIER;
+    Token::Type token = Token::TK_IDENTIFIER;
     switch (len) {
       case 2:
         // if in do
         if (buf[0] == 'i') {
           if (buf[1] == 'f') {
-            token = Token::IF;
+            token = Token::TK_IF;
           } else if (buf[1] == 'n') {
-            token = Token::IN;
+            token = Token::TK_IN;
           }
         } else if (buf[0] == 'd' && buf[1] == 'o') {
           // do
-          token = Token::DO;
+          token = Token::TK_DO;
         }
         break;
       case 3:
@@ -49,32 +49,32 @@ class Keyword<IdentifyReservedWords> {
           case 't':
             if (buf[0] == 'l' && buf[1] == 'e' && strict) {
               // let
-              token = Token::LET;
+              token = Token::TK_LET;
             } else if (buf[0] == 'i' && buf[1] == 'n') {
               // int (removed)
-              // token = Token::INT;
+              // token = Token::TK_INT;
             }
             break;
           case 'r':
             // for var
             if (buf[0] == 'f' && buf[1] == 'o') {
               // for
-              token = Token::FOR;
+              token = Token::TK_FOR;
             } else if (buf[0] == 'v' && buf[1] == 'a') {
               // var
-              token = Token::VAR;
+              token = Token::TK_VAR;
             }
             break;
           case 'y':
             // try
             if (buf[0] == 't' && buf[1] == 'r') {
-              token = Token::TRY;
+              token = Token::TK_TRY;
             }
             break;
           case 'w':
             // new
             if (buf[0] == 'n' && buf[1] == 'e') {
-              token = Token::NEW;
+              token = Token::TK_NEW;
             }
             break;
         }
@@ -89,75 +89,75 @@ class Keyword<IdentifyReservedWords> {
             if (buf[2] == 's') {
               if (buf[0] == 'e' && buf[1] == 'l') {
                 // else
-                token = Token::ELSE;
+                token = Token::TK_ELSE;
               } else if (buf[0] == 'c' && buf[1] == 'a') {
                 // case
-                token = Token::CASE;
+                token = Token::TK_CASE;
               }
             } else if (buf[0] == 't' &&
                        buf[1] == 'r' && buf[2] == 'u') {
               // true
-              token = Token::TRUE_LITERAL;
+              token = Token::TK_TRUE_LITERAL;
             } else if (buf[0] == 'b' &&
                        buf[1] == 'y' && buf[2] == 't') {
               // byte (removed)
-              // token = Token::BYTE;
+              // token = Token::TK_BYTE;
             }
             break;
           case 'l':
             // null
             if (buf[0] == 'n' &&
                 buf[1] == 'u' && buf[2] == 'l') {
-              token = Token::NULL_LITERAL;
+              token = Token::TK_NULL_LITERAL;
             }
             break;
           case 's':
             // this
             if (buf[0] == 't' &&
                 buf[1] == 'h' && buf[2] == 'i') {
-              token = Token::THIS;
+              token = Token::TK_THIS;
             }
             break;
           case 'd':
             // void
             if (buf[0] == 'v' &&
                 buf[1] == 'o' && buf[2] == 'i') {
-              token = Token::VOID;
+              token = Token::TK_VOID;
             }
             break;
           case 'h':
             // with
             if (buf[0] == 'w' &&
                 buf[1] == 'i' && buf[2] == 't') {
-              token = Token::WITH;
+              token = Token::TK_WITH;
             }
             break;
           case 'g':
             // long (removed)
             if (buf[0] == 'l' &&
                 buf[1] == 'o' && buf[2] == 'n') {
-              // token = Token::LONG;
+              // token = Token::TK_LONG;
             }
             break;
           case 'm':
             // enum
             if (buf[0] == 'e' &&
                 buf[1] == 'n' && buf[2] == 'u') {
-              token = Token::ENUM;
+              token = Token::TK_ENUM;
             }
             break;
           case 'r':
             // char (removed)
             if (buf[0] == 'c' &&
                 buf[1] == 'h' && buf[2] == 'a') {
-              // token = Token::CHAR;
+              // token = Token::TK_CHAR;
             }
             break;
           case 'o':
             // goto (removed)
             if (buf[0] == 'g' &&
                 buf[1] == 'o' && buf[2] == 't') {
-              // token = Token::GOTO;
+              // token = Token::TK_GOTO;
             }
             break;
         }
@@ -172,16 +172,16 @@ class Keyword<IdentifyReservedWords> {
             if (buf[0] == 'b' && buf[1] == 'r' &&
                 buf[2] == 'e' && buf[4] == 'k') {
               // break
-              token = Token::BREAK;
+              token = Token::TK_BREAK;
             } else if (buf[0] == 'f') {
               if (buf[1] == 'i' &&
                   buf[2] == 'n' && buf[4] == 'l') {
                 // final (removed)
-                // token = Token::FINAL;
+                // token = Token::TK_FINAL;
               } else if (buf[1] == 'l' &&
                          buf[2] == 'o' && buf[4] == 't') {
                 // float (removed)
-                // token = Token::FLOAT;
+                // token = Token::TK_FLOAT;
               }
             }
             break;
@@ -189,40 +189,40 @@ class Keyword<IdentifyReservedWords> {
             if (buf[0] == 'c' && buf[1] == 'a' &&
                 buf[2] == 't' && buf[4] == 'h') {
               // catch
-              token = Token::CATCH;
+              token = Token::TK_CATCH;
             }
             break;
           case 'e':
             if (buf[0] == 's' && buf[1] == 'u' &&
                 buf[2] == 'p' && buf[4] == 'r') {
               // super
-              token = Token::SUPER;
+              token = Token::TK_SUPER;
             }
             break;
           case 'l':
             if (buf[0] == 'w' && buf[1] == 'h' &&
                 buf[2] == 'i' && buf[4] == 'e') {
               // while
-              token = Token::WHILE;
+              token = Token::TK_WHILE;
             } else if (strict &&
                        buf[0] == 'y' && buf[1] == 'i' &&
                        buf[2] == 'e' && buf[4] == 'd') {
               // yield
-              token = Token::YIELD;
+              token = Token::TK_YIELD;
             }
             break;
           case 'o':
             if (buf[0] == 't' && buf[1] == 'h' &&
                 buf[2] == 'r' && buf[4] == 'w') {
               // throw
-              token = Token::THROW;
+              token = Token::TK_THROW;
             }
             break;
           case 'r':
             if (buf[0] == 's' && buf[1] == 'h' &&
                 buf[2] == 'o' && buf[4] == 't') {
               // short (removed)
-              // token = Token::SHORT;
+              // token = Token::TK_SHORT;
             }
             break;
           case 's':
@@ -231,16 +231,16 @@ class Keyword<IdentifyReservedWords> {
               if (buf[1] == 'l' &&
                   buf[2] == 'a' && buf[4] == 's') {
                 // class
-                token = Token::CLASS;
+                token = Token::TK_CLASS;
               } else if (buf[1] == 'o' &&
                          buf[2] == 'n' && buf[4] == 't') {
                 // const
-                token = Token::CONST;
+                token = Token::TK_CONST;
               }
             } else if (buf[0] == 'f' && buf[1] == 'a' &&
                        buf[2] == 'l' && buf[4] == 'e') {
               // false
-              token = Token::FALSE_LITERAL;
+              token = Token::TK_FALSE_LITERAL;
             }
             break;
         }
@@ -256,33 +256,33 @@ class Keyword<IdentifyReservedWords> {
                 buf[4] == 'l' && buf[3] == 'b' &&
                 buf[2] == 'u' && buf[1] == 'o') {
               // double
-              // token = Token::DOUBLE;
+              // token = Token::TK_DOUBLE;
             } else if (buf[5] == 'e' &&
                        buf[4] == 't' && buf[3] == 'e' &&
                        buf[2] == 'l' && buf[1] == 'e') {
               // delete
-              token = Token::DELETE;
+              token = Token::TK_DELETE;
             }
             break;
           case 'e':
             // export
-            token = IsMatch("export", buf, Token::EXPORT);
+            token = IsMatch("export", buf, Token::TK_EXPORT);
             break;
           case 'i':
             // import
-            token = IsMatch("import", buf, Token::IMPORT);
+            token = IsMatch("import", buf, Token::TK_IMPORT);
             break;
           case 'n':
             // native (removed)
-            // token = IsMatch("native", buf, Token::NATIVE);
+            // token = IsMatch("native", buf, Token::TK_NATIVE);
             break;
           case 'p':
             // public
-            token = IsMatch("public", buf, Token::PUBLIC, strict);
+            token = IsMatch("public", buf, Token::TK_PUBLIC, strict);
             break;
           case 'r':
             // return
-            token = IsMatch("return", buf, Token::RETURN);
+            token = IsMatch("return", buf, Token::TK_RETURN);
             break;
           case 's':
             // switch static
@@ -290,13 +290,13 @@ class Keyword<IdentifyReservedWords> {
                 buf[2] == 'i' && buf[3] == 't' &&
                 buf[4] == 'c' && buf[5] == 'h') {
               // switch
-              token = Token::SWITCH;
+              token = Token::TK_SWITCH;
             } else if (strict &&
                        buf[1] == 't' &&
                        buf[2] == 'a' && buf[3] == 't' &&
                        buf[4] == 'i' && buf[5] == 'c') {
               // static
-              token = Token::STATIC;
+              token = Token::TK_STATIC;
             }
             break;
           case 't':
@@ -305,12 +305,12 @@ class Keyword<IdentifyReservedWords> {
                 buf[4] == 'o' && buf[3] == 'e' &&
                 buf[2] == 'p' && buf[1] == 'y') {
               // typeof
-              token = Token::TYPEOF;
+              token = Token::TK_TYPEOF;
             } else if (buf[5] == 's' &&
                        buf[4] == 'w' && buf[3] == 'o' &&
                        buf[2] == 'r' && buf[1] == 'h') {
               // throws (removed)
-              // token = Token::THROWS;
+              // token = Token::TK_THROWS;
             }
             break;
         }
@@ -321,22 +321,22 @@ class Keyword<IdentifyReservedWords> {
         switch (buf[0]) {
           case 'b':
             // boolean (removed)
-            // token = IsMatch("boolean", buf, Token::BOOLEAN);
+            // token = IsMatch("boolean", buf, Token::TK_BOOLEAN);
             break;
           case 'd':
-            token = IsMatch("default", buf, Token::DEFAULT);
+            token = IsMatch("default", buf, Token::TK_DEFAULT);
             break;
           case 'e':
-            token = IsMatch("extends", buf, Token::EXTENDS);
+            token = IsMatch("extends", buf, Token::TK_EXTENDS);
             break;
           case 'f':
-            token = IsMatch("finally", buf, Token::FINALLY);
+            token = IsMatch("finally", buf, Token::TK_FINALLY);
             break;
           case 'p':
             if (buf[1] == 'a') {
-              token = IsMatch("package", buf, Token::PACKAGE, strict);
+              token = IsMatch("package", buf, Token::TK_PACKAGE, strict);
             } else if (buf[1] == 'r') {
-              token = IsMatch("private", buf, Token::PRIVATE, strict);
+              token = IsMatch("private", buf, Token::TK_PRIVATE, strict);
             }
             break;
         }
@@ -346,20 +346,20 @@ class Keyword<IdentifyReservedWords> {
         // number 4 character is most duplicated
         switch (buf[4]) {
           case 'g':
-            token = IsMatch("debugger", buf, Token::DEBUGGER);
+            token = IsMatch("debugger", buf, Token::TK_DEBUGGER);
             break;
           case 'i':
-            token = IsMatch("continue", buf, Token::CONTINUE);
+            token = IsMatch("continue", buf, Token::TK_CONTINUE);
             break;
           case 'r':
             // abstract (removed)
-            // token = IsMatch("abstract", buf, Token::ABSTRACT);
+            // token = IsMatch("abstract", buf, Token::TK_ABSTRACT);
             break;
           case 't':
             if (buf[1] == 'o') {
-              // token = IsMatch("volatile", buf, Token::VOLATILE);
+              // token = IsMatch("volatile", buf, Token::TK_VOLATILE);
             } else if (buf[1] == 'u') {
-              token = IsMatch("function", buf, Token::FUNCTION);
+              token = IsMatch("function", buf, Token::TK_FUNCTION);
             }
             break;
         }
@@ -367,28 +367,28 @@ class Keyword<IdentifyReservedWords> {
       case 9:
         // interface protected transient
         if (buf[1] == 'n') {
-          token = IsMatch("interface", buf, Token::INTERFACE, strict);
+          token = IsMatch("interface", buf, Token::TK_INTERFACE, strict);
         } else if (buf[1] == 'r') {
           if (buf[0] == 'p') {
-            token = IsMatch("protected", buf, Token::PROTECTED, strict);
+            token = IsMatch("protected", buf, Token::TK_PROTECTED, strict);
           } else if (buf[0] == 't') {
             // transient (removed)
-            // token = IsMatch("transient", buf, Token::TRANSIENT);
+            // token = IsMatch("transient", buf, Token::TK_TRANSIENT);
           }
         }
         break;
       case 10:
         // instanceof implements
         if (buf[1] == 'n') {
-          token = IsMatch("instanceof", buf, Token::INSTANCEOF);
+          token = IsMatch("instanceof", buf, Token::TK_INSTANCEOF);
         } else if (buf[1] == 'm') {
-          token = IsMatch("implements", buf, Token::IMPLEMENTS, strict);
+          token = IsMatch("implements", buf, Token::TK_IMPLEMENTS, strict);
         }
         break;
       case 12:
         // synchronized (removed)
-        // token = IsMatch("synchronized", buf, Token::SYNCHRONIZED);
-        token = Token::IDENTIFIER;
+        // token = IsMatch("synchronized", buf, Token::TK_SYNCHRONIZED);
+        token = Token::TK_IDENTIFIER;
         break;
     }
     return token;
@@ -400,13 +400,13 @@ class Keyword<IdentifyReservedWords> {
                                     Token::Type guess,
                                     bool strict) {
     if (!strict) {
-      return Token::IDENTIFIER;
+      return Token::TK_IDENTIFIER;
     }
     typename Buffer::const_iterator it = buf.begin();
     const typename Buffer::const_iterator last = buf.end();
     do {
       if (*it++ != *keyword++) {
-        return Token::IDENTIFIER;
+        return Token::TK_IDENTIFIER;
       }
     } while (it != last);
     return guess;
@@ -420,7 +420,7 @@ class Keyword<IdentifyReservedWords> {
     const typename Buffer::const_iterator last = buf.end();
     do {
       if (*it++ != *keyword++) {
-        return Token::IDENTIFIER;
+        return Token::TK_IDENTIFIER;
       }
     } while (it != last);
     return guess;
@@ -432,7 +432,7 @@ class Keyword<IgnoreReservedWords> {
  public:
   template<typename Buffer>
   static inline Token::Type Detect(const Buffer& buf, bool strict) {
-    return Token::IDENTIFIER;
+    return Token::TK_IDENTIFIER;
   }
 };
 
@@ -444,13 +444,13 @@ class Keyword<IgnoreReservedWordsAndIdentifyGetterOrSetter> {
     if (buf.size() == 3) {
       if (buf[1] == 'e' && buf[2] == 't') {
         if (buf[0] == 'g') {
-          return Token::GET;
+          return Token::TK_GET;
         } else if (buf[0] == 's') {
-          return Token::SET;
+          return Token::TK_SET;
         }
       }
     }
-    return Token::IDENTIFIER;
+    return Token::TK_IDENTIFIER;
   }
 };
 

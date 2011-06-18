@@ -332,7 +332,7 @@ class VariableStatement : public VariableStatementBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Declarations Declarations;
   VariableStatement(Token::Type type, Declarations* decls)
-    : is_const_(type == Token::CONST),
+    : is_const_(type == Token::TK_CONST),
       decls_(decls) { }
   inline const Declarations& decls() const {
     return *decls_;

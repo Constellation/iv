@@ -214,7 +214,7 @@ class Parser
     bool *res = &error_flag;
     const ScopeSwitcher scope_switcher(this, scope);
     Next();
-    const bool strict = ParseSourceElements(Token::EOS, body, CHECK);
+    const bool strict = ParseSourceElements(Token::TK_EOS, body, CHECK);
     const std::size_t end_position = lexer_.end_position();
 #ifdef DEBUG
     if (error_flag) {
@@ -250,7 +250,7 @@ class Parser
       bool octal_escaped_directive_found = false;
       std::size_t line = 0;
       while (token_ != end) {
-        if (token_ != Token::STRING) {
+        if (token_ != Token::TK_STRING) {
           // this is not directive
           break;
         }
@@ -279,7 +279,7 @@ class Parser
             }
             // and one token lexed is not in strict
             // so rescan
-            if (token_ == Token::IDENTIFIER) {
+            if (token_ == Token::TK_IDENTIFIER) {
               typedef detail::Keyword<IdentifyReservedWords> KeywordChecker;
               token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
               break;
@@ -297,7 +297,7 @@ class Parser
 
     // statements
     while (token_ != end) {
-      if (token_ == Token::FUNCTION) {
+      if (token_ == Token::TK_FUNCTION) {
         // FunctionDeclaration
         stmt = ParseFunctionDeclaration(CHECK);
         body->push_back(stmt);
@@ -329,100 +329,100 @@ class Parser
   Statement* ParseStatement(bool *res) {
     Statement *result = NULL;
     switch (token_) {
-      case Token::LBRACE:
+      case Token::TK_LBRACE:
         // Block
         result = ParseBlock(CHECK);
         break;
 
-      case Token::CONST:
+      case Token::TK_CONST:
         if (strict_) {
           RAISE("\"const\" not allowed in strict code");
         }
-      case Token::VAR:
+      case Token::TK_VAR:
         // VariableStatement
         result = ParseVariableStatement(CHECK);
         break;
 
-      case Token::SEMICOLON:
+      case Token::TK_SEMICOLON:
         // EmptyStatement
         result = ParseEmptyStatement();
         break;
 
-      case Token::IF:
+      case Token::TK_IF:
         // IfStatement
         result = ParseIfStatement(CHECK);
         break;
 
-      case Token::DO:
+      case Token::TK_DO:
         // IterationStatement
         // do while
         result = ParseDoWhileStatement(CHECK);
         break;
 
-      case Token::WHILE:
+      case Token::TK_WHILE:
         // IterationStatement
         // while
         result = ParseWhileStatement(CHECK);
         break;
 
-      case Token::FOR:
+      case Token::TK_FOR:
         // IterationStatement
         // for
         result = ParseForStatement(CHECK);
         break;
 
-      case Token::CONTINUE:
+      case Token::TK_CONTINUE:
         // ContinueStatement
         result = ParseContinueStatement(CHECK);
         break;
 
-      case Token::BREAK:
+      case Token::TK_BREAK:
         // BreakStatement
         result = ParseBreakStatement(CHECK);
         break;
 
-      case Token::RETURN:
+      case Token::TK_RETURN:
         // ReturnStatement
         result = ParseReturnStatement(CHECK);
         break;
 
-      case Token::WITH:
+      case Token::TK_WITH:
         // WithStatement
         result = ParseWithStatement(CHECK);
         break;
 
-      case Token::SWITCH:
+      case Token::TK_SWITCH:
         // SwitchStatement
         result = ParseSwitchStatement(CHECK);
         break;
 
-      case Token::THROW:
+      case Token::TK_THROW:
         // ThrowStatement
         result = ParseThrowStatement(CHECK);
         break;
 
-      case Token::TRY:
+      case Token::TK_TRY:
         // TryStatement
         result = ParseTryStatement(CHECK);
         break;
 
-      case Token::DEBUGGER:
+      case Token::TK_DEBUGGER:
         // DebuggerStatement
         result = ParseDebuggerStatement(CHECK);
         break;
 
-      case Token::FUNCTION:
+      case Token::TK_FUNCTION:
         // FunctionStatement (not in ECMA-262 5th)
         // FunctionExpression
         result = ParseFunctionStatement<UseFunctionStatement>(CHECK);
         break;
 
-      case Token::IDENTIFIER:
+      case Token::TK_IDENTIFIER:
         // LabelledStatement or ExpressionStatement
         result = ParseExpressionOrLabelledStatement(CHECK);
         break;
 
-      case Token::ILLEGAL:
+      case Token::TK_ILLEGAL:
         UNEXPECT(token_);
         break;
 
@@ -447,7 +447,7 @@ class Parser
 //  FunctionStatement is not standard, but implemented in SpiderMonkey
 //  and this statement is very useful for not breaking FunctionDeclaration.
   Statement* ParseFunctionDeclaration(bool *res) {
-    assert(token_ == Token::FUNCTION);
+    assert(token_ == Token::TK_FUNCTION);
     FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::DECLARATION,
         FunctionLiteral::GENERAL, CHECK);
@@ -465,13 +465,13 @@ class Parser
 //    : Statement
 //    | StatementList Statement
   Block* ParseBlock(bool *res) {
-    assert(token_ == Token::LBRACE);
+    assert(token_ == Token::TK_LBRACE);
     const std::size_t begin = lexer_.begin_position();
     Statements* const body = factory_->template NewVector<Statement*>();
     Target target(this, Target::kNamedOnlyStatement);
 
     Next();
-    while (token_ != Token::RBRACE) {
+    while (token_ != Token::TK_RBRACE) {
       Statement* const stmt = ParseStatement(CHECK);
       body->push_back(stmt);
     }
@@ -488,11 +488,11 @@ class Parser
 //    : VAR VariableDeclarationList ';'
 //    : CONST VariableDeclarationList ';'
   Statement* ParseVariableStatement(bool *res) {
-    assert(token_ == Token::VAR || token_ == Token::CONST);
+    assert(token_ == Token::TK_VAR || token_ == Token::TK_CONST);
     const Token::Type op = token_;
     const std::size_t begin = lexer_.begin_position();
     Declarations* const decls = factory_->template NewVector<Declaration*>();
-    ParseVariableDeclarations(decls, token_ == Token::CONST, true, CHECK);
+    ParseVariableDeclarations(decls, token_ == Token::TK_CONST, true, CHECK);
     ExpectSemicolon(CHECK);
     assert(decls);
     return factory_->NewVariableStatement(op,
@@ -524,7 +524,7 @@ class Parser
 
     do {
       Next();
-      IS(Token::IDENTIFIER);
+      IS(Token::TK_IDENTIFIER);
       name = ParseIdentifier(lexer_.Buffer());
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
@@ -540,7 +540,7 @@ class Parser
         }
       }
 
-      if (token_ == Token::ASSIGN) {
+      if (token_ == Token::TK_ASSIGN) {
         Next();
         // AssignmentExpression
         expr = ParseAssignmentExpression(contains_in, CHECK);
@@ -553,7 +553,7 @@ class Parser
       }
       decls->push_back(decl);
       scope_->AddUnresolved(name, is_const);
-    } while (token_ == Token::COMMA);
+    } while (token_ == Token::TK_COMMA);
 
     return decls;
   }
@@ -561,7 +561,7 @@ class Parser
 //  EmptyStatement
 //    : ';'
   Statement* ParseEmptyStatement() {
-    assert(token_ == Token::SEMICOLON);
+    assert(token_ == Token::TK_SEMICOLON);
     Next();
     return factory_->NewEmptyStatement(lexer_.previous_begin_position(),
                                        lexer_.previous_end_position());
@@ -571,19 +571,19 @@ class Parser
 //    : IF '(' Expression ')' Statement ELSE Statement
 //    | IF '(' Expression ')' Statement
   Statement* ParseIfStatement(bool *res) {
-    assert(token_ == Token::IF);
+    assert(token_ == Token::TK_IF);
     const std::size_t begin = lexer_.begin_position();
     Statement* else_statement = NULL;
     Next();
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Expression* const expr = ParseExpression(true, CHECK);
 
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
 
     Statement* const then_statement = ParseStatement(CHECK);
-    if (token_ == Token::ELSE) {
+    if (token_ == Token::TK_ELSE) {
       Next();
       else_statement = ParseStatement(CHECK);
     }
@@ -607,27 +607,27 @@ class Parser
 //    | FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
   Statement* ParseDoWhileStatement(bool *res) {
     //  DO Statement WHILE '(' Expression ')' ';'
-    assert(token_ == Token::DO);
+    assert(token_ == Token::TK_DO);
     const std::size_t begin = lexer_.begin_position();
     Target target(this, Target::kIterationStatement);
     Next();
 
     Statement* const stmt = ParseStatement(CHECK);
 
-    EXPECT(Token::WHILE);
+    EXPECT(Token::TK_WHILE);
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Expression* const expr = ParseExpression(true, CHECK);
 
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
 
     // ex:
     //   do {
     //     print("valid syntax");
     //   } while (0) return true;
     // is syntax valid
-    if (token_ == Token::SEMICOLON) {
+    if (token_ == Token::TK_SEMICOLON) {
       Next();
     }
     assert(stmt && expr);
@@ -639,16 +639,16 @@ class Parser
 
 //  WHILE '(' Expression ')' Statement
   Statement* ParseWhileStatement(bool *res) {
-    assert(token_ == Token::WHILE);
+    assert(token_ == Token::TK_WHILE);
     const std::size_t begin = lexer_.begin_position();
     Next();
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Expression* const expr = ParseExpression(true, CHECK);
     Target target(this, Target::kIterationStatement);
 
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
 
     Statement* const stmt = ParseStatement(CHECK);
     assert(stmt);
@@ -668,22 +668,22 @@ class Parser
 //  FOR '(' LeftHandSideExpression IN Expression ')' Statement
 //  FOR '(' VAR VariableDeclarationNoIn IN Expression ')' Statement
   Statement* ParseForStatement(bool *res) {
-    assert(token_ == Token::FOR);
+    assert(token_ == Token::TK_FOR);
     const std::size_t for_stmt_begin = lexer_.begin_position();
     Next();
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Statement *init = NULL;
 
-    if (token_ != Token::SEMICOLON) {
-      if (token_ == Token::VAR || token_ == Token::CONST) {
+    if (token_ != Token::TK_SEMICOLON) {
+      if (token_ == Token::TK_VAR || token_ == Token::TK_CONST) {
         const std::size_t begin = lexer_.begin_position();
         const Token::Type op = token_;
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
-        ParseVariableDeclarations(decls, token_ == Token::CONST, false, CHECK);
-        if (token_ == Token::IN) {
+        ParseVariableDeclarations(decls, token_ == Token::TK_CONST, false, CHECK);
+        if (token_ == Token::TK_IN) {
           assert(decls);
           VariableStatement* const var =
               factory_->NewVariableStatement(op,
@@ -700,7 +700,7 @@ class Parser
             RAISE("invalid for-in left-hand-side");
           }
           Expression* const enumerable = ParseExpression(true, CHECK);
-          EXPECT(Token::RPAREN);
+          EXPECT(Token::TK_RPAREN);
           Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
           assert(body && init && enumerable);
@@ -717,7 +717,7 @@ class Parser
         }
       } else {
         Expression* const init_expr = ParseExpression(false, CHECK);
-        if (token_ == Token::IN) {
+        if (token_ == Token::TK_IN) {
           // for in loop
           assert(init_expr);
           init = factory_->NewExpressionStatement(init_expr,
@@ -727,7 +727,7 @@ class Parser
           }
           Next();
           Expression* const enumerable = ParseExpression(true, CHECK);
-          EXPECT(Token::RPAREN);
+          EXPECT(Token::TK_RPAREN);
           Target target(this, Target::kIterationStatement);
           Statement* const body = ParseStatement(CHECK);
           assert(body && init && enumerable);
@@ -745,24 +745,24 @@ class Parser
     }
 
     // ordinary for loop
-    EXPECT(Token::SEMICOLON);
+    EXPECT(Token::TK_SEMICOLON);
 
     Expression* cond = NULL;
-    if (token_ == Token::SEMICOLON) {
+    if (token_ == Token::TK_SEMICOLON) {
       // no cond expr
       Next();
     } else {
       cond = ParseExpression(true, CHECK);
-      EXPECT(Token::SEMICOLON);
+      EXPECT(Token::TK_SEMICOLON);
     }
 
     Expression* next = NULL;
-    if (token_ == Token::RPAREN) {
+    if (token_ == Token::TK_RPAREN) {
       Next();
     } else {
       next = ParseExpression(true, CHECK);
       assert(next);
-      EXPECT(Token::RPAREN);
+      EXPECT(Token::TK_RPAREN);
     }
 
     Target target(this, Target::kIterationStatement);
@@ -777,16 +777,16 @@ class Parser
 //  ContinueStatement
 //    : CONTINUE Identifier_opt ';'
   Statement* ParseContinueStatement(bool *res) {
-    assert(token_ == Token::CONTINUE);
+    assert(token_ == Token::TK_CONTINUE);
     const std::size_t begin = lexer_.begin_position();
     Identifier* label = NULL;
     IterationStatement** target;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
-        token_ != Token::SEMICOLON &&
-        token_ != Token::RBRACE &&
-        token_ != Token::EOS) {
-      IS(Token::IDENTIFIER);
+        token_ != Token::TK_SEMICOLON &&
+        token_ != Token::TK_RBRACE &&
+        token_ != Token::TK_EOS) {
+      IS(Token::TK_IDENTIFIER);
       label = ParseIdentifier(lexer_.Buffer());
       target = LookupContinuableTarget(label);
       if (!target) {
@@ -806,17 +806,17 @@ class Parser
 //  BreakStatement
 //    : BREAK Identifier_opt ';'
   Statement* ParseBreakStatement(bool *res) {
-    assert(token_ == Token::BREAK);
+    assert(token_ == Token::TK_BREAK);
     const std::size_t begin = lexer_.begin_position();
     Identifier* label = NULL;
     BreakableStatement** target = NULL;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
-        token_ != Token::SEMICOLON &&
-        token_ != Token::RBRACE &&
-        token_ != Token::EOS) {
+        token_ != Token::TK_SEMICOLON &&
+        token_ != Token::TK_RBRACE &&
+        token_ != Token::TK_EOS) {
       // label
-      IS(Token::IDENTIFIER);
+      IS(Token::TK_IDENTIFIER);
       label = ParseIdentifier(lexer_.Buffer());
       if (ContainsLabel(labels_, label)) {
         // example
@@ -848,7 +848,7 @@ class Parser
 //  ReturnStatement
 //    : RETURN Expression_opt ';'
   Statement* ParseReturnStatement(bool *res) {
-    assert(token_ == Token::RETURN);
+    assert(token_ == Token::TK_RETURN);
     const std::size_t begin = lexer_.begin_position();
     Next();
 
@@ -859,9 +859,9 @@ class Parser
     }
 
     if (lexer_.has_line_terminator_before_next() ||
-        token_ == Token::SEMICOLON ||
-        token_ == Token::RBRACE ||
-        token_ == Token::EOS) {
+        token_ == Token::TK_SEMICOLON ||
+        token_ == Token::TK_RBRACE ||
+        token_ == Token::TK_EOS) {
       ExpectSemicolon(CHECK);
       return factory_->NewReturnStatement(NULL,
                                           begin,
@@ -876,7 +876,7 @@ class Parser
 //  WithStatement
 //    : WITH '(' Expression ')' Statement
   Statement* ParseWithStatement(bool *res) {
-    assert(token_ == Token::WITH);
+    assert(token_ == Token::TK_WITH);
     const std::size_t begin = lexer_.begin_position();
     Next();
 
@@ -886,11 +886,11 @@ class Parser
       RAISE("with statement not allowed in strict code");
     }
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Expression *expr = ParseExpression(true, CHECK);
 
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
 
     Statement *stmt = ParseStatement(CHECK);
     assert(expr && stmt);
@@ -904,25 +904,25 @@ class Parser
 //    : '{' CaseClauses_opt '}'
 //    | '{' CaseClauses_opt DefaultClause CaseClauses_opt '}'
   Statement* ParseSwitchStatement(bool *res) {
-    assert(token_ == Token::SWITCH);
+    assert(token_ == Token::TK_SWITCH);
     const std::size_t begin = lexer_.begin_position();
     CaseClause* case_clause;
     Next();
 
-    EXPECT(Token::LPAREN);
+    EXPECT(Token::TK_LPAREN);
 
     Expression* expr = ParseExpression(true, CHECK);
     CaseClauses* clauses = factory_->template NewVector<CaseClause*>();
     Target target(this, Target::kSwitchStatement);
 
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
 
-    EXPECT(Token::LBRACE);
+    EXPECT(Token::TK_LBRACE);
 
     bool default_found = false;
-    while (token_ != Token::RBRACE) {
-      if (token_ == Token::CASE ||
-          token_ == Token::DEFAULT) {
+    while (token_ != Token::TK_RBRACE) {
+      if (token_ == Token::TK_CASE ||
+          token_ == Token::TK_DEFAULT) {
         case_clause = ParseCaseClause(CHECK);
       } else {
         UNEXPECT(token_);
@@ -956,23 +956,23 @@ class Parser
 //  DefaultClause
 //    : DEFAULT ':' StatementList_opt
   CaseClause* ParseCaseClause(bool *res) {
-    assert(token_ == Token::CASE || token_ == Token::DEFAULT);
+    assert(token_ == Token::TK_CASE || token_ == Token::TK_DEFAULT);
     const std::size_t begin = lexer_.begin_position();
     Expression* expr = NULL;
     Statements* const body = factory_->template NewVector<Statement*>();
 
-    if (token_ == Token::CASE) {
+    if (token_ == Token::TK_CASE) {
       Next();
       expr = ParseExpression(true, CHECK);
     } else  {
-      EXPECT(Token::DEFAULT);
+      EXPECT(Token::TK_DEFAULT);
     }
 
-    EXPECT(Token::COLON);
+    EXPECT(Token::TK_COLON);
 
-    while (token_ != Token::RBRACE &&
-           token_ != Token::CASE   &&
-           token_ != Token::DEFAULT) {
+    while (token_ != Token::TK_RBRACE &&
+           token_ != Token::TK_CASE   &&
+           token_ != Token::TK_DEFAULT) {
       Statement* const stmt = ParseStatement(CHECK);
       body->push_back(stmt);
     }
@@ -986,7 +986,7 @@ class Parser
 //  ThrowStatement
 //    : THROW Expression ';'
   Statement* ParseThrowStatement(bool *res) {
-    assert(token_ == Token::THROW);
+    assert(token_ == Token::TK_THROW);
     const std::size_t begin = lexer_.begin_position();
     Next();
     // Throw requires Expression
@@ -1011,7 +1011,7 @@ class Parser
 //  Finally
 //    : FINALLY Block
   Statement* ParseTryStatement(bool *res) {
-    assert(token_ == Token::TRY);
+    assert(token_ == Token::TK_TRY);
     const std::size_t begin = lexer_.begin_position();
     Identifier* name = NULL;
     Block* catch_block = NULL;
@@ -1020,15 +1020,15 @@ class Parser
 
     Next();
 
-    IS(Token::LBRACE);
+    IS(Token::TK_LBRACE);
     Block* const try_block = ParseBlock(CHECK);
 
-    if (token_ == Token::CATCH) {
+    if (token_ == Token::TK_CATCH) {
       // Catch
       has_catch_or_finally = true;
       Next();
-      EXPECT(Token::LPAREN);
-      IS(Token::IDENTIFIER);
+      EXPECT(Token::TK_LPAREN);
+      IS(Token::TK_IDENTIFIER);
       name = ParseIdentifier(lexer_.Buffer());
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
@@ -1044,16 +1044,16 @@ class Parser
           }
         }
       }
-      EXPECT(Token::RPAREN);
-      IS(Token::LBRACE);
+      EXPECT(Token::TK_RPAREN);
+      IS(Token::TK_LBRACE);
       catch_block = ParseBlock(CHECK);
     }
 
-    if (token_ == Token::FINALLY) {
+    if (token_ == Token::TK_FINALLY) {
       // Finally
       has_catch_or_finally= true;
       Next();
-      IS(Token::LBRACE);
+      IS(Token::TK_LBRACE);
       finally_block = ParseBlock(CHECK);
     }
 
@@ -1070,7 +1070,7 @@ class Parser
 //  DebuggerStatement
 //    : DEBUGGER ';'
   Statement* ParseDebuggerStatement(bool *res) {
-    assert(token_ == Token::DEBUGGER);
+    assert(token_ == Token::TK_DEBUGGER);
     const std::size_t begin = lexer_.begin_position();
     Next();
     ExpectSemicolon(CHECK);
@@ -1092,9 +1092,9 @@ class Parser
 //  ExpressionStatement
 //    : Expression ';'
   Statement* ParseExpressionOrLabelledStatement(bool *res) {
-    assert(token_ == Token::IDENTIFIER);
+    assert(token_ == Token::TK_IDENTIFIER);
     Expression* const expr = ParseExpression(true, CHECK);
-    if (token_ == Token::COLON &&
+    if (token_ == Token::TK_COLON &&
         expr->AsIdentifier()) {
       // LabelledStatement
       Next();
@@ -1125,7 +1125,7 @@ class Parser
   template<bool Use>
   Statement* ParseFunctionStatement(bool *res,
                                     typename enable_if_c<Use>::type* = 0) {
-    assert(token_ == Token::FUNCTION);
+    assert(token_ == Token::TK_FUNCTION);
     if (strict_) {
       RAISE("function statement not allowed in strict code");
     }
@@ -1155,11 +1155,11 @@ class Parser
   Expression* ParseExpression(bool contains_in, bool *res) {
     Expression* right;
     Expression* result = ParseAssignmentExpression(contains_in, CHECK);
-    while (token_ == Token::COMMA) {
+    while (token_ == Token::TK_COMMA) {
       Next();
       right = ParseAssignmentExpression(contains_in, CHECK);
       assert(result && right);
-      result = factory_->NewBinaryOperation(Token::COMMA, result, right);
+      result = factory_->NewBinaryOperation(Token::TK_COMMA, result, right);
     }
     return result;
   }
@@ -1199,11 +1199,11 @@ class Parser
 //    | LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
   Expression* ParseConditionalExpression(bool contains_in, bool *res) {
     Expression* result = ParseBinaryExpression(contains_in, 9, CHECK);
-    if (token_ == Token::CONDITIONAL) {
+    if (token_ == Token::TK_CONDITIONAL) {
       Next();
       // see ECMA-262 section 11.12
       Expression* const left = ParseAssignmentExpression(true, CHECK);
-      EXPECT(Token::COLON);
+      EXPECT(Token::TK_COLON);
       Expression* const right = ParseAssignmentExpression(contains_in, CHECK);
       assert(result && left && right);
       result = factory_->NewConditionalExpression(result, left, right);
@@ -1268,9 +1268,9 @@ class Parser
     Token::Type op;
     left = ParseUnaryExpression(CHECK);
     // MultiplicativeExpression
-    while (token_ == Token::MUL ||
-           token_ == Token::DIV ||
-           token_ == Token::MOD) {
+    while (token_ == Token::TK_MUL ||
+           token_ == Token::TK_DIV ||
+           token_ == Token::TK_MOD) {
       op = token_;
       Next();
       right = ParseUnaryExpression(CHECK);
@@ -1279,8 +1279,8 @@ class Parser
     if (prec < 1) return left;
 
     // AdditiveExpression
-    while (token_ == Token::ADD ||
-           token_ == Token::SUB) {
+    while (token_ == Token::TK_ADD ||
+           token_ == Token::TK_SUB) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 0, CHECK);
@@ -1289,9 +1289,9 @@ class Parser
     if (prec < 2) return left;
 
     // ShiftExpression
-    while (token_ == Token::SHL ||
-           token_ == Token::SAR ||
-           token_ == Token::SHR) {
+    while (token_ == Token::TK_SHL ||
+           token_ == Token::TK_SAR ||
+           token_ == Token::TK_SHR) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 1, CHECK);
@@ -1300,9 +1300,9 @@ class Parser
     if (prec < 3) return left;
 
     // RelationalExpression
-    while ((Token::REL_FIRST < token_ &&
-            token_ < Token::REL_LAST) ||
-           (contains_in && token_ == Token::IN)) {
+    while ((Token::TK_REL_FIRST < token_ &&
+            token_ < Token::TK_REL_LAST) ||
+           (contains_in && token_ == Token::TK_IN)) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 2, CHECK);
@@ -1312,10 +1312,10 @@ class Parser
     if (prec < 4) return left;
 
     // EqualityExpression
-    while (token_ == Token::EQ_STRICT ||
-           token_ == Token::NE_STRICT ||
-           token_ == Token::EQ ||
-           token_ == Token::NE) {
+    while (token_ == Token::TK_EQ_STRICT ||
+           token_ == Token::TK_NE_STRICT ||
+           token_ == Token::TK_EQ ||
+           token_ == Token::TK_NE) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 3, CHECK);
@@ -1325,7 +1325,7 @@ class Parser
     if (prec < 5) return left;
 
     // BitwiseAndExpression
-    while (token_ == Token::BIT_AND) {
+    while (token_ == Token::TK_BIT_AND) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 4, CHECK);
@@ -1334,7 +1334,7 @@ class Parser
     if (prec < 6) return left;
 
     // BitwiseXorExpression
-    while (token_ == Token::BIT_XOR) {
+    while (token_ == Token::TK_BIT_XOR) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 5, CHECK);
@@ -1343,7 +1343,7 @@ class Parser
     if (prec < 7) return left;
 
     // BitwiseOrExpression
-    while (token_ == Token::BIT_OR) {
+    while (token_ == Token::TK_BIT_OR) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 6, CHECK);
@@ -1352,7 +1352,7 @@ class Parser
     if (prec < 8) return left;
 
     // LogicalAndExpression
-    while (token_ == Token::LOGICAL_AND) {
+    while (token_ == Token::TK_LOGICAL_AND) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 7, CHECK);
@@ -1362,7 +1362,7 @@ class Parser
     if (prec < 9) return left;
 
     // LogicalOrExpression
-    while (token_ == Token::LOGICAL_OR) {
+    while (token_ == Token::TK_LOGICAL_OR) {
       op = token_;
       Next();
       right = ParseBinaryExpression(contains_in, 8, CHECK);
@@ -1383,53 +1383,53 @@ class Parser
       const double r_val = right->AsNumberLiteral()->value();
       Expression* res;
       switch (op) {
-        case Token::ADD:
+        case Token::TK_ADD:
           res = factory_->NewReducedNumberLiteral(l_val + r_val);
           break;
 
-        case Token::SUB:
+        case Token::TK_SUB:
           res = factory_->NewReducedNumberLiteral(l_val - r_val);
           break;
 
-        case Token::MUL:
+        case Token::TK_MUL:
           res = factory_->NewReducedNumberLiteral(l_val * r_val);
           break;
 
-        case Token::DIV:
+        case Token::TK_DIV:
           res = factory_->NewReducedNumberLiteral(l_val / r_val);
           break;
 
-        case Token::BIT_OR:
+        case Token::TK_BIT_OR:
           res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) | DoubleToInt32(r_val));
           break;
 
-        case Token::BIT_AND:
+        case Token::TK_BIT_AND:
           res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) & DoubleToInt32(r_val));
           break;
 
-        case Token::BIT_XOR:
+        case Token::TK_BIT_XOR:
           res = factory_->NewReducedNumberLiteral(
               DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
           break;
 
         // section 11.7 Bitwise Shift Operators
-        case Token::SHL: {
+        case Token::TK_SHL: {
           const int32_t value = DoubleToInt32(l_val)
               << (DoubleToInt32(r_val) & 0x1f);
           res = factory_->NewReducedNumberLiteral(value);
           break;
         }
 
-        case Token::SHR: {
+        case Token::TK_SHR: {
           const uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           const uint32_t value = DoubleToUInt32(l_val) >> shift;
           res = factory_->NewReducedNumberLiteral(value);
           break;
         }
 
-        case Token::SAR: {
+        case Token::TK_SAR: {
           uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           int32_t value = DoubleToInt32(l_val) >> shift;
           res = factory_->NewReducedNumberLiteral(value);
@@ -1473,16 +1473,16 @@ class Parser
     const Token::Type op = token_;
     const std::size_t begin = lexer_.begin_position();
     switch (token_) {
-      case Token::VOID:
-      case Token::NOT:
-      case Token::TYPEOF:
+      case Token::TK_VOID:
+      case Token::TK_NOT:
+      case Token::TK_TYPEOF:
         Next();
         expr = ParseUnaryExpression(CHECK);
         assert(expr);
         result = factory_->NewUnaryOperation(op, expr, begin);
         break;
 
-      case Token::DELETE:
+      case Token::TK_DELETE:
         // a strict mode restriction in sec 11.4.1
         // raise SyntaxError when target is direct reference to a variable,
         // function argument, or function name
@@ -1495,7 +1495,7 @@ class Parser
         result = factory_->NewUnaryOperation(op, expr, begin);
         break;
 
-      case Token::BIT_NOT:
+      case Token::TK_BIT_NOT:
         Next();
         expr = ParseUnaryExpression(CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
@@ -1507,7 +1507,7 @@ class Parser
         }
         break;
 
-      case Token::ADD:
+      case Token::TK_ADD:
         Next();
         expr = ParseUnaryExpression(CHECK);
         if (expr->AsNumberLiteral()) {
@@ -1518,7 +1518,7 @@ class Parser
         }
         break;
 
-      case Token::SUB:
+      case Token::TK_SUB:
         Next();
         expr = ParseUnaryExpression(CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
@@ -1530,8 +1530,8 @@ class Parser
         }
         break;
 
-      case Token::INC:
-      case Token::DEC:
+      case Token::TK_INC:
+      case Token::TK_DEC:
         Next();
         expr = ParseMemberExpression(true, CHECK);
         if (!expr->IsValidLeftHandSide()) {
@@ -1569,7 +1569,7 @@ class Parser
   Expression* ParsePostfixExpression(bool *res) {
     Expression* expr = ParseMemberExpression(true, CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
-        (token_ == Token::INC || token_ == Token::DEC)) {
+        (token_ == Token::TK_INC || token_ == Token::TK_DEC)) {
       if (!expr->IsValidLeftHandSide()) {
         RAISE("invalid left-hand-side in postfix expression");
       }
@@ -1609,8 +1609,8 @@ class Parser
 //    | NEW MemberExpression Arguments
   Expression* ParseMemberExpression(bool allow_call, bool *res) {
     Expression* expr;
-    if (token_ != Token::NEW) {
-      if (token_ == Token::FUNCTION) {
+    if (token_ != Token::TK_NEW) {
+      if (token_ == Token::TK_FUNCTION) {
         // FunctionExpression
         expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
                                     FunctionLiteral::GENERAL, CHECK);
@@ -1621,7 +1621,7 @@ class Parser
       Next();
       Expression* const target = ParseMemberExpression(false, CHECK);
       Expressions* const args = factory_->template NewVector<Expression*>();
-      if (token_ == Token::LPAREN) {
+      if (token_ == Token::TK_LPAREN) {
         ParseArguments(args, CHECK);
       }
       assert(target && args);
@@ -1629,25 +1629,25 @@ class Parser
     }
     while (true) {
       switch (token_) {
-        case Token::LBRACK: {
+        case Token::TK_LBRACK: {
           Next();
           Expression* const index = ParseExpression(true, CHECK);
           assert(expr && index);
           expr = factory_->NewIndexAccess(expr, index);
-          EXPECT(Token::RBRACK);
+          EXPECT(Token::TK_RBRACK);
           break;
         }
 
-        case Token::PERIOD: {
+        case Token::TK_PERIOD: {
           Next<IgnoreReservedWords>();  // IDENTIFIERNAME
-          IS(Token::IDENTIFIER);
+          IS(Token::TK_IDENTIFIER);
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           assert(expr && ident);
           expr = factory_->NewIdentifierAccess(expr, ident);
           break;
         }
 
-        case Token::LPAREN:
+        case Token::TK_LPAREN:
           if (allow_call) {
             Expressions* const args =
                 factory_->template NewVector<Expression*>();
@@ -1684,35 +1684,35 @@ class Parser
   Expression* ParsePrimaryExpression(bool *res) {
     Expression* result = NULL;
     switch (token_) {
-      case Token::THIS:
+      case Token::TK_THIS:
         result = factory_->NewThisLiteral(lexer_.begin_position(),
                                           lexer_.end_position());
         Next();
         break;
 
-      case Token::IDENTIFIER:
+      case Token::TK_IDENTIFIER:
         result = ParseIdentifier(lexer_.Buffer());
         break;
 
-      case Token::NULL_LITERAL:
+      case Token::TK_NULL_LITERAL:
         result = factory_->NewNullLiteral(lexer_.begin_position(),
                                           lexer_.end_position());
         Next();
         break;
 
-      case Token::TRUE_LITERAL:
+      case Token::TK_TRUE_LITERAL:
         result = factory_->NewTrueLiteral(lexer_.begin_position(),
                                           lexer_.end_position());
         Next();
         break;
 
-      case Token::FALSE_LITERAL:
+      case Token::TK_FALSE_LITERAL:
         result = factory_->NewFalseLiteral(lexer_.begin_position(),
                                            lexer_.end_position());
         Next();
         break;
 
-      case Token::NUMBER:
+      case Token::TK_NUMBER:
         // section 7.8.3
         // strict mode forbids Octal Digits Literal
         if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
@@ -1724,7 +1724,7 @@ class Parser
         Next();
         break;
 
-      case Token::STRING: {
+      case Token::TK_STRING: {
         const typename lexer_type::State state = lexer_.StringEscapeType();
         if (strict_ && state == lexer_type::OCTAL) {
           RAISE("octal escape sequence not allowed in strict code");
@@ -1736,26 +1736,26 @@ class Parser
         break;
       }
 
-      case Token::DIV:
+      case Token::TK_DIV:
         result = ParseRegExpLiteral(false, CHECK);
         break;
 
-      case Token::ASSIGN_DIV:
+      case Token::TK_ASSIGN_DIV:
         result = ParseRegExpLiteral(true, CHECK);
         break;
 
-      case Token::LBRACK:
+      case Token::TK_LBRACK:
         result = ParseArrayLiteral(CHECK);
         break;
 
-      case Token::LBRACE:
+      case Token::TK_LBRACE:
         result = ParseObjectLiteral(CHECK);
         break;
 
-      case Token::LPAREN:
+      case Token::TK_LPAREN:
         Next();
         result = ParseExpression(true, CHECK);
-        EXPECT(Token::RPAREN);
+        EXPECT(Token::TK_RPAREN);
         break;
 
       default:
@@ -1775,16 +1775,16 @@ class Parser
   template<typename Container>
   Container* ParseArguments(Container* container, bool *res) {
     Next();
-    if (token_ != Token::RPAREN) {
+    if (token_ != Token::TK_RPAREN) {
       Expression* const first = ParseAssignmentExpression(true, CHECK);
       container->push_back(first);
-      while (token_ == Token::COMMA) {
+      while (token_ == Token::TK_COMMA) {
         Next();
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
         container->push_back(expr);
       }
     }
-    EXPECT(Token::RPAREN);
+    EXPECT(Token::TK_RPAREN);
     return container;
   }
 
@@ -1824,16 +1824,16 @@ class Parser
     const std::size_t begin = lexer_.begin_position();
     MaybeExpressions* const items = factory_->template NewVector<Maybe<Expression> >();
     Next();
-    while (token_ != Token::RBRACK) {
-      if (token_ == Token::COMMA) {
-        // when Token::COMMA, only increment length
+    while (token_ != Token::TK_RBRACK) {
+      if (token_ == Token::TK_COMMA) {
+        // when Token::TK_COMMA, only increment length
         items->push_back(Maybe<Expression>());
       } else {
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
         items->push_back(expr);
       }
-      if (token_ != Token::RBRACK) {
-        EXPECT(Token::COMMA);
+      if (token_ != Token::TK_RBRACK) {
+        EXPECT(Token::TK_COMMA);
       }
     }
     Next();
@@ -1879,12 +1879,12 @@ class Parser
 
     // IDENTIFIERNAME
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
-    while (token_ != Token::RBRACE) {
-      if (token_ == Token::GET || token_ == Token::SET) {
-        const bool is_get = token_ == Token::GET;
+    while (token_ != Token::TK_RBRACE) {
+      if (token_ == Token::TK_GET || token_ == Token::TK_SET) {
+        const bool is_get = token_ == Token::TK_GET;
         // this is getter or setter or usual prop
         Next<IgnoreReservedWords>();  // IDENTIFIERNAME
-        if (token_ == Token::COLON) {
+        if (token_ == Token::TK_COLON) {
           // property
           ident = ParseIdentifierWithPosition(
               is_get ? detail::kGet : detail::kSet,
@@ -1908,12 +1908,12 @@ class Parser
           }
         } else {
           // getter or setter
-          if (token_ == Token::IDENTIFIER ||
-              token_ == Token::STRING ||
-              token_ == Token::NUMBER) {
-            if (token_ == Token::NUMBER) {
+          if (token_ == Token::TK_IDENTIFIER ||
+              token_ == Token::TK_STRING ||
+              token_ == Token::TK_NUMBER) {
+            if (token_ == Token::TK_NUMBER) {
               ident = ParseIdentifierNumber(CHECK);
-            } else if (token_ == Token::STRING) {
+            } else if (token_ == Token::TK_STRING) {
               ident = ParseIdentifierString(CHECK);
             } else {
               ident = ParseIdentifier(lexer_.Buffer());
@@ -1943,17 +1943,17 @@ class Parser
             RAISE_RECOVERVABLE("invalid property name");
           }
         }
-      } else if (token_ == Token::IDENTIFIER ||
-                 token_ == Token::STRING ||
-                 token_ == Token::NUMBER) {
-        if (token_ == Token::NUMBER) {
+      } else if (token_ == Token::TK_IDENTIFIER ||
+                 token_ == Token::TK_STRING ||
+                 token_ == Token::TK_NUMBER) {
+        if (token_ == Token::TK_NUMBER) {
           ident = ParseIdentifierNumber(CHECK);
-        } else if (token_ == Token::STRING) {
+        } else if (token_ == Token::TK_STRING) {
           ident = ParseIdentifierString(CHECK);
         } else {
           ident = ParseIdentifier(lexer_.Buffer());
         }
-        EXPECT(Token::COLON);
+        EXPECT(Token::TK_COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         ObjectLiteral::AddDataProperty(prop, ident, expr);
         typename ObjectMap::iterator it = map.find(ident);
@@ -1974,8 +1974,8 @@ class Parser
         RAISE_RECOVERVABLE("invalid property name");
       }
 
-      if (token_ != Token::RBRACE) {
-        IS(Token::COMMA);
+      if (token_ != Token::TK_RBRACE) {
+        IS(Token::TK_COMMA);
         // IDENTIFIERNAME
         Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
       }
@@ -2009,17 +2009,17 @@ class Parser
     Identifier* name = NULL;
 
     if (arg_type == FunctionLiteral::GENERAL) {
-      assert(token_ == Token::FUNCTION);
+      assert(token_ == Token::TK_FUNCTION);
       Next(true);  // preparing for strict directive
       const Token::Type current = token_;
-      if (current == Token::IDENTIFIER ||
+      if (current == Token::TK_IDENTIFIER ||
           Token::IsAddedFutureReservedWordInStrictCode(current)) {
         name = ParseIdentifier(lexer_.Buffer());
         if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         } else {
-          assert(current == Token::IDENTIFIER);
+          assert(current == Token::TK_IDENTIFIER);
           const EvalOrArguments val = IsEvalOrArguments(name);
           if (val) {
             throw_error_if_strict_code = (val == kEval) ?
@@ -2029,25 +2029,25 @@ class Parser
         }
       } else if (decl_type == FunctionLiteral::DECLARATION ||
                  decl_type == FunctionLiteral::STATEMENT) {
-        IS(Token::IDENTIFIER);
+        IS(Token::TK_IDENTIFIER);
       }
     }
 
     const std::size_t begin_block_position = lexer_.begin_position();
 
     //  '(' FormalParameterList_opt ')'
-    IS(Token::LPAREN);
+    IS(Token::TK_LPAREN);
     Next(true);  // preparing for strict directive
 
     if (arg_type == FunctionLiteral::GETTER) {
       // if getter, parameter count is 0
-      EXPECT(Token::RPAREN);
+      EXPECT(Token::TK_RPAREN);
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
       const Token::Type current = token_;
-      if (current != Token::IDENTIFIER &&
+      if (current != Token::TK_IDENTIFIER &&
           !Token::IsAddedFutureReservedWordInStrictCode(current)) {
-        IS(Token::IDENTIFIER);
+        IS(Token::TK_IDENTIFIER);
       }
       Identifier* const ident = ParseIdentifier(lexer_.Buffer());
       if (!throw_error_if_strict_code) {
@@ -2055,7 +2055,7 @@ class Parser
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         } else {
-          assert(current == Token::IDENTIFIER);
+          assert(current == Token::TK_IDENTIFIER);
           const EvalOrArguments val = IsEvalOrArguments(ident);
           if (val) {
             throw_error_if_strict_code = (val == kEval) ?
@@ -2065,14 +2065,14 @@ class Parser
         }
       }
       params->push_back(ident);
-      EXPECT(Token::RPAREN);
+      EXPECT(Token::TK_RPAREN);
     } else {
-      if (token_ != Token::RPAREN) {
+      if (token_ != Token::TK_RPAREN) {
         do {
           const Token::Type current = token_;
-          if (current != Token::IDENTIFIER &&
+          if (current != Token::TK_IDENTIFIER &&
               !Token::IsAddedFutureReservedWordInStrictCode(current)) {
-            IS(Token::IDENTIFIER);
+            IS(Token::TK_IDENTIFIER);
           }
           Identifier* const ident = ParseIdentifier(lexer_.Buffer());
           if (!throw_error_if_strict_code) {
@@ -2080,7 +2080,7 @@ class Parser
               throw_error_if_strict_code = kDetectFutureReservedWords;
               throw_error_if_strict_code_line = lexer_.line_number();
             } else {
-              assert(current == Token::IDENTIFIER);
+              assert(current == Token::TK_IDENTIFIER);
               const EvalOrArguments val = IsEvalOrArguments(ident);
               if (val) {
                 throw_error_if_strict_code = (val == kEval) ?
@@ -2096,14 +2096,14 @@ class Parser
           }
           params->push_back(ident);
           param_set.insert(ident);
-          if (token_ == Token::COMMA) {
+          if (token_ == Token::TK_COMMA) {
             Next(true);
           } else {
             break;
           }
         } while (true);
       }
-      EXPECT(Token::RPAREN);
+      EXPECT(Token::TK_RPAREN);
     }
 
     //  '{' FunctionBody '}'
@@ -2111,14 +2111,14 @@ class Parser
     //  FunctionBody
     //    :
     //    | SourceElements
-    EXPECT(Token::LBRACE);
+    EXPECT(Token::TK_LBRACE);
 
     Statements* const body = factory_->template NewVector<Statement*>();
     Scope* const scope = factory_->NewScope(decl_type);
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
     const bool function_is_strict =
-        ParseSourceElements(Token::RBRACE, body, CHECK);
+        ParseSourceElements(Token::TK_RBRACE, body, CHECK);
     if (strict_ || function_is_strict) {
       // section 13.1
       // Strict Mode Restrictions
@@ -2180,7 +2180,7 @@ class Parser
     dtoa::StringPieceDToA builder;
     builder.Build(val);
     Identifier* const ident = factory_->NewIdentifier(
-        Token::NUMBER,
+        Token::TK_NUMBER,
         builder.buffer(),
         lexer_.begin_position(),
         lexer_.end_position());
@@ -2193,7 +2193,7 @@ class Parser
     if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
       RAISE("octal escape sequence not allowed in strict code");
     }
-    Identifier* const ident = factory_->NewIdentifier(Token::STRING,
+    Identifier* const ident = factory_->NewIdentifier(Token::TK_STRING,
                                                       lexer_.Buffer(),
                                                       lexer_.begin_position(),
                                                       lexer_.end_position());
@@ -2203,7 +2203,7 @@ class Parser
 
   template<typename Range>
   Identifier* ParseIdentifier(const Range& range) {
-    Identifier* const ident = factory_->NewIdentifier(Token::IDENTIFIER,
+    Identifier* const ident = factory_->NewIdentifier(Token::TK_IDENTIFIER,
                                                       range,
                                                       lexer_.begin_position(),
                                                       lexer_.end_position());
@@ -2215,7 +2215,7 @@ class Parser
   Identifier* ParseIdentifierWithPosition(const Range& range,
                                           std::size_t begin,
                                           std::size_t end) {
-    Identifier* const ident = factory_->NewIdentifier(Token::IDENTIFIER,
+    Identifier* const ident = factory_->NewIdentifier(Token::TK_IDENTIFIER,
                                                       range,
                                                       begin,
                                                       end);
@@ -2315,19 +2315,19 @@ class Parser
   void ReportUnexpectedToken(Token::Type expected_token) {
     SetErrorHeader();
     switch (token_) {
-      case Token::STRING:
+      case Token::TK_STRING:
         error_.append("unexpected string");
         break;
-      case Token::NUMBER:
+      case Token::TK_NUMBER:
         error_.append("unexpected number");
         break;
-      case Token::IDENTIFIER:
+      case Token::TK_IDENTIFIER:
         error_.append("unexpected identifier");
         break;
-      case Token::EOS:
+      case Token::TK_EOS:
         error_.append("unexpected EOS");
         break;
-      case Token::ILLEGAL: {
+      case Token::TK_ILLEGAL: {
         error_.append("illegal character");
         break;
       }
@@ -2340,13 +2340,13 @@ class Parser
   }
 
   bool ExpectSemicolon(bool *res) {
-    if (token_ == Token::SEMICOLON) {
+    if (token_ == Token::TK_SEMICOLON) {
       Next();
       return true;
     }
     if (lexer_.has_line_terminator_before_next() ||
-        token_ == Token::RBRACE ||
-        token_ == Token::EOS ) {
+        token_ == Token::TK_RBRACE ||
+        token_ == Token::TK_EOS ) {
       return true;
     }
     UNEXPECT(token_);
@@ -2399,7 +2399,7 @@ class Parser
     strict_ = strict;
   }
   inline bool RecoverableError() const {
-    return (!(error_state_ & kNotRecoverable)) && token_ == Token::EOS;
+    return (!(error_state_ & kNotRecoverable)) && token_ == Token::TK_EOS;
   }
 
  protected:

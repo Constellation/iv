@@ -55,28 +55,28 @@ class JSONLexer : private core::Noncopyable<> {
 
       case ':':
         Advance();
-        return core::Token::COLON;
+        return core::Token::TK_COLON;
 
       case ',':
         Advance();
-        return core::Token::COMMA;
+        return core::Token::TK_COMMA;
 
       case '[':
         Advance();
-        return core::Token::LBRACK;
+        return core::Token::TK_LBRACK;
         break;
 
       case ']':
         Advance();
-        return core::Token::RBRACK;
+        return core::Token::TK_RBRACK;
 
       case '{':
         Advance();
-        return core::Token::LBRACE;
+        return core::Token::TK_LBRACE;
 
       case '}':
         Advance();
-        return core::Token::RBRACE;
+        return core::Token::TK_RBRACE;
 
       case '-':
         Advance();
@@ -85,29 +85,29 @@ class JSONLexer : private core::Noncopyable<> {
       case 'n': {  // null literal
         static const char* literal = "ull";
         Advance();
-        return MatchLiteral(literal, 3, core::Token::NULL_LITERAL);
+        return MatchLiteral(literal, 3, core::Token::TK_NULL_LITERAL);
       }
 
       case 't': {  // true literal
         static const char* literal = "rue";
         Advance();
-        return MatchLiteral(literal, 3, core::Token::TRUE_LITERAL);
+        return MatchLiteral(literal, 3, core::Token::TK_TRUE_LITERAL);
       }
 
       case 'f': {  // false literal
         static const char* literal = "alse";
         Advance();
-        return MatchLiteral(literal, 4, core::Token::FALSE_LITERAL);
+        return MatchLiteral(literal, 4, core::Token::TK_FALSE_LITERAL);
       }
 
       default:
         if (c_ < 0) {
           // EOS
-          return core::Token::EOS;
+          return core::Token::TK_EOS;
         } else if (core::character::IsDecimalDigit(c_)) {
           return ScanNumber<false>();
         } else {
-          return core::Token::ILLEGAL;
+          return core::Token::TK_ILLEGAL;
         }
     }
   }
@@ -160,7 +160,7 @@ class JSONLexer : private core::Noncopyable<> {
                                  core::Token::Type token) {
     for (std::size_t i = 0; i < size; ++i) {
       if (c_ != literal[i]) {
-        return core::Token::ILLEGAL;
+        return core::Token::TK_ILLEGAL;
       }
       Advance();
     }
@@ -176,23 +176,23 @@ class JSONLexer : private core::Noncopyable<> {
         Advance();
         // escape sequence
         if (c_ < 0) {
-          return core::Token::ILLEGAL;
+          return core::Token::TK_ILLEGAL;
         }
         if (!ScanEscape()) {
-          return core::Token::ILLEGAL;
+          return core::Token::TK_ILLEGAL;
         }
       } else if (detail::IsAcceptedChar<AcceptLineTerminator>(c_)) {
         Record16Advance();
       } else {
-        return core::Token::ILLEGAL;
+        return core::Token::TK_ILLEGAL;
       }
     }
     if (c_ != '"') {
       // not closed
-      return core::Token::ILLEGAL;
+      return core::Token::TK_ILLEGAL;
     }
     Advance();
-    return core::Token::STRING;
+    return core::Token::TK_STRING;
   }
 
   template<bool find_sign>
@@ -202,7 +202,7 @@ class JSONLexer : private core::Noncopyable<> {
       Record8('-');
       if (c_ < 0 ||
           !core::character::IsDecimalDigit(c_)) {
-        return core::Token::ILLEGAL;
+        return core::Token::TK_ILLEGAL;
       }
     }
     if (c_ == '0') {
@@ -214,7 +214,7 @@ class JSONLexer : private core::Noncopyable<> {
       Record8Advance();
       if (c_ < 0 ||
           !core::character::IsDecimalDigit(c_)) {
-        return core::Token::ILLEGAL;
+        return core::Token::TK_ILLEGAL;
       }
       ScanDecimalDigits();
     }
@@ -228,13 +228,13 @@ class JSONLexer : private core::Noncopyable<> {
       // more than 1 decimal digit required
       if (c_ < 0 ||
           !core::character::IsDecimalDigit(c_)) {
-        return core::Token::ILLEGAL;
+        return core::Token::TK_ILLEGAL;
       }
       ScanDecimalDigits();
     }
     buffer8_.push_back('\0');
     numeric_ = std::atof(buffer8_.data());
-    return core::Token::NUMBER;
+    return core::Token::TK_NUMBER;
   }
 
   void ScanDecimalDigits() {

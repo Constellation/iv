@@ -16,189 +16,189 @@ typedef detail::TokenContents<None> TokenContents;
 class Token {
  public:
   enum Type {
-    EOS,             // EOS
-    ILLEGAL,         // ILLEGAL
+    TK_EOS,             // EOS
+    TK_ILLEGAL,         // ILLEGAL
 
-    PERIOD,          // .
-    COLON,           // :
-    SEMICOLON,       // ;
-    COMMA,           // ,
+    TK_PERIOD,          // .
+    TK_COLON,           // :
+    TK_SEMICOLON,       // ;
+    TK_COMMA,           // ,
 
-    LPAREN,          // (
-    RPAREN,          // )
-    LBRACK,          // [
-    RBRACK,          // ]
-    LBRACE,          // {
-    RBRACE,          // }
+    TK_LPAREN,          // (
+    TK_RPAREN,          // )
+    TK_LBRACK,          // [
+    TK_RBRACK,          // ]
+    TK_LBRACE,          // {
+    TK_RBRACE,          // }
 
-    CONDITIONAL,     // ?
+    TK_CONDITIONAL,     // ?
 
-    EQ,              // ==
-    EQ_STRICT,       // ===
+    TK_EQ,              // ==
+    TK_EQ_STRICT,       // ===
 
-    NOT,             // !
-    NE,              // !=
-    NE_STRICT,       // !==
+    TK_NOT,             // !
+    TK_NE,              // !=
+    TK_NE_STRICT,       // !==
 
-    INC,             // ++
-    DEC,             // --
+    TK_INC,             // ++
+    TK_DEC,             // --
 
-    ADD,             // +
-    SUB,             // -
-    MUL,             // *
-    DIV,             // /
-    MOD,             // %
+    TK_ADD,             // +
+    TK_SUB,             // -
+    TK_MUL,             // *
+    TK_DIV,             // /
+    TK_MOD,             // %
 
-    REL_FIRST,       // RELATIONAL FIRST
-    LT,              // <
-    GT,              // >
-    LTE,             // <=
-    GTE,             // >=
-    INSTANCEOF,      // instanceof
-    REL_LAST,        // RELATIONAL LAST
+    TK_REL_FIRST,       // RELATIONAL FIRST
+    TK_LT,              // <
+    TK_GT,              // >
+    TK_LTE,             // <=
+    TK_GTE,             // >=
+    TK_INSTANCEOF,      // instanceof
+    TK_REL_LAST,        // RELATIONAL LAST
 
-    SAR,             // >>
-    SHR,             // >>>
-    SHL,             // <<
+    TK_SAR,             // >>
+    TK_SHR,             // >>>
+    TK_SHL,             // <<
 
-    BIT_AND,         // &
-    BIT_OR,          // |
-    BIT_XOR,         // ^
-    BIT_NOT,         // ~
+    TK_BIT_AND,         // &
+    TK_BIT_OR,          // |
+    TK_BIT_XOR,         // ^
+    TK_BIT_NOT,         // ~
 
-    LOGICAL_AND,     // &&
-    LOGICAL_OR,      // ||
+    TK_LOGICAL_AND,     // &&
+    TK_LOGICAL_OR,      // ||
 
-    HTML_COMMENT,    // <!--
+    TK_HTML_COMMENT,    // <!--
 
-    ASSIGN_FIRST,    // ASSIGN OP FIRST
-    ASSIGN,          // =
-    ASSIGN_ADD,      // +=
-    ASSIGN_SUB,      // -=
-    ASSIGN_MUL,      // *=
-    ASSIGN_MOD,      // %=
-    ASSIGN_DIV,      // /=
-    ASSIGN_SAR,      // >>=
-    ASSIGN_SHR,      // >>>=
-    ASSIGN_SHL,      // <<=
-    ASSIGN_BIT_AND,  // &=
-    ASSIGN_BIT_OR,   // |=
-    ASSIGN_BIT_XOR,  // ^=
-    ASSIGN_LAST,     // ASSIGN OP LAST
+    TK_ASSIGN_FIRST,    // ASSIGN OP FIRST
+    TK_ASSIGN,          // =
+    TK_ASSIGN_ADD,      // +=
+    TK_ASSIGN_SUB,      // -=
+    TK_ASSIGN_MUL,      // *=
+    TK_ASSIGN_MOD,      // %=
+    TK_ASSIGN_DIV,      // /=
+    TK_ASSIGN_SAR,      // >>=
+    TK_ASSIGN_SHR,      // >>>=
+    TK_ASSIGN_SHL,      // <<=
+    TK_ASSIGN_BIT_AND,  // &=
+    TK_ASSIGN_BIT_OR,   // |=
+    TK_ASSIGN_BIT_XOR,  // ^=
+    TK_ASSIGN_LAST,     // ASSIGN OP LAST
 
-    DELETE,          // delete
-    TYPEOF,          // typeof
-    VOID,            // void
-    BREAK,           // break
-    CASE,            // case
-    CATCH,           // catch
-    CONTINUE,        // continue
-    DEBUGGER,        // debugger
-    DEFAULT,         // default
-    DO,              // do
-    ELSE,            // else
-    FINALLY,         // finaly
-    FOR,             // for
-    FUNCTION,        // function
-    IF,              // if
-    IN,              // in
-    NEW,             // new
-    RETURN,          // return
-    SWITCH,          // switch
-    THIS,            // this
-    THROW,           // throw
-    TRY,             // try
-    VAR,             // var
-    WHILE,           // while
-    WITH,            // with
+    TK_DELETE,          // delete
+    TK_TYPEOF,          // typeof
+    TK_VOID,            // void
+    TK_BREAK,           // break
+    TK_CASE,            // case
+    TK_CATCH,           // catch
+    TK_CONTINUE,        // continue
+    TK_DEBUGGER,        // debugger
+    TK_DEFAULT,         // default
+    TK_DO,              // do
+    TK_ELSE,            // else
+    TK_FINALLY,         // finaly
+    TK_FOR,             // for
+    TK_FUNCTION,        // function
+    TK_IF,              // if
+    TK_IN,              // in
+    TK_NEW,             // new
+    TK_RETURN,          // return
+    TK_SWITCH,          // switch
+    TK_THIS,            // this
+    TK_THROW,           // throw
+    TK_TRY,             // try
+    TK_VAR,             // var
+    TK_WHILE,           // while
+    TK_WITH,            // with
 
-    ABSTRACT,        // abstract
-    BOOLEAN,         // boolean
-    BYTE,            // byte
-    CHAR,            // char
-    CLASS,           // class
-    CONST,           // const
-    DOUBLE,          // double
-    ENUM,            // enum
-    EXPORT,          // export
-    EXTENDS,         // extends
-    FINAL,           // final
-    FLOAT,           // float
-    GOTO,            // goto
-    IMPORT,          // import
-    INT,             // int
-    LONG,            // long
-    NATIVE,          // native
-    SHORT,           // short
-    SUPER,           // super
-    SYNCHRONIZED,    // synchronized
-    THROWS,          // throws
-    TRANSIENT,       // transient
-    VOLATILE,        // volatile
+    TK_ABSTRACT,        // abstract
+    TK_BOOLEAN,         // boolean
+    TK_BYTE,            // byte
+    TK_CHAR,            // char
+    TK_CLASS,           // class
+    TK_CONST,           // const
+    TK_DOUBLE,          // double
+    TK_ENUM,            // enum
+    TK_EXPORT,          // export
+    TK_EXTENDS,         // extends
+    TK_FINAL,           // final
+    TK_FLOAT,           // float
+    TK_GOTO,            // goto
+    TK_IMPORT,          // import
+    TK_INT,             // int
+    TK_LONG,            // long
+    TK_NATIVE,          // native
+    TK_SHORT,           // short
+    TK_SUPER,           // super
+    TK_SYNCHRONIZED,    // synchronized
+    TK_THROWS,          // throws
+    TK_TRANSIENT,       // transient
+    TK_VOLATILE,        // volatile
 
-    GET,             // get
-    SET,             // set
+    TK_GET,             // get
+    TK_SET,             // set
 
-    STRICT_FIRST,    // STRICT FIRST
-    IMPLEMENTS,      // implements
-    LET,             // let
-    PRIVATE,         // private
-    PUBLIC,          // public
-    YIELD,           // yield
-    INTERFACE,       // interface
-    PACKAGE,         // package
-    PROTECTED,       // protected
-    STATIC,          // static
-    STRICT_LAST,     // STRICT LAST
+    TK_STRICT_FIRST,    // STRICT FIRST
+    TK_IMPLEMENTS,      // implements
+    TK_LET,             // let
+    TK_PRIVATE,         // private
+    TK_PUBLIC,          // public
+    TK_YIELD,           // yield
+    TK_INTERFACE,       // interface
+    TK_PACKAGE,         // package
+    TK_PROTECTED,       // protected
+    TK_STATIC,          // static
+    TK_STRICT_LAST,     // STRICT LAST
 
-    NULL_LITERAL,    // NULL   LITERAL
-    FALSE_LITERAL,   // FALSE  LITERAL
-    TRUE_LITERAL,    // TRUE   LITERAL
-    NUMBER,          // NUMBER LITERAL
-    STRING,          // STRING LITERAL
+    TK_NULL_LITERAL,    // NULL   LITERAL
+    TK_FALSE_LITERAL,   // FALSE  LITERAL
+    TK_TRUE_LITERAL,    // TRUE   LITERAL
+    TK_NUMBER,          // NUMBER LITERAL
+    TK_STRING,          // STRING LITERAL
 
-    IDENTIFIER,      // IDENTIFIER
+    TK_IDENTIFIER,      // IDENTIFIER
 
-    SINGLE_LINE_COMMENT,  // SINGLE LINE COMMENT
-    MULTI_LINE_COMMENT,  // MULTI LINE COMMENT
+    TK_SINGLE_LINE_COMMENT,  // SINGLE LINE COMMENT
+    TK_MULTI_LINE_COMMENT,  // MULTI LINE COMMENT
 
-    NOT_FOUND,       // NOT_FOUND
+    TK_NOT_FOUND,       // NOT_FOUND
 
-    NUM_TOKENS       // number of tokens
+    TK_NUM_TOKENS       // number of tokens
   };
   static const std::size_t kMaxSize = 12;  // "synchronized"
 
   static inline bool IsAssignOp(Token::Type type) {
-    return Token::ASSIGN_FIRST < type && type < Token::ASSIGN_LAST;
+    return Token::TK_ASSIGN_FIRST < type && type < Token::TK_ASSIGN_LAST;
   }
 
   static inline bool IsAddedFutureReservedWordInStrictCode(Token::Type type) {
-    return Token::STRICT_FIRST < type && type < Token::STRICT_LAST;
+    return Token::TK_STRICT_FIRST < type && type < Token::TK_STRICT_LAST;
   }
 
   static inline const char* ToString(Token::Type type) {
-    assert(0 <= type && type < NUM_TOKENS);
-    assert(type != Token::ASSIGN_FIRST &&
-           type != Token::ASSIGN_LAST &&
-           type != Token::REL_FIRST &&
-           type != Token::REL_LAST &&
-           type != Token::STRICT_FIRST &&
-           type != Token::STRICT_LAST &&
-           type != Token::STRING &&
-           type != Token::NUMBER &&
-           type != Token::IDENTIFIER &&
-           type != Token::EOS &&
-           type != Token::ILLEGAL &&
-           type != Token::SINGLE_LINE_COMMENT &&
-           type != Token::MULTI_LINE_COMMENT &&
-           type != Token::NOT_FOUND);
+    assert(0 <= type && type < TK_NUM_TOKENS);
+    assert(type != Token::TK_ASSIGN_FIRST &&
+           type != Token::TK_ASSIGN_LAST &&
+           type != Token::TK_REL_FIRST &&
+           type != Token::TK_REL_LAST &&
+           type != Token::TK_STRICT_FIRST &&
+           type != Token::TK_STRICT_LAST &&
+           type != Token::TK_STRING &&
+           type != Token::TK_NUMBER &&
+           type != Token::TK_IDENTIFIER &&
+           type != Token::TK_EOS &&
+           type != Token::TK_ILLEGAL &&
+           type != Token::TK_SINGLE_LINE_COMMENT &&
+           type != Token::TK_MULTI_LINE_COMMENT &&
+           type != Token::TK_NOT_FOUND);
     return TokenContents::kContents[type];
   }
 };
 
 namespace detail {
 template<typename T>
-const char* TokenContents<T>::kContents[Token::NUM_TOKENS] = {
+const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   NULL,            // EOS
   NULL,            // ILLEGAL
   ".",
