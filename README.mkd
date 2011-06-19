@@ -4,6 +4,10 @@ iv is ECMA262 5.1 lexer and parser and interpreter project written in C++ / JS
 
 a lot of inspired from V8, SpiderMonkey, JavaScriptCore
 
+## License
+under New BSD License
+see LICENSE file
+
 ## iv / lv5
 
 lv5 is ECMA262 5.1 interpreter
