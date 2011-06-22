@@ -875,7 +875,7 @@ do {\
       }
 
       case OP::CALL: {
-        const uint32_t argc = oparg;
+        const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e.Report(Error::Type, "not callable object");
@@ -915,7 +915,7 @@ do {\
       }
 
       case OP::CONSTRUCT: {
-        const uint32_t argc = oparg;
+        const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e.Report(Error::Type, "not callable object");
@@ -956,7 +956,7 @@ do {\
 
       case OP::EVAL: {
         // maybe direct call to eval
-        const uint32_t argc = oparg;
+        const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e.Report(Error::Type, "not callable object");
