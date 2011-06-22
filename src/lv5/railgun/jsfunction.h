@@ -5,6 +5,7 @@
 #include "lv5/jsenv.h"
 #include "lv5/jsscript.h"
 #include "lv5/jsfunction.h"
+#include "lv5/jsarguments.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/jsscript.h"
@@ -96,6 +97,108 @@ class JSVMFunction : public JSFunction {
   static JSVMFunction* New(Context* ctx,
                            railgun::Code* code, JSEnv* env) {
     return new JSVMFunction(ctx, code, env);
+  }
+
+  void InstantiateBindings(Context* ctx, Frame* frame, Error* e) {
+    // step 1
+    JSVal this_value = frame->GetThis();
+    // TODO(Constellation) fix
+    JSDeclEnv* env = static_cast<JSDeclEnv*>(frame->variable_env());
+    if (!code_->strict()) {
+      if (this_value.IsUndefined() || this_value.IsNull()) {
+        this_value.set_value(ctx->global_obj());
+      } else if (!this_value.IsObject()) {
+        JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
+        this_value.set_value(obj);
+      }
+    }
+
+    // step 2
+    const bool configurable_bindings = false;
+
+    // step 4
+    {
+      const std::size_t arg_count = frame->argc_;
+      JSVal* args = frame->arguments_begin();
+      std::size_t n = 0;
+      for (Code::Names::const_iterator it = code_->params().begin(),
+           last = code_->params().end(); it != last; ++it) {
+        ++n;
+        const Symbol& arg_name = *it;
+        if (!env->HasBinding(ctx, arg_name)) {
+          env->CreateMutableBinding(ctx, arg_name,
+                                    configurable_bindings, IV_LV5_ERROR_VOID(e));
+        }
+        if (n > arg_count) {
+          env->SetMutableBinding(ctx, arg_name,
+                                 JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+        } else {
+          env->SetMutableBinding(ctx, arg_name,
+                                 args[n-1], code_->strict(), IV_LV5_ERROR_VOID(e));
+        }
+      }
+    }
+
+    // step 5
+    for (Code::Codes::const_iterator it = code_->codes().begin(),
+         last = code_->codes().end(); it != last; ++it) {
+      if ((*it)->IsFunctionDeclaration()) {
+        const Symbol& fn = (*it)->name();
+        const JSVal fo = JSVMFunction::New(ctx, *it, env);
+        // see 10.5 errata
+        if (!env->HasBinding(ctx, fn)) {
+          env->CreateMutableBinding(ctx, fn,
+                                    configurable_bindings, IV_LV5_ERROR_VOID(e));
+        }
+        env->SetMutableBinding(ctx, fn, fo, code_->strict(), IV_LV5_ERROR_VOID(e));
+      }
+    }
+
+    // step 6, 7
+    // TODO(Constellation)
+    // implement it
+    // optimization
+//    const Symbol arguments_symbol = context::arguments_symbol(ctx);
+//    if (!env->HasBinding(ctx, arguments_symbol)) {
+//      JSArguments* const args_obj =
+//          JSArguments::New(ctx, this,
+//                           code_->params(),
+//                           args, env,
+//                           ctx->IsStrict(), IV_LV5_ERROR_VOID(e));
+//      if (code_->strict()) {
+//        env->CreateImmutableBinding(arguments_symbol);
+//        env->InitializeImmutableBinding(arguments_symbol, args_obj);
+//      } else {
+//        env->CreateMutableBinding(ctx_, context::arguments_symbol(ctx_),
+//                                  configurable_bindings, IV_LV5_ERROR_VOID(e));
+//        env->SetMutableBinding(ctx_, arguments_symbol,
+//                               args_obj, false, IV_LV5_ERROR_VOID(e));
+//      }
+//    }
+
+    // step 8
+    for (Code::Names::const_iterator it = code_->varnames().begin(),
+         last = code_->varnames().end(); it != last; ++it) {
+      const Symbol& dn = *it;
+      if (!env->HasBinding(ctx, dn)) {
+        env->CreateMutableBinding(ctx, dn,
+                                  configurable_bindings, IV_LV5_ERROR_VOID(e));
+        env->SetMutableBinding(ctx, dn,
+                               JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+      }
+    }
+
+    {
+      const FunctionLiteral::DeclType type = code_->decl_type();
+      if (type == FunctionLiteral::STATEMENT ||
+          (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
+        const Symbol& name = code_->name();
+        if (!env->HasBinding(ctx, name)) {
+          env->CreateImmutableBinding(name);
+          env->InitializeImmutableBinding(name, this);
+        }
+      }
+    }
   }
 
   bool IsNativeFunction() const {

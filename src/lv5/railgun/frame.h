@@ -9,7 +9,7 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-// 
+//
 // Frame structure is following
 //
 // FUNC | THIS | ARG1 | ARG2 | FRAME | STACK DEPTH |
@@ -27,8 +27,24 @@ struct Frame {
     return reinterpret_cast<JSVal*>(this);
   }
 
-  JSVal GetThis() {
-    return *(reinterpret_cast<JSVal*>(this) - (argc_ + 1));
+  JSVal GetThis() const {
+    return this_binding();
+  }
+
+  JSVal this_binding() const {
+    return *(reinterpret_cast<const JSVal*>(this) - (argc_ + 1));
+  }
+
+  void set_this_binding(JSVal val) {
+    *(reinterpret_cast<JSVal*>(this) - (argc_ + 1)) = val;
+  }
+
+  JSVal* arguments_begin() {
+    return reinterpret_cast<JSVal*>(this) - argc_;
+  }
+
+  JSVal* arguments_end() {
+    return GetFrameBase();
   }
 
   static std::size_t GetFrameSize(std::size_t n) {

@@ -900,6 +900,7 @@ do {\
           constants = &frame->constants();
           names = &code->names();
           strict = code->strict();
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
           JSVal* stack_pointer = sp;
@@ -939,6 +940,7 @@ do {\
           constants = &frame->constants();
           names = &code->names();
           strict = code->strict();
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
           JSVal* stack_pointer = sp;
@@ -954,12 +956,41 @@ do {\
 
       case OP::EVAL: {
         // maybe direct call to eval
-        JSVal* stack_pointer = sp;
-        const JSVal x = InvokeMaybeEval(&stack_pointer, oparg, &e);
-        sp = stack_pointer;
-        PUSH(x);
-        if (e) {
+        const uint32_t argc = oparg;
+        const JSVal v = sp[-(argc + 2)];
+        if (!v.IsCallable()) {
+          e.Report(Error::Type, "not callable object");
           break;
+        }
+        JSFunction* func = v.object()->AsCallable();
+        if (!func->IsNativeFunction()) {
+          // inline call
+          frame = stack_.NewCodeFrame(
+              ctx_,
+              static_cast<JSVMFunction*>(func)->code(),
+              static_cast<JSVMFunction*>(func)->scope(), instr, argc);
+          if (!frame) {
+            e.Report(Error::Range, "maximum call stack size exceeded");
+            break;
+          }
+          code = frame->code();
+          first_instr = frame->data();
+          instr = first_instr;
+          sp = frame->stacktop();
+          dynamic_env_level = 0;
+          constants = &frame->constants();
+          names = &code->names();
+          strict = code->strict();
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
+        } else {
+          // Native Function, so use Invoke
+          JSVal* stack_pointer = sp;
+          const JSVal x = InvokeMaybeEval(&stack_pointer, oparg, &e);
+          sp = stack_pointer;
+          PUSH(x);
+          if (e) {
+            break;
+          }
         }
         continue;
       }

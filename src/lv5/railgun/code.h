@@ -35,6 +35,9 @@ class Code : public HeapObject {
     : strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
+      has_name_(func.name()),
+      decl_type_(func.type()),
+      name_(),
       script_(script),
       start_position_(func.start_position()),
       end_position_(func.end_position()),
@@ -44,6 +47,9 @@ class Code : public HeapObject {
       varnames_(),
       params_(func.params().size()),
       constants_() {
+    if (has_name_) {
+      name_ = func.name().Address()->symbol();
+    }
     std::transform(func.params().begin(),
                    func.params().end(),
                    params_.begin(),
@@ -106,12 +112,28 @@ class Code : public HeapObject {
     return has_arguments_;
   }
 
+  bool IsFunctionDeclaration() const {
+    return decl_type_ == FunctionLiteral::DECLARATION;
+  }
+
+  FunctionLiteral::DeclType decl_type() const {
+    return decl_type_;
+  }
+
   void set_code_has_eval() {
     has_eval_ = true;
   }
 
   void set_code_has_arguments() {
     has_arguments_ = true;
+  }
+
+  bool HasName() const {
+    return has_name_;
+  }
+
+  const Symbol& name() const {
+    return name_;
   }
 
   std::size_t start_position() const {
@@ -134,6 +156,9 @@ class Code : public HeapObject {
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
+  bool has_name_;
+  FunctionLiteral::DeclType decl_type_;
+  Symbol name_;
   JSScript* script_;
   std::size_t start_position_;
   std::size_t end_position_;
