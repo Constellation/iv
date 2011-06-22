@@ -71,13 +71,8 @@ class JSVMFunction : public JSFunction {
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
     VM* const vm = ctx->vm();
-    OldFrame frame;
-    frame.code_ = code_;
-    frame.stacktop_ = args->end();
-    frame.env_ = internal::NewDeclarativeEnvironment(ctx, ctx->variable_env());
-    frame.back_ = NULL;
-    frame.set_this_binding(this_binding);
-    std::pair<JSVal, VM::Status> res = vm->Execute(&frame);
+    args->set_this_binding(this_binding);
+    const std::pair<JSVal, VM::Status> res = vm->Execute(*args, this);
     if (res.second == VM::THROW) {
       e->Report(res.first);
       return JSEmpty;
@@ -92,6 +87,10 @@ class JSVMFunction : public JSFunction {
 
   JSEnv* scope() const {
     return env_;
+  }
+
+  Code* code() const {
+    return code_;
   }
 
   static JSVMFunction* New(Context* ctx,

@@ -21,6 +21,7 @@
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/frame.h"
 #include "lv5/railgun/jsfunction.h"
+#include "lv5/railgun/stack.h"
 
 namespace iv {
 namespace lv5 {
@@ -59,28 +60,32 @@ class JSValRef : public JSVal {
 
 int VM::Run(Context* ctx, Code* code) {
   ctx_ = ctx;
-  OldFrame frame;
-  frame.code_ = code;
-  frame.stacktop_ = stack_.stack()->Gain(10000);
-  frame.env_ = ctx_->variable_env();
-  frame.back_ = NULL;
-  frame.set_this_binding(JSUndefined);
-  Execute(&frame);
+  Frame* frame = stack_.NewGlobalFrame(ctx, code);
+  Execute(frame);
+  stack_.Unwind(frame);
   ctx_ = NULL;
   return EXIT_SUCCESS;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(OldFrame* frame) {
-  const Code& code = frame->code();
-  const uint8_t* const first_instr = frame->data();
+std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* func) {
+  Frame* frame = stack_.NewCodeFrame(ctx_, func->code(), func->scope(), NULL, args.size());
+  const std::pair<JSVal, VM::Status> res = Execute(frame);
+  stack_.Unwind(frame);
+  return res;
+}
+
+std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
+  // current frame values
+  Frame* frame = start;
+  const Code* code = frame->code();
+  const uint8_t* first_instr = frame->data();
   const uint8_t* instr = first_instr;
   JSVal* sp = frame->stacktop();
-  JSEnv* env = frame->env();
   uint32_t dynamic_env_level = 0;
-  const JSVals& constants = frame->constants();
-  const Code::Names& names = code.names();
-  const bool strict = code.strict();
-  JSVal ret = JSUndefined;
+  const JSVals* constants = &frame->constants();
+  const Code::Names* names = &code->names();
+  bool strict = code->strict();
+
 #define ERR\
   &e);\
   if (e) {\
@@ -104,10 +109,12 @@ std::pair<JSVal, VM::Status> VM::Execute(OldFrame* frame) {
 #define UNWIND_DYNAMIC_ENV(n)\
 do {\
   const uint16_t dynamic_env_level_shrink = (n);\
+  JSEnv* dynamic_env_target = frame->lexical_env();\
   assert(dynamic_env_level >= dynamic_env_level_shrink);\
   for (uint16_t i = dynamic_env_level_shrink; i < dynamic_env_level; ++i) {\
-    env = env->outer();\
+    dynamic_env_target = dynamic_env_target->outer();\
   }\
+  frame->set_lexical_env(dynamic_env_target);\
   dynamic_env_level = dynamic_env_level_shrink;\
 } while (0)
 #define STACK_DEPTH() (sp - frame->stacktop())
@@ -127,7 +134,7 @@ do {\
 (fast_locals[(i)]) = (v);\
 } while (0)
 
-#define GETITEM(target, i) ((target)[(i)])
+#define GETITEM(target, i) ((*target)[(i)])
 
   // error object
   Error e;
@@ -157,7 +164,7 @@ do {\
 
       case OP::LOAD_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal w = LoadName(env, s, strict, ERR);
+        const JSVal w = LoadName(frame->lexical_env(), s, strict, ERR);
         PUSH(w);
         continue;
       }
@@ -181,7 +188,7 @@ do {\
       case OP::STORE_NAME: {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal v = TOP();
-        StoreName(env, s, v, strict, ERR);
+        StoreName(frame->lexical_env(), s, v, strict, ERR);
         continue;
       }
 
@@ -219,7 +226,7 @@ do {\
 
       case OP::DELETE_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        if (JSEnv* current = GetEnv(env, s)) {
+        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
           const bool res = current->DeleteBinding(ctx_, s);
           PUSH(JSVal::Bool(res));
         } else {
@@ -257,7 +264,7 @@ do {\
       }
 
       case OP::POP_TOP_AND_RET: {
-        ret = POP();
+        frame->ret_ = POP();
         continue;
       }
 
@@ -390,7 +397,7 @@ do {\
       }
 
       case OP::PUSH_THIS: {
-        PUSH(frame->this_binding());
+        PUSH(frame->GetThis());
         continue;
       }
 
@@ -431,7 +438,7 @@ do {\
 
       case OP::TYPEOF_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        if (JSEnv* current = GetEnv(env, s)) {
+        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
           const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
           PUSH(expr.TypeOf(ctx_));
         } else {
@@ -443,28 +450,28 @@ do {\
 
       case OP::DECREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 1>(env, s, strict, ERR);
+        const double result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         continue;
       }
 
       case OP::POSTFIX_DECREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 0>(env, s, strict, ERR);
+        const double result = IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         continue;
       }
 
       case OP::INCREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 1>(env, s, strict, ERR);
+        const double result = IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         continue;
       }
 
       case OP::POSTFIX_INCREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 0>(env, s, strict, ERR);
+        const double result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         continue;
       }
@@ -706,17 +713,36 @@ do {\
       }
 
       case OP::RETURN: {
-        ret = TOP();
-        return std::make_pair(ret, RETURN);
+        frame->ret_ = TOP();
+        // if previous code is not native code, unwind frame and jump
+        if (frame->prev_pc_ == NULL) {
+          // this code is invoked by native function
+          return std::make_pair(frame->ret_, RETURN);
+        } else {
+          // this code is invoked by JS code
+          code = frame->prev_->code();
+          first_instr = frame->prev_->data();
+          instr = frame->prev_pc_;
+          sp = frame->GetPreviousFrameStackTop();
+          // TODO(Constellation) fix this value
+          dynamic_env_level = 0;
+          constants = &frame->prev_->constants();
+          names = &code->names();
+          strict = code->strict();
+          const JSVal ret = frame->ret_;
+          frame = stack_.Unwind(frame);
+          PUSH(ret);
+          continue;
+        }
       }
 
       case OP::SET_RET_VALUE: {
-        ret = POP();
+        frame->ret_ = POP();
         continue;
       }
 
       case OP::RETURN_RET_VALUE: {
-        return std::make_pair(ret, RETURN);
+        return std::make_pair(frame->ret_, RETURN);
       }
 
       case OP::RETURN_SUBROUTINE: {
@@ -739,8 +765,8 @@ do {\
       }
 
       case OP::THROW: {
-        ret = POP();
-        e.Report(ret);
+        frame->ret_ = POP();
+        e.Report(frame->ret_);
         break;
       }
 
@@ -748,15 +774,15 @@ do {\
         const JSVal val = POP();
         JSObject* const obj = val.ToObject(ctx_, ERR);
         JSObjectEnv* const with_env =
-            internal::NewObjectEnvironment(ctx_, obj, env);
+            internal::NewObjectEnvironment(ctx_, obj, frame->lexical_env());
         with_env->set_provide_this(true);
-        env = with_env;
+        frame->set_lexical_env(with_env);
         ++dynamic_env_level;
         continue;
       }
 
       case OP::POP_ENV: {
-        env = env->outer();
+        frame->set_lexical_env(frame->lexical_env()->outer());
         --dynamic_env_level;
         continue;
       }
@@ -765,10 +791,10 @@ do {\
         const Symbol& s = GETITEM(names, oparg);
         const JSVal error = POP();
         JSEnv* const catch_env =
-            internal::NewDeclarativeEnvironment(ctx_, env);
+            internal::NewDeclarativeEnvironment(ctx_, frame->lexical_env());
         catch_env->CreateMutableBinding(ctx_, s, false, ERR);
         catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
-        env = catch_env;
+        frame->set_lexical_env(catch_env);
         ++dynamic_env_level;
         continue;
       }
@@ -793,8 +819,8 @@ do {\
       }
 
       case OP::MAKE_CLOSURE: {
-        Code* target = code.codes()[oparg];
-        JSFunction* x = JSVMFunction::New(ctx_, target, env);
+        Code* target = code->codes()[oparg];
+        JSFunction* x = JSVMFunction::New(ctx_, target, frame->lexical_env());
         PUSH(x);
         continue;
       }
@@ -858,25 +884,70 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
-        }
-        // Native Function, so use Invoke
-        JSVal* stack_pointer = sp;
-        const JSVal x = Invoke(&stack_pointer, oparg, &e);
-        sp = stack_pointer;
-        PUSH(x);
-        if (e) {
-          break;
+          frame = stack_.NewCodeFrame(
+              ctx_,
+              static_cast<JSVMFunction*>(func)->code(),
+              static_cast<JSVMFunction*>(func)->scope(), instr, argc);
+          if (!frame) {
+            e.Report(Error::Range, "maximum call stack size exceeded");
+            break;
+          }
+          code = frame->code();
+          first_instr = frame->data();
+          instr = first_instr;
+          sp = frame->stacktop();
+          dynamic_env_level = 0;
+          constants = &frame->constants();
+          names = &code->names();
+          strict = code->strict();
+        } else {
+          // Native Function, so use Invoke
+          JSVal* stack_pointer = sp;
+          const JSVal x = Invoke(&stack_pointer, oparg, &e);
+          sp = stack_pointer;
+          PUSH(x);
+          if (e) {
+            break;
+          }
         }
         continue;
       }
 
       case OP::CONSTRUCT: {
-        JSVal* stack_pointer = sp;
-        const JSVal x = Construct(&stack_pointer, oparg, &e);
-        sp = stack_pointer;
-        PUSH(x);
-        if (e) {
+        const uint32_t argc = oparg;
+        const JSVal v = sp[-(argc + 2)];
+        if (!v.IsCallable()) {
+          e.Report(Error::Type, "not callable object");
           break;
+        }
+        JSFunction* func = v.object()->AsCallable();
+        if (!func->IsNativeFunction()) {
+          // inline call
+          frame = stack_.NewCodeFrame(
+              ctx_,
+              static_cast<JSVMFunction*>(func)->code(),
+              static_cast<JSVMFunction*>(func)->scope(), instr, argc);
+          if (!frame) {
+            e.Report(Error::Range, "maximum call stack size exceeded");
+            break;
+          }
+          code = frame->code();
+          first_instr = frame->data();
+          instr = first_instr;
+          sp = frame->stacktop();
+          dynamic_env_level = 0;
+          constants = &frame->constants();
+          names = &code->names();
+          strict = code->strict();
+        } else {
+          // Native Function, so use Invoke
+          JSVal* stack_pointer = sp;
+          const JSVal x = Construct(&stack_pointer, oparg, &e);
+          sp = stack_pointer;
+          PUSH(x);
+          if (e) {
+            break;
+          }
         }
         continue;
       }
@@ -896,7 +967,7 @@ do {\
       case OP::CALL_NAME: {
         const Symbol& s = GETITEM(names, oparg);
         JSVal res;
-        if (JSEnv* target_env = GetEnv(env, s)) {
+        if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
           const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
           PUSH(target_env->ImplicitThisValue());
@@ -931,7 +1002,7 @@ do {\
     // should rethrow exception.
     assert(e);
     typedef Code::ExceptionTable ExceptionTable;
-    const ExceptionTable& table = code.exception_table();
+    const ExceptionTable& table = code->exception_table();
     bool handler_found = false;
     for (ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
@@ -959,7 +1030,6 @@ do {\
     if (handler_found) {
       continue;
     }
-    // std::printf("stack depth: %d\n", STACK_DEPTH());
     break;
   }  // for main loop
   const JSVal error = JSError::Detail(ctx_, &e);

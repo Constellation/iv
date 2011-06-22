@@ -11,6 +11,7 @@ class VM;
 class CodeContext;
 class Code;
 class Frame;
+class Stack;
 
 class Analyzer;
 
@@ -30,6 +31,9 @@ template<typename Source>
 class JSEvalScript;
 
 class JSGlobalScript;
+
+class JSVMFunction;
+
 
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_

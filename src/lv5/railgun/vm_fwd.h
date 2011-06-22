@@ -4,6 +4,7 @@
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/frame.h"
+#include "lv5/railgun/stack.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -17,7 +18,8 @@ class VM {
   };
 
   inline int Run(Context* ctx, Code* code);
-  inline std::pair<JSVal, Status> Execute(OldFrame* frame);
+  inline std::pair<JSVal, Status> Execute(Frame* frame);
+  inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func);
 
   JSVal Invoke(JSVal** stack_pointer, int argc, Error* e) {
     JSVal* sp = *stack_pointer;
@@ -418,7 +420,7 @@ class VM {
 
  private:
   Context* ctx_;
-  StackResource stack_;
+  Stack stack_;
 };
 
 } } }  // namespace iv::lv5::railgun
