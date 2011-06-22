@@ -10,6 +10,9 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+#define IV_ROUNDUP(x, y)\
+  (((x) + (y - 1)) & ~(y - 1))
+
 //
 // Frame structure is following
 //
@@ -17,7 +20,7 @@ namespace railgun {
 //
 struct Frame {
   JSVal* GetStackBase() {
-    return reinterpret_cast<JSVal*>(this + 1);
+    return reinterpret_cast<JSVal*>(this) + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
   JSVal* GetPreviousFrameStackTop() {
@@ -49,7 +52,7 @@ struct Frame {
   }
 
   static std::size_t GetFrameSize(std::size_t n) {
-    return sizeof(JSVal) * n + sizeof(Frame);
+    return sizeof(JSVal) * n + IV_ROUNDUP(sizeof(Frame), sizeof(JSVal));
   }
 
   const Code* code() const {
@@ -85,9 +88,12 @@ struct Frame {
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;
-  std::size_t argc_;
+  uint16_t argc_;
+  uint16_t dynamic_env_level_;
   JSVal ret_;
 };
+
+#undef IV_ROUNDUP
 
 IV_STATIC_ASSERT(AlignOf(Frame) <= AlignOf(JSVal));
 

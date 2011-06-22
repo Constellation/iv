@@ -88,6 +88,7 @@ class Stack : core::Noncopyable<Stack> {
           internal::NewDeclarativeEnvironment(ctx, env);
       frame->prev_ = current_;
       frame->argc_ = argc;
+      frame->dynamic_env_level_ = 0;
       current_ = frame;
       return frame;
     } else {
@@ -106,6 +107,7 @@ class Stack : core::Noncopyable<Stack> {
       frame->variable_env_ = frame->lexical_env_ = ctx->global_env();
       frame->prev_ = NULL;
       frame->argc_ = 0;
+      frame->dynamic_env_level_ = 0;
       current_ = frame;
       return frame;
     } else {

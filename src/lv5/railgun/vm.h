@@ -80,7 +80,6 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
   const uint8_t* first_instr = frame->data();
   const uint8_t* instr = first_instr;
   JSVal* sp = frame->stacktop();
-  uint32_t dynamic_env_level = 0;
   const JSVals* constants = &frame->constants();
   const Code::Names* names = &code->names();
   bool strict = code->strict();
@@ -109,12 +108,13 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
 do {\
   const uint16_t dynamic_env_level_shrink = (n);\
   JSEnv* dynamic_env_target = frame->lexical_env();\
-  assert(dynamic_env_level >= dynamic_env_level_shrink);\
-  for (uint16_t i = dynamic_env_level_shrink; i < dynamic_env_level; ++i) {\
+  assert(frame->dynamic_env_level_ >= dynamic_env_level_shrink);\
+  for (uint16_t i = dynamic_env_level_shrink,\
+       len = frame->dynamic_env_level_; i < len; ++i) {\
     dynamic_env_target = dynamic_env_target->outer();\
   }\
   frame->set_lexical_env(dynamic_env_target);\
-  dynamic_env_level = dynamic_env_level_shrink;\
+  frame->dynamic_env_level_ = dynamic_env_level_shrink;\
 } while (0)
 #define STACK_DEPTH() (sp - frame->stacktop())
 #define TOP() (sp[-1])
@@ -719,17 +719,15 @@ do {\
           return std::make_pair(frame->ret_, RETURN);
         } else {
           // this code is invoked by JS code
-          code = frame->prev_->code();
-          first_instr = frame->prev_->data();
           instr = frame->prev_pc_;
           sp = frame->GetPreviousFrameStackTop();
-          // TODO(Constellation) fix this value
-          dynamic_env_level = 0;
-          constants = &frame->prev_->constants();
-          names = &code->names();
-          strict = code->strict();
           const JSVal ret = frame->ret_;
           frame = stack_.Unwind(frame);
+          constants = &frame->constants();
+          code = frame->code();
+          first_instr = frame->data();
+          names = &code->names();
+          strict = code->strict();
           PUSH(ret);
           continue;
         }
@@ -741,7 +739,24 @@ do {\
       }
 
       case OP::RETURN_RET_VALUE: {
-        return std::make_pair(frame->ret_, RETURN);
+        // if previous code is not native code, unwind frame and jump
+        if (frame->prev_pc_ == NULL) {
+          // this code is invoked by native function
+          return std::make_pair(frame->ret_, RETURN);
+        } else {
+          // this code is invoked by JS code
+          instr = frame->prev_pc_;
+          sp = frame->GetPreviousFrameStackTop();
+          const JSVal ret = frame->ret_;
+          frame = stack_.Unwind(frame);
+          constants = &frame->constants();
+          code = frame->code();
+          first_instr = frame->data();
+          names = &code->names();
+          strict = code->strict();
+          PUSH(ret);
+          continue;
+        }
       }
 
       case OP::RETURN_SUBROUTINE: {
@@ -776,13 +791,13 @@ do {\
             internal::NewObjectEnvironment(ctx_, obj, frame->lexical_env());
         with_env->set_provide_this(true);
         frame->set_lexical_env(with_env);
-        ++dynamic_env_level;
+        frame->dynamic_env_level_ += 1;
         continue;
       }
 
       case OP::POP_ENV: {
         frame->set_lexical_env(frame->lexical_env()->outer());
-        --dynamic_env_level;
+        frame->dynamic_env_level_ -= 1;
         continue;
       }
 
@@ -794,7 +809,7 @@ do {\
         catch_env->CreateMutableBinding(ctx_, s, false, ERR);
         catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
         frame->set_lexical_env(catch_env);
-        ++dynamic_env_level;
+        frame->dynamic_env_level_ += 1;
         continue;
       }
 
@@ -895,7 +910,6 @@ do {\
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
-          dynamic_env_level = 0;
           constants = &frame->constants();
           names = &code->names();
           strict = code->strict();
@@ -935,7 +949,6 @@ do {\
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
-          dynamic_env_level = 0;
           constants = &frame->constants();
           names = &code->names();
           strict = code->strict();
@@ -976,7 +989,6 @@ do {\
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
-          dynamic_env_level = 0;
           constants = &frame->constants();
           names = &code->names();
           strict = code->strict();
