@@ -113,8 +113,12 @@ JSFunction* throw_type_error(Context* ctx) {
   return ctx->throw_type_error();
 }
 
-VMStack* stack(Context* ctx) {
-  return ctx->stack();
+JSVal* StackGain(Context* ctx, std::size_t size) {
+  return ctx->StackGain(size);
+}
+
+void StackRelease(Context* ctx, std::size_t size) {
+  ctx->StackRelease(size);
 }
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
@@ -126,7 +130,6 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 Context::Context()
   : global_data_(),
     throw_type_error_(this),
-    stack_resource_(),
     lexical_env_(NULL),
     variable_env_(NULL),
     global_env_(NULL) {

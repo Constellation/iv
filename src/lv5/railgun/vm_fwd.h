@@ -3,7 +3,6 @@
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
-#include "lv5/railgun/frame.h"
 #include "lv5/railgun/stack.h"
 namespace iv {
 namespace lv5 {
@@ -414,6 +413,10 @@ class VM {
     std::get<1>(results) = std::get<0>(results) + Target;
     StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
     return std::get<Returned>(results);
+  }
+
+  Stack* stack() {
+    return &stack_;
   }
 
 #undef CHECK

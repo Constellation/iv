@@ -14,8 +14,6 @@
 #include "lv5/specialized_ast.h"
 #include "lv5/global_data.h"
 #include "lv5/context_utils.h"
-#include "lv5/stack_resource.h"
-#include "lv5/vm_stack.h"
 
 namespace iv {
 namespace lv5 {
@@ -76,6 +74,9 @@ class Context : private core::Noncopyable<> {
     return global_env_;
   }
 
+  virtual JSVal* StackGain(std::size_t size) { return NULL; }
+  virtual void StackRelease(std::size_t size) { }
+
   template<typename Func>
   void DefineFunction(const Func& f,
                       const core::StringPiece& func_name,
@@ -125,10 +126,6 @@ class Context : private core::Noncopyable<> {
 
   JSString* ToString(Symbol sym);
 
-  VMStack* stack() {
-    return stack_resource_.stack();
-  }
-
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
 
@@ -165,7 +162,6 @@ class Context : private core::Noncopyable<> {
 
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
-  StackResource stack_resource_;
   JSEnv* lexical_env_;
   JSEnv* variable_env_;
   JSEnv* global_env_;

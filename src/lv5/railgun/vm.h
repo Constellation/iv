@@ -14,7 +14,6 @@
 #include "lv5/jsregexp.h"
 #include "lv5/property.h"
 #include "lv5/internal.h"
-#include "lv5/stack_resource.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/op.h"

@@ -7,6 +7,8 @@
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/interpreter.h"
 #include "lv5/teleporter/jsscript.h"
+#include "lv5/teleporter/stack_resource.h"
+#include "lv5/teleporter/stack.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -30,7 +32,8 @@ class Context : public iv::lv5::Context {
       target_(NULL),
       generate_script_counter_(0),
       current_script_(NULL),
-      strict_(false) {
+      strict_(false),
+      stack_resource_() {
     Initialize<&FunctionConstructor, &GlobalEval>();
   }
 
@@ -165,6 +168,14 @@ class Context : public iv::lv5::Context {
     return strict_;
   }
 
+  JSVal* StackGain(std::size_t size) {
+    return stack_resource_.stack()->Gain(size);
+  }
+
+  void StackRelease(std::size_t size) {
+    stack_resource_.stack()->Release(size);
+  }
+
  private:
   std::shared_ptr<Interpreter> interp_;
   JSVal binding_;
@@ -175,6 +186,7 @@ class Context : public iv::lv5::Context {
   std::size_t generate_script_counter_;
   JSScript* current_script_;
   bool strict_;
+  StackResource stack_resource_;
 };
 
 } } }  // namespace iv::lv5::teleporter

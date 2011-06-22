@@ -211,7 +211,6 @@ class Stack : core::Noncopyable<Stack> {
     return stack_ + kStackCapacity;
   }
 
- private:
   pointer Gain(size_type n) {
     if (stack_pointer_ + n < end()) {
       const pointer stack = stack_pointer_;
@@ -226,6 +225,8 @@ class Stack : core::Noncopyable<Stack> {
   void Release(size_type n) {
     stack_pointer_ -= n;
   }
+
+ private:
 
   JSVal* stack_;
   JSVal* stack_pointer_;

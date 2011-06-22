@@ -6,10 +6,10 @@
 #include "lv5/class.h"
 #include "lv5/symbol.h"
 #include "lv5/specialized_ast.h"
-#include "lv5/vm_stack.h"
 namespace iv {
 namespace lv5 {
 
+class JSVal;
 class Context;
 class JSRegExpImpl;
 class JSFunction;
@@ -48,7 +48,8 @@ JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);
 
-VMStack* stack(Context* ctx);
+JSVal* StackGain(Context* ctx, std::size_t size);
+void StackRelease(Context* ctx, std::size_t size);
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 

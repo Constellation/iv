@@ -17,17 +17,21 @@ class Arguments : private core::Noncopyable<> {
  public:
   typedef Arguments this_type;
 
-  typedef VMStack::value_type value_type;
-  typedef VMStack::reference reference;
-  typedef VMStack::const_reference const_reference;
-  typedef VMStack::iterator iterator;
-  typedef VMStack::const_iterator const_iterator;
-  typedef VMStack::pointer pointer;
-  typedef VMStack::difference_type difference_type;
-  typedef VMStack::size_type size_type;
+  typedef JSVal* iterator;
+  typedef const JSVal* const_iterator;
 
-  typedef VMStack::const_reverse_iterator const_reverse_iterator;
-  typedef VMStack::reverse_iterator reverse_iterator;
+  typedef std::iterator_traits<iterator>::value_type value_type;
+
+  typedef std::iterator_traits<iterator>::pointer pointer;
+  typedef std::iterator_traits<const_iterator>::pointer const_pointer;
+  typedef std::iterator_traits<iterator>::reference reference;
+  typedef std::iterator_traits<const_iterator>::reference const_reference;
+
+  typedef std::reverse_iterator<iterator> reverse_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+  typedef std::iterator_traits<iterator>::difference_type difference_type;
+  typedef std::size_t size_type;
 
   inline iterator begin() {
     return stack_ + 1;  // index 0 is this binding
@@ -140,7 +144,7 @@ class ScopedArguments : public Arguments {
  public:
   ScopedArguments(Context* ctx, std::size_t n, Error* e)
     : Arguments(ctx, n, e) {
-    stack_ = context::stack(ctx_)->Gain(size_ + 1);
+    stack_ = context::StackGain(ctx_, size_ + 1);
     if (!stack_) {  // stack overflow
       e->Report(Error::Range, "maximum call stack size exceeded");
     } else {
@@ -152,7 +156,7 @@ class ScopedArguments : public Arguments {
 
   ~ScopedArguments() {
     if (stack_) {
-      context::stack(ctx_)->Release(size_ + 1);
+      context::StackRelease(ctx_, size_ + 1);
     }
     stack_ = NULL;
   }

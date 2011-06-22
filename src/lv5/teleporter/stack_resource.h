@@ -1,14 +1,15 @@
-#ifndef _IV_LV5_STACK_RESOURCE_H_
-#define _IV_LV5_STACK_RESOURCE_H_
+#ifndef _IV_LV5_TELEPORTER_STACK_RESOURCE_H_
+#define _IV_LV5_TELEPORTER_STACK_RESOURCE_H_
 #include <new>
 #include <gc/gc.h>
 extern "C" {
 #include <gc/gc_mark.h>
 }
 #include "noncopyable.h"
-#include "lv5/vm_stack.h"
+#include "lv5/teleporter/stack.h"
 namespace iv {
 namespace lv5 {
+namespace teleporter {
 
 class StackResource : private core::Noncopyable<> {
  public:
@@ -20,15 +21,15 @@ class StackResource : private core::Noncopyable<> {
       stack_kind_(GC_new_kind(stack_free_list_,
                               GC_MAKE_PROC(stack_mark_proc_, 0), 0, 0)),
       stack_(NULL) {
-    stack_ = new (GC_generic_malloc(sizeof(VMStack), stack_kind_)) VMStack();
+    stack_ = new (GC_generic_malloc(sizeof(Stack), stack_kind_)) Stack();
   }
 
   ~StackResource() {
-    stack_->~VMStack();
+    stack_->~Stack();
     GC_free(stack_);
   }
 
-  VMStack* stack() const {
+  Stack* stack() const {
     return stack_;
   }
 
@@ -36,12 +37,12 @@ class StackResource : private core::Noncopyable<> {
                               GCMSEntry* mark_sp,
                               GCMSEntry* mark_sp_limit,
                               GC_word env) {
-    // first JSVal is pointer to VMStack
-    const VMStack* vmstack = reinterpret_cast<VMStack*>(stack);
+    // first JSVal is pointer to Stack
+    const Stack* vmstack = reinterpret_cast<Stack*>(stack);
 
     GCMSEntry* entry = mark_sp;
 
-    for (VMStack::iterator it = vmstack->stack_pointer_begin(),
+    for (Stack::iterator it = vmstack->stack_pointer_begin(),
          last = vmstack->stack_pointer(); it != last; ++it) {
       if (it->IsPtr()) {
         void* ptr = it->pointer();
@@ -60,8 +61,8 @@ class StackResource : private core::Noncopyable<> {
   void** stack_free_list_;
   int stack_mark_proc_;
   int stack_kind_;
-  VMStack* stack_;
+  Stack* stack_;
 };
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_STACK_RESOURCE_H_
+} } }  // namespace iv::lv5::teleporter
+#endif  // _IV_LV5_TELEPORTER_STACK_RESOURCE_H_

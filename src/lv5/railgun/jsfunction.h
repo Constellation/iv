@@ -9,7 +9,7 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/jsscript.h"
-#include "lv5/railgun/context.h"
+#include "lv5/railgun/context_fwd.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/frame.h"
 namespace iv {

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_VM_STACK_H_
-#define _IV_LV5_VM_STACK_H_
+#ifndef _IV_LV5_TELEPORTER_STACK_H_
+#define _IV_LV5_TELEPORTER_STACK_H_
 #include <iterator>
 #include "platform.h"
 #include "noncopyable.h"
@@ -7,10 +7,11 @@
 #include "lv5/jsval.h"
 namespace iv {
 namespace lv5 {
+namespace teleporter {
 
-class VMStack : private core::Noncopyable<> {
+class Stack : private core::Noncopyable<> {
  public:
-  typedef VMStack this_type;
+  typedef Stack this_type;
   typedef JSVal* iterator;
   typedef const JSVal* const_iterator;
 
@@ -42,7 +43,7 @@ class VMStack : private core::Noncopyable<> {
   static const size_type kMaxCallCount = 4096;
 #endif
 
-  VMStack()
+  Stack()
     : stack_(NULL),
       stack_pointer_(NULL),
       call_count_(0),
@@ -51,7 +52,7 @@ class VMStack : private core::Noncopyable<> {
         core::OSAllocator::Allocate(kStackBytes));
   }
 
-  ~VMStack() {
+  ~Stack() {
     core::OSAllocator::Decommit(stack_, kStackBytes);
     core::OSAllocator::Deallocate(stack_, kStackBytes);
   }
@@ -109,5 +110,5 @@ class VMStack : private core::Noncopyable<> {
   std::size_t pages_;
 };
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_VM_STACK_H_
+} } }  // namespace iv::lv5::teleporter
+#endif  // _IV_LV5_TELEPORTER_STACK_H_
