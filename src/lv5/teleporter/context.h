@@ -5,7 +5,7 @@
 #include "lv5/jserror.h"
 #include "lv5/jsfunction.h"
 #include "lv5/teleporter/fwd.h"
-#include "lv5/teleporter/interpreter.h"
+#include "lv5/teleporter/interpreter_fwd.h"
 #include "lv5/teleporter/jsscript.h"
 #include "lv5/teleporter/stack_resource.h"
 #include "lv5/teleporter/stack.h"

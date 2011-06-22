@@ -11,7 +11,7 @@
 #include "lv5/teleporter/fwd.h"
 #include "lv5/teleporter/jsscript.h"
 #include "lv5/teleporter/context.h"
-#include "lv5/teleporter/interpreter.h"
+#include "lv5/teleporter/interpreter_fwd.h"
 namespace iv {
 namespace lv5 {
 
