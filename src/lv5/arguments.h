@@ -41,11 +41,19 @@ class Arguments : private core::Noncopyable<> {
     return stack_ + 1;
   }
 
+  inline const_iterator cbegin() const {
+    return stack_ + 1;
+  }
+
   inline iterator end() {
     return begin() + size_;
   }
 
   inline const_iterator end() const {
+    return begin() + size_;
+  }
+
+  inline const_iterator cend() const {
     return begin() + size_;
   }
 
@@ -57,11 +65,19 @@ class Arguments : private core::Noncopyable<> {
     return const_reverse_iterator(end());
   }
 
+  inline const_reverse_iterator crbegin() const {
+    return const_reverse_iterator(end());
+  }
+
   inline reverse_iterator rend() {
     return reverse_iterator(begin());
   }
 
   inline const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
+
+  inline const_reverse_iterator crend() const {
     return const_reverse_iterator(begin());
   }
 
@@ -115,6 +131,10 @@ class Arguments : private core::Noncopyable<> {
 
   inline bool IsConstructorCalled() const {
     return constructor_call_;
+  }
+
+  pointer GetEnd() const {
+    return stack_ + 1 + size_;
   }
 
  protected:

@@ -19,6 +19,10 @@ namespace railgun {
 // FUNC | THIS | ARG1 | ARG2 | FRAME | STACK DEPTH |
 //
 struct Frame {
+  JSVal* GetFrameEnd() {
+    return GetFrameBase() + GetFrameSize(code_->stack_depth());
+  }
+
   JSVal* GetStackBase() {
     return reinterpret_cast<JSVal*>(this) + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
@@ -52,7 +56,7 @@ struct Frame {
   }
 
   static std::size_t GetFrameSize(std::size_t n) {
-    return sizeof(JSVal) * n + IV_ROUNDUP(sizeof(Frame), sizeof(JSVal));
+    return n + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
   const Code* code() const {

@@ -75,13 +75,13 @@ class Stack : core::Noncopyable<Stack> {
 
   // returns new frame for function call
   Frame* NewCodeFrame(Context* ctx,
+                      JSVal* sp,
                       Code* code,
                       JSEnv* env,
                       const uint8_t* pc,
                       std::size_t argc) {
     assert(code);
-    if (JSVal* mem = Gain(
-            Frame::GetFrameSize(code->stack_depth()) / sizeof(JSVal))) {
+    if (JSVal* mem = GainFrame(sp, code)) {
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
       frame->prev_pc_ = pc;
@@ -100,8 +100,7 @@ class Stack : core::Noncopyable<Stack> {
 
   Frame* NewGlobalFrame(Context* ctx, Code* code) {
     assert(code);
-    if (JSVal* mem = Gain(
-            Frame::GetFrameSize(code->stack_depth()) / sizeof(JSVal))) {
+    if (JSVal* mem = GainFrame(stack_ + 1, code)) {
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
       frame->prev_pc_ = 0;
@@ -110,6 +109,7 @@ class Stack : core::Noncopyable<Stack> {
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
       current_ = frame;
+      SetSafeStackPointerForFrame(current_);
       return frame;
     } else {
       // stack overflow
@@ -124,7 +124,7 @@ class Stack : core::Noncopyable<Stack> {
   Frame* Unwind(Frame* frame) {
     current_ = frame->prev_;
     assert(frame->code());
-    Release(Frame::GetFrameSize(frame->code()->stack_depth()) / sizeof(JSVal));
+    SetSafeStackPointerForFrame(current_);
     return current_;
   }
 
@@ -218,6 +218,7 @@ class Stack : core::Noncopyable<Stack> {
     return stack_ + kStackCapacity;
   }
 
+  // these 2 function Gain / Release is reserved for ScopedArguments
   pointer Gain(size_type n) {
     if (stack_pointer_ + n < end()) {
       const pointer stack = stack_pointer_;
@@ -234,6 +235,23 @@ class Stack : core::Noncopyable<Stack> {
   }
 
  private:
+
+  void SetSafeStackPointerForFrame(Frame* target) {
+    if (target) {
+      stack_pointer_ = target->GetFrameEnd();
+    } else {
+      // previous of Global Frame is NULL
+      stack_pointer_ = stack_ + 1;
+    }
+  }
+
+  JSVal* GainFrame(JSVal* top, Code* code) {
+    assert(stack_ < top && top <= stack_pointer_);
+    stack_pointer_ = top;
+    return Gain(Frame::GetFrameSize(code->stack_depth()));
+  }
+
+  // stack_pointer_ is safe point
 
   JSVal* stack_;
   JSVal* stack_pointer_;

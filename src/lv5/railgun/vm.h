@@ -68,7 +68,11 @@ int VM::Run(Context* ctx, Code* code) {
 }
 
 std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* func) {
-  Frame* frame = stack_.NewCodeFrame(ctx_, func->code(), func->scope(), NULL, args.size());
+  Frame* frame = stack_.NewCodeFrame(
+      ctx_,
+      args.GetEnd(),
+      func->code(),
+      func->scope(), NULL, args.size());
   const std::pair<JSVal, VM::Status> res = Execute(frame);
   stack_.Unwind(frame);
   return res;
@@ -899,6 +903,7 @@ MAIN_LOOP_START:
           // inline call
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
+              sp,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
           if (!new_frame) {
@@ -938,6 +943,7 @@ MAIN_LOOP_START:
           // inline call
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
+              sp,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
           if (!new_frame) {
@@ -978,6 +984,7 @@ MAIN_LOOP_START:
           // inline call
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
+              sp,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
           if (!new_frame) {
