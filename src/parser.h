@@ -1142,7 +1142,7 @@ class Parser
 
   template<bool Use>
   Statement* ParseFunctionStatement(bool *res,
-                                    typename enable_if_c<!Use>::type* = 0) {
+                                    typename disable_if_c<Use>::type* = 0) {
     // FunctionStatement is not Standard
     // so, if template parameter UseFunctionStatement is false,
     // this parser reject FunctionStatement

@@ -76,13 +76,12 @@ std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* fu
 std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
   // current frame values
   Frame* frame = start;
-  const Code* code = frame->code();
   const uint8_t* first_instr = frame->data();
   const uint8_t* instr = first_instr;
   JSVal* sp = frame->stacktop();
   const JSVals* constants = &frame->constants();
-  const Code::Names* names = &code->names();
-  bool strict = code->strict();
+  const Code::Names* names = &frame->code()->names();
+  bool strict = frame->code()->strict();
 
 #define ERR\
   &e);\
@@ -724,10 +723,9 @@ do {\
           const JSVal ret = frame->ret_;
           frame = stack_.Unwind(frame);
           constants = &frame->constants();
-          code = frame->code();
           first_instr = frame->data();
-          names = &code->names();
-          strict = code->strict();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
           PUSH(ret);
           continue;
         }
@@ -750,10 +748,9 @@ do {\
           const JSVal ret = frame->ret_;
           frame = stack_.Unwind(frame);
           constants = &frame->constants();
-          code = frame->code();
           first_instr = frame->data();
-          names = &code->names();
-          strict = code->strict();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
           PUSH(ret);
           continue;
         }
@@ -833,7 +830,7 @@ do {\
       }
 
       case OP::MAKE_CLOSURE: {
-        Code* target = code->codes()[oparg];
+        Code* target = frame->code()->codes()[oparg];
         JSFunction* x = JSVMFunction::New(ctx_, target, frame->lexical_env());
         PUSH(x);
         continue;
@@ -898,21 +895,21 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
-          frame = stack_.NewCodeFrame(
+          Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
-          if (!frame) {
+          if (!new_frame) {
             e.Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
-          code = frame->code();
+          frame = new_frame;
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
           constants = &frame->constants();
-          names = &code->names();
-          strict = code->strict();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
@@ -937,21 +934,21 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
-          frame = stack_.NewCodeFrame(
+          Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
-          if (!frame) {
+          if (!new_frame) {
             e.Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
-          code = frame->code();
+          frame = new_frame;
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
           constants = &frame->constants();
-          names = &code->names();
-          strict = code->strict();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
@@ -977,21 +974,21 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
-          frame = stack_.NewCodeFrame(
+          Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc);
-          if (!frame) {
+          if (!new_frame) {
             e.Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
-          code = frame->code();
+          frame = new_frame;
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
           constants = &frame->constants();
-          names = &code->names();
-          strict = code->strict();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
@@ -1044,7 +1041,7 @@ do {\
     // should rethrow exception.
     assert(e);
     typedef Code::ExceptionTable ExceptionTable;
-    const ExceptionTable& table = code->exception_table();
+    const ExceptionTable& table = frame->code()->exception_table();
     bool handler_found = false;
     for (ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {

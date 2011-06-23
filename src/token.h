@@ -159,6 +159,9 @@ class Token {
 
     IDENTIFIER,      // IDENTIFIER
 
+    SINGLE_LINE_COMMENT,  // SINGLE LINE COMMENT
+    MULTI_LINE_COMMENT,  // MULTI LINE COMMENT
+
     NOT_FOUND,       // NOT_FOUND
 
     NUM_TOKENS       // number of tokens
@@ -186,6 +189,8 @@ class Token {
            type != Token::IDENTIFIER &&
            type != Token::EOS &&
            type != Token::ILLEGAL &&
+           type != Token::SINGLE_LINE_COMMENT &&
+           type != Token::MULTI_LINE_COMMENT &&
            type != Token::NOT_FOUND);
     return TokenContents::kContents[type];
   }
@@ -317,6 +322,8 @@ const char* TokenContents<T>::kContents[Token::NUM_TOKENS] = {
   NULL,            // NUMBER LITERAL
   NULL,            // STRING LITERAL
   NULL,            // IDENTIFIER
+  NULL,            // SINGLE LINE COMMENT
+  NULL,            // MULTI LINE COMMENT
   NULL             // NOT FOUND
 };
 

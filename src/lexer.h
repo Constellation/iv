@@ -17,7 +17,7 @@
 namespace iv {
 namespace core {
 
-template<typename Source>
+template<typename Source, bool RecognizeCommentAsToken = false>
 class Lexer: private Noncopyable<> {
  public:
 
@@ -76,7 +76,7 @@ class Lexer: private Noncopyable<> {
               token = Token::SHL;
             }
           } else if (c_ == '!') {
-            token = ScanHtmlComment();
+            token = SkipHtmlComment();
           } else {
             token = Token::LT;
           }
@@ -161,7 +161,7 @@ class Lexer: private Noncopyable<> {
           if (c_ == '-') {
             Advance();
             if (c_ == '>' && has_line_terminator_before_next_) {
-              token = SkipSingleLineComment();
+              token = SkipSingleLineComment<false>();
             } else {
               token = Token::DEC;
             }
@@ -201,15 +201,10 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '/') {
             // SINGLE LINE COMMENT
-            if (line_number_ == (has_shebang_ ? 1 : 2)) {
-              // magic comment
-              token = ScanMagicComment();
-            } else {
-              token = SkipSingleLineComment();
-            }
+            token = SkipSingleLineComment<RecognizeCommentAsToken>();
           } else if (c_ == '*') {
             // MULTI LINES COMMENT
-            token = SkipMultiLineComment();
+            token = SkipMultiLineComment<RecognizeCommentAsToken>();
           } else if (c_ == '=') {
             // ASSIGN_DIV
             Advance();
@@ -334,7 +329,7 @@ class Lexer: private Noncopyable<> {
             if (c_ == '!') {
               // shebang
               has_shebang_ = true;
-              token = SkipSingleLineComment();
+              token = SkipSingleLineComment<false>();
               break;
             }
             PushBack();
@@ -379,16 +374,12 @@ class Lexer: private Noncopyable<> {
   }
 
   inline State NumericType() const {
-    assert(type_ == DECIMAL ||
-           type_ == HEX ||
-           type_ == OCTAL);
+    assert(type_ == DECIMAL || type_ == HEX || type_ == OCTAL);
     return type_;
   }
 
   inline State StringEscapeType() const {
-    assert(type_ == NONE ||
-           type_ == ESCAPE ||
-           type_ == OCTAL);
+    assert(type_ == NONE || type_ == ESCAPE || type_ == OCTAL);
     return type_;
   }
 
@@ -542,7 +533,8 @@ class Lexer: private Noncopyable<> {
     }
   }
 
-  Token::Type SkipSingleLineComment() {
+  template<bool Val>
+  Token::Type SkipSingleLineComment(typename disable_if_c<Val>::type* = 0) {
     Advance();
     // see ECMA-262 section 7.4
     while (c_ >= 0 && !character::IsLineTerminator(c_)) {
@@ -551,7 +543,18 @@ class Lexer: private Noncopyable<> {
     return Token::NOT_FOUND;
   }
 
-  Token::Type SkipMultiLineComment() {
+  template<bool Val>
+  Token::Type SkipSingleLineComment(typename enable_if_c<Val>::type* = 0) {
+    Advance();
+    // see ECMA-262 section 7.4
+    while (c_ >= 0 && !character::IsLineTerminator(c_)) {
+      Advance();
+    }
+    return Token::SINGLE_LINE_COMMENT;
+  }
+
+  template<bool Val>
+  Token::Type SkipMultiLineComment(typename disable_if_c<Val>::type* = 0) {
     Advance();
     // remember previous ch
     uc16 ch;
@@ -571,29 +574,41 @@ class Lexer: private Noncopyable<> {
     return Token::ILLEGAL;
   }
 
-  Token::Type ScanHtmlComment() {
+  template<bool Val>
+  Token::Type SkipMultiLineComment(typename enable_if_c<Val>::type* = 0) {
+    Advance();
+    // remember previous ch
+    uc16 ch;
+    while (c_ >= 0) {
+      ch = c_;
+      Advance();
+      if (ch == '*' && c_ == '/') {
+        c_ = ' ';
+        return Token::MULTI_LINE_COMMENT;
+      } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
+        // see ECMA-262 section 7.4
+        SkipLineTerminator();
+        has_line_terminator_before_next_ = true;
+        ch = '\n';
+      }
+    }
+    return Token::ILLEGAL;
+  }
+
+  Token::Type SkipHtmlComment() {
     Advance();
     if (c_ == '-') {
       // <!-
       Advance();
       if (c_ == '-') {
         // <!--
-        return SkipSingleLineComment();
+        return SkipSingleLineComment<false>();
       }
       PushBack();
     }
     // <! is LT and NOT
     PushBack();
     return Token::LT;
-  }
-
-  Token::Type ScanMagicComment() {
-    Advance();
-    // see ECMA-262 section 7.4
-    while (c_ >= 0 && !character::IsLineTerminator(c_)) {
-      Advance();
-    }
-    return Token::NOT_FOUND;
   }
 
   template<typename LexType>
