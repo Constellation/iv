@@ -11,12 +11,11 @@ namespace railgun {
 class VM {
  public:
   enum Status {
-    NORMAL,
     RETURN,
     THROW
   };
 
-  inline int Run(Context* ctx, Code* code);
+  inline std::pair<JSVal, Status> Run(Context* ctx, Code* code);
   inline std::pair<JSVal, Status> Execute(Frame* frame);
   inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func);
 

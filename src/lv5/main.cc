@@ -51,7 +51,7 @@ bool ReadFile(const std::string& filename, std::vector<char>* out) {
 
 template<typename Source>
 iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
-                                    const Source& src) {
+                                const Source& src) {
   iv::lv5::AstFactory factory(ctx);
   iv::core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
@@ -76,7 +76,21 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  return vm.Run(&ctx, code);
+  const std::pair<
+      iv::lv5::JSVal,
+      iv::lv5::railgun::VM::Status> res = vm.Run(&ctx, code);
+  if (res.second == iv::lv5::railgun::VM::THROW) {
+    iv::lv5::Error e;
+    const iv::lv5::JSString* const str = res.first.ToString(&ctx, &e);
+    if (!e) {
+      iv::core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
+      return EXIT_FAILURE;
+    } else {
+      return EXIT_FAILURE;
+    }
+  } else {
+    return EXIT_SUCCESS;
+  }
 }
 
 int DisAssemble(const iv::core::StringPiece& data,

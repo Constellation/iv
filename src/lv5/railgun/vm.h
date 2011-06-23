@@ -57,14 +57,14 @@ class JSValRef : public JSVal {
   }
 };
 
-int VM::Run(Context* ctx, Code* code) {
+std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
   ctx_ = ctx;
   stack_.SetThis(ctx->global_obj());
   Frame* frame = stack_.NewGlobalFrame(ctx, code);
-  Execute(frame);
+  const std::pair<JSVal, Status> res = Execute(frame);
   stack_.Unwind(frame);
   ctx_ = NULL;
-  return EXIT_SUCCESS;
+  return res;
 }
 
 std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* func) {
@@ -73,7 +73,7 @@ std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* fu
       args.GetEnd(),
       func->code(),
       func->scope(), NULL, args.size(), args.IsConstructorCalled());
-  const std::pair<JSVal, VM::Status> res = Execute(frame);
+  const std::pair<JSVal, Status> res = Execute(frame);
   stack_.Unwind(frame);
   return res;
 }
