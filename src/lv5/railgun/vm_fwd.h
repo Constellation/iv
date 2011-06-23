@@ -38,6 +38,7 @@ class VM {
 
   JSVal Construct(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
+    args.set_constructor_call(true);
     return func->Construct(&args, e);
   }
 
