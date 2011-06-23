@@ -79,7 +79,8 @@ class Stack : core::Noncopyable<Stack> {
                       Code* code,
                       JSEnv* env,
                       const uint8_t* pc,
-                      std::size_t argc) {
+                      std::size_t argc,
+                      bool constructor_call) {
     assert(code);
     if (JSVal* mem = GainFrame(sp, code)) {
       Frame* frame = reinterpret_cast<Frame*>(mem);
@@ -88,8 +89,10 @@ class Stack : core::Noncopyable<Stack> {
       frame->variable_env_ = frame->lexical_env_ =
           internal::NewDeclarativeEnvironment(ctx, env);
       frame->prev_ = current_;
+      frame->ret_ = JSUndefined;
       frame->argc_ = argc;
       frame->dynamic_env_level_ = 0;
+      frame->constructor_call_ = constructor_call;
       current_ = frame;
       return frame;
     } else {
@@ -103,13 +106,14 @@ class Stack : core::Noncopyable<Stack> {
     if (JSVal* mem = GainFrame(stack_ + 1, code)) {
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
-      frame->prev_pc_ = 0;
+      frame->prev_pc_ = NULL;
       frame->variable_env_ = frame->lexical_env_ = ctx->global_env();
       frame->prev_ = NULL;
+      frame->ret_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
+      frame->constructor_call_ = false;
       current_ = frame;
-      SetSafeStackPointerForFrame(current_);
       return frame;
     } else {
       // stack overflow

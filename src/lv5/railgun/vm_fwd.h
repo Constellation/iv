@@ -20,47 +20,25 @@ class VM {
   inline std::pair<JSVal, Status> Execute(Frame* frame);
   inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func);
 
-  JSVal Invoke(JSVal** stack_pointer, int argc, Error* e) {
-    JSVal* sp = *stack_pointer;
+  JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
-    const JSVal func = sp[-(argc + 2)];
-    if (!func.IsCallable()) {
-      e->Report(Error::Type, "not callable object");
-      return JSEmpty;
-    }
-    *stack_pointer = sp - (argc + 2);
-    return func.object()->AsCallable()->Call(&args, sp[-(argc + 1)], e);
+    return func->Call(&args, sp[-(argc + 1)], e);
   }
 
-  JSVal InvokeMaybeEval(JSVal** stack_pointer, int argc, Error* e) {
-    JSVal* sp = *stack_pointer;
+  JSVal InvokeMaybeEval(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
-    const JSVal func = sp[-(argc + 2)];
-    if (!func.IsCallable()) {
-      e->Report(Error::Type, "not callable object");
-      return JSEmpty;
-    }
-    JSFunction* const callable = func.object()->AsCallable();
-    const JSAPI native = callable->NativeFunction();
-    *stack_pointer = sp - (argc + 2);
+    const JSAPI native = func->NativeFunction();
     if (native && native == &GlobalEval) {
       // direct call to eval point
       args.set_this_binding(sp[-(argc + 1)]);
       return DirectCallToEval(args, e);
     }
-    return callable->AsCallable()->Call(&args, sp[-(argc + 1)], e);
+    return func->Call(&args, sp[-(argc + 1)], e);
   }
 
-  JSVal Construct(JSVal** stack_pointer, int argc, Error* e) {
-    JSVal* sp = *stack_pointer;
+  JSVal Construct(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
-    const JSVal func = sp[-(argc + 2)];
-    if (!func.IsCallable()) {
-      e->Report(Error::Type, "not callable object");
-      return JSEmpty;
-    }
-    *stack_pointer = sp - (argc + 2);
-    return func.object()->AsCallable()->Construct(&args, e);
+    return func->Construct(&args, e);
   }
 
   void RaiseReferenceError(const Symbol& name, Error* e) const {

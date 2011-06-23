@@ -92,9 +92,10 @@ struct Frame {
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;
+  JSVal ret_;
   uint16_t argc_;
   uint16_t dynamic_env_level_;
-  JSVal ret_;
+  bool constructor_call_;
 };
 
 #undef IV_ROUNDUP

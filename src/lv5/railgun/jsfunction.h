@@ -83,7 +83,14 @@ class JSVMFunction : public JSFunction {
   }
 
   JSVal Construct(Arguments* args, Error* e) {
-    return JSUndefined;
+    Context* const ctx = static_cast<Context*>(args->ctx());
+    JSObject* const obj = JSObject::New(ctx);
+    args->set_constructor_call(true);
+    const JSVal proto = Get(ctx, context::prototype_symbol(ctx), IV_LV5_ERROR(e));
+    if (proto.IsObject()) {
+      obj->set_prototype(proto.object());
+    }
+    return Call(args, obj, IV_LV5_ERROR(e));
   }
 
   JSEnv* scope() const {
