@@ -268,6 +268,7 @@ MAIN_LOOP_START:
       }
 
       case OP::POP_TOP_AND_RET: {
+        // TODO(Constellation) overwrite return value...
         frame->ret_ = POP();
         continue;
       }
@@ -546,6 +547,16 @@ MAIN_LOOP_START:
         const double result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
         continue;
+      }
+
+      case DECREMENT_CALL_RESULT:
+      case POSTFIX_DECREMENT_CALL_RESULT:
+      case INCREMENT_CALL_RESULT:
+      case POSTFIX_INCREMENT_CALL_RESULT: {
+        const JSVal base = TOP();
+        base.ToNumber(ctx_, ERR);
+        e.Report(Error::Reference, "target is not reference");
+        break;
       }
 
       case OP::BINARY_ADD: {
