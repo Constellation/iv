@@ -53,8 +53,11 @@ V(RETURN_RET_VALUE)\
 V(THROW)\
 V(POP_ENV)\
 V(WITH_SETUP)\
+/* not implemented */\
 V(FORIN_SETUP)\
+/* not implemented */\
 V(FORIN_CLEANUP)\
+/* not implemented */\
 V(SWITCH_SETUP)\
 V(RETURN_SUBROUTINE)\
 \
@@ -113,8 +116,11 @@ V(DECREMENT_PROP)\
 V(POSTFIX_INCREMENT_PROP)\
 V(POSTFIX_DECREMENT_PROP)\
 \
+/* not implemented */\
 V(LOAD_GLOBAL)\
+/* not implemented */\
 V(STORE_GLOBAL)\
+/* not implemented */\
 V(DELETE_GLOBAL)\
 \
 V(LOAD_CONST)\
@@ -129,23 +135,26 @@ V(JUMP_ABSOLUTE)\
 V(POP_JUMP_IF_FALSE)\
 V(POP_JUMP_IF_TRUE)\
 \
+/* not implemented */\
 V(FORIN_ENUMERATE)\
+/* not implemented */\
 V(SWITCH_CASE)\
+/* not implemented */\
 V(SWITCH_DEFAULT)\
 V(TRY_CATCH_SETUP)\
 \
+/* not implemented */\
 V(LOAD_LOCAL)\
+/* not implemented */\
 V(STORE_LOCAL)\
+/* not implemented */\
 V(DELETE_LOCAL)\
 \
 V(CALL)\
 V(CONSTRUCT)\
 V(EVAL)\
 \
-V(MAKE_FUNCTION)\
-\
 V(MAKE_CLOSURE)\
-V(LOAD_CLOSURE)\
 \
 V(INIT_ARRAY_ELEMENT)\
 V(BUILD_ARRAY)\
