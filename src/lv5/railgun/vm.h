@@ -1058,6 +1058,7 @@ MAIN_LOOP_START:
 
       default: {
         std::printf("%s\n", OP::String(opcode));
+        UNREACHABLE();
       }
     }  // switch
 
