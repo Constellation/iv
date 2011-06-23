@@ -136,10 +136,9 @@ class Stack : core::Noncopyable<Stack> {
                          GCMSEntry* mark_sp,
                          GCMSEntry* mark_sp_limit,
                          GC_word env) {
+    GCMSEntry* entry = GC_mark_and_push(top, mark_sp, mark_sp_limit, NULL);
     Stack* stack = *reinterpret_cast<Stack**>(top);
     Frame* current = stack->current_;
-
-    GCMSEntry* entry = mark_sp;
 
     // mark Frame member
     entry = GC_mark_and_push(current->code_,
