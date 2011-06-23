@@ -59,6 +59,7 @@ class Stack : core::Noncopyable<Stack> {
     stack_pointer_ = stack_ =
         reinterpret_cast<JSVal*>(
             core::OSAllocator::Allocate(kStackBytes));
+    stack_pointer_ += 1;  // for Global This
     // register root
     stack_for_gc_ =
         reinterpret_cast<Stack**>(
@@ -114,6 +115,10 @@ class Stack : core::Noncopyable<Stack> {
       // stack overflow
       return NULL;
     }
+  }
+
+  void SetThis(JSVal val) {
+    *stack_ = val;
   }
 
   Frame* Unwind(Frame* frame) {

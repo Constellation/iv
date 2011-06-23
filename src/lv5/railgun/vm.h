@@ -59,6 +59,7 @@ class JSValRef : public JSVal {
 
 int VM::Run(Context* ctx, Code* code) {
   ctx_ = ctx;
+  stack_.SetThis(ctx->global_obj());
   Frame* frame = stack_.NewGlobalFrame(ctx, code);
   Execute(frame);
   stack_.Unwind(frame);
@@ -1035,6 +1036,15 @@ MAIN_LOOP_START:
         PUSH(base);
         continue;
       }
+
+      case OP::CALL_CALL_RESULT: {
+        PUSH(frame->lexical_env()->ImplicitThisValue());
+        continue;
+      }
+
+      default: {
+        std::printf("%s\n", OP::String(opcode));
+      }
     }  // switch
 
     // search exception handler or finally handler.
@@ -1070,6 +1080,7 @@ MAIN_LOOP_START:
       // so, unwind frame and search again
       if (frame->prev_pc_ == NULL) {
         // this code is invoked by native function
+        // so, not unwind and return (continues to after for main loop)
         break;
       } else {
         // unwind frame
