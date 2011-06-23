@@ -549,10 +549,10 @@ MAIN_LOOP_START:
         continue;
       }
 
-      case DECREMENT_CALL_RESULT:
-      case POSTFIX_DECREMENT_CALL_RESULT:
-      case INCREMENT_CALL_RESULT:
-      case POSTFIX_INCREMENT_CALL_RESULT: {
+      case OP::DECREMENT_CALL_RESULT:
+      case OP::POSTFIX_DECREMENT_CALL_RESULT:
+      case OP::INCREMENT_CALL_RESULT:
+      case OP::POSTFIX_INCREMENT_CALL_RESULT: {
         const JSVal base = TOP();
         base.ToNumber(ctx_, ERR);
         e.Report(Error::Reference, "target is not reference");
