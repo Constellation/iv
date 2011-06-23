@@ -139,6 +139,7 @@ do {\
 
   // main loop
   for (;;) {
+MAIN_LOOP_START:
     // fetch opcode
     const int opcode = NEXTOP();
     const uint32_t oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
@@ -1041,33 +1042,45 @@ do {\
     // should rethrow exception.
     assert(e);
     typedef Code::ExceptionTable ExceptionTable;
-    const ExceptionTable& table = frame->code()->exception_table();
-    bool handler_found = false;
-    for (ExceptionTable::const_iterator it = table.begin(),
-         last = table.end(); it != last; ++it) {
-      const int handler = std::get<0>(*it);
-      const uint16_t begin = std::get<1>(*it);
-      const uint16_t end = std::get<2>(*it);
-      const uint16_t stack_base_level = std::get<3>(*it);
-      const uint16_t env_level = std::get<4>(*it);
-      const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
-      if (begin < offset && offset <= end) {
-        const JSVal error = JSError::Detail(ctx_, &e);
-        e.Clear();
-        UNWIND_STACK(stack_base_level);
-        UNWIND_DYNAMIC_ENV(env_level);
-        PUSH(error);
-        if (handler == Handler::FINALLY) {
-          // finally jump if return or error raised
-          PUSH(JSFalse);
+    while (true) {
+      const ExceptionTable& table = frame->code()->exception_table();
+      for (ExceptionTable::const_iterator it = table.begin(),
+           last = table.end(); it != last; ++it) {
+        const int handler = std::get<0>(*it);
+        const uint16_t begin = std::get<1>(*it);
+        const uint16_t end = std::get<2>(*it);
+        const uint16_t stack_base_level = std::get<3>(*it);
+        const uint16_t env_level = std::get<4>(*it);
+        const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
+        if (begin < offset && offset <= end) {
+          const JSVal error = JSError::Detail(ctx_, &e);
+          e.Clear();
+          UNWIND_STACK(stack_base_level);
+          UNWIND_DYNAMIC_ENV(env_level);
+          PUSH(error);
+          if (handler == Handler::FINALLY) {
+            // finally jump if return or error raised
+            PUSH(JSFalse);
+          }
+          JUMPTO(end);
+          goto MAIN_LOOP_START;
         }
-        JUMPTO(end);
-        handler_found = true;
-        break;
       }
-    }
-    if (handler_found) {
-      continue;
+      // handler not in this frame
+      // so, unwind frame and search again
+      if (frame->prev_pc_ == NULL) {
+        // this code is invoked by native function
+        break;
+      } else {
+        // unwind frame
+        instr = frame->prev_pc_;
+        sp = frame->GetPreviousFrameStackTop();
+        frame = stack_.Unwind(frame);
+        constants = &frame->constants();
+        first_instr = frame->data();
+        names = &frame->code()->names();
+        strict = frame->code()->strict();
+      }
     }
     break;
   }  // for main loop
