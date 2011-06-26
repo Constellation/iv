@@ -128,6 +128,18 @@ class Compiler
     return code;
   }
 
+  Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
+    script_ = script;
+    Code* code = new Code(script_, function);
+    {
+      CodeContext code_context(this, code);
+      EmitFunctionCode(function);
+      assert(stack_depth()->GetCurrent() == 0);
+      code->set_stack_depth(stack_depth()->GetMaxDepth());
+    }
+    return code;
+  }
+
  private:
   class CodeContext : private core::Noncopyable<> {
    public:
@@ -1812,6 +1824,13 @@ class Compiler
 inline Code* Compile(Context* ctx, const FunctionLiteral& global, JSScript* script) {
   Compiler compiler(ctx);
   return compiler.Compile(global, script);
+}
+
+
+inline Code* CompileFunction(Context* ctx,
+                             const FunctionLiteral& func, JSScript* script) {
+  Compiler compiler(ctx);
+  return compiler.CompileFunction(func, script);
 }
 
 } } }  // namespace iv::lv5::railgun

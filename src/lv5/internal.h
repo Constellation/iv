@@ -397,17 +397,21 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
   }
 }
 
-inline void IsOneFunctionExpression(const FunctionLiteral& func, Error* e) {
+inline const FunctionLiteral* IsOneFunctionExpression(
+    const FunctionLiteral& func,
+    Error* e) {
   const FunctionLiteral::Statements& stmts = func.body();
   if (stmts.size() == 1) {
     const Statement& stmt = *stmts[0];
     if (stmt.AsExpressionStatement()) {
-      if (stmt.AsExpressionStatement()->expr()->AsFunctionLiteral()) {
-        return;
+      if (const FunctionLiteral* func =
+          stmt.AsExpressionStatement()->expr()->AsFunctionLiteral()) {
+        return func;
       }
     }
   }
   e->Report(Error::Syntax, "Function Constructor with invalid arguments");
+  return NULL;
 }
 
 inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {

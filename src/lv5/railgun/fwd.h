@@ -35,5 +35,10 @@ class JSGlobalScript;
 class JSVMFunction;
 
 
+Code* CompileFunction(Context* ctx,
+                      const JSString* str,
+                      bool is_strict,
+                      bool is_one_function, Error* e);
+
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_
