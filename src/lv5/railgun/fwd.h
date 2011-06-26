@@ -40,5 +40,11 @@ Code* CompileFunction(Context* ctx,
                       bool is_strict,
                       bool is_one_function, Error* e);
 
+void Instantiate(Context* ctx,
+                 Code* code,
+                 Frame* frame,
+                 bool is_eval,
+                 bool is_global_env, Error* e);
+
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_

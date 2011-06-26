@@ -101,6 +101,31 @@ class Stack : core::Noncopyable<Stack> {
     }
   }
 
+  Frame* NewEvalFrame(Context* ctx,
+                      JSEnv* variable_env,
+                      JSEnv* lexical_env,
+                      JSVal* sp,
+                      Code* code) {
+    assert(code);
+    if (JSVal* mem = GainFrame(sp, code)) {
+      Frame* frame = reinterpret_cast<Frame*>(mem);
+      frame->code_ = code;
+      frame->prev_pc_ = NULL;
+      frame->variable_env_ = variable_env;
+      frame->lexical_env_ = lexical_env;
+      frame->prev_ = current_;
+      frame->ret_ = JSUndefined;
+      frame->argc_ = 0;
+      frame->dynamic_env_level_ = 0;
+      frame->constructor_call_ = false;
+      current_ = frame;
+      return frame;
+    } else {
+      // stack overflow
+      return NULL;
+    }
+  }
+
   Frame* NewGlobalFrame(Context* ctx, Code* code) {
     assert(code);
     if (JSVal* mem = GainFrame(stack_ + 1, code)) {
@@ -219,6 +244,10 @@ class Stack : core::Noncopyable<Stack> {
 
   iterator end() {
     return stack_ + kStackCapacity;
+  }
+
+  pointer GetTop() {
+    return stack_pointer_;
   }
 
   // these 2 function Gain / Release is reserved for ScopedArguments
