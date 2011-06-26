@@ -56,6 +56,7 @@ inline void Instantiate(Context* ctx,
       this_value.set_value(obj);
     }
   }
+  frame->set_this_binding(this_value);
 
   // step 2
   const bool configurable_bindings = is_eval;
