@@ -152,11 +152,13 @@ static const uint32_t kBoolTag        = 0xfffffff8;
 static const uint32_t kStringTag      = 0xfffffff7;
 static const uint32_t kObjectTag      = 0xfffffff6;
 static const uint32_t kErrorTag       = 0xfffffff5;
-static const uint32_t kJSValRefTag    = 0xfffffff4;  // use VM only
+static const uint32_t kOtherPtrTag    = 0xfffffff4;
+static const uint32_t kJSValRefTag    = 0xfffffff3;  // use VM only
 static const uint32_t kNumberTag      = 0xfffffff1;
 static const uint32_t kUInt32Tag      = 0xfffffff0;
 
 struct UInt32Tag { };
+struct OtherPtrTag { };
 
 }  // namespace detail
 
@@ -268,6 +270,12 @@ class JSVal {
 
   inline void set_value(double val) {
     value_.number_.as_ = (val == val) ? val : core::kNaN;
+  }
+
+  template<typename T>
+  inline void set_value_ptr(T* ptr) {
+    value_.struct_.payload_.pointer_ = reinterpret_cast<void*>(ptr);
+    value_.struct_.tag_ = detail::kOtherPtrTag;
   }
 
   inline void set_value_uint32(uint32_t val) {
@@ -417,12 +425,17 @@ class JSVal {
     return value_.struct_.tag_ == detail::kEnvironmentTag;
   }
 
+  inline bool IsOtherPtr() const {
+    return value_.struct_.tag_ == detail::kOtherPtrTag;
+  }
+
   inline bool IsPrimitive() const {
     return IsNumber() || IsString() || IsBoolean();
   }
 
+  // TODO(Constellation) mv ptr tags to sequencial
   inline bool IsPtr() const {
-    return IsObject() || IsString() || IsReference() || IsEnvironment();
+    return IsObject() || IsString() || IsReference() || IsEnvironment() || IsOtherPtr();
   }
 
   JSString* TypeOf(Context* ctx) const;
@@ -497,10 +510,21 @@ class JSVal {
     return JSVal(val, detail::UInt32Tag());
   }
 
+  template<typename T>
+  static inline JSVal Ptr(T* ptr) {
+    return JSVal(ptr, detail::OtherPtrTag());
+  }
+
  protected:
   JSVal(const uint32_t& val, detail::UInt32Tag dummy)
     : value_() {
     set_value_uint32(val);
+  }
+
+  template<typename T>
+  JSVal(T* val, detail::OtherPtrTag dummy)
+    : value_() {
+    set_value_ptr(val);
   }
 
   // protected is for railgun::JSValRef

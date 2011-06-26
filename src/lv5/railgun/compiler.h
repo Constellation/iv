@@ -439,7 +439,8 @@ class Compiler
     {
       stmt->enumerable()->Accept(this);
       stack_depth()->BaseUp(1);
-      Emit<OP::FORIN_SETUP>();
+      const std::size_t for_in_setup_jump = CurrentSize() + 1;
+      Emit<OP::FORIN_SETUP>(0);  // dummy index
       const std::size_t start_index = CurrentSize();
       const std::size_t arg_index = CurrentSize() + 1;
 
@@ -501,12 +502,14 @@ class Compiler
       Emit<OP::JUMP_ABSOLUTE>(start_index);
       const std::size_t end_index = CurrentSize();
       EmitArgAt(end_index, arg_index);
+      EmitArgAt(end_index, for_in_setup_jump);
 
       stack_depth()->BaseDown(1);
       stack_depth()->Down();
       jump.EmitJumps(end_index, start_index);
     }
 
+    Emit<OP::POP_TOP>();  // FORIN_CLEANUP
     assert(stack_depth()->IsBaseLine());
   }
 

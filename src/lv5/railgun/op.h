@@ -53,10 +53,6 @@ V(RETURN_RET_VALUE)\
 V(THROW)\
 V(POP_ENV)\
 V(WITH_SETUP)\
-/* not implemented */\
-V(FORIN_SETUP)\
-/* not implemented */\
-V(FORIN_CLEANUP)\
 V(RETURN_SUBROUTINE)\
 \
 V(PUSH_EMPTY)\
@@ -133,6 +129,8 @@ V(JUMP_ABSOLUTE)\
 V(POP_JUMP_IF_FALSE)\
 V(POP_JUMP_IF_TRUE)\
 \
+/* not implemented */\
+V(FORIN_SETUP)\
 /* not implemented */\
 V(FORIN_ENUMERATE)\
 V(SWITCH_CASE)\

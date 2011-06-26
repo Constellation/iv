@@ -14,6 +14,7 @@
 #include "lv5/jsregexp.h"
 #include "lv5/property.h"
 #include "lv5/internal.h"
+#include "lv5/name_iterator.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/op.h"
@@ -831,6 +832,31 @@ MAIN_LOOP_START:
       case OP::SWITCH_DEFAULT: {
         POP_UNUSED();
         JUMPTO(oparg);
+        continue;
+      }
+
+      case OP::FORIN_SETUP: {
+        const JSVal v = POP();
+        if (v.IsNull() || v.IsUndefined()) {
+          JUMPTO(oparg);  // skip for-in stmt
+          continue;
+        }
+        // TODO(Constellation) implement JSIterator
+        JSObject* const obj = v.ToObject(ctx_, ERR);
+        NameIterator* it = NameIterator::New(ctx_, obj);
+        PUSH(JSVal::Ptr(it));
+        continue;
+      }
+
+      case OP::FORIN_ENUMERATE: {
+        NameIterator* it = reinterpret_cast<NameIterator*>(TOP().pointer());
+        if (it->Has()) {
+          const Symbol sym = it->Get();
+          it->Next();
+          PUSH(ctx_->ToString(sym));
+        } else {
+          JUMPTO(oparg);
+        }
         continue;
       }
 
