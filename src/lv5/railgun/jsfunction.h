@@ -106,7 +106,7 @@ class JSVMFunction : public JSFunction {
   }
 
   void InstantiateBindings(Context* ctx, Frame* frame, Error* e) {
-    Instantiate(ctx, code_, frame, false, false, IV_LV5_ERROR_VOID(e));
+    Instantiate(ctx, code_, frame, false, false, this, IV_LV5_ERROR_VOID(e));
     JSDeclEnv* env = static_cast<JSDeclEnv*>(frame->variable_env());
     const FunctionLiteral::DeclType type = code_->decl_type();
     if (type == FunctionLiteral::STATEMENT ||

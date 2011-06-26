@@ -44,7 +44,9 @@ void Instantiate(Context* ctx,
                  Code* code,
                  Frame* frame,
                  bool is_eval,
-                 bool is_global_env, Error* e);
+                 bool is_global_env,
+                 JSVMFunction* func,  // maybe NULL
+                 Error* e);
 
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FWD_H_

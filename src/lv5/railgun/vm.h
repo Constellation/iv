@@ -65,7 +65,7 @@ std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
   Frame* frame = stack_.NewGlobalFrame(ctx, code);
   {
     Error e;
-    Instantiate(ctx, code, frame, false, true, &e);
+    Instantiate(ctx, code, frame, false, true, NULL, &e);
     if (e) {
       stack_.Unwind(frame);
       return std::make_pair(JSError::Detail(ctx_, &e), THROW);
@@ -443,6 +443,14 @@ MAIN_LOOP_START:
 
       case OP::PUSH_THIS: {
         PUSH(frame->GetThis());
+        continue;
+      }
+
+      case OP::PUSH_ARGUMENTS: {
+        const JSVal w = LoadName(
+            frame->lexical_env(),
+            context::arguments_symbol(ctx_), strict, ERR);
+        PUSH(w);
         continue;
       }
 

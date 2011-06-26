@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_FRAME_H_
 #define _IV_LV5_RAILGUN_FRAME_H_
 #include <cstddef>
+#include <iterator>
 #include "utils.h"
 #include "static_assert.h"
 #include "lv5/jsval.h"
@@ -19,6 +20,23 @@ namespace railgun {
 // FUNC | THIS | ARG1 | ARG2 | FRAME | STACK DEPTH |
 //
 struct Frame {
+
+  typedef JSVal* iterator;
+  typedef const JSVal* const_iterator;
+
+  typedef std::iterator_traits<iterator>::value_type value_type;
+
+  typedef std::iterator_traits<iterator>::pointer pointer;
+  typedef std::iterator_traits<const_iterator>::pointer const_pointer;
+  typedef std::iterator_traits<iterator>::reference reference;
+  typedef std::iterator_traits<const_iterator>::reference const_reference;
+
+  typedef std::reverse_iterator<iterator> reverse_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+  typedef std::iterator_traits<iterator>::difference_type difference_type;
+  typedef std::size_t size_type;
+
   JSVal* GetFrameEnd() {
     return GetFrameBase() + GetFrameSize(code_->stack_depth());
   }
@@ -53,6 +71,14 @@ struct Frame {
 
   JSVal* arguments_end() {
     return GetFrameBase();
+  }
+
+  reverse_iterator arguments_rbegin() {
+    return reverse_iterator(arguments_end());
+  }
+
+  reverse_iterator arguments_rend() {
+    return reverse_iterator(arguments_begin());
   }
 
   static std::size_t GetFrameSize(std::size_t n) {

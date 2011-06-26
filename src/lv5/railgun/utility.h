@@ -42,7 +42,9 @@ inline void Instantiate(Context* ctx,
                         Code* code,
                         Frame* frame,
                         bool is_eval,
-                        bool is_global_env, Error* e) {
+                        bool is_global_env,
+                        JSVMFunction* func,  // maybe NULL
+                        Error* e) {
   // step 1
   JSVal this_value = frame->GetThis();
   JSDeclEnv* env = static_cast<JSDeclEnv*>(frame->variable_env());
@@ -125,25 +127,27 @@ inline void Instantiate(Context* ctx,
 
   // step 6, 7
   // TODO(Constellation)
-  // implement it
   // optimization
-//    const Symbol arguments_symbol = context::arguments_symbol(ctx);
-//    if (!env->HasBinding(ctx, arguments_symbol)) {
-//      JSArguments* const args_obj =
-//          JSArguments::New(ctx, this,
-//                           code_->params(),
-//                           args, env,
-//                           ctx->IsStrict(), IV_LV5_ERROR_VOID(e));
-//      if (code_->strict()) {
-//        env->CreateImmutableBinding(arguments_symbol);
-//        env->InitializeImmutableBinding(arguments_symbol, args_obj);
-//      } else {
-//        env->CreateMutableBinding(ctx, context::arguments_symbol(ctx),
-//                                  configurable_bindings, IV_LV5_ERROR_VOID(e));
-//        env->SetMutableBinding(ctx, arguments_symbol,
-//                               args_obj, false, IV_LV5_ERROR_VOID(e));
-//      }
-//    }
+  if (func) {
+    const Symbol arguments_symbol = context::arguments_symbol(ctx);
+    if (!env->HasBinding(ctx, arguments_symbol)) {
+      JSArguments* const args_obj =
+          JSArguments::New(ctx, func,
+                           code->params(),
+                           frame->arguments_rbegin(),
+                           frame->arguments_rend(), env,
+                           code->strict(), IV_LV5_ERROR_VOID(e));
+      if (code->strict()) {
+        env->CreateImmutableBinding(arguments_symbol);
+        env->InitializeImmutableBinding(arguments_symbol, args_obj);
+      } else {
+        env->CreateMutableBinding(ctx, context::arguments_symbol(ctx),
+                                  configurable_bindings, IV_LV5_ERROR_VOID(e));
+        env->SetMutableBinding(ctx, arguments_symbol,
+                               args_obj, false, IV_LV5_ERROR_VOID(e));
+      }
+    }
+  }
 
   // step 8
   for (Code::Names::const_iterator it = code->varnames().begin(),

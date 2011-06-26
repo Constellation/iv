@@ -147,7 +147,8 @@ void Interpreter::Invoke(JSCodeFunction* code,
     JSArguments* const args_obj =
         JSArguments::New(ctx_, code,
                          code->code()->params(),
-                         args, env,
+                         args.rbegin(),
+                         args.rend(), env,
                          ctx_->IsStrict(), CHECK_IN_STMT);
     if (ctx_->IsStrict()) {
       env->CreateImmutableBinding(arguments_symbol);

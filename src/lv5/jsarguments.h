@@ -23,16 +23,17 @@ class JSArguments : public JSObject {
     : env_(env),
       map_() { }
 
+  template<typename Idents, typename ArgsReverseIter>
   static JSArguments* New(Context* ctx,
                           JSFunction* func,
-                          const Identifiers& names,
-                          const Arguments& args,
+                          const Idents& names,
+                          ArgsReverseIter it,
+                          ArgsReverseIter last,
                           JSDeclEnv* env,
                           bool strict,
                           Error* e) {
     JSArguments* const obj = new JSArguments(ctx, env);
-    const uint32_t len = args.size();
-    const std::size_t names_len = names.size();
+    const uint32_t len = std::distance(it, last);
     const Class& cls = context::Cls(ctx, "Arguments");
     bind::Object binder(ctx, obj);
     binder
@@ -40,20 +41,8 @@ class JSArguments : public JSObject {
         .prototype(cls.prototype)
         .def(context::length_symbol(ctx),
              JSVal::UInt32(len), bind::W | bind::C);
+    SetArguments(ctx, obj, &binder, names, it, last, len, strict);
 
-    uint32_t index = len - 1;
-    for (Arguments::const_reverse_iterator it = args.rbegin(),
-         last = args.rend(); it != last; ++it) {
-      const Symbol sym = context::Intern(ctx, index);
-      binder.def(sym, *it, bind::W | bind::E | bind::C);
-      if (index < names_len) {
-        if (!strict) {
-          obj->map_.insert(
-              std::make_pair(sym, names[index]->symbol()));
-        }
-      }
-      index -= 1;
-    }
     if (strict) {
       JSFunction* const throw_type_error = context::throw_type_error(ctx);
       binder
@@ -157,6 +146,37 @@ class JSArguments : public JSObject {
   }
 
  private:
+  template<typename Idents, typename ArgsReverseIter>
+  static void SetArguments(Context* ctx,
+                           JSArguments* obj,
+                           bind::Object* binder,
+                           const Idents& names,
+                           ArgsReverseIter it, ArgsReverseIter last,
+                           uint32_t len, bool strict) {
+    uint32_t index = len - 1;
+    const std::size_t names_len = names.size();
+    for (; it != last; ++it) {
+      const Symbol sym = context::Intern(ctx, index);
+      binder->def(sym, *it, bind::W | bind::E | bind::C);
+      if (index < names_len) {
+        if (!strict) {
+          obj->map_.insert(
+              std::make_pair(sym, GetIdent(names, index)));
+        }
+      }
+      index -= 1;
+    }
+  }
+
+  static Symbol GetIdent(const Identifiers& names, uint32_t index) {
+    return names[index]->symbol();
+  }
+
+  template<typename T>
+  static Symbol GetIdent(const T& names, uint32_t index) {
+    return names[index];
+  }
+
   JSDeclEnv* env_;
   Index2Param map_;
 };
