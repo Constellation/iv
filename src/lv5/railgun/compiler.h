@@ -1591,10 +1591,6 @@ class Compiler
         (*it)->Accept(this);
       }
     }
-    Emit<OP::PUSH_UNDEFINED>();
-    stack_depth()->Up();
-    Emit<OP::RETURN>();
-    stack_depth()->Down();
     Emit<OP::STOP_CODE>();
   }
 

@@ -153,6 +153,28 @@ MAIN_LOOP_START:
     // if error, use break.
     switch (opcode) {
       case OP::STOP_CODE: {
+        // no return at last
+        // return undefined
+        frame->ret_ = JSUndefined;
+        const JSVal ret =
+            (frame->constructor_call_ && !frame->ret_.IsObject()) ?
+            frame->GetThis() : frame->ret_;
+        // if previous code is not native code, unwind frame and jump
+        if (frame->prev_pc_ == NULL) {
+          // this code is invoked by native function
+          return std::make_pair(ret, RETURN);
+        } else {
+          // this code is invoked by JS code
+          instr = frame->prev_pc_;
+          sp = frame->GetPreviousFrameStackTop();
+          frame = stack_.Unwind(frame);
+          constants = &frame->constants();
+          first_instr = frame->data();
+          names = &frame->code()->names();
+          strict = frame->code()->strict();
+          PUSH(ret);
+          continue;
+        }
         break;
       }
 
