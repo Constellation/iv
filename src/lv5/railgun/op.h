@@ -135,9 +135,7 @@ V(POP_JUMP_IF_TRUE)\
 \
 /* not implemented */\
 V(FORIN_ENUMERATE)\
-/* not implemented */\
 V(SWITCH_CASE)\
-/* not implemented */\
 V(SWITCH_DEFAULT)\
 V(TRY_CATCH_SETUP)\
 \
