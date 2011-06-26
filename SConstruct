@@ -74,6 +74,7 @@ def Build():
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
+    BoolVariable('nosse', '', 0),
     BoolVariable('release', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
@@ -131,6 +132,11 @@ def Build():
 
   if env['cxx0x']:
     env.Append(CXXFLAGS=["-std=c++0x"])
+
+  if not env['nosse']:
+    env.Append(
+        CCFLAGS=["-msse2", "-mfpmath=sse"],
+        CPPDEFINES=["IV_USE_SSE"])
 
   if env['debug']:
     env.Append(CCFLAGS=["-g"])
