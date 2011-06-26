@@ -578,10 +578,18 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
       return true;
     }
     if (lhsv == rhsv) {
-      if (core::Signbit(lhsv) && core::Signbit(rhsv)) {
-        return true;
+      if (core::Signbit(lhsv)) {
+        if (core::Signbit(rhsv)) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
-        return false;
+        if (core::Signbit(rhsv)) {
+          return false;
+        } else {
+          return true;
+        }
       }
     } else {
       return false;

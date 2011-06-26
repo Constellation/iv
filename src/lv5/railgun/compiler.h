@@ -1268,7 +1268,9 @@ class Compiler
     uint16_t i = 0;
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
-      if (it->IsNumber() && it->number() == lit->value()) {
+      if (it->IsNumber() && it->number() == lit->value() &&
+          (static_cast<bool>(core::Signbit(it->number())) ==
+           static_cast<bool>(core::Signbit(lit->value())))) {
         // duplicate constant pool
         Emit<OP::LOAD_CONST>(i);
         stack_depth()->Up();

@@ -334,7 +334,8 @@ CompareKind Compare(Context* ctx,
       return CMP_UNDEFINED;
     }
     if (nx == ny) {
-      if (core::Signbit(nx) != core::Signbit(ny)) {
+      if (static_cast<bool>(core::Signbit(nx)) !=
+          static_cast<bool>(core::Signbit(ny))) {
         return CMP_FALSE;
       }
       return CMP_FALSE;
