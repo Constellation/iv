@@ -77,6 +77,35 @@ std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
   return res;
 }
 
+// Eval
+std::pair<JSVal, VM::Status> VM::RunEval(Context* ctx,
+                                         Code* code,
+                                         JSEnv* variable_env,
+                                         JSEnv* lexical_env,
+                                         JSVal this_binding) {
+  ctx_ = ctx;
+  // TODO(Constellation) check overflow
+  Frame* frame = stack_.NewEvalFrame(
+      ctx,
+      stack_.GetTop(),
+      code,
+      variable_env,
+      lexical_env,
+      this_binding);
+  {
+    Error e;
+    Instantiate(ctx, code, frame, true, false, NULL, &e);
+    if (e) {
+      stack_.Unwind(frame);
+      return std::make_pair(JSError::Detail(ctx_, &e), THROW);
+    }
+  }
+  const std::pair<JSVal, Status> res = Execute(frame);
+  stack_.Unwind(frame);
+  ctx_ = NULL;
+  return res;
+}
+
 std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* func) {
   Frame* frame = stack_.NewCodeFrame(
       ctx_,

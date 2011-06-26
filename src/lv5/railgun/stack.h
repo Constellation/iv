@@ -102,12 +102,14 @@ class Stack : core::Noncopyable<Stack> {
   }
 
   Frame* NewEvalFrame(Context* ctx,
+                      JSVal* sp,
+                      Code* code,
                       JSEnv* variable_env,
                       JSEnv* lexical_env,
-                      JSVal* sp,
-                      Code* code) {
+                      JSVal this_binding) {
     assert(code);
-    if (JSVal* mem = GainFrame(sp, code)) {
+    if (JSVal* mem = GainFrame(sp + 1, code)) {
+      *sp = this_binding;
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
       frame->prev_pc_ = NULL;
@@ -264,6 +266,10 @@ class Stack : core::Noncopyable<Stack> {
 
   void Release(size_type n) {
     stack_pointer_ -= n;
+  }
+
+  Frame* current() {
+    return current_;
   }
 
  private:

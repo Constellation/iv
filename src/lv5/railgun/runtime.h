@@ -54,27 +54,39 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     e->Report(Error::Syntax, parser.error());
     return JSUndefined;
   }
-//  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-//  Code* code = Compile(ctx, *eval, script);
-  return JSUndefined;
-//  if (eval->strict()) {
-//    JSDeclEnv* const env =
-//        internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
-//    const ContextSwitcher switcher(ctx,
-//                                   env,
-//                                   env,
-//                                   ctx->global_obj(),
-//                                   true);
-//    ctx->Run(script);
-//  } else {
-//    const ContextSwitcher switcher(ctx,
-//                                   ctx->global_env(),
-//                                   ctx->global_env(),
-//                                   ctx->global_obj(),
-//                                   false);
-//    ctx->Run(script);
-//  }
-//  return ctx->ret();
+  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+  Code* code = Compile(ctx, *eval, script);
+  if (code->strict()) {
+    JSDeclEnv* const env =
+        internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
+    VM* const vm = ctx->vm();
+    const std::pair<JSVal, VM::Status> res = vm->RunEval(
+        ctx,
+        code,
+        env,
+        env,
+        vm->stack()->current()->GetThis());
+    if (res.second == VM::THROW) {
+      e->Report(res.first);
+      return JSEmpty;
+    } else {
+      return res.first;
+    }
+  } else {
+    VM* const vm = ctx->vm();
+    const std::pair<JSVal, VM::Status> res = vm->RunEval(
+        ctx,
+        code,
+        ctx->global_env(),
+        ctx->global_env(),
+        ctx->global_obj());
+    if (res.second == VM::THROW) {
+      e->Report(res.first);
+      return JSEmpty;
+    } else {
+      return res.first;
+    }
+  }
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
