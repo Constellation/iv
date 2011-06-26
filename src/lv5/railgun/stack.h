@@ -4,6 +4,7 @@
 #ifndef _IV_LV5_RAILGUN_STACK_H_
 #define _IV_LV5_RAILGUN_STACK_H_
 #include <cstddef>
+#include <cmath>
 #include <algorithm>
 #include <iterator>
 #include <gc/gc.h>
@@ -160,9 +161,10 @@ class Stack : core::Noncopyable<Stack> {
   }
 
   Frame* Unwind(Frame* frame) {
-    current_ = frame->prev_;
+    assert(current_ == frame);
     assert(frame->code());
-    SetSafeStackPointerForFrame(current_);
+    SetSafeStackPointerForFrame(frame, frame->prev_);
+    current_ = frame->prev_;
     return current_;
   }
 
@@ -281,9 +283,11 @@ class Stack : core::Noncopyable<Stack> {
 
  private:
 
-  void SetSafeStackPointerForFrame(Frame* target) {
-    if (target) {
-      stack_pointer_ = target->GetFrameEnd();
+  void SetSafeStackPointerForFrame(Frame* prev, Frame* current) {
+    if (current) {
+      JSVal* frame_last = current->GetFrameEnd();
+      JSVal* prev_first = prev->GetFrameBase();
+      stack_pointer_ = std::max(frame_last, prev_first);
     } else {
       // previous of Global Frame is NULL
       stack_pointer_ = stack_ + 1;
@@ -291,7 +295,8 @@ class Stack : core::Noncopyable<Stack> {
   }
 
   JSVal* GainFrame(JSVal* top, Code* code) {
-    assert(stack_ < top && top <= stack_pointer_);
+    assert(stack_ < top);
+    assert(top <= stack_pointer_);
     stack_pointer_ = top;
     return Gain(Frame::GetFrameSize(code->stack_depth()));
   }
