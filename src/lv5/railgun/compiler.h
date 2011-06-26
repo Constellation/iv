@@ -101,8 +101,8 @@ class Compiler
       public AstVisitor {
  public:
   typedef std::tuple<uint16_t,
-                          std::vector<std::size_t>*,
-                          std::vector<std::size_t>*> JumpEntry;
+                     std::vector<std::size_t>*,
+                     std::vector<std::size_t>*> JumpEntry;
   typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
   typedef std::vector<std::vector<std::size_t> > FinallyStack;
 
@@ -414,6 +414,7 @@ class Compiler
     stmt->body()->Accept(this);  // STMT
     assert(stack_depth()->IsBaseLine());
 
+    const std::size_t prev_next = CurrentSize();
     if (const core::Maybe<const Expression> next = stmt->next()) {
       next.Address()->Accept(this);
       Emit<OP::POP_TOP>();
@@ -426,7 +427,7 @@ class Compiler
       EmitArgAt(CurrentSize(), arg_index);
     }
 
-    jump.EmitJumps(CurrentSize(), start_index);
+    jump.EmitJumps(CurrentSize(), prev_next);
 
     assert(stack_depth()->IsBaseLine());
   }
@@ -541,17 +542,20 @@ class Compiler
   }
 
   void Visit(const BreakStatement* stmt) {
-    const JumpEntry& entry = (*jump_table_)[stmt->target()];
-    for (uint16_t level = CurrentLevel(),
-         last = std::get<0>(entry); level > last; --level) {
-      const std::size_t finally_jump_index = CurrentSize() + 1;
-      Emit<OP::JUMP_SUBROUTINE>(0);
-      (*finally_stack_)[level - 1].push_back(finally_jump_index);
+    if (!stmt->target() && stmt->label()) {
+      // through
+    } else {
+      const JumpEntry& entry = (*jump_table_)[stmt->target()];
+      for (uint16_t level = CurrentLevel(),
+           last = std::get<0>(entry); level > last; --level) {
+        const std::size_t finally_jump_index = CurrentSize() + 1;
+        Emit<OP::JUMP_SUBROUTINE>(0);
+        (*finally_stack_)[level - 1].push_back(finally_jump_index);
+      }
+      const std::size_t arg_index = CurrentSize() + 1;
+      Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
+      std::get<1>(entry)->push_back(arg_index);
     }
-    const std::size_t arg_index = CurrentSize() + 1;
-    Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
-    std::get<1>(entry)->push_back(arg_index);
-
     assert(stack_depth()->IsBaseLine());
   }
 
