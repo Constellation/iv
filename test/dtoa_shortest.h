@@ -30,7 +30,7 @@
 //          decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
 #ifndef _IV_TEST_DTOA_SHORTEST_H_
 #define _IV_TEST_DTOA_SHORTEST_H_
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 
 struct PrecomputedShortest {
   double v;
@@ -38,6 +38,6 @@ struct PrecomputedShortest {
   int decimal_point;
 };
 
-typedef std::tr1::array<PrecomputedShortest, 100000> ShortestTestContainerType;
+typedef std::array<PrecomputedShortest, 100000> ShortestTestContainerType;
 const ShortestTestContainerType& ShortestTestContainer();
 #endif  // _IV_TEST_DTOA_SHORTEST_H_

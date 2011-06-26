@@ -1,7 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <gtest/gtest.h>
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 #include "dtoa.h"
 #include "dtoa_fixed.h"
 #include "dtoa_precision.h"
@@ -23,7 +23,7 @@ static void TrimRepresentation(char* buf) {
 
 TEST(DToACase, DToAGayFixed) {
   // dtoa(v, 3, number_digits, &decimal_point, &sign, NULL);
-  std::tr1::array<char, 100> buffer;
+  std::array<char, 100> buffer;
   bool sign;
   int exponent;
   unsigned precision;
@@ -54,7 +54,7 @@ TEST(DToACase, DToAGayFixed) {
 
 TEST(DToACase, DToAGayPrecision) {
   // dtoa(v, 2, number_digits, &decimal_point, &sign, NULL);
-  std::tr1::array<char, 100> buffer;
+  std::array<char, 100> buffer;
   bool sign;
   int exponent;
   unsigned precision;
@@ -76,7 +76,7 @@ TEST(DToACase, DToAGayPrecision) {
 
 TEST(DToACase, DToAGayShortest) {
   // decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
-  std::tr1::array<char, 100> buffer;
+  std::array<char, 100> buffer;
   bool sign;
   int exponent;
   unsigned precision;

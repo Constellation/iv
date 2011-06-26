@@ -30,7 +30,7 @@
 //         dtoa(v, 2, number_digits, &decimal_point, &sign, NULL);
 #ifndef _IV_TEST_DTOA_PRECISION_H_
 #define _IV_TEST_DTOA_PRECISION_H_
-#include "detail/tr1/array.h"
+#include "detail/array.h"
 
 struct PrecomputedPrecision {
   double v;
@@ -39,6 +39,6 @@ struct PrecomputedPrecision {
   int decimal_point;
 };
 
-typedef std::tr1::array<PrecomputedPrecision, 100000> PrecisionTestContainerType;
+typedef std::array<PrecomputedPrecision, 100000> PrecisionTestContainerType;
 const PrecisionTestContainerType& PrecisionTestContainer();
 #endif  // _IV_TEST_DTOA_PRECISION_H_

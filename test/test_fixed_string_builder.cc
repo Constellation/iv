@@ -1,9 +1,9 @@
-#include <tr1/array>
 #include <gtest/gtest.h>
+#include "detail/array.h"
 #include "fixed_string_builder.h"
 
 TEST(FixedStringBuilderCase, MainTest) {
-  std::tr1::array<char, 100> buffer;
+  std::array<char, 100> buffer;
   {
     buffer.assign('\0');
     iv::core::FixedStringBuilder builder(buffer.data(), buffer.size());
