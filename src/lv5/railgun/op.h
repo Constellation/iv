@@ -57,8 +57,6 @@ V(WITH_SETUP)\
 V(FORIN_SETUP)\
 /* not implemented */\
 V(FORIN_CLEANUP)\
-/* not implemented */\
-V(SWITCH_SETUP)\
 V(RETURN_SUBROUTINE)\
 \
 V(PUSH_EMPTY)\

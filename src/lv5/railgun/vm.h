@@ -818,6 +818,22 @@ MAIN_LOOP_START:
         }
       }
 
+      case OP::SWITCH_CASE: {
+        const JSVal v = POP();
+        const JSVal w = TOP();
+        if (internal::StrictEqual(v, w)) {
+          POP_UNUSED();
+          JUMPTO(oparg);
+        }
+        continue;
+      }
+
+      case OP::SWITCH_DEFAULT: {
+        POP_UNUSED();
+        JUMPTO(oparg);
+        continue;
+      }
+
       case OP::THROW: {
         frame->ret_ = POP();
         e.Report(frame->ret_);
