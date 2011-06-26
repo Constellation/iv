@@ -567,8 +567,7 @@ class Compiler
       Emit<OP::RETURN>();
       stack_depth()->Down();
     } else {
-      Emit<OP::SET_RET_VALUE>();
-      stack_depth()->Down();
+      stack_depth()->BaseUp(1);  // set return value in base
 
       // nested finally has found
       // set finally jump targets
@@ -578,7 +577,9 @@ class Compiler
         (*finally_stack_)[level - 1].push_back(finally_jump_index);
       }
 
-      Emit<OP::RETURN_RET_VALUE>();
+      Emit<OP::RETURN>();
+      stack_depth()->BaseDown(1);
+      stack_depth()->Down();
     }
 
     assert(stack_depth()->IsBaseLine());

@@ -77,8 +77,14 @@ class JSVMFunction : public JSFunction {
     if (res.second == VM::THROW) {
       e->Report(res.first);
       return JSEmpty;
-    } else {
+    } else if (res.second == VM::RETURN) {
       return res.first;
+    } else {
+      if (args->IsConstructorCalled()) {
+        return res.first;
+      } else {
+        return JSUndefined;
+      }
     }
   }
 

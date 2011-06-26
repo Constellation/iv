@@ -11,7 +11,7 @@ namespace railgun {
 class VM {
  public:
   enum Status {
-    NORMAL,
+    STOP,
     RETURN,
     THROW
   };
