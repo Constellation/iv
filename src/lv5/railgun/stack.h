@@ -108,6 +108,12 @@ class Stack : core::Noncopyable<Stack> {
                       JSEnv* lexical_env,
                       JSVal this_binding) {
     assert(code);
+    if (JSVal* this_ptr = Gain(1)) {
+      *this_ptr = this_binding;
+    } else {
+      // stack overflow
+      return NULL;
+    }
     if (JSVal* mem = GainFrame(sp + 1, code)) {
       *sp = this_binding;
       Frame* frame = reinterpret_cast<Frame*>(mem);
@@ -124,6 +130,7 @@ class Stack : core::Noncopyable<Stack> {
       return frame;
     } else {
       // stack overflow
+      Release(1);
       return NULL;
     }
   }

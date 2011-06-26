@@ -30,13 +30,13 @@ class VM {
     return func->Call(&args, sp[-(argc + 1)], e);
   }
 
-  JSVal InvokeMaybeEval(JSFunction* func, JSVal* sp, int argc, Error* e) {
+  JSVal InvokeMaybeEval(JSFunction* func, JSVal* sp, int argc, Frame* prev, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
     const JSAPI native = func->NativeFunction();
     if (native && native == &GlobalEval) {
       // direct call to eval point
       args.set_this_binding(sp[-(argc + 1)]);
-      return DirectCallToEval(args, e);
+      return DirectCallToEval(args, prev, e);
     }
     return func->Call(&args, sp[-(argc + 1)], e);
   }

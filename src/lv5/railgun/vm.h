@@ -83,8 +83,6 @@ std::pair<JSVal, VM::Status> VM::RunEval(Context* ctx,
                                          JSEnv* variable_env,
                                          JSEnv* lexical_env,
                                          JSVal this_binding) {
-  ctx_ = ctx;
-  // TODO(Constellation) check overflow
   Frame* frame = stack_.NewEvalFrame(
       ctx,
       stack_.GetTop(),
@@ -102,7 +100,6 @@ std::pair<JSVal, VM::Status> VM::RunEval(Context* ctx,
   }
   const std::pair<JSVal, Status> res = Execute(frame);
   stack_.Unwind(frame);
-  ctx_ = NULL;
   return res;
 }
 
@@ -1114,7 +1111,7 @@ MAIN_LOOP_START:
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
-          const JSVal x = InvokeMaybeEval(func, sp, oparg, &e);
+          const JSVal x = InvokeMaybeEval(func, sp, oparg, frame, &e);
           sp -= (argc + 2);
           PUSH(x);
           if (e) {

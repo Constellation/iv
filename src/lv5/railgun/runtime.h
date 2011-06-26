@@ -5,6 +5,7 @@
 #include "lv5/internal.h"
 #include "lv5/json.h"
 #include "lv5/railgun/fwd.h"
+#include "lv5/railgun/frame.h"
 #include "lv5/railgun/utility.h"
 #include "lv5/railgun/jsfunction.h"
 namespace iv {
@@ -89,8 +90,75 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   }
 }
 
-inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
-  return JSUndefined;
+inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
+  if (!args.size()) {
+    return JSUndefined;
+  }
+  const JSVal& first = args[0];
+  if (!first.IsString()) {
+    return first;
+  }
+  JSString* str = first.string();
+  Context* const ctx = static_cast<Context*>(args.ctx());
+  const bool strict = frame->code()->strict();
+  // if str is (...) expression,
+  // parse as JSON (RejectLineTerminator Pattern) at first
+  if (str->size() > 2 &&
+      (*str)[0] == '(' &&
+      (*str)[str->size() - 1] == ')' &&
+      !strict) {
+    Error json_parse_error;
+    const JSVal result = ParseJSON<false>(ctx,
+                                          core::UStringPiece(str->data() + 1,
+                                                             str->size() - 2),
+                                          &json_parse_error);
+    if (!json_parse_error) {
+      return result;
+    }
+  }
+
+  std::shared_ptr<EvalSource> const src(new EvalSource(*str));
+  AstFactory factory(ctx);
+  core::Parser<AstFactory, EvalSource> parser(&factory, *src);
+  parser.set_strict(strict);
+  const FunctionLiteral* const eval = parser.ParseProgram();
+  if (!eval) {
+    e->Report(Error::Syntax, parser.error());
+    return JSUndefined;
+  }
+  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+  Code* code = Compile(ctx, *eval, script);
+  if (code->strict()) {
+    VM* const vm = ctx->vm();
+    JSDeclEnv* const env =
+        internal::NewDeclarativeEnvironment(ctx, vm->stack()->current()->lexical_env());
+    const std::pair<JSVal, VM::Status> res = vm->RunEval(
+        ctx,
+        code,
+        env,
+        env,
+        vm->stack()->current()->GetThis());
+    if (res.second == VM::THROW) {
+      e->Report(res.first);
+      return JSEmpty;
+    } else {
+      return res.first;
+    }
+  } else {
+    VM* const vm = ctx->vm();
+    const std::pair<JSVal, VM::Status> res = vm->RunEval(
+        ctx,
+        code,
+        vm->stack()->current()->variable_env(),
+        vm->stack()->current()->lexical_env(),
+        vm->stack()->current()->GetThis());
+    if (res.second == VM::THROW) {
+      e->Report(res.first);
+      return JSEmpty;
+    } else {
+      return res.first;
+    }
+  }
 }
 
 } } }  // iv::lv5::railgun

@@ -23,7 +23,7 @@ class DisAssembler;
 
 JSVal FunctionConstructor(const Arguments& args, Error* e);
 JSVal GlobalEval(const Arguments& args, Error* e);
-JSVal DirectCallToEval(const Arguments& args, Error* e);
+inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e);
 
 class JSScript;
 
