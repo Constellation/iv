@@ -403,6 +403,10 @@ class VM {
     return &stack_;
   }
 
+  void set_context(Context* ctx) {
+    ctx_ = ctx;
+  }
+
 #undef CHECK
 
  private:

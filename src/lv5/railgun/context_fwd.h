@@ -7,11 +7,7 @@ namespace railgun {
 
 class Context : public lv5::Context {
  public:
-  Context(VM* vm)
-    : lv5::Context(),
-      vm_(vm) {
-    Initialize<&FunctionConstructor, &GlobalEval>();
-  }
+  explicit inline Context(VM* vm);
 
   VM* vm() {
     return vm_;

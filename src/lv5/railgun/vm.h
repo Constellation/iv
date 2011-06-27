@@ -60,7 +60,6 @@ class JSValRef : public JSVal {
 
 // Global
 std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
-  ctx_ = ctx;
   stack_.SetThis(ctx->global_obj());
   Frame* frame = stack_.NewGlobalFrame(ctx, code);
   {
@@ -73,7 +72,6 @@ std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
   }
   const std::pair<JSVal, Status> res = Execute(frame);
   stack_.Unwind(frame);
-  ctx_ = NULL;
   return res;
 }
 
