@@ -587,7 +587,10 @@ class Compiler
           Emit<OP::POP_TOP>();
           Emit<OP::POP_TOP>();
         } else {
-          Emit<OP::POP_TOP>();
+          // break target for in ?
+          if (last + 1 != level) {
+            Emit<OP::POP_TOP>();
+          }
         }
       }
       const std::size_t arg_index = CurrentSize() + 1;
