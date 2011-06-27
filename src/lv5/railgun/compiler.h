@@ -555,7 +555,10 @@ class Compiler
         Emit<OP::POP_TOP>();
         Emit<OP::POP_TOP>();
       } else {
-        Emit<OP::POP_TOP>();
+        // continue target for in ?
+        if (last + 1 != level) {
+          Emit<OP::POP_TOP>();
+        }
       }
     }
     const std::size_t arg_index = CurrentSize() + 1;
@@ -725,12 +728,12 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      stack_depth()->Up();  // exception handler
       code_->RegisterHandler<Handler::CATCH>(
           try_start,
           CurrentSize(),
           stack_depth()->GetStackBase(),
           dynamic_env_level());
+      stack_depth()->Up();  // exception handler
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
       stack_depth()->Down();
@@ -750,13 +753,13 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      stack_depth()->BaseUp(3);
-      stack_depth()->Up(3);  // JUMP_SUBROUTINE or exception handler
       code_->RegisterHandler<Handler::FINALLY>(
           try_start,
           finally_start,
           stack_depth()->GetStackBase(),
           dynamic_env_level());
+      stack_depth()->BaseUp(3);
+      stack_depth()->Up(3);  // JUMP_SUBROUTINE or exception handler
       target.EmitJumps(finally_start);
 
       PushLevelSub();
