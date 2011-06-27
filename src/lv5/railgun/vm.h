@@ -1202,6 +1202,9 @@ MAIN_LOOP_START:
           e.Clear();
           UNWIND_STACK(stack_base_level);
           UNWIND_DYNAMIC_ENV(env_level);
+          if (handler == Handler::FINALLY) {
+            PUSH(JSEmpty);
+          }
           PUSH(error);
           if (handler == Handler::FINALLY) {
             // finally jump if return or error raised
