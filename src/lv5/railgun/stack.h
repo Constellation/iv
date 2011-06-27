@@ -7,12 +7,13 @@
 #include <cmath>
 #include <algorithm>
 #include <iterator>
+#include <new>
 #include <gc/gc.h>
 extern "C" {
 #include <gc/gc_mark.h>
 }
 #include "noncopyable.h"
-#include "noncopyable.h"
+#include "singleton.h"
 #include "os_allocator.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/frame.h"
@@ -47,14 +48,40 @@ class Stack : core::Noncopyable<Stack> {
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * 1024;
 
+  class Resource {
+   public:
+    explicit Resource(Stack* stack)
+      : stack_(stack) { }
+    Stack* stack() const {
+      return stack_;
+    }
+   private:
+    Stack* stack_;
+  };
+
+  class GCKind : public core::Singleton<GCKind> {
+   public:
+    friend class core::Singleton<GCKind>;
+
+    int GetKind() const {
+      return stack_kind_;
+    }
+
+   private:
+    GCKind()
+      : stack_kind_(GC_new_kind(GC_new_free_list(),
+                                GC_MAKE_PROC(GC_new_proc(&Mark), 0), 0, 1)) {
+    }
+
+    ~GCKind() { }  // private destructor
+
+    volatile int stack_kind_;
+  };
+
   Stack()
     : stack_(NULL),
       stack_pointer_(NULL),
-      stack_free_list_(GC_new_free_list()),
-      stack_mark_proc_(GC_new_proc(&Mark)),
-      stack_kind_(GC_new_kind(stack_free_list_,
-                              GC_MAKE_PROC(stack_mark_proc_, 0), 0, 0)),
-      stack_for_gc_(NULL),
+      resource_(NULL),
       base_(NULL),
       current_(NULL) {
     stack_pointer_ = stack_ =
@@ -62,16 +89,15 @@ class Stack : core::Noncopyable<Stack> {
             core::OSAllocator::Allocate(kStackBytes));
     stack_pointer_ += 1;  // for Global This
     // register root
-    stack_for_gc_ =
-        reinterpret_cast<Stack**>(
-            GC_generic_malloc(sizeof(Stack*), stack_kind_));  // NOLINT
-    *stack_for_gc_ = this;
+    resource_ =
+        new (GC_generic_malloc(sizeof(Resource),
+                               GCKind::Instance()->GetKind())) Resource(this);
   }
 
   ~Stack() {
     core::OSAllocator::Decommit(stack_, kStackBytes);
     core::OSAllocator::Deallocate(stack_, kStackBytes);
-    GC_free(stack_for_gc_);
+    GC_free(resource_);
   }
 
   // returns new frame for function call
@@ -160,72 +186,20 @@ class Stack : core::Noncopyable<Stack> {
   }
 
   static GCMSEntry* Mark(GC_word* top,
-                         GCMSEntry* mark_sp,
+                         GCMSEntry* entry,
                          GCMSEntry* mark_sp_limit,
                          GC_word env) {
-    GCMSEntry* entry = GC_mark_and_push(top, mark_sp, mark_sp_limit, NULL);
-    Stack* stack = *reinterpret_cast<Stack**>(top);
-    Frame* current = stack->current_;
-
-    // mark Frame member
-    entry = GC_mark_and_push(current->code_,
-                             entry, mark_sp_limit,
-                             reinterpret_cast<void**>(&current));
-    entry = GC_mark_and_push(current->lexical_env_,
-                             entry, mark_sp_limit,
-                             reinterpret_cast<void**>(&current));
-    entry = GC_mark_and_push(current->variable_env_,
-                             entry, mark_sp_limit,
-                             reinterpret_cast<void**>(&current));
-    if (current->ret_.IsPtr()) {
-      entry = GC_mark_and_push(current->ret_.pointer(),
-                               entry, mark_sp_limit,
-                               reinterpret_cast<void**>(&current));
-    }
-
-    // start current frame marking
-    for (JSVal *it = current->GetStackBase(),
-         *last = stack->stack_pointer_; it != last; ++it) {
-      if (it->IsPtr()) {
-        void* ptr = it->pointer();
-        if (GC_least_plausible_heap_addr < ptr &&
-            ptr < GC_greatest_plausible_heap_addr) {
-          entry = GC_mark_and_push(ptr,
-                                   entry, mark_sp_limit,
-                                   reinterpret_cast<void**>(&stack));
-        }
-      }
-    }
-
-    // traverse frames
-    for (Frame *next = current, *now = current->prev_;
-         now; next = now, now = next->prev_) {
-      entry = GC_mark_and_push(now->code_,
-                               entry, mark_sp_limit,
-                               reinterpret_cast<void**>(&now));
-      entry = GC_mark_and_push(now->lexical_env_,
-                               entry, mark_sp_limit,
-                               reinterpret_cast<void**>(&now));
-      entry = GC_mark_and_push(now->variable_env_,
-                               entry, mark_sp_limit,
-                               reinterpret_cast<void**>(&now));
-      if (now->ret_.IsPtr()) {
-        entry = GC_mark_and_push(now->ret_.pointer(),
-                                 entry, mark_sp_limit,
-                                 reinterpret_cast<void**>(&now));
-      }
-
-      // and mark stacks
-      for (JSVal *it = now->GetStackBase(),
-           *last = next->GetFrameBase(); it != last; ++it) {
-        if (it->IsPtr()) {
-          void* ptr = it->pointer();
-          if (GC_least_plausible_heap_addr < ptr &&
-              ptr < GC_greatest_plausible_heap_addr) {
-            entry = GC_mark_and_push(ptr,
-                                     entry, mark_sp_limit,
-                                     reinterpret_cast<void**>(&stack));
-          }
+    // GC bug...
+    Stack* stack = reinterpret_cast<Resource*>(top)->stack();
+    if (stack) {
+      Frame* current = stack->current_;
+      if (current) {
+        // mark Frame member
+        entry = MarkFrame(entry, mark_sp_limit, current, stack->stack_pointer_);
+        // traverse frames
+        for (Frame *next = current, *now = current->prev_;
+             now; next = now, now = next->prev_) {
+          entry = MarkFrame(entry, mark_sp_limit, now, next->GetFrameBase());
         }
       }
     }
@@ -273,6 +247,36 @@ class Stack : core::Noncopyable<Stack> {
   }
 
  private:
+  static GCMSEntry* MarkFrame(GCMSEntry* entry,
+                              GCMSEntry* mark_sp_limit,
+                              Frame* frame, JSVal* last) {
+    entry = GC_MARK_AND_PUSH(frame->code_,
+                             entry, mark_sp_limit,
+                             reinterpret_cast<void**>(&frame));
+    entry = GC_MARK_AND_PUSH(frame->lexical_env_,
+                             entry, mark_sp_limit,
+                             reinterpret_cast<void**>(&frame));
+    entry = GC_MARK_AND_PUSH(frame->variable_env_,
+                             entry, mark_sp_limit,
+                             reinterpret_cast<void**>(&frame));
+    if (frame->ret_.IsPtr()) {
+      void* ptr = frame->ret_.pointer();
+      entry = GC_MARK_AND_PUSH(ptr,
+                               entry, mark_sp_limit,
+                               reinterpret_cast<void**>(&frame));
+    }
+
+    // start current frame marking
+    for (JSVal *it = frame->GetStackBase(); it != last; ++it) {
+      if (it->IsPtr()) {
+        void* ptr = it->pointer();
+        entry = GC_MARK_AND_PUSH(ptr,
+                                 entry, mark_sp_limit,
+                                 reinterpret_cast<void**>(&frame));
+      }
+    }
+    return entry;
+  }
 
   void SetSafeStackPointerForFrame(Frame* prev, Frame* current) {
     if (current) {
@@ -296,12 +300,7 @@ class Stack : core::Noncopyable<Stack> {
 
   JSVal* stack_;
   JSVal* stack_pointer_;
-
-  void** stack_free_list_;
-  int stack_mark_proc_;
-  int stack_kind_;
-  Stack** stack_for_gc_;
-
+  Resource* resource_;
   Frame* base_;
   Frame* current_;
 };
