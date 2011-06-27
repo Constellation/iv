@@ -736,11 +736,13 @@ class Compiler
       stack_depth()->Up();  // exception handler
       Emit<OP::TRY_CATCH_SETUP>(
           SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
+      PushLevelWith();
       stack_depth()->Down();
       {
         DynamicEnvLevelCounter counter(this);
         block.Address()->Accept(this);  // STMT
       }
+      PopLevel();
       Emit<OP::POP_ENV>();
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
