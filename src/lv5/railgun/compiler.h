@@ -77,7 +77,7 @@ class StackDepth : private core::Noncopyable<> {
 
 class DepthPoint : private core::Noncopyable<> {
  public:
-  DepthPoint(StackDepth* depth)
+  explicit DepthPoint(StackDepth* depth)
 #ifdef DEBUG
     : depth_(depth),
       current_(depth->GetCurrent())
@@ -104,14 +104,22 @@ class Compiler
                      std::vector<std::size_t>*,
                      std::vector<std::size_t>*> JumpEntry;
   typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
-  typedef std::vector<std::vector<std::size_t> > FinallyStack;
+
+  enum LevelType {
+    WITH,
+    FORIN,
+    FINALLY,
+    SUB
+  };
+  typedef std::pair<LevelType, std::vector<std::size_t>*> LevelEntry;
+  typedef std::vector<LevelEntry> LevelStack;
 
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
       script_(NULL),
       jump_table_(NULL),
-      finally_stack_(NULL),
+      level_stack_(NULL),
       stack_depth_(NULL),
       dynamic_env_level_(0) {
   }
@@ -146,16 +154,16 @@ class Compiler
     CodeContext(Compiler* compiler, Code* code)
       : compiler_(compiler),
         jump_table_(),
-        finally_stack_(),
+        level_stack_(),
         stack_depth_(),
         prev_code_(compiler_->code()),
         prev_jump_table_(compiler_->jump_table()),
-        prev_finally_stack_(compiler->finally_stack()),
+        prev_level_stack_(compiler->level_stack()),
         prev_stack_depth_(compiler_->stack_depth()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
-      compiler_->set_finally_stack(&finally_stack_);
+      compiler_->set_level_stack(&level_stack_);
       compiler_->set_stack_depth(&stack_depth_);
       compiler_->set_dynamic_env_level(0);
     }
@@ -163,18 +171,18 @@ class Compiler
     ~CodeContext() {
       compiler_->set_code(prev_code_);
       compiler_->set_jump_table(prev_jump_table_);
-      compiler_->set_finally_stack(prev_finally_stack_);
+      compiler_->set_level_stack(prev_level_stack_);
       compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
     }
    private:
     Compiler* compiler_;
     JumpTable jump_table_;
-    FinallyStack finally_stack_;
+    LevelStack level_stack_;
     StackDepth stack_depth_;
     Code* prev_code_;
     JumpTable* prev_jump_table_;
-    FinallyStack* prev_finally_stack_;
+    LevelStack* prev_level_stack_;
     StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
   };
@@ -238,31 +246,35 @@ class Compiler
    public:
     TryTarget(Compiler* compiler, bool has_finally)
       : compiler_(compiler),
-        has_finally_(has_finally) {
+        has_finally_(has_finally),
+        vec_() {
       if (has_finally_) {
-        compiler_->PushFinallyStack();
+        compiler_->PushLevelFinally(&vec_);
       }
     }
 
     void EmitJumps(std::size_t finally_target) {
       assert(has_finally_);
-      const FinallyStack& stack = *compiler_->finally_stack();
-      const std::vector<std::size_t>& vec = stack[stack.size() - 1];
-      for (std::vector<std::size_t>::const_iterator it = vec.begin(),
-           last = vec.end(); it != last; ++it) {
+      const LevelStack& stack = *compiler_->level_stack();
+      std::pair<LevelType, std::vector<std::size_t>*> pair = stack.back();
+      assert(pair.first == FINALLY);
+      assert(pair.second == &vec_);
+      for (std::vector<std::size_t>::const_iterator it = pair.second->begin(),
+           last = pair.second->end(); it != last; ++it) {
         compiler_->EmitArgAt(finally_target, *it);
       }
-      compiler_->PopFinallyStack();
+      compiler_->PopLevel();
     }
 
    private:
     Compiler* compiler_;
     bool has_finally_;
+    std::vector<std::size_t> vec_;
   };
 
   class DynamicEnvLevelCounter : private core::Noncopyable<> {
    public:
-    DynamicEnvLevelCounter(Compiler* compiler)
+    explicit DynamicEnvLevelCounter(Compiler* compiler)
       : compiler_(compiler) {
       compiler_->DynamicEnvLevelUp();
     }
@@ -452,6 +464,7 @@ class Compiler
     {
       stmt->enumerable()->Accept(this);
       stack_depth()->BaseUp(1);
+      PushLevelForIn();
       const std::size_t for_in_setup_jump = CurrentSize() + 1;
       Emit<OP::FORIN_SETUP>(0);  // dummy index
       const std::size_t start_index = CurrentSize();
@@ -521,7 +534,7 @@ class Compiler
       stack_depth()->Down();
       jump.EmitJumps(end_index, start_index);
     }
-
+    PopLevel();
     Emit<OP::POP_TOP>();  // FORIN_CLEANUP
     assert(stack_depth()->IsBaseLine());
   }
@@ -530,9 +543,20 @@ class Compiler
     const JumpEntry& entry = (*jump_table_)[stmt->target()];
     for (uint16_t level = CurrentLevel(),
          last = std::get<0>(entry); level > last; --level) {
-      const std::size_t finally_jump_index = CurrentSize() + 1;
-      Emit<OP::JUMP_SUBROUTINE>(0);
-      (*finally_stack_)[level - 1].push_back(finally_jump_index);
+      const LevelEntry& le = (*level_stack_)[level - 1];
+      if (le.first == FINALLY) {
+        const std::size_t finally_jump_index = CurrentSize() + 1;
+        Emit<OP::JUMP_SUBROUTINE>(0);
+        le.second->push_back(finally_jump_index);
+      } else if (le.first == WITH) {
+        Emit<OP::POP_ENV>();
+      } else if (le.first == SUB) {
+        Emit<OP::POP_TOP>();
+        Emit<OP::POP_TOP>();
+        Emit<OP::POP_TOP>();
+      } else {
+        Emit<OP::POP_TOP>();
+      }
     }
     const std::size_t arg_index = CurrentSize() + 1;
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
@@ -548,9 +572,20 @@ class Compiler
       const JumpEntry& entry = (*jump_table_)[stmt->target()];
       for (uint16_t level = CurrentLevel(),
            last = std::get<0>(entry); level > last; --level) {
-        const std::size_t finally_jump_index = CurrentSize() + 1;
-        Emit<OP::JUMP_SUBROUTINE>(0);
-        (*finally_stack_)[level - 1].push_back(finally_jump_index);
+        const LevelEntry& le = (*level_stack_)[level - 1];
+        if (le.first == FINALLY) {
+          const std::size_t finally_jump_index = CurrentSize() + 1;
+          Emit<OP::JUMP_SUBROUTINE>(0);
+          le.second->push_back(finally_jump_index);
+        } else if (le.first == WITH) {
+          Emit<OP::POP_ENV>();
+        } else if (le.first == SUB) {
+          Emit<OP::POP_TOP>();
+          Emit<OP::POP_TOP>();
+          Emit<OP::POP_TOP>();
+        } else {
+          Emit<OP::POP_TOP>();
+        }
       }
       const std::size_t arg_index = CurrentSize() + 1;
       Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
@@ -576,9 +611,22 @@ class Compiler
       // nested finally has found
       // set finally jump targets
       for (uint16_t level = CurrentLevel(); level > 0; --level) {
-        const std::size_t finally_jump_index = CurrentSize() + 1;
-        Emit<OP::JUMP_SUBROUTINE>(0);
-        (*finally_stack_)[level - 1].push_back(finally_jump_index);
+        const LevelEntry& le = (*level_stack_)[level - 1];
+        if (le.first == FINALLY) {
+          const std::size_t finally_jump_index = CurrentSize() + 1;
+          Emit<OP::JUMP_RETURN_HOOKED_SUBROUTINE>(0);
+          le.second->push_back(finally_jump_index);
+        } else if (le.first == WITH) {
+          Emit<OP::POP_ENV>();
+        } else if (le.first == SUB) {
+          Emit<OP::ROT_FOUR>();
+          Emit<OP::POP_TOP>();
+          Emit<OP::POP_TOP>();
+          Emit<OP::POP_TOP>();
+        } else {
+          Emit<OP::ROT_TWO>();
+          Emit<OP::POP_TOP>();
+        }
       }
 
       Emit<OP::RETURN>();
@@ -592,11 +640,13 @@ class Compiler
   void Visit(const WithStatement* stmt) {
     stmt->context()->Accept(this);
     Emit<OP::WITH_SETUP>();
+    PushLevelWith();
     stack_depth()->Down();
     {
       DynamicEnvLevelCounter counter(this);
       stmt->body()->Accept(this);  // STMT
     }
+    PopLevel();
     Emit<OP::POP_ENV>();
 
     assert(stack_depth()->IsBaseLine());
@@ -668,7 +718,7 @@ class Compiler
     if (has_finally) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-      (*finally_stack_)[CurrentLevel() - 1].push_back(finally_jump_index);
+      (*level_stack_)[CurrentLevel() - 1].second->push_back(finally_jump_index);
     }
     const std::size_t label_index = CurrentSize();
     Emit<OP::JUMP_FORWARD>(0);  // dummy index
@@ -692,7 +742,7 @@ class Compiler
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-        (*finally_stack_)[CurrentLevel() - 1].push_back(finally_jump_index);
+        (*level_stack_)[CurrentLevel() - 1].second->push_back(finally_jump_index);
       }
       catch_return_label_index = CurrentSize();
       Emit<OP::JUMP_FORWARD>(0);  // dummy index
@@ -700,9 +750,8 @@ class Compiler
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      stack_depth()->BaseUp(2);
-      stack_depth()->Up(2);  // JUMP_SUBROUTINE or exception handler
-
+      stack_depth()->BaseUp(3);
+      stack_depth()->Up(3);  // JUMP_SUBROUTINE or exception handler
       code_->RegisterHandler<Handler::FINALLY>(
           try_start,
           finally_start,
@@ -710,11 +759,13 @@ class Compiler
           dynamic_env_level());
       target.EmitJumps(finally_start);
 
+      PushLevelSub();
       block.Address()->Accept(this);  // STMT
 
       Emit<OP::RETURN_SUBROUTINE>();
-      stack_depth()->BaseDown(2);
-      stack_depth()->Down(2);  // RETURN_SUBROUTINE
+      PopLevel();
+      stack_depth()->BaseDown(3);
+      stack_depth()->Down(3);  // RETURN_SUBROUTINE
     }
     // try last
     EmitArgAt(CurrentSize() - label_index, label_index + 1);
@@ -1746,18 +1797,18 @@ class Compiler
     return jump_table_;
   }
 
-  void set_finally_stack(FinallyStack* finally_stack) {
-    finally_stack_ = finally_stack;
+  void set_level_stack(LevelStack* level_stack) {
+    level_stack_ = level_stack;
   }
 
-  FinallyStack* finally_stack() const {
-    return finally_stack_;
+  LevelStack* level_stack() const {
+    return level_stack_;
   }
 
   // try - catch - finally nest level
   // use for break / continue exile by executing finally block
   std::size_t CurrentLevel() const {
-    return finally_stack_->size();
+    return level_stack_->size();
   }
 
   void DynamicEnvLevelUp() {
@@ -1803,12 +1854,27 @@ class Compiler
     jump_table_->erase(stmt);
   }
 
-  void PushFinallyStack() {
-    finally_stack_->push_back(FinallyStack::value_type());
+  void PushLevelFinally(std::vector<std::size_t>* vec) {
+    level_stack_->push_back(std::make_pair(FINALLY, vec));
   }
 
-  void PopFinallyStack() {
-    finally_stack_->pop_back();
+  void PushLevelWith() {
+    level_stack_->push_back(
+        std::make_pair(WITH, static_cast<std::vector<std::size_t>*>(NULL)));
+  }
+
+  void PushLevelForIn() {
+    level_stack_->push_back(
+        std::make_pair(FORIN, static_cast<std::vector<std::size_t>*>(NULL)));
+  }
+
+  void PushLevelSub() {
+    level_stack_->push_back(
+        std::make_pair(SUB, static_cast<std::vector<std::size_t>*>(NULL)));
+  }
+
+  void PopLevel() {
+    level_stack_->pop_back();
   }
 
   StackDepth* stack_depth() const {
@@ -1823,12 +1889,13 @@ class Compiler
   Code* code_;
   JSScript* script_;
   JumpTable* jump_table_;
-  FinallyStack* finally_stack_;
+  LevelStack* level_stack_;
   StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
 };
 
-inline Code* Compile(Context* ctx, const FunctionLiteral& global, JSScript* script) {
+inline Code* Compile(Context* ctx,
+                     const FunctionLiteral& global, JSScript* script) {
   Compiler compiler(ctx);
   return compiler.Compile(global, script);
 }

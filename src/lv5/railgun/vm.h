@@ -385,8 +385,18 @@ MAIN_LOOP_START:
       case OP::JUMP_SUBROUTINE: {
         const JSVal addr = JSVal::UInt32(
             static_cast<uint32_t>(std::distance(first_instr, instr)));
+        PUSH(JSEmpty);
         PUSH(addr);
-        PUSH(JSTrue);
+        PUSH(JSVal::UInt32(0u));
+        JUMPTO(oparg);
+        continue;
+      }
+
+      case OP::JUMP_RETURN_HOOKED_SUBROUTINE: {
+        const JSVal addr = JSVal::UInt32(
+            static_cast<uint32_t>(std::distance(first_instr, instr)));
+        PUSH(addr);
+        PUSH(JSVal::UInt32(1u));
         JUMPTO(oparg);
         continue;
       }
@@ -830,17 +840,25 @@ MAIN_LOOP_START:
       case OP::RETURN_SUBROUTINE: {
         const JSVal flag = POP();
         const JSVal v = POP();
-        assert(flag.IsBoolean());
-        if (flag.boolean()) {
+        assert(flag.IsUInt32());
+        const uint32_t f = flag.uint32();
+        if (f == 0) {
           // JUMP_SUBROUTINE
           // return to caller
           // v is always UInt32
+          POP_UNUSED();
+          const uint32_t addr = v.uint32();
+          JUMPTO(addr);
+          continue;
+        } else if (f == 1) {
+          // RETURN HOOK
           const uint32_t addr = v.uint32();
           JUMPTO(addr);
           continue;
         } else {
           // ERROR FINALLY JUMP
           // rethrow error
+          POP_UNUSED();
           e.Report(v);
           break;
         }
@@ -1187,7 +1205,7 @@ MAIN_LOOP_START:
           PUSH(error);
           if (handler == Handler::FINALLY) {
             // finally jump if return or error raised
-            PUSH(JSFalse);
+            PUSH(JSVal::UInt32(2u));
           }
           JUMPTO(end);
           goto MAIN_LOOP_START;
