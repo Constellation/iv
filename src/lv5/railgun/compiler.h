@@ -126,7 +126,7 @@ class Compiler
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     script_ = script;
-    Code* code = new Code(script_, global);
+    Code* code = new Code(ctx_, script_, global);
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(global);
@@ -138,7 +138,7 @@ class Compiler
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     script_ = script;
-    Code* code = new Code(script_, function);
+    Code* code = new Code(ctx_, script_, function);
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(function);
@@ -1448,7 +1448,7 @@ class Compiler
 
   void Visit(const FunctionLiteral* lit) {
     DepthPoint point(stack_depth());
-    Code* const code = new Code(script_, *lit);
+    Code* const code = new Code(ctx_, script_, *lit);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
     {
@@ -1638,6 +1638,7 @@ class Compiler
   }
 
   void EmitFunctionCode(const FunctionLiteral& lit) {
+    const Symbol arguments_symbol = context::arguments_symbol(ctx_);
     const Scope& scope = lit.scope();
     {
       // function declarations
@@ -1647,8 +1648,11 @@ class Compiler
            last = functions.end(); it != last; ++it) {
         const FunctionLiteral* const func = *it;
         Visit(func);
-        const uint16_t index =
-            SymbolToNameIndex(func->name().Address()->symbol());
+        const Symbol sym = func->name().Address()->symbol();
+        if (sym == arguments_symbol) {
+          code_->set_code_hiding_arguments();
+        }
+        const uint16_t index = SymbolToNameIndex(sym);
         Emit<OP::STORE_NAME>(index);
         Emit<OP::POP_TOP>();
         stack_depth()->Down();

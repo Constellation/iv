@@ -31,11 +31,12 @@ class Code : public HeapObject {
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
-  explicit Code(JSScript* script, const FunctionLiteral& func)
+  Code(Context* ctx, JSScript* script, const FunctionLiteral& func)
     : strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
       has_name_(func.name()),
+      arguments_hiding_(false),
       decl_type_(func.type()),
       name_(),
       script_(script),
@@ -50,10 +51,14 @@ class Code : public HeapObject {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }
-    std::transform(func.params().begin(),
-                   func.params().end(),
-                   params_.begin(),
-                   std::mem_fun(&Identifier::symbol));
+    const Symbol arguments_symbol = context::arguments_symbol(ctx);
+    Names::iterator target = params_.begin();
+    for (Identifiers::const_iterator it = func.params().begin(),
+         last = func.params().end(); it != last; ++it, ++target) {
+      if ((*target = (*it)->symbol()) == arguments_symbol) {
+        set_code_hiding_arguments();
+      }
+    }
   }
 
   const uint8_t* data() const {
@@ -112,6 +117,10 @@ class Code : public HeapObject {
     return has_arguments_;
   }
 
+  bool ShouldCreateArguments() const {
+    return !arguments_hiding_ && (has_arguments_ || has_eval_);
+  }
+
   bool IsFunctionDeclaration() const {
     return decl_type_ == FunctionLiteral::DECLARATION;
   }
@@ -126,6 +135,10 @@ class Code : public HeapObject {
 
   void set_code_has_arguments() {
     has_arguments_ = true;
+  }
+
+  void set_code_hiding_arguments() {
+    arguments_hiding_ = true;
   }
 
   bool HasName() const {
@@ -157,6 +170,7 @@ class Code : public HeapObject {
   bool has_eval_;
   bool has_arguments_;
   bool has_name_;
+  bool arguments_hiding_;
   FunctionLiteral::DeclType decl_type_;
   Symbol name_;
   JSScript* script_;

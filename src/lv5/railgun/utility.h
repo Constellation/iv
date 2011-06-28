@@ -127,27 +127,23 @@ inline void Instantiate(Context* ctx,
   }
 
   // step 6, 7
-  // TODO(Constellation)
-  // optimization
-  if (func) {
+  if (func && code->ShouldCreateArguments()) {
     JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
     const Symbol arguments_symbol = context::arguments_symbol(ctx);
-    if (!decl_env->HasBinding(ctx, arguments_symbol)) {
-      JSArguments* const args_obj =
-          JSArguments::New(ctx, func,
-                           code->params(),
-                           frame->arguments_rbegin(),
-                           frame->arguments_rend(), decl_env,
-                           code->strict(), IV_LV5_ERROR_VOID(e));
-      if (code->strict()) {
-        decl_env->CreateImmutableBinding(arguments_symbol);
-        decl_env->InitializeImmutableBinding(arguments_symbol, args_obj);
-      } else {
-        decl_env->CreateMutableBinding(ctx, context::arguments_symbol(ctx),
-                                       configurable_bindings, IV_LV5_ERROR_VOID(e));
-        decl_env->SetMutableBinding(ctx, arguments_symbol,
-                                    args_obj, false, IV_LV5_ERROR_VOID(e));
-      }
+    JSArguments* const args_obj =
+        JSArguments::New(ctx, func,
+                         code->params(),
+                         frame->arguments_rbegin(),
+                         frame->arguments_rend(), decl_env,
+                         code->strict(), IV_LV5_ERROR_VOID(e));
+    if (code->strict()) {
+      decl_env->CreateImmutableBinding(arguments_symbol);
+      decl_env->InitializeImmutableBinding(arguments_symbol, args_obj);
+    } else {
+      decl_env->CreateMutableBinding(ctx, context::arguments_symbol(ctx),
+                                     configurable_bindings, IV_LV5_ERROR_VOID(e));
+      decl_env->SetMutableBinding(ctx, arguments_symbol,
+                                  args_obj, false, IV_LV5_ERROR_VOID(e));
     }
   }
 
