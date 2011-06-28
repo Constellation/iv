@@ -59,18 +59,18 @@ class JSValRef : public JSVal {
 };
 
 // Global
-std::pair<JSVal, VM::Status> VM::Run(Code* code) {
-  stack_.SetThis(ctx_->global_obj());
+std::pair<JSVal, VM::Status> VM::Run(Code* code, Error* e) {
   Frame* frame = stack_.NewGlobalFrame(ctx_, code);
-  {
-    Error e;
-    Instantiate(ctx_, code, frame, false, true, NULL, &e);
-    if (e) {
-      stack_.Unwind(frame);
-      return std::make_pair(JSError::Detail(ctx_, &e), THROW);
-    }
+  if (!frame) {
+    e->Report(Error::Range, "maximum call stack size exceeded");
+    return std::make_pair(JSEmpty, THROW);
   }
-  const std::pair<JSVal, Status> res = Execute(frame);
+  Instantiate(ctx_, code, frame, false, true, NULL, e);
+  if (*e) {
+    stack_.Unwind(frame);
+    return std::make_pair(JSEmpty, THROW);
+  }
+  const std::pair<JSVal, Status> res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
@@ -79,11 +79,11 @@ std::pair<JSVal, VM::Status> VM::Run(Code* code) {
 std::pair<JSVal, VM::Status> VM::RunEval(Code* code,
                                          JSEnv* variable_env,
                                          JSEnv* lexical_env,
-                                         JSVal this_binding) {
-  Error e;
-  ScopedArguments args(ctx_, 0, &e);
-  if (e) {
-    return std::make_pair(JSError::Detail(ctx_, &e), THROW);
+                                         JSVal this_binding,
+                                         Error* e) {
+  ScopedArguments args(ctx_, 0, e);
+  if (*e) {
+    return std::make_pair(JSEmpty, THROW);
   }
   args.set_this_binding(this_binding);
   Frame* frame = stack_.NewEvalFrame(
@@ -92,36 +92,42 @@ std::pair<JSVal, VM::Status> VM::RunEval(Code* code,
       code,
       variable_env,
       lexical_env);
-  Instantiate(ctx_, code, frame, true, false, NULL, &e);
-  if (e) {
-    stack_.Unwind(frame);
-    return std::make_pair(JSError::Detail(ctx_, &e), THROW);
+  if (!frame) {
+    e->Report(Error::Range, "maximum call stack size exceeded");
+    return std::make_pair(JSEmpty, THROW);
   }
-  const std::pair<JSVal, Status> res = Execute(frame);
+  Instantiate(ctx_, code, frame, true, false, NULL, e);
+  if (*e) {
+    stack_.Unwind(frame);
+    return std::make_pair(JSEmpty, THROW);
+  }
+  const std::pair<JSVal, Status> res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args, JSVMFunction* func) {
+std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args,
+                                         JSVMFunction* func, Error* e) {
   Frame* frame = stack_.NewCodeFrame(
       ctx_,
       args.GetEnd(),
       func->code(),
       func->scope(), NULL, args.size(), args.IsConstructorCalled());
-  {
-    Error e;
-    func->InstantiateBindings(ctx_, frame, &e);
-    if (e) {
-      stack_.Unwind(frame);
-      return std::make_pair(JSError::Detail(ctx_, &e), THROW);
-    }
+  if (!frame) {
+    e->Report(Error::Range, "maximum call stack size exceeded");
+    return std::make_pair(JSEmpty, THROW);
   }
-  const std::pair<JSVal, Status> res = Execute(frame);
+  func->InstantiateBindings(ctx_, frame, e);
+  if (*e) {
+    stack_.Unwind(frame);
+    return std::make_pair(JSEmpty, THROW);
+  }
+  const std::pair<JSVal, Status> res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
+std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
   // current frame values
   Frame* frame = start;
   const uint8_t* first_instr = frame->data();
@@ -132,8 +138,8 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start) {
   bool strict = frame->code()->strict();
 
 #define ERR\
-  &e);\
-  if (e) {\
+  e);\
+  if (*e) {\
     break;\
   }\
 ((void)0
@@ -181,9 +187,6 @@ do {\
 } while (0)
 
 #define GETITEM(target, i) ((*target)[(i)])
-
-  // error object
-  Error e;
 
   // main loop
   for (;;) {
@@ -285,7 +288,7 @@ MAIN_LOOP_START:
       case OP::STORE_CALL_RESULT: {
         // lv5 reject `func() = 20`
         const JSVal w = POP();
-        e.Report(Error::Reference, "target is not reference");
+        e->Report(Error::Reference, "target is not reference");
         SET_TOP(w);
         break;
       }
@@ -641,7 +644,7 @@ MAIN_LOOP_START:
       case OP::POSTFIX_INCREMENT_CALL_RESULT: {
         const JSVal base = TOP();
         base.ToNumber(ctx_, ERR);
-        e.Report(Error::Reference, "target is not reference");
+        e->Report(Error::Reference, "target is not reference");
         break;
       }
 
@@ -858,7 +861,7 @@ MAIN_LOOP_START:
           // ERROR FINALLY JUMP
           // rethrow error
           POP_UNUSED();
-          e.Report(v);
+          e->Report(v);
           break;
         }
       }
@@ -906,7 +909,7 @@ MAIN_LOOP_START:
 
       case OP::THROW: {
         frame->ret_ = POP();
-        e.Report(frame->ret_);
+        e->Report(frame->ret_);
         break;
       }
 
@@ -1018,7 +1021,7 @@ MAIN_LOOP_START:
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
-          e.Report(Error::Type, "not callable object");
+          e->Report(Error::Type, "not callable object");
           break;
         }
         JSFunction* func = v.object()->AsCallable();
@@ -1030,7 +1033,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, false);
           if (!new_frame) {
-            e.Report(Error::Range, "maximum call stack size exceeded");
+            e->Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
           frame = new_frame;
@@ -1043,10 +1046,10 @@ MAIN_LOOP_START:
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
-          const JSVal x = Invoke(func, sp, oparg, &e);
+          const JSVal x = Invoke(func, sp, oparg, e);
           sp -= (argc + 2);
           PUSH(x);
-          if (e) {
+          if (*e) {
             break;
           }
         }
@@ -1057,7 +1060,7 @@ MAIN_LOOP_START:
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
-          e.Report(Error::Type, "not callable object");
+          e->Report(Error::Type, "not callable object");
           break;
         }
         JSFunction* func = v.object()->AsCallable();
@@ -1069,7 +1072,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, true);
           if (!new_frame) {
-            e.Report(Error::Range, "maximum call stack size exceeded");
+            e->Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
           frame = new_frame;
@@ -1088,10 +1091,10 @@ MAIN_LOOP_START:
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
-          const JSVal x = Construct(func, sp, oparg, &e);
+          const JSVal x = Construct(func, sp, oparg, e);
           sp -= (argc + 2);
           PUSH(x);
-          if (e) {
+          if (*e) {
             break;
           }
         }
@@ -1103,7 +1106,7 @@ MAIN_LOOP_START:
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
-          e.Report(Error::Type, "not callable object");
+          e->Report(Error::Type, "not callable object");
           break;
         }
         JSFunction* func = v.object()->AsCallable();
@@ -1115,7 +1118,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->code(),
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, false);
           if (!new_frame) {
-            e.Report(Error::Range, "maximum call stack size exceeded");
+            e->Report(Error::Range, "maximum call stack size exceeded");
             break;
           }
           frame = new_frame;
@@ -1128,10 +1131,10 @@ MAIN_LOOP_START:
           static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
         } else {
           // Native Function, so use Invoke
-          const JSVal x = InvokeMaybeEval(func, sp, oparg, frame, &e);
+          const JSVal x = InvokeMaybeEval(func, sp, oparg, frame, e);
           sp -= (argc + 2);
           PUSH(x);
-          if (e) {
+          if (*e) {
             break;
           }
         }
@@ -1146,7 +1149,7 @@ MAIN_LOOP_START:
           PUSH(w);
           PUSH(target_env->ImplicitThisValue());
         } else {
-          RaiseReferenceError(s, &e);
+          RaiseReferenceError(s, e);
           break;
         }
         continue;
@@ -1184,7 +1187,7 @@ MAIN_LOOP_START:
     // search exception handler or finally handler.
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
-    assert(e);
+    assert(*e);
     typedef Code::ExceptionTable ExceptionTable;
     while (true) {
       const ExceptionTable& table = frame->code()->exception_table();
@@ -1197,8 +1200,8 @@ MAIN_LOOP_START:
         const uint16_t env_level = std::get<4>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
         if (begin < offset && offset <= end) {
-          const JSVal error = JSError::Detail(ctx_, &e);
-          e.Clear();
+          const JSVal error = JSError::Detail(ctx_, e);
+          e->Clear();
           UNWIND_STACK(stack_base_level);
           UNWIND_DYNAMIC_ENV(env_level);
           if (handler == Handler::FINALLY) {
@@ -1232,8 +1235,8 @@ MAIN_LOOP_START:
     }
     break;
   }  // for main loop
-  const JSVal error = JSError::Detail(ctx_, &e);
-  return std::make_pair(error, THROW);
+  assert(*e);
+  return std::make_pair(JSEmpty, THROW);
 #undef NEXTOP
 #undef NEXTARG
 #undef PEEKARG

@@ -66,6 +66,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
+  iv::lv5::Error e;
   iv::lv5::railgun::VM vm;
   iv::lv5::railgun::Context ctx(&vm);
   iv::core::FileSource src(data, filename);
@@ -76,12 +77,11 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  const std::pair<
-      iv::lv5::JSVal,
-      iv::lv5::railgun::VM::Status> res = vm.Run(code);
-  if (res.second == iv::lv5::railgun::VM::THROW) {
-    iv::lv5::Error e;
-    const iv::lv5::JSString* const str = res.first.ToString(&ctx, &e);
+  vm.Run(code, &e);
+  if (e) {
+    const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
+    e.Clear();
+    const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
     if (!e) {
       iv::core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
       return EXIT_FAILURE;

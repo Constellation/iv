@@ -73,11 +73,10 @@ class JSVMFunction : public JSFunction {
     Context* const ctx = static_cast<Context*>(args->ctx());
     VM* const vm = ctx->vm();
     args->set_this_binding(this_binding);
-    const std::pair<JSVal, VM::Status> res = vm->Execute(*args, this);
-    if (res.second == VM::THROW) {
-      e->Report(res.first);
-      return JSEmpty;
-    } else if (res.second == VM::RETURN) {
+    const std::pair<JSVal, VM::Status> res =
+        vm->Execute(*args, this, IV_LV5_ERROR(e));
+    assert(res.second != VM::THROW);
+    if (res.second == VM::RETURN) {
       return res.first;
     } else {
       if (args->IsConstructorCalled()) {

@@ -16,13 +16,14 @@ class VM {
     THROW
   };
 
-  inline std::pair<JSVal, Status> Run(Code* code);
+  inline std::pair<JSVal, Status> Run(Code* code, Error* e);
   inline std::pair<JSVal, Status> RunEval(Code* code,
                                           JSEnv* variable_env,
                                           JSEnv* lexical_env,
-                                          JSVal this_binding);
-  inline std::pair<JSVal, Status> Execute(Frame* frame);
-  inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func);
+                                          JSVal this_binding,
+                                          Error* e);
+  inline std::pair<JSVal, Status> Execute(Frame* frame, Error* e);
+  inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func, Error* e);
 
   JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
@@ -404,6 +405,7 @@ class VM {
 
   void set_context(Context* ctx) {
     ctx_ = ctx;
+    stack_.SetThis(ctx_->global_obj());
   }
 
 #undef CHECK

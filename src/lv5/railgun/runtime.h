@@ -65,26 +65,20 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
         code,
         env,
         env,
-        vm->stack()->current()->GetThis());
-    if (res.second == VM::THROW) {
-      e->Report(res.first);
-      return JSEmpty;
-    } else {
-      return res.first;
-    }
+        vm->stack()->current()->GetThis(),
+        IV_LV5_ERROR(e));
+    assert(res.second != VM::THROW);
+    return res.first;
   } else {
     VM* const vm = ctx->vm();
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
         code,
         ctx->global_env(),
         ctx->global_env(),
-        ctx->global_obj());
-    if (res.second == VM::THROW) {
-      e->Report(res.first);
-      return JSEmpty;
-    } else {
-      return res.first;
-    }
+        ctx->global_obj(),
+        IV_LV5_ERROR(e));
+    assert(res.second != VM::THROW);
+    return res.first;
   }
 }
 
@@ -134,26 +128,20 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
         code,
         env,
         env,
-        vm->stack()->current()->GetThis());
-    if (res.second == VM::THROW) {
-      e->Report(res.first);
-      return JSEmpty;
-    } else {
-      return res.first;
-    }
+        vm->stack()->current()->GetThis(),
+        IV_LV5_ERROR(e));
+    assert(res.second != VM::THROW);
+    return res.first;
   } else {
     VM* const vm = ctx->vm();
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
         code,
         vm->stack()->current()->variable_env(),
         vm->stack()->current()->lexical_env(),
-        vm->stack()->current()->GetThis());
-    if (res.second == VM::THROW) {
-      e->Report(res.first);
-      return JSEmpty;
-    } else {
-      return res.first;
-    }
+        vm->stack()->current()->GetThis(),
+        IV_LV5_ERROR(e));
+    assert(res.second != VM::THROW);
+    return res.first;
   }
 }
 
