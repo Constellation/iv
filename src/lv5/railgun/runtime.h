@@ -62,7 +62,6 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
         internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
     VM* const vm = ctx->vm();
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
-        ctx,
         code,
         env,
         env,
@@ -76,7 +75,6 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   } else {
     VM* const vm = ctx->vm();
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
-        ctx,
         code,
         ctx->global_env(),
         ctx->global_env(),
@@ -133,7 +131,6 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     JSDeclEnv* const env =
         internal::NewDeclarativeEnvironment(ctx, vm->stack()->current()->lexical_env());
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
-        ctx,
         code,
         env,
         env,
@@ -147,7 +144,6 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   } else {
     VM* const vm = ctx->vm();
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
-        ctx,
         code,
         vm->stack()->current()->variable_env(),
         vm->stack()->current()->lexical_env(),

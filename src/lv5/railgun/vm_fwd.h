@@ -16,9 +16,8 @@ class VM {
     THROW
   };
 
-  inline std::pair<JSVal, Status> Run(Context* ctx, Code* code);
-  inline std::pair<JSVal, Status> RunEval(Context* ctx,
-                                          Code* code,
+  inline std::pair<JSVal, Status> Run(Code* code);
+  inline std::pair<JSVal, Status> RunEval(Code* code,
                                           JSEnv* variable_env,
                                           JSEnv* lexical_env,
                                           JSVal this_binding);

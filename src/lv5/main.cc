@@ -78,7 +78,7 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   const std::pair<
       iv::lv5::JSVal,
-      iv::lv5::railgun::VM::Status> res = vm.Run(&ctx, code);
+      iv::lv5::railgun::VM::Status> res = vm.Run(code);
   if (res.second == iv::lv5::railgun::VM::THROW) {
     iv::lv5::Error e;
     const iv::lv5::JSString* const str = res.first.ToString(&ctx, &e);

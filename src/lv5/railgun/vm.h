@@ -59,12 +59,12 @@ class JSValRef : public JSVal {
 };
 
 // Global
-std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
-  stack_.SetThis(ctx->global_obj());
-  Frame* frame = stack_.NewGlobalFrame(ctx, code);
+std::pair<JSVal, VM::Status> VM::Run(Code* code) {
+  stack_.SetThis(ctx_->global_obj());
+  Frame* frame = stack_.NewGlobalFrame(ctx_, code);
   {
     Error e;
-    Instantiate(ctx, code, frame, false, true, NULL, &e);
+    Instantiate(ctx_, code, frame, false, true, NULL, &e);
     if (e) {
       stack_.Unwind(frame);
       return std::make_pair(JSError::Detail(ctx_, &e), THROW);
@@ -76,24 +76,23 @@ std::pair<JSVal, VM::Status> VM::Run(Context* ctx, Code* code) {
 }
 
 // Eval
-std::pair<JSVal, VM::Status> VM::RunEval(Context* ctx,
-                                         Code* code,
+std::pair<JSVal, VM::Status> VM::RunEval(Code* code,
                                          JSEnv* variable_env,
                                          JSEnv* lexical_env,
                                          JSVal this_binding) {
   Error e;
-  ScopedArguments args(ctx, 0, &e);
+  ScopedArguments args(ctx_, 0, &e);
   if (e) {
     return std::make_pair(JSError::Detail(ctx_, &e), THROW);
   }
   args.set_this_binding(this_binding);
   Frame* frame = stack_.NewEvalFrame(
-      ctx,
+      ctx_,
       stack_.GetTop(),
       code,
       variable_env,
       lexical_env);
-  Instantiate(ctx, code, frame, true, false, NULL, &e);
+  Instantiate(ctx_, code, frame, true, false, NULL, &e);
   if (e) {
     stack_.Unwind(frame);
     return std::make_pair(JSError::Detail(ctx_, &e), THROW);
