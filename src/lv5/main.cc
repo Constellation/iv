@@ -21,11 +21,12 @@
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
-#include "lv5/interactive.h"
 #include "lv5/fpu.h"
 #include "lv5/program.h"
 #include "lv5/railgun.h"
+#include "lv5/railgun/interactive.h"
 #include "lv5/teleporter.h"
+#include "lv5/teleporter/interactive.h"
 
 namespace {
 
@@ -184,9 +185,9 @@ int main(int argc, char **argv) {
   cmd.Add("ast",
           "ast",
           0, "print ast");
-  cmd.Add("vm",
-          "vm",
-          0, "use virtual machine");
+  cmd.Add("interp",
+          "interp",
+          0, "use interpreter");
   cmd.Add("dis",
           "dis",
           0, "print bytecode");
@@ -245,15 +246,20 @@ int main(int argc, char **argv) {
       return Ast(src, filename);
     } else if (cmd.Exist("dis")) {
       return DisAssemble(src, filename);
-    } else if (cmd.Exist("vm")) {
-      return Execute(src, filename);
-    } else {
+    } else if (cmd.Exist("interp")) {
       return Interpret(src, filename);
+    } else {
+      return Execute(src, filename);
     }
   } else {
     // Interactive Shell Mode
-    iv::lv5::Interactive shell;
-    return shell.Run();
+    if (cmd.Exist("interp")) {
+      iv::lv5::teleporter::Interactive shell;
+      return shell.Run();
+    } else {
+      iv::lv5::railgun::Interactive shell;
+      return shell.Run();
+    }
   }
   return 0;
 }

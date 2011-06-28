@@ -15,6 +15,7 @@ extern "C" {
 #include "noncopyable.h"
 #include "singleton.h"
 #include "os_allocator.h"
+#include "lv5/internal.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/frame.h"
 namespace iv {

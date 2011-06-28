@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_INTERACTIVE_H_
-#define _IV_LV5_INTERACTIVE_H_
+#ifndef _IV_LV5_RAILGUN_INTERACTIVE_H_
+#define _IV_LV5_RAILGUN_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
 #include "detail/memory.h"
@@ -13,9 +13,10 @@
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
-#include "lv5/teleporter.h"
+#include "lv5/railgun.h"
 namespace iv {
 namespace lv5 {
+namespace railgun {
 namespace detail {
 
 static const std::string kInteractiveOrigin = "(shell)";
@@ -26,12 +27,16 @@ static const std::string kInteractiveOrigin = "(shell)";
 class Interactive {
  public:
   Interactive()
-    : ctx_() {
+    : vm_(),
+      ctx_(&vm_) {
+    vm_.set_context(&ctx_);
     ctx_.DefineFunction<&lv5::Print, 1>("print");
     ctx_.DefineFunction<&lv5::Quit, 1>("quit");
     ctx_.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   }
+
   int Run() {
+    Error e;
     std::vector<char> buffer;
     while (true) {
       std::array<char, 1024> line;
@@ -46,34 +51,31 @@ class Interactive {
         break;
       }
       buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
-      teleporter::JSEvalScript<core::FileSource>* script =
-          Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
-      if (script) {
+      Code* code = Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
+      if (code) {
         buffer.clear();
-        JSVal val;
-        if (ctx_.Run(script)) {
-          val = ctx_.ErrorVal();
-          ctx_.error()->Clear();
-          ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
+        const std::pair<JSVal, VM::Status> pair = vm_.Run(code, &e);
+        JSVal ret;
+        if (e) {
+          ret = iv::lv5::JSError::Detail(&ctx_, &e);
+          e.Clear();
         } else {
-          val = ctx_.ret();
+          ret = pair.first;
         }
-        if (!val.IsUndefined()) {
-          const JSString* const str = val.ToString(&ctx_, ctx_.error());
-          if (!ctx_.IsError()) {
+        if (!ret.IsUndefined()) {
+          const JSString* const str = ret.ToString(&ctx_, &e);
+          if (!e) {
             core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
             std::fputc('\n', stdout);
           } else {
-            val = ctx_.ErrorVal();
-            ctx_.error()->Clear();
-            ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
-            const JSString* const str = val.ToString(&ctx_, ctx_.error());
-            if (!ctx_.IsError()) {
+            ret = iv::lv5::JSError::Detail(&ctx_, &e);
+            e.Clear();
+            const JSString* const str = ret.ToString(&ctx_, &e);
+            if (!e) {
               core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
               std::fputc('\n', stdout);
             } else {
-              ctx_.error()->Clear();
-              ctx_.SetStatement(teleporter::Context::NORMAL, JSEmpty, NULL);
+              e.Clear();
               std::puts("<STRING CONVERSION FAILED>\n");
             }
           }
@@ -85,13 +87,11 @@ class Interactive {
     return EXIT_SUCCESS;
   }
  private:
-  teleporter::JSEvalScript<core::FileSource>* Parse(const core::StringPiece& text,
-                                               bool* recover) {
-    std::shared_ptr<core::FileSource> src(
+  Code* Parse(const core::StringPiece& text, bool* recover) {
+    std::shared_ptr<core::FileSource> const src(
         new core::FileSource(text, detail::kInteractiveOrigin));
-    AstFactory* const factory = new AstFactory(&ctx_);
-    core::Parser<AstFactory, core::FileSource> parser(factory, *src);
-    parser.set_strict(ctx_.IsStrict());
+    AstFactory factory(&ctx_);
+    core::Parser<AstFactory, core::FileSource> parser(&factory, *src);
     const FunctionLiteral* const eval = parser.ParseProgram();
     if (!eval) {
       if (parser.RecoverableError()) {
@@ -99,15 +99,15 @@ class Interactive {
       } else {
         std::fprintf(stderr, "%s\n", parser.error().c_str());
       }
-      delete factory;
       return NULL;
-    } else {
-      return teleporter::JSEvalScript<core::FileSource>::New(&ctx_, eval,
-                                                             factory, src);
     }
+    JSScript* script = JSEvalScript<core::FileSource>::New(&ctx_, src);
+    return Compile(&ctx_, *eval, script);
   }
-  teleporter::Context ctx_;
+
+  VM vm_;
+  Context ctx_;
 };
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_INTERACTIVE_H_
+} } }  // namespace iv::lv5::railgun
+#endif  // _IV_LV5_RAILGUN_INTERACTIVE_H_
