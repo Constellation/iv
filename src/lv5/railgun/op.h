@@ -129,9 +129,7 @@ V(JUMP_ABSOLUTE)\
 V(POP_JUMP_IF_FALSE)\
 V(POP_JUMP_IF_TRUE)\
 \
-/* not implemented */\
 V(FORIN_SETUP)\
-/* not implemented */\
 V(FORIN_ENUMERATE)\
 V(SWITCH_CASE)\
 V(SWITCH_DEFAULT)\
