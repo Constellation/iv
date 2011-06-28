@@ -339,7 +339,6 @@ MAIN_LOOP_START:
       }
 
       case OP::POP_TOP_AND_RET: {
-        // TODO(Constellation) overwrite return value...
         frame->ret_ = POP();
         continue;
       }
