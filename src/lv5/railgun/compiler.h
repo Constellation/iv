@@ -787,6 +787,7 @@ class Compiler
   }
 
   void Visit(const DebuggerStatement* stmt) {
+    Emit<OP::DEBUGGER>();
     assert(stack_depth()->IsBaseLine());
   }
 

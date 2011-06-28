@@ -145,5 +145,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   }
 }
 
+// some utility function for only railgun VM
+
 } } }  // iv::lv5::railgun
 #endif  // _IV_LV5_RUNTIME_RAILGUN_H_

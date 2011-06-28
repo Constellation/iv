@@ -912,6 +912,10 @@ MAIN_LOOP_START:
         break;
       }
 
+      case OP::DEBUGGER: {
+        continue;
+      }
+
       case OP::WITH_SETUP: {
         const JSVal val = POP();
         JSObject* const obj = val.ToObject(ctx_, ERR);
