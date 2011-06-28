@@ -403,6 +403,10 @@ class VM {
     return &stack_;
   }
 
+  const Stack* stack() const {
+    return &stack_;
+  }
+
   void set_context(Context* ctx) {
     ctx_ = ctx;
     stack_.SetThis(ctx_->global_obj());

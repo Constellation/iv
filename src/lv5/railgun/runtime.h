@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_RAILGUN_H_
-#define _IV_LV5_RUNTIME_RAILGUN_H_
+#ifndef _IV_LV5_RAILGUN_RUNTIME_H_
+#define _IV_LV5_RAILGUN_RUNTIME_H_
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/internal.h"
@@ -123,7 +123,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   if (code->strict()) {
     VM* const vm = ctx->vm();
     JSDeclEnv* const env =
-        internal::NewDeclarativeEnvironment(ctx, vm->stack()->current()->lexical_env());
+        internal::NewDeclarativeEnvironment(
+            ctx, vm->stack()->current()->lexical_env());
     const std::pair<JSVal, VM::Status> res = vm->RunEval(
         code,
         env,
@@ -145,7 +146,5 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   }
 }
 
-// some utility function for only railgun VM
-
-} } }  // iv::lv5::railgun
-#endif  // _IV_LV5_RUNTIME_RAILGUN_H_
+} } }  // namespace iv::lv5::railgun
+#endif  // _IV_LV5_RAILGUN_RUNTIME_H_

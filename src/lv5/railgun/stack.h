@@ -227,6 +227,14 @@ class Stack : core::Noncopyable<Stack> {
     return stack_pointer_;
   }
 
+  const_pointer GetTop() const {
+    return stack_pointer_;
+  }
+
+  const_pointer GetBase() const {
+    return stack_;
+  }
+
   // these 2 function Gain / Release is reserved for ScopedArguments
   pointer Gain(size_type n) {
     if (stack_pointer_ + n < end()) {

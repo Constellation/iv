@@ -24,6 +24,7 @@
 #include "lv5/fpu.h"
 #include "lv5/program.h"
 #include "lv5/railgun.h"
+#include "lv5/railgun/command.h"
 #include "lv5/railgun/interactive.h"
 #include "lv5/teleporter.h"
 #include "lv5/teleporter/interactive.h"
@@ -78,6 +79,7 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   vm.Run(code, &e);
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);

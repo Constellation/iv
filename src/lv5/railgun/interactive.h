@@ -14,6 +14,7 @@
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
 #include "lv5/railgun.h"
+#include "lv5/railgun/command.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -33,6 +34,7 @@ class Interactive {
     ctx_.DefineFunction<&lv5::Print, 1>("print");
     ctx_.DefineFunction<&lv5::Quit, 1>("quit");
     ctx_.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+    ctx_.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   }
 
   int Run() {

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_TELEPORTER_H_
-#define _IV_LV5_RUNTIME_TELEPORTER_H_
+#ifndef _IV_LV5_TELEPORTER_RUNTIME_H_
+#define _IV_LV5_TELEPORTER_RUNTIME_H_
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/teleporter/fwd.h"
@@ -128,4 +128,4 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_RUNTIME_TELEPORTER_H_
+#endif  // _IV_LV5_TELEPORTER_RUNTIME_H_
