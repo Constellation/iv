@@ -30,47 +30,6 @@ static bool ReadFile(const std::string& filename, std::vector<char>* out) {
   }
 }
 
-
-template<typename Source>
-Code* Compile(Context* ctx, const Source& src) {
-  AstFactory factory(ctx);
-  core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
-  const FunctionLiteral* const global = parser.ParseProgram();
-  JSScript* script = JSGlobalScript::New(ctx, &src);
-  if (!global) {
-    std::fprintf(stderr, "%s\n", parser.error().c_str());
-    return NULL;
-  }
-  return Compile(ctx, *global, script);
-}
-
-static int Execute(const core::StringPiece& data, const std::string& filename) {
-  Error e;
-  VM vm;
-  Context ctx(&vm);
-  core::FileSource src(data, filename);
-  Code* code = Compile(&ctx, src);
-  if (!code) {
-    return EXIT_FAILURE;
-  }
-  ctx.DefineFunction<&Print, 1>("print");
-  ctx.DefineFunction<&Quit, 1>("quit");
-  vm.Run(code, &e);
-  if (e) {
-    const JSVal res = JSError::Detail(&ctx, &e);
-    e.Clear();
-    const JSString* const str = res.ToString(&ctx, &e);
-    if (!e) {
-      core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
-      return EXIT_FAILURE;
-    } else {
-      return EXIT_FAILURE;
-    }
-  } else {
-    return EXIT_SUCCESS;
-  }
-}
-
 }  // namespace detail
 
 // some utility function for only railgun VM
@@ -102,8 +61,20 @@ inline JSVal Run(const Arguments& args, Error* e) {
       core::unicode::UTF16ToUTF8(f->begin(),
                                  f->end(), std::back_inserter(filename));
       if (detail::ReadFile(filename, &buffer)) {
-        detail::Execute(
-            core::StringPiece(buffer.data(), buffer.size()), filename);
+        Context* const ctx = static_cast<Context*>(args.ctx());
+        VM* const vm = ctx->vm();
+        std::shared_ptr<core::FileSource> const src(
+            new core::FileSource(
+                core::StringPiece(buffer.data(), buffer.size()), filename));
+        AstFactory factory(ctx);
+        core::Parser<AstFactory, core::FileSource> parser(&factory, *src);
+        const FunctionLiteral* const eval = parser.ParseProgram();
+        JSScript* script = JSEvalScript<core::FileSource>::New(ctx, src);
+        if (!eval) {
+          return timer.GetTime();
+        }
+        Code* code = CompileFunction(ctx, *eval, script);
+        vm->RunGlobal(code, IV_LV5_ERROR(e));
       }
     }
   }

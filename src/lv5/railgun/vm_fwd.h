@@ -17,6 +17,7 @@ class VM {
   };
 
   inline std::pair<JSVal, Status> Run(Code* code, Error* e);
+  inline std::pair<JSVal, Status> RunGlobal(Code* code, Error* e);
   inline std::pair<JSVal, Status> RunEval(Code* code,
                                           JSEnv* variable_env,
                                           JSEnv* lexical_env,

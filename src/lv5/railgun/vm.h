@@ -58,9 +58,36 @@ class JSValRef : public JSVal {
   }
 };
 
-// Global
+// Global start
 std::pair<JSVal, VM::Status> VM::Run(Code* code, Error* e) {
   Frame* frame = stack_.NewGlobalFrame(ctx_, code);
+  if (!frame) {
+    e->Report(Error::Range, "maximum call stack size exceeded");
+    return std::make_pair(JSEmpty, THROW);
+  }
+  Instantiate(ctx_, code, frame, false, true, NULL, e);
+  if (*e) {
+    stack_.Unwind(frame);
+    return std::make_pair(JSEmpty, THROW);
+  }
+  const std::pair<JSVal, Status> res = Execute(frame, e);
+  stack_.Unwind(frame);
+  return res;
+}
+
+// Global
+std::pair<JSVal, VM::Status> VM::RunGlobal(Code* code, Error* e) {
+  ScopedArguments args(ctx_, 0, e);
+  if (*e) {
+    return std::make_pair(JSEmpty, THROW);
+  }
+  args.set_this_binding(ctx_->global_obj());
+  Frame* frame = stack_.NewEvalFrame(
+      ctx_,
+      stack_.GetTop(),
+      code,
+      ctx_->global_env(),
+      ctx_->global_env());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
     return std::make_pair(JSEmpty, THROW);
