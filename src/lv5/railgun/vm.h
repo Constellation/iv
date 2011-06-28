@@ -882,11 +882,13 @@ MAIN_LOOP_START:
       }
 
       case OP::FORIN_SETUP: {
-        const JSVal v = POP();
+        const JSVal v = TOP();
         if (v.IsNull() || v.IsUndefined()) {
+          // TODO(Constellation) more precise method
           JUMPTO(oparg);  // skip for-in stmt
           continue;
         }
+        POP_UNUSED();
         // TODO(Constellation) implement JSIterator
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
