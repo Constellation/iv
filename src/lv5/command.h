@@ -2,6 +2,9 @@
 #define _IV_LV5_COMMAND_H_
 #include <cstdio>
 #include <cstdlib>
+extern "C" {
+#include <gc/gc.h>
+}
 #include "conversions.h"
 #include "date_utils.h"
 #include "unicode.h"
@@ -42,6 +45,11 @@ inline JSVal Quit(const Arguments& args, Error* e) {
 
 inline JSVal HiResTime(const Arguments& args, Error* e) {
   return date::HighResTime();
+}
+
+inline JSVal CollectGarbage(const Arguments& args, Error* e) {
+  GC_gcollect();
+  return JSUndefined;
 }
 
 } }  // namespace iv::lv5

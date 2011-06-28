@@ -78,6 +78,8 @@ int Execute(const iv::core::StringPiece& data,
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
+  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   vm.Run(code, &e);
