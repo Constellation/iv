@@ -31,10 +31,11 @@ class Interactive {
     : vm_(),
       ctx_(&vm_) {
     vm_.set_context(&ctx_);
-    ctx_.DefineFunction<&lv5::Print, 1>("print");
-    ctx_.DefineFunction<&lv5::Quit, 1>("quit");
-    ctx_.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-    ctx_.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
+    ctx_.DefineFunction<&Print, 1>("print");
+    ctx_.DefineFunction<&Quit, 1>("quit");
+    ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
+    ctx_.DefineFunction<&railgun::Run, 0>("run");
+    ctx_.DefineFunction<&railgun::StackDepth, 0>("StackDepth");
   }
 
   int Run() {
