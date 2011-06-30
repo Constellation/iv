@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
-#include "uchar.h"
 #include "token.h"
 #include "character.h"
 #include "noncopyable.h"
@@ -113,7 +112,7 @@ class JSONLexer : private core::Noncopyable<> {
     }
   }
 
-  inline const std::vector<uc16>& Buffer() const {
+  inline const std::vector<uint16_t>& Buffer() const {
     return buffer16_;
   }
 
@@ -273,7 +272,7 @@ class JSONLexer : private core::Noncopyable<> {
         break;
       case 'u' : {
         Advance();
-        uc16 uc = '\0';
+        uint16_t uc = '\0';
         for (int i = 0; i < 4; ++i) {
           const int d = core::HexValue(c_);
           if (d < 0) {
@@ -294,7 +293,7 @@ class JSONLexer : private core::Noncopyable<> {
 
   const Source& source_;
   std::vector<char> buffer8_;
-  std::vector<uc16> buffer16_;
+  std::vector<uint16_t> buffer16_;
   double numeric_;
   std::size_t pos_;
   const std::size_t end_;

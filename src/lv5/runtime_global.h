@@ -382,7 +382,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
     return str;  // empty string
   }
   for (std::size_t k = 0; k < len; ++k) {
-    const uc16 ch = (*str)[k];
+    const uint16_t ch = (*str)[k];
     if (detail::Escape::ContainsInEncode(ch)) {
       builder.Append(ch);
     } else {
@@ -416,7 +416,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
   StringBuilder builder;
   std::size_t k = 0;
   while (k != len) {
-    const uc16 ch = (*str)[k];
+    const uint16_t ch = (*str)[k];
     if (ch == '%') {
       if (k <= (len - 6) &&
           (*str)[k + 1] == 'u' &&
@@ -424,7 +424,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
           core::character::IsHexDigit((*str)[k + 3]) &&
           core::character::IsHexDigit((*str)[k + 4]) &&
           core::character::IsHexDigit((*str)[k + 5])) {
-        uc16 uc = '\0';
+        uint16_t uc = '\0';
         for (int i = k + 2, last = k + 6; i < last; ++i) {
           const int d = core::HexValue((*str)[i]);
           uc = uc * 16 + d;

@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <vector>
-#include "uchar.h"
 #include "token.h"
 #include "noncopyable.h"
 #include "conversions.h"
@@ -169,7 +168,7 @@ class JSONParser : private core::Noncopyable<> {
 
   JSVal ParseJSONString() {
     assert(token_ == Token::STRING);
-    const std::vector<uc16>& vec = lexer_.Buffer();
+    const std::vector<uint16_t>& vec = lexer_.Buffer();
     JSString* string = JSString::New(ctx_, vec.begin(), vec.end());
     Next();
     return string;
@@ -182,7 +181,7 @@ class JSONParser : private core::Noncopyable<> {
     return number;
   }
 
-  Symbol ParseSymbol(const std::vector<uc16>& range) {
+  Symbol ParseSymbol(const std::vector<uint16_t>& range) {
     const Symbol res = context::Intern(ctx_, core::UStringPiece(range.data(), range.size()));
     Next();
     return res;

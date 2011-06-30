@@ -1,9 +1,9 @@
 #ifndef _IV_USTRINGPIECE_H_
 #define _IV_USTRINGPIECE_H_
-#include "uchar.h"
+#include "detail/cstdint.h"
 #include "stringpiece.h"
 namespace iv {
 namespace core {
-typedef BasicStringPiece<uc16, std::char_traits<uc16> > UStringPiece;
+typedef BasicStringPiece<uint16_t, std::char_traits<uint16_t> > UStringPiece;
 } }  // namespace iv::core
 #endif  // _IV_USTRINGPIECE_H_

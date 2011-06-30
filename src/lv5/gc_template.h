@@ -6,7 +6,7 @@
 #include <gc/gc_allocator.h>
 #include "detail/unordered_map.h"
 #include "detail/unordered_set.h"
-#include "uchar.h"
+#include "detail/cstdint.h"
 
 namespace iv {
 namespace lv5 {
@@ -76,9 +76,9 @@ struct GCHashSet {
                                   gc_allocator<T> > type;
 };
 
-typedef std::basic_string<uc16,
-                          std::char_traits<uc16>,
-                          gc_allocator<uc16> > GCUString;
+typedef std::basic_string<uint16_t,
+                          std::char_traits<uint16_t>,
+                          gc_allocator<uint16_t> > GCUString;
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_GC_TEMPLATE_H_

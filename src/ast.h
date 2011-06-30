@@ -4,9 +4,9 @@
 #include <functional>
 #include "detail/unordered_map.h"
 #include "detail/tuple.h"
+#include "detail/cstdint.h"
 #include "detail/type_traits.h"
 #include "detail/functional.h"
-#include "uchar.h"
 #include "noncopyable.h"
 #include "utils.h"
 #include "space.h"
@@ -928,7 +928,7 @@ template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  StringLiteral(const std::vector<uc16>& buffer,
+  StringLiteral(const std::vector<uint16_t>& buffer,
                 Factory* factory)
     : value_(buffer.data(),
              buffer.size(),
@@ -1095,8 +1095,8 @@ class RegExpLiteral : public RegExpLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
 
-  RegExpLiteral(const std::vector<uc16>& buffer,
-                const std::vector<uc16>& flags,
+  RegExpLiteral(const std::vector<uint16_t>& buffer,
+                const std::vector<uint16_t>& flags,
                 Factory* factory)
     : value_(buffer.data(),
              buffer.size(), typename value_type::allocator_type(factory)),

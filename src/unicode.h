@@ -71,18 +71,18 @@ inline CharT Mask(CharT ch) {
   return BitMask<N, uint32_t>::lower & ch;
 }
 
-template<typename UC16>
-inline bool IsHighSurrogate(UC16 uc) {
+template<typename uint16_t>
+inline bool IsHighSurrogate(uint16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kHighSurrogateMask) == kHighSurrogateMin;
 }
 
-template<typename UC16>
-inline bool IsLowSurrogate(UC16 uc) {
+template<typename uint16_t>
+inline bool IsLowSurrogate(uint16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kLowSurrogateMask) == kLowSurrogateMin;
 }
 
-template<typename UC16>
-inline bool IsSurrogate(UC16 uc) {
+template<typename uint16_t>
+inline bool IsSurrogate(uint16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kSurrogateMask) == kSurrogateMin;
 }
 
@@ -397,8 +397,8 @@ inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, UC32OutputIter r
   return NO_ERROR;
 }
 
-template<typename UC8InputIter, typename UC16OutputIter>
-inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, UC16OutputIter result) {
+template<typename UC8InputIter, typename uint16_tOutputIter>
+inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, uint16_tOutputIter result) {
   UTF8Error error = NO_ERROR;
   uint32_t res;
   while (it != last) {

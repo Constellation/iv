@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
-#include "uchar.h"
+#include "detail/cstdint.h"
 #include "character.h"
 #include "token.h"
 #include "location.h"
@@ -361,7 +361,7 @@ class Lexer: private Noncopyable<> {
     return token;
   }
 
-  inline const std::vector<uc16>& Buffer() const {
+  inline const std::vector<uint16_t>& Buffer() const {
     return buffer16_;
   }
 
@@ -466,7 +466,7 @@ class Lexer: private Noncopyable<> {
         }
         Advance();
         bool ng = false;
-        const uc16 uc = ScanHexEscape('u', 4, &ng);
+        const uint16_t uc = ScanHexEscape('u', 4, &ng);
         if (ng || uc == '\\') {
           return false;
         }
@@ -557,7 +557,7 @@ class Lexer: private Noncopyable<> {
   Token::Type SkipMultiLineComment(typename disable_if_c<Val>::type* = 0) {
     Advance();
     // remember previous ch
-    uc16 ch;
+    uint16_t ch;
     while (c_ >= 0) {
       ch = c_;
       Advance();
@@ -578,7 +578,7 @@ class Lexer: private Noncopyable<> {
   Token::Type SkipMultiLineComment(typename enable_if_c<Val>::type* = 0) {
     Advance();
     // remember previous ch
-    uc16 ch;
+    uint16_t ch;
     while (c_ >= 0) {
       ch = c_;
       Advance();
@@ -622,7 +622,7 @@ class Lexer: private Noncopyable<> {
       }
       Advance();
       bool ng = false;
-      const uc16 uc = ScanHexEscape('u', 4, &ng);
+      const uint16_t uc = ScanHexEscape('u', 4, &ng);
       if (ng || uc == '\\' || !character::IsIdentifierStart(uc)) {
         return Token::ILLEGAL;
       }
@@ -639,7 +639,7 @@ class Lexer: private Noncopyable<> {
         }
         Advance();
         bool ng = false;
-        const uc16 uc = ScanHexEscape('u', 4, &ng);
+        const uint16_t uc = ScanHexEscape('u', 4, &ng);
         if (ng || uc == '\\' || !character::IsIdentifierPart(uc)) {
           return Token::ILLEGAL;
         }
@@ -654,7 +654,7 @@ class Lexer: private Noncopyable<> {
 
   Token::Type ScanString() {
     type_ = NONE;
-    const uc16 quote = c_;
+    const uint16_t quote = c_;
     buffer16_.clear();
     Advance();
     while (c_ != quote && c_ >= 0 && !character::IsLineTerminator(c_)) {
@@ -721,7 +721,7 @@ class Lexer: private Noncopyable<> {
       case 'u' : {
         Advance();
         bool ng = false;
-        const uc16 uc = ScanHexEscape('u', 4, &ng);
+        const uint16_t uc = ScanHexEscape('u', 4, &ng);
         if (ng) {
           return false;
         }
@@ -737,7 +737,7 @@ class Lexer: private Noncopyable<> {
       case 'x' : {
         Advance();
         bool ng = false;
-        const uc16 uc = ScanHexEscape('x', 2, &ng);
+        const uint16_t uc = ScanHexEscape('x', 2, &ng);
         if (ng) {
           return false;
         }
@@ -755,7 +755,7 @@ class Lexer: private Noncopyable<> {
       }
 
       case '0' : {
-        uc16 uc = OctalValue(c_);
+        uint16_t uc = OctalValue(c_);
         Advance();
         if (c_ >= 0 && character::IsDecimalDigit(c_)) {
           if (!character::IsOctalDigit(c_)) {
@@ -787,7 +787,7 @@ class Lexer: private Noncopyable<> {
         if (type_ != OCTAL) {
           type_ = OCTAL;
         }
-        uc16 uc = OctalValue(c_);
+        uint16_t uc = OctalValue(c_);
         Advance();
         if (c_ >= 0 && character::IsDecimalDigit(c_)) {
           if (!character::IsOctalDigit(c_)) {
@@ -899,8 +899,8 @@ class Lexer: private Noncopyable<> {
     return Token::NUMBER;
   }
 
-  uc16 ScanOctalEscape() {
-    uc16 res = 0;
+  uint16_t ScanOctalEscape() {
+    uint16_t res = 0;
     for (int i = 0; i < 3; ++i) {
       const int d = OctalValue(c_);
       if (d < 0) {
@@ -916,8 +916,8 @@ class Lexer: private Noncopyable<> {
     return res;
   }
 
-  uc16 ScanHexEscape(uc16 c, int len, bool* ng) {
-    uc16 res = 0;
+  uint16_t ScanHexEscape(uint16_t c, int len, bool* ng) {
+    uint16_t res = 0;
     for (int i = 0; i < len; ++i) {
       const int d = HexValue(c_);
       if (d < 0) {
@@ -940,7 +940,7 @@ class Lexer: private Noncopyable<> {
   }
 
   void SkipLineTerminator() {
-    const uc16 c = c_;
+    const uint16_t c = c_;
     Advance();
     if (c + c_ == '\n' + '\r') {
       Advance();
@@ -950,7 +950,7 @@ class Lexer: private Noncopyable<> {
 
   const Source& source_;
   std::vector<char> buffer8_;
-  std::vector<uc16> buffer16_;
+  std::vector<uint16_t> buffer16_;
   double numeric_;
   State type_;
   std::size_t pos_;

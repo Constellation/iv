@@ -49,12 +49,12 @@ class JSString : public HeapObject {
       hash_value_(str.hash_value_) {
   }
 
-  JSString(size_type len, uc16 ch)
+  JSString(size_type len, uint16_t ch)
     : string_(len, ch),
       hash_value_(core::StringToHash(string_)) {
   }
 
-  JSString(const uc16* s, size_type len)
+  JSString(const uint16_t* s, size_type len)
     : string_(s, len),
       hash_value_(core::StringToHash(string_)) {
   }
@@ -75,7 +75,7 @@ class JSString : public HeapObject {
       hash_value_(core::StringToHash(string_)) {
   }
 
-  const uc16& operator[](size_type n) const {
+  const uint16_t& operator[](size_type n) const {
     return string_[n];
   }
 
@@ -87,7 +87,7 @@ class JSString : public HeapObject {
     return string_.size();
   }
 
-  const uc16* data() const {
+  const uint16_t* data() const {
     return string_.data();
   }
 
@@ -149,7 +149,7 @@ class JSString : public HeapObject {
   }
 
   static JSString* New(Context* ctx, const core::StringPiece& str) {
-    std::vector<uc16> buffer;
+    std::vector<uint16_t> buffer;
     buffer.reserve(str.size());
     if (core::unicode::UTF8ToUTF16(
             str.begin(),
@@ -188,10 +188,10 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   return core::unicode::OutputUTF16(os, str.value().begin(), str.value().end());
 }
 
-class StringBuilder : protected std::vector<uc16> {
+class StringBuilder : protected std::vector<uint16_t> {
  public:
   typedef StringBuilder this_type;
-  typedef std::vector<uc16> container_type;
+  typedef std::vector<uint16_t> container_type;
 
   void Append(const core::UStringPiece& piece) {
     insert(end(), piece.begin(), piece.end());
@@ -205,7 +205,7 @@ class StringBuilder : protected std::vector<uc16> {
     insert(end(), str.begin(), str.end());
   }
 
-  void Append(uc16 ch) {
+  void Append(uint16_t ch) {
     push_back(ch);
   }
 

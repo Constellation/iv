@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
-#include "uchar.h"
 #include "platform_math.h"
 #include "noncopyable.h"
 #include "conversions.h"
@@ -77,7 +76,7 @@ class JSONStringifier : private core::Noncopyable<> {
     builder.Append('"');
     for (JSString::const_iterator it = str.begin(),
          last = str.end(); it != last; ++it) {
-      const uc16 c = *it;
+      const uint16_t c = *it;
       if (c == '"' || c == '\\') {
         builder.Append('\\');
         builder.Append(c);

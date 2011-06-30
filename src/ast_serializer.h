@@ -4,7 +4,7 @@
 #include <ostream>  // NOLINT
 #include <sstream>
 #include "detail/tuple.h"
-#include "uchar.h"
+#include "detail/cstdint.h"
 #include "ast.h"
 #include "ast_visitor.h"
 #include "ustring.h"
@@ -43,7 +43,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     out_.append(str.begin(), str.end());
   }
 
-  void Append(uc16 c) {
+  void Append(uint16_t c) {
     out_.push_back(c);
   }
 
@@ -514,7 +514,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void DecodeString(Iter it, const Iter last) {
     char buf[5];
     for (;it != last; ++it) {
-      const uc16 val = *it;
+      const uint16_t val = *it;
       switch (val) {
         case '"':
           Append("\\\"");

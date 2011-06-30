@@ -94,7 +94,7 @@ class JSRegExpImpl : public gc_cleanup {
     jscre::JSRegExpMultilineOption multi = jscre::JSRegExpSingleLine;
     for (core::UStringPiece::const_iterator it = flags.begin(),
          last = flags.end(); it != last; ++it) {
-      const uc16 c = *it;
+      const uint16_t c = *it;
       if (c == 'g') {
         if (global()) {
           state = true;

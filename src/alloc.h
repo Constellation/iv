@@ -8,7 +8,6 @@
 #include <limits>
 #include "detail/array.h"
 #include "static_assert.h"
-#include "uchar.h"
 #include "utils.h"
 
 namespace iv {

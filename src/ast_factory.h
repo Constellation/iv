@@ -65,14 +65,14 @@ class BasicAstFactory {
   }
 
 
-  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer,
+  StringLiteral* NewStringLiteral(const std::vector<uint16_t>& buffer,
                                   std::size_t begin, std::size_t end) {
     return new (static_cast<Factory*>(this))
         StringLiteral(buffer, static_cast<Factory*>(this));
   }
 
-  RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
-                                  const std::vector<uc16>& flags,
+  RegExpLiteral* NewRegExpLiteral(const std::vector<uint16_t>& content,
+                                  const std::vector<uint16_t>& flags,
                                   std::size_t begin,
                                   std::size_t end) {
     return new (static_cast<Factory*>(this))

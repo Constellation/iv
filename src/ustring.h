@@ -2,14 +2,14 @@
 #define _IV_USTRING_H_
 #include <string>
 #include "detail/functional.h"
-#include "uchar.h"
+#include "detail/cstdint.h"
 #include "stringpiece.h"
 #include "conversions.h"
 namespace iv {
 namespace core {
 
-typedef std::basic_string<uc16,
-                          std::char_traits<uc16> > UString;
+typedef std::basic_string<uint16_t,
+                          std::char_traits<uint16_t> > UString;
 
 inline UString ToUString(StringPiece str) {
   return UString(str.begin(), str.end());

@@ -1790,7 +1790,7 @@ class Parser
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
-      const std::vector<uc16> content(lexer_.Buffer());
+      const std::vector<uint16_t> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
         RAISE("invalid regular expression flag");
       }

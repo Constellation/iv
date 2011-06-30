@@ -203,10 +203,10 @@ class StringReplacer : public Replacer<StringReplacer> {
   void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
     using std::get;
     Replace::State state = Replace::kNormal;
-    uc16 upper_digit_char = '\0';
+    uint16_t upper_digit_char = '\0';
     for (typename JSString::const_iterator it = replace_.begin(),
          last = replace_.end(); it != last; ++it) {
-      const uc16 ch = *it;
+      const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
           state = Replace::kDollar;
@@ -386,7 +386,7 @@ inline void ReplaceOnce(Builder* builder,
   Replace::State state = Replace::kNormal;
   for (typename StringV::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
-    const uc16 ch = *it;
+    const uint16_t ch = *it;
     if (state == Replace::kNormal) {
       if (ch == '$') {
         state = Replace::kDollar;

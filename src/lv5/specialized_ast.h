@@ -2,7 +2,6 @@
 #define _IV_LV5_SPECIALIZED_AST_H_
 #include <vector>
 #include <cassert>
-#include "uchar.h"
 #include "ast.h"
 #include "lv5/symbol.h"
 #include "lv5/jsregexp_impl.h"
