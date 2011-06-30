@@ -16,7 +16,7 @@ class FileSource {
  public:
   static const int kEOS = -1;
   FileSource(const core::StringPiece& str,
-         const core::StringPiece& filename)
+             const core::StringPiece& filename)
     : source_(),
       filename_(filename.data(), filename.size()) {
     ParseMagicComment(str);
