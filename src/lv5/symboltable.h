@@ -38,7 +38,7 @@ class SymbolTable {
         const Symbol sym = { strings_.size() };
         strings_.push_back(target);
         Indexes vec(1, sym);
-        table_.insert(it, make_pair(hash, vec));
+        table_.insert(it, std::make_pair(hash, vec));
         return sym;
       } else {
         Indexes& vec = it->second;
