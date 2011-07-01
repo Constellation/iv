@@ -320,21 +320,6 @@ class Lexer: private Noncopyable<> {
           token = Token::BIT_NOT;
           break;
 
-        case '#':
-          // #!
-          // skip shebang as single line comment
-          if (pos_ == 1) {
-            assert(line_number_ == 1);
-            Advance();
-            if (c_ == '!') {
-              // shebang
-              has_shebang_ = true;
-              token = SkipSingleLineComment<false>();
-              break;
-            }
-            PushBack();
-          }
-
         default:
           if (c_ < 0) {
             // EOS
