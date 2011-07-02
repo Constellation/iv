@@ -15,17 +15,17 @@ namespace iv {
 namespace lv5 {
 
 JSObject::JSObject()
-  : prototype_(NULL),
-    class_name_(),
+  : cls_(NULL),
+    prototype_(NULL),
     extensible_(true),
     table_() {
 }
 
 JSObject::JSObject(JSObject* proto,
-                   Symbol class_name,
+                   Class* cls,
                    bool extensible)
-  : prototype_(proto),
-    class_name_(class_name),
+  : cls_(cls),
+    prototype_(proto),
     extensible_(extensible),
     table_() {
 }
@@ -375,9 +375,8 @@ void JSObject::GetOwnPropertyNames(Context* ctx,
 
 JSObject* JSObject::New(Context* ctx) {
   JSObject* const obj = NewPlain(ctx);
-  const Class& cls = context::Cls(ctx, "Object");
-  obj->set_class_name(cls.name);
-  obj->set_prototype(cls.prototype);
+  obj->set_cls(JSObject::GetClass());
+  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
   return obj;
 }
 
@@ -387,9 +386,8 @@ JSObject* JSObject::NewPlain(Context* ctx) {
 
 JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
   JSNumberObject* const obj = new JSNumberObject(value);
-  const Class& cls = context::Cls(ctx, "Number");
-  obj->set_class_name(cls.name);
-  obj->set_prototype(cls.prototype);
+  obj->set_cls(JSNumberObject::GetClass());
+  obj->set_prototype(context::GetClassSlot(ctx, Class::Number).prototype);
   return obj;
 }
 
@@ -403,9 +401,8 @@ JSBooleanObject* JSBooleanObject::NewPlain(Context* ctx, bool value) {
 
 JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
   JSBooleanObject* const obj = new JSBooleanObject(value);
-  const Class& cls = context::Cls(ctx, "Boolean");
-  obj->set_class_name(cls.name);
-  obj->set_prototype(cls.prototype);
+  obj->set_cls(JSBooleanObject::GetClass());
+  obj->set_prototype(context::GetClassSlot(ctx, Class::Boolean).prototype);
   return obj;
 }
 

@@ -23,9 +23,8 @@ class JSDate : public JSObject {
 
   static JSDate* New(Context* ctx, double val) {
     JSDate* const date = new JSDate(ctx, val);
-    const Class& cls = context::Cls(ctx, "Date");
-    date->set_class_name(cls.name);
-    date->set_prototype(cls.prototype);
+    date->set_cls(JSDate::GetClass());
+    date->set_prototype(context::GetClassSlot(ctx, Class::Date).prototype);
     return date;
   }
 
@@ -44,6 +43,13 @@ class JSDate : public JSObject {
     value_ = val;
   }
 
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Date",
+      Class::Date
+    };
+    return &cls;
+  }
 
  private:
   double value_;

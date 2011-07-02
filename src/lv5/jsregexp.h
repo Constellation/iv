@@ -51,9 +51,8 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx) {
     JSRegExp* const reg = new JSRegExp(ctx);
-    const Class& cls = context::Cls(ctx, "RegExp");
-    reg->set_class_name(cls.name);
-    reg->set_prototype(cls.prototype);
+    reg->set_cls(JSRegExp::GetClass());
+    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
@@ -61,9 +60,8 @@ class JSRegExp : public JSObject {
                        const core::UStringPiece& value,
                        const JSRegExpImpl* impl) {
     JSRegExp* const reg = new JSRegExp(ctx, value, impl);
-    const Class& cls = context::Cls(ctx, "RegExp");
-    reg->set_class_name(cls.name);
-    reg->set_prototype(cls.prototype);
+    reg->set_cls(JSRegExp::GetClass());
+    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
@@ -71,18 +69,16 @@ class JSRegExp : public JSObject {
                        const core::UStringPiece& value,
                        const core::UStringPiece& flags) {
     JSRegExp* const reg = new JSRegExp(ctx, value, flags);
-    const Class& cls = context::Cls(ctx, "RegExp");
-    reg->set_class_name(cls.name);
-    reg->set_prototype(cls.prototype);
+    reg->set_cls(JSRegExp::GetClass());
+    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSRegExp* r) {
     const JSString* const source = r->source(ctx);
     JSRegExp* const reg = new JSRegExp(ctx, source->piece(), r->impl());
-    const Class& cls = context::Cls(ctx, "RegExp");
-    reg->set_class_name(cls.name);
-    reg->set_prototype(cls.prototype);
+    reg->set_cls(JSRegExp::GetClass());
+    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
@@ -322,6 +318,14 @@ class JSRegExp : public JSObject {
           std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
     }
     return std::make_tuple(offset_vector[0], offset_vector[1], true);
+  }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "RegExp",
+      Class::RegExp
+    };
+    return &cls;
   }
 
  private:

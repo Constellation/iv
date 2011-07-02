@@ -18,8 +18,8 @@ class GlobalData;
 namespace context {
 
 const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym);
-const Class& Cls(Context* ctx, const Symbol& name);
-const Class& Cls(Context* ctx, const core::StringPiece& str);
+
+const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type);
 
 Symbol Intern(Context* ctx, const core::StringPiece& str);
 Symbol Intern(Context* ctx, const core::UStringPiece& str);

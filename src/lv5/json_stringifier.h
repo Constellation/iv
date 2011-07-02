@@ -303,11 +303,11 @@ class JSONStringifier : private core::Noncopyable<> {
     }
     if (value.IsObject()) {
       JSObject* const target = value.object();
-      if (target->class_name() == context::Intern(ctx_, "Number")) {
+      if (target->IsClass<Class::Number>()) {
         value = value.ToNumber(ctx_, IV_LV5_ERROR(e));
-      } else if (target->class_name() == context::Intern(ctx_, "String")) {
+      } else if (target->IsClass<Class::String>()) {
         value = value.ToString(ctx_, IV_LV5_ERROR(e));
-      } else if (target->class_name() == context::Intern(ctx_, "Boolean")) {
+      } else if (target->IsClass<Class::Boolean>()) {
         value = JSVal::Bool(static_cast<JSBooleanObject*>(target)->value());
       }
     }
@@ -334,7 +334,7 @@ class JSONStringifier : private core::Noncopyable<> {
     }
     if (value.IsObject() && !value.IsCallable()) {
       JSObject* target = value.object();
-      if (ctx_->IsArray(*target)) {
+      if (target->IsClass<Class::Array>()) {
         return JA(static_cast<JSArray*>(target), e);
       } else {
         return JO(target, e);

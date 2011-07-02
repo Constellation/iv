@@ -25,7 +25,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
   const JSVal val = holder->Get(ctx, name, IV_LV5_ERROR(e));
   if (val.IsObject()) {
     JSObject* const obj = val.object();
-    if (ctx->IsArray(*obj)) {
+    if (obj->IsClass<Class::Array>()) {
       JSArray* const ary = static_cast<JSArray*>(obj);
       const uint32_t len = internal::GetLength(ctx, ary, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
@@ -134,7 +134,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
     JSObject* const rep = replacer.object();
     if (replacer.IsCallable()) {  // 4-a
       replacer_function = rep->AsCallable();
-    } else if (ctx->IsArray(*rep)) {  // 4-b
+    } else if (rep->IsClass<Class::Array>()) {  // 4-b
       maybe = &property_list;
       const uint32_t len = internal::GetLength(ctx, rep, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
@@ -146,8 +146,8 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
           item = v.ToString(ctx, IV_LV5_ERROR(e));
         } else if (v.IsObject()) {
           JSObject* target = v.object();
-          if (target->class_name() == context::Intern(ctx, "String") ||
-              target->class_name() == context::Intern(ctx, "Number")) {
+          if (target->IsClass<Class::String>() ||
+              target->IsClass<Class::Number>()) {
             item = v.ToString(ctx, IV_LV5_ERROR(e));
           }
         }
@@ -167,9 +167,9 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   // step 5
   if (space.IsObject()) {
     JSObject* const target = space.object();
-    if (target->class_name() == context::Intern(ctx, "Number")) {
+    if (target->IsClass<Class::Number>()) {
       space = space.ToNumber(ctx, IV_LV5_ERROR(e));
-    } else if (target->class_name() == context::Intern(ctx, "String")) {
+    } else if (target->IsClass<Class::String>()) {
       space = space.ToString(ctx, IV_LV5_ERROR(e));
     }
   }

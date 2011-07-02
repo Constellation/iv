@@ -79,11 +79,11 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     if (msg->empty()) {
       return name;
     }
-    core::UString buffer;
-    buffer.append(name->data(), name->size());
-    buffer.append(detail::kErrorSplitter.begin(), detail::kErrorSplitter.end());
-    buffer.append(msg->data(), msg->size());
-    return JSString::New(ctx, buffer);
+    StringBuilder builder;
+    builder.Append(name->data(), name->size());
+    builder.Append(detail::kErrorSplitter);
+    builder.Append(msg->data(), msg->size());
+    return builder.Build(ctx);
   }
   error->Report(Error::Type, "base must be object");
   return JSUndefined;
@@ -92,37 +92,37 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
 // section 15.11.6.1 EvalError
 inline JSVal EvalErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewEvalError(args.ctx(), message);
+  return JSEvalError::New(args.ctx(), message);
 }
 
 // section 15.11.6.2 RangeError
 inline JSVal RangeErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewRangeError(args.ctx(), message);
+  return JSRangeError::New(args.ctx(), message);
 }
 
 // section 15.11.6.3 ReferenceError
 inline JSVal ReferenceErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewReferenceError(args.ctx(), message);
+  return JSReferenceError::New(args.ctx(), message);
 }
 
 // section 15.11.6.4 SyntaxError
 inline JSVal SyntaxErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewSyntaxError(args.ctx(), message);
+  return JSSyntaxError::New(args.ctx(), message);
 }
 
 // section 15.11.6.5 TypeError
 inline JSVal TypeErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewTypeError(args.ctx(), message);
+  return JSTypeError::New(args.ctx(), message);
 }
 
 // section 15.11.6.6 URIError
 inline JSVal URIErrorConstructor(const Arguments& args, Error* error) {
   JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
-  return JSError::NewURIError(args.ctx(), message);
+  return JSURIError::New(args.ctx(), message);
 }
 
 } } }  // namespace iv::lv5::runtime

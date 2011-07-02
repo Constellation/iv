@@ -34,9 +34,6 @@ class Context : private core::Noncopyable<> {
   friend class SymbolChecker;
   friend const core::UString& context::GetSymbolString(const Context* ctx,
                                                        const Symbol& sym);
-  friend const Class& context::Cls(Context* ctx, const Symbol& name);
-  friend const Class& context::Cls(Context* ctx,
-                                   const core::StringPiece& str);
   friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
   friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
   friend Symbol context::Intern(Context* ctx, uint32_t index);
@@ -110,10 +107,6 @@ class Context : private core::Noncopyable<> {
     return &throw_type_error_;
   }
 
-  bool IsArray(const JSObject& obj) {
-    return obj.class_name() == global_data_.Array_symbol();
-  }
-
   double Random();
 
   GlobalData* global_data() {
@@ -129,35 +122,35 @@ class Context : private core::Noncopyable<> {
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
 
-  void InitGlobal(const Class& func_cls,
+  void InitGlobal(const ClassSlot& func_cls,
                   JSObject* obj_proto, JSFunction* eval_function,
                   bind::Object* global_binder);
 
-  void InitArray(const Class& func_cls,
+  void InitArray(const ClassSlot& func_cls,
                  JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitString(const Class& func_cls,
+  void InitString(const ClassSlot& func_cls,
                  JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitBoolean(const Class& func_cls,
+  void InitBoolean(const ClassSlot& func_cls,
                    JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitNumber(const Class& func_cls,
+  void InitNumber(const ClassSlot& func_cls,
                   JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitMath(const Class& func_cls,
+  void InitMath(const ClassSlot& func_cls,
                 JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitDate(const Class& func_cls,
+  void InitDate(const ClassSlot& func_cls,
                 JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitRegExp(const Class& func_cls,
+  void InitRegExp(const ClassSlot& func_cls,
                  JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitError(const Class& func_cls,
+  void InitError(const ClassSlot& func_cls,
                  JSObject* obj_proto, bind::Object* global_binder);
 
-  void InitJSON(const Class& func_cls,
+  void InitJSON(const ClassSlot& func_cls,
                 JSObject* obj_proto, bind::Object* global_binder);
 
   GlobalData global_data_;

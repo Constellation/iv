@@ -12,6 +12,14 @@ namespace lv5 {
 class JSVal;
 class JSString;
 
+// fwd decls
+class JSEvalError;
+class JSRangeError;
+class JSReferenceError;
+class JSSyntaxError;
+class JSTypeError;
+class JSURIError;
+
 class JSError : public JSObject {
  public:
   JSError(Context* ctx, Error::Code code, JSString* str)
@@ -26,104 +34,164 @@ class JSError : public JSObject {
     }
   }
 
-
-  static JSVal Detail(Context* ctx, const Error* error) {
-    assert(error && (error->code() != Error::Normal));
-    switch (error->code()) {
-      case Error::Eval:
-        return JSError::NewEvalError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::Range:
-        return JSError::NewRangeError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::Reference:
-        return JSError::NewReferenceError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::Syntax:
-        return JSError::NewSyntaxError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::Type:
-        return JSError::NewTypeError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::URI:
-        return JSError::NewURIError(
-            ctx, JSString::New(ctx, error->detail()));
-      case Error::User:
-        return error->value();
-      default:
-        UNREACHABLE();
-        return JSUndefined;  // make compiler happy
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::Error
     };
+    return &cls;
   }
 
+  static inline JSVal Detail(Context* ctx, const Error* error);
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const error = new JSError(ctx, code, str);
-    const Class& cls = context::Cls(ctx, "Error");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
+    error->set_cls(JSError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
     return error;
   }
-
-
-  static JSError* NewEvalError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Eval, str);
-    const Class& cls = context::Cls(ctx, "EvalError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewRangeError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Range, str);
-    const Class& cls = context::Cls(ctx, "RangeError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewReferenceError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Reference, str);
-    const Class& cls = context::Cls(ctx, "ReferenceError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewSyntaxError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Syntax, str);
-    const Class& cls = context::Cls(ctx, "SyntaxError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewTypeError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Type, str);
-    const Class& cls = context::Cls(ctx, "TypeError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
-
-  static JSError* NewURIError(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::URI, str);
-    const Class& cls = context::Cls(ctx, "URIError");
-    error->set_class_name(cls.name);
-    error->set_prototype(cls.prototype);
-    return error;
-  }
-
 
  protected:
   Error::Code code_;
   JSString* detail_;
 };
+
+class JSEvalError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::EvalError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::Eval, str);
+    error->set_cls(JSEvalError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::EvalError).prototype);
+    return error;
+  }
+};
+
+class JSRangeError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::RangeError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::Range, str);
+    error->set_cls(JSRangeError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::RangeError).prototype);
+    return error;
+  }
+};
+
+class JSReferenceError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::ReferenceError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::Reference, str);
+    error->set_cls(JSReferenceError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::ReferenceError).prototype);
+    return error;
+  }
+};
+
+class JSSyntaxError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::SyntaxError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::Syntax, str);
+    error->set_cls(JSSyntaxError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::SyntaxError).prototype);
+    return error;
+  }
+};
+
+class JSTypeError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::TypeError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::Type, str);
+    error->set_cls(JSTypeError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::TypeError).prototype);
+    return error;
+  }
+};
+
+class JSURIError : public JSError {
+ public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::URIError
+    };
+    return &cls;
+  }
+
+  static JSError* New(Context* ctx, JSString* str) {
+    JSError* const error = new JSError(ctx, Error::URI, str);
+    error->set_cls(JSURIError::GetClass());
+    error->set_prototype(context::GetClassSlot(ctx, Class::URIError).prototype);
+    return error;
+  }
+};
+
+JSVal JSError::Detail(Context* ctx, const Error* error) {
+  assert(error && (error->code() != Error::Normal));
+  switch (error->code()) {
+    case Error::Eval:
+      return JSEvalError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::Range:
+      return JSRangeError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::Reference:
+      return JSReferenceError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::Syntax:
+      return JSSyntaxError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::Type:
+      return JSTypeError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::URI:
+      return JSURIError::New(
+          ctx, JSString::New(ctx, error->detail()));
+    case Error::User:
+      return error->value();
+    default:
+      UNREACHABLE();
+      return JSUndefined;  // make compiler happy
+  };
+}
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSEXCEPTION_H_

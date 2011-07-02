@@ -8,6 +8,7 @@
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
 #include "lv5/heap_object.h"
+#include "lv5/class.h"
 
 namespace iv {
 namespace lv5 {
@@ -28,55 +29,76 @@ class JSObject : public HeapObject {
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   JSObject();
-  JSObject(JSObject* proto, Symbol class_name, bool extensible);
+  JSObject(JSObject* proto, Class* cls, bool extensible);
 
   virtual ~JSObject() { }
 
   virtual JSVal DefaultValue(Context* ctx,
                              Hint::Object hint, Error* res);
+
   virtual JSVal Get(Context* ctx,
                     Symbol name, Error* res);
+
   virtual JSVal GetWithIndex(
       Context* context, uint32_t index, Error* res);
+
   virtual PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+
   virtual PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
                                                      uint32_t index) const;
+
   virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+
   virtual PropertyDescriptor GetPropertyWithIndex(Context* ctx,
                                                   uint32_t index) const;
+
   virtual bool CanPut(Context* ctx, Symbol name) const;
+
   virtual bool CanPutWithIndex(Context* ctx,
                                uint32_t index) const;
+
   virtual void Put(Context* context, Symbol name,
                    const JSVal& val, bool th, Error* res);
+
   virtual void PutWithIndex(Context* context, uint32_t index,
                             const JSVal& val, bool th, Error* res);
+
   virtual bool HasProperty(Context* ctx, Symbol name) const;
+
   virtual bool HasPropertyWithIndex(Context* ctx, uint32_t index) const;
+
   virtual bool Delete(Context* ctx, Symbol name, bool th, Error* res);
+
   virtual bool DeleteWithIndex(Context* ctx, uint32_t index,
                                bool th, Error* res);
+
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* res);
+
   virtual bool DefineOwnPropertyWithIndex(Context* ctx,
                                           uint32_t index,
                                           const PropertyDescriptor& desc,
                                           bool th,
                                           Error* res);
+
   void GetPropertyNames(Context* ctx,
                         std::vector<Symbol>* vec, EnumerationMode mode) const;
+
   virtual void GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const;
+
   virtual bool IsCallable() const {
     return false;
   }
+
   virtual JSFunction* AsCallable() {
     return NULL;
   }
+
   virtual bool IsNativeObject() const {
     return true;
   }
@@ -84,28 +106,50 @@ class JSObject : public HeapObject {
   bool IsExtensible() const {
     return extensible_;
   }
+
   void set_extensible(bool val) {
     extensible_ = val;
   }
+
   JSObject* prototype() const {
     return prototype_;
   }
+
   void set_prototype(JSObject* obj) {
     prototype_ = obj;
   }
-  Symbol class_name() const {
-    return class_name_;
+
+  const Class* cls() const {
+    return cls_;
   }
-  void set_class_name(Symbol cls) {
-    class_name_ = cls;
+
+  void set_cls(const Class* cls) {
+    cls_ = cls;
+  }
+
+  template<Class::JSClassType CLS>
+  bool IsClass() const {
+    return cls_->type == CLS;
+  }
+
+  bool IsClass(Class::JSClassType cls) const {
+    return cls_->type == cls;
   }
 
   static JSObject* New(Context* ctx);
   static JSObject* NewPlain(Context* ctx);
 
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Object",
+      Class::Object
+    };
+    return &cls;
+  }
+
  protected:
+  const Class* cls_;
   JSObject* prototype_;
-  Symbol class_name_;
   bool extensible_;
   Properties table_;
 };
@@ -118,6 +162,15 @@ class JSNumberObject : public JSObject {
   const double& value() const {
     return value_;
   }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Number",
+      Class::Number
+    };
+    return &cls;
+  }
+
  private:
   double value_;
 };
@@ -130,6 +183,15 @@ class JSBooleanObject : public JSObject {
   bool value() const {
     return value_;
   }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Boolean",
+      Class::Boolean
+    };
+    return &cls;
+  }
+
  private:
   bool value_;
 };

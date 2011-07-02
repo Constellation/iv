@@ -6,7 +6,11 @@
 #include "dtoa.h"
 #include "canonicalized_nan.h"
 #include "lv5/jsenv.h"
+#include "lv5/jsmath.h"
+#include "lv5/jsjson.h"
+#include "lv5/jsglobal.h"
 #include "lv5/jsfunction.h"
+#include "lv5/jsarguments.h"
 #include "lv5/arguments.h"
 #include "lv5/context.h"
 #include "lv5/context_utils.h"
@@ -25,12 +29,8 @@ const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
   return ctx->global_data()->GetSymbolString(sym);
 }
 
-const Class& Cls(Context* ctx, const Symbol& name) {
-  return ctx->global_data()->GetClass(name);
-}
-
-const Class& Cls(Context* ctx, const core::StringPiece& str) {
-  return ctx->global_data()->GetClass(str);
+const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type) {
+  return ctx->global_data()->GetClassSlot(type);
 }
 
 Symbol Intern(Context* ctx, const core::StringPiece& str) {
@@ -162,30 +162,32 @@ void Context::InitContext(JSFunction* func_constructor,
   JSFunction* const func_proto =
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
 
-  struct Class func_cls = {
+  struct ClassSlot func_cls = {
+    JSFunction::GetClass(),
     context::Intern(this, "Function"),
     JSString::NewAsciiString(this, "Function"),
     func_constructor,
     func_proto
   };
-  global_data_.RegisterClass(func_cls.name, func_cls);
+  global_data_.RegisterClass<Class::Function>(func_cls);
 
-  struct Class obj_cls = {
+  struct ClassSlot obj_cls = {
+    JSObject::GetClass(),
     context::Intern(this, "Object"),
     JSString::NewAsciiString(this, "Object"),
     obj_constructor,
     obj_proto
   };
-  global_data_.RegisterClass(obj_cls.name, obj_cls);
+  global_data_.RegisterClass<Class::Object>(obj_cls);
 
   bind::Object(this, func_constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // seciton 15.3.3.1 Function.prototype
       .def(context::prototype_symbol(this), func_proto, bind::NONE);
 
   bind::Object(this, obj_constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // seciton 15.2.3.1 Object.prototype
       .def(context::prototype_symbol(this), obj_proto, bind::NONE)
@@ -217,7 +219,7 @@ void Context::InitContext(JSFunction* func_constructor,
       .def<&runtime::ObjectKeys, 1>("keys");
 
   bind::Object(this, func_proto)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(obj_proto)
       // section 15.3.4.1 Function.prototype.constructor
       .def(context::constructor_symbol(this), func_constructor, bind::W | bind::C)
@@ -231,7 +233,7 @@ void Context::InitContext(JSFunction* func_constructor,
       .def<&runtime::FunctionBind, 1>("bind");
 
   bind::Object(this, obj_proto)
-      .class_name(obj_cls.name)
+      .cls(obj_cls.cls)
       .prototype(NULL)
       // section 15.2.4.1 Object.prototype.constructor
       .def(context::constructor_symbol(this), obj_constructor, bind::W | bind::C)
@@ -275,23 +277,32 @@ void Context::InitContext(JSFunction* func_constructor,
 
   {
     // Arguments
-    struct Class cls = {
+    struct ClassSlot cls = {
+      JSArguments::GetClass(),
       context::Intern(this, "Arguments"),
       JSString::NewAsciiString(this, "Arguments"),
       NULL,
       obj_proto
     };
-    global_data_.RegisterClass(cls.name, cls);
+    global_data_.RegisterClass<Class::Arguments>(cls);
   }
 }
 
-void Context::InitGlobal(const Class& func_cls,
+void Context::InitGlobal(const ClassSlot& func_cls,
                          JSObject* obj_proto, JSFunction* eval_function,
                          bind::Object* global_binder) {
   // Global
+  struct ClassSlot cls = {
+    JSGlobal::GetClass(),
+    context::Intern(this, "global"),
+    JSString::NewAsciiString(this, "global"),
+    NULL,
+    obj_proto
+  };
+  global_data_.RegisterClass<Class::global>(cls);
   eval_function->Initialize(this);  // lazy update
-  global_binder->class_name("global")
-      .prototype(obj_proto)
+  global_binder->cls(cls.cls)
+      .prototype(cls.prototype)
       // section 15.1.1.1 NaN
       .def("NaN", core::kNaN)
       // section 15.1.1.2 Infinity
@@ -324,7 +335,7 @@ void Context::InitGlobal(const Class& func_cls,
       .def<&runtime::GlobalUnescape, 1>("unescape");
 }
 
-void Context::InitArray(const Class& func_cls,
+void Context::InitArray(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.4 Array
   JSObject* const proto = JSArray::NewPlain(this);
@@ -332,17 +343,18 @@ void Context::InitArray(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSArray::GetClass(),
     context::Array_symbol(this),
     JSString::NewAsciiString(this, "Array"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::Array>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // prototype
       .def(context::prototype_symbol(this), proto, bind::NONE)
@@ -350,7 +362,7 @@ void Context::InitArray(const Class& func_cls,
       .def<&runtime::ArrayIsArray, 1>("isArray");
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.5.4.1 Array.prototype.constructor
       .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
@@ -399,7 +411,7 @@ void Context::InitArray(const Class& func_cls,
       .def<&runtime::ArrayReduceRight, 1>("reduceRight");
 }
 
-void Context::InitString(const Class& func_cls,
+void Context::InitString(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.5 String
   JSStringObject* const proto = JSStringObject::NewPlain(this);
@@ -407,17 +419,18 @@ void Context::InitString(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSStringObject::GetClass(),
     context::Intern(this, "String"),
     JSString::NewAsciiString(this, "String"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::String>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // prototype
       .def(context::prototype_symbol(this), proto, bind::NONE)
@@ -425,7 +438,7 @@ void Context::InitString(const Class& func_cls,
       .def<&runtime::StringFromCharCode, 1>("fromCharCode");
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.5.4.1 String.prototype.constructor
       .def(context::constructor_symbol(this), constructor,
@@ -473,7 +486,7 @@ void Context::InitString(const Class& func_cls,
       .def<&runtime::StringSubstr, 2>("substr");
 }
 
-void Context::InitBoolean(const Class& func_cls,
+void Context::InitBoolean(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   // Boolean
   JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
@@ -481,23 +494,24 @@ void Context::InitBoolean(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSBooleanObject::GetClass(),
     context::Intern(this, "Boolean"),
     JSString::NewAsciiString(this, "Boolean"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::Boolean>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.6.3.1 Boolean.prototype
       .def(context::prototype_symbol(this), proto, bind::NONE);
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.6.4.1 Boolean.prototype.constructor
       .def(context::constructor_symbol(this), constructor,
@@ -508,7 +522,7 @@ void Context::InitBoolean(const Class& func_cls,
       .def<&runtime::BooleanValueOf, 0>(context::valueOf_symbol(this));
 }
 
-void Context::InitNumber(const Class& func_cls,
+void Context::InitNumber(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // 15.7 Number
   JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
@@ -516,17 +530,18 @@ void Context::InitNumber(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSNumberObject::GetClass(),
     context::Intern(this, "Number"),
     JSString::NewAsciiString(this, "Number"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::Number>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.7.3.1 Number.prototype
       .def(context::prototype_symbol(this), proto, bind::NONE)
@@ -542,7 +557,7 @@ void Context::InitNumber(const Class& func_cls,
       .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity());
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.7.4.1 Number.prototype.constructor
       .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
@@ -560,14 +575,22 @@ void Context::InitNumber(const Class& func_cls,
       .def<&runtime::NumberToPrecision, 1>("toPrecision");
 }
 
-void Context::InitMath(const Class& func_cls,
+void Context::InitMath(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.8 Math
-  JSObject* const math = JSObject::NewPlain(this);
+  struct ClassSlot cls = {
+    JSMath::GetClass(),
+    context::Intern(this, "Math"),
+    JSString::NewAsciiString(this, "Math"),
+    NULL,
+    obj_proto
+  };
+  global_data_.RegisterClass<Class::Math>(cls);
+  JSObject* const math = JSMath::NewPlain(this);
   global_binder->def("Math", math, bind::W | bind::C);
 
   bind::Object(this, math)
-      .class_name("Math")
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.8.1.1 E
       .def("E", std::exp(1.0))
@@ -623,7 +646,7 @@ void Context::InitMath(const Class& func_cls,
       .def<&runtime::MathTan, 1>("tan");
 }
 
-void Context::InitDate(const Class& func_cls,
+void Context::InitDate(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.9 Date
   JSObject* const proto = JSDate::NewPlain(this, core::kNaN);
@@ -631,17 +654,18 @@ void Context::InitDate(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSDate::GetClass(),
     context::Intern(this, "Date"),
     JSString::NewAsciiString(this, "Date"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::Date>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.9.4.1 Date.prototype
       .def(context::prototype_symbol(this), proto, bind::NONE)
@@ -657,7 +681,7 @@ void Context::InitDate(const Class& func_cls,
           this, context::Intern(this, "toUTCString"));
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.9.5.1 Date.prototype.constructor
       .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
@@ -757,7 +781,7 @@ void Context::InitDate(const Class& func_cls,
       .def("toGMTString", toUTCString, bind::W | bind::C);
 }
 
-void Context::InitRegExp(const Class& func_cls,
+void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
   JSObject* const proto = JSRegExp::NewPlain(this);
@@ -765,23 +789,24 @@ void Context::InitRegExp(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSRegExp::GetClass(),
     context::Intern(this, "RegExp"),
     JSString::NewAsciiString(this, "RegExp"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::RegExp>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.10.5.1 RegExp.prototype
       .def(context::prototype_symbol(this), proto, bind::NONE);
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.10.6.1 RegExp.prototype.constructor
       .def(context::constructor_symbol(this), constructor,
@@ -794,7 +819,7 @@ void Context::InitRegExp(const Class& func_cls,
       .def<&runtime::RegExpToString, 0>("toString");
 }
 
-void Context::InitError(const Class& func_cls,
+void Context::InitError(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // Error
   JSObject* const proto = JSObject::NewPlain(this);
@@ -802,24 +827,25 @@ void Context::InitError(const Class& func_cls,
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(this);
 
-  struct Class cls = {
+  struct ClassSlot cls = {
+    JSError::GetClass(),
     context::Intern(this, "Error"),
     JSString::NewAsciiString(this, "Error"),
     constructor,
     proto
   };
-  global_data_.RegisterClass(cls.name, cls);
+  global_data_.RegisterClass<Class::Error>(cls);
   global_binder->def(cls.name, constructor, bind::W | bind::C);
 
   bind::Object(this, constructor)
-      .class_name(func_cls.name)
+      .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.11.3.1 Error.prototype
       .def(context::prototype_symbol(this), proto, bind::NONE);
 
 
   bind::Object(this, proto)
-      .class_name(cls.name)
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.11.4.1 Error.prototype.constructor
       .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
@@ -837,21 +863,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "EvalError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSEvalError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "EvalError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::EvalError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -865,21 +892,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "RangeError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSRangeError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "RangeError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::RangeError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -893,21 +921,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "ReferenceError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSReferenceError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "ReferenceError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::ReferenceError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -921,21 +950,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "SyntaxError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSSyntaxError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "SyntaxError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::SyntaxError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -949,21 +979,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "TypeError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSTypeError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "TypeError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::TypeError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -977,21 +1008,22 @@ void Context::InitError(const Class& func_cls,
         JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "URIError");
     bind::Object(this, sub_constructor)
-        .class_name(func_cls.name)
+        .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(context::prototype_symbol(this), sub_proto, bind::NONE);
 
-    struct Class sub_cls = {
+    struct ClassSlot sub_cls = {
+      JSURIError::GetClass(),
       context::Intern(this, "Error"),
       JSString::NewAsciiString(this, "URIError"),
       sub_constructor,
       sub_proto
     };
-    global_data_.RegisterClass(sym, sub_cls);
+    global_data_.RegisterClass<Class::URIError>(sub_cls);
     global_binder->def(sym, sub_constructor, bind::W | bind::C);
 
     bind::Object(this, sub_proto)
-        .class_name(sub_cls.name)
+        .cls(sub_cls.cls)
         .prototype(proto)
         .def(context::constructor_symbol(this),
              sub_constructor, bind::W | bind::C)
@@ -1000,13 +1032,21 @@ void Context::InitError(const Class& func_cls,
   }
 }
 
-void Context::InitJSON(const Class& func_cls,
+void Context::InitJSON(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.12 JSON
-  JSObject* const json = JSObject::NewPlain(this);
+  struct ClassSlot cls = {
+    JSJSON::GetClass(),
+    context::Intern(this, "JSON"),
+    JSString::NewAsciiString(this, "JSON"),
+    NULL,
+    obj_proto
+  };
+  global_data_.RegisterClass<Class::JSON>(cls);
+  JSObject* const json = JSJSON::NewPlain(this);
   global_binder->def("JSON", json, bind::W | bind::C);
   bind::Object(this, json)
-      .class_name("JSON")
+      .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.12.2 parse(text[, reviver])
       .def<&runtime::JSONParse, 2>("parse")

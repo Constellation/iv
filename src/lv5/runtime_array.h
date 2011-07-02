@@ -91,7 +91,7 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
   if (!val.IsObject()) {
     return JSFalse;
   }
-  return JSVal::Bool(args.ctx()->IsArray(*val.object()));
+  return JSVal::Bool(val.object()->IsClass<Class::Array>());
 }
 
 // section 15.4.4.2 Array.prototype.toString()
@@ -175,7 +175,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
   JSArray* const ary = JSArray::New(ctx);
 
   uint32_t n = 0;
-  if (ctx->IsArray(*obj)) {
+  if (obj->IsClass<Class::Array>()) {
     JSObject* const elm = obj;
     uint32_t k = 0;
     const uint32_t len = internal::GetLength(ctx, elm, IV_LV5_ERROR(e));
@@ -208,7 +208,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
 
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    if (it->IsObject() && ctx->IsArray(*it->object())) {
+    if (it->IsObject() && it->object()->IsClass<Class::Array>()) {
       JSObject* const elm = it->object();
       uint32_t k = 0;
       const uint32_t len = internal::GetLength(ctx, elm, IV_LV5_ERROR(e));

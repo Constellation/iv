@@ -41,8 +41,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(args.ctx(), "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       num = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -101,8 +100,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(args.ctx(), "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       num = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -124,8 +122,7 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, error);
   const JSVal& obj = args.this_binding();
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(args.ctx(), "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       return static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -162,8 +159,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(ctx, "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       x = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -195,8 +191,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(ctx, "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       x = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,
@@ -255,8 +250,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
-    if (obj.IsObject() &&
-        context::Cls(ctx, "Number").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       x = static_cast<JSNumberObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type,

@@ -7,9 +7,11 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
+#include "lv5/class.h"
 #include "lv5/gc_template.h"
 #include "lv5/xorshift.h"
 #include "lv5/jsstring.h"
+#include "lv5/jsglobal.h"
 #include "lv5/jsfunction.h"
 #include "lv5/symboltable.h"
 namespace iv {
@@ -17,11 +19,13 @@ namespace lv5 {
 
 class SymbolChecker;
 class JSRegExpImpl;
+class Context;
 
 // GlobalData has symboltable, global object
 class GlobalData {
  public:
   friend class SymbolChecker;
+  friend class Context;
   typedef Xor128 random_engine_type;
   typedef boost::uniform_real<double> random_distribution_type;
   typedef boost::variate_generator<
@@ -150,11 +154,11 @@ class GlobalData {
     return random_engine_();
   }
 
-  const JSObject* global_obj() const {
+  const JSGlobal* global_obj() const {
     return &global_obj_;
   }
 
-  JSObject* global_obj() {
+  JSGlobal* global_obj() {
     return &global_obj_;
   }
 
@@ -162,22 +166,18 @@ class GlobalData {
     regs_.push_back(reg);
   }
 
-  void RegisterClass(const Symbol& name, const Class& cls) {
-    builtins_[name] = cls;
+  template<Class::JSClassType CLS>
+  void RegisterClass(const ClassSlot& slot) {
+    classes_[CLS] = slot;
   }
 
-  const Class& GetClass(const Symbol& name) {
-    assert(builtins_.find(name) != builtins_.end());
-    return builtins_[name];
-  }
-
-  const Class& GetClass(const core::StringPiece& name) {
-    return GetClass(Intern(name));
+  const ClassSlot& GetClassSlot(Class::JSClassType cls) const {
+    return classes_[cls];
   }
 
  private:
   random_generator random_engine_;
-  JSObject global_obj_;
+  JSGlobal global_obj_;
   trace::Vector<JSRegExpImpl*>::type regs_;
   trace::HashMap<Symbol, Class>::type builtins_;
   SymbolTable table_;
@@ -191,6 +191,7 @@ class GlobalData {
   Symbol prototype_symbol_;
   Symbol constructor_symbol_;
   Symbol Array_symbol_;
+  std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
 };
 
 } }  // namespace iv::lv5

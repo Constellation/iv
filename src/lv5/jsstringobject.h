@@ -70,14 +70,21 @@ class JSStringObject : public JSObject {
   static JSStringObject* New(Context* ctx, JSString* str) {
     JSStringObject* const obj = new JSStringObject(ctx, str);
     const Symbol name = context::Intern(ctx, "String");
-    const Class& cls = context::Cls(ctx, name);
-    obj->set_class_name(cls.name);
-    obj->set_prototype(cls.prototype);
+    obj->set_cls(JSStringObject::GetClass());
+    obj->set_prototype(context::GetClassSlot(ctx, Class::String).prototype);
     return obj;
   }
 
   static JSStringObject* NewPlain(Context* ctx) {
     return new JSStringObject(ctx, JSString::NewEmptyString(ctx));
+  }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "String",
+      Class::String
+    };
+    return &cls;
   }
 
  private:

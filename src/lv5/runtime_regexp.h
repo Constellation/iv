@@ -21,8 +21,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
     return JSRegExp::New(ctx);
   } else {
     const JSVal& first = args[0];
-    if (first.IsObject() &&
-        context::Intern(ctx, "RegExp") == first.object()->class_name()) {
+    if (first.IsObject() && first.object()->IsClass<Class::RegExp>()) {
       if (args_count > 1 && !args[1].IsUndefined()) {
         e->Report(Error::Type,
                   "RegExp Constructor with RegExp object and unknown flags");
@@ -61,8 +60,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
-  if (obj.IsObject() &&
-      context::Intern(ctx, "RegExp") == obj.object()->class_name()) {
+  if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string;
     if (args.size() == 0) {
       string = JSString::NewAsciiString(ctx, "undefined");
@@ -82,8 +80,7 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
-  if (obj.IsObject() &&
-      context::Intern(ctx, "RegExp") == obj.object()->class_name()) {
+  if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string;
     if (args.size() == 0) {
       string = JSString::NewAsciiString(ctx, "undefined");
@@ -104,8 +101,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
-  if (obj.IsObject() &&
-      context::Intern(ctx, "RegExp") == obj.object()->class_name()) {
+  if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     StringBuilder builder;
     builder.Append('/');

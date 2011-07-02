@@ -34,11 +34,10 @@ class JSArguments : public JSObject {
                           Error* e) {
     JSArguments* const obj = new JSArguments(ctx, env);
     const uint32_t len = std::distance(it, last);
-    const Class& cls = context::Cls(ctx, "Arguments");
+    obj->set_cls(JSArguments::GetClass());
+    obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
     bind::Object binder(ctx, obj);
     binder
-        .class_name(cls.name)
-        .prototype(cls.prototype)
         .def(context::length_symbol(ctx),
              JSVal::UInt32(len), bind::W | bind::C);
     SetArguments(ctx, obj, &binder, names, it, last, len, strict);
@@ -143,6 +142,14 @@ class JSArguments : public JSObject {
       }
     }
     return result;
+  }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Arguments",
+      Class::Arguments
+    };
+    return &cls;
   }
 
  private:

@@ -6,6 +6,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
+#include "lv5/class.h"
 #include "lv5/arguments.h"
 namespace iv {
 namespace lv5 {
@@ -91,9 +92,16 @@ class JSFunction : public JSObject {
   virtual bool IsStrict() const = 0;
 
   void Initialize(Context* ctx) {
-    const Class& cls = context::Cls(ctx, "Function");
-    set_class_name(cls.name);
-    set_prototype(cls.prototype);
+    set_cls(JSFunction::GetClass());
+    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
+  }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Function",
+      Class::Function
+    };
+    return &cls;
   }
 };
 
@@ -218,11 +226,10 @@ class JSBoundFunction : public JSFunction {
       std::copy(args.begin() + 1, args.end(), arguments_.begin());
     }
     const uint32_t bound_args_size = arguments_.size();
-    const Class& cls = context::Cls(ctx, "Function");
-    set_class_name(cls.name);
-    set_prototype(cls.prototype);
+    set_cls(JSFunction::GetClass());
+    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
     // step 15
-    if (target_->class_name() == cls.name) {
+    if (target_->IsClass<Class::Function>()) {
       // target [[Class]] is "Function"
       const JSVal length = target_->Get(ctx, context::length_symbol(ctx), &e);
       assert(length.IsNumber());

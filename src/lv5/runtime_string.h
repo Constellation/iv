@@ -31,8 +31,7 @@ static inline JSVal StringToStringValueOfImpl(const Arguments& args,
                                               const char* msg) {
   const JSVal& obj = args.this_binding();
   if (!obj.IsString()) {
-    if (obj.IsObject() &&
-        context::Cls(args.ctx(), "String").name == obj.object()->class_name()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::String>()) {
       return static_cast<JSStringObject*>(obj.object())->value();
     } else {
       error->Report(Error::Type, msg);
@@ -622,7 +621,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
   JSRegExp* regexp;
   if (args_count == 0 ||
       !args[0].IsObject() ||
-      (args[0].object()->class_name() != context::Intern(ctx, "RegExp"))) {
+      !args[0].object()->IsClass<Class::RegExp>()) {
     ScopedArguments a(ctx, 1, IV_LV5_ERROR(e));
     if (args_count == 0) {
       a[0] = JSUndefined;
@@ -653,8 +652,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
   const uint32_t args_count = args.size();
   const bool search_value_is_regexp =
       args_count != 0 &&
-      args[0].IsObject() &&
-      (args[0].object()->class_name() == context::Intern(ctx, "RegExp"));
+      args[0].IsObject() && args[0].object()->IsClass<Class::RegExp>();
 
   JSString* search_str = NULL;
 
@@ -734,9 +732,8 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
   JSRegExp* regexp;
   if (args_count == 0) {
     regexp = JSRegExp::New(ctx);
-  } else if (
-      args[0].IsObject() &&
-      (args[0].object()->class_name() == context::Intern(ctx, "RegExp"))) {
+  } else if (args[0].IsObject() &&
+             args[0].object()->IsClass<Class::RegExp>()) {
     regexp = JSRegExp::New(
         ctx, static_cast<JSRegExp*>(args[0].object()));
   } else {
@@ -824,8 +821,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   JSVal separator;
   if (args_count > 0) {
     separator = args[0];
-    if (separator.IsObject() &&
-        (context::Intern(ctx, "RegExp") == separator.object()->class_name())) {
+    if (separator.IsObject() && separator.object()->IsClass<Class::RegExp>()) {
       target = separator;
       regexp = true;
     } else {

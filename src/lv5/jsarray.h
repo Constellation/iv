@@ -28,8 +28,7 @@ static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
   if (!desc.IsConfigurable()) {
     return false;
   }
-  if (desc.IsAccessorDescriptor()) {
-    return false;
+  if (desc.IsAccessorDescriptor()) { return false;
   }
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
@@ -392,22 +391,28 @@ class JSArray : public JSObject {
 
   static JSArray* New(Context* ctx) {
     JSArray* const ary = new JSArray(ctx, 0);
-    const Class& cls = context::Cls(ctx, "Array");
-    ary->set_class_name(cls.name);
-    ary->set_prototype(cls.prototype);
+    ary->set_cls(JSArray::GetClass());
+    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
     return ary;
   }
 
   static JSArray* New(Context* ctx, uint32_t n) {
     JSArray* const ary = new JSArray(ctx, n);
-    const Class& cls = context::Cls(ctx, "Array");
-    ary->set_class_name(cls.name);
-    ary->set_prototype(cls.prototype);
+    ary->set_cls(JSArray::GetClass());
+    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
     return ary;
   }
 
   static JSArray* NewPlain(Context* ctx) {
     return new JSArray(ctx, 0);
+  }
+
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Array",
+      Class::Array
+    };
+    return &cls;
   }
 
  private:

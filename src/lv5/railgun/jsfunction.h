@@ -30,9 +30,8 @@ class JSVMFunction : public JSFunction {
             PropertyDescriptor::NONE),
         false, &e);
     // section 13.2 Creating Function Objects
-    const Class& cls = context::Cls(ctx, "Function");
-    set_class_name(cls.name);
-    set_prototype(cls.prototype);
+    set_cls(JSFunction::GetClass());
+    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
 
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(

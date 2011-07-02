@@ -53,12 +53,8 @@ class Object : public Scope {
   Object(Context* ctx, JSObject* obj)
       : Scope(ctx), obj_(obj), e_() { }
 
-  Object& class_name(const core::StringPiece& string) {
-    return class_name(context::Intern(ctx_, string));
-  }
-
-  Object& class_name(const Symbol& name) {
-    obj_->set_class_name(name);
+  Object& cls(const Class* cls) {
+    obj_->set_cls(cls);
     return *this;
   }
 
