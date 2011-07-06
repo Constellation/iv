@@ -244,5 +244,62 @@ class JSObjectEnv : public JSEnv {
   bool provide_this_;
 };
 
+// for catch block environment
+class JSStaticEnv : public JSEnv {
+ public:
+  explicit JSStaticEnv(JSEnv* outer, Symbol sym, const JSVal& value)
+    : JSEnv(outer),
+      symbol_(sym),
+      value_(value) {
+  }
+
+  bool HasBinding(Context* ctx, Symbol name) const {
+    return name == symbol_;
+  }
+
+  bool DeleteBinding(Context* ctx, Symbol name) {
+    return name != symbol_;
+  }
+
+  void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
+    UNREACHABLE();
+  }
+
+  void SetMutableBinding(Context* ctx,
+                         Symbol name,
+                         const JSVal& val,
+                         bool strict, Error* res) {
+    assert(name == symbol_);
+    value_ = val;
+  }
+
+  JSVal GetBindingValue(Context* ctx, Symbol name,
+                        bool strict, Error* res) const {
+    assert(name == symbol_);
+    return value_;
+  }
+
+  JSVal ImplicitThisValue() const {
+    return JSUndefined;
+  }
+
+  JSDeclEnv* AsJSDeclEnv() {
+    return NULL;
+  }
+
+  JSObjectEnv* AsJSObjectEnv() {
+    return NULL;
+  }
+
+  static JSStaticEnv* New(Context* ctx, JSEnv* outer,
+                          Symbol sym, const JSVal& value) {
+    return new JSStaticEnv(outer, sym, value);
+  }
+
+ private:
+  Symbol symbol_;
+  JSVal value_;
+};
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSENV_H_

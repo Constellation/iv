@@ -966,9 +966,7 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, oparg);
         const JSVal error = POP();
         JSEnv* const catch_env =
-            internal::NewDeclarativeEnvironment(ctx_, frame->lexical_env());
-        catch_env->CreateMutableBinding(ctx_, s, false, ERR);
-        catch_env->SetMutableBinding(ctx_, s, error, false, ERR);
+            internal::NewStaticEnvironment(ctx_, frame->lexical_env(), s, error);
         frame->set_lexical_env(catch_env);
         frame->dynamic_env_level_ += 1;
         continue;
