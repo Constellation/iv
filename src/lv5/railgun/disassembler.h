@@ -18,20 +18,18 @@ class DisAssembler : private core::Noncopyable<> {
   DisAssembler() { }
 
   void DisAssemble(const Code& code) {
-    typedef typename Code::Data Data;
     {
       // code description
       std::ostringstream ss;
       ss << "[code] stack: " << code.stack_depth();
       OutputLine(ss.str());
     }
-    const Data& data = code.Main();
     const Code::Codes& codes = code.codes();
     std::vector<char> line;
     int index = 0;
     std::array<char, 30> buf;
-    for (Data::const_iterator it = data.begin(),
-         last = data.end(); it != last; ++it, ++index) {
+    for (const uint8_t* it = code.begin(),
+         *last = code.end(); it != last; ++it, ++index) {
       const uint8_t opcode = *it;
       const bool has_arg = OP::HasArg(opcode);
       const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);

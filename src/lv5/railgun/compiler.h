@@ -117,6 +117,7 @@ class Compiler
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
+      data_(NULL),
       script_(NULL),
       jump_table_(NULL),
       level_stack_(NULL),
@@ -126,24 +127,24 @@ class Compiler
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     script_ = script;
-    Code* code = new Code(ctx_, script_, global);
+    data_ = new Code::Data();
+    data_->reserve(1024);
+    Code* code = new Code(ctx_, script_, global, data_);
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(global);
-      assert(stack_depth()->GetCurrent() == 0);
-      code->set_stack_depth(stack_depth()->GetMaxDepth());
     }
     return code;
   }
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     script_ = script;
-    Code* code = new Code(ctx_, script_, function);
+    data_ = new Code::Data();
+    data_->reserve(1024);
+    Code* code = new Code(ctx_, script_, function, data_);
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(function);
-      assert(stack_depth()->GetCurrent() == 0);
-      code->set_stack_depth(stack_depth()->GetMaxDepth());
     }
     return code;
   }
@@ -1448,15 +1449,9 @@ class Compiler
 
   void Visit(const FunctionLiteral* lit) {
     DepthPoint point(stack_depth());
-    Code* const code = new Code(ctx_, script_, *lit);
+    Code* const code = new Code(ctx_, script_, *lit, data_);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
-    {
-      CodeContext code_context(this, code);
-      EmitFunctionCode(*lit);
-      assert(stack_depth()->GetCurrent() == 0);
-      code->set_stack_depth(stack_depth()->GetMaxDepth());
-    }
     Emit<OP::MAKE_CLOSURE>(index);
     stack_depth()->Up();
     point.LevelCheck(1);
@@ -1638,6 +1633,7 @@ class Compiler
   }
 
   void EmitFunctionCode(const FunctionLiteral& lit) {
+    code_->set_start(data_->size());
     const Symbol arguments_symbol = context::arguments_symbol(ctx_);
     const Scope& scope = lit.scope();
     {
@@ -1678,6 +1674,17 @@ class Compiler
       }
     }
     Emit<OP::STOP_CODE>();
+    code_->set_end(data_->size());
+    assert(stack_depth()->GetCurrent() == 0);
+    code_->set_stack_depth(stack_depth()->GetMaxDepth());
+    {
+      // lazy code compile
+      for (Code::Codes::const_iterator it = code_->codes().begin(),
+           last = code_->codes().end(); it != last; ++it) {
+        CodeContext code_context(this, *it);
+        EmitFunctionCode((*it)->function_literal());
+      }
+    }
   }
 
   void EmitAssignedBinaryOperation(core::Token::Type token) {
@@ -1745,53 +1752,53 @@ class Compiler
   }
 
   std::size_t CurrentSize() const {
-    return code_->data_.size();
+    return data_->size() - code_->start();
   }
 
   template<OP::Type op>
   void Emit() {
     IV_STATIC_ASSERT(op < OP::HAVE_ARGUMENT);
-    code_->data_.push_back(op);
+    data_->push_back(op);
   }
 
   template<OP::Type op>
   void Emit(uint16_t arg,
             typename disable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
-    code_->data_.push_back(op);
-    code_->data_.push_back(arg & 0xff);
-    code_->data_.push_back(arg >> 8);
+    data_->push_back(op);
+    data_->push_back(arg & 0xff);
+    data_->push_back(arg >> 8);
   }
 
   template<OP::Type op>
   void Emit(uint16_t arg,
             typename enable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
-    code_->data_.push_back(op);
-    code_->data_.push_back(arg & 0xff);
-    code_->data_.push_back(arg >> 8);
+    data_->push_back(op);
+    data_->push_back(arg & 0xff);
+    data_->push_back(arg >> 8);
     if (code_->names()[arg] == context::arguments_symbol(ctx_)) {
       code_->set_code_has_arguments();
     }
   }
 
   void Emit(OP::Type op) {
-    code_->data_.push_back(op);
+    data_->push_back(op);
   }
 
   void Emit(OP::Type op, uint16_t arg) {
-    code_->data_.push_back(op);
-    code_->data_.push_back(arg & 0xff);
-    code_->data_.push_back(arg >> 8);
+    data_->push_back(op);
+    data_->push_back(arg & 0xff);
+    data_->push_back(arg >> 8);
   }
 
   void EmitOPAt(OP::Type op, std::size_t index) {
-    code_->data_[index] = op;
+    (*data_)[code_->start() + index] = op;
   }
 
   void EmitArgAt(uint16_t arg, std::size_t index) {
-    code_->data_[index] = (arg & 0xff);
-    code_->data_[index + 1] = (arg >> 8);
+    (*data_)[code_->start() + index] = (arg & 0xff);
+    (*data_)[code_->start() + index + 1] = (arg >> 8);
   }
 
   void set_code(Code* code) {
@@ -1900,6 +1907,7 @@ class Compiler
 
   Context* ctx_;
   Code* code_;
+  Code::Data* data_;
   JSScript* script_;
   JumpTable* jump_table_;
   LevelStack* level_stack_;

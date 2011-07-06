@@ -31,18 +31,23 @@ class Code : public HeapObject {
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
-  Code(Context* ctx, JSScript* script, const FunctionLiteral& func)
+  Code(Context* ctx,
+       JSScript* script,
+       const FunctionLiteral& func,
+       Data* data)
     : strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
       has_name_(func.name()),
       arguments_hiding_(false),
       decl_type_(func.type()),
+      function_literal_(&func),
       name_(),
       script_(script),
       start_position_(func.start_position()),
       end_position_(func.end_position()),
-      data_(),
+      data_(data),
+      start_(),
       codes_(),
       names_(),
       varnames_(),
@@ -62,15 +67,11 @@ class Code : public HeapObject {
   }
 
   const uint8_t* data() const {
-    return data_.data();
+    return data_->data() + start_;
   }
 
   const Codes& codes() const {
     return codes_;
-  }
-
-  const Data& Main() const {
-    return data_;
   }
 
   const JSVals& constants() const {
@@ -165,19 +166,47 @@ class Code : public HeapObject {
     stack_depth_ = depth;
   }
 
+  std::size_t start() const {
+    return start_;
+  }
+
+  const uint8_t* begin() const {
+    return data_->data() + start_;
+  }
+
+  const uint8_t* end() const {
+    return data_->data() + end_;
+  }
+
  private:
+  // only use in Compiler
+  const FunctionLiteral& function_literal() const {
+    return *function_literal_;
+  }
+
+  void set_start(std::size_t start) {
+    start_ = start;
+  }
+
+  void set_end(std::size_t end) {
+    end_ = end;
+  }
+
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
   bool has_name_;
   bool arguments_hiding_;
   FunctionLiteral::DeclType decl_type_;
+  const FunctionLiteral* function_literal_;   // only use in Compiler
   Symbol name_;
   JSScript* script_;
   std::size_t start_position_;
   std::size_t end_position_;
   std::size_t stack_depth_;
-  Data data_;
+  Data* data_;
+  std::size_t start_;
+  std::size_t end_;
   Codes codes_;
   Names names_;
   Names varnames_;
