@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_RAILGUN_COMPILER_H_
 #define _IV_LV5_RAILGUN_COMPILER_H_
 #include <algorithm>
+#include <gc/gc.h>
 #include "detail/tuple.h"
 #include "detail/unordered_map.h"
 #include "ast_visitor.h"
@@ -127,7 +128,7 @@ class Compiler
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     script_ = script;
-    data_ = new Code::Data();
+    data_ = new (GC) Code::Data();
     data_->reserve(1024);
     Code* code = new Code(ctx_, script_, global, data_);
     {
@@ -139,7 +140,7 @@ class Compiler
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     script_ = script;
-    data_ = new Code::Data();
+    data_ = new (GC) Code::Data();
     data_->reserve(1024);
     Code* code = new Code(ctx_, script_, function, data_);
     {
