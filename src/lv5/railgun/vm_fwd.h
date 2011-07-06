@@ -194,6 +194,23 @@ class VM {
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
   JSVal BinaryAdd(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+    // fast case check
+    if (lhs.IsNumber() && rhs.IsNumber()) {
+      return lhs.number() + rhs.number();
+    }
+    if (lhs.IsString()) {
+      StringBuilder builder;
+      builder.Append(*lhs.string());
+      if (rhs.IsString()) {
+        builder.Append(*rhs.string());
+      } else {
+        const JSVal rp = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
+        const JSString* const rs = rp.ToString(ctx_, CHECK);
+        builder.Append(*rs);
+      }
+      return builder.Build(ctx_);
+    }
+
     const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
     const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
     if (lprim.IsString() || rprim.IsString()) {
