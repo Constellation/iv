@@ -343,7 +343,7 @@ MAIN_LOOP_START:
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
         const JSString* str = element.ToString(ctx_, ERR);
-        const Symbol s = context::Intern(ctx_, str->value());
+        const Symbol s = context::Intern(ctx_, str);
         JSObject* const obj = base.ToObject(ctx_, ERR);
         const bool result = obj->Delete(ctx_, s, strict, ERR);
         SET_TOP(JSVal::Bool(result));

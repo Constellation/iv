@@ -61,7 +61,7 @@ static int Execute(const core::StringPiece& data, const std::string& filename) {
     e.Clear();
     const JSString* const str = res.ToString(&ctx, &e);
     if (!e) {
-      core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
+      std::fputs(str->GetUTF8().c_str(), stderr);
       return EXIT_FAILURE;
     } else {
       return EXIT_FAILURE;
@@ -98,9 +98,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
     if (val.IsString()) {
       const JSString* const f = val.string();
       std::vector<char> buffer;
-      std::string filename;
-      core::unicode::UTF16ToUTF8(f->begin(),
-                                 f->end(), std::back_inserter(filename));
+      const std::string filename(f->GetUTF8());
       if (detail::ReadFile(filename, &buffer)) {
         detail::Execute(
             core::StringPiece(buffer.data(), buffer.size()), filename);

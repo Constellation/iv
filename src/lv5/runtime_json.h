@@ -93,8 +93,9 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
   if (args_size > 0) {
     first = args[0];
   }
-  const JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
-  const JSVal result = ParseJSON<true>(ctx, *text, IV_LV5_ERROR(e));
+  JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
+  const lv5::detail::StringImpl& impl = *text->Flatten();
+  const JSVal result = ParseJSON<true>(ctx, impl, IV_LV5_ERROR(e));
   if (args_size > 1 && args[1].IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
     const Symbol empty = context::Intern(ctx, "");
@@ -183,7 +184,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       gap.assign(core::DoubleToUInt32(sp), static_cast<uint16_t>(' '));
     }
   } else if (space.IsString()) {
-    JSString* target = space.string();
+    const lv5::detail::StringImpl* target = space.string()->Flatten();
     if (target->size() <= 10) {
       gap.assign(target->data(), target->size());
     } else {

@@ -3,13 +3,13 @@
 #include <cassert>
 #include <gc/gc_cpp.h>
 #include "lv5/gc_template.h"
-#include "lv5/jsval.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
 #include "lv5/property.h"
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
 #include "lv5/heap_object.h"
+#include "lv5/jsval.h"
 
 namespace iv {
 namespace lv5 {

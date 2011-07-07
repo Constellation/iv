@@ -80,9 +80,9 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
       return name;
     }
     StringBuilder builder;
-    builder.Append(name->data(), name->size());
+    builder.Append(*name);
     builder.Append(detail::kErrorSplitter);
-    builder.Append(msg->data(), msg->size());
+    builder.Append(*msg);
     return builder.Build(ctx);
   }
   error->Report(Error::Type, "base must be object");

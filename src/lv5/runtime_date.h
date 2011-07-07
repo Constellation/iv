@@ -40,7 +40,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* error) {
       const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, IV_LV5_ERROR(error));
       if (v.IsString()) {
         return JSDate::New(ctx,
-                           date::TimeClip(date::Parse(*v.string())));
+                           date::TimeClip(date::Parse(*v.string()->Flatten())));
       } else {
         const double V = v.ToNumber(ctx, IV_LV5_ERROR(error));
         return JSDate::New(ctx, date::TimeClip(V));
@@ -139,7 +139,7 @@ inline JSVal DateParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.parse", args, e);
   const JSVal first = (args.size() == 0) ? JSUndefined : args[0];
   const JSString* target = first.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return date::Parse(*target);
+  return date::Parse(*target->Flatten());
 }
 
 // section 15.9.4.3

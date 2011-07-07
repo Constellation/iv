@@ -13,142 +13,293 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
+#include "static_assert.h"
 #include "lv5/gc_template.h"
 #include "lv5/heap_object.h"
-
 namespace iv {
 namespace lv5 {
 
 class Context;
-class StringBuilder;
 
-class JSString : public HeapObject {
+namespace detail {
+
+static const std::size_t kMaxFibers = 5;
+
+class StringImpl : private core::Noncopyable<StringImpl> {
  public:
-  friend class StringBuilder;
-  typedef JSString this_type;
-  typedef GCUString value_type;
-  typedef value_type::iterator iterator;
-  typedef value_type::const_iterator const_iterator;
-  typedef value_type::reverse_iterator reverse_iterator;
-  typedef value_type::const_reverse_iterator const_reverse_iterator;
-  typedef value_type::size_type size_type;
+  typedef StringImpl this_type;
+  typedef uint16_t char_type;
+  typedef std::char_traits<char_type> traits_type;
 
-  JSString()
-    : string_(),
-      hash_value_(core::StringToHash(string_)) {
+  typedef char_type* iterator;
+  typedef const char_type* const_iterator;
+  typedef std::iterator_traits<iterator>::value_type value_type;
+  typedef std::iterator_traits<iterator>::pointer pointer;
+  typedef std::iterator_traits<const_iterator>::pointer const_pointer;
+  typedef std::iterator_traits<iterator>::reference reference;
+  typedef std::iterator_traits<const_iterator>::reference const_reference;
+  typedef std::reverse_iterator<iterator> reverse_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  typedef std::iterator_traits<iterator>::difference_type difference_type;
+  typedef std::size_t size_type;
+
+  template<typename String>
+  static StringImpl* New(const String& piece) {
+    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+        sizeof(size_type) + piece.size() * sizeof(char_type),
+        GC_true_type()));
+    mem->size_ = piece.size();
+    std::copy(piece.begin(), piece.end(), mem->begin());
+    return mem;
   }
 
-  template<class String>
-  explicit JSString(const String& rhs)
-    : string_(rhs.begin(), rhs.end()),
-      hash_value_(core::StringToHash(string_)) {
+  static StringImpl* NewWithSize(std::size_t n) {
+    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+        sizeof(size_type) + n * sizeof(char_type),
+        GC_true_type()));
+    mem->size_ = n;
+    return mem;
   }
 
-  JSString(const JSString& str)
-    : string_(str.string_),
-      hash_value_(str.hash_value_) {
+  template<typename Iter>
+  static StringImpl* New(Iter it, Iter last) {
+    const std::size_t n = std::distance(it, last);
+    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+        sizeof(size_type) + n * sizeof(char_type),
+        GC_true_type()));
+    mem->size_ = n;
+    std::copy(it, last, mem->begin());
+    return mem;
   }
 
-  JSString(size_type len, uint16_t ch)
-    : string_(len, ch),
-      hash_value_(core::StringToHash(string_)) {
+  template<typename Iter>
+  static StringImpl* New(Iter it, std::size_t n) {
+    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+        sizeof(size_type) + n * sizeof(char_type),
+        GC_true_type()));
+    mem->size_ = n;
+    std::copy(it, it + n, mem->begin());
+    return mem;
   }
 
-  JSString(const uint16_t* s, size_type len)
-    : string_(s, len),
-      hash_value_(core::StringToHash(string_)) {
-  }
-
-  JSString(const GCUString& s, size_type index, size_type len)
-    : string_(s, index, len),
-      hash_value_(core::StringToHash(string_)) {
-  }
-
-  // UStringPiece cast
   operator core::UStringPiece() const {
     return core::UStringPiece(data(), size());
   }
 
-  template<typename Iter>
-  JSString(Iter start, Iter last)
-    : string_(start, last),
-      hash_value_(core::StringToHash(string_)) {
+  const_reference operator[](size_type n) const {
+    return (data())[n];
   }
 
-  const uint16_t& operator[](size_type n) const {
-    return string_[n];
+  reference operator[](size_type n) {
+    return (data())[n];
   }
 
-  bool empty() const {
-    return string_.empty();
+  pointer data() {
+    return reinterpret_cast<pointer>(this + 1);
   }
 
-  size_type size() const {
-    return string_.size();
+  const_pointer data() const {
+    return reinterpret_cast<const_pointer>(this + 1);
   }
 
-  const uint16_t* data() const {
-    return string_.data();
+  iterator begin() {
+    return data();
   }
 
   const_iterator begin() const {
-    return string_.begin();
+    return data();
+  }
+
+  const_iterator cbegin() const {
+    return data();
+  }
+
+  iterator end() {
+    return begin() + size_;
   }
 
   const_iterator end() const {
-    return string_.end();
+    return begin() + size_;
+  }
+
+  const_iterator cend() const {
+    return begin() + size_;
   }
 
   const_reverse_iterator rbegin() const {
-    return string_.rbegin();
+    return const_reverse_iterator(end());
+  }
+
+  const_reverse_iterator crbegin() const {
+    return rbegin();
   }
 
   const_reverse_iterator rend() const {
-    return string_.rend();
+    return const_reverse_iterator(begin());
   }
 
-  const GCUString& value() const {
-    return string_;
+  const_reverse_iterator crend() const {
+    return rend();
   }
 
-  core::UStringPiece piece() const {
-    return core::UStringPiece(data(), size());
+  size_type size() const {
+    return size_;
   }
 
-  inline friend bool operator==(const this_type& lhs,
-                                const this_type& rhs) {
-    return lhs.string_ == rhs.string_;
+  int compare(const this_type& x) const {
+    const int r =
+        traits_type::compare(data(), x.data(), std::min(size_, x.size_));
+    if (r == 0) {
+      if (size_ < x.size_) {
+        return -1;
+      } else if (size_ > x.size_) {
+        return 1;
+      }
+    }
+    return r;
   }
 
-  inline friend bool operator<(const this_type& lhs,
-                               const this_type& rhs) {
-    return lhs.string_ < rhs.string_;
+  friend bool operator==(const this_type& x, const this_type& y) {
+    return x.compare(y) == 0;
   }
 
-  inline friend bool operator>(const this_type& lhs,
-                               const this_type& rhs) {
-    return lhs.string_ > rhs.string_;
+  friend bool operator!=(const this_type& x, const this_type& y) {
+    return !(x == y);
   }
 
-  inline friend bool operator<=(const this_type& lhs,
-                                const this_type& rhs) {
-    return lhs.string_ <= rhs.string_;
+  friend bool operator<(const this_type& x, const this_type& y) {
+    return x.compare(y) < 0;
   }
 
-  inline friend bool operator>=(const this_type& lhs,
-                                const this_type& rhs) {
-    return lhs.string_ >= rhs.string_;
+  friend bool operator>(const this_type& x, const this_type& y) {
+    return x.compare(y) > 0;
   }
 
-  inline int compare(const core::UStringPiece& piece) const {
-    return string_.compare(0, string_.size(), piece.data(), piece.size());
+  friend bool operator<=(const this_type& x, const this_type& y) {
+    return x.compare(y) <= 0;
   }
 
-  inline std::size_t hash_value() const {
-    return hash_value_;
+  friend bool operator>=(const this_type& x, const this_type& y) {
+    return x.compare(y) >= 0;
   }
 
-  static JSString* New(Context* ctx, const core::StringPiece& str) {
+  std::size_t size_;
+};
+
+IV_STATIC_ASSERT(sizeof(StringImpl) == sizeof(std::size_t));
+
+}  // namespace detail
+
+class JSString : public HeapObject {
+ public:
+  typedef JSString this_type;
+  typedef std::array<const detail::StringImpl*, detail::kMaxFibers> Fibers;
+  typedef detail::StringImpl::size_type size_type;
+
+  struct FlattenTag { };
+
+  std::size_t size() const {
+    return size_;
+  }
+
+  bool empty() const {
+    return size_ == 0;
+  }
+
+  const detail::StringImpl* Flatten() const {
+    if (fiber_count_ != 1) {
+      detail::StringImpl* impl = detail::StringImpl::NewWithSize(size_);
+      detail::StringImpl::iterator target = impl->begin();
+      for (Fibers::iterator it = fibers_.begin(),
+           last = it + fiber_count_; it != last; ++it) {
+        target = std::copy((*it)->begin(), (*it)->end(), target);
+        *it = NULL;
+      }
+      fiber_count_ = 1;
+      fibers_[0] = impl;
+    }
+    assert(fibers_[0]->size() == size());
+    return fibers_[0];
+  }
+
+  std::string GetUTF8() const {
+    const detail::StringImpl* impl = Flatten();
+    std::string str;
+    str.reserve(size_);
+    if (core::unicode::UTF16ToUTF8(
+          impl->begin(), impl->end(),
+          std::back_inserter(str)) != core::unicode::NO_ERROR) {
+      str.clear();
+    }
+    return str;
+  }
+
+  core::UString GetUString() const {
+    const detail::StringImpl* impl = Flatten();
+    return core::UString(impl->data(), impl->size());
+  }
+
+  uint16_t GetIndex(detail::StringImpl::size_type n) const {
+    if (fibers_[0]->size() > n) {
+      return (*fibers_.front())[n];
+    }
+    return (*Flatten())[n];
+  }
+
+  template<typename Target>
+  void CopyToString(Target* target) const {
+    if (!empty()) {
+      const detail::StringImpl* impl = Flatten();
+      target->assign(impl->data(), impl->size());
+    } else {
+      target->assign(0UL, typename Target::value_type());
+    }
+  }
+
+  template<typename Target>
+  void AppendToString(Target* target) const {
+    if (!empty()) {
+      const detail::StringImpl* impl = Flatten();
+      target->assign(impl->data(), impl->size());
+    }
+  }
+
+  template<typename OutputIter>
+  void Copy(OutputIter target) const {
+    for (Fibers::iterator it = fibers_.begin(),
+         last = it + fiber_count_; it != last; ++it) {
+      target = std::copy((*it)->begin(), (*it)->end(), target);
+    }
+  }
+
+  friend bool operator==(const this_type& x, const this_type& y) {
+    if (x.size() == y.size()) {
+      return (*x.Flatten()) == (*y.Flatten());
+    }
+    return false;
+  }
+
+  friend bool operator!=(const this_type& x, const this_type& y) {
+    return !(x == y);
+  }
+
+  friend bool operator<(const this_type& x, const this_type& y) {
+    return (*x.Flatten()) < (*y.Flatten());
+  }
+
+  friend bool operator>(const this_type& x, const this_type& y) {
+    return (*x.Flatten()) > (*y.Flatten());
+  }
+
+  friend bool operator<=(const this_type& x, const this_type& y) {
+    return (*x.Flatten()) <= (*y.Flatten());
+  }
+
+  friend bool operator>=(const this_type& x, const this_type& y) {
+    return (*x.Flatten()) >= (*y.Flatten());
+  }
+
+  static this_type* New(Context* ctx, const core::StringPiece& str) {
     std::vector<uint16_t> buffer;
     buffer.reserve(str.size());
     if (core::unicode::UTF8ToUTF16(
@@ -157,35 +308,125 @@ class JSString : public HeapObject {
             std::back_inserter(buffer)) != core::unicode::NO_ERROR) {
       buffer.clear();
     }
-    return new JSString(buffer.begin(), buffer.end());
+    return new this_type(
+        core::UStringPiece(buffer.data(), buffer.size()));
   }
 
-  static JSString* New(Context* ctx, const core::UStringPiece& str) {
-    return new JSString(str.data(), str.size());
+  static this_type* New(Context* ctx, const core::UStringPiece& str) {
+    return new this_type(str);
   }
 
-  static JSString* NewAsciiString(Context* ctx,
-                                  const core::StringPiece& str) {
-    return new JSString(str.begin(), str.end());
+  static this_type* NewAsciiString(Context* ctx,
+                                   const core::StringPiece& str) {
+    return new this_type(str);
+  }
+
+  static this_type* NewSingle(Context* ctx, uint16_t ch) {
+    return new this_type(ch);
   }
 
   template<typename Iter>
-  static JSString* New(Context* ctx, Iter it, Iter last) {
-    return new JSString(it, last);
+  static this_type* New(Context* ctx, Iter it, Iter last) {
+    return new this_type(it, last);
   }
 
-  static JSString* NewEmptyString(Context* ctx) {
-    return new JSString();
+  static this_type* NewEmptyString(Context* ctx) {
+    return new this_type();
+  }
+
+  static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
+    if (lhs->empty()) {
+      return rhs;
+    } else if (rhs->empty()) {
+      return lhs;
+    } else if ((lhs->fiber_count_ + rhs->fiber_count_) <= detail::kMaxFibers) {
+      return new this_type(lhs, rhs);
+    } else {
+      // flatten version
+      return new this_type(lhs, rhs, FlattenTag());
+    }
   }
 
  private:
+  std::size_t fiber_count() const {
+    return fiber_count_;
+  }
 
-  GCUString string_;
-  std::size_t hash_value_;
+  // empty string
+  JSString()
+    : size_(0),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = detail::StringImpl::NewWithSize(size_);
+  }
+
+  // single char string
+  JSString(uint16_t ch)
+    : size_(1),
+      fiber_count_(1),
+      fibers_() {
+    detail::StringImpl* impl = detail::StringImpl::NewWithSize(1);
+    (*impl)[0] = ch;
+    fibers_[0] = impl;
+  }
+
+  template<typename Iter>
+  JSString(Iter it, Iter last)
+    : size_(std::distance(it, last)),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = detail::StringImpl::New(it, size_);
+  }
+
+  template<typename String>
+  explicit JSString(const String& str)
+    : size_(str.size()),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = detail::StringImpl::New(str.data(), size_);
+  }
+
+  // fiber count version
+  JSString(JSString* lhs, JSString* rhs)
+    : size_(lhs->size() + rhs->size()),
+      fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
+      fibers_() {
+    assert(fiber_count_ <= detail::kMaxFibers);
+    std::copy(
+        rhs->fibers_.begin(),
+        rhs->fibers_.begin() + rhs->fiber_count_,
+        std::copy(lhs->fibers_.begin(),
+                  lhs->fibers_.begin() + lhs->fiber_count_,
+                  fibers_.begin()));
+  }
+
+  // flatten version
+  JSString(JSString* lhs, JSString* rhs, FlattenTag tag)
+    : size_(lhs->size() + rhs->size()),
+      fiber_count_(1),
+      fibers_() {
+    detail::StringImpl* impl = detail::StringImpl::NewWithSize(size_);
+    detail::StringImpl::iterator target = impl->begin();
+    for (Fibers::const_iterator it = lhs->fibers_.begin(),
+         last = lhs->fibers_.begin() + lhs->fiber_count_;
+         it != last; ++it) {
+      target = std::copy((*it)->begin(), (*it)->end(), target);
+    }
+    for (Fibers::const_iterator it = rhs->fibers_.begin(),
+         last = rhs->fibers_.begin() + rhs->fiber_count_;
+         it != last; ++it) {
+      target = std::copy((*it)->begin(), (*it)->end(), target);
+    }
+    fibers_[0] = impl;
+  }
+
+  std::size_t size_;
+  mutable std::size_t fiber_count_;
+  mutable Fibers fibers_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
-  return core::unicode::OutputUTF16(os, str.value().begin(), str.value().end());
+  return os << str.GetUTF8();
 }
 
 class StringBuilder : protected std::vector<uint16_t> {
@@ -202,7 +443,7 @@ class StringBuilder : protected std::vector<uint16_t> {
   }
 
   void Append(const JSString& str) {
-    insert(end(), str.begin(), str.end());
+    str.Copy(std::back_inserter<container_type>(*this));
   }
 
   void Append(uint16_t ch) {
@@ -210,7 +451,7 @@ class StringBuilder : protected std::vector<uint16_t> {
   }
 
   template<typename Iter>
-  void Append(Iter it, typename JSString::size_type size) {
+  void Append(Iter it, typename container_type::size_type size) {
     insert(end(), it, it + size);
   }
 
@@ -230,10 +471,12 @@ class StringBuilder : protected std::vector<uint16_t> {
   }
 
   void append(const JSString& str) {
-    insert(end(), str.begin(), str.end());
+    str.Copy(std::back_inserter<container_type>(*this));
   }
 
   using container_type::push_back;
+
+  using container_type::insert;
 
   using container_type::assign;
 
@@ -251,19 +494,4 @@ class StringBuilder : protected std::vector<uint16_t> {
 };
 
 } }  // namespace iv::lv5
-
-namespace IV_HASH_NAMESPACE_START {
-
-// template specialization for JSString in std::unordered_map
-// allowed in section 17.4.3.1
-template<>
-struct hash<iv::lv5::JSString>
-  : public std::unary_function<iv::lv5::JSString, std::size_t> {
-  result_type operator()(const argument_type& x) const {
-    return x.hash_value();
-  }
-};
-
-} IV_HASH_NAMESPACE_END
-
 #endif  // _IV_LV5_JSSTRING_H_

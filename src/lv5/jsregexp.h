@@ -76,7 +76,7 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx, JSRegExp* r) {
     const JSString* const source = r->source(ctx);
-    JSRegExp* const reg = new JSRegExp(ctx, source->piece(), r->impl());
+    JSRegExp* const reg = new JSRegExp(ctx, *source->Flatten(), r->impl());
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
@@ -158,8 +158,9 @@ class JSRegExp : public JSObject {
     int n = 0;
     const int start = previous_index;
     const int size = str->size();
+    const detail::StringImpl* impl = str->Flatten();
     do {
-      const int rc = impl_->ExecuteOnce(str->piece(),
+      const int rc = impl_->ExecuteOnce(*impl,
                                         previous_index, &offset_vector);
       if (rc == jscre::JSRegExpErrorNoMatch ||
           rc == jscre::JSRegExpErrorHitLimit) {
@@ -183,8 +184,8 @@ class JSRegExp : public JSObject {
           n,
           DataDescriptor(
               JSString::New(ctx,
-                            str->begin() + offset_vector[0],
-                            str->begin() + offset_vector[1]),
+                            impl->begin() + offset_vector[0],
+                            impl->begin() + offset_vector[1]),
               PropertyDescriptor::WRITABLE |
               PropertyDescriptor::ENUMERABLE |
               PropertyDescriptor::CONFIGURABLE),
@@ -228,7 +229,8 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const int rc = impl_->ExecuteOnce(str->piece(),
+    const detail::StringImpl* impl = str->Flatten();
+    const int rc = impl_->ExecuteOnce(*impl,
                                       previous_index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||
         rc == jscre::JSRegExpErrorHitLimit) {
@@ -278,8 +280,8 @@ class JSRegExp : public JSObject {
             i,
             DataDescriptor(
                 JSString::New(ctx,
-                              str->begin() + offset_vector[i*2],
-                              str->begin() + offset_vector[i*2+1]),
+                              impl->begin() + offset_vector[i*2],
+                              impl->begin() + offset_vector[i*2+1]),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),

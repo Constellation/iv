@@ -99,7 +99,7 @@ class KeywordChecker : private core::Noncopyable<> {
   template<typename Iter>
   static const Keyword& Lookup(Iter* it, Iter last) {
     // fill buffer 4 chars
-    typedef typename Iter::value_type char_type;
+    typedef typename std::iterator_traits<Iter>::value_type char_type;
     std::array<char_type, 4> buf = { { 0 } };
     std::size_t i = 0;
     for (;

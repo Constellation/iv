@@ -68,15 +68,13 @@ class Interactive {
         if (!ret.IsUndefined()) {
           const JSString* const str = ret.ToString(&ctx_, &e);
           if (!e) {
-            core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
-            std::fputc('\n', stdout);
+            std::printf("%s\n", str->GetUTF8().c_str());
           } else {
             ret = iv::lv5::JSError::Detail(&ctx_, &e);
             e.Clear();
             const JSString* const str = ret.ToString(&ctx_, &e);
             if (!e) {
-              core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
-              std::fputc('\n', stdout);
+              std::printf("%s\n", str->GetUTF8().c_str());
             } else {
               e.Clear();
               std::puts("<STRING CONVERSION FAILED>\n");

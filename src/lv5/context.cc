@@ -5,8 +5,8 @@
 #include "ustring.h"
 #include "dtoa.h"
 #include "canonicalized_nan.h"
-#include "lv5/jsenv.h"
 #include "lv5/jsmath.h"
+#include "lv5/jsenv.h"
 #include "lv5/jsjson.h"
 #include "lv5/jsglobal.h"
 #include "lv5/jsfunction.h"
@@ -41,6 +41,10 @@ Symbol Intern(Context* ctx, const core::UStringPiece& str) {
   return ctx->global_data()->Intern(str);
 }
 
+Symbol Intern(Context* ctx, const JSString* str) {
+  return ctx->global_data()->Intern(*str->Flatten());
+}
+
 Symbol Intern(Context* ctx, uint32_t index) {
   return ctx->global_data()->InternUInt32(index);
 }
@@ -55,6 +59,10 @@ Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res) {
 
 Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res) {
   return ctx->global_data()->CheckIntern(str, res);
+}
+
+Symbol Intern(Context* ctx, const JSString* str, bool* res) {
+  return ctx->global_data()->CheckIntern(*str->Flatten(), res);
 }
 
 Symbol Lookup(Context* ctx, uint32_t index, bool* res) {

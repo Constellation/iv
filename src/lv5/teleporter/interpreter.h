@@ -706,12 +706,9 @@ void Interpreter::Visit(const Assignment* assign) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
-          StringBuilder builder;
-          const JSString* const lstr = lprim.ToString(ctx_, CHECK);
-          const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          builder.Append(*lstr);
-          builder.Append(*rstr);
-          result.set_value(builder.Build(ctx_));
+          JSString* const lstr = lprim.ToString(ctx_, CHECK);
+          JSString* const rstr = rprim.ToString(ctx_, CHECK);
+          result.set_value(JSString::New(ctx_, lstr, rstr));
           break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -867,12 +864,9 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         if (lprim.IsString() || rprim.IsString()) {
-          StringBuilder builder;
-          const JSString* const lstr = lprim.ToString(ctx_, CHECK);
-          const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          builder.Append(*lstr);
-          builder.Append(*rstr);
-          ctx_->Return(builder.Build(ctx_));
+          JSString* const lstr = lprim.ToString(ctx_, CHECK);
+          JSString* const rstr = rprim.ToString(ctx_, CHECK);
+          ctx_->Return(JSString::New(ctx_, lstr, rstr));
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -967,7 +961,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         const JSString* const name = lhs.ToString(ctx_, CHECK);
         const bool res =
             rhs.object()->HasProperty(ctx_,
-                                      context::Intern(ctx_, *name));
+                                      context::Intern(ctx_, name));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1348,7 +1342,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
   ctx_->Return(
       JSReference::New(ctx_,
                        base_value,
-                       context::Intern(ctx_, *name),
+                       context::Intern(ctx_, name),
                        ctx_->IsStrict()));
 }
 

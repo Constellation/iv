@@ -74,8 +74,9 @@ class JSONStringifier : private core::Noncopyable<> {
     static const char kHexDigits[17] = "0123456789ABCDEF";
     StringBuilder builder;
     builder.Append('"');
-    for (JSString::const_iterator it = str.begin(),
-         last = str.end(); it != last; ++it) {
+    const detail::StringImpl* impl = str.Flatten();
+    for (detail::StringImpl::const_iterator it = impl->begin(),
+         last = impl->end(); it != last; ++it) {
       const uint16_t c = *it;
       if (c == '"' || c == '\\') {
         builder.Append('\\');
@@ -154,20 +155,19 @@ class JSONStringifier : private core::Noncopyable<> {
     for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
       const JSVal result = Str(
-          context::Intern(ctx_,
-                          core::UStringPiece((*it)->data(), (*it)->size())),
+          context::Intern(ctx_, *(*it)->Flatten()),
           value, IV_LV5_ERROR(e));
       if (!result.IsUndefined()) {
         core::UString member;
         JSString* ret = Quote(**it, IV_LV5_ERROR(e));
-        member.append(ret->begin(), ret->end());
+        ret->Copy(std::back_inserter(member));
         member.push_back(':');
         if (!gap_.empty()) {
           member.push_back(' ');
         }
         assert(result.IsString());
         JSString* target = result.string();
-        member.append(target->begin(), target->end());
+        target->Copy(std::back_inserter(member));
         partial.push_back(member);
       }
     }
@@ -233,7 +233,7 @@ class JSONStringifier : private core::Noncopyable<> {
       } else {
         assert(str.IsString());
         const JSString* const s = str.string();
-        partial.push_back(core::UString(s->begin(), s->end()));
+        partial.push_back(s->GetUString());
       }
     }
     JSString* final;

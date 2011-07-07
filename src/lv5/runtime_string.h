@@ -47,34 +47,40 @@ static inline bool IsTrimmed(uint16_t c) {
          core::character::IsLineTerminator(c);
 }
 
-inline int64_t SplitMatch(const JSString& str,
-                          uint32_t q, const JSString& rstr) {
-  const std::size_t rs = rstr.size();
+inline int64_t SplitMatch(const lv5::detail::StringImpl& str,
+                          uint32_t q,
+                          const lv5::detail::StringImpl& rhs) {
+  const std::size_t rs = rhs.size();
   const std::size_t s = str.size();
   if (q + rs > s) {
     return -1;
   }
-  if (rstr.value().compare(0, rs, str.value().data() + q, rs) != 0) {
+  if (lv5::detail::StringImpl::traits_type::compare(
+          rhs.data(),
+          str.data() + q,
+          rs) != 0) {
     return -1;
   }
   return q + rs;
 }
 
-inline JSVal StringSplit(Context* ctx, const JSString& str,
+inline JSVal StringSplit(Context* ctx,
+                         const lv5::detail::StringImpl& target,
                          const JSString& rstr, uint32_t lim) {
   Error e;
   uint32_t length = 0;
   uint32_t p = 0;
   uint32_t q = p;
-  const uint32_t size = str.size();
+  const uint32_t size = target.size();
   JSArray* const ary = JSArray::New(ctx);
+  const lv5::detail::StringImpl& rhs = *rstr.Flatten();
   if (size == 0) {
-    if (detail::SplitMatch(str, q, rstr) != -1) {
+    if (detail::SplitMatch(target, q, rhs) != -1) {
       return ary;
     }
   }
   while (q != size) {
-    const int64_t rs = detail::SplitMatch(str, q, rstr);
+    const int64_t rs = detail::SplitMatch(target, q, rhs);
     if (rs == -1) {
       ++q;
     } else {
@@ -85,7 +91,7 @@ inline JSVal StringSplit(Context* ctx, const JSString& str,
         ary->DefineOwnPropertyWithIndex(
             ctx, length,
             DataDescriptor(
-                JSString::New(ctx, str.begin() + p, str.begin() + q),
+                JSString::New(ctx, target.begin() + p, target.begin() + q),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
@@ -103,8 +109,8 @@ inline JSVal StringSplit(Context* ctx, const JSString& str,
       ctx, length,
       DataDescriptor(
           JSString::New(ctx,
-                        str.begin() + p,
-                        str.begin() + size),
+                        target.begin() + p,
+                        target.begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
@@ -113,12 +119,12 @@ inline JSVal StringSplit(Context* ctx, const JSString& str,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(const JSString& str,
+inline regexp::MatchResult RegExpMatch(const lv5::detail::StringImpl& str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
   vec->clear();
-  return reg.Match(str.value(), q, vec);
+  return reg.Match(str, q, vec);
 }
 
 struct Replace {
@@ -137,12 +143,12 @@ class Replacer : private core::Noncopyable<> {
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
-    const regexp::MatchResult res = RegExpMatch(*str_, 0, reg_, &vec_);
+    const regexp::MatchResult res = RegExpMatch(str_impl_, 0, reg_, &vec_);
     if (get<2>(res)) {
-      builder->Append(str_->begin(), str_->begin() + get<0>(res));
+      builder->Append(str_impl_.begin(), str_impl_.begin() + get<0>(res));
       static_cast<T*>(this)->DoReplace(builder, res, e);
     }
-    builder->Append(str_->begin() + get<1>(res), str_->end());
+    builder->Append(str_impl_.begin() + get<1>(res), str_impl_.end());
   }
 
   template<typename Builder>
@@ -150,16 +156,16 @@ class Replacer : private core::Noncopyable<> {
     using std::get;
     int previous_index = 0;
     int not_matched_index = previous_index;
-    const int size = str_->size();
+    const int size = str_impl_.size();
     do {
-      const regexp::MatchResult res = detail::RegExpMatch(*str_,
+      const regexp::MatchResult res = detail::RegExpMatch(str_impl_,
                                                           previous_index,
                                                           reg_, &vec_);
       if (!get<2>(res)) {
         break;
       }
-      builder->Append(str_->begin() + not_matched_index,
-                      str_->begin() + get<0>(res));
+      builder->Append(str_impl_.begin() + not_matched_index,
+                      str_impl_.begin() + get<0>(res));
       const int this_index = get<1>(res);
       not_matched_index = this_index;
       if (previous_index == this_index) {
@@ -172,17 +178,19 @@ class Replacer : private core::Noncopyable<> {
         break;
       }
     } while (true);
-    builder->Append(str_->begin() + not_matched_index, str_->end());
+    builder->Append(str_impl_.begin() + not_matched_index, str_impl_.end());
   }
 
  protected:
   Replacer(JSString* str, const JSRegExp& reg)
     : str_(str),
+      str_impl_(*str->Flatten()),
       reg_(reg),
       vec_() {
   }
 
   JSString* str_;
+  const lv5::detail::StringImpl& str_impl_;
   const JSRegExp& reg_;
   regexp::PairVector vec_;
 };
@@ -195,7 +203,8 @@ class StringReplacer : public Replacer<StringReplacer> {
                  const JSRegExp& reg,
                  const JSString& replace)
     : super_type(str, reg),
-      replace_(replace) {
+      replace_(replace),
+      replace_impl_(*replace_.Flatten()) {
   }
 
   template<typename Builder>
@@ -203,8 +212,8 @@ class StringReplacer : public Replacer<StringReplacer> {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
-    for (typename JSString::const_iterator it = replace_.begin(),
-         last = replace_.end(); it != last; ++it) {
+    for (typename lv5::detail::StringImpl::const_iterator it = replace_impl_.begin(),
+         last = replace_impl_.end(); it != last; ++it) {
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
@@ -221,19 +230,19 @@ class StringReplacer : public Replacer<StringReplacer> {
 
           case '&':  // $& pattern
             state = Replace::kNormal;
-            builder->Append(str_->begin() + get<0>(res),
-                            str_->begin() + get<1>(res));
+            builder->Append(str_impl_.begin() + get<0>(res),
+                            str_impl_.begin() + get<1>(res));
             break;
 
           case '`':  // $` pattern
             state = Replace::kNormal;
-            builder->Append(str_->begin(),
-                            str_->begin() + get<0>(res));
+            builder->Append(str_impl_.begin(),
+                            str_impl_.begin() + get<0>(res));
             break;
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
-            builder->Append(str_->begin() + get<1>(res), str_->end());
+            builder->Append(str_impl_.begin() + get<1>(res), str_impl_.end());
             break;
 
           default:
@@ -253,16 +262,16 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_->begin() + pair.first,
-                              str_->begin() + pair.second);
+              builder->Append(str_impl_.begin() + pair.first,
+                              str_impl_.begin() + pair.second);
             }
           } else {
             // single digit pattern search
             if (vec_.size() >= single_n) {
               const regexp::PairVector::value_type& pair = vec_[single_n - 1];
               if (pair.first != -1 && pair.second != -1) {  // check undefined
-                builder->Append(str_->begin() + pair.first,
-                                str_->begin() + pair.second);
+                builder->Append(str_impl_.begin() + pair.first,
+                                str_impl_.begin() + pair.second);
               }
             } else {
               builder->Append('$');
@@ -275,8 +284,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_->begin() + pair.first,
-                              str_->begin() + pair.second);
+              builder->Append(str_impl_.begin() + pair.first,
+                              str_impl_.begin() + pair.second);
             }
           } else {
             builder->Append('$');
@@ -293,8 +302,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_->begin() + pair.first,
-                              str_->begin() + pair.second);
+              builder->Append(str_impl_.begin() + pair.first,
+                              str_impl_.begin() + pair.second);
             }
           } else {
             builder->Append("$0");
@@ -316,8 +325,8 @@ class StringReplacer : public Replacer<StringReplacer> {
       if (vec_.size() >= n) {
         const regexp::PairVector::value_type& pair = vec_[n - 1];
         if (pair.first != -1 && pair.second != -1) {  // check undefined
-          builder->Append(str_->begin() + pair.first,
-                          str_->begin() + pair.second);
+          builder->Append(str_impl_.begin() + pair.first,
+                          str_impl_.begin() + pair.second);
         }
       } else {
         builder->Append('$');
@@ -330,6 +339,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
+  const lv5::detail::StringImpl& replace_impl_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {
@@ -350,15 +360,15 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     using std::get;
     ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
-                         str_->begin() + get<0>(res),
-                         str_->begin() + get<1>(res));
+                         str_impl_.begin() + get<0>(res),
+                         str_impl_.begin() + get<1>(res));
     std::size_t i = 1;
     for (regexp::PairVector::const_iterator it = vec_.begin(),
          last = vec_.end(); it != last; ++it, ++i) {
       if (it->first != -1 && it->second != -1) {  // check undefined
         a[i] = JSString::New(ctx_,
-                             str_->begin() + it->first,
-                             str_->begin() + it->second);
+                             str_impl_.begin() + it->first,
+                             str_impl_.begin() + it->second);
       }
     }
     a[i++] = get<0>(res);
@@ -373,17 +383,14 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
   Context* ctx_;
 };
 
-template<typename Builder,
-         typename StringT,
-         typename StringU,
-         typename StringV>
+template<typename Builder>
 inline void ReplaceOnce(Builder* builder,
-                        const StringT& str,
-                        const StringU& search_str,
-                        JSString::size_type loc,
-                        const StringV& replace_str) {
+                        const lv5::detail::StringImpl& str,
+                        const JSString& search_str,
+                        lv5::detail::StringImpl::size_type loc,
+                        const lv5::detail::StringImpl& replace_str) {
   Replace::State state = Replace::kNormal;
-  for (typename StringV::const_iterator it = replace_str.begin(),
+  for (lv5::detail::StringImpl::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (state == Replace::kNormal) {
@@ -494,9 +501,9 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
   if (position < 0 || position >= str->size()) {
     return JSString::NewEmptyString(args.ctx());
   } else {
-    return JSString::New(
+    return JSString::NewSingle(
         args.ctx(),
-        core::UStringPiece(str->data() + core::DoubleToUInt32(position), 1));
+        str->GetIndex(position));
   }
 }
 
@@ -518,7 +525,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
     return JSNaN;
   } else {
     return JSVal::UInt32(
-        static_cast<uint32_t>((*str)[core::DoubleToUInt32(position)]));
+        static_cast<uint32_t>(str->GetIndex(core::DoubleToUInt32(position))));
   }
 }
 
@@ -528,13 +535,14 @@ inline JSVal StringConcat(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  core::UString result(str->begin(), str->end());
+  StringBuilder builder;
+  builder.Append(*str);
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(error));
-    result.append(r->begin(), r->end());
+    builder.Append(*r);
   }
-  return JSString::New(args.ctx(), result);
+  return builder.Build(args.ctx());
 }
 
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
@@ -558,9 +566,10 @@ inline JSVal StringIndexOf(const Arguments& args, Error* error) {
   }
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
-  const GCUString::size_type loc =
-      str->value().find(search_str->value(), start);
-  return (loc == GCUString::npos) ? -1.0 : loc;
+  const core::UStringPiece base(*str->Flatten());
+  const core::UStringPiece::size_type loc =
+      base.find(*search_str->Flatten(), start);
+  return (loc == core::UStringPiece::npos) ? -1.0 : loc;
 }
 
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
@@ -589,9 +598,10 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
     // undefined -> "undefined"
     search_str = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  const GCUString::size_type loc =
-      str->value().rfind(search_str->value(), target);
-  return (loc == GCUString::npos) ? -1.0 : loc;
+  const core::UStringPiece base(*str->Flatten());
+  const core::UStringPiece::size_type loc =
+      base.rfind(*search_str->Flatten(), target);
+  return (loc == core::UStringPiece::npos) ? -1.0 : loc;
 }
 
 // section 15.5.4.9 String.prototype.localeCompare(that)
@@ -606,7 +616,7 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
   } else {
     that = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  return str->value().compare(that->value());
+  return str->Flatten()->compare(*that->Flatten());
 }
 
 
@@ -690,14 +700,17 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
-    const GCUString::size_type loc = str->value().find(search_str->value(), 0);
-    if (loc == GCUString::npos) {
+    const lv5::detail::StringImpl* impl = str->Flatten();
+    const core::UStringPiece base(*impl);
+    const core::UStringPiece::size_type loc = base.find(*search_str->Flatten(),
+                                                        0);
+    if (loc == core::UStringPiece::npos) {
       // not found
       return str;
     }
     // found pattern
     StringBuilder builder;
-    builder.Append(str->begin(), str->begin() + loc);
+    builder.Append(impl->begin(), impl->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
       ScopedArguments a(ctx, 3, IV_LV5_ERROR(e));
@@ -714,9 +727,11 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
-      detail::ReplaceOnce(&builder, *str, *search_str, loc, *replace_value);
+      detail::ReplaceOnce(&builder,
+                          *impl, *search_str,
+                          loc, *replace_value->Flatten());
     }
-    builder.Append(str->begin() + loc + search_str->size(), str->end());
+    builder.Append(impl->begin() + loc + search_str->size(), impl->end());
     return builder.Build(ctx);
   }
 }
@@ -765,7 +780,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const uint32_t len = str->size();
+  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const uint32_t len = impl.size();
   uint32_t start;
   if (args.size() > 0) {
     double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -796,8 +812,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   }
   const uint32_t span = (end < start) ? 0 : end - start;
   return JSString::New(ctx,
-                       str->begin() + start,
-                       str->begin() + start + span);
+                       impl.begin() + start,
+                       impl.begin() + start + span);
 }
 
 // section 15.5.4.14 String.prototype.split(separator, limit)
@@ -808,6 +824,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
@@ -847,15 +864,15 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   }
 
   if (!regexp) {
-    return detail::StringSplit(ctx, *str, *target.string(), lim);
+    return detail::StringSplit(ctx, impl, *target.string(), lim);
   }
 
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
   JSArray* const ary = JSArray::New(ctx);
   regexp::PairVector cap;
-  const uint32_t size = str->size();
+  const uint32_t size = impl.size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(*str, 0, *reg, &cap))) {
+    if (get<2>(detail::RegExpMatch(impl, 0, *reg, &cap))) {
       return ary;
     }
     ary->DefineOwnPropertyWithIndex(
@@ -873,7 +890,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const regexp::MatchResult rs = detail::RegExpMatch(*str, q, *reg, &cap);
+    const regexp::MatchResult rs = detail::RegExpMatch(impl, q, *reg, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;
@@ -885,8 +902,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       ary->DefineOwnPropertyWithIndex(
           ctx, length,
           DataDescriptor(JSString::New(ctx,
-                                       str->begin() + p,
-                                       str->begin() + start_match),
+                                       impl.begin() + p,
+                                       impl.begin() + start_match),
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -905,8 +922,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
               ctx, length,
               DataDescriptor(
                   JSString::New(ctx,
-                                str->begin() + it->first,
-                                str->begin() + it->second),
+                                impl.begin() + it->first,
+                                impl.begin() + it->second),
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
@@ -932,8 +949,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       ctx, length,
       DataDescriptor(
           JSString::New(ctx,
-                        str->begin() + p,
-                        str->begin() + size),
+                        impl.begin() + p,
+                        impl.begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
@@ -947,8 +964,9 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
-  const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const uint32_t len = str->size();
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const uint32_t len = impl.size();
   uint32_t start;
   if (args.size() > 0) {
     double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -975,8 +993,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   const uint32_t from = std::min<uint32_t>(start, end);
   const uint32_t to = std::max<uint32_t>(start, end);
   return JSString::New(ctx,
-                       str->begin() + from,
-                       str->begin() + to);
+                       impl.begin() + from,
+                       impl.begin() + to);
 }
 
 // section 15.5.4.16 String.prototype.toLowerCase()
@@ -984,10 +1002,11 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
   StringBuilder builder;
-  for (JSString::const_iterator it = str->begin(),
-       last = str->end(); it != last; ++it) {
+  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
+       last = impl.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -998,10 +1017,11 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
   StringBuilder builder;
-  for (JSString::const_iterator it = str->begin(),
-       last = str->end(); it != last; ++it) {
+  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
+       last = impl.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1012,10 +1032,11 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
   StringBuilder builder;
-  for (JSString::const_iterator it = str->begin(),
-       last = str->end(); it != last; ++it) {
+  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
+       last = impl.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1026,10 +1047,11 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
   StringBuilder builder;
-  for (JSString::const_iterator it = str->begin(),
-       last = str->end(); it != last; ++it) {
+  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
+       last = impl.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1040,9 +1062,10 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  JSString::const_iterator lit = str->begin();
-  const JSString::const_iterator last = str->end();
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  const lv5::detail::StringImpl& impl = *str->Flatten();
+  lv5::detail::StringImpl::const_iterator lit = impl.begin();
+  const lv5::detail::StringImpl::const_iterator last = impl.end();
   // trim leading space
   bool empty = true;
   for (; lit != last; ++lit) {
@@ -1055,7 +1078,7 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  JSString::const_iterator rit = str->end() - 1;
+  lv5::detail::StringImpl::const_iterator rit = impl.end() - 1;
   for (; rit != lit; --rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
@@ -1071,7 +1094,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const double len = str->size();
+  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const double len = impl.size();
 
   double start;
   if (args.size() > 0) {
@@ -1110,8 +1134,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const uint32_t capacity = core::DoubleToUInt32(result6);
   const uint32_t start_position = core::DoubleToUInt32(result5);
   return JSString::New(ctx,
-                       str->begin() + start_position,
-                       str->begin() + start_position + capacity);
+                       impl.begin() + start_position,
+                       impl.begin() + start_position + capacity);
 }
 
 } } }  // namespace iv::lv5::runtime

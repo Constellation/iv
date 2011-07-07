@@ -94,8 +94,9 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   std::array<uint16_t, 3> hexbuf;
   StringBuilder builder;
   hexbuf[0] = '%';
-  for (JSString::const_iterator it = str.begin(),
-       last = str.end(); it != last; ++it) {
+  const lv5::detail::StringImpl* impl = str.Flatten();
+  for (lv5::detail::StringImpl::const_iterator it = impl->begin(),
+       last = impl->end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (URITraits::ContainsInEncode(ch)) {
       builder.Append(ch);
@@ -139,8 +140,9 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
 }
 
 template<typename URITraits>
-JSVal Decode(Context* ctx, const JSString& str, Error* e) {
+JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
   StringBuilder builder;
+  const lv5::detail::StringImpl& str = *arg.Flatten();
   const uint32_t length = str.size();
   std::array<uint16_t, 3> buf;
   std::array<uint8_t, 4> octets;
@@ -263,7 +265,8 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
     } else {
       radix = 10;
     }
-    return core::StringToIntegerWithRadix(str->begin(), str->end(),
+    const lv5::detail::StringImpl* impl = str->Flatten();
+    return core::StringToIntegerWithRadix(impl->begin(), impl->end(),
                                           radix,
                                           strip_prefix);
   } else {
@@ -276,7 +279,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, error);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
-    return core::StringToDouble(*str, true);
+    return core::StringToDouble(*str->Flatten(), true);
   } else {
     return JSNaN;
   }
@@ -381,8 +384,10 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   if (len == 0) {
     return str;  // empty string
   }
-  for (std::size_t k = 0; k < len; ++k) {
-    const uint16_t ch = (*str)[k];
+  const lv5::detail::StringImpl* impl = str->Flatten();
+  for (lv5::detail::StringImpl::const_iterator it = impl->begin(),
+       last = it + len; it != last; ++it) {
+    const uint16_t ch = *it;
     if (detail::Escape::ContainsInEncode(ch)) {
       builder.Append(ch);
     } else {
@@ -408,12 +413,13 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
 inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("unescape", args, e);
   Context* const ctx = args.ctx();
-  JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const std::size_t len = str->size();
+  JSString* s = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
+  const std::size_t len = s->size();
   if (len == 0) {
-    return str;  // empty string
+    return s;  // empty string
   }
   StringBuilder builder;
+  const lv5::detail::StringImpl* str = s->Flatten();
   std::size_t k = 0;
   while (k != len) {
     const uint16_t ch = (*str)[k];

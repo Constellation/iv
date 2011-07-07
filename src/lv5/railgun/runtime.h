@@ -34,16 +34,18 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
-  if (str->size() > 2 &&
-      (*str)[0] == '(' &&
-      (*str)[str->size() - 1] == ')') {
-    Error json_parse_error;
-    const JSVal result = ParseJSON<false>(ctx,
-                                          core::UStringPiece(str->data() + 1,
-                                                             str->size() - 2),
-                                          &json_parse_error);
-    if (!json_parse_error) {
-      return result;
+  if (str->size() > 2) {
+    const detail::StringImpl* impl = str->Flatten();
+    if ((*impl)[0] == '(' &&
+        (*impl)[str->size() - 1] == ')') {
+      Error json_parse_error;
+      const JSVal result = ParseJSON<false>(ctx,
+                                            core::UStringPiece(impl->data() + 1,
+                                                               impl->size() - 2),
+                                            &json_parse_error);
+      if (!json_parse_error) {
+        return result;
+      }
     }
   }
 
@@ -95,17 +97,18 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   const bool strict = frame->code()->strict();
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
-  if (str->size() > 2 &&
-      (*str)[0] == '(' &&
-      (*str)[str->size() - 1] == ')' &&
-      !strict) {
-    Error json_parse_error;
-    const JSVal result = ParseJSON<false>(ctx,
-                                          core::UStringPiece(str->data() + 1,
-                                                             str->size() - 2),
-                                          &json_parse_error);
-    if (!json_parse_error) {
-      return result;
+  if (str->size() > 2 && !strict) {
+    const detail::StringImpl* impl = str->Flatten();
+    if ((*impl)[0] == '(' &&
+        (*impl)[str->size() - 1] == ')') {
+      Error json_parse_error;
+      const JSVal result = ParseJSON<false>(ctx,
+                                            core::UStringPiece(impl->data() + 1,
+                                                               impl->size() - 2),
+                                            &json_parse_error);
+      if (!json_parse_error) {
+        return result;
+      }
     }
   }
 

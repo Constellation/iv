@@ -88,7 +88,7 @@ class VM {
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
-    const Symbol s = context::Intern(ctx_, str->value());
+    const Symbol s = context::Intern(ctx_, str);
     return LoadPropImpl(sp, base, s, strict, e);
   }
 
@@ -142,7 +142,7 @@ class VM {
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
-    const Symbol s = context::Intern(ctx_, str->value());
+    const Symbol s = context::Intern(ctx_, str);
     StorePropImpl(base, s, stored, strict, e);
   }
 
@@ -199,27 +199,21 @@ class VM {
       return lhs.number() + rhs.number();
     }
     if (lhs.IsString()) {
-      StringBuilder builder;
-      builder.Append(*lhs.string());
       if (rhs.IsString()) {
-        builder.Append(*rhs.string());
+        return JSString::New(ctx_, lhs.string(), rhs.string());
       } else {
         const JSVal rp = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
-        const JSString* const rs = rp.ToString(ctx_, CHECK);
-        builder.Append(*rs);
+        JSString* const rs = rp.ToString(ctx_, CHECK);
+        return JSString::New(ctx_, lhs.string(), rs);
       }
-      return builder.Build(ctx_);
     }
 
     const JSVal lprim = lhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
     const JSVal rprim = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
     if (lprim.IsString() || rprim.IsString()) {
-      StringBuilder builder;
-      const JSString* const lstr = lprim.ToString(ctx_, CHECK);
-      const JSString* const rstr = rprim.ToString(ctx_, CHECK);
-      builder.Append(*lstr);
-      builder.Append(*rstr);
-      return builder.Build(ctx_);
+      JSString* const lstr = lprim.ToString(ctx_, CHECK);
+      JSString* const rstr = rprim.ToString(ctx_, CHECK);
+      return JSString::New(ctx_, lstr, rstr);
     }
     const double left_num = lprim.ToNumber(ctx_, CHECK);
     const double right_num = rprim.ToNumber(ctx_, CHECK);
@@ -325,7 +319,7 @@ class VM {
     const JSString* const name = lhs.ToString(ctx_, CHECK);
     const bool res =
         rhs.object()->HasProperty(ctx_,
-                                  context::Intern(ctx_, name->value()));
+                                  context::Intern(ctx_, name));
     return JSVal::Bool(res);
   }
 
@@ -397,7 +391,7 @@ class VM {
                           const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSString* str = element.ToString(ctx_, CHECK);
-    const Symbol s = context::Intern(ctx_, str->value());
+    const Symbol s = context::Intern(ctx_, str);
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx_, CHECK);

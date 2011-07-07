@@ -88,7 +88,7 @@ int Execute(const iv::core::StringPiece& data,
     e.Clear();
     const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
     if (!e) {
-      iv::core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
+      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
       return EXIT_FAILURE;
     } else {
       return EXIT_FAILURE;
@@ -135,7 +135,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
                      iv::lv5::JSEmpty, NULL);
     const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
     if (!*ctx.error()) {
-      iv::core::unicode::FPutsUTF16(stderr, str->begin(), str->end());
+      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
       return EXIT_FAILURE;
     }
   }

@@ -62,16 +62,14 @@ class Interactive {
         if (!val.IsUndefined()) {
           const JSString* const str = val.ToString(&ctx_, ctx_.error());
           if (!ctx_.IsError()) {
-            core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
-            std::fputc('\n', stdout);
+            std::printf("%s\n", str->GetUTF8().c_str());
           } else {
             val = ctx_.ErrorVal();
             ctx_.error()->Clear();
             ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);
             const JSString* const str = val.ToString(&ctx_, ctx_.error());
             if (!ctx_.IsError()) {
-              core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
-              std::fputc('\n', stdout);
+              std::printf("%s\n", str->GetUTF8().c_str());
             } else {
               ctx_.error()->Clear();
               ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);

@@ -16,7 +16,7 @@ namespace runtime {
 inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   const uint32_t args_count = args.size();
   Context* const ctx = args.ctx();
-  JSString* pattern;
+  core::UString pattern;
   if (args_count == 0) {
     return JSRegExp::New(ctx);
   } else {
@@ -33,18 +33,17 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
         return first;
       }
     }
-    if (first.IsUndefined()) {
-      pattern = JSString::NewEmptyString(ctx);
-    } else {
-      pattern = args[0].ToString(ctx, IV_LV5_ERROR(e));
+    if (!first.IsUndefined()) {
+      JSString* str = args[0].ToString(ctx, IV_LV5_ERROR(e));
+      pattern = str->GetUString();
     }
   }
   JSRegExp* reg;
   if (args_count == 1 || args[1].IsUndefined()) {
-    reg = JSRegExp::New(ctx, pattern->piece(), core::UStringPiece());
+    reg = JSRegExp::New(ctx, pattern, core::UStringPiece());
   } else {
     JSString* flags = args[1].ToString(ctx, IV_LV5_ERROR(e));
-    reg = JSRegExp::New(ctx, pattern->piece(), flags->piece());
+    reg = JSRegExp::New(ctx, pattern, *flags->Flatten());
   }
   if (reg->IsValid()) {
     return reg;

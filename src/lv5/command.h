@@ -21,7 +21,7 @@ inline JSVal Print(const Arguments& args, Error* e) {
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last;) {
       const JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
-      core::unicode::FPutsUTF16(stdout, str->begin(), str->end());
+      std::fputs(str->GetUTF8().c_str(), stdout);
       if (++it != last) {
         std::fputc(' ', stdout);
       } else {
