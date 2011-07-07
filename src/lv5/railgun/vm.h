@@ -516,7 +516,7 @@ MAIN_LOOP_START:
       case OP::PUSH_ARGUMENTS: {
         const JSVal w = LoadName(
             frame->lexical_env(),
-            context::arguments_symbol(ctx_), strict, ERR);
+            symbol::arguments, strict, ERR);
         PUSH(w);
         continue;
       }
@@ -1113,7 +1113,7 @@ MAIN_LOOP_START:
           names = &frame->code()->names();
           strict = frame->code()->strict();
           JSObject* const obj = JSObject::New(ctx_);
-          const JSVal proto = func->Get(ctx_, context::prototype_symbol(ctx_), ERR);
+          const JSVal proto = func->Get(ctx_, symbol::prototype, ERR);
           if (proto.IsObject()) {
             obj->set_prototype(proto.object());
           }

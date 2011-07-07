@@ -69,46 +69,6 @@ GlobalData* Global(Context* ctx) {
   return ctx->global_data();
 }
 
-Symbol arguments_symbol(const Context* ctx) {
-  return ctx->global_data()->arguments_symbol();
-}
-
-Symbol constructor_symbol(const Context* ctx) {
-  return ctx->global_data()->constructor_symbol();
-}
-
-Symbol eval_symbol(const Context* ctx) {
-  return ctx->global_data()->eval_symbol();
-}
-
-Symbol caller_symbol(const Context* ctx) {
-  return ctx->global_data()->caller_symbol();
-}
-
-Symbol callee_symbol(const Context* ctx) {
-  return ctx->global_data()->callee_symbol();
-}
-
-Symbol prototype_symbol(const Context* ctx) {
-  return ctx->global_data()->prototype_symbol();
-}
-
-Symbol length_symbol(const Context* ctx) {
-  return ctx->global_data()->length_symbol();
-}
-
-Symbol toString_symbol(const Context* ctx) {
-  return ctx->global_data()->toString_symbol();
-}
-
-Symbol valueOf_symbol(const Context* ctx) {
-  return ctx->global_data()->valueOf_symbol();
-}
-
-Symbol Array_symbol(const Context* ctx) {
-  return ctx->global_data()->Array_symbol();
-}
-
 JSFunction* throw_type_error(Context* ctx) {
   return ctx->throw_type_error();
 }
@@ -184,13 +144,13 @@ void Context::InitContext(JSFunction* func_constructor,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // seciton 15.3.3.1 Function.prototype
-      .def(context::prototype_symbol(this), func_proto, bind::NONE);
+      .def(symbol::prototype, func_proto, bind::NONE);
 
   bind::Object(this, obj_constructor)
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // seciton 15.2.3.1 Object.prototype
-      .def(context::prototype_symbol(this), obj_proto, bind::NONE)
+      .def(symbol::prototype, obj_proto, bind::NONE)
       // section 15.2.3.2 Object.getPrototypeOf(O)
       .def<&runtime::ObjectGetPrototypeOf, 1>("getPrototypeOf")
       // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
@@ -222,9 +182,9 @@ void Context::InitContext(JSFunction* func_constructor,
       .cls(func_cls.cls)
       .prototype(obj_proto)
       // section 15.3.4.1 Function.prototype.constructor
-      .def(context::constructor_symbol(this), func_constructor, bind::W | bind::C)
+      .def(symbol::constructor, func_constructor, bind::W | bind::C)
       // section 15.3.4.2 Function.prototype.toString()
-      .def<&runtime::FunctionToString, 0>(context::toString_symbol(this))
+      .def<&runtime::FunctionToString, 0>(symbol::toString)
       // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
       .def<&runtime::FunctionApply, 2>("apply")
       // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
@@ -236,9 +196,9 @@ void Context::InitContext(JSFunction* func_constructor,
       .cls(obj_cls.cls)
       .prototype(NULL)
       // section 15.2.4.1 Object.prototype.constructor
-      .def(context::constructor_symbol(this), obj_constructor, bind::W | bind::C)
+      .def(symbol::constructor, obj_constructor, bind::W | bind::C)
       // section 15.2.4.2 Object.prototype.toString()
-      .def<&runtime::ObjectToString, 0>(context::toString_symbol(this))
+      .def<&runtime::ObjectToString, 0>(symbol::toString)
       // section 15.2.4.3 Object.prototype.toLocaleString()
       .def<&runtime::ObjectToLocaleString, 0>("toLocaleString")
       // section 15.2.4.4 Object.prototype.valueOf()
@@ -345,7 +305,7 @@ void Context::InitArray(const ClassSlot& func_cls,
 
   struct ClassSlot cls = {
     JSArray::GetClass(),
-    context::Array_symbol(this),
+    context::Intern(this, "Array"),
     JSString::NewAsciiString(this, "Array"),
     constructor,
     proto
@@ -357,7 +317,7 @@ void Context::InitArray(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE)
+      .def(symbol::prototype, proto, bind::NONE)
       // section 15.4.3.2 Array.isArray(arg)
       .def<&runtime::ArrayIsArray, 1>("isArray");
 
@@ -365,7 +325,7 @@ void Context::InitArray(const ClassSlot& func_cls,
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.5.4.1 Array.prototype.constructor
-      .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
+      .def(symbol::constructor, constructor, bind::W | bind::C)
       // section 15.4.4.2 Array.prototype.toString()
       .def<&runtime::ArrayToString, 0>("toString")
       // section 15.4.4.3 Array.prototype.toLocaleString()
@@ -433,7 +393,7 @@ void Context::InitString(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE)
+      .def(symbol::prototype, proto, bind::NONE)
       // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
       .def<&runtime::StringFromCharCode, 1>("fromCharCode");
 
@@ -441,7 +401,7 @@ void Context::InitString(const ClassSlot& func_cls,
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.5.4.1 String.prototype.constructor
-      .def(context::constructor_symbol(this), constructor,
+      .def(symbol::constructor, constructor,
            bind::WRITABLE | bind::CONFIGURABLE)
       // section 15.5.4.2 String.prototype.toString()
       .def<&runtime::StringToString, 0>("toString")
@@ -508,18 +468,18 @@ void Context::InitBoolean(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.6.3.1 Boolean.prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE);
+      .def(symbol::prototype, proto, bind::NONE);
 
   bind::Object(this, proto)
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.6.4.1 Boolean.prototype.constructor
-      .def(context::constructor_symbol(this), constructor,
+      .def(symbol::constructor, constructor,
            bind::WRITABLE | bind::CONFIGURABLE)
       // section 15.6.4.2 Boolean.prototype.toString()
-      .def<&runtime::BooleanToString, 0>(context::toString_symbol(this))
+      .def<&runtime::BooleanToString, 0>(symbol::toString)
       // section 15.6.4.3 Boolean.prototype.valueOf()
-      .def<&runtime::BooleanValueOf, 0>(context::valueOf_symbol(this));
+      .def<&runtime::BooleanValueOf, 0>(symbol::valueOf);
 }
 
 void Context::InitNumber(const ClassSlot& func_cls,
@@ -544,7 +504,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.7.3.1 Number.prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE)
+      .def(symbol::prototype, proto, bind::NONE)
       // section 15.7.3.2 Number.MAX_VALUE
       .def("MAX_VALUE", 1.7976931348623157e+308)
       // section 15.7.3.3 Number.MIN_VALUE
@@ -560,13 +520,13 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.7.4.1 Number.prototype.constructor
-      .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
+      .def(symbol::constructor, constructor, bind::W | bind::C)
       // section 15.7.4.2 Number.prototype.toString([radix])
-      .def<&runtime::NumberToString, 1>(context::toString_symbol(this))
+      .def<&runtime::NumberToString, 1>(symbol::toString)
       // section 15.7.4.3 Number.prototype.toLocaleString()
       .def<&runtime::NumberToLocaleString, 0>("toLocaleString")
       // section 15.7.4.4 Number.prototype.valueOf()
-      .def<&runtime::NumberValueOf, 0>(context::valueOf_symbol(this))
+      .def<&runtime::NumberValueOf, 0>(symbol::valueOf)
       // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
       .def<&runtime::NumberToFixed, 1>("toFixed")
       // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
@@ -668,7 +628,7 @@ void Context::InitDate(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.9.4.1 Date.prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE)
+      .def(symbol::prototype, proto, bind::NONE)
       // section 15.9.4.2 Date.parse(string)
       .def<&runtime::DateParse, 1>("parse")
       // section 15.9.4.3 Date.UTC()
@@ -684,7 +644,7 @@ void Context::InitDate(const ClassSlot& func_cls,
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.9.5.1 Date.prototype.constructor
-      .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
+      .def(symbol::constructor, constructor, bind::W | bind::C)
       // section 15.9.5.2 Date.prototype.toString()
       .def<&runtime::DateToString, 0>("toString")
       // section 15.9.5.3 Date.prototype.toDateString()
@@ -803,13 +763,13 @@ void Context::InitRegExp(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.10.5.1 RegExp.prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE);
+      .def(symbol::prototype, proto, bind::NONE);
 
   bind::Object(this, proto)
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.10.6.1 RegExp.prototype.constructor
-      .def(context::constructor_symbol(this), constructor,
+      .def(symbol::constructor, constructor,
            bind::WRITABLE | bind::CONFIGURABLE)
       // section 15.10.6.2 RegExp.prototype.exec(string)
       .def<&runtime::RegExpExec, 1>("exec")
@@ -841,20 +801,20 @@ void Context::InitError(const ClassSlot& func_cls,
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)
       // section 15.11.3.1 Error.prototype
-      .def(context::prototype_symbol(this), proto, bind::NONE);
+      .def(symbol::prototype, proto, bind::NONE);
 
 
   bind::Object(this, proto)
       .cls(cls.cls)
       .prototype(obj_proto)
       // section 15.11.4.1 Error.prototype.constructor
-      .def(context::constructor_symbol(this), constructor, bind::W | bind::C)
+      .def(symbol::constructor, constructor, bind::W | bind::C)
       // section 15.11.4.2 Error.prototype.name
       .def("name", JSString::NewAsciiString(this, "Error"), bind::NONE)
       // section 15.11.4.3 Error.prototype.message
       .def("message", JSString::NewEmptyString(this), bind::NONE)
       // section 15.11.4.4 Error.prototype.toString()
-      .def<&runtime::ErrorToString, 0>(context::toString_symbol(this));
+      .def<&runtime::ErrorToString, 0>(symbol::toString);
 
   {
     // section 15.11.6.1 EvalError
@@ -865,7 +825,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSEvalError::GetClass(),
@@ -880,7 +840,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);
@@ -894,7 +854,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSRangeError::GetClass(),
@@ -909,7 +869,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);
@@ -923,7 +883,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSReferenceError::GetClass(),
@@ -938,7 +898,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);
@@ -952,7 +912,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSSyntaxError::GetClass(),
@@ -967,7 +927,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);
@@ -981,7 +941,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSTypeError::GetClass(),
@@ -996,7 +956,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);
@@ -1010,7 +970,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(context::prototype_symbol(this), sub_proto, bind::NONE);
+        .def(symbol::prototype, sub_proto, bind::NONE);
 
     struct ClassSlot sub_cls = {
       JSURIError::GetClass(),
@@ -1025,7 +985,7 @@ void Context::InitError(const ClassSlot& func_cls,
     bind::Object(this, sub_proto)
         .cls(sub_cls.cls)
         .prototype(proto)
-        .def(context::constructor_symbol(this),
+        .def(symbol::constructor,
              sub_constructor, bind::W | bind::C)
         .def("name", sub_cls.name_string, bind::NONE)
         .def("message", JSString::NewEmptyString(this), bind::NONE);

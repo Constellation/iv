@@ -129,7 +129,6 @@ inline void Instantiate(Context* ctx,
   // step 6, 7
   if (func && code->ShouldCreateArguments()) {
     JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
-    const Symbol arguments_symbol = context::arguments_symbol(ctx);
     JSArguments* const args_obj =
         JSArguments::New(ctx, func,
                          code->params(),
@@ -137,12 +136,12 @@ inline void Instantiate(Context* ctx,
                          frame->arguments_rend(), decl_env,
                          code->strict(), IV_LV5_ERROR_VOID(e));
     if (code->strict()) {
-      decl_env->CreateImmutableBinding(arguments_symbol);
-      decl_env->InitializeImmutableBinding(arguments_symbol, args_obj);
+      decl_env->CreateImmutableBinding(symbol::arguments);
+      decl_env->InitializeImmutableBinding(symbol::arguments, args_obj);
     } else {
-      decl_env->CreateMutableBinding(ctx, context::arguments_symbol(ctx),
+      decl_env->CreateMutableBinding(ctx, symbol::arguments,
                                      configurable_bindings, IV_LV5_ERROR_VOID(e));
-      decl_env->SetMutableBinding(ctx, arguments_symbol,
+      decl_env->SetMutableBinding(ctx, symbol::arguments,
                                   args_obj, false, IV_LV5_ERROR_VOID(e));
     }
   }

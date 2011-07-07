@@ -813,7 +813,7 @@ class Compiler
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        if (ident->symbol() == context::arguments_symbol(ctx_)) {
+        if (ident->symbol() == symbol::arguments) {
           code_->set_code_has_arguments();
           Emit<OP::PUSH_ARGUMENTS>();
           stack_depth()->Up();
@@ -1351,7 +1351,7 @@ class Compiler
     // directlly extract value and set to top version
     DepthPoint point(stack_depth());
     const Symbol name = lit->symbol();
-    if (name == context::arguments_symbol(ctx_)) {
+    if (name == symbol::arguments) {
       code_->set_code_has_arguments();
       Emit<OP::PUSH_ARGUMENTS>();
       stack_depth()->Up();
@@ -1589,7 +1589,7 @@ class Compiler
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         Emit<OP::CALL_NAME>(index);
         stack_depth()->Up(2);
-        if (op == OP::CALL && ident->symbol() == context::eval_symbol(ctx_)) {
+        if (op == OP::CALL && ident->symbol() == symbol::eval) {
           direct_call_to_eval = true;
         }
       } else if (const PropertyAccess* prop = target.AsPropertyAccess()) {
@@ -1635,7 +1635,6 @@ class Compiler
 
   void EmitFunctionCode(const FunctionLiteral& lit) {
     code_->set_start(data_->size());
-    const Symbol arguments_symbol = context::arguments_symbol(ctx_);
     const Scope& scope = lit.scope();
     {
       // function declarations
@@ -1646,7 +1645,7 @@ class Compiler
         const FunctionLiteral* const func = *it;
         Visit(func);
         const Symbol sym = func->name().Address()->symbol();
-        if (sym == arguments_symbol) {
+        if (sym == symbol::arguments) {
           code_->set_code_hiding_arguments();
         }
         const uint16_t index = SymbolToNameIndex(sym);
@@ -1778,7 +1777,7 @@ class Compiler
     data_->push_back(op);
     data_->push_back(arg & 0xff);
     data_->push_back(arg >> 8);
-    if (code_->names()[arg] == context::arguments_symbol(ctx_)) {
+    if (code_->names()[arg] == symbol::arguments) {
       code_->set_code_has_arguments();
     }
   }

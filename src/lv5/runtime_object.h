@@ -445,7 +445,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
       args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   const JSVal toString =
-      obj->Get(ctx, context::toString_symbol(ctx), IV_LV5_ERROR(e));
+      obj->Get(ctx, symbol::toString, IV_LV5_ERROR(e));
   if (!toString.IsCallable()) {
     e->Report(Error::Type, "toString is not callable");
     return JSUndefined;

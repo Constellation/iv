@@ -19,6 +19,10 @@ class SymbolTable {
     : sync_(),
       table_(),
       strings_() {
+    // insert default symbols
+#define V(sym) Lookup(#sym);
+    IV_LV5_DEFAULT_SYMBOLS(V)
+#undef V
   }
 
   template<class CharT>

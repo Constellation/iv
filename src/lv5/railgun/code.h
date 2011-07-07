@@ -56,11 +56,10 @@ class Code : public HeapObject {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }
-    const Symbol arguments_symbol = context::arguments_symbol(ctx);
     Names::iterator target = params_.begin();
     for (Identifiers::const_iterator it = func.params().begin(),
          last = func.params().end(); it != last; ++it, ++target) {
-      if ((*target = (*it)->symbol()) == arguments_symbol) {
+      if ((*target = (*it)->symbol()) == symbol::arguments) {
         set_code_hiding_arguments();
       }
     }

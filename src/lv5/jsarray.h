@@ -52,7 +52,7 @@ class JSArray : public JSObject {
       map_(NULL),
       dense_(true) {
     JSObject::DefineOwnProperty(
-        ctx, context::length_symbol(ctx),
+        ctx, symbol::length,
         DataDescriptor(JSVal::UInt32(len),
                        PropertyDescriptor::WRITABLE),
         false, NULL);
@@ -129,13 +129,12 @@ class JSArray : public JSObject {
       return JSArray::DefineOwnPropertyWithIndex(ctx, index, desc, th, e);
     }
 
-    const Symbol length_symbol = context::length_symbol(ctx);
-    PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, length_symbol);
+    PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, symbol::length);
     DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
     const JSVal& len_value = old_len_desc->value();
     assert(len_value.IsUInt32());
 
-    if (name == length_symbol) {
+    if (name == symbol::length) {
       if (desc.IsDataDescriptor()) {
         const DataDescriptor* const data = desc.AsDataDescriptor();
         if (data->IsValueAbsent()) {
@@ -155,7 +154,7 @@ class JSArray : public JSObject {
         new_len_desc.set_value(JSVal::UInt32(new_len));
         uint32_t old_len = len_value.uint32();
         if (new_len >= old_len) {
-          return JSObject::DefineOwnProperty(ctx, length_symbol,
+          return JSObject::DefineOwnProperty(ctx, symbol::length,
                                              new_len_desc, th, e);
         }
         if (!old_len_desc->IsWritable()) {
@@ -164,7 +163,7 @@ class JSArray : public JSObject {
         const bool new_writable =
             new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
         new_len_desc.set_writable(true);
-        const bool succeeded = JSObject::DefineOwnProperty(ctx, length_symbol,
+        const bool succeeded = JSObject::DefineOwnProperty(ctx, symbol::length,
                                                            new_len_desc, th, e);
         if (!succeeded) {
           return false;
@@ -186,7 +185,7 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                JSObject::DefineOwnProperty(ctx, length_symbol,
+                JSObject::DefineOwnProperty(ctx, symbol::length,
                                             new_len_desc,
                                             false, IV_LV5_ERROR_WITH(e, false));
                 REJECT("shrink array failed");
@@ -218,7 +217,7 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                JSObject::DefineOwnProperty(ctx, length_symbol,
+                JSObject::DefineOwnProperty(ctx, symbol::length,
                                             new_len_desc, false,
                                             IV_LV5_ERROR_WITH(e, false));
                 REJECT("shrink array failed");
@@ -229,7 +228,7 @@ class JSArray : public JSObject {
         }
         if (!new_writable) {
           JSObject::DefineOwnProperty(
-              ctx, length_symbol,
+              ctx, symbol::length,
               DataDescriptor(
                   PropertyDescriptor::WRITABLE |
                   PropertyDescriptor::UNDEF_ENUMERABLE |
@@ -254,7 +253,7 @@ class JSArray : public JSObject {
                                   Error* e) {
     // array index
     PropertyDescriptor old_len_desc_prop =
-        JSArray::GetOwnProperty(ctx, context::length_symbol(ctx));
+        JSArray::GetOwnProperty(ctx, symbol::length);
     DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
     const uint32_t old_len =
         old_len_desc->value().ToUInt32(ctx, IV_LV5_ERROR_WITH(e, false));
@@ -314,7 +313,7 @@ class JSArray : public JSObject {
     if (index >= old_len) {
       old_len_desc->set_value(JSVal::UInt32(index+1));
       JSObject::DefineOwnProperty(ctx,
-                                  context::length_symbol(ctx),
+                                  symbol::length,
                                   *old_len_desc,
                                   false, e);
     }

@@ -33,17 +33,6 @@ Symbol Lookup(Context* ctx, double number, bool* res);
 
 GlobalData* Global(Context* ctx);
 
-Symbol arguments_symbol(const Context* ctx);
-Symbol constructor_symbol(const Context* ctx);
-Symbol eval_symbol(const Context* ctx);
-Symbol caller_symbol(const Context* ctx);
-Symbol callee_symbol(const Context* ctx);
-Symbol prototype_symbol(const Context* ctx);
-Symbol length_symbol(const Context* ctx);
-Symbol toString_symbol(const Context* ctx);
-Symbol valueOf_symbol(const Context* ctx);
-Symbol Array_symbol(const Context* ctx);
-
 JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);

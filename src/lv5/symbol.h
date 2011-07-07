@@ -8,14 +8,40 @@
 namespace iv {
 namespace lv5 {
 
-struct Symbol {
-  std::size_t value_as_index;
+// default symbols
+#define IV_LV5_DEFAULT_SYMBOLS(V)\
+    V(length)\
+    V(eval)\
+    V(arguments)\
+    V(caller)\
+    V(callee)\
+    V(toString)\
+    V(valueOf)\
+    V(prototype)\
+    V(constructor)
 
+struct Symbol {
+  enum DefaultSymbols {
+#define V(sym) sym,
+    IV_LV5_DEFAULT_SYMBOLS(V)
+#undef V
+    NUM_OF_DEFAULT_SYMBOLS
+  };
+
+  std::size_t value_as_index;
   static Symbol FromSymbol(std::size_t value) {
     Symbol sym = { value };
     return sym;
   }
 };
+
+namespace symbol {
+
+#define V(sym) static const Symbol sym = { Symbol::sym };
+IV_LV5_DEFAULT_SYMBOLS(V)
+#undef V
+
+}  // namespace symbol
 
 inline bool operator==(const Symbol& x, const Symbol& y) {
   return x.value_as_index == y.value_as_index;

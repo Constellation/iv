@@ -393,7 +393,6 @@ inline std::size_t StringToHash(const StringPiece& x) {
   return h;
 }
 
-
 inline int32_t DoubleToInt32(double d) {
   int32_t i = static_cast<int32_t>(d);
   if (static_cast<double>(i) == d) {

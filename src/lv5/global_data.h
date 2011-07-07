@@ -36,18 +36,7 @@ class GlobalData {
                      random_distribution_type(0, 1)),
       global_obj_(),
       regs_(),
-      builtins_(),
-      table_(),
-      length_symbol_(Intern("length")),
-      eval_symbol_(Intern("eval")),
-      arguments_symbol_(Intern("arguments")),
-      caller_symbol_(Intern("caller")),
-      callee_symbol_(Intern("callee")),
-      toString_symbol_(Intern("toString")),
-      valueOf_symbol_(Intern("valueOf")),
-      prototype_symbol_(Intern("prototype")),
-      constructor_symbol_(Intern("constructor")),
-      Array_symbol_(Intern("Array")) {
+      table_() {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();
@@ -110,46 +99,6 @@ class GlobalData {
     return table_.GetSymbolString(sym);
   }
 
-  inline const Symbol& length_symbol() const {
-    return length_symbol_;
-  }
-
-  inline const Symbol& eval_symbol() const {
-    return eval_symbol_;
-  }
-
-  inline const Symbol& arguments_symbol() const {
-    return arguments_symbol_;
-  }
-
-  inline const Symbol& caller_symbol() const {
-    return caller_symbol_;
-  }
-
-  inline const Symbol& callee_symbol() const {
-    return callee_symbol_;
-  }
-
-  inline const Symbol& toString_symbol() const {
-    return toString_symbol_;
-  }
-
-  inline const Symbol& valueOf_symbol() const {
-    return valueOf_symbol_;
-  }
-
-  inline const Symbol& prototype_symbol() const {
-    return prototype_symbol_;
-  }
-
-  inline const Symbol& constructor_symbol() const {
-    return constructor_symbol_;
-  }
-
-  inline const Symbol& Array_symbol() const {
-    return Array_symbol_;
-  }
-
   double Random() {
     return random_engine_();
   }
@@ -179,18 +128,7 @@ class GlobalData {
   random_generator random_engine_;
   JSGlobal global_obj_;
   trace::Vector<JSRegExpImpl*>::type regs_;
-  trace::HashMap<Symbol, Class>::type builtins_;
   SymbolTable table_;
-  Symbol length_symbol_;
-  Symbol eval_symbol_;
-  Symbol arguments_symbol_;
-  Symbol caller_symbol_;
-  Symbol callee_symbol_;
-  Symbol toString_symbol_;
-  Symbol valueOf_symbol_;
-  Symbol prototype_symbol_;
-  Symbol constructor_symbol_;
-  Symbol Array_symbol_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
 };
 
