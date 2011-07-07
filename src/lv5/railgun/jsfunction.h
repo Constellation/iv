@@ -45,12 +45,19 @@ class JSVMFunction : public JSFunction {
         DataDescriptor(proto,
                        PropertyDescriptor::WRITABLE),
         false, &e);
-    core::UStringPiece name = GetName();
-    if (!name.empty()) {
+    if (code->HasName()) {
       DefineOwnProperty(
           ctx, context::Intern(ctx, "name"),
-          DataDescriptor(JSString::New(ctx, name),
-                         PropertyDescriptor::NONE),
+          DataDescriptor(
+              JSString::New(ctx, context::GetSymbolString(ctx, code->name())),
+              PropertyDescriptor::NONE),
+          false, &e);
+    } else {
+      DefineOwnProperty(
+          ctx, context::Intern(ctx, "name"),
+          DataDescriptor(
+              JSString::NewEmptyString(ctx),
+              PropertyDescriptor::NONE),
           false, &e);
     }
     if (code->strict()) {

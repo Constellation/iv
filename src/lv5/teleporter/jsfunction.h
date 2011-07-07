@@ -60,6 +60,13 @@ class JSCodeFunction : public JSFunction {
           DataDescriptor(JSString::New(ctx, name),
                          PropertyDescriptor::NONE),
           false, &e);
+    } else {
+      DefineOwnProperty(
+          ctx, context::Intern(ctx, "name"),
+          DataDescriptor(
+              JSString::NewEmptyString(ctx),
+              PropertyDescriptor::NONE),
+          false, &e);
     }
     if (function_->strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();

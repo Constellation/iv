@@ -35,13 +35,17 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
+    Context* const ctx = args.ctx();
     StringBuilder builder;
     builder.Append(detail::kFunctionPrefix);
-    const core::UStringPiece name = func->GetName();
-    if (name.empty()) {
+    const JSVal name = func->Get(ctx,
+                                 context::Intern(ctx, "name"),
+                                 IV_LV5_ERROR(e));
+    JSString* name_str = name.ToString(ctx, IV_LV5_ERROR(e));
+    if (name_str->empty()) {
       builder.Append("anonymous");
     } else {
-      builder.Append(name);
+      builder.Append(*name_str);
     }
     builder.Append(func->GetSource());
     return builder.Build(args.ctx());
