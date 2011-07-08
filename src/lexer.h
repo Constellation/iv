@@ -29,6 +29,8 @@ class Lexer: private Noncopyable<> {
     OCTAL
   };
 
+  typedef Source source_type;
+
   explicit Lexer(const Source& src)
       : source_(src),
         buffer8_(),
@@ -36,7 +38,6 @@ class Lexer: private Noncopyable<> {
         pos_(0),
         end_(source_.size()),
         has_line_terminator_before_next_(false),
-        has_shebang_(false),
         line_number_(1),
         previous_location_(),
         location_() {
@@ -466,6 +467,14 @@ class Lexer: private Noncopyable<> {
       location_.set_end_position(pos() - 1);
     }
     return true;
+  }
+
+  void SkipTo(std::size_t pos,
+              std::size_t line_number,
+              bool has_line_terminator_before_next) {
+    pos_ = pos;
+    line_number_ = line_number;
+    has_line_terminator_before_next_ = has_line_terminator_before_next;
   }
 
  private:
@@ -950,7 +959,6 @@ class Lexer: private Noncopyable<> {
   std::size_t pos_;
   const std::size_t end_;
   bool has_line_terminator_before_next_;
-  bool has_shebang_;
   int c_;
   std::size_t line_number_;
   Location previous_location_;
