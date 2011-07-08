@@ -473,6 +473,7 @@ class Lexer: private Noncopyable<> {
               std::size_t line_number,
               bool has_line_terminator_before_next) {
     pos_ = pos;
+    Advance();
     line_number_ = line_number;
     has_line_terminator_before_next_ = has_line_terminator_before_next;
   }
