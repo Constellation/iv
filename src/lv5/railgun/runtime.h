@@ -35,13 +35,13 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2) {
-    const detail::StringImpl* impl = str->Flatten();
-    if ((*impl)[0] == '(' &&
-        (*impl)[str->size() - 1] == ')') {
+    const StringFiber* fiber = str->Flatten();
+    if ((*fiber)[0] == '(' &&
+        (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
       const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(impl->data() + 1,
-                                                               impl->size() - 2),
+                                            core::UStringPiece(fiber->data() + 1,
+                                                               fiber->size() - 2),
                                             &json_parse_error);
       if (!json_parse_error) {
         return result;
@@ -98,13 +98,13 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2 && !strict) {
-    const detail::StringImpl* impl = str->Flatten();
-    if ((*impl)[0] == '(' &&
-        (*impl)[str->size() - 1] == ')') {
+    const StringFiber* fiber = str->Flatten();
+    if ((*fiber)[0] == '(' &&
+        (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
       const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(impl->data() + 1,
-                                                               impl->size() - 2),
+                                            core::UStringPiece(fiber->data() + 1,
+                                                               fiber->size() - 2),
                                             &json_parse_error);
       if (!json_parse_error) {
         return result;

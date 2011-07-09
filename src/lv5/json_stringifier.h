@@ -74,9 +74,9 @@ class JSONStringifier : private core::Noncopyable<> {
     static const char kHexDigits[17] = "0123456789ABCDEF";
     StringBuilder builder;
     builder.Append('"');
-    const detail::StringImpl* impl = str.Flatten();
-    for (detail::StringImpl::const_iterator it = impl->begin(),
-         last = impl->end(); it != last; ++it) {
+    const StringFiber* fiber = str.Flatten();
+    for (StringFiber::const_iterator it = fiber->begin(),
+         last = fiber->end(); it != last; ++it) {
       const uint16_t c = *it;
       if (c == '"' || c == '\\') {
         builder.Append('\\');

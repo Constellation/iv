@@ -21,13 +21,11 @@ namespace lv5 {
 
 class Context;
 
-namespace detail {
-
 static const std::size_t kMaxFibers = 5;
 
-class StringImpl : private core::Noncopyable<StringImpl> {
+class StringFiber : private core::Noncopyable<StringFiber> {
  public:
-  typedef StringImpl this_type;
+  typedef StringFiber this_type;
   typedef uint16_t char_type;
   typedef std::char_traits<char_type> traits_type;
 
@@ -44,8 +42,8 @@ class StringImpl : private core::Noncopyable<StringImpl> {
   typedef std::size_t size_type;
 
   template<typename String>
-  static StringImpl* New(const String& piece) {
-    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+  static this_type* New(const String& piece) {
+    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
         sizeof(size_type) + piece.size() * sizeof(char_type),
         GC_true_type()));
     mem->size_ = piece.size();
@@ -53,8 +51,8 @@ class StringImpl : private core::Noncopyable<StringImpl> {
     return mem;
   }
 
-  static StringImpl* NewWithSize(std::size_t n) {
-    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+  static this_type* NewWithSize(std::size_t n) {
+    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
         sizeof(size_type) + n * sizeof(char_type),
         GC_true_type()));
     mem->size_ = n;
@@ -62,9 +60,9 @@ class StringImpl : private core::Noncopyable<StringImpl> {
   }
 
   template<typename Iter>
-  static StringImpl* New(Iter it, Iter last) {
+  static this_type* New(Iter it, Iter last) {
     const std::size_t n = std::distance(it, last);
-    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
         sizeof(size_type) + n * sizeof(char_type),
         GC_true_type()));
     mem->size_ = n;
@@ -73,8 +71,8 @@ class StringImpl : private core::Noncopyable<StringImpl> {
   }
 
   template<typename Iter>
-  static StringImpl* New(Iter it, std::size_t n) {
-    StringImpl* mem = static_cast<StringImpl*>(GC_selective_alloc(
+  static this_type* New(Iter it, std::size_t n) {
+    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
         sizeof(size_type) + n * sizeof(char_type),
         GC_true_type()));
     mem->size_ = n;
@@ -183,18 +181,18 @@ class StringImpl : private core::Noncopyable<StringImpl> {
     return x.compare(y) >= 0;
   }
 
+ private:
   std::size_t size_;
 };
 
-IV_STATIC_ASSERT(sizeof(StringImpl) == sizeof(std::size_t));
-
-}  // namespace detail
+IV_STATIC_ASSERT(sizeof(StringFiber) == sizeof(std::size_t));
 
 class JSString : public HeapObject {
  public:
   typedef JSString this_type;
-  typedef std::array<const detail::StringImpl*, detail::kMaxFibers> Fibers;
-  typedef detail::StringImpl::size_type size_type;
+  typedef StringFiber Fiber;
+  typedef std::array<const Fiber*, kMaxFibers> Fibers;
+  typedef Fiber::size_type size_type;
 
   struct FlattenTag { };
 
@@ -206,28 +204,28 @@ class JSString : public HeapObject {
     return size_ == 0;
   }
 
-  const detail::StringImpl* Flatten() const {
+  const Fiber* Flatten() const {
     if (fiber_count_ != 1) {
-      detail::StringImpl* impl = detail::StringImpl::NewWithSize(size_);
-      detail::StringImpl::iterator target = impl->begin();
+      Fiber* fiber = Fiber::NewWithSize(size_);
+      Fiber::iterator target = fiber->begin();
       for (Fibers::iterator it = fibers_.begin(),
            last = it + fiber_count_; it != last; ++it) {
         target = std::copy((*it)->begin(), (*it)->end(), target);
         *it = NULL;
       }
       fiber_count_ = 1;
-      fibers_[0] = impl;
+      fibers_[0] = fiber;
     }
     assert(fibers_[0]->size() == size());
     return fibers_[0];
   }
 
   std::string GetUTF8() const {
-    const detail::StringImpl* impl = Flatten();
+    const Fiber* fiber = Flatten();
     std::string str;
-    str.reserve(size_);
+    str.reserve(size());
     if (core::unicode::UTF16ToUTF8(
-          impl->begin(), impl->end(),
+          fiber->begin(), fiber->end(),
           std::back_inserter(str)) != core::unicode::NO_ERROR) {
       str.clear();
     }
@@ -235,11 +233,11 @@ class JSString : public HeapObject {
   }
 
   core::UString GetUString() const {
-    const detail::StringImpl* impl = Flatten();
-    return core::UString(impl->data(), impl->size());
+    const Fiber* fiber = Flatten();
+    return core::UString(fiber->data(), fiber->size());
   }
 
-  uint16_t GetIndex(detail::StringImpl::size_type n) const {
+  uint16_t GetIndex(size_type n) const {
     if (fibers_[0]->size() > n) {
       return (*fibers_.front())[n];
     }
@@ -249,8 +247,8 @@ class JSString : public HeapObject {
   template<typename Target>
   void CopyToString(Target* target) const {
     if (!empty()) {
-      const detail::StringImpl* impl = Flatten();
-      target->assign(impl->data(), impl->size());
+      const Fiber* fiber = Flatten();
+      target->assign(fiber->data(), fiber->size());
     } else {
       target->assign(0UL, typename Target::value_type());
     }
@@ -259,8 +257,8 @@ class JSString : public HeapObject {
   template<typename Target>
   void AppendToString(Target* target) const {
     if (!empty()) {
-      const detail::StringImpl* impl = Flatten();
-      target->assign(impl->data(), impl->size());
+      const Fiber* fiber = Flatten();
+      target->assign(fiber->data(), fiber->size());
     }
   }
 
@@ -339,7 +337,7 @@ class JSString : public HeapObject {
       return rhs;
     } else if (rhs->empty()) {
       return lhs;
-    } else if ((lhs->fiber_count_ + rhs->fiber_count_) <= detail::kMaxFibers) {
+    } else if ((lhs->fiber_count_ + rhs->fiber_count_) <= kMaxFibers) {
       return new this_type(lhs, rhs);
     } else {
       // flatten version
@@ -357,7 +355,7 @@ class JSString : public HeapObject {
     : size_(0),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = detail::StringImpl::NewWithSize(size_);
+    fibers_[0] = Fiber::NewWithSize(size_);
   }
 
   // single char string
@@ -365,9 +363,9 @@ class JSString : public HeapObject {
     : size_(1),
       fiber_count_(1),
       fibers_() {
-    detail::StringImpl* impl = detail::StringImpl::NewWithSize(1);
-    (*impl)[0] = ch;
-    fibers_[0] = impl;
+    Fiber* fiber = Fiber::NewWithSize(1);
+    (*fiber)[0] = ch;
+    fibers_[0] = fiber;
   }
 
   template<typename Iter>
@@ -375,7 +373,7 @@ class JSString : public HeapObject {
     : size_(std::distance(it, last)),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = detail::StringImpl::New(it, size_);
+    fibers_[0] = Fiber::New(it, size_);
   }
 
   template<typename String>
@@ -383,7 +381,7 @@ class JSString : public HeapObject {
     : size_(str.size()),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = detail::StringImpl::New(str.data(), size_);
+    fibers_[0] = Fiber::New(str.data(), size_);
   }
 
   // fiber count version
@@ -391,7 +389,7 @@ class JSString : public HeapObject {
     : size_(lhs->size() + rhs->size()),
       fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
       fibers_() {
-    assert(fiber_count_ <= detail::kMaxFibers);
+    assert(fiber_count_ <= kMaxFibers);
     std::copy(
         rhs->fibers_.begin(),
         rhs->fibers_.begin() + rhs->fiber_count_,
@@ -405,8 +403,8 @@ class JSString : public HeapObject {
     : size_(lhs->size() + rhs->size()),
       fiber_count_(1),
       fibers_() {
-    detail::StringImpl* impl = detail::StringImpl::NewWithSize(size_);
-    detail::StringImpl::iterator target = impl->begin();
+    Fiber* fiber = Fiber::NewWithSize(size_);
+    Fiber::iterator target = fiber->begin();
     for (Fibers::const_iterator it = lhs->fibers_.begin(),
          last = lhs->fibers_.begin() + lhs->fiber_count_;
          it != last; ++it) {
@@ -417,7 +415,7 @@ class JSString : public HeapObject {
          it != last; ++it) {
       target = std::copy((*it)->begin(), (*it)->end(), target);
     }
-    fibers_[0] = impl;
+    fibers_[0] = fiber;
   }
 
   std::size_t size_;

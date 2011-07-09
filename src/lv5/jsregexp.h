@@ -158,9 +158,9 @@ class JSRegExp : public JSObject {
     int n = 0;
     const int start = previous_index;
     const int size = str->size();
-    const detail::StringImpl* impl = str->Flatten();
+    const StringFiber* fiber = str->Flatten();
     do {
-      const int rc = impl_->ExecuteOnce(*impl,
+      const int rc = impl_->ExecuteOnce(*fiber,
                                         previous_index, &offset_vector);
       if (rc == jscre::JSRegExpErrorNoMatch ||
           rc == jscre::JSRegExpErrorHitLimit) {
@@ -184,8 +184,8 @@ class JSRegExp : public JSObject {
           n,
           DataDescriptor(
               JSString::New(ctx,
-                            impl->begin() + offset_vector[0],
-                            impl->begin() + offset_vector[1]),
+                            fiber->begin() + offset_vector[0],
+                            fiber->begin() + offset_vector[1]),
               PropertyDescriptor::WRITABLE |
               PropertyDescriptor::ENUMERABLE |
               PropertyDescriptor::CONFIGURABLE),
@@ -229,8 +229,8 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const detail::StringImpl* impl = str->Flatten();
-    const int rc = impl_->ExecuteOnce(*impl,
+    const StringFiber* fiber = str->Flatten();
+    const int rc = impl_->ExecuteOnce(*fiber,
                                       previous_index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||
         rc == jscre::JSRegExpErrorHitLimit) {
@@ -280,8 +280,8 @@ class JSRegExp : public JSObject {
             i,
             DataDescriptor(
                 JSString::New(ctx,
-                              impl->begin() + offset_vector[i*2],
-                              impl->begin() + offset_vector[i*2+1]),
+                              fiber->begin() + offset_vector[i*2],
+                              fiber->begin() + offset_vector[i*2+1]),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),

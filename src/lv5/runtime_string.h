@@ -47,15 +47,15 @@ static inline bool IsTrimmed(uint16_t c) {
          core::character::IsLineTerminator(c);
 }
 
-inline int64_t SplitMatch(const lv5::detail::StringImpl& str,
+inline int64_t SplitMatch(const StringFiber& str,
                           uint32_t q,
-                          const lv5::detail::StringImpl& rhs) {
+                          const StringFiber& rhs) {
   const std::size_t rs = rhs.size();
   const std::size_t s = str.size();
   if (q + rs > s) {
     return -1;
   }
-  if (lv5::detail::StringImpl::traits_type::compare(
+  if (StringFiber::traits_type::compare(
           rhs.data(),
           str.data() + q,
           rs) != 0) {
@@ -65,7 +65,7 @@ inline int64_t SplitMatch(const lv5::detail::StringImpl& str,
 }
 
 inline JSVal StringSplit(Context* ctx,
-                         const lv5::detail::StringImpl& target,
+                         const StringFiber& target,
                          const JSString& rstr, uint32_t lim) {
   Error e;
   uint32_t length = 0;
@@ -73,7 +73,7 @@ inline JSVal StringSplit(Context* ctx,
   uint32_t q = p;
   const uint32_t size = target.size();
   JSArray* const ary = JSArray::New(ctx);
-  const lv5::detail::StringImpl& rhs = *rstr.Flatten();
+  const StringFiber& rhs = *rstr.Flatten();
   if (size == 0) {
     if (detail::SplitMatch(target, q, rhs) != -1) {
       return ary;
@@ -119,7 +119,7 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(const lv5::detail::StringImpl& str,
+inline regexp::MatchResult RegExpMatch(const StringFiber& str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
@@ -143,12 +143,12 @@ class Replacer : private core::Noncopyable<> {
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
-    const regexp::MatchResult res = RegExpMatch(str_impl_, 0, reg_, &vec_);
+    const regexp::MatchResult res = RegExpMatch(str_fiber_, 0, reg_, &vec_);
     if (get<2>(res)) {
-      builder->Append(str_impl_.begin(), str_impl_.begin() + get<0>(res));
+      builder->Append(str_fiber_.begin(), str_fiber_.begin() + get<0>(res));
       static_cast<T*>(this)->DoReplace(builder, res, e);
     }
-    builder->Append(str_impl_.begin() + get<1>(res), str_impl_.end());
+    builder->Append(str_fiber_.begin() + get<1>(res), str_fiber_.end());
   }
 
   template<typename Builder>
@@ -156,16 +156,16 @@ class Replacer : private core::Noncopyable<> {
     using std::get;
     int previous_index = 0;
     int not_matched_index = previous_index;
-    const int size = str_impl_.size();
+    const int size = str_fiber_.size();
     do {
-      const regexp::MatchResult res = detail::RegExpMatch(str_impl_,
+      const regexp::MatchResult res = detail::RegExpMatch(str_fiber_,
                                                           previous_index,
                                                           reg_, &vec_);
       if (!get<2>(res)) {
         break;
       }
-      builder->Append(str_impl_.begin() + not_matched_index,
-                      str_impl_.begin() + get<0>(res));
+      builder->Append(str_fiber_.begin() + not_matched_index,
+                      str_fiber_.begin() + get<0>(res));
       const int this_index = get<1>(res);
       not_matched_index = this_index;
       if (previous_index == this_index) {
@@ -178,19 +178,19 @@ class Replacer : private core::Noncopyable<> {
         break;
       }
     } while (true);
-    builder->Append(str_impl_.begin() + not_matched_index, str_impl_.end());
+    builder->Append(str_fiber_.begin() + not_matched_index, str_fiber_.end());
   }
 
  protected:
   Replacer(JSString* str, const JSRegExp& reg)
     : str_(str),
-      str_impl_(*str->Flatten()),
+      str_fiber_(*str->Flatten()),
       reg_(reg),
       vec_() {
   }
 
   JSString* str_;
-  const lv5::detail::StringImpl& str_impl_;
+  const StringFiber& str_fiber_;
   const JSRegExp& reg_;
   regexp::PairVector vec_;
 };
@@ -204,7 +204,7 @@ class StringReplacer : public Replacer<StringReplacer> {
                  const JSString& replace)
     : super_type(str, reg),
       replace_(replace),
-      replace_impl_(*replace_.Flatten()) {
+      replace_fiber_(*replace_.Flatten()) {
   }
 
   template<typename Builder>
@@ -212,8 +212,8 @@ class StringReplacer : public Replacer<StringReplacer> {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
-    for (typename lv5::detail::StringImpl::const_iterator it = replace_impl_.begin(),
-         last = replace_impl_.end(); it != last; ++it) {
+    for (typename StringFiber::const_iterator it = replace_fiber_.begin(),
+         last = replace_fiber_.end(); it != last; ++it) {
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
@@ -230,19 +230,19 @@ class StringReplacer : public Replacer<StringReplacer> {
 
           case '&':  // $& pattern
             state = Replace::kNormal;
-            builder->Append(str_impl_.begin() + get<0>(res),
-                            str_impl_.begin() + get<1>(res));
+            builder->Append(str_fiber_.begin() + get<0>(res),
+                            str_fiber_.begin() + get<1>(res));
             break;
 
           case '`':  // $` pattern
             state = Replace::kNormal;
-            builder->Append(str_impl_.begin(),
-                            str_impl_.begin() + get<0>(res));
+            builder->Append(str_fiber_.begin(),
+                            str_fiber_.begin() + get<0>(res));
             break;
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
-            builder->Append(str_impl_.begin() + get<1>(res), str_impl_.end());
+            builder->Append(str_fiber_.begin() + get<1>(res), str_fiber_.end());
             break;
 
           default:
@@ -262,16 +262,16 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_impl_.begin() + pair.first,
-                              str_impl_.begin() + pair.second);
+              builder->Append(str_fiber_.begin() + pair.first,
+                              str_fiber_.begin() + pair.second);
             }
           } else {
             // single digit pattern search
             if (vec_.size() >= single_n) {
               const regexp::PairVector::value_type& pair = vec_[single_n - 1];
               if (pair.first != -1 && pair.second != -1) {  // check undefined
-                builder->Append(str_impl_.begin() + pair.first,
-                                str_impl_.begin() + pair.second);
+                builder->Append(str_fiber_.begin() + pair.first,
+                                str_fiber_.begin() + pair.second);
               }
             } else {
               builder->Append('$');
@@ -284,8 +284,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_impl_.begin() + pair.first,
-                              str_impl_.begin() + pair.second);
+              builder->Append(str_fiber_.begin() + pair.first,
+                              str_fiber_.begin() + pair.second);
             }
           } else {
             builder->Append('$');
@@ -302,8 +302,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_impl_.begin() + pair.first,
-                              str_impl_.begin() + pair.second);
+              builder->Append(str_fiber_.begin() + pair.first,
+                              str_fiber_.begin() + pair.second);
             }
           } else {
             builder->Append("$0");
@@ -325,8 +325,8 @@ class StringReplacer : public Replacer<StringReplacer> {
       if (vec_.size() >= n) {
         const regexp::PairVector::value_type& pair = vec_[n - 1];
         if (pair.first != -1 && pair.second != -1) {  // check undefined
-          builder->Append(str_impl_.begin() + pair.first,
-                          str_impl_.begin() + pair.second);
+          builder->Append(str_fiber_.begin() + pair.first,
+                          str_fiber_.begin() + pair.second);
         }
       } else {
         builder->Append('$');
@@ -339,7 +339,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
-  const lv5::detail::StringImpl& replace_impl_;
+  const StringFiber& replace_fiber_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {
@@ -360,15 +360,15 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     using std::get;
     ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
-                         str_impl_.begin() + get<0>(res),
-                         str_impl_.begin() + get<1>(res));
+                         str_fiber_.begin() + get<0>(res),
+                         str_fiber_.begin() + get<1>(res));
     std::size_t i = 1;
     for (regexp::PairVector::const_iterator it = vec_.begin(),
          last = vec_.end(); it != last; ++it, ++i) {
       if (it->first != -1 && it->second != -1) {  // check undefined
         a[i] = JSString::New(ctx_,
-                             str_impl_.begin() + it->first,
-                             str_impl_.begin() + it->second);
+                             str_fiber_.begin() + it->first,
+                             str_fiber_.begin() + it->second);
       }
     }
     a[i++] = get<0>(res);
@@ -385,12 +385,12 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
 
 template<typename Builder>
 inline void ReplaceOnce(Builder* builder,
-                        const lv5::detail::StringImpl& str,
+                        const StringFiber& str,
                         const JSString& search_str,
-                        lv5::detail::StringImpl::size_type loc,
-                        const lv5::detail::StringImpl& replace_str) {
+                        StringFiber::size_type loc,
+                        const StringFiber& replace_str) {
   Replace::State state = Replace::kNormal;
-  for (lv5::detail::StringImpl::const_iterator it = replace_str.begin(),
+  for (StringFiber::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (state == Replace::kNormal) {
@@ -700,8 +700,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
-    const lv5::detail::StringImpl* impl = str->Flatten();
-    const core::UStringPiece base(*impl);
+    const StringFiber* fiber = str->Flatten();
+    const core::UStringPiece base(*fiber);
     const core::UStringPiece::size_type loc = base.find(*search_str->Flatten(),
                                                         0);
     if (loc == core::UStringPiece::npos) {
@@ -710,7 +710,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     }
     // found pattern
     StringBuilder builder;
-    builder.Append(impl->begin(), impl->begin() + loc);
+    builder.Append(fiber->begin(), fiber->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
       ScopedArguments a(ctx, 3, IV_LV5_ERROR(e));
@@ -728,10 +728,10 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
       detail::ReplaceOnce(&builder,
-                          *impl, *search_str,
+                          *fiber, *search_str,
                           loc, *replace_value->Flatten());
     }
-    builder.Append(impl->begin() + loc + search_str->size(), impl->end());
+    builder.Append(fiber->begin() + loc + search_str->size(), fiber->end());
     return builder.Build(ctx);
   }
 }
@@ -780,8 +780,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
-  const uint32_t len = impl.size();
+  const StringFiber& fiber = *str->Flatten();
+  const uint32_t len = fiber.size();
   uint32_t start;
   if (args.size() > 0) {
     double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -812,8 +812,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   }
   const uint32_t span = (end < start) ? 0 : end - start;
   return JSString::New(ctx,
-                       impl.begin() + start,
-                       impl.begin() + start + span);
+                       fiber.begin() + start,
+                       fiber.begin() + start + span);
 }
 
 // section 15.5.4.14 String.prototype.split(separator, limit)
@@ -824,7 +824,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const StringFiber& fiber = *str->Flatten();
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
@@ -864,15 +864,15 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   }
 
   if (!regexp) {
-    return detail::StringSplit(ctx, impl, *target.string(), lim);
+    return detail::StringSplit(ctx, fiber, *target.string(), lim);
   }
 
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
   JSArray* const ary = JSArray::New(ctx);
   regexp::PairVector cap;
-  const uint32_t size = impl.size();
+  const uint32_t size = fiber.size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(impl, 0, *reg, &cap))) {
+    if (get<2>(detail::RegExpMatch(fiber, 0, *reg, &cap))) {
       return ary;
     }
     ary->DefineOwnPropertyWithIndex(
@@ -890,7 +890,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const regexp::MatchResult rs = detail::RegExpMatch(impl, q, *reg, &cap);
+    const regexp::MatchResult rs = detail::RegExpMatch(fiber, q, *reg, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;
@@ -902,8 +902,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       ary->DefineOwnPropertyWithIndex(
           ctx, length,
           DataDescriptor(JSString::New(ctx,
-                                       impl.begin() + p,
-                                       impl.begin() + start_match),
+                                       fiber.begin() + p,
+                                       fiber.begin() + start_match),
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -922,8 +922,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
               ctx, length,
               DataDescriptor(
                   JSString::New(ctx,
-                                impl.begin() + it->first,
-                                impl.begin() + it->second),
+                                fiber.begin() + it->first,
+                                fiber.begin() + it->second),
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
@@ -949,8 +949,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       ctx, length,
       DataDescriptor(
           JSString::New(ctx,
-                        impl.begin() + p,
-                        impl.begin() + size),
+                        fiber.begin() + p,
+                        fiber.begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
@@ -965,8 +965,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
-  const uint32_t len = impl.size();
+  const StringFiber& fiber = *str->Flatten();
+  const uint32_t len = fiber.size();
   uint32_t start;
   if (args.size() > 0) {
     double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -993,8 +993,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   const uint32_t from = std::min<uint32_t>(start, end);
   const uint32_t to = std::max<uint32_t>(start, end);
   return JSString::New(ctx,
-                       impl.begin() + from,
-                       impl.begin() + to);
+                       fiber.begin() + from,
+                       fiber.begin() + to);
 }
 
 // section 15.5.4.16 String.prototype.toLowerCase()
@@ -1003,10 +1003,10 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const StringFiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
-       last = impl.end(); it != last; ++it) {
+  for (StringFiber::const_iterator it = fiber.begin(),
+       last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1018,10 +1018,10 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const StringFiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
-       last = impl.end(); it != last; ++it) {
+  for (StringFiber::const_iterator it = fiber.begin(),
+       last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1033,10 +1033,10 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const StringFiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
-       last = impl.end(); it != last; ++it) {
+  for (StringFiber::const_iterator it = fiber.begin(),
+       last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1048,10 +1048,10 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
+  const StringFiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (lv5::detail::StringImpl::const_iterator it = impl.begin(),
-       last = impl.end(); it != last; ++it) {
+  for (StringFiber::const_iterator it = fiber.begin(),
+       last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1063,9 +1063,9 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
-  lv5::detail::StringImpl::const_iterator lit = impl.begin();
-  const lv5::detail::StringImpl::const_iterator last = impl.end();
+  const StringFiber& fiber = *str->Flatten();
+  StringFiber::const_iterator lit = fiber.begin();
+  const StringFiber::const_iterator last = fiber.end();
   // trim leading space
   bool empty = true;
   for (; lit != last; ++lit) {
@@ -1078,7 +1078,7 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  lv5::detail::StringImpl::const_iterator rit = impl.end() - 1;
+  StringFiber::const_iterator rit = fiber.end() - 1;
   for (; rit != lit; --rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
@@ -1094,8 +1094,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const lv5::detail::StringImpl& impl = *str->Flatten();
-  const double len = impl.size();
+  const StringFiber& fiber = *str->Flatten();
+  const double len = fiber.size();
 
   double start;
   if (args.size() > 0) {
@@ -1134,8 +1134,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const uint32_t capacity = core::DoubleToUInt32(result6);
   const uint32_t start_position = core::DoubleToUInt32(result5);
   return JSString::New(ctx,
-                       impl.begin() + start_position,
-                       impl.begin() + start_position + capacity);
+                       fiber.begin() + start_position,
+                       fiber.begin() + start_position + capacity);
 }
 
 } } }  // namespace iv::lv5::runtime
