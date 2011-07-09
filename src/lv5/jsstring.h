@@ -182,6 +182,8 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   }
 
  private:
+  StringFiber();  // hiding constructor
+
   std::size_t size_;
 };
 
@@ -345,6 +347,10 @@ class JSString : public HeapObject {
     }
   }
 
+  static this_type* New(Context* ctx, const Fiber* fiber) {
+    return new this_type(fiber);
+  }
+
  private:
   std::size_t fiber_count() const {
     return fiber_count_;
@@ -415,6 +421,13 @@ class JSString : public HeapObject {
          it != last; ++it) {
       target = std::copy((*it)->begin(), (*it)->end(), target);
     }
+    fibers_[0] = fiber;
+  }
+
+  explicit JSString(const Fiber* fiber)
+    : size_(fiber->size()),
+      fiber_count_(1),
+      fibers_() {
     fibers_[0] = fiber;
   }
 
