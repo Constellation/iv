@@ -1,17 +1,19 @@
 # iv / lv5
 ![lv5](https://github.com/Constellation/iv/raw/master/doc/lv5.png)
 
-lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Interpreter written in C++.
+lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Engine written in C++.
 
 ## MILESTONE
 + parser - done
 + interpreter - done
 + statements - done
 + expressions - done
-+ builtin objects - working
++ builtin objects - done
++ vm - done
++ vm tuning - working
 
 ## TARGET
-Aims at the most precise interpreter of The ECMA262 5th Specification.
+Aims at the most precise engine of The ECMA262 5th Specification.
 
 ## DEPS
 
