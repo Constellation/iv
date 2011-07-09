@@ -12,6 +12,12 @@
 namespace iv {
 namespace core {
 namespace character {
+namespace code {
+
+static const uint16_t CR = 0x000D;
+static const uint16_t LF = 0x000A;
+
+}  // namespace code
 
 static const uint16_t kMinValue = 0;
 static const uint16_t kMaxValue = 0xFFFF;
@@ -773,7 +779,7 @@ inline bool IsWhiteSpace(uint16_t c) {
 }
 
 inline bool IsLineTerminator(uint16_t c) {
-  return c == '\r' || c == '\n' || (c & ~1) == 0x2028;  // 0x2028 or 0x2029
+  return c == code::CR || c == code::LF || (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
 inline bool IsIdentifierStart(uint16_t c) {

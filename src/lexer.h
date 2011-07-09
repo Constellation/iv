@@ -872,7 +872,8 @@ class Lexer: private Noncopyable<> {
     // see ECMA-262 section 7.8.3
     // "immediately following a NumericLiteral must not be an IdentifierStart or
     // DecimalDigit."
-    if (c_ >= 0 && (character::IsDecimalDigit(c_) || character::IsIdentifierStart(c_))) {
+    if (c_ >= 0 &&
+        (character::IsDecimalDigit(c_) || character::IsIdentifierStart(c_))) {
       return Token::TK_ILLEGAL;
     }
 
@@ -945,7 +946,7 @@ class Lexer: private Noncopyable<> {
   void SkipLineTerminator() {
     const uint16_t c = c_;
     Advance();
-    if (c + c_ == '\n' + '\r') {
+    if (c == character::code::CR && c_ == character::code::LF) {
       Advance();
     }
     ++line_number_;
