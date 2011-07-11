@@ -4,6 +4,7 @@
 #include <gc/gc.h>
 #include "detail/tuple.h"
 #include "detail/unordered_map.h"
+#include "utils.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
 #include "static_assert.h"
@@ -129,7 +130,7 @@ class Compiler
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     script_ = script;
     data_ = new (GC) Code::Data();
-    data_->reserve(1024);
+    data_->reserve(4 * core::Size::KB);
     Code* code = new Code(ctx_, script_, global, data_);
     {
       CodeContext code_context(this, code);
@@ -141,7 +142,7 @@ class Compiler
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     script_ = script;
     data_ = new (GC) Code::Data();
-    data_->reserve(1024);
+    data_->reserve(core::Size::KB);
     Code* code = new Code(ctx_, script_, function, data_);
     {
       CodeContext code_context(this, code);
