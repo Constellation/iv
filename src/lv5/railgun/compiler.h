@@ -553,9 +553,7 @@ class Compiler
       } else if (le.first == WITH) {
         Emit<OP::POP_ENV>();
       } else if (le.first == SUB) {
-        Emit<OP::POP_TOP>();
-        Emit<OP::POP_TOP>();
-        Emit<OP::POP_TOP>();
+        Emit<OP::POP_N>(3);
       } else {
         // continue target for in ?
         if (last + 1 != level) {
@@ -585,9 +583,7 @@ class Compiler
         } else if (le.first == WITH) {
           Emit<OP::POP_ENV>();
         } else if (le.first == SUB) {
-          Emit<OP::POP_TOP>();
-          Emit<OP::POP_TOP>();
-          Emit<OP::POP_TOP>();
+          Emit<OP::POP_N>(3);
         } else {
           // break target for in ?
           if (last + 1 != level) {
@@ -628,9 +624,7 @@ class Compiler
           Emit<OP::POP_ENV>();
         } else if (le.first == SUB) {
           Emit<OP::ROT_FOUR>();
-          Emit<OP::POP_TOP>();
-          Emit<OP::POP_TOP>();
-          Emit<OP::POP_TOP>();
+          Emit<OP::POP_N>(3);
         } else {
           Emit<OP::ROT_TWO>();
           Emit<OP::POP_TOP>();

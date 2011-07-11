@@ -370,6 +370,12 @@ MAIN_LOOP_START:
         continue;
       }
 
+      case OP::POP_N: {
+        const int n = -static_cast<int>(oparg);
+        STACKADJ(n);
+        continue;
+      }
+
       case OP::POP_JUMP_IF_FALSE: {
         const JSVal v = POP();
         const bool x = v.ToBoolean(ERR);

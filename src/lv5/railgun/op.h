@@ -87,6 +87,7 @@ V(TYPEOF)\
 \
 /* opcodes over this requres argument */\
 V(HAVE_ARGUMENT)\
+V(POP_N)\
 \
 V(STORE_OBJECT_DATA)\
 V(STORE_OBJECT_GET)\
