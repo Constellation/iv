@@ -308,10 +308,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  const JSVal length = obj->Get(
-      ctx,
-      symbol::length, IV_LV5_ERROR(e));
-  uint32_t n = length.ToUInt32(ctx, IV_LV5_ERROR(e));
+  uint32_t n = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   bool index_over = false;
   Arguments::const_iterator it = args.begin();
   const Arguments::const_iterator last = args.end();
