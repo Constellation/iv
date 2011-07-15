@@ -76,17 +76,13 @@ class JSArray : public JSObject {
     return length_.value();
   }
 
-  DataDescriptor GetLengthDescriptor() const {
-    return length_;
-  }
-
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
     uint32_t index;
     if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
       return JSArray::GetOwnPropertyWithIndex(ctx, index);
     }
     if (name == symbol::length) {
-      return GetLengthDescriptor();
+      return length_;
     }
     return JSObject::GetOwnProperty(ctx, name);
   }
@@ -166,7 +162,6 @@ class JSArray : public JSObject {
           // GetDefineOwnPropertyResult
           bool returned = false;
           if (IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e)) {
-            // TODO(Constellation) more fast fix
             length_ =
                 detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(length_, desc));
           }
@@ -185,7 +180,6 @@ class JSArray : public JSObject {
         if (new_len >= old_len) {
           bool returned = false;
           if (IsDefineOwnPropertyAccepted(length_, new_len_desc, th, &returned, e)) {
-            // TODO(Constellation) more fast fix
             length_ =
                 detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(new_len_desc, length_));
           }
@@ -224,11 +218,8 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                // TODO(Constellation)
-                // clean up code and check this
                 bool wasted = false;
                 if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
-                  // TODO(Constellation) more fast fix
                   length_ =
                       detail::DescriptorToArrayLengthSlot(
                           PropertyDescriptor::Merge(new_len_desc, length_));
@@ -263,11 +254,8 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                // TODO(Constellation)
-                // clean up code and check this
                 bool wasted = false;
                 if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
-                  // TODO(Constellation) more fast fix
                   length_ =
                       detail::DescriptorToArrayLengthSlot(
                           PropertyDescriptor::Merge(new_len_desc, length_));
@@ -286,7 +274,6 @@ class JSArray : public JSObject {
               PropertyDescriptor::UNDEF_CONFIGURABLE);
           bool wasted = false;
           if (IsDefineOwnPropertyAccepted(length_, target, false, &wasted, e)) {
-            // TODO(Constellation) more fast fix
             length_ =
                 detail::DescriptorToArrayLengthSlot(
                     PropertyDescriptor::Merge(target, length_));
