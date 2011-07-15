@@ -16,10 +16,12 @@
 #include "static_assert.h"
 #include "lv5/gc_template.h"
 #include "lv5/heap_object.h"
+#include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
 
 class Context;
+class GlobalData;
 
 static const std::size_t kMaxFibers = 5;
 
@@ -191,6 +193,7 @@ IV_STATIC_ASSERT(sizeof(StringFiber) == sizeof(std::size_t));
 
 class JSString : public HeapObject {
  public:
+  friend class GlobalData;
   typedef JSString this_type;
   typedef StringFiber Fiber;
   typedef std::array<const Fiber*, kMaxFibers> Fibers;
@@ -322,16 +325,27 @@ class JSString : public HeapObject {
   }
 
   static this_type* NewSingle(Context* ctx, uint16_t ch) {
+    if (this_type* res = context::LookupSingleString(ctx, ch)) {
+      return res;
+    }
     return new this_type(ch);
   }
 
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, Iter last) {
-    return new this_type(it, last);
+    const std::size_t n = std::distance(it, last);
+    if (n <= 0) {
+      if (n == 0) {
+        return NewEmptyString(ctx);
+      } else {
+        return NewSingle(ctx, *it);
+      }
+    }
+    return new this_type(it, last, n);
   }
 
   static this_type* NewEmptyString(Context* ctx) {
-    return new this_type();
+    return context::EmptyString(ctx);
   }
 
   static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
@@ -375,8 +389,8 @@ class JSString : public HeapObject {
   }
 
   template<typename Iter>
-  JSString(Iter it, Iter last)
-    : size_(std::distance(it, last)),
+  JSString(Iter it, Iter last, std::size_t n)
+    : size_(n),
       fiber_count_(1),
       fibers_() {
     fibers_[0] = Fiber::New(it, size_);

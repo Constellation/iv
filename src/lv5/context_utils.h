@@ -36,6 +36,9 @@ Symbol Lookup(Context* ctx, double number, bool* res);
 
 GlobalData* Global(Context* ctx);
 
+JSString* EmptyString(Context* ctx);
+JSString* LookupSingleString(Context* ctx, uint16_t ch);
+
 JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);

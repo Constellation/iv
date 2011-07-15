@@ -36,7 +36,10 @@ class GlobalData {
                      random_distribution_type(0, 1)),
       global_obj_(),
       regs_(),
-      table_() {
+      table_(),
+      classes_(),
+      string_cache_(),
+      empty_(new JSString()) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();
@@ -112,8 +115,7 @@ class GlobalData {
   }
 
   void RegisterLiteralRegExp(JSRegExpImpl* reg) {
-    regs_.push_back(reg);
-  }
+    regs_.push_back(reg); }
 
   template<Class::JSClassType CLS>
   void RegisterClass(const ClassSlot& slot) {
@@ -124,12 +126,29 @@ class GlobalData {
     return classes_[cls];
   }
 
+  JSString* GetEmptyString() const {
+    return empty_;
+  }
+
+  JSString* GetSingleString(uint16_t ch) {
+    if (ch <= 0xFF) {
+      // caching value
+      if (string_cache_[ch]) {
+        return string_cache_[ch];
+      }
+      return (string_cache_[ch] = new JSString(ch));
+    }
+    return NULL;
+  }
+
  private:
   random_generator random_engine_;
   JSGlobal global_obj_;
   trace::Vector<JSRegExpImpl*>::type regs_;
   SymbolTable table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
+  std::array<JSString*, 0xFF + 1> string_cache_;
+  JSString* empty_;
 };
 
 } }  // namespace iv::lv5

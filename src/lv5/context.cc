@@ -79,6 +79,14 @@ GlobalData* Global(Context* ctx) {
   return ctx->global_data();
 }
 
+JSString* EmptyString(Context* ctx) {
+  return ctx->global_data()->GetEmptyString();
+}
+
+JSString* LookupSingleString(Context* ctx, uint16_t ch) {
+  return ctx->global_data()->GetSingleString(ch);
+}
+
 JSFunction* throw_type_error(Context* ctx) {
   return ctx->throw_type_error();
 }
