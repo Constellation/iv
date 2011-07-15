@@ -39,7 +39,7 @@ class JSStringObject : public JSObject {
       return JSUndefined;
     }
     return DataDescriptor(
-        JSString::NewSingle(ctx, value_->GetIndex(index)),
+        JSString::NewSingle(ctx, value_->GetAt(index)),
         PropertyDescriptor::ENUMERABLE);
   }
 

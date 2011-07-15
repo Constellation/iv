@@ -503,7 +503,7 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
   } else {
     return JSString::NewSingle(
         args.ctx(),
-        str->GetIndex(position));
+        str->GetAt(position));
   }
 }
 
@@ -525,7 +525,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
     return JSNaN;
   } else {
     return JSVal::UInt32(
-        static_cast<uint32_t>(str->GetIndex(core::DoubleToUInt32(position))));
+        static_cast<uint32_t>(str->GetAt(core::DoubleToUInt32(position))));
   }
 }
 

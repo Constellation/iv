@@ -19,7 +19,7 @@ class EvalSource : public core::Noncopyable<> {
 
   inline uint16_t operator[](std::size_t pos) const {
     assert(pos < size());
-    return source_.GetIndex(pos);
+    return source_.GetAt(pos);
   }
 
   inline std::size_t size() const {

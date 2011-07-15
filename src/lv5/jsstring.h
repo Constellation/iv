@@ -239,7 +239,7 @@ class JSString : public HeapObject {
     return core::UString(fiber->data(), fiber->size());
   }
 
-  uint16_t GetIndex(size_type n) const {
+  uint16_t GetAt(size_type n) const {
     if (fibers_[0]->size() > n) {
       return (*fibers_.front())[n];
     }
