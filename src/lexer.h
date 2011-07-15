@@ -17,7 +17,7 @@
 namespace iv {
 namespace core {
 
-template<typename Source, bool RecognizeCommentAsToken = false>
+template<typename Source, bool RecognizeCommentAsToken = false, bool LexingIfIllegalFound = false>
 class Lexer: private Noncopyable<> {
  public:
 
@@ -162,7 +162,7 @@ class Lexer: private Noncopyable<> {
           if (c_ == '-') {
             Advance();
             if (c_ == '>' && has_line_terminator_before_next_) {
-              token = SkipSingleLineComment<false>();
+              token = SkipSingleLineComment(false);
             } else {
               token = Token::TK_DEC;
             }
@@ -202,10 +202,10 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '/') {
             // SINGLE LINE COMMENT
-            token = SkipSingleLineComment<RecognizeCommentAsToken>();
+            token = SkipSingleLineComment(RecognizeCommentAsToken);
           } else if (c_ == '*') {
             // MULTI LINES COMMENT
-            token = SkipMultiLineComment<RecognizeCommentAsToken>();
+            token = SkipMultiLineComment();
           } else if (c_ == '=') {
             // ASSIGN_DIV
             Advance();
@@ -334,6 +334,9 @@ class Lexer: private Noncopyable<> {
             has_line_terminator_before_next_ = true;
             token = Token::TK_NOT_FOUND;
           } else {
+            // illegal character (like: #)
+            // reduce one character to TK_ILLEGAL
+            Advance();
             token = Token::TK_ILLEGAL;
           }
           break;
@@ -527,28 +530,16 @@ class Lexer: private Noncopyable<> {
     }
   }
 
-  template<bool Val>
-  Token::Type SkipSingleLineComment(typename disable_if_c<Val>::type* = 0) {
+  Token::Type SkipSingleLineComment(bool recognize_comment_as_token) {
     Advance();
     // see ECMA-262 section 7.4
     while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
-    return Token::TK_NOT_FOUND;
+    return (recognize_comment_as_token) ? Token::TK_SINGLE_LINE_COMMENT : Token::TK_NOT_FOUND;
   }
 
-  template<bool Val>
-  Token::Type SkipSingleLineComment(typename enable_if_c<Val>::type* = 0) {
-    Advance();
-    // see ECMA-262 section 7.4
-    while (c_ >= 0 && !character::IsLineTerminator(c_)) {
-      Advance();
-    }
-    return Token::TK_SINGLE_LINE_COMMENT;
-  }
-
-  template<bool Val>
-  Token::Type SkipMultiLineComment(typename disable_if_c<Val>::type* = 0) {
+  Token::Type SkipMultiLineComment() {
     Advance();
     // remember previous ch
     uint16_t ch;
@@ -557,7 +548,7 @@ class Lexer: private Noncopyable<> {
       Advance();
       if (ch == '*' && c_ == '/') {
         c_ = ' ';
-        return Token::TK_NOT_FOUND;
+        return (RecognizeCommentAsToken) ? Token::TK_MULTI_LINE_COMMENT : Token::TK_NOT_FOUND;
       } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
         // see ECMA-262 section 7.4
         SkipLineTerminator();
@@ -565,27 +556,7 @@ class Lexer: private Noncopyable<> {
         ch = '\n';
       }
     }
-    return Token::TK_ILLEGAL;
-  }
-
-  template<bool Val>
-  Token::Type SkipMultiLineComment(typename enable_if_c<Val>::type* = 0) {
-    Advance();
-    // remember previous ch
-    uint16_t ch;
-    while (c_ >= 0) {
-      ch = c_;
-      Advance();
-      if (ch == '*' && c_ == '/') {
-        c_ = ' ';
-        return Token::TK_MULTI_LINE_COMMENT;
-      } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
-        // see ECMA-262 section 7.4
-        SkipLineTerminator();
-        has_line_terminator_before_next_ = true;
-        ch = '\n';
-      }
-    }
+    // EOS found
     return Token::TK_ILLEGAL;
   }
 
@@ -596,7 +567,7 @@ class Lexer: private Noncopyable<> {
       Advance();
       if (c_ == '-') {
         // <!--
-        return SkipSingleLineComment<false>();
+        return SkipSingleLineComment(false);
       }
       PushBack();
     }
