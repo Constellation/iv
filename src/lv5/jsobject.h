@@ -196,5 +196,6 @@ class JSBooleanObject : public JSObject {
   bool value_;
 };
 
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSOBJECT_H_

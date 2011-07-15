@@ -9,6 +9,7 @@
 #include "lv5/jsenv.h"
 #include "lv5/context.h"
 #include "lv5/class.h"
+#include "lv5/object_utils.h"
 #include "lv5/error_check.h"
 
 namespace iv {
@@ -170,6 +171,8 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
   const PropertyDescriptor current = GetOwnProperty(ctx, name);
+
+  // empty check
   if (current.IsEmpty()) {
     if (!extensible_) {
       REJECT("object not extensible");
@@ -184,73 +187,11 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       return true;
     }
   }
-
-  // step 5
-  if (PropertyDescriptor::IsAbsent(desc)) {
-    return true;
+  bool returned = false;
+  if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+    table_[name] = PropertyDescriptor::Merge(desc, current);
   }
-  // step 6
-  if (PropertyDescriptor::Equals(desc, current)) {
-    return true;
-  }
-
-  // step 7
-  if (!current.IsConfigurable()) {
-    if (desc.IsConfigurable()) {
-      REJECT(
-          "changing [[Configurable]] of unconfigurable property not allowed");
-    }
-    if (!desc.IsEnumerableAbsent() &&
-        current.IsEnumerable() != desc.IsEnumerable()) {
-      REJECT("changing [[Enumerable]] of unconfigurable property not allowed");
-    }
-  }
-
-  // step 9
-  if (desc.IsGenericDescriptor()) {
-    // no further validation
-  } else if (current.type() != desc.type()) {
-    if (!current.IsConfigurable()) {
-      REJECT("changing descriptor type of unconfigurable property not allowed");
-    }
-    if (current.IsDataDescriptor()) {
-      assert(desc.IsAccessorDescriptor());
-    } else {
-      assert(desc.IsDataDescriptor());
-    }
-  } else {
-    // step 10
-    if (current.IsDataDescriptor()) {
-      assert(desc.IsDataDescriptor());
-      if (!current.IsConfigurable()) {
-        if (!current.AsDataDescriptor()->IsWritable()) {
-          const DataDescriptor* const data = desc.AsDataDescriptor();
-          if (data->IsWritable()) {
-            REJECT(
-                "changing [[Writable]] of unconfigurable property not allowed");
-          }
-          if (!SameValue(current.AsDataDescriptor()->value(),
-                         data->value())) {
-            REJECT("changing [[Value]] of readonly property not allowed");
-          }
-        }
-      }
-    } else {
-      // step 11
-      assert(desc.IsAccessorDescriptor());
-      if (!current.IsConfigurableAbsent() && !current.IsConfigurable()) {
-        const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
-        const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
-        if ((!rhs->IsSetterAbsent() && (lhs->set() != rhs->set())) ||
-            (!rhs->IsGetterAbsent() && (lhs->get() != rhs->get()))) {
-          REJECT("changing [[Set]] or [[Get]] "
-                 "of unconfigurable property not allowed");
-        }
-      }
-    }
-  }
-  table_[name] = PropertyDescriptor::Merge(desc, current);
-  return true;
+  return returned;
 }
 
 bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,

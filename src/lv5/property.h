@@ -7,9 +7,7 @@ namespace lv5 {
 
 class JSObject;
 class DataDescriptor;
-class AccessorDescriptor;
-
-class PropertyDescriptor {
+class AccessorDescriptor; class PropertyDescriptor {
  public:
   typedef PropertyDescriptor this_type;
   enum Attribute {
@@ -240,10 +238,10 @@ class AccessorDescriptor : public PropertyDescriptor {
 
 class DataDescriptor: public PropertyDescriptor {
  public:
-  DataDescriptor(const JSVal& value, int attrs)
+  explicit DataDescriptor(const JSVal& value, int attrs)
      : PropertyDescriptor(kDataDescripter, value, attrs) {
   }
-  DataDescriptor(int attrs)
+  explicit DataDescriptor(int attrs)
      : PropertyDescriptor(kDataDescripter, JSUndefined, attrs | UNDEF_VALUE) {
   }
   int type() const {
@@ -279,7 +277,7 @@ class DataDescriptor: public PropertyDescriptor {
 
 class GenericDescriptor : public PropertyDescriptor {
  public:
-  GenericDescriptor(int attrs)
+  explicit GenericDescriptor(int attrs)
      : PropertyDescriptor(kGenericDescriptor, attrs) {
   }
 };
@@ -437,6 +435,69 @@ inline bool PropertyDescriptor::IsAbsent(const PropertyDescriptor& desc) {
       desc.IsGenericDescriptor();
 }
 
+template<typename T>
+struct JSValConverter : public std::unary_function<const T&, JSVal> {
+  typedef typename std::unary_function<const T&, JSVal>::argument_type argument_type;
+  typedef typename std::unary_function<const T&, JSVal>::result_type result_type;
+  JSVal operator()(const T& t) const {
+    return JSVal(t);
+  }
+};
+
+template<>
+struct JSValConverter<uint32_t> : public std::unary_function<const uint32_t&, JSVal> {
+  JSVal operator()(const uint32_t t) const {
+    return JSVal::UInt32(t);
+  }
+};
+
+class DescriptorSlot {
+ public:
+  template<typename T>
+  class Data {
+   public:
+    Data(T value, int attrs)
+      : value_(value),
+        attrs_(attrs) {
+    }
+
+    operator DataDescriptor() const {
+      return DataDescriptor(JSValConverter<T>()(value_), attrs_);
+    }
+
+    const T& value() const {
+      return value_;
+    }
+
+    void set_value(T val) {
+      value_ = val;
+    }
+
+    int attrs() const {
+      return attrs_;
+    }
+
+    void set_attrs(int attrs) {
+      attrs_ = attrs;
+    }
+
+    bool IsWritable() const {
+      return attrs_ & PropertyDescriptor::WRITABLE;
+    }
+
+    bool IsConfigurable() const {
+      return attrs_ & PropertyDescriptor::CONFIGURABLE;
+    }
+
+    bool IsEnumerable() const {
+      return attrs_ & PropertyDescriptor::ENUMERABLE;
+    }
+
+   private:
+    T value_;
+    int attrs_;
+  };
+};
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_PROPERTY_H_

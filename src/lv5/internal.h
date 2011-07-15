@@ -7,6 +7,7 @@
 #include "lv5/jsstring.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
+#include "lv5/jsarray.h"
 #include "lv5/jsobject.h"
 #include "lv5/context.h"
 #include "lv5/error.h"
@@ -421,6 +422,9 @@ inline const FunctionLiteral* IsOneFunctionExpression(
 }
 
 inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
+  if (obj->IsClass<Class::Array>()) {
+    return static_cast<JSArray*>(obj)->GetLength();
+  }
   const JSVal length = obj->Get(ctx,
                                 symbol::length,
                                 IV_LV5_ERROR_WITH(e, 0));

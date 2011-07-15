@@ -1,6 +1,7 @@
 #ifndef _IV_LV5_JSARRAY_H_
 #define _IV_LV5_JSARRAY_H_
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <vector>
 #include <set>
@@ -14,6 +15,7 @@
 #include "lv5/class.h"
 #include "lv5/context_utils.h"
 #include "lv5/symbol_checker.h"
+#include "lv5/object_utils.h"
 #include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
@@ -37,6 +39,22 @@ static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
   return true;
 }
 
+static DescriptorSlot::Data<uint32_t>
+DescriptorToArrayLengthSlot(const PropertyDescriptor& desc) {
+  assert(desc.IsDataDescriptor());
+  const JSVal val = desc.AsDataDescriptor()->value();
+  assert(val.IsNumber());
+  uint32_t res;
+  if (val.IsUInt32()) {
+    res = val.uint32();
+  } else {
+    res = core::DoubleToUInt32(val.number());
+  }
+  return DescriptorSlot::Data<uint32_t>(
+      res,
+      desc.attrs());
+}
+
 }  // namespace iv::lv5::detail
 
 class Context;
@@ -50,18 +68,25 @@ class JSArray : public JSObject {
     : JSObject(),
       vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
-      dense_(true) {
-    JSObject::DefineOwnProperty(
-        ctx, symbol::length,
-        DataDescriptor(JSVal::UInt32(len),
-                       PropertyDescriptor::WRITABLE),
-        false, NULL);
+      dense_(true),
+      length_(len, PropertyDescriptor::WRITABLE) {
+  }
+
+  uint32_t GetLength() const {
+    return length_.value();
+  }
+
+  DataDescriptor GetLengthDescriptor() const {
+    return length_;
   }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
     uint32_t index;
     if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
       return JSArray::GetOwnPropertyWithIndex(ctx, index);
+    }
+    if (name == symbol::length) {
+      return GetLengthDescriptor();
     }
     return JSObject::GetOwnProperty(ctx, name);
   }
@@ -129,42 +154,56 @@ class JSArray : public JSObject {
       return JSArray::DefineOwnPropertyWithIndex(ctx, index, desc, th, e);
     }
 
-    PropertyDescriptor old_len_desc_prop = GetOwnProperty(ctx, symbol::length);
-    DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
-    const JSVal& len_value = old_len_desc->value();
-    assert(len_value.IsUInt32());
-
     if (name == symbol::length) {
       if (desc.IsDataDescriptor()) {
         const DataDescriptor* const data = desc.AsDataDescriptor();
         if (data->IsValueAbsent()) {
+          // GenericDescriptor
           // changing attribute [[Writable]] or TypeError.
           // [[Value]] not changed.
-          return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+          //
+          // length value is always not empty, so use
+          // GetDefineOwnPropertyResult
+          bool returned = false;
+          if (IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e)) {
+            // TODO(Constellation) more fast fix
+            length_ =
+                detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(length_, desc));
+          }
+          return returned;
         }
-        DataDescriptor new_len_desc(*data);
         const double new_len_double =
-            new_len_desc.value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
+            data->value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
         // length must be uint32_t
         const uint32_t new_len = core::DoubleToUInt32(new_len_double);
         if (new_len != new_len_double) {
           e->Report(Error::Range, "invalid array length");
           return false;
         }
-        new_len_desc.set_value(JSVal::UInt32(new_len));
-        uint32_t old_len = len_value.uint32();
+        DataDescriptor new_len_desc(JSVal::UInt32(new_len), data->attrs());
+        uint32_t old_len = length_.value();
         if (new_len >= old_len) {
-          return JSObject::DefineOwnProperty(ctx, symbol::length,
-                                             new_len_desc, th, e);
+          bool returned = false;
+          if (IsDefineOwnPropertyAccepted(length_, new_len_desc, th, &returned, e)) {
+            // TODO(Constellation) more fast fix
+            length_ =
+                detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(new_len_desc, length_));
+          }
+          return returned;
         }
-        if (!old_len_desc->IsWritable()) {
+        if (!length_.IsWritable()) {
           REJECT("\"length\" not writable");
         }
         const bool new_writable =
             new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
         new_len_desc.set_writable(true);
-        const bool succeeded = JSObject::DefineOwnProperty(ctx, symbol::length,
-                                                           new_len_desc, th, e);
+
+        bool succeeded = false;
+        if (IsDefineOwnPropertyAccepted(length_, new_len_desc, th, &succeeded, e)) {
+          length_ =
+              detail::DescriptorToArrayLengthSlot(
+                  PropertyDescriptor::Merge(new_len_desc, length_));
+        }
         if (!succeeded) {
           return false;
         }
@@ -185,9 +224,16 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                JSObject::DefineOwnProperty(ctx, symbol::length,
-                                            new_len_desc,
-                                            false, IV_LV5_ERROR_WITH(e, false));
+                // TODO(Constellation)
+                // clean up code and check this
+                bool wasted = false;
+                if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
+                  // TODO(Constellation) more fast fix
+                  length_ =
+                      detail::DescriptorToArrayLengthSlot(
+                          PropertyDescriptor::Merge(new_len_desc, length_));
+                }
+                IV_LV5_ERROR_GUARD_WITH(e, false);
                 REJECT("shrink array failed");
               }
             }
@@ -217,9 +263,16 @@ class JSArray : public JSObject {
                 if (!new_writable) {
                   new_len_desc.set_writable(false);
                 }
-                JSObject::DefineOwnProperty(ctx, symbol::length,
-                                            new_len_desc, false,
-                                            IV_LV5_ERROR_WITH(e, false));
+                // TODO(Constellation)
+                // clean up code and check this
+                bool wasted = false;
+                if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
+                  // TODO(Constellation) more fast fix
+                  length_ =
+                      detail::DescriptorToArrayLengthSlot(
+                          PropertyDescriptor::Merge(new_len_desc, length_));
+                }
+                IV_LV5_ERROR_GUARD_WITH(e, false);
                 REJECT("shrink array failed");
               }
             }
@@ -227,19 +280,25 @@ class JSArray : public JSObject {
           }
         }
         if (!new_writable) {
-          JSObject::DefineOwnProperty(
-              ctx, symbol::length,
-              DataDescriptor(
-                  PropertyDescriptor::WRITABLE |
-                  PropertyDescriptor::UNDEF_ENUMERABLE |
-                  PropertyDescriptor::UNDEF_CONFIGURABLE),
-              false, e);
+          const DataDescriptor target = DataDescriptor(
+              PropertyDescriptor::WRITABLE |
+              PropertyDescriptor::UNDEF_ENUMERABLE |
+              PropertyDescriptor::UNDEF_CONFIGURABLE);
+          bool wasted = false;
+          if (IsDefineOwnPropertyAccepted(length_, target, false, &wasted, e)) {
+            // TODO(Constellation) more fast fix
+            length_ =
+                detail::DescriptorToArrayLengthSlot(
+                    PropertyDescriptor::Merge(target, length_));
+          }
         }
         return true;
       } else {
         // length is not configurable
         // so length is not changed
-        return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+        bool returned = false;
+        assert(!IsDefineOwnPropertyAccepted(length_, target, false, &returned, e));
+        return returned;
       }
     } else {
       return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
@@ -252,12 +311,8 @@ class JSArray : public JSObject {
                                   bool th,
                                   Error* e) {
     // array index
-    PropertyDescriptor old_len_desc_prop =
-        JSArray::GetOwnProperty(ctx, symbol::length);
-    DataDescriptor* const old_len_desc = old_len_desc_prop.AsDataDescriptor();
-    const uint32_t old_len =
-        old_len_desc->value().ToUInt32(ctx, IV_LV5_ERROR_WITH(e, false));
-    if (index >= old_len && !old_len_desc->IsWritable()) {
+    const uint32_t old_len = length_.value();
+    if (index >= old_len && !length_.IsWritable()) {
       return false;
     }
 
@@ -311,11 +366,7 @@ class JSArray : public JSObject {
       }
     }
     if (index >= old_len) {
-      old_len_desc->set_value(JSVal::UInt32(index+1));
-      JSObject::DefineOwnProperty(ctx,
-                                  symbol::length,
-                                  *old_len_desc,
-                                  false, e);
+      length_.set_value(index + 1);
     }
     return true;
   }
@@ -326,6 +377,12 @@ class JSArray : public JSObject {
     uint32_t index;
     if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
       return JSArray::DeleteWithIndex(ctx, index, th, e);
+    }
+    if (symbol::length == name) {
+      if (th) {
+        e->Report(Error::Type, "delete failed");
+      }
+      return false;
     }
     return JSObject::Delete(ctx, name, th, e);
   }
@@ -365,6 +422,9 @@ class JSArray : public JSObject {
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const {
     uint32_t index = 0;
+    if (length_.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
+      vec->push_back(symbol::length);
+    }
     for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
@@ -457,6 +517,7 @@ class JSArray : public JSObject {
   JSVals vector_;
   Map* map_;
   bool dense_;
+  DescriptorSlot::Data<uint32_t> length_;
 };
 
 } }  // namespace iv::lv5
