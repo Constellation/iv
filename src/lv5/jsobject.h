@@ -30,6 +30,7 @@ class JSObject : public HeapObject {
 
   JSObject();
   JSObject(JSObject* proto, Class* cls, bool extensible);
+  JSObject(Properties* table);
 
   virtual ~JSObject() { }
 
@@ -147,55 +148,41 @@ class JSObject : public HeapObject {
     return &cls;
   }
 
- protected:
+ private:
+  void AllocateTable() {
+    if (!table_) {
+      table_ = new(GC)Properties();
+    }
+  }
+
   const Class* cls_;
   JSObject* prototype_;
   bool extensible_;
-  Properties table_;
+  Properties* table_;
 };
 
-class JSNumberObject : public JSObject {
+template<std::size_t N>
+class JSObjectWithSlot : public JSObject {
  public:
-  explicit JSNumberObject(const double& value) : value_(value) { }
-  static JSNumberObject* New(Context* ctx, const double& value);
-  static JSNumberObject* NewPlain(Context* ctx, const double& value);
-  const double& value() const {
-    return value_;
+  static const std::size_t kSlotSize = N;
+
+  std::size_t GetSlotSize() {
+    return N;
   }
 
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Number",
-      Class::Number
-    };
-    return &cls;
+  JSVal& GetSlot(std::size_t n) {
+    assert(n < N);
+    return slots_[n];
   }
 
- private:
-  double value_;
+  const JSVal& GetSlot(std::size_t n) const {
+    assert(n < N);
+    return slots_[n];
+  }
+
+ protected:
+  std::array<JSVal, N> slots_;
 };
-
-class JSBooleanObject : public JSObject {
- public:
-  explicit JSBooleanObject(bool value) : value_(value) { }
-  static JSBooleanObject* NewPlain(Context* ctx, bool value);
-  static JSBooleanObject* New(Context* ctx, bool value);
-  bool value() const {
-    return value_;
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Boolean",
-      Class::Boolean
-    };
-    return &cls;
-  }
-
- private:
-  bool value_;
-};
-
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSOBJECT_H_

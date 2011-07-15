@@ -14,6 +14,8 @@
 #include "lv5/jsarray.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsobject.h"
+#include "lv5/jsnumberobject.h"
+#include "lv5/jsbooleanobject.h"
 #include "lv5/jsfunction.h"
 #include "lv5/gc_template.h"
 #include "lv5/context.h"

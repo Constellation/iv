@@ -10,6 +10,9 @@
 #include "lv5/context.h"
 #include "lv5/class.h"
 #include "lv5/object_utils.h"
+#include "lv5/jsbooleanobject.h"
+#include "lv5/jsnumberobject.h"
+#include "lv5/jshashobject.h"
 #include "lv5/error_check.h"
 
 namespace iv {
@@ -19,7 +22,7 @@ JSObject::JSObject()
   : cls_(NULL),
     prototype_(NULL),
     extensible_(true),
-    table_() {
+    table_(NULL) {
 }
 
 JSObject::JSObject(JSObject* proto,
@@ -28,7 +31,14 @@ JSObject::JSObject(JSObject* proto,
   : cls_(cls),
     prototype_(proto),
     extensible_(extensible),
-    table_() {
+    table_(NULL) {
+}
+
+JSObject::JSObject(Properties* table)
+  : cls_(NULL),
+    prototype_(NULL),
+    extensible_(true),
+    table_(table) {
 }
 
 #define TRY(context, sym, arg, error)\
@@ -109,11 +119,15 @@ PropertyDescriptor JSObject::GetPropertyWithIndex(Context* ctx,
 }
 
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
-  const Properties::const_iterator it = table_.find(name);
-  if (it == table_.end()) {
-    return JSUndefined;
+  if (table_) {
+    const Properties::const_iterator it = table_->find(name);
+    if (it == table_->end()) {
+      return JSUndefined;
+    } else {
+      return it->second;
+    }
   } else {
-    return it->second;
+    return JSUndefined;
   }
 }
 
@@ -177,19 +191,21 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     if (!extensible_) {
       REJECT("object not extensible");
     } else {
+      AllocateTable();
       if (!desc.IsAccessorDescriptor()) {
         assert(desc.IsDataDescriptor() || desc.IsGenericDescriptor());
-        table_[name] = PropertyDescriptor::SetDefault(desc);
+        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
       } else {
         assert(desc.IsAccessorDescriptor());
-        table_[name] = PropertyDescriptor::SetDefault(desc);
+        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
       }
       return true;
     }
   }
   bool returned = false;
   if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-    table_[name] = PropertyDescriptor::Merge(desc, current);
+    AllocateTable();
+    (*table_)[name] = PropertyDescriptor::Merge(desc, current);
   }
   return returned;
 }
@@ -258,18 +274,22 @@ bool JSObject::HasPropertyWithIndex(Context* ctx, uint32_t index) const {
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
-  const PropertyDescriptor desc = GetOwnProperty(ctx, name);
-  if (desc.IsEmpty()) {
-    return true;
-  }
-  if (desc.IsConfigurable()) {
-    table_.erase(name);
-    return true;
-  } else {
-    if (th) {
-      e->Report(Error::Type, "delete failed");
+  if (table_) {
+    const PropertyDescriptor desc = GetOwnProperty(ctx, name);
+    if (desc.IsEmpty()) {
+      return true;
     }
-    return false;
+    if (desc.IsConfigurable()) {
+      table_->erase(name);
+      return true;
+    } else {
+      if (th) {
+        e->Report(Error::Type, "delete failed");
+      }
+      return false;
+    }
+  } else {
+    return true;
   }
 }
 
@@ -296,55 +316,32 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const {
-  if (vec->empty()) {
-    for (JSObject::Properties::const_iterator it = table_.begin(),
-         last = table_.end(); it != last; ++it) {
-      if (it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
-        vec->push_back(it->first);
+  if (table_) {
+    if (vec->empty()) {
+      for (JSObject::Properties::const_iterator it = table_->begin(),
+           last = table_->end(); it != last; ++it) {
+        if (it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
+          vec->push_back(it->first);
+        }
       }
-    }
-  } else {
-    for (JSObject::Properties::const_iterator it = table_.begin(),
-         last = table_.end(); it != last; ++it) {
-      if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
-          (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
-        vec->push_back(it->first);
+    } else {
+      for (JSObject::Properties::const_iterator it = table_->begin(),
+           last = table_->end(); it != last; ++it) {
+        if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
+            (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
+          vec->push_back(it->first);
+        }
       }
     }
   }
 }
 
 JSObject* JSObject::New(Context* ctx) {
-  JSObject* const obj = NewPlain(ctx);
-  obj->set_cls(JSObject::GetClass());
-  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
-  return obj;
+  return JSHashObject::New(ctx);
 }
 
 JSObject* JSObject::NewPlain(Context* ctx) {
-  return new JSObject();
-}
-
-JSNumberObject* JSNumberObject::New(Context* ctx, const double& value) {
-  JSNumberObject* const obj = new JSNumberObject(value);
-  obj->set_cls(JSNumberObject::GetClass());
-  obj->set_prototype(context::GetClassSlot(ctx, Class::Number).prototype);
-  return obj;
-}
-
-JSNumberObject* JSNumberObject::NewPlain(Context* ctx, const double& value) {
-  return new JSNumberObject(value);
-}
-
-JSBooleanObject* JSBooleanObject::NewPlain(Context* ctx, bool value) {
-  return new JSBooleanObject(value);
-}
-
-JSBooleanObject* JSBooleanObject::New(Context* ctx, bool value) {
-  JSBooleanObject* const obj = new JSBooleanObject(value);
-  obj->set_cls(JSBooleanObject::GetClass());
-  obj->set_prototype(context::GetClassSlot(ctx, Class::Boolean).prototype);
-  return obj;
+  return JSHashObject::NewPlain(ctx);
 }
 
 } }  // namespace iv::lv5

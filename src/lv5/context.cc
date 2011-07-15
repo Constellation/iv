@@ -11,6 +11,8 @@
 #include "lv5/jsglobal.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsarguments.h"
+#include "lv5/jsnumberobject.h"
+#include "lv5/jsbooleanobject.h"
 #include "lv5/arguments.h"
 #include "lv5/context.h"
 #include "lv5/context_utils.h"

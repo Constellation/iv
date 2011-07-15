@@ -11,6 +11,7 @@
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
+#include "lv5/jsnumberobject.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsdtoa.h"
 namespace iv {

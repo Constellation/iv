@@ -5,6 +5,8 @@
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
+#include "lv5/jsbooleanobject.h"
+#include "lv5/jsnumberobject.h"
 #include "lv5/jsstringobject.h"
 namespace iv {
 namespace lv5 {
