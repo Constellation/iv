@@ -88,7 +88,9 @@ class Scope : public SpaceObject,
     : up_(NULL),
       vars_(typename Variables::allocator_type(factory)),
       funcs_(typename FunctionLiterals::allocator_type(factory)),
-      is_global_(is_global) {
+      is_global_(is_global),
+      direct_call_to_eval_(false),
+      with_statement_(false) {
   }
   void AddUnresolved(Identifier<Factory>* name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
@@ -111,11 +113,25 @@ class Scope : public SpaceObject,
   this_type* GetUpperScope() {
     return up_;
   }
+  bool HasDirectCallToEval() const {
+    return direct_call_to_eval_;
+  }
+  bool HasWithStatement() const {
+    return with_statement_;
+  }
+  void RecordDirectCallToEval() {
+    direct_call_to_eval_ = true;
+  }
+  void RecordWithStatement() {
+    with_statement_ = true;
+  }
  protected:
   this_type* up_;
   Variables vars_;
   FunctionLiterals funcs_;
   bool is_global_;
+  bool direct_call_to_eval_;
+  bool with_statement_;
 };
 
 template<typename Factory>

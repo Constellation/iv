@@ -894,6 +894,7 @@ class Parser
 
     Statement *stmt = ParseStatement(CHECK);
     assert(expr && stmt);
+    scope_->RecordWithStatement();
     return factory_->NewWithStatement(expr, stmt, begin);
   }
 
@@ -1653,6 +1654,12 @@ class Parser
                 factory_->template NewVector<Expression*>();
             ParseArguments(args, CHECK);
             assert(expr && args);
+            // record eval call
+            if (expr->AsIdentifier() &&
+                IsEvalOrArguments(expr->AsIdentifier()) == kEval) {
+              // this is maybe direct call to eval
+              scope_->RecordDirectCallToEval();
+            }
             expr = factory_->NewFunctionCall(expr, args,
                                              lexer_.previous_end_position());
           } else {
