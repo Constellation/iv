@@ -96,6 +96,19 @@ class VM {
                      const Symbol& s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       // section 8.7.1 special [[Get]]
+      if (base.IsString()) {
+        // string short circuit
+        JSString* str = base.string();
+        if (s == symbol::length) {
+          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
+        }
+        uint32_t index;
+        if (core::ConvertToUInt32(context::GetSymbolString(ctx_, s), &index)) {
+          if (index < str->size()) {
+            return JSString::NewSingle(ctx_, str->GetAt(index));
+          }
+        }
+      }
       const JSObject* const o = base.ToObject(ctx_, CHECK);
       const PropertyDescriptor desc = o->GetProperty(ctx_, s);
       if (desc.IsEmpty()) {
