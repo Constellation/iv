@@ -342,11 +342,18 @@ MAIN_LOOP_START:
         const JSVal element = POP();
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
-        const JSString* str = element.ToString(ctx_, ERR);
-        const Symbol s = context::Intern(ctx_, str);
-        JSObject* const obj = base.ToObject(ctx_, ERR);
-        const bool result = obj->Delete(ctx_, s, strict, ERR);
-        SET_TOP(JSVal::Bool(result));
+        uint32_t index;
+        if (element.GetUInt32(&index)) {
+          JSObject* const obj = base.ToObject(ctx_, ERR);
+          const bool result = obj->DeleteWithIndex(ctx_, index, strict, ERR);
+          SET_TOP(JSVal::Bool(result));
+        } else {
+          const JSString* str = element.ToString(ctx_, ERR);
+          const Symbol s = context::Intern(ctx_, str);
+          JSObject* const obj = base.ToObject(ctx_, ERR);
+          const bool result = obj->Delete(ctx_, s, strict, ERR);
+          SET_TOP(JSVal::Bool(result));
+        }
         continue;
       }
 

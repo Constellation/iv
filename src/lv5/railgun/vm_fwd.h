@@ -329,11 +329,14 @@ class VM {
       e->Report(Error::Type, "in requires object");
       return JSEmpty;
     }
-    const JSString* const name = lhs.ToString(ctx_, CHECK);
-    const bool res =
-        rhs.object()->HasProperty(ctx_,
-                                  context::Intern(ctx_, name));
-    return JSVal::Bool(res);
+    uint32_t index;
+    if (lhs.GetUInt32(&index)) {
+      return JSVal::Bool(rhs.object()->HasPropertyWithIndex(ctx_, index));
+    } else {
+      const JSString* const name = lhs.ToString(ctx_, CHECK);
+      return JSVal::Bool(
+          rhs.object()->HasProperty(ctx_, context::Intern(ctx_, name)));
+    }
   }
 
   JSVal BinaryEqual(const JSVal& lhs,

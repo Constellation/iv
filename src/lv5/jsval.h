@@ -458,6 +458,21 @@ class JSVal {
     }
   }
 
+  bool GetUInt32(uint32_t* result) const {
+    if (IsUInt32()) {
+      *result = uint32();
+      return true;
+    } else if (IsNumber()) {
+      const double val = number();
+      const uint32_t res = static_cast<uint32_t>(val);
+      if (val == res) {
+        *result = res;
+        return true;
+      }
+    }
+    return false;
+  }
+
   JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
 
   bool IsCallable() const;
