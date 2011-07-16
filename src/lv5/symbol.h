@@ -18,7 +18,8 @@ namespace lv5 {
     V(toString)\
     V(valueOf)\
     V(prototype)\
-    V(constructor)
+    V(constructor)\
+    V(__proto__)
 
 struct Symbol {
   enum DefaultSymbols {
