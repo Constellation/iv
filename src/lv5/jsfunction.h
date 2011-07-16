@@ -75,6 +75,8 @@ class JSFunction : public JSObject {
 
   virtual bool IsNativeFunction() const = 0;
 
+  virtual bool IsBoundFunction() const = 0;
+
   virtual JSAPI NativeFunction() const {
     return NULL;
   }
@@ -134,6 +136,10 @@ class JSNativeFunction : public JSFunction {
     return true;
   }
 
+  bool IsBoundFunction() const {
+    return false;
+  }
+
   bool IsStrict() const {
     return false;
   }
@@ -167,6 +173,10 @@ class JSBoundFunction : public JSFunction {
   }
 
   bool IsNativeFunction() const {
+    return true;
+  }
+
+  bool IsBoundFunction() const {
     return true;
   }
 
@@ -314,6 +324,10 @@ class JSInlinedFunction : public JSFunction {
 
   bool IsNativeFunction() const {
     return true;
+  }
+
+  bool IsBoundFunction() const {
+    return false;
   }
 
   bool IsStrict() const {

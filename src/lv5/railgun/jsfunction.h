@@ -134,6 +134,10 @@ class JSVMFunction : public JSFunction {
     return false;
   }
 
+  bool IsBoundFunction() const {
+    return false;
+  }
+
   core::UStringPiece GetSource() const {
     const std::size_t start_pos = code_->start_position();
     const std::size_t end_pos = code_->end_position();
