@@ -10,15 +10,14 @@ namespace lv5 {
 class JSStringObject : public JSObject {
  public:
   JSStringObject(Context* ctx, JSString* value)
-    : value_(value) {
-    DefineOwnProperty(
-        ctx, symbol::length,
-        DataDescriptor(JSVal::UInt32(static_cast<uint32_t>(value->size())),
-                       PropertyDescriptor::NONE),
-        false, NULL);
+    : value_(value),
+      length_(static_cast<uint32_t>(value->size())) {
   }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
+    if (name == symbol::length) {
+      return DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE);
+    }
     uint32_t index;
     if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
       return JSStringObject::GetOwnPropertyWithIndex(ctx, index);
@@ -46,6 +45,11 @@ class JSStringObject : public JSObject {
   void GetOwnPropertyNames(Context* ctx,
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const {
+    if (mode == kIncludeNotEnumerable) {
+      if (std::find(vec->begin(), vec->end(), symbol::length) == vec->end()) {
+        vec->push_back(symbol::length);
+      }
+    }
     if (vec->empty()) {
       for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
         vec->push_back(context::Intern(ctx, i));
@@ -86,6 +90,7 @@ class JSStringObject : public JSObject {
 
  private:
   JSString* value_;
+  uint32_t length_;
 };
 
 } }  // namespace iv::lv5

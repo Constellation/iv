@@ -410,7 +410,9 @@ class JSArray : public JSObject {
                            EnumerationMode mode) const {
     uint32_t index = 0;
     if (length_.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
-      vec->push_back(symbol::length);
+      if (std::find(vec->begin(), vec->end(), symbol::length) == vec->end()) {
+        vec->push_back(symbol::length);
+      }
     }
     for (JSVals::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
