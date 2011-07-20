@@ -351,10 +351,10 @@ class Compiler
     const Statements& stmts = block->body();
     for (Statements::const_iterator it = stmts.begin(),
          last = stmts.end(); it != last; ++it) {
+      (*it)->Accept(this);
       if (continuation_status_->IsDeadStatement()) {
         break;
       }
-      (*it)->Accept(this);
     }
     jump.EmitJumps(CurrentSize());
     continuation_status_->ResolveJump(block);
@@ -695,6 +695,7 @@ class Compiler
       Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
       std::get<1>(entry)->push_back(arg_index);
     }
+
     continuation_status_->JumpTo(stmt->target());
     assert(stack_depth()->IsBaseLine());
   }
@@ -799,10 +800,10 @@ class Compiler
         const Statements& stmts = (*it)->body();
         for (Statements::const_iterator stmt_it = stmts.begin(),
              stmt_last = stmts.end(); stmt_it != stmt_last; ++stmt_it) {
+          (*stmt_it)->Accept(this);
           if (continuation_status_->IsDeadStatement()) {
             break;
           }
-          (*stmt_it)->Accept(this);
         }
         if (continuation_status_->IsDeadStatement()) {
           if ((it + 1) != last) {
@@ -1808,10 +1809,10 @@ class Compiler
       const Statements& stmts = lit.body();
       for (Statements::const_iterator it = stmts.begin(),
            last = stmts.end(); it != last; ++it) {
+        (*it)->Accept(this);
         if (continuation_status_->IsDeadStatement()) {
           break;
         }
-        (*it)->Accept(this);
       }
     }
     Emit<OP::STOP_CODE>();

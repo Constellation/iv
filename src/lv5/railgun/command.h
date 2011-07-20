@@ -44,8 +44,8 @@ Code* Compile(Context* ctx, const Source& src) {
   return Compile(ctx, *global, script);
 }
 
-static int Execute(const core::StringPiece& data, const std::string& filename) {
-  Error e;
+static int Execute(const core::StringPiece& data,
+                   const std::string& filename, Error* e) {
   VM vm;
   Context ctx(&vm);
   core::FileSource src(data, filename);
@@ -55,12 +55,12 @@ static int Execute(const core::StringPiece& data, const std::string& filename) {
   }
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
-  vm.Run(code, &e);
-  if (e) {
-    const JSVal res = JSError::Detail(&ctx, &e);
-    e.Clear();
-    const JSString* const str = res.ToString(&ctx, &e);
-    if (!e) {
+  vm.Run(code, e);
+  if (*e) {
+    const JSVal res = JSError::Detail(&ctx, e);
+    e->Clear();
+    const JSString* const str = res.ToString(&ctx, e);
+    if (!*e) {
       std::fputs(str->GetUTF8().c_str(), stderr);
       return EXIT_FAILURE;
     } else {
@@ -101,7 +101,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
       const std::string filename(f->GetUTF8());
       if (detail::ReadFile(filename, &buffer)) {
         detail::Execute(
-            core::StringPiece(buffer.data(), buffer.size()), filename);
+            core::StringPiece(buffer.data(), buffer.size()), filename, e);
       }
     }
   }
