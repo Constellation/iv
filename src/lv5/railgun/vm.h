@@ -36,7 +36,7 @@ class JSValRef : public JSVal {
 
   JSValRef(JSVal* val) {  // NOLINT
     value_.struct_.payload_.jsvalref_ = val;
-    value_.struct_.tag_ = detail::kJSValRefTag;
+    value_.struct_.tag_ = lv5::detail::kJSValRefTag;
   }
 
   JSValRef& operator=(const JSVal& rhs) {
@@ -45,7 +45,7 @@ class JSValRef : public JSVal {
   }
 
   inline bool IsJSValRef() const {
-    return value_.struct_.tag_ == detail::kJSValRefTag;
+    return value_.struct_.tag_ == lv5::detail::kJSValRefTag;
   }
 
   inline bool IsPtr() const {
