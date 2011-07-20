@@ -178,7 +178,7 @@ class Compiler
       data_(NULL),
       script_(NULL),
       jump_table_(),
-      level_stack_(NULL),
+      level_stack_(),
       stack_depth_(NULL),
       dynamic_env_level_(0),
       continuation_status_() {
@@ -213,29 +213,24 @@ class Compiler
    public:
     CodeContext(Compiler* compiler, Code* code)
       : compiler_(compiler),
-        level_stack_(),
         stack_depth_(),
-        prev_level_stack_(compiler->level_stack()),
         prev_stack_depth_(compiler_->stack_depth()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
       compiler_->ClearJumpTable();
-      compiler_->set_level_stack(&level_stack_);
+      compiler_->ClearLevelStack();
       compiler_->set_stack_depth(&stack_depth_);
       compiler_->set_dynamic_env_level(0);
       compiler_->ClearContinuation();
     }
 
     ~CodeContext() {
-      compiler_->set_level_stack(prev_level_stack_);
       compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
     }
    private:
     Compiler* compiler_;
-    LevelStack level_stack_;
     StackDepth stack_depth_;
-    LevelStack* prev_level_stack_;
     StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
   };
@@ -308,7 +303,7 @@ class Compiler
 
     void EmitJumps(std::size_t finally_target) {
       assert(has_finally_);
-      const LevelStack& stack = *compiler_->level_stack();
+      const LevelStack& stack = compiler_->level_stack();
       std::pair<LevelType, std::vector<std::size_t>*> pair = stack.back();
       assert(pair.first == FINALLY);
       assert(pair.second == &vec_);
@@ -636,7 +631,7 @@ class Compiler
     const JumpEntry& entry = jump_table_[stmt->target()];
     for (uint16_t level = CurrentLevel(),
          last = std::get<0>(entry); level > last; --level) {
-      const LevelEntry& le = (*level_stack_)[level - 1];
+      const LevelEntry& le = level_stack_[level - 1];
       if (le.first == FINALLY) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);
@@ -667,7 +662,7 @@ class Compiler
       const JumpEntry& entry = jump_table_[stmt->target()];
       for (uint16_t level = CurrentLevel(),
            last = std::get<0>(entry); level > last; --level) {
-        const LevelEntry& le = (*level_stack_)[level - 1];
+        const LevelEntry& le = level_stack_[level - 1];
         if (le.first == FINALLY) {
           const std::size_t finally_jump_index = CurrentSize() + 1;
           Emit<OP::JUMP_SUBROUTINE>(0);
@@ -709,7 +704,7 @@ class Compiler
       // nested finally has found
       // set finally jump targets
       for (uint16_t level = CurrentLevel(); level > 0; --level) {
-        const LevelEntry& le = (*level_stack_)[level - 1];
+        const LevelEntry& le = level_stack_[level - 1];
         if (le.first == FINALLY) {
           const std::size_t finally_jump_index = CurrentSize() + 1;
           Emit<OP::JUMP_RETURN_HOOKED_SUBROUTINE>(0);
@@ -831,7 +826,7 @@ class Compiler
     if (has_finally) {
       const std::size_t finally_jump_index = CurrentSize() + 1;
       Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-      (*level_stack_)[CurrentLevel() - 1].second->push_back(finally_jump_index);
+      level_stack_[CurrentLevel() - 1].second->push_back(finally_jump_index);
     }
     const std::size_t label_index = CurrentSize();
     Emit<OP::JUMP_FORWARD>(0);  // dummy index
@@ -862,7 +857,7 @@ class Compiler
       if (has_finally) {
         const std::size_t finally_jump_index = CurrentSize() + 1;
         Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-        (*level_stack_)[CurrentLevel() - 1].second->push_back(finally_jump_index);
+        level_stack_[CurrentLevel() - 1].second->push_back(finally_jump_index);
       }
       catch_return_label_index = CurrentSize();
       Emit<OP::JUMP_FORWARD>(0);  // dummy index
@@ -1943,18 +1938,14 @@ class Compiler
     return code_;
   }
 
-  void set_level_stack(LevelStack* level_stack) {
-    level_stack_ = level_stack;
-  }
-
-  LevelStack* level_stack() const {
+  const LevelStack& level_stack() const {
     return level_stack_;
   }
 
   // try - catch - finally nest level
   // use for break / continue exile by executing finally block
   std::size_t CurrentLevel() const {
-    return level_stack_->size();
+    return level_stack_.size();
   }
 
   void DynamicEnvLevelUp() {
@@ -2001,26 +1992,26 @@ class Compiler
   }
 
   void PushLevelFinally(std::vector<std::size_t>* vec) {
-    level_stack_->push_back(std::make_pair(FINALLY, vec));
+    level_stack_.push_back(std::make_pair(FINALLY, vec));
   }
 
   void PushLevelWith() {
-    level_stack_->push_back(
+    level_stack_.push_back(
         std::make_pair(WITH, static_cast<std::vector<std::size_t>*>(NULL)));
   }
 
   void PushLevelForIn() {
-    level_stack_->push_back(
+    level_stack_.push_back(
         std::make_pair(FORIN, static_cast<std::vector<std::size_t>*>(NULL)));
   }
 
   void PushLevelSub() {
-    level_stack_->push_back(
+    level_stack_.push_back(
         std::make_pair(SUB, static_cast<std::vector<std::size_t>*>(NULL)));
   }
 
   void PopLevel() {
-    level_stack_->pop_back();
+    level_stack_.pop_back();
   }
 
   StackDepth* stack_depth() const {
@@ -2035,6 +2026,10 @@ class Compiler
     jump_table_.clear();
   }
 
+  void ClearLevelStack() {
+    level_stack_.clear();
+  }
+
   void ClearContinuation() {
     continuation_status_.Clear();
   }
@@ -2044,7 +2039,7 @@ class Compiler
   Code::Data* data_;
   JSScript* script_;
   JumpTable jump_table_;
-  LevelStack* level_stack_;
+  LevelStack level_stack_;
   StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
