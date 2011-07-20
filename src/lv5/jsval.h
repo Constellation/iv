@@ -34,8 +34,8 @@ class JSString;
 
 namespace detail {
 template<std::size_t PointerSize, bool IsLittle>
-struct Layout {
-};
+struct Layout;
+
 template<>
 struct Layout<4, true> {
   union {
