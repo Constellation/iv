@@ -145,6 +145,11 @@ class ContinuationStatus : private iv::core::Noncopyable<ContinuationStatus> {
     }
   }
 
+  void Clear() {
+    current_.clear();
+    Insert(detail::kNextStatement);
+  }
+
  private:
   ContinuationSet current_;
 };
@@ -196,6 +201,7 @@ class Compiler
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
     Code* code = new Code(ctx_, script_, function, data_);
+    continuation_status_.Clear();
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(function);
@@ -211,19 +217,17 @@ class Compiler
         jump_table_(),
         level_stack_(),
         stack_depth_(),
-        continuation_status_(),
         prev_code_(compiler_->code()),
         prev_jump_table_(compiler_->jump_table()),
         prev_level_stack_(compiler->level_stack()),
         prev_stack_depth_(compiler_->stack_depth()),
-        prev_dynamic_env_level_(compiler_->dynamic_env_level()),
-        prev_continuation_status_(compiler_->continuation_status()) {
+        prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
       compiler_->set_jump_table(&jump_table_);
       compiler_->set_level_stack(&level_stack_);
       compiler_->set_stack_depth(&stack_depth_);
       compiler_->set_dynamic_env_level(0);
-      compiler_->set_continuation_status(&continuation_status_);
+      compiler_->ClearContinuation();
     }
 
     ~CodeContext() {
@@ -232,20 +236,17 @@ class Compiler
       compiler_->set_level_stack(prev_level_stack_);
       compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
-      compiler_->set_continuation_status(prev_continuation_status_);
     }
    private:
     Compiler* compiler_;
     JumpTable jump_table_;
     LevelStack level_stack_;
     StackDepth stack_depth_;
-    ContinuationStatus continuation_status_;
     Code* prev_code_;
     JumpTable* prev_jump_table_;
     LevelStack* prev_level_stack_;
     StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
-    ContinuationStatus* prev_continuation_status_;
   };
 
   class BreakTarget : private core::Noncopyable<> {
@@ -352,12 +353,12 @@ class Compiler
     for (Statements::const_iterator it = stmts.begin(),
          last = stmts.end(); it != last; ++it) {
       (*it)->Accept(this);
-      if (continuation_status_->IsDeadStatement()) {
+      if (continuation_status_.IsDeadStatement()) {
         break;
       }
     }
     jump.EmitJumps(CurrentSize());
-    continuation_status_->ResolveJump(block);
+    continuation_status_.ResolveJump(block);
     assert(stack_depth()->IsBaseLine());
   }
 
@@ -405,10 +406,10 @@ class Compiler
     if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
       // then statement block
       stmt->then_statement()->Accept(this);  // STMT
-      if (continuation_status_->IsDeadStatement()) {
-        continuation_status_->Insert(detail::kNextStatement);
+      if (continuation_status_.IsDeadStatement()) {
+        continuation_status_.Insert(detail::kNextStatement);
       } else {
-        continuation_status_->Insert(stmt);
+        continuation_status_.Insert(stmt);
       }
       assert(stack_depth()->IsBaseLine());
 
@@ -417,10 +418,10 @@ class Compiler
       EmitArgAt(CurrentSize(), arg_index);
 
       else_stmt.Address()->Accept(this);  // STMT
-      if (continuation_status_->Has(stmt)) {
-        continuation_status_->Erase(stmt);
-        if (continuation_status_->IsDeadStatement()) {
-          continuation_status_->Insert(detail::kNextStatement);
+      if (continuation_status_.Has(stmt)) {
+        continuation_status_.Erase(stmt);
+        if (continuation_status_.IsDeadStatement()) {
+          continuation_status_.Insert(detail::kNextStatement);
         }
       }
       assert(stack_depth()->IsBaseLine());
@@ -429,9 +430,9 @@ class Compiler
     } else {
       // then statement block
       stmt->then_statement()->Accept(this);  // STMT
-      if (continuation_status_->IsDeadStatement()) {
+      if (continuation_status_.IsDeadStatement()) {
         // recover if this IfStatement is not dead code
-        continuation_status_->Insert(detail::kNextStatement);
+        continuation_status_.Insert(detail::kNextStatement);
       }
       assert(stack_depth()->IsBaseLine());
       EmitArgAt(CurrentSize(), arg_index);
@@ -455,9 +456,9 @@ class Compiler
 
     jump.EmitJumps(CurrentSize(), cond_index);
 
-    continuation_status_->ResolveJump(stmt);
-    if (continuation_status_->IsDeadStatement()) {
-      continuation_status_->Insert(detail::kNextStatement);
+    continuation_status_.ResolveJump(stmt);
+    if (continuation_status_.IsDeadStatement()) {
+      continuation_status_.Insert(detail::kNextStatement);
     }
     assert(stack_depth()->IsBaseLine());
   }
@@ -480,9 +481,9 @@ class Compiler
     EmitArgAt(CurrentSize(), arg_index);
     jump.EmitJumps(CurrentSize(), start_index);
 
-    continuation_status_->ResolveJump(stmt);
-    if (continuation_status_->IsDeadStatement()) {
-      continuation_status_->Insert(detail::kNextStatement);
+    continuation_status_.ResolveJump(stmt);
+    if (continuation_status_.IsDeadStatement()) {
+      continuation_status_.Insert(detail::kNextStatement);
     }
     assert(stack_depth()->IsBaseLine());
   }
@@ -533,9 +534,9 @@ class Compiler
 
     jump.EmitJumps(CurrentSize(), prev_next);
 
-    continuation_status_->ResolveJump(stmt);
-    if (continuation_status_->IsDeadStatement()) {
-      continuation_status_->Insert(detail::kNextStatement);
+    continuation_status_.ResolveJump(stmt);
+    if (continuation_status_.IsDeadStatement()) {
+      continuation_status_.Insert(detail::kNextStatement);
     }
     assert(stack_depth()->IsBaseLine());
   }
@@ -633,9 +634,9 @@ class Compiler
     PopLevel();
     Emit<OP::POP_TOP>();  // FORIN_CLEANUP
 
-    continuation_status_->ResolveJump(stmt);
-    if (continuation_status_->IsDeadStatement()) {
-      continuation_status_->Insert(detail::kNextStatement);
+    continuation_status_.ResolveJump(stmt);
+    if (continuation_status_.IsDeadStatement()) {
+      continuation_status_.Insert(detail::kNextStatement);
     }
     assert(stack_depth()->IsBaseLine());
   }
@@ -664,7 +665,7 @@ class Compiler
     Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
     std::get<2>(entry)->push_back(arg_index);
 
-    continuation_status_->JumpTo(stmt->target());
+    continuation_status_.JumpTo(stmt->target());
     assert(stack_depth()->IsBaseLine());
   }
 
@@ -696,7 +697,7 @@ class Compiler
       std::get<1>(entry)->push_back(arg_index);
     }
 
-    continuation_status_->JumpTo(stmt->target());
+    continuation_status_.JumpTo(stmt->target());
     assert(stack_depth()->IsBaseLine());
   }
 
@@ -738,7 +739,7 @@ class Compiler
       stack_depth()->Down();
     }
 
-    continuation_status_->Kill();
+    continuation_status_.Kill();
     assert(stack_depth()->IsBaseLine());
   }
 
@@ -801,22 +802,22 @@ class Compiler
         for (Statements::const_iterator stmt_it = stmts.begin(),
              stmt_last = stmts.end(); stmt_it != stmt_last; ++stmt_it) {
           (*stmt_it)->Accept(this);
-          if (continuation_status_->IsDeadStatement()) {
+          if (continuation_status_.IsDeadStatement()) {
             break;
           }
         }
-        if (continuation_status_->IsDeadStatement()) {
+        if (continuation_status_.IsDeadStatement()) {
           if ((it + 1) != last) {
-            continuation_status_->Insert(detail::kNextStatement);
+            continuation_status_.Insert(detail::kNextStatement);
           }
         }
       }
     }
     jump.EmitJumps(CurrentSize());
 
-    continuation_status_->ResolveJump(stmt);
-    if (continuation_status_->IsDeadStatement() && !has_default_clause) {
-      continuation_status_->Insert(detail::kNextStatement);
+    continuation_status_.ResolveJump(stmt);
+    if (continuation_status_.IsDeadStatement() && !has_default_clause) {
+      continuation_status_.Insert(detail::kNextStatement);
     }
     assert(stack_depth()->IsBaseLine());
   }
@@ -826,7 +827,7 @@ class Compiler
     Emit<OP::THROW>();
     stack_depth()->Down();
 
-    continuation_status_->Kill();
+    continuation_status_.Kill();
     assert(stack_depth()->IsBaseLine());
   }
 
@@ -846,10 +847,10 @@ class Compiler
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
-      if (continuation_status_->IsDeadStatement()) {
-        continuation_status_->Insert(detail::kNextStatement);
+      if (continuation_status_.IsDeadStatement()) {
+        continuation_status_.Insert(detail::kNextStatement);
       } else {
-        continuation_status_->Insert(stmt);
+        continuation_status_.Insert(stmt);
       }
       code_->RegisterHandler<Handler::CATCH>(
           try_start,
@@ -875,20 +876,20 @@ class Compiler
       catch_return_label_index = CurrentSize();
       Emit<OP::JUMP_FORWARD>(0);  // dummy index
 
-      if (continuation_status_->Has(stmt)) {
-        continuation_status_->Erase(stmt);
-        if (continuation_status_->IsDeadStatement()) {
-          continuation_status_->Insert(detail::kNextStatement);
+      if (continuation_status_.Has(stmt)) {
+        continuation_status_.Erase(stmt);
+        if (continuation_status_.IsDeadStatement()) {
+          continuation_status_.Insert(detail::kNextStatement);
         }
       }
     }
 
     if (const core::Maybe<const Block> block = stmt->finally_block()) {
       const std::size_t finally_start = CurrentSize();
-      if (continuation_status_->IsDeadStatement()) {
-        continuation_status_->Insert(detail::kNextStatement);
+      if (continuation_status_.IsDeadStatement()) {
+        continuation_status_.Insert(detail::kNextStatement);
       } else {
-        continuation_status_->Insert(stmt);
+        continuation_status_.Insert(stmt);
       }
       code_->RegisterHandler<Handler::FINALLY>(
           try_start,
@@ -907,11 +908,11 @@ class Compiler
       stack_depth()->BaseDown(3);
       stack_depth()->Down(3);  // RETURN_SUBROUTINE
 
-      if (continuation_status_->Has(stmt)) {
-        continuation_status_->Erase(stmt);
+      if (continuation_status_.Has(stmt)) {
+        continuation_status_.Erase(stmt);
       } else {
-        if (!continuation_status_->IsDeadStatement()) {
-          continuation_status_->Kill();
+        if (!continuation_status_.IsDeadStatement()) {
+          continuation_status_.Kill();
         }
       }
     }
@@ -1810,7 +1811,7 @@ class Compiler
       for (Statements::const_iterator it = stmts.begin(),
            last = stmts.end(); it != last; ++it) {
         (*it)->Accept(this);
-        if (continuation_status_->IsDeadStatement()) {
+        if (continuation_status_.IsDeadStatement()) {
           break;
         }
       }
@@ -2047,12 +2048,8 @@ class Compiler
     stack_depth_ = depth;
   }
 
-  ContinuationStatus* continuation_status() const {
-    return continuation_status_;
-  }
-
-  void set_continuation_status(ContinuationStatus* status) {
-    continuation_status_ = status;
+  void ClearContinuation() {
+    continuation_status_.Clear();
   }
 
   Context* ctx_;
@@ -2063,7 +2060,7 @@ class Compiler
   LevelStack* level_stack_;
   StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
-  ContinuationStatus* continuation_status_;
+  ContinuationStatus continuation_status_;
 };
 
 inline Code* Compile(Context* ctx,
