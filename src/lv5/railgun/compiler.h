@@ -215,7 +215,6 @@ class Compiler
       : compiler_(compiler),
         level_stack_(),
         stack_depth_(),
-        prev_code_(compiler_->code()),
         prev_level_stack_(compiler->level_stack()),
         prev_stack_depth_(compiler_->stack_depth()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
@@ -228,7 +227,6 @@ class Compiler
     }
 
     ~CodeContext() {
-      compiler_->set_code(prev_code_);
       compiler_->set_level_stack(prev_level_stack_);
       compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
@@ -237,7 +235,6 @@ class Compiler
     Compiler* compiler_;
     LevelStack level_stack_;
     StackDepth stack_depth_;
-    Code* prev_code_;
     LevelStack* prev_level_stack_;
     StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
