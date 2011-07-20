@@ -14,12 +14,14 @@ static const std::string kEvalSource = "(eval)";
 class EvalSource : public core::Noncopyable<> {
  public:
   EvalSource(const JSString& str)
-    : source_(str) {
+    : source_() {
+    source_.reserve(str.size());
+    str.Copy(std::back_inserter(source_));
   }
 
   inline uint16_t operator[](std::size_t pos) const {
     assert(pos < size());
-    return source_.GetAt(pos);
+    return source_[pos];
   }
 
   inline std::size_t size() const {
@@ -27,11 +29,11 @@ class EvalSource : public core::Noncopyable<> {
   }
 
   core::UStringPiece GetData() const {
-    return *(source_.Flatten());
+    return source_;
   }
 
  private:
-  const JSString& source_;
+  core::UString source_;
 };
 
 }  // namespace lv5
