@@ -284,7 +284,7 @@ class JSArray : public JSObject {
         // length is not configurable
         // so length is not changed
         bool returned = false;
-        assert(!IsDefineOwnPropertyAccepted(length_, target, false, &returned, e));
+        IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e);
         return returned;
       }
     } else {
