@@ -195,10 +195,7 @@ class Compiler
     data_ = new (GC) Code::Data();
     data_->reserve(4 * core::Size::KB);
     Code* code = new Code(ctx_, script_, global, data_);
-    {
-      CodeContext code_context(this, code);
-      EmitFunctionCode(global);
-    }
+    EmitFunctionCode(global, code);
     return code;
   }
 
@@ -207,35 +204,11 @@ class Compiler
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
     Code* code = new Code(ctx_, script_, function, data_);
-    {
-      CodeContext code_context(this, code);
-      EmitFunctionCode(function);
-    }
+    EmitFunctionCode(function, code);
     return code;
   }
 
  private:
-  class CodeContext : private core::Noncopyable<> {
-   public:
-    CodeContext(Compiler* compiler, Code* code)
-      : compiler_(compiler),
-        prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
-      compiler_->set_code(code);
-      compiler_->ClearJumpTable();
-      compiler_->ClearLevelStack();
-      compiler_->ClearStackDepth();
-      compiler_->set_dynamic_env_level(0);
-      compiler_->ClearContinuation();
-    }
-
-    ~CodeContext() {
-      compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
-    }
-   private:
-    Compiler* compiler_;
-    uint16_t prev_dynamic_env_level_;
-  };
-
   class BreakTarget : private core::Noncopyable<> {
    public:
     BreakTarget(Compiler* compiler,
@@ -333,6 +306,21 @@ class Compiler
    private:
     Compiler* compiler_;
   };
+
+  void CodeContextPrologue(Code* code) {
+    set_code(code);
+    ClearJumpTable();
+    ClearLevelStack();
+    ClearStackDepth();
+    set_dynamic_env_level(0);
+    ClearContinuation();
+  }
+
+  void CodeContextEpilogue(Code* code) {
+    code->set_end(data_->size());
+    assert(stack_depth_.GetCurrent() == 0);
+    code->set_stack_depth(stack_depth_.GetMaxDepth());
+  }
 
   void Visit(const Block* block) {
     BreakTarget jump(this, block);
@@ -1760,7 +1748,8 @@ class Compiler
     }
   }
 
-  void EmitFunctionCode(const FunctionLiteral& lit) {
+  void EmitFunctionCode(const FunctionLiteral& lit, Code* code) {
+    CodeContextPrologue(code);
     code_->set_start(data_->size());
     const Scope& scope = lit.scope();
     {
@@ -1806,15 +1795,12 @@ class Compiler
 
     // epilogue
     Emit<OP::STOP_CODE>();
-    code_->set_end(data_->size());
-    assert(stack_depth_.GetCurrent() == 0);
-    code_->set_stack_depth(stack_depth_.GetMaxDepth());
+    CodeContextEpilogue(code);
     {
       // lazy code compile
       for (Code::Codes::const_iterator it = code_->codes().begin(),
            last = code_->codes().end(); it != last; ++it) {
-        CodeContext code_context(this, *it);
-        EmitFunctionCode((*it)->function_literal());
+        EmitFunctionCode((*it)->function_literal(), *it);
       }
     }
   }
