@@ -177,7 +177,7 @@ class Compiler
       code_(NULL),
       data_(NULL),
       script_(NULL),
-      jump_table_(NULL),
+      jump_table_(),
       level_stack_(NULL),
       stack_depth_(NULL),
       dynamic_env_level_(0),
@@ -201,7 +201,6 @@ class Compiler
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
     Code* code = new Code(ctx_, script_, function, data_);
-    continuation_status_.Clear();
     {
       CodeContext code_context(this, code);
       EmitFunctionCode(function);
@@ -214,16 +213,14 @@ class Compiler
    public:
     CodeContext(Compiler* compiler, Code* code)
       : compiler_(compiler),
-        jump_table_(),
         level_stack_(),
         stack_depth_(),
         prev_code_(compiler_->code()),
-        prev_jump_table_(compiler_->jump_table()),
         prev_level_stack_(compiler->level_stack()),
         prev_stack_depth_(compiler_->stack_depth()),
         prev_dynamic_env_level_(compiler_->dynamic_env_level()) {
       compiler_->set_code(code);
-      compiler_->set_jump_table(&jump_table_);
+      compiler_->ClearJumpTable();
       compiler_->set_level_stack(&level_stack_);
       compiler_->set_stack_depth(&stack_depth_);
       compiler_->set_dynamic_env_level(0);
@@ -232,18 +229,15 @@ class Compiler
 
     ~CodeContext() {
       compiler_->set_code(prev_code_);
-      compiler_->set_jump_table(prev_jump_table_);
       compiler_->set_level_stack(prev_level_stack_);
       compiler_->set_stack_depth(prev_stack_depth_);
       compiler_->set_dynamic_env_level(prev_dynamic_env_level_);
     }
    private:
     Compiler* compiler_;
-    JumpTable jump_table_;
     LevelStack level_stack_;
     StackDepth stack_depth_;
     Code* prev_code_;
-    JumpTable* prev_jump_table_;
     LevelStack* prev_level_stack_;
     StackDepth* prev_stack_depth_;
     uint16_t prev_dynamic_env_level_;
@@ -642,7 +636,7 @@ class Compiler
   }
 
   void Visit(const ContinueStatement* stmt) {
-    const JumpEntry& entry = (*jump_table_)[stmt->target()];
+    const JumpEntry& entry = jump_table_[stmt->target()];
     for (uint16_t level = CurrentLevel(),
          last = std::get<0>(entry); level > last; --level) {
       const LevelEntry& le = (*level_stack_)[level - 1];
@@ -673,7 +667,7 @@ class Compiler
     if (!stmt->target() && stmt->label()) {
       // through
     } else {
-      const JumpEntry& entry = (*jump_table_)[stmt->target()];
+      const JumpEntry& entry = jump_table_[stmt->target()];
       for (uint16_t level = CurrentLevel(),
            last = std::get<0>(entry); level > last; --level) {
         const LevelEntry& le = (*level_stack_)[level - 1];
@@ -1952,14 +1946,6 @@ class Compiler
     return code_;
   }
 
-  void set_jump_table(JumpTable* jump_table) {
-    jump_table_ = jump_table;
-  }
-
-  JumpTable* jump_table() const {
-    return jump_table_;
-  }
-
   void set_level_stack(LevelStack* level_stack) {
     level_stack_ = level_stack;
   }
@@ -1992,7 +1978,7 @@ class Compiler
 
   void RegisterJumpTarget(const BreakableStatement* stmt,
                           std::vector<std::size_t>* breaks) {
-    jump_table_->insert(
+    jump_table_.insert(
         std::make_pair(
             stmt,
             std::make_tuple(
@@ -2004,7 +1990,7 @@ class Compiler
   void RegisterJumpTarget(const IterationStatement* stmt,
                           std::vector<std::size_t>* breaks,
                           std::vector<std::size_t>* continues) {
-    jump_table_->insert(
+    jump_table_.insert(
         std::make_pair(
             stmt,
             std::make_tuple(
@@ -2014,7 +2000,7 @@ class Compiler
   }
 
   void UnRegisterJumpTarget(const BreakableStatement* stmt) {
-    jump_table_->erase(stmt);
+    jump_table_.erase(stmt);
   }
 
   void PushLevelFinally(std::vector<std::size_t>* vec) {
@@ -2048,6 +2034,10 @@ class Compiler
     stack_depth_ = depth;
   }
 
+  void ClearJumpTable() {
+    jump_table_.clear();
+  }
+
   void ClearContinuation() {
     continuation_status_.Clear();
   }
@@ -2056,7 +2046,7 @@ class Compiler
   Code* code_;
   Code::Data* data_;
   JSScript* script_;
-  JumpTable* jump_table_;
+  JumpTable jump_table_;
   LevelStack* level_stack_;
   StackDepth* stack_depth_;
   uint16_t dynamic_env_level_;
