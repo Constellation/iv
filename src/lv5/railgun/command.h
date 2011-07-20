@@ -2,6 +2,7 @@
 #define _IV_LV5_RAILGUN_COMMAND_H_
 #include "file_source.h"
 #include "lv5/specialized_ast.h"
+#include "lv5/error_check.h"
 #include "lv5/date_utils.h"
 #include "lv5/context.h"
 #include "lv5/railgun.h"
@@ -44,31 +45,18 @@ Code* Compile(Context* ctx, const Source& src) {
   return Compile(ctx, *global, script);
 }
 
-static int Execute(const core::StringPiece& data,
-                   const std::string& filename, Error* e) {
+static void Execute(const core::StringPiece& data,
+                    const std::string& filename, Error* e) {
   VM vm;
   Context ctx(&vm);
   core::FileSource src(data, filename);
   Code* code = Compile(&ctx, src);
   if (!code) {
-    return EXIT_FAILURE;
+    return;
   }
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
   vm.Run(code, e);
-  if (*e) {
-    const JSVal res = JSError::Detail(&ctx, e);
-    e->Clear();
-    const JSString* const str = res.ToString(&ctx, e);
-    if (!*e) {
-      std::fputs(str->GetUTF8().c_str(), stderr);
-      return EXIT_FAILURE;
-    } else {
-      return EXIT_FAILURE;
-    }
-  } else {
-    return EXIT_SUCCESS;
-  }
 }
 
 }  // namespace detail
@@ -101,7 +89,8 @@ inline JSVal Run(const Arguments& args, Error* e) {
       const std::string filename(f->GetUTF8());
       if (detail::ReadFile(filename, &buffer)) {
         detail::Execute(
-            core::StringPiece(buffer.data(), buffer.size()), filename, e);
+            core::StringPiece(buffer.data(), buffer.size()),
+            filename, IV_LV5_ERROR(e));
       }
     }
   }
