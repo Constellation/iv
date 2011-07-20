@@ -314,6 +314,7 @@ class Compiler
     ClearStackDepth();
     set_dynamic_env_level(0);
     ClearContinuation();
+    code->set_start(data_->size());
   }
 
   void CodeContextEpilogue(Code* code) {
@@ -1750,7 +1751,6 @@ class Compiler
 
   void EmitFunctionCode(const FunctionLiteral& lit, Code* code) {
     CodeContextPrologue(code);
-    code_->set_start(data_->size());
     const Scope& scope = lit.scope();
     {
       // function declarations
