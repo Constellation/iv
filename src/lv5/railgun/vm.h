@@ -179,7 +179,17 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
 #define PEEKARG() ((instr[2] << 8) + instr[1])
 #define JUMPTO(x) (instr = first_instr + (x))
 #define JUMPBY(x) (instr += (x))
+
+#ifdef DEBUG
+#define PUSH(x)\
+  do {\
+    assert(sp < frame->GetFrameEnd());\
+    (*sp++ = (x));\
+  } while (0)
+#else
 #define PUSH(x) (*sp++ = (x))
+#endif
+
 #define POP() (*--sp)
 #define POP_UNUSED() (--sp)
 #define STACKADJ(n) (sp += (n))
