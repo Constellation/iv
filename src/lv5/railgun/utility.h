@@ -127,22 +127,35 @@ inline void Instantiate(Context* ctx,
   }
 
   // step 6, 7
-  if (func && code->ShouldCreateArguments()) {
-    JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
-    JSArguments* const args_obj =
-        JSArguments::New(ctx, func,
-                         code->params(),
-                         frame->arguments_rbegin(),
-                         frame->arguments_rend(), decl_env,
-                         code->strict(), IV_LV5_ERROR_VOID(e));
-    if (code->strict()) {
-      decl_env->CreateImmutableBinding(symbol::arguments);
-      decl_env->InitializeImmutableBinding(symbol::arguments, args_obj);
+  if (func) {
+    if (code->ShouldCreateArguments()) {
+      JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
+      JSArguments* const args_obj =
+          JSArguments::New(ctx, func,
+                           code->params(),
+                           frame->arguments_rbegin(),
+                           frame->arguments_rend(), decl_env,
+                           code->strict(), IV_LV5_ERROR_VOID(e));
+      if (code->strict()) {
+        decl_env->CreateImmutableBinding(symbol::arguments);
+        decl_env->InitializeImmutableBinding(symbol::arguments, args_obj);
+      } else {
+        decl_env->CreateMutableBinding(ctx, symbol::arguments,
+                                       configurable_bindings, IV_LV5_ERROR_VOID(e));
+        decl_env->SetMutableBinding(ctx, symbol::arguments,
+                                    args_obj, false, IV_LV5_ERROR_VOID(e));
+      }
     } else {
-      decl_env->CreateMutableBinding(ctx, symbol::arguments,
-                                     configurable_bindings, IV_LV5_ERROR_VOID(e));
-      decl_env->SetMutableBinding(ctx, symbol::arguments,
-                                  args_obj, false, IV_LV5_ERROR_VOID(e));
+      JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
+      if (code->strict()) {
+        decl_env->CreateImmutableBinding(symbol::arguments);
+        decl_env->InitializeImmutableBinding(symbol::arguments, JSUndefined);
+      } else {
+        decl_env->CreateMutableBinding(ctx, symbol::arguments,
+                                       configurable_bindings, IV_LV5_ERROR_VOID(e));
+        decl_env->SetMutableBinding(ctx, symbol::arguments,
+                                    JSUndefined, false, IV_LV5_ERROR_VOID(e));
+      }
     }
   }
 
