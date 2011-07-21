@@ -4,6 +4,7 @@
 #include <gc/gc.h>
 #include "detail/tuple.h"
 #include "detail/unordered_map.h"
+#include "detail/memory.h"
 #include "utils.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
@@ -160,6 +161,149 @@ class ContinuationStatus : private iv::core::Noncopyable<ContinuationStatus> {
   ContinuationSet current_;
 };
 
+class VariableScope : private core::Noncopyable<VariableScope> {
+ public:
+  class WithContext;
+  friend class WithContext;
+
+  enum Type {
+    STACK = 0,
+    HEAP,
+    GLOBAL,
+    LOOKUP
+  };
+
+  class WithContext : private core::Noncopyable<WithContext> {
+   public:
+    WithContext(VariableScope* scope)
+      : scope_(scope),
+        prev_in_with_(scope->InWith()) {
+      scope_->set_in_with(true);
+    }
+
+    ~WithContext() {
+      scope_->set_in_with(prev_in_with_);
+    }
+   private:
+    VariableScope* scope_;
+    bool prev_in_with_;
+  };
+
+  // for catch env
+  VariableScope(std::shared_ptr<VariableScope> upper, Symbol sym)
+    : upper_(upper),
+      map_(),
+      labels_(),
+      catch_env_(true),
+      upper_of_eval_(false) {
+    map_[sym] = HEAP;
+  }
+
+  // for global or function
+  VariableScope(std::shared_ptr<VariableScope> upper, const Scope& scope)
+    : upper_(upper),
+      map_(),
+      labels_(),
+      catch_env_(false),
+      upper_of_eval_(false) {
+    // is global or not
+    const Type default_type = (IsGlobal()) ? GLOBAL : STACK;
+    if (default_type == STACK) {
+      map_[symbol::arguments] = STACK;
+    }
+    // function declarations
+    typedef Scope::FunctionLiterals Functions;
+    const Functions& functions = scope.function_declarations();
+    for (Functions::const_iterator it = functions.begin(),
+         last = functions.end(); it != last; ++it) {
+      const Symbol sym = (*it)->name().Address()->symbol();
+      map_[sym] = default_type;
+    }
+    // variables
+    typedef Scope::Variables Variables;
+    const Variables& vars = scope.variables();
+    for (Variables::const_iterator it = vars.begin(),
+         last = vars.end(); it != last; ++it) {
+      const Symbol name = it->first->symbol();
+      map_[name] = default_type;
+    }
+  }
+
+  void Lookup(Symbol sym, std::size_t target) {
+    // first, so this is stack
+    LookupImpl(sym, target, in_with_ ? LOOKUP : STACK);
+  }
+
+  bool IsGlobal() const {
+    return !upper_;
+  }
+
+  bool IsCatch() const {
+    return catch_env_;
+  }
+
+  bool InWith() const {
+    return in_with_;
+  }
+
+  void RecordEval() {
+    upper_of_eval_ = true;
+    std::shared_ptr<VariableScope> scope = upper_;
+    while (scope) {
+      scope->upper_of_eval_ = true;
+      scope = scope->upper_;
+    }
+  }
+
+  ~VariableScope() {
+    // roll up variables
+  }
+
+  std::shared_ptr<VariableScope> upper() const {
+    return upper_;
+  }
+
+ private:
+  void LookupImpl(Symbol sym, std::size_t target, Type type) {
+    if (map_.find(sym) == map_.end()) {
+      if (IsGlobal()) {
+        // this is global
+        map_[sym] = TypeUpgrade(GLOBAL, type);
+        labels_.push_back(std::make_pair(sym, target));
+      } else {
+        if (IsCatch()) {
+          upper_->LookupImpl(sym, target, TypeUpgrade(type, (InWith()) ? LOOKUP : HEAP));
+        } else {
+          upper_->LookupImpl(sym, target, (InWith()) ? LOOKUP : HEAP);
+        }
+      }
+    } else {
+      if (IsGlobal()) {
+        map_[sym] = TypeUpgrade(map_[sym], type);
+        labels_.push_back(std::make_pair(sym, target));
+      } else {
+        map_[sym] = TypeUpgrade(map_[sym], type);
+        labels_.push_back(std::make_pair(sym, target));
+      }
+    }
+  }
+
+  void set_in_with(bool in_with) {
+    in_with_ = in_with;
+  }
+
+  static Type TypeUpgrade(Type now, Type next) {
+    return std::max<Type>(now, next);
+  }
+
+  std::shared_ptr<VariableScope> upper_;
+  std::unordered_map<Symbol, Type> map_;
+  std::vector<std::pair<Symbol, std::size_t> > labels_;
+  bool catch_env_;
+  bool upper_of_eval_;
+  bool in_with_;
+};
+
 class Compiler
     : private core::Noncopyable<Compiler>,
       public AstVisitor {
@@ -187,7 +331,8 @@ class Compiler
       level_stack_(),
       stack_depth_(),
       dynamic_env_level_(0),
-      continuation_status_() {
+      continuation_status_(),
+      current_variable_scope_() {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
@@ -343,7 +488,7 @@ class Compiler
     assert(func.name());  // FunctionStatement must have name
     const uint16_t index = SymbolToNameIndex(func.name().Address()->symbol());
     Visit(&func);
-    Emit<OP::STORE_NAME>(index);
+    EmitStoreName(index);
     Emit<OP::POP_TOP>();
     stack_depth_.Down();
     assert(stack_depth_.IsBaseLine());
@@ -550,7 +695,7 @@ class Compiler
       if (const Identifier* ident = lhs->AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        Emit<OP::STORE_NAME>(index);
+        EmitStoreName(index);
       } else if (lhs->AsPropertyAccess()) {
         // PropertyAccess
         if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
@@ -726,6 +871,7 @@ class Compiler
     stack_depth_.Down();
     {
       DynamicEnvLevelCounter counter(this);
+      VariableScope::WithContext with_context(current_variable_scope_.get());
       stmt->body()->Accept(this);  // STMT
     }
     PopLevel();
@@ -933,12 +1079,12 @@ class Compiler
           Emit<OP::PUSH_ARGUMENTS>();
           stack_depth_.Up();
         } else {
-          Emit<OP::LOAD_NAME>(index);
+          EmitLoadName(index);
           stack_depth_.Up();
         }
         rhs.Accept(this);
         EmitAssignedBinaryOperation(token);
-        Emit<OP::STORE_NAME>(index);
+        EmitStoreName(index);
       } else if (lhs.AsPropertyAccess()) {
         // PropertyAccess
         if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
@@ -1473,7 +1619,7 @@ class Compiler
       stack_depth_.Up();
     } else {
       const uint16_t index = SymbolToNameIndex(name);
-      Emit<OP::LOAD_NAME>(index);
+      EmitLoadName(index);
       stack_depth_.Up();
     }
     point.LevelCheck(1);
@@ -1606,7 +1752,7 @@ class Compiler
     const uint16_t index = SymbolToNameIndex(decl->name()->symbol());
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
-      Emit<OP::STORE_NAME>(index);
+      EmitStoreName(index);
       Emit<OP::POP_TOP>();
       stack_depth_.Down();
     }
@@ -1652,7 +1798,7 @@ class Compiler
       // Identifier
       const uint16_t index = SymbolToNameIndex(ident->symbol());
       rhs.Accept(this);
-      Emit<OP::STORE_NAME>(index);
+      EmitStoreName(index);
     } else if (lhs.AsPropertyAccess()) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs.AsIdentifierAccess()) {
@@ -1743,6 +1889,7 @@ class Compiler
       Emit<OP::EVAL>(args.size());
       stack_depth_.Down(args.size() + 1);
       code_->set_code_has_eval();
+      current_variable_scope_->RecordEval();
     } else {
       Emit<op>(args.size());
       stack_depth_.Down(args.size() + 1);
@@ -1752,6 +1899,9 @@ class Compiler
   void EmitFunctionCode(const FunctionLiteral& lit, Code* code) {
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
+    current_variable_scope_ =
+        std::shared_ptr<VariableScope>(
+            new VariableScope(current_variable_scope_, scope));
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
@@ -1765,7 +1915,7 @@ class Compiler
           code_->set_code_hiding_arguments();
         }
         const uint16_t index = SymbolToNameIndex(sym);
-        Emit<OP::STORE_NAME>(index);
+        EmitStoreName(index);
         Emit<OP::POP_TOP>();
         stack_depth_.Down();
       }
@@ -1803,6 +1953,7 @@ class Compiler
         EmitFunctionCode((*it)->function_literal(), *it);
       }
     }
+    current_variable_scope_ = current_variable_scope_->upper();
   }
 
   void EmitAssignedBinaryOperation(core::Token::Type token) {
@@ -1867,6 +2018,18 @@ class Compiler
         UNREACHABLE();
     }
     stack_depth_.Down();
+  }
+
+  void EmitLoadName(uint16_t index) {
+    const std::size_t point = CurrentSize();
+    Emit<OP::LOAD_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitStoreName(uint16_t index) {
+    const std::size_t point = CurrentSize();
+    Emit<OP::STORE_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
   }
 
   std::size_t CurrentSize() const {
@@ -2028,6 +2191,7 @@ class Compiler
   StackDepth stack_depth_;
   uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
+  std::shared_ptr<VariableScope> current_variable_scope_;
 };
 
 inline Code* Compile(Context* ctx,
