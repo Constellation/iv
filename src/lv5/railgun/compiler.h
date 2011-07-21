@@ -980,13 +980,17 @@ class Compiler
           stack_depth_.GetStackBase(),
           dynamic_env_level());
       stack_depth_.Up();  // exception handler
-      Emit<OP::TRY_CATCH_SETUP>(
-          SymbolToNameIndex(stmt->catch_name().Address()->symbol()));
+      const Symbol catch_symbol = stmt->catch_name().Address()->symbol();
+      Emit<OP::TRY_CATCH_SETUP>(SymbolToNameIndex(catch_symbol));
       PushLevelWith();
       stack_depth_.Down();
       {
         DynamicEnvLevelCounter counter(this);
+        current_variable_scope_ =
+            std::shared_ptr<VariableScope>(
+                new VariableScope(current_variable_scope_, catch_symbol));
         block.Address()->Accept(this);  // STMT
+        current_variable_scope_ = current_variable_scope_->upper();
       }
       PopLevel();
       Emit<OP::POP_ENV>();
