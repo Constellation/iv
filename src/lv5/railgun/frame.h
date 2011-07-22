@@ -17,7 +17,7 @@ namespace railgun {
 //
 // Frame structure is following
 //
-// FUNC | THIS | ARG1 | ARG2 | FRAME | STACK DEPTH |
+// FUNC | THIS | ARG1 | ARG2 | FRAME | LOCALS | STACK |
 //
 struct Frame {
 
@@ -41,8 +41,12 @@ struct Frame {
     return GetFrameBase() + GetFrameSize(code_->stack_depth());
   }
 
-  JSVal* GetStackBase() {
+  JSVal* GetLocal() {
     return reinterpret_cast<JSVal*>(this) + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
+  }
+
+  JSVal* GetStackBase() {
+    return GetLocal() + localc_;
   }
 
   JSVal* GetPreviousFrameStackTop() {
@@ -97,6 +101,10 @@ struct Frame {
     return GetStackBase();
   }
 
+  JSVal* locals() {
+    return GetLocal();
+  }
+
   JSEnv* lexical_env() {
     return lexical_env_;
   }
@@ -121,6 +129,7 @@ struct Frame {
   JSVal ret_;
   uint16_t argc_;
   uint16_t dynamic_env_level_;
+  uint16_t localc_;
   bool constructor_call_;
 };
 

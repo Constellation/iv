@@ -21,7 +21,7 @@ class DisAssembler : private core::Noncopyable<> {
     {
       // code description
       std::ostringstream ss;
-      ss << "[code] stack: " << code.stack_depth();
+      ss << "[code] stack: " << code.stack_depth() << " locals: " << code.locals();
       OutputLine(ss.str());
     }
     const Code::Codes& codes = code.codes();

@@ -23,6 +23,11 @@ struct Handler {
 
 class Code : public HeapObject {
  public:
+  enum CodeType {
+    FUNCTION,
+    GLOBAL,
+    EVAL
+  };
   friend class Compiler;
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<uint8_t>::type Data;
@@ -34,14 +39,15 @@ class Code : public HeapObject {
   Code(Context* ctx,
        JSScript* script,
        const FunctionLiteral& func,
-       Data* data)
-    : strict_(func.strict()),
+       Data* data,
+       CodeType code_type)
+    : code_type_(code_type),
+      strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
       has_name_(func.name()),
       arguments_hiding_(false),
       decl_type_(func.type()),
-      function_literal_(&func),
       name_(),
       script_(script),
       start_position_(func.start_position()),
@@ -82,6 +88,10 @@ class Code : public HeapObject {
   }
 
   const Names& varnames() const {
+    return varnames_;
+  }
+
+  Names& varnames() {
     return varnames_;
   }
 
@@ -177,11 +187,19 @@ class Code : public HeapObject {
     return data_->data() + end_;
   }
 
- private:
-  // only use in Compiler
-  const FunctionLiteral& function_literal() const {
-    return *function_literal_;
+  std::size_t locals() const {
+    return locals_;
   }
+
+  void set_locals(std::size_t locals) {
+    locals_ = locals;
+  }
+
+  CodeType code_type() const {
+    return code_type_;
+  }
+
+ private:
 
   void set_start(std::size_t start) {
     start_ = start;
@@ -191,18 +209,19 @@ class Code : public HeapObject {
     end_ = end;
   }
 
+  CodeType code_type_;
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
   bool has_name_;
   bool arguments_hiding_;
   FunctionLiteral::DeclType decl_type_;
-  const FunctionLiteral* function_literal_;   // only use in Compiler
   Symbol name_;
   JSScript* script_;
   std::size_t start_position_;
   std::size_t end_position_;
   std::size_t stack_depth_;
+  std::size_t locals_;
   Data* data_;
   std::size_t start_;
   std::size_t end_;

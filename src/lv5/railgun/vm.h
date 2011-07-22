@@ -218,9 +218,9 @@ do {\
 #define SET_FOURTH(v) (sp[-4] = (v))
 #define SET_VALUE(n, v) (sp[-(n)] = (v))
 
-#define GETLOCAL(i) (fast_locals[(i)])
+#define GETLOCAL(i) (frame->GetLocal()[(i)])
 #define SETLOCAL(i, v) do {\
-(fast_locals[(i)]) = (v);\
+(frame->GetLocal()[(i)]) = (v);\
 } while (0)
 
 #define GETITEM(target, i) ((*target)[(i)])
@@ -281,6 +281,19 @@ MAIN_LOOP_START:
         continue;
       }
 
+      case OP::LOAD_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        PUSH(w);
+        continue;
+      }
+
+      case OP::LOAD_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
+        PUSH(w);
+        continue;
+      }
+
       case OP::LOAD_ELEMENT: {
         const JSVal element = POP();
         const JSVal& base = TOP();
@@ -301,6 +314,19 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, oparg);
         const JSVal v = TOP();
         StoreName(frame->lexical_env(), s, v, strict, ERR);
+        continue;
+      }
+
+      case OP::STORE_LOCAL: {
+        const JSVal v = TOP();
+        SETLOCAL(oparg, v);
+        continue;
+      }
+
+      case OP::STORE_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const JSVal v = TOP();
+        StoreName(ctx_->global_env(), s, v, strict, ERR);
         continue;
       }
 
@@ -339,6 +365,23 @@ MAIN_LOOP_START:
       case OP::DELETE_NAME: {
         const Symbol& s = GETITEM(names, oparg);
         if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
+          const bool res = current->DeleteBinding(ctx_, s);
+          PUSH(JSVal::Bool(res));
+        } else {
+          // not found -> unresolvable reference
+          PUSH(JSTrue);
+        }
+        continue;
+      }
+
+      case OP::DELETE_LOCAL: {
+        PUSH(JSTrue);
+        continue;
+      }
+
+      case OP::DELETE_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
           const bool res = current->DeleteBinding(ctx_, s);
           PUSH(JSVal::Bool(res));
         } else {
@@ -591,6 +634,24 @@ MAIN_LOOP_START:
         continue;
       }
 
+      case OP::TYPEOF_LOCAL: {
+        const JSVal& expr = GETLOCAL(oparg);
+        PUSH(expr.TypeOf(ctx_));
+        continue;
+      }
+
+      case OP::TYPEOF_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
+          const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
+          PUSH(expr.TypeOf(ctx_));
+        } else {
+          // unresolvable reference
+          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
+        }
+        continue;
+      }
+
       case OP::DECREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
@@ -615,6 +676,70 @@ MAIN_LOOP_START:
       case OP::POSTFIX_INCREMENT_NAME: {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+        PUSH(result);
+        continue;
+      }
+
+      case OP::DECREMENT_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev - 1;
+        SETLOCAL(oparg, now);
+        PUSH(now);
+        continue;
+      }
+
+      case OP::POSTFIX_DECREMENT_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev - 1;
+        SETLOCAL(oparg, now);
+        PUSH(prev);
+        continue;
+      }
+
+      case OP::INCREMENT_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev + 1;
+        SETLOCAL(oparg, now);
+        PUSH(now);
+        continue;
+      }
+
+      case OP::POSTFIX_INCREMENT_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev + 1;
+        SETLOCAL(oparg, now);
+        PUSH(prev);
+        continue;
+      }
+
+      case OP::DECREMENT_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const double result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
+        PUSH(result);
+        continue;
+      }
+
+      case OP::POSTFIX_DECREMENT_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const double result = IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
+        PUSH(result);
+        continue;
+      }
+
+      case OP::INCREMENT_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const double result = IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
+        PUSH(result);
+        continue;
+      }
+
+      case OP::POSTFIX_INCREMENT_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        const double result = IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         continue;
       }
@@ -1198,6 +1323,27 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, oparg);
         JSVal res;
         if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
+          const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
+          PUSH(w);
+          PUSH(target_env->ImplicitThisValue());
+        } else {
+          RaiseReferenceError(s, e);
+          break;
+        }
+        continue;
+      }
+
+      case OP::CALL_LOCAL: {
+        const JSVal& w = GETLOCAL(oparg);
+        PUSH(w);
+        PUSH(frame->lexical_env()->ImplicitThisValue());
+        continue;
+      }
+
+      case OP::CALL_GLOBAL: {
+        const Symbol& s = GETITEM(names, oparg);
+        JSVal res;
+        if (JSEnv* target_env = GetEnv(ctx_->global_env(), s)) {
           const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
           PUSH(target_env->ImplicitThisValue());

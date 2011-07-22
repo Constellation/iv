@@ -10,6 +10,7 @@
 #include "noncopyable.h"
 #include "static_assert.h"
 #include "enable_if.h"
+#include "unicode.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
@@ -163,9 +164,6 @@ class ContinuationStatus : private iv::core::Noncopyable<ContinuationStatus> {
 
 class VariableScope : private core::Noncopyable<VariableScope> {
  public:
-  class WithContext;
-  friend class WithContext;
-
   enum Type {
     STACK = 0,
     HEAP,
@@ -173,51 +171,68 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     LOOKUP
   };
 
-  class WithContext : private core::Noncopyable<WithContext> {
-   public:
-    WithContext(VariableScope* scope)
-      : scope_(scope),
-        prev_in_with_(scope->InWith()) {
-      scope_->set_in_with(true);
-    }
-
-    ~WithContext() {
-      scope_->set_in_with(prev_in_with_);
-    }
-   private:
-    VariableScope* scope_;
-    bool prev_in_with_;
-  };
+  typedef std::vector<std::pair<Symbol, std::size_t> > Labels;
+  typedef std::unordered_map<Symbol, Type> Variables;
 
   // for catch env
   VariableScope(std::shared_ptr<VariableScope> upper, Symbol sym)
     : upper_(upper),
       map_(),
       labels_(),
+      code_(NULL),
       catch_env_(true),
-      upper_of_eval_(false) {
+      upper_of_eval_(false),
+      in_with_(false),
+      eval_top_scope_(false) {
     map_[sym] = HEAP;
   }
 
-  // for global or function
-  VariableScope(std::shared_ptr<VariableScope> upper, const Scope& scope)
+  // for with env
+  VariableScope(std::shared_ptr<VariableScope> upper)
     : upper_(upper),
       map_(),
       labels_(),
+      code_(NULL),
+      catch_env_(true),
+      upper_of_eval_(false),
+      in_with_(true),
+      eval_top_scope_(false) {
+  }
+
+  // for global or function
+  VariableScope(std::shared_ptr<VariableScope> upper, Code* code, const Scope& scope)
+    : upper_(upper),
+      map_(),
+      labels_(),
+      code_(code),
       catch_env_(false),
-      upper_of_eval_(false) {
+      upper_of_eval_(false),
+      in_with_(false),
+      eval_top_scope_(code->code_type() == Code::EVAL) {
     // is global or not
-    const Type default_type = (IsGlobal()) ? GLOBAL : STACK;
+    const Type default_type = (IsTop()) ? (eval_top_scope_) ? LOOKUP : GLOBAL : STACK;
     if (default_type == STACK) {
-      map_[symbol::arguments] = STACK;
+      // map_[symbol::arguments] = STACK;
+      map_[symbol::arguments] = HEAP;
     }
+
+    // params
+    for (Code::Names::const_iterator it = code->params().begin(),
+         last = code->params().end(); it != last; ++it) {
+      // TODO(Constellation) optimize it
+      // map_[*it] = default_type;
+      map_[*it] = TypeUpgrade(default_type, HEAP);
+    }
+
     // function declarations
     typedef Scope::FunctionLiterals Functions;
     const Functions& functions = scope.function_declarations();
     for (Functions::const_iterator it = functions.begin(),
          last = functions.end(); it != last; ++it) {
+      // TODO(Constellation) optimize it
       const Symbol sym = (*it)->name().Address()->symbol();
-      map_[sym] = default_type;
+      // map_[sym] = default_type;
+      map_[sym] = TypeUpgrade(default_type, HEAP);
     }
     // variables
     typedef Scope::Variables Variables;
@@ -227,6 +242,15 @@ class VariableScope : private core::Noncopyable<VariableScope> {
       const Symbol name = it->first->symbol();
       map_[name] = default_type;
     }
+
+    const FunctionLiteral::DeclType type = code->decl_type();
+    if (type == FunctionLiteral::STATEMENT ||
+        (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
+      const Symbol& name = code_->name();
+      if (map_.find(name) == map_.end()) {
+        map_[name] = TypeUpgrade(default_type, HEAP);
+      }
+    }
   }
 
   void Lookup(Symbol sym, std::size_t target) {
@@ -234,7 +258,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     LookupImpl(sym, target, in_with_ ? LOOKUP : STACK);
   }
 
-  bool IsGlobal() const {
+  bool IsTop() const {
     return !upper_;
   }
 
@@ -255,20 +279,60 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     }
   }
 
-  ~VariableScope() {
-    // roll up variables
-  }
-
-  std::shared_ptr<VariableScope> upper() const {
+  std::shared_ptr<VariableScope> Realize(Context* ctx,
+                                         Code* code, Code::Data* data) {
+    if (!upper_of_eval_ && !IsCatch() && !InWith()) {
+      // if arguments is realized, mark params to HEAP
+      // TODO(Constellation) strict mode optimization
+//      if (code_ && code_->ShouldCreateArguments()) {
+//        for (Code::Names::const_iterator it = code->params().begin(),
+//             last = code->params().end(); it != last; ++it) {
+//          map_[*it] = TypeUpgrade(map_[*it], HEAP);
+//        }
+//      } else {
+//        map_.erase(symbol::arguments);
+//      }
+      std::unordered_map<Symbol, uint16_t> locations;
+      uint16_t locals = 0;
+      for (Variables::const_iterator it = map_.begin(),
+           last = map_.end(); it != last; ++it) {
+        if (it->second == STACK) {
+          locations.insert(std::make_pair(it->first, locations.size()));
+          Code::Names::iterator f =
+              std::find(code->varnames().begin(), code->varnames().end(), it->first);
+          if (f != code->varnames().end()) {
+            code->varnames().erase(f);
+          }
+          ++locals;
+        }
+      }
+      code->set_locals(locals);
+      code->set_stack_depth(code->stack_depth() + locals);
+      for (Labels::const_iterator it = labels_.begin(),
+           last = labels_.end(); it != last; ++it) {
+        const Type type = map_[it->first];
+        if (type == STACK) {
+          const uint8_t op = (*data)[it->second];
+          (*data)[it->second] = OP::ToLocal(op);
+          const uint16_t loc = locations[it->first];
+          (*data)[it->second + 1] = (loc & 0xff);
+          (*data)[it->second + 2] = (loc >> 8);
+        } else if (type == GLOBAL) {
+          // emit global opt
+          const uint8_t op = (*data)[it->second];
+          (*data)[it->second] = OP::ToGlobal(op);
+        }
+      }
+    }
     return upper_;
   }
 
  private:
   void LookupImpl(Symbol sym, std::size_t target, Type type) {
     if (map_.find(sym) == map_.end()) {
-      if (IsGlobal()) {
+      if (IsTop()) {
         // this is global
-        map_[sym] = TypeUpgrade(GLOBAL, type);
+        map_[sym] = TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type);
         labels_.push_back(std::make_pair(sym, target));
       } else {
         if (IsCatch()) {
@@ -278,7 +342,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
         }
       }
     } else {
-      if (IsGlobal()) {
+      if (IsTop()) {
         map_[sym] = TypeUpgrade(map_[sym], type);
         labels_.push_back(std::make_pair(sym, target));
       } else {
@@ -288,20 +352,18 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     }
   }
 
-  void set_in_with(bool in_with) {
-    in_with_ = in_with;
-  }
-
   static Type TypeUpgrade(Type now, Type next) {
     return std::max<Type>(now, next);
   }
 
   std::shared_ptr<VariableScope> upper_;
-  std::unordered_map<Symbol, Type> map_;
-  std::vector<std::pair<Symbol, std::size_t> > labels_;
+  Variables map_;
+  Labels labels_;
+  Code* code_;
   bool catch_env_;
   bool upper_of_eval_;
   bool in_with_;
+  bool eval_top_scope_;
 };
 
 class Compiler
@@ -312,6 +374,8 @@ class Compiler
                      std::vector<std::size_t>*,
                      std::vector<std::size_t>*> JumpEntry;
   typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
+  typedef std::pair<const FunctionLiteral*, std::shared_ptr<VariableScope> > CodeInfo;
+  typedef std::vector<CodeInfo> CodeInfoStack;
 
   enum LevelType {
     WITH,
@@ -327,6 +391,7 @@ class Compiler
       code_(NULL),
       data_(NULL),
       script_(NULL),
+      code_info_stack_(),
       jump_table_(),
       level_stack_(),
       stack_depth_(),
@@ -339,8 +404,8 @@ class Compiler
     script_ = script;
     data_ = new (GC) Code::Data();
     data_->reserve(4 * core::Size::KB);
-    Code* code = new Code(ctx_, script_, global, data_);
-    EmitFunctionCode(global, code);
+    Code* code = new Code(ctx_, script_, global, data_, Code::GLOBAL);
+    EmitFunctionCode(global, code, current_variable_scope_);
     return code;
   }
 
@@ -348,8 +413,17 @@ class Compiler
     script_ = script;
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
-    Code* code = new Code(ctx_, script_, function, data_);
-    EmitFunctionCode(function, code);
+    Code* code = new Code(ctx_, script_, function, data_, Code::GLOBAL);
+    EmitFunctionCode(function, code, current_variable_scope_);
+    return code;
+  }
+
+  Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
+    script_ = script;
+    data_ = new (GC) Code::Data();
+    data_->reserve(core::Size::KB);
+    Code* code = new Code(ctx_, script_, eval, data_, Code::EVAL);
+    EmitFunctionCode(eval, code, current_variable_scope_);
     return code;
   }
 
@@ -871,8 +945,11 @@ class Compiler
     stack_depth_.Down();
     {
       DynamicEnvLevelCounter counter(this);
-      VariableScope::WithContext with_context(current_variable_scope_.get());
+      current_variable_scope_ =
+          std::shared_ptr<VariableScope>(
+              new VariableScope(current_variable_scope_));
       stmt->body()->Accept(this);  // STMT
+      current_variable_scope_ = current_variable_scope_->Realize(ctx_, code_, data_);
     }
     PopLevel();
     Emit<OP::POP_ENV>();
@@ -990,7 +1067,7 @@ class Compiler
             std::shared_ptr<VariableScope>(
                 new VariableScope(current_variable_scope_, catch_symbol));
         block.Address()->Accept(this);  // STMT
-        current_variable_scope_ = current_variable_scope_->upper();
+        current_variable_scope_ = current_variable_scope_->Realize(ctx_, code_, data_);
       }
       PopLevel();
       Emit<OP::POP_ENV>();
@@ -1394,7 +1471,7 @@ class Compiler
           if (const Identifier* ident = expr.AsIdentifier()) {
             // DELETE_NAME_STRICT is already rejected in parser
             assert(!code_->strict());
-            Emit<OP::DELETE_NAME>(SymbolToNameIndex(ident->symbol()));
+            EmitDeleteName(SymbolToNameIndex(ident->symbol()));
             stack_depth_.Up();
           } else if (expr.AsPropertyAccess()) {
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
@@ -1436,7 +1513,7 @@ class Compiler
         const Expression& expr = *unary->expr();
         if (const Identifier* ident = expr.AsIdentifier()) {
           // maybe Global Reference
-          Emit<OP::TYPEOF_NAME>(SymbolToNameIndex(ident->symbol()));
+          EmitTypeofName(SymbolToNameIndex(ident->symbol()));
           stack_depth_.Up();
         } else {
           unary->expr()->Accept(this);
@@ -1452,10 +1529,10 @@ class Compiler
         if (const Identifier* ident = expr.AsIdentifier()) {
           const uint16_t index = SymbolToNameIndex(ident->symbol());
           if (token == Token::TK_INC) {
-            Emit<OP::INCREMENT_NAME>(index);
+            EmitIncrementName(index);
             stack_depth_.Up();
           } else {
-            Emit<OP::DECREMENT_NAME>(index);
+            EmitDecrementName(index);
             stack_depth_.Up();
           }
         } else if (expr.AsPropertyAccess()) {
@@ -1529,10 +1606,10 @@ class Compiler
     if (const Identifier* ident = expr.AsIdentifier()) {
       const uint16_t index = SymbolToNameIndex(ident->symbol());
       if (token == Token::TK_INC) {
-        Emit<OP::POSTFIX_INCREMENT_NAME>(index);
+        EmitPostfixIncrementName(index);
         stack_depth_.Up();
       } else {
-        Emit<OP::POSTFIX_DECREMENT_NAME>(index);
+        EmitPostfixDecrementName(index);
         stack_depth_.Up();
       }
     } else if (expr.AsPropertyAccess()) {
@@ -1716,9 +1793,10 @@ class Compiler
 
   void Visit(const FunctionLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    Code* const code = new Code(ctx_, script_, *lit, data_);
+    Code* const code = new Code(ctx_, script_, *lit, data_, Code::FUNCTION);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
+    code_info_stack_.push_back(std::make_pair(lit, current_variable_scope_));
     Emit<OP::MAKE_CLOSURE>(index);
     stack_depth_.Up();
     point.LevelCheck(1);
@@ -1853,7 +1931,7 @@ class Compiler
     if (target.IsValidLeftHandSide()) {
       if (const Identifier* ident = target.AsIdentifier()) {
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        Emit<OP::CALL_NAME>(index);
+        EmitCallName(index);
         stack_depth_.Up(2);
         if (op == OP::CALL && ident->symbol() == symbol::eval) {
           direct_call_to_eval = true;
@@ -1900,12 +1978,14 @@ class Compiler
     }
   }
 
-  void EmitFunctionCode(const FunctionLiteral& lit, Code* code) {
+  void EmitFunctionCode(const FunctionLiteral& lit,
+                        Code* code,
+                        std::shared_ptr<VariableScope> upper) {
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(
-            new VariableScope(current_variable_scope_, scope));
+        std::shared_ptr<VariableScope>(new VariableScope(upper, code, scope));
+    const std::size_t code_info_stack_size = code_info_stack_.size();
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
@@ -1952,12 +2032,18 @@ class Compiler
     CodeContextEpilogue(code);
     {
       // lazy code compile
+      std::size_t code_info_stack_index = code_info_stack_size;
       for (Code::Codes::const_iterator it = code_->codes().begin(),
-           last = code_->codes().end(); it != last; ++it) {
-        EmitFunctionCode((*it)->function_literal(), *it);
+           last = code_->codes().end(); it != last; ++it, ++code_info_stack_index) {
+        const CodeInfo info = code_info_stack_[code_info_stack_index];
+        EmitFunctionCode(*info.first, *it, info.second);
       }
     }
-    current_variable_scope_ = current_variable_scope_->upper();
+    current_variable_scope_ = current_variable_scope_->Realize(ctx_, code, data_);
+    // clear code info stack
+    code_info_stack_.erase(
+        code_info_stack_.begin() + code_info_stack_size,
+        code_info_stack_.end());
   }
 
   void EmitAssignedBinaryOperation(core::Token::Type token) {
@@ -2025,14 +2111,56 @@ class Compiler
   }
 
   void EmitLoadName(uint16_t index) {
-    const std::size_t point = CurrentSize();
+    const std::size_t point = data_->size();
     Emit<OP::LOAD_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point);
   }
 
   void EmitStoreName(uint16_t index) {
-    const std::size_t point = CurrentSize();
+    const std::size_t point = data_->size();
     Emit<OP::STORE_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitCallName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::CALL_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitIncrementName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::INCREMENT_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitPostfixIncrementName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::POSTFIX_INCREMENT_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitDecrementName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::DECREMENT_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitPostfixDecrementName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::POSTFIX_DECREMENT_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitTypeofName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::TYPEOF_NAME>(index);
+    current_variable_scope_->Lookup(code_->names_[index], point);
+  }
+
+  void EmitDeleteName(uint16_t index) {
+    const std::size_t point = data_->size();
+    Emit<OP::DELETE_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point);
   }
 
@@ -2190,6 +2318,7 @@ class Compiler
   Code* code_;
   Code::Data* data_;
   JSScript* script_;
+  CodeInfoStack code_info_stack_;
   JumpTable jump_table_;
   LevelStack level_stack_;
   StackDepth stack_depth_;
@@ -2209,6 +2338,12 @@ inline Code* CompileFunction(Context* ctx,
                              const FunctionLiteral& func, JSScript* script) {
   Compiler compiler(ctx);
   return compiler.CompileFunction(func, script);
+}
+
+inline Code* CompileEval(Context* ctx,
+                         const FunctionLiteral& eval, JSScript* script) {
+  Compiler compiler(ctx);
+  return compiler.CompileEval(eval, script);
 }
 
 } } }  // namespace iv::lv5::railgun
