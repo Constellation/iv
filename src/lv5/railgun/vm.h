@@ -375,7 +375,7 @@ MAIN_LOOP_START:
       }
 
       case OP::DELETE_LOCAL: {
-        PUSH(JSTrue);
+        PUSH(JSFalse);
         continue;
       }
 
