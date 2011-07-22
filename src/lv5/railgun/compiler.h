@@ -228,8 +228,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
       eval_top_scope_(code->code_type() == Code::EVAL) {
     // is global or not
     const Type default_type = (IsTop()) ? (eval_top_scope_) ? LOOKUP : GLOBAL : STACK;
-    if (default_type == STACK) {
-      // map_[symbol::arguments] = STACK;
+    if (!IsTop()) {
       map_[symbol::arguments] = HEAP;
     }
 
@@ -257,7 +256,11 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     for (Variables::const_iterator it = vars.begin(),
          last = vars.end(); it != last; ++it) {
       const Symbol name = it->first->symbol();
-      map_[name] = default_type;
+      if (map_.find(name) != map_.end()) {
+        map_[name] = TypeUpgrade(map_[name], default_type);
+      } else {
+        map_[name] = default_type;
+      }
     }
 
     const FunctionLiteral::DeclType type = code->decl_type();
@@ -1185,7 +1188,8 @@ class Compiler
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         if (ident->symbol() == symbol::arguments) {
           code_->set_code_has_arguments();
-          Emit<OP::PUSH_ARGUMENTS>();
+          // Emit<OP::PUSH_ARGUMENTS>();
+          EmitLoadName(index);
           stack_depth_.Up();
         } else {
           EmitLoadName(index);
@@ -1722,12 +1726,13 @@ class Compiler
     // directlly extract value and set to top version
     DepthPoint point(&stack_depth_);
     const Symbol name = lit->symbol();
+    const uint16_t index = SymbolToNameIndex(name);
     if (name == symbol::arguments) {
       code_->set_code_has_arguments();
-      Emit<OP::PUSH_ARGUMENTS>();
+      // Emit<OP::PUSH_ARGUMENTS>();
+      EmitLoadName(index);
       stack_depth_.Up();
     } else {
-      const uint16_t index = SymbolToNameIndex(name);
       EmitLoadName(index);
       stack_depth_.Up();
     }
@@ -2220,7 +2225,7 @@ class Compiler
     data_->push_back(op);
     data_->push_back(arg & 0xff);
     data_->push_back(arg >> 8);
-    if (code_->names()[arg] == symbol::arguments) {
+    if (code_->names()[arg] == symbol::arguments && op != OP::STORE_NAME) {
       code_->set_code_has_arguments();
     }
   }
