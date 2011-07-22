@@ -255,7 +255,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
 
   void Lookup(Symbol sym, std::size_t target) {
     // first, so this is stack
-    LookupImpl(sym, target, in_with_ ? LOOKUP : STACK);
+    LookupImpl(sym, target, (InWith())? LOOKUP : STACK);
   }
 
   bool IsTop() const {
@@ -279,8 +279,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     }
   }
 
-  std::shared_ptr<VariableScope> Realize(Context* ctx,
-                                         Code* code, Code::Data* data) {
+  ~VariableScope() {
     if (!upper_of_eval_ && !IsCatch() && !InWith()) {
       // if arguments is realized, mark params to HEAP
       // TODO(Constellation) strict mode optimization
@@ -299,31 +298,37 @@ class VariableScope : private core::Noncopyable<VariableScope> {
         if (it->second == STACK) {
           locations.insert(std::make_pair(it->first, locations.size()));
           Code::Names::iterator f =
-              std::find(code->varnames().begin(), code->varnames().end(), it->first);
-          if (f != code->varnames().end()) {
-            code->varnames().erase(f);
+              std::find(code_->varnames().begin(), code_->varnames().end(), it->first);
+          if (f != code_->varnames().end()) {
+            code_->varnames().erase(f);
           }
           ++locals;
         }
       }
-      code->set_locals(locals);
-      code->set_stack_depth(code->stack_depth() + locals);
+      code_->set_locals(locals);
+      code_->set_stack_depth(code_->stack_depth() + locals);
       for (Labels::const_iterator it = labels_.begin(),
            last = labels_.end(); it != last; ++it) {
         const Type type = map_[it->first];
         if (type == STACK) {
-          const uint8_t op = (*data)[it->second];
-          (*data)[it->second] = OP::ToLocal(op);
+          const uint8_t op = (*data_)[it->second];
+          (*data_)[it->second] = OP::ToLocal(op);
           const uint16_t loc = locations[it->first];
-          (*data)[it->second + 1] = (loc & 0xff);
-          (*data)[it->second + 2] = (loc >> 8);
+          (*data_)[it->second + 1] = (loc & 0xff);
+          (*data_)[it->second + 2] = (loc >> 8);
         } else if (type == GLOBAL) {
           // emit global opt
-          const uint8_t op = (*data)[it->second];
-          (*data)[it->second] = OP::ToGlobal(op);
+          const uint8_t op = (*data_)[it->second];
+          (*data_)[it->second] = OP::ToGlobal(op);
         }
       }
     }
+  }
+
+  std::shared_ptr<VariableScope> Realize(Context* ctx,
+                                         Code* code, Code::Data* data) {
+    code_ = code;
+    data_ = data;
     return upper_;
   }
 
@@ -335,11 +340,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
         map_[sym] = TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type);
         labels_.push_back(std::make_pair(sym, target));
       } else {
-        if (IsCatch()) {
-          upper_->LookupImpl(sym, target, TypeUpgrade(type, (InWith()) ? LOOKUP : HEAP));
-        } else {
-          upper_->LookupImpl(sym, target, (InWith()) ? LOOKUP : HEAP);
-        }
+        upper_->LookupImpl(sym, target, TypeUpgrade(type, (InWith()) ? LOOKUP : HEAP));
       }
     } else {
       if (IsTop()) {
@@ -360,6 +361,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
   Variables map_;
   Labels labels_;
   Code* code_;
+  Code::Data* data_;
   bool catch_env_;
   bool upper_of_eval_;
   bool in_with_;
@@ -374,7 +376,7 @@ class Compiler
                      std::vector<std::size_t>*,
                      std::vector<std::size_t>*> JumpEntry;
   typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
-  typedef std::pair<const FunctionLiteral*, std::shared_ptr<VariableScope> > CodeInfo;
+  typedef std::tuple<Code*, const FunctionLiteral*, std::shared_ptr<VariableScope> > CodeInfo;
   typedef std::vector<CodeInfo> CodeInfoStack;
 
   enum LevelType {
@@ -1796,7 +1798,7 @@ class Compiler
     Code* const code = new Code(ctx_, script_, *lit, data_, Code::FUNCTION);
     const uint16_t index = code_->codes_.size();
     code_->codes_.push_back(code);
-    code_info_stack_.push_back(std::make_pair(lit, current_variable_scope_));
+    code_info_stack_.push_back(std::make_tuple(code, lit, current_variable_scope_));
     Emit<OP::MAKE_CLOSURE>(index);
     stack_depth_.Up();
     point.LevelCheck(1);
@@ -2030,16 +2032,18 @@ class Compiler
     // epilogue
     Emit<OP::STOP_CODE>();
     CodeContextEpilogue(code);
+    std::shared_ptr<VariableScope> target = current_variable_scope_;
     {
       // lazy code compile
       std::size_t code_info_stack_index = code_info_stack_size;
       for (Code::Codes::const_iterator it = code_->codes().begin(),
            last = code_->codes().end(); it != last; ++it, ++code_info_stack_index) {
         const CodeInfo info = code_info_stack_[code_info_stack_index];
-        EmitFunctionCode(*info.first, *it, info.second);
+        assert(std::get<0>(info) == *it);
+        EmitFunctionCode(*std::get<1>(info), *it, std::get<2>(info));
       }
     }
-    current_variable_scope_ = current_variable_scope_->Realize(ctx_, code, data_);
+    current_variable_scope_ = target->Realize(ctx_, code, data_);
     // clear code info stack
     code_info_stack_.erase(
         code_info_stack_.begin() + code_info_stack_size,
