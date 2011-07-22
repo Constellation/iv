@@ -170,6 +170,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     GLOBAL,
     LOOKUP
   };
+  struct GlobalTag { };
 
   typedef std::vector<std::pair<Symbol, std::size_t> > Labels;
   typedef std::unordered_map<Symbol, Type> Variables;
@@ -180,6 +181,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
       map_(),
       labels_(),
       code_(NULL),
+      is_global_(false),
       catch_env_(true),
       upper_of_eval_(false),
       in_with_(false),
@@ -193,7 +195,21 @@ class VariableScope : private core::Noncopyable<VariableScope> {
       map_(),
       labels_(),
       code_(NULL),
+      is_global_(false),
       catch_env_(true),
+      upper_of_eval_(false),
+      in_with_(true),
+      eval_top_scope_(false) {
+  }
+
+  // for global dummy scope
+  VariableScope(std::shared_ptr<VariableScope> upper, GlobalTag dummy)
+    : upper_(upper),
+      map_(),
+      labels_(),
+      code_(NULL),
+      is_global_(true),
+      catch_env_(false),
       upper_of_eval_(false),
       in_with_(true),
       eval_top_scope_(false) {
@@ -205,6 +221,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
       map_(),
       labels_(),
       code_(code),
+      is_global_(code->code_type() == Code::GLOBAL),
       catch_env_(false),
       upper_of_eval_(false),
       in_with_(false),
@@ -292,21 +309,24 @@ class VariableScope : private core::Noncopyable<VariableScope> {
 //        map_.erase(symbol::arguments);
 //      }
       std::unordered_map<Symbol, uint16_t> locations;
-      uint16_t locals = 0;
-      for (Variables::const_iterator it = map_.begin(),
-           last = map_.end(); it != last; ++it) {
-        if (it->second == STACK) {
-          locations.insert(std::make_pair(it->first, locations.size()));
-          Code::Names::iterator f =
-              std::find(code_->varnames().begin(), code_->varnames().end(), it->first);
-          if (f != code_->varnames().end()) {
-            code_->varnames().erase(f);
+      // dummy global
+      if (code_) {
+        uint16_t locals = 0;
+        for (Variables::const_iterator it = map_.begin(),
+             last = map_.end(); it != last; ++it) {
+          if (it->second == STACK) {
+            locations.insert(std::make_pair(it->first, locations.size()));
+            Code::Names::iterator f =
+                std::find(code_->varnames().begin(), code_->varnames().end(), it->first);
+            if (f != code_->varnames().end()) {
+              code_->varnames().erase(f);
+            }
+            ++locals;
           }
-          ++locals;
         }
+        code_->set_locals(locals);
+        code_->set_stack_depth(code_->stack_depth() + locals);
       }
-      code_->set_locals(locals);
-      code_->set_stack_depth(code_->stack_depth() + locals);
       for (Labels::const_iterator it = labels_.begin(),
            last = labels_.end(); it != last; ++it) {
         const Type type = map_[it->first];
@@ -362,6 +382,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
   Labels labels_;
   Code* code_;
   Code::Data* data_;
+  bool is_global_;
   bool catch_env_;
   bool upper_of_eval_;
   bool in_with_;
@@ -415,8 +436,13 @@ class Compiler
     script_ = script;
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
-    Code* code = new Code(ctx_, script_, function, data_, Code::GLOBAL);
+    // create dummy global scope
+    current_variable_scope_ =
+        std::shared_ptr<VariableScope>(new VariableScope(current_variable_scope_, VariableScope::GlobalTag()));
+    std::shared_ptr<VariableScope> target = current_variable_scope_;
+    Code* code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
     EmitFunctionCode(function, code, current_variable_scope_);
+    current_variable_scope_ = current_variable_scope_->Realize(ctx_, NULL, data_);
     return code;
   }
 
