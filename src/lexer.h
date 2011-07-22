@@ -626,12 +626,18 @@ class Lexer: private Noncopyable<> {
       if (c_ == '\\') {
         Advance();
         // escape sequence
-        if (c_ < 0) return Token::TK_ILLEGAL;
+        if (c_ < 0) {
+          // EOS found
+          return Token::TK_ILLEGAL;
+        }
         if (type_ == NONE) {
           type_ = ESCAPE;
         }
         if (!ScanEscape()) {
-          return Token::TK_ILLEGAL;
+          if (!LexingIfIllegalFound) {
+            return Token::TK_ILLEGAL;
+          }
+          return SkipFuzzyString(quote);
         }
       } else {
         Record16Advance();
@@ -644,6 +650,32 @@ class Lexer: private Noncopyable<> {
     Advance();
 
     return Token::TK_STRING;
+  }
+
+  Token::Type SkipFuzzyString(uint16_t quote) {
+    // skip string
+    // Lexer#ScanString scans String Format strictly,
+    // but, in recovery phase skips String loosely.
+    Advance();
+    while (c_ != quote && c_ >= 0 && !character::IsLineTerminator(c_)) {
+      if (c_ == '\\') {
+        // escape sequence
+        // but, now recovery fuzzy lexing, so skip next one char.
+        Advance();
+        if (c_ >= 0) {
+          if (character::IsLineTerminator(c_)) {
+            SkipLineTerminator();
+          } else {
+            Advance();
+          }
+        }
+      }
+    }
+    // quote or EOS or LineTerminator found
+    if (c_ == quote) {
+      Advance();
+    }
+    return Token::TK_ILLEGAL;
   }
 
   bool ScanEscape() {
