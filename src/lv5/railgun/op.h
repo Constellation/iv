@@ -93,15 +93,6 @@ V(STORE_OBJECT_DATA)\
 V(STORE_OBJECT_GET)\
 V(STORE_OBJECT_SET)\
 \
-V(LOAD_NAME)\
-V(STORE_NAME)\
-V(DELETE_NAME)\
-V(CALL_NAME)\
-V(INCREMENT_NAME)\
-V(DECREMENT_NAME)\
-V(POSTFIX_INCREMENT_NAME)\
-V(POSTFIX_DECREMENT_NAME)\
-\
 V(LOAD_PROP)\
 V(STORE_PROP)\
 V(DELETE_PROP)\
@@ -111,16 +102,7 @@ V(DECREMENT_PROP)\
 V(POSTFIX_INCREMENT_PROP)\
 V(POSTFIX_DECREMENT_PROP)\
 \
-/* not implemented */\
-V(LOAD_GLOBAL)\
-/* not implemented */\
-V(STORE_GLOBAL)\
-/* not implemented */\
-V(DELETE_GLOBAL)\
-\
 V(LOAD_CONST)\
-\
-V(TYPEOF_NAME)\
 \
 V(JUMP_FORWARD)\
 V(JUMP_SUBROUTINE)\
@@ -137,12 +119,35 @@ V(SWITCH_CASE)\
 V(SWITCH_DEFAULT)\
 V(TRY_CATCH_SETUP)\
 \
-/* not implemented */\
+V(LOAD_NAME)\
+V(STORE_NAME)\
+V(DELETE_NAME)\
+V(CALL_NAME)\
+V(INCREMENT_NAME)\
+V(DECREMENT_NAME)\
+V(POSTFIX_INCREMENT_NAME)\
+V(POSTFIX_DECREMENT_NAME)\
+V(TYPEOF_NAME)\
+\
 V(LOAD_LOCAL)\
-/* not implemented */\
 V(STORE_LOCAL)\
-/* not implemented */\
 V(DELETE_LOCAL)\
+V(CALL_LOCAL)\
+V(INCREMENT_LOCAL)\
+V(DECREMENT_LOCAL)\
+V(POSTFIX_INCREMENT_LOCAL)\
+V(POSTFIX_DECREMENT_LOCAL)\
+V(TYPEOF_LOCAL)\
+\
+V(LOAD_GLOBAL)\
+V(STORE_GLOBAL)\
+V(DELETE_GLOBAL)\
+V(CALL_GLOBAL)\
+V(INCREMENT_GLOBAL)\
+V(DECREMENT_GLOBAL)\
+V(POSTFIX_INCREMENT_GLOBAL)\
+V(POSTFIX_DECREMENT_GLOBAL)\
+V(TYPEOF_GLOBAL)\
 \
 V(CALL)\
 V(CONSTRUCT)\
@@ -177,18 +182,37 @@ struct OP {
     return opcode >= HAVE_ARGUMENT;
   }
 
+#define IS_NAME_LOOKUP_OP(op)\
+  ((op) == OP::LOAD_NAME ||\
+   (op) == OP::STORE_NAME ||\
+   (op) == OP::DELETE_NAME ||\
+   (op) == OP::CALL_NAME ||\
+   (op) == OP::INCREMENT_NAME ||\
+   (op) == OP::DECREMENT_NAME ||\
+   (op) == OP::POSTFIX_INCREMENT_NAME ||\
+   (op) == OP::POSTFIX_DECREMENT_NAME ||\
+   (op) == OP::TYPEOF_NAME)
+
   template<OP::Type op>
   struct IsNameLookupOP {
-    static const bool value =
-        op == OP::LOAD_NAME ||
-        op == OP::DELETE_NAME ||
-        op == OP::CALL_NAME ||
-        op == OP::INCREMENT_NAME ||
-        op == OP::DECREMENT_NAME ||
-        op == OP::POSTFIX_INCREMENT_NAME ||
-        op == OP::POSTFIX_DECREMENT_NAME ||
-        op == OP::TYPEOF_NAME;
+    static const bool value = IS_NAME_LOOKUP_OP(op);
   };
+
+  static bool IsNameLookup(OP::Type op) {
+    return IS_NAME_LOOKUP_OP(op);
+  }
+
+#undef IS_NAME_LOOKUP_OP
+
+  static OP::Type ToGlobal(uint8_t op) {
+    assert(IsNameLookup(static_cast<OP::Type>(op)));
+    return static_cast<OP::Type>(op + (OP::LOAD_GLOBAL - OP::LOAD_NAME));
+  }
+
+  static OP::Type ToLocal(uint8_t op) {
+    assert(IsNameLookup(static_cast<OP::Type>(op)));
+    return static_cast<OP::Type>(op + (OP::LOAD_LOCAL - OP::LOAD_NAME));
+  }
 
   static inline const char* String(int op);
 };

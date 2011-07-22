@@ -122,7 +122,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     return JSUndefined;
   }
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  Code* code = Compile(ctx, *eval, script);
+  Code* code = CompileEval(ctx, *eval, script);
   if (code->strict()) {
     VM* const vm = ctx->vm();
     JSDeclEnv* const env =

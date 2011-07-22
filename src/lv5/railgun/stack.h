@@ -120,6 +120,8 @@ class Stack : core::Noncopyable<Stack> {
       frame->ret_ = JSUndefined;
       frame->argc_ = argc;
       frame->dynamic_env_level_ = 0;
+      frame->localc_ = code->locals();
+      std::fill_n(frame->GetLocal(), frame->localc_, JSUndefined);
       frame->constructor_call_ = constructor_call;
       current_ = frame;
       return frame;
@@ -145,6 +147,7 @@ class Stack : core::Noncopyable<Stack> {
       frame->ret_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
+      frame->localc_ = 0;
       frame->constructor_call_ = false;
       current_ = frame;
       return frame;
@@ -165,6 +168,7 @@ class Stack : core::Noncopyable<Stack> {
       frame->ret_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
+      frame->localc_ = 0;
       frame->constructor_call_ = false;
       current_ = frame;
       return frame;
@@ -276,7 +280,7 @@ class Stack : core::Noncopyable<Stack> {
     }
 
     // start current frame marking
-    for (JSVal *it = frame->GetStackBase(); it != last; ++it) {
+    for (JSVal *it = frame->GetLocal(); it != last; ++it) {
       if (it->IsPtr()) {
         void* ptr = it->pointer();
         entry = GC_MARK_AND_PUSH(ptr,
