@@ -52,13 +52,6 @@ class JSVMFunction : public JSFunction {
               JSString::New(ctx, context::GetSymbolString(ctx, code->name())),
               PropertyDescriptor::NONE),
           false, &e);
-    } else {
-      DefineOwnProperty(
-          ctx, context::Intern(ctx, "name"),
-          DataDescriptor(
-              JSString::NewEmptyString(ctx),
-              PropertyDescriptor::NONE),
-          false, &e);
     }
     if (code->strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();

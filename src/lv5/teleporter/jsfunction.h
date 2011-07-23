@@ -53,20 +53,22 @@ class JSCodeFunction : public JSFunction {
         DataDescriptor(proto,
                        PropertyDescriptor::WRITABLE),
         false, &e);
-    core::UStringPiece name = GetName();
-    if (!name.empty()) {
-      DefineOwnProperty(
-          ctx, context::Intern(ctx, "name"),
-          DataDescriptor(JSString::New(ctx, name),
-                         PropertyDescriptor::NONE),
-          false, &e);
-    } else {
-      DefineOwnProperty(
-          ctx, context::Intern(ctx, "name"),
-          DataDescriptor(
-              JSString::NewEmptyString(ctx),
-              PropertyDescriptor::NONE),
-          false, &e);
+    if (const core::Maybe<const Identifier> ident = function_->name()) {
+      const core::UStringPiece name = ident.Address()->value();
+      if (!name.empty()) {
+        DefineOwnProperty(
+            ctx, context::Intern(ctx, "name"),
+            DataDescriptor(JSString::New(ctx, name),
+                           PropertyDescriptor::NONE),
+            false, &e);
+      } else {
+        DefineOwnProperty(
+            ctx, context::Intern(ctx, "name"),
+            DataDescriptor(
+                JSString::NewEmptyString(ctx),
+                PropertyDescriptor::NONE),
+            false, &e);
+      }
     }
     if (function_->strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();

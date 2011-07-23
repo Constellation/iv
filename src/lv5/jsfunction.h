@@ -288,12 +288,6 @@ class JSInlinedFunction : public JSFunction {
         DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
-    DefineOwnProperty(
-        ctx, context::Intern(ctx, "name"),
-        DataDescriptor(
-            JSUndefined,
-            PropertyDescriptor::NONE),
-            false, NULL);
   }
 
   JSInlinedFunction(Context* ctx, const Symbol& name) {
