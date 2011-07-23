@@ -220,6 +220,10 @@ class Code : public HeapObject {
     return decls_;
   }
 
+  void set_has_declarative_env(bool val) {
+    has_declarative_env_ = val;
+  }
+
  private:
 
   void set_start(std::size_t start) {

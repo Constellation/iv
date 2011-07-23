@@ -1796,6 +1796,10 @@ class Compiler
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(new FunctionScope(upper, ctx_, code, data_, scope));
     const std::size_t code_info_stack_size = code_info_stack_.size();
+
+    {
+      // arguments initialization code
+    }
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;

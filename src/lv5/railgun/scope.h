@@ -107,7 +107,7 @@ class FunctionScope : public VariableScope {
  public:
 
   typedef std::vector<std::tuple<Symbol, std::size_t, Type> > Labels;
-  typedef std::pair<Type, std::size_t> Variable;
+  typedef std::tuple<Type, std::size_t> Variable;
   typedef std::unordered_map<Symbol, Variable> Variables;
 
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
@@ -166,7 +166,7 @@ class FunctionScope : public VariableScope {
          last = vars.end(); it != last; ++it) {
       const Symbol name = it->first->symbol();
       if (map_.find(name) != map_.end()) {
-        map_[name] = std::make_pair(TypeUpgrade(map_[name].first, default_type), 0);
+        map_[name] = std::make_pair(TypeUpgrade(std::get<0>(map_[name]), default_type), 0);
       } else {
         map_[name] = std::make_pair(default_type, 0);
       }
@@ -203,7 +203,7 @@ class FunctionScope : public VariableScope {
         uint16_t locals = 0;
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
-          if (it->second.first == STACK) {
+          if (std::get<0>(it->second) == STACK) {
             locations.insert(std::make_pair(it->first, locations.size()));
             Code::Names::iterator f =
                 std::find(code_->varnames().begin(),
@@ -221,7 +221,7 @@ class FunctionScope : public VariableScope {
            last = labels_.end(); it != last; ++it) {
         const Symbol sym = std::get<0>(*it);
         const std::size_t point = std::get<1>(*it);
-        const Type type = TypeUpgrade(map_[sym].first, std::get<2>(*it));
+        const Type type = TypeUpgrade(std::get<0>(map_[sym]), std::get<2>(*it));
         if (type == STACK) {
           const uint8_t op = (*data_)[point];
           (*data_)[point] = OP::ToLocal(op);
@@ -240,7 +240,7 @@ class FunctionScope : public VariableScope {
              last = labels_.end(); it != last; ++it) {
           const Symbol sym = std::get<0>(*it);
           const std::size_t point = std::get<1>(*it);
-          const Type type = TypeUpgrade(map_[sym].first, std::get<2>(*it));
+          const Type type = TypeUpgrade(std::get<0>(map_[sym]), std::get<2>(*it));
           if (type == GLOBAL) {
             // emit global opt
             const uint8_t op = (*data_)[point];
@@ -269,7 +269,7 @@ class FunctionScope : public VariableScope {
       }
     } else {
       if (IsTop()) {
-        ++map_[sym].second;
+        ++std::get<1>(map_[sym]);
         labels_.push_back(
             std::make_tuple(
                 sym,
@@ -277,8 +277,8 @@ class FunctionScope : public VariableScope {
                 TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type)));
       } else {
         const Type stored = (type == LOOKUP || type == GLOBAL) ? HEAP : type;
-        map_[sym].first = TypeUpgrade(map_[sym].first, stored);
-        ++map_[sym].second;
+        std::get<0>(map_[sym]) = TypeUpgrade(std::get<0>(map_[sym]), stored);
+        ++std::get<1>(map_[sym]);
         labels_.push_back(
             std::make_tuple(sym, target, type));
       }
@@ -367,6 +367,9 @@ class FunctionScope : public VariableScope {
                        SearchDecl(fn)) == code->decls_.end()) {
         code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true, 0));
       }
+    }
+    if (code->decls_.empty()) {
+      code->set_has_declarative_env(false);
     }
   }
 
