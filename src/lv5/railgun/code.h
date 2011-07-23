@@ -46,6 +46,7 @@ class Code : public HeapObject {
       has_eval_(false),
       has_arguments_(false),
       has_name_(func.name()),
+      has_declarative_env_(true),
       arguments_hiding_(false),
       decl_type_(func.type()),
       name_(),
@@ -125,6 +126,10 @@ class Code : public HeapObject {
 
   bool HasArguments() const {
     return has_arguments_;
+  }
+
+  bool HasDeclEnv() const {
+    return has_declarative_env_;
   }
 
   bool ShouldCreateArguments() const {
@@ -214,6 +219,7 @@ class Code : public HeapObject {
   bool has_eval_;
   bool has_arguments_;
   bool has_name_;
+  bool has_declarative_env_;
   bool arguments_hiding_;
   FunctionLiteral::DeclType decl_type_;
   Symbol name_;

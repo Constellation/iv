@@ -114,8 +114,12 @@ class Stack : core::Noncopyable<Stack> {
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
       frame->prev_pc_ = pc;
-      frame->variable_env_ = frame->lexical_env_ =
-          internal::NewDeclarativeEnvironment(ctx, env);
+      if (code->HasDeclEnv()) {
+        frame->variable_env_ = frame->lexical_env_ =
+            internal::NewDeclarativeEnvironment(ctx, env);
+      } else {
+        frame->variable_env_ = frame->lexical_env_ = env;
+      }
       frame->prev_ = current_;
       frame->ret_ = JSUndefined;
       frame->argc_ = argc;

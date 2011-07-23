@@ -107,7 +107,8 @@ class FunctionScope : public VariableScope {
  public:
 
   typedef std::vector<std::tuple<Symbol, std::size_t, Type> > Labels;
-  typedef std::unordered_map<Symbol, Type> Variables;
+  typedef std::pair<Type, std::size_t> Variable;
+  typedef std::unordered_map<Symbol, Variable> Variables;
 
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
     : VariableScope(upper),
@@ -137,7 +138,7 @@ class FunctionScope : public VariableScope {
     const Type default_type =
         (IsTop()) ? ((eval_top_scope_) ? LOOKUP : GLOBAL) : STACK;
     if (!IsTop()) {
-      map_[symbol::arguments] = HEAP;
+      map_[symbol::arguments] = std::make_pair(HEAP, 0);
     }
 
     // params
@@ -145,7 +146,7 @@ class FunctionScope : public VariableScope {
          last = code->params().end(); it != last; ++it) {
       // TODO(Constellation) optimize it
       // map_[*it] = default_type;
-      map_[*it] = TypeUpgrade(default_type, HEAP);
+      map_[*it] = std::make_pair(TypeUpgrade(default_type, HEAP), 0);
     }
 
     // function declarations
@@ -156,7 +157,7 @@ class FunctionScope : public VariableScope {
       // TODO(Constellation) optimize it
       const Symbol sym = (*it)->name().Address()->symbol();
       // map_[sym] = default_type;
-      map_[sym] = TypeUpgrade(default_type, HEAP);
+      map_[sym] = std::make_pair(TypeUpgrade(default_type, HEAP), 0);
     }
     // variables
     typedef Scope::Variables Variables;
@@ -165,9 +166,9 @@ class FunctionScope : public VariableScope {
          last = vars.end(); it != last; ++it) {
       const Symbol name = it->first->symbol();
       if (map_.find(name) != map_.end()) {
-        map_[name] = TypeUpgrade(map_[name], default_type);
+        map_[name] = std::make_pair(TypeUpgrade(map_[name].first, default_type), 0);
       } else {
-        map_[name] = default_type;
+        map_[name] = std::make_pair(default_type, 0);
       }
     }
 
@@ -176,7 +177,7 @@ class FunctionScope : public VariableScope {
         (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
       const Symbol& name = code_->name();
       if (map_.find(name) == map_.end()) {
-        map_[name] = TypeUpgrade(default_type, HEAP);
+        map_[name] = std::make_pair(TypeUpgrade(default_type, HEAP), 0);
       }
     }
   }
@@ -184,7 +185,8 @@ class FunctionScope : public VariableScope {
   ~FunctionScope() {
     std::unordered_map<Symbol, uint16_t> locations;
     if (eval_top_scope_) {
-      // nothing
+      // direct call to eval top scope
+      // all variable is {configurable : true}, so not STACK
     } else if (!upper_of_eval_) {
       // if arguments is realized, mark params to HEAP
       // TODO(Constellation) strict mode optimization
@@ -201,7 +203,7 @@ class FunctionScope : public VariableScope {
         uint16_t locals = 0;
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
-          if (it->second == STACK) {
+          if (it->second.first == STACK) {
             locations.insert(std::make_pair(it->first, locations.size()));
             Code::Names::iterator f =
                 std::find(code_->varnames().begin(),
@@ -219,7 +221,7 @@ class FunctionScope : public VariableScope {
            last = labels_.end(); it != last; ++it) {
         const Symbol sym = std::get<0>(*it);
         const std::size_t point = std::get<1>(*it);
-        const Type type = TypeUpgrade(map_[sym], std::get<2>(*it));
+        const Type type = TypeUpgrade(map_[sym].first, std::get<2>(*it));
         if (type == STACK) {
           const uint8_t op = (*data_)[point];
           (*data_)[point] = OP::ToLocal(op);
@@ -233,15 +235,17 @@ class FunctionScope : public VariableScope {
         }
       }
     } else {
-      for (Labels::const_iterator it = labels_.begin(),
-           last = labels_.end(); it != last; ++it) {
-        const Symbol sym = std::get<0>(*it);
-        const std::size_t point = std::get<1>(*it);
-        const Type type = TypeUpgrade(map_[sym], std::get<2>(*it));
-        if (type == GLOBAL) {
-          // emit global opt
-          const uint8_t op = (*data_)[point];
-          (*data_)[point] = OP::ToGlobal(op);
+      if (IsTop()) {
+        for (Labels::const_iterator it = labels_.begin(),
+             last = labels_.end(); it != last; ++it) {
+          const Symbol sym = std::get<0>(*it);
+          const std::size_t point = std::get<1>(*it);
+          const Type type = TypeUpgrade(map_[sym].first, std::get<2>(*it));
+          if (type == GLOBAL) {
+            // emit global opt
+            const uint8_t op = (*data_)[point];
+            (*data_)[point] = OP::ToGlobal(op);
+          }
         }
       }
     }
@@ -251,7 +255,7 @@ class FunctionScope : public VariableScope {
     if (map_.find(sym) == map_.end()) {
       if (IsTop()) {
         // this is global
-        map_[sym] = (eval_top_scope_) ? LOOKUP : GLOBAL;
+        map_[sym] = std::make_pair((eval_top_scope_) ? LOOKUP : GLOBAL, 1);
         labels_.push_back(
             std::make_tuple(
                 sym,
@@ -262,6 +266,7 @@ class FunctionScope : public VariableScope {
       }
     } else {
       if (IsTop()) {
+        ++map_[sym].second;
         labels_.push_back(
             std::make_tuple(
                 sym,
@@ -269,7 +274,8 @@ class FunctionScope : public VariableScope {
                 TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type)));
       } else {
         const Type stored = (type == LOOKUP || type == GLOBAL) ? HEAP : type;
-        map_[sym] = TypeUpgrade(map_[sym], stored);
+        map_[sym].first = TypeUpgrade(map_[sym].first, stored);
+        ++map_[sym].second;
         labels_.push_back(
             std::make_tuple(sym, target, type));
       }
