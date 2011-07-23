@@ -202,8 +202,10 @@ class Compiler
     script_ = script;
     data_ = new (GC) Code::Data();
     data_->reserve(4 * core::Size::KB);
+    current_variable_scope_ = std::shared_ptr<VariableScope>();
     Code* code = new Code(ctx_, script_, global, data_, Code::GLOBAL);
     EmitFunctionCode(global, code, current_variable_scope_);
+    assert(!current_variable_scope_);
     return code;
   }
 
@@ -213,11 +215,12 @@ class Compiler
     data_->reserve(core::Size::KB);
     // create dummy global scope
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(new FunctionScope(current_variable_scope_, data_));
+        std::shared_ptr<VariableScope>(new FunctionScope(std::shared_ptr<VariableScope>(), data_));
     std::shared_ptr<VariableScope> target = current_variable_scope_;
     Code* code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
     EmitFunctionCode(function, code, current_variable_scope_);
     current_variable_scope_ = current_variable_scope_->upper();
+    assert(!current_variable_scope_);
     return code;
   }
 
@@ -225,8 +228,10 @@ class Compiler
     script_ = script;
     data_ = new (GC) Code::Data();
     data_->reserve(core::Size::KB);
+    current_variable_scope_ = std::shared_ptr<VariableScope>();
     Code* code = new Code(ctx_, script_, eval, data_, Code::EVAL);
     EmitFunctionCode(eval, code, current_variable_scope_);
+    assert(!current_variable_scope_);
     return code;
   }
 
