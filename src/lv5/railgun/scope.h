@@ -310,12 +310,20 @@ class FunctionScope : public VariableScope {
   };
 
   void CleanUpDecls(Code* code) {
-    for (Code::Names::const_iterator it = code->params().begin(),
-         last = code->params().end(); it != last; ++it) {
-      if (std::find_if(code->decls_.begin(),
-                       code->decls_.end(),
-                       SearchDecl(*it)) != code->decls_.end()) {
-        code->decls_.push_back(std::make_tuple(*it, Code::PARAM, false));
+    {
+      std::size_t param_count = 0;
+      std::unordered_map<Symbol, std::size_t> sym2c;
+      for (Code::Names::const_iterator it = code->params().begin(),
+           last = code->params().end(); it != last; ++it, ++param_count) {
+        sym2c[*it] = param_count;
+      }
+      for (std::unordered_map<Symbol, std::size_t>::const_iterator it = sym2c.begin(),
+           last = sym2c.end(); it != last; ++it) {
+        if (std::find_if(code->decls_.begin(),
+                         code->decls_.end(),
+                         SearchDecl(it->first)) == code->decls_.end()) {
+          code->decls_.push_back(std::make_tuple(it->first, Code::PARAM, false, it->second));
+        }
       }
     }
 
@@ -325,8 +333,8 @@ class FunctionScope : public VariableScope {
         const Symbol& fn = (*it)->name();
         if (std::find_if(code->decls_.begin(),
                          code->decls_.end(),
-                         SearchDecl(fn)) != code->decls_.end()) {
-          code->decls_.push_back(std::make_tuple(fn, Code::FDECL, false));
+                         SearchDecl(fn)) == code->decls_.end()) {
+          code->decls_.push_back(std::make_tuple(fn, Code::FDECL, false, 0));
         }
       }
     }
@@ -334,10 +342,10 @@ class FunctionScope : public VariableScope {
     if (code->ShouldCreateArguments()) {
       if (code->strict()) {
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, true));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, true, 0));
       } else {
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, false));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, false, 0));
       }
     }
 
@@ -346,8 +354,8 @@ class FunctionScope : public VariableScope {
       const Symbol& dn = *it;
       if (std::find_if(code->decls_.begin(),
                        code->decls_.end(),
-                       SearchDecl(dn)) != code->decls_.end()) {
-        code->decls_.push_back(std::make_tuple(dn, Code::VAR, false));
+                       SearchDecl(dn)) == code->decls_.end()) {
+        code->decls_.push_back(std::make_tuple(dn, Code::VAR, false, 0));
       }
     }
     const FunctionLiteral::DeclType type = code->decl_type();
@@ -356,8 +364,8 @@ class FunctionScope : public VariableScope {
       const Symbol& fn = code->name();
       if (std::find_if(code->decls_.begin(),
                        code->decls_.end(),
-                       SearchDecl(fn)) != code->decls_.end()) {
-        code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true));
+                       SearchDecl(fn)) == code->decls_.end()) {
+        code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true, 0));
       }
     }
   }

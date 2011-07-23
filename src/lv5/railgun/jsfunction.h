@@ -117,9 +117,19 @@ class JSVMFunction : public JSFunction {
   }
 
   void InstantiateBindings(Context* ctx, Frame* frame, Error* e) {
+    // step 1
+    JSVal this_value = frame->GetThis();
+    if (!code_->strict()) {
+      if (this_value.IsUndefined() || this_value.IsNull()) {
+        this_value.set_value(ctx->global_obj());
+      } else if (!this_value.IsObject()) {
+        JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
+        this_value.set_value(obj);
+      }
+    }
+    frame->set_this_binding(this_value);
     JSDeclEnv* env = static_cast<JSDeclEnv*>(frame->variable_env());
     JSVal* args = frame->arguments_begin();
-    std::size_t param_count = 0;
     const std::size_t arg_count = frame->argc_;
     for (Code::Decls::const_iterator it = code_->decls().begin(),
          last = code_->decls().end(); it != last; ++it) {
@@ -128,12 +138,12 @@ class JSVMFunction : public JSFunction {
       const Code::DeclType type = std::get<1>(decl);
       const bool immutable = std::get<2>(decl);
       if (type == Code::PARAM) {
-        ++param_count;
+        const std::size_t param = std::get<3>(decl);
         env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
-        if (param_count > arg_count) {
+        if (param >= arg_count) {
           env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
         } else {
-          env->SetMutableBinding(ctx, sym, args[param_count-1], code_->strict(), IV_LV5_ERROR_VOID(e));
+          env->SetMutableBinding(ctx, sym, args[param], code_->strict(), IV_LV5_ERROR_VOID(e));
         }
       } else if (type == Code::FDECL) {
         env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));

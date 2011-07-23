@@ -44,7 +44,7 @@ class Code : public HeapObject {
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
   // symbol, decl type, configurable, immutable
-  typedef std::tuple<Symbol, DeclType, bool> Decl;
+  typedef std::tuple<Symbol, DeclType, bool, std::size_t> Decl;
   typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,
