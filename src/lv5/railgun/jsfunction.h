@@ -117,15 +117,46 @@ class JSVMFunction : public JSFunction {
   }
 
   void InstantiateBindings(Context* ctx, Frame* frame, Error* e) {
-    Instantiate(ctx, code_, frame, false, false, this, IV_LV5_ERROR_VOID(e));
     JSDeclEnv* env = static_cast<JSDeclEnv*>(frame->variable_env());
-    const FunctionLiteral::DeclType type = code_->decl_type();
-    if (type == FunctionLiteral::STATEMENT ||
-        (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
-      const Symbol& name = code_->name();
-      if (!env->HasBinding(ctx, name)) {
-        env->CreateImmutableBinding(name);
-        env->InitializeImmutableBinding(name, this);
+    JSVal* args = frame->arguments_begin();
+    std::size_t param_count = 0;
+    const std::size_t arg_count = frame->argc_;
+    for (Code::Decls::const_iterator it = code_->decls().begin(),
+         last = code_->decls().end(); it != last; ++it) {
+      const Code::Decl& decl = *it;
+      const Symbol sym = std::get<0>(decl);
+      const Code::DeclType type = std::get<1>(decl);
+      const bool immutable = std::get<2>(decl);
+      if (type == Code::PARAM) {
+        ++param_count;
+        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+        if (param_count > arg_count) {
+          env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+        } else {
+          env->SetMutableBinding(ctx, sym, args[param_count-1], code_->strict(), IV_LV5_ERROR_VOID(e));
+        }
+      } else if (type == Code::FDECL) {
+        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+      } else if (type == Code::ARGUMENTS) {
+        JSArguments* const args_obj =
+            JSArguments::New(ctx, this,
+                             code_->params(),
+                             frame->arguments_rbegin(),
+                             frame->arguments_rend(), env,
+                             code_->strict(), IV_LV5_ERROR_VOID(e));
+        if (immutable) {
+          env->CreateImmutableBinding(sym);
+          env->InitializeImmutableBinding(sym, args_obj);
+        } else {
+          env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+          env->SetMutableBinding(ctx, sym, args_obj, false, IV_LV5_ERROR_VOID(e));
+        }
+      } else if (type == Code::VAR) {
+        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+        env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+      } else if (type == Code::FEXPR) {
+        env->CreateImmutableBinding(sym);
+        env->InitializeImmutableBinding(sym, this);
       }
     }
   }

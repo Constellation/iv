@@ -28,13 +28,24 @@ class Code : public HeapObject {
     GLOBAL,
     EVAL
   };
+  enum DeclType {
+    PARAM,
+    FDECL,
+    ARGUMENTS,
+    VAR,
+    FEXPR
+  };
   friend class Compiler;
+  friend class FunctionScope;
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<uint8_t>::type Data;
   typedef GCVector<Code*>::type Codes;
   typedef std::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
+  // symbol, decl type, configurable, immutable
+  typedef std::tuple<Symbol, DeclType, bool> Decl;
+  typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,
        JSScript* script,
@@ -59,6 +70,7 @@ class Code : public HeapObject {
       names_(),
       varnames_(),
       params_(func.params().size()),
+      decls_(),
       constants_() {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
@@ -204,6 +216,10 @@ class Code : public HeapObject {
     return code_type_;
   }
 
+  const Decls& decls() const {
+    return decls_;
+  }
+
  private:
 
   void set_start(std::size_t start) {
@@ -235,6 +251,7 @@ class Code : public HeapObject {
   Names names_;
   Names varnames_;
   Names params_;
+  Decls decls_;
   JSVals constants_;
   ExceptionTable exception_table_;
 };

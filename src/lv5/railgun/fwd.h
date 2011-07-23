@@ -15,6 +15,11 @@ class Stack;
 
 class Analyzer;
 
+class VariableScope;
+class FunctionScope;
+class WithScope;
+class CatchScope;
+
 class Compiler;
 class Context;
 

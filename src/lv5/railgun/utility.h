@@ -161,7 +161,5 @@ inline void Instantiate(Context* ctx,
   }
 }
 
-
-
 } } }  // iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_UTILITY_H_

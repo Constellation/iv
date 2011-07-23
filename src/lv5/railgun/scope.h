@@ -249,6 +249,9 @@ class FunctionScope : public VariableScope {
         }
       }
     }
+    if (!IsTop()) {
+      CleanUpDecls(code_);
+    }
   }
 
   virtual void LookupImpl(Symbol sym, std::size_t target, Type type) {
@@ -295,6 +298,70 @@ class FunctionScope : public VariableScope {
   }
 
  private:
+  class SearchDecl {
+   public:
+    explicit SearchDecl(Symbol sym) : sym_(sym) { }
+    template<typename DeclTuple>
+    bool operator()(const DeclTuple& decl) const {
+      return std::get<0>(decl) == sym_;
+    }
+   private:
+   Symbol sym_;
+  };
+
+  void CleanUpDecls(Code* code) {
+    for (Code::Names::const_iterator it = code->params().begin(),
+         last = code->params().end(); it != last; ++it) {
+      if (std::find_if(code->decls_.begin(),
+                       code->decls_.end(),
+                       SearchDecl(*it)) != code->decls_.end()) {
+        code->decls_.push_back(std::make_tuple(*it, Code::PARAM, false));
+      }
+    }
+
+    for (Code::Codes::const_iterator it = code->codes().begin(),
+         last = code->codes().end(); it != last; ++it) {
+      if ((*it)->IsFunctionDeclaration()) {
+        const Symbol& fn = (*it)->name();
+        if (std::find_if(code->decls_.begin(),
+                         code->decls_.end(),
+                         SearchDecl(fn)) != code->decls_.end()) {
+          code->decls_.push_back(std::make_tuple(fn, Code::FDECL, false));
+        }
+      }
+    }
+
+    if (code->ShouldCreateArguments()) {
+      if (code->strict()) {
+        code->decls_.push_back(
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, true));
+      } else {
+        code->decls_.push_back(
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, false));
+      }
+    }
+
+    for (Code::Names::const_iterator it = code->varnames().begin(),
+         last = code->varnames().end(); it != last; ++it) {
+      const Symbol& dn = *it;
+      if (std::find_if(code->decls_.begin(),
+                       code->decls_.end(),
+                       SearchDecl(dn)) != code->decls_.end()) {
+        code->decls_.push_back(std::make_tuple(dn, Code::VAR, false));
+      }
+    }
+    const FunctionLiteral::DeclType type = code->decl_type();
+    if (type == FunctionLiteral::STATEMENT ||
+        (type == FunctionLiteral::EXPRESSION && code->HasName())) {
+      const Symbol& fn = code->name();
+      if (std::find_if(code->decls_.begin(),
+                       code->decls_.end(),
+                       SearchDecl(fn)) != code->decls_.end()) {
+        code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true));
+      }
+    }
+  }
+
   Variables map_;
   Labels labels_;
   Code* code_;
