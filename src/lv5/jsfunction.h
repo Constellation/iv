@@ -291,7 +291,7 @@ class JSInlinedFunction : public JSFunction {
     DefineOwnProperty(
         ctx, context::Intern(ctx, "name"),
         DataDescriptor(
-            JSString::NewEmptyString(ctx),
+            JSUndefined,
             PropertyDescriptor::NONE),
             false, NULL);
   }
