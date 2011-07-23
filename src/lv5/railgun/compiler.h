@@ -20,6 +20,7 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/code.h"
+#include "lv5/railgun/scope.h"
 
 namespace iv {
 namespace lv5 {
@@ -162,235 +163,6 @@ class ContinuationStatus : private iv::core::Noncopyable<ContinuationStatus> {
   ContinuationSet current_;
 };
 
-class VariableScope : private core::Noncopyable<VariableScope> {
- public:
-  enum Type {
-    STACK = 0,
-    HEAP,
-    GLOBAL,
-    LOOKUP
-  };
-  struct GlobalTag { };
-
-  typedef std::vector<std::pair<Symbol, std::size_t> > Labels;
-  typedef std::unordered_map<Symbol, Type> Variables;
-
-  // for catch env
-  VariableScope(std::shared_ptr<VariableScope> upper, Symbol sym)
-    : upper_(upper),
-      map_(),
-      labels_(),
-      code_(NULL),
-      is_global_(false),
-      catch_env_(true),
-      upper_of_eval_(false),
-      in_with_(false),
-      eval_top_scope_(false) {
-    map_[sym] = HEAP;
-  }
-
-  // for with env
-  VariableScope(std::shared_ptr<VariableScope> upper)
-    : upper_(upper),
-      map_(),
-      labels_(),
-      code_(NULL),
-      is_global_(false),
-      catch_env_(true),
-      upper_of_eval_(false),
-      in_with_(true),
-      eval_top_scope_(false) {
-  }
-
-  // for global dummy scope
-  VariableScope(std::shared_ptr<VariableScope> upper, GlobalTag dummy)
-    : upper_(upper),
-      map_(),
-      labels_(),
-      code_(NULL),
-      is_global_(true),
-      catch_env_(false),
-      upper_of_eval_(false),
-      in_with_(true),
-      eval_top_scope_(false) {
-  }
-
-  // for global or function
-  VariableScope(std::shared_ptr<VariableScope> upper, Code* code, const Scope& scope)
-    : upper_(upper),
-      map_(),
-      labels_(),
-      code_(code),
-      is_global_(code->code_type() == Code::GLOBAL),
-      catch_env_(false),
-      upper_of_eval_(false),
-      in_with_(false),
-      eval_top_scope_(code->code_type() == Code::EVAL) {
-    // is global or not
-    const Type default_type = (IsTop()) ? (eval_top_scope_) ? LOOKUP : GLOBAL : STACK;
-    if (!IsTop()) {
-      map_[symbol::arguments] = HEAP;
-    }
-
-    // params
-    for (Code::Names::const_iterator it = code->params().begin(),
-         last = code->params().end(); it != last; ++it) {
-      // TODO(Constellation) optimize it
-      // map_[*it] = default_type;
-      map_[*it] = TypeUpgrade(default_type, HEAP);
-    }
-
-    // function declarations
-    typedef Scope::FunctionLiterals Functions;
-    const Functions& functions = scope.function_declarations();
-    for (Functions::const_iterator it = functions.begin(),
-         last = functions.end(); it != last; ++it) {
-      // TODO(Constellation) optimize it
-      const Symbol sym = (*it)->name().Address()->symbol();
-      // map_[sym] = default_type;
-      map_[sym] = TypeUpgrade(default_type, HEAP);
-    }
-    // variables
-    typedef Scope::Variables Variables;
-    const Variables& vars = scope.variables();
-    for (Variables::const_iterator it = vars.begin(),
-         last = vars.end(); it != last; ++it) {
-      const Symbol name = it->first->symbol();
-      if (map_.find(name) != map_.end()) {
-        map_[name] = TypeUpgrade(map_[name], default_type);
-      } else {
-        map_[name] = default_type;
-      }
-    }
-
-    const FunctionLiteral::DeclType type = code->decl_type();
-    if (type == FunctionLiteral::STATEMENT ||
-        (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
-      const Symbol& name = code_->name();
-      if (map_.find(name) == map_.end()) {
-        map_[name] = TypeUpgrade(default_type, HEAP);
-      }
-    }
-  }
-
-  void Lookup(Symbol sym, std::size_t target) {
-    // first, so this is stack
-    LookupImpl(sym, target, (InWith())? LOOKUP : STACK);
-  }
-
-  bool IsTop() const {
-    return !upper_;
-  }
-
-  bool IsCatch() const {
-    return catch_env_;
-  }
-
-  bool InWith() const {
-    return in_with_;
-  }
-
-  void RecordEval() {
-    upper_of_eval_ = true;
-    std::shared_ptr<VariableScope> scope = upper_;
-    while (scope) {
-      scope->upper_of_eval_ = true;
-      scope = scope->upper_;
-    }
-  }
-
-  ~VariableScope() {
-    if (!upper_of_eval_ && !IsCatch() && !InWith()) {
-      // if arguments is realized, mark params to HEAP
-      // TODO(Constellation) strict mode optimization
-//      if (code_ && code_->ShouldCreateArguments()) {
-//        for (Code::Names::const_iterator it = code->params().begin(),
-//             last = code->params().end(); it != last; ++it) {
-//          map_[*it] = TypeUpgrade(map_[*it], HEAP);
-//        }
-//      } else {
-//        map_.erase(symbol::arguments);
-//      }
-      std::unordered_map<Symbol, uint16_t> locations;
-      // dummy global
-      if (code_) {
-        uint16_t locals = 0;
-        for (Variables::const_iterator it = map_.begin(),
-             last = map_.end(); it != last; ++it) {
-          if (it->second == STACK) {
-            locations.insert(std::make_pair(it->first, locations.size()));
-            Code::Names::iterator f =
-                std::find(code_->varnames().begin(), code_->varnames().end(), it->first);
-            if (f != code_->varnames().end()) {
-              code_->varnames().erase(f);
-            }
-            ++locals;
-          }
-        }
-        code_->set_locals(locals);
-        code_->set_stack_depth(code_->stack_depth() + locals);
-      }
-      for (Labels::const_iterator it = labels_.begin(),
-           last = labels_.end(); it != last; ++it) {
-        const Type type = map_[it->first];
-        if (type == STACK) {
-          const uint8_t op = (*data_)[it->second];
-          (*data_)[it->second] = OP::ToLocal(op);
-          const uint16_t loc = locations[it->first];
-          (*data_)[it->second + 1] = (loc & 0xff);
-          (*data_)[it->second + 2] = (loc >> 8);
-        } else if (type == GLOBAL) {
-          // emit global opt
-          const uint8_t op = (*data_)[it->second];
-          (*data_)[it->second] = OP::ToGlobal(op);
-        }
-      }
-    }
-  }
-
-  std::shared_ptr<VariableScope> Realize(Context* ctx,
-                                         Code* code, Code::Data* data) {
-    code_ = code;
-    data_ = data;
-    return upper_;
-  }
-
- private:
-  void LookupImpl(Symbol sym, std::size_t target, Type type) {
-    if (map_.find(sym) == map_.end()) {
-      if (IsTop()) {
-        // this is global
-        map_[sym] = TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type);
-        labels_.push_back(std::make_pair(sym, target));
-      } else {
-        upper_->LookupImpl(sym, target, TypeUpgrade(type, (InWith()) ? LOOKUP : HEAP));
-      }
-    } else {
-      if (IsTop()) {
-        map_[sym] = TypeUpgrade(map_[sym], type);
-        labels_.push_back(std::make_pair(sym, target));
-      } else {
-        map_[sym] = TypeUpgrade(map_[sym], type);
-        labels_.push_back(std::make_pair(sym, target));
-      }
-    }
-  }
-
-  static Type TypeUpgrade(Type now, Type next) {
-    return std::max<Type>(now, next);
-  }
-
-  std::shared_ptr<VariableScope> upper_;
-  Variables map_;
-  Labels labels_;
-  Code* code_;
-  Code::Data* data_;
-  bool is_global_;
-  bool catch_env_;
-  bool upper_of_eval_;
-  bool in_with_;
-  bool eval_top_scope_;
-};
 
 class Compiler
     : private core::Noncopyable<Compiler>,
@@ -441,11 +213,11 @@ class Compiler
     data_->reserve(core::Size::KB);
     // create dummy global scope
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(new VariableScope(current_variable_scope_, VariableScope::GlobalTag()));
+        std::shared_ptr<VariableScope>(new FunctionScope(current_variable_scope_, data_));
     std::shared_ptr<VariableScope> target = current_variable_scope_;
     Code* code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
     EmitFunctionCode(function, code, current_variable_scope_);
-    current_variable_scope_ = current_variable_scope_->Realize(ctx_, NULL, data_);
+    current_variable_scope_ = current_variable_scope_->upper();
     return code;
   }
 
@@ -978,9 +750,9 @@ class Compiler
       DynamicEnvLevelCounter counter(this);
       current_variable_scope_ =
           std::shared_ptr<VariableScope>(
-              new VariableScope(current_variable_scope_));
+              new WithScope(current_variable_scope_));
       stmt->body()->Accept(this);  // STMT
-      current_variable_scope_ = current_variable_scope_->Realize(ctx_, code_, data_);
+      current_variable_scope_ = current_variable_scope_->upper();
     }
     PopLevel();
     Emit<OP::POP_ENV>();
@@ -1096,9 +868,9 @@ class Compiler
         DynamicEnvLevelCounter counter(this);
         current_variable_scope_ =
             std::shared_ptr<VariableScope>(
-                new VariableScope(current_variable_scope_, catch_symbol));
+                new CatchScope(current_variable_scope_, catch_symbol));
         block.Address()->Accept(this);  // STMT
-        current_variable_scope_ = current_variable_scope_->Realize(ctx_, code_, data_);
+        current_variable_scope_ = current_variable_scope_->upper();
       }
       PopLevel();
       Emit<OP::POP_ENV>();
@@ -2017,7 +1789,7 @@ class Compiler
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(new VariableScope(upper, code, scope));
+        std::shared_ptr<VariableScope>(new FunctionScope(upper, ctx_, code, data_, scope));
     const std::size_t code_info_stack_size = code_info_stack_.size();
     {
       // function declarations
@@ -2074,7 +1846,7 @@ class Compiler
         EmitFunctionCode(*std::get<1>(info), *it, std::get<2>(info));
       }
     }
-    current_variable_scope_ = target->Realize(ctx_, code, data_);
+    current_variable_scope_ = target->upper();
     // clear code info stack
     code_info_stack_.erase(
         code_info_stack_.begin() + code_info_stack_size,

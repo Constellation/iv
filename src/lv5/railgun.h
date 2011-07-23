@@ -9,6 +9,7 @@
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/analyzer.h"
+#include "lv5/railgun/scope.h"
 #include "lv5/railgun/compiler.h"
 #include "lv5/railgun/disassembler.h"
 #include "lv5/railgun/runtime.h"
