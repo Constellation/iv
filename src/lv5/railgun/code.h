@@ -30,6 +30,7 @@ class Code : public HeapObject {
   };
   enum DeclType {
     PARAM,
+    PARAM_LOCAL,
     FDECL,
     ARGUMENTS,
     VAR,
@@ -44,7 +45,7 @@ class Code : public HeapObject {
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
   // symbol, decl type, configurable, immutable
-  typedef std::tuple<Symbol, DeclType, bool, std::size_t> Decl;
+  typedef std::tuple<Symbol, DeclType, bool, std::size_t, uint16_t> Decl;
   typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,

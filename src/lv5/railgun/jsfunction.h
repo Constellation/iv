@@ -138,6 +138,15 @@ class JSVMFunction : public JSFunction {
         } else {
           env->SetMutableBinding(ctx, sym, args[param], code_->strict(), IV_LV5_ERROR_VOID(e));
         }
+      } else if (type == Code::PARAM_LOCAL) {
+        // initialize local value
+        const std::size_t param = std::get<3>(decl);
+        const std::size_t target = std::get<4>(decl);
+        if (param >= arg_count) {
+          frame->GetLocal()[target] = JSUndefined;
+        } else {
+          frame->GetLocal()[target] = args[param];
+        }
       } else if (type == Code::FDECL) {
         env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
       } else if (type == Code::ARGUMENTS) {
