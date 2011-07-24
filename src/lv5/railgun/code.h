@@ -59,6 +59,7 @@ class Code : public HeapObject {
       strict_(func.strict()),
       has_eval_(false),
       has_arguments_(false),
+      has_arguments_assign_(false),
       has_name_(func.name()),
       has_declarative_env_(true),
       arguments_hiding_(false),
@@ -143,6 +144,10 @@ class Code : public HeapObject {
     return has_arguments_;
   }
 
+  bool HasArgumentsAssign() const {
+    return has_arguments_assign_;
+  }
+
   bool HasDeclEnv() const {
     return has_declarative_env_;
   }
@@ -165,6 +170,10 @@ class Code : public HeapObject {
 
   void set_code_has_arguments() {
     has_arguments_ = true;
+  }
+
+  void set_code_has_arguments_assign() {
+    has_arguments_assign_ = true;
   }
 
   void set_code_hiding_arguments() {
@@ -237,6 +246,7 @@ class Code : public HeapObject {
   bool strict_;
   bool has_eval_;
   bool has_arguments_;
+  bool has_arguments_assign_;
   bool has_name_;
   bool has_declarative_env_;
   bool arguments_hiding_;

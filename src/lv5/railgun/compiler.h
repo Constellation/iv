@@ -2011,8 +2011,12 @@ class Compiler
     data_->push_back(op);
     data_->push_back(arg & 0xff);
     data_->push_back(arg >> 8);
-    if (code_->names()[arg] == symbol::arguments && op != OP::STORE_NAME) {
-      code_->set_code_has_arguments();
+    if (code_->names()[arg] == symbol::arguments) {
+      if (op == OP::STORE_NAME) {
+        code_->set_code_has_arguments_assign();
+      } else {
+        code_->set_code_has_arguments();
+      }
     }
   }
 

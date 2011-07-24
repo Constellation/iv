@@ -209,6 +209,10 @@ class FunctionScope : public VariableScope {
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
           if (std::get<0>(it->second) == STACK) {
+            if (it->first == symbol::arguments &&
+                !code_->ShouldCreateArguments() && !code_->HasArgumentsAssign()) {
+              continue;
+            }
             locations.insert(std::make_pair(it->first, locations.size()));
             code_->locals_.push_back(it->first);
             // if this is variable?
