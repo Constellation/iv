@@ -164,10 +164,36 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
   const Code::Names* names = &frame->code()->names();
   bool strict = frame->code()->strict();
 
+#if defined(IV_USE_DIRECT_THREADED_CODE) && defined(IV_COMPILER_GCC)
+#define USE_DIRECT_THREADED_CODE
+#endif
+
+#ifdef USE_DIRECT_THREADED_CODE
+
+#define DEFINE_OPCODE(op)\
+  case OP::op:\
+  op:
+#define DISPATCH_ERROR() goto ERROR_OCCURRED
+#define DISPATCH()\
+  do {\
+    opcode = NEXTOP();\
+    oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;\
+    goto *kDispatchTable[opcode];\
+  } while (0)
+
+#else
+
+#define DEFINE_OPCODE(op)\
+  case OP::op:
+#define DISPATCH_ERROR() break
+#define DISPATCH() continue
+
+#endif
+
 #define ERR\
   e);\
   if (*e) {\
-    break;\
+    DISPATCH_ERROR();\
   }\
 ((void)0
 #define DUMMY )  // to make indentation work
@@ -226,16 +252,42 @@ do {\
 #define GETITEM(target, i) ((*target)[(i)])
 
   // main loop
+  int opcode = 0;
+  uint32_t oparg = 0;
   for (;;) {
 MAIN_LOOP_START:
     // fetch opcode
-    const int opcode = NEXTOP();
-    const uint32_t oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
+#ifdef USE_DIRECT_THREADED_CODE
+#define V(label) &&label,
+    static const std::array<const void*, OP::NUM_OF_OP + 1> kDispatchTable = { {
+      IV_LV5_RAILGUN_OP_LIST(V)
+      NULL
+    } };
+#undef V
+    DISPATCH();
+#else
+    opcode = NEXTOP();
+    oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
+#endif
 
-    // if ok, use continue.
-    // if error, use break.
+    // if ok, use DISPATCH.
+    // if error, use DISPATCH_ERROR.
     switch (opcode) {
-      case OP::STOP_CODE: {
+      DEFINE_OPCODE(NOP) {
+        DISPATCH();
+      }
+
+      DEFINE_OPCODE(NOP_ARGUMENT) {
+        DISPATCH();
+      }
+
+      // wasted opcodes... (for direct threading)
+      DEFINE_OPCODE(HAVE_ARGUMENT)
+      DEFINE_OPCODE(HAVE_EX_ARGUMENT) {
+        UNREACHABLE();
+      }
+
+      DEFINE_OPCODE(STOP_CODE) {
         // no return at last
         // return undefined
         // if previous code is not native code, unwind frame and jump
@@ -259,119 +311,111 @@ MAIN_LOOP_START:
           names = &frame->code()->names();
           strict = frame->code()->strict();
           PUSH(ret);
-          continue;
+          DISPATCH();
         }
-        break;
+        DISPATCH_ERROR();
       }
 
-      case OP::NOP: {
-        continue;
-      }
-
-      case OP::NOP_ARGUMENT: {
-        continue;
-      }
-
-      case OP::LOAD_CONST: {
+      DEFINE_OPCODE(LOAD_CONST) {
         const JSVal x = GETITEM(constants, oparg);
         PUSH(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::LOAD_NAME: {
+      DEFINE_OPCODE(LOAD_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal w = LoadName(frame->lexical_env(), s, strict, ERR);
         PUSH(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::LOAD_LOCAL: {
+      DEFINE_OPCODE(LOAD_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         PUSH(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::LOAD_GLOBAL: {
+      DEFINE_OPCODE(LOAD_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
         PUSH(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::LOAD_ELEMENT: {
+      DEFINE_OPCODE(LOAD_ELEMENT) {
         const JSVal element = POP();
         const JSVal& base = TOP();
         const JSVal res = LoadElement(sp, base, element, strict, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::LOAD_PROP: {
+      DEFINE_OPCODE(LOAD_PROP) {
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const JSVal res = LoadProp(sp, base, s, strict, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_NAME: {
+      DEFINE_OPCODE(STORE_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal v = TOP();
         StoreName(frame->lexical_env(), s, v, strict, ERR);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_LOCAL: {
+      DEFINE_OPCODE(STORE_LOCAL) {
         const JSVal v = TOP();
         SETLOCAL(oparg, v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_LOCAL_IMMUTABLE: {
+      DEFINE_OPCODE(STORE_LOCAL_IMMUTABLE) {
         assert(!strict);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_GLOBAL: {
+      DEFINE_OPCODE(STORE_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal v = TOP();
         StoreName(ctx_->global_env(), s, v, strict, ERR);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_ELEMENT: {
+      DEFINE_OPCODE(STORE_ELEMENT) {
         const JSVal w = POP();
         const JSVal element = POP();
         const JSVal base = TOP();
         StoreElement(base, element, w, strict, ERR);
         SET_TOP(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_PROP: {
+      DEFINE_OPCODE(STORE_PROP) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal w = POP();
         const JSVal base = TOP();
         StoreProp(base, s, w, strict, ERR);
         SET_TOP(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_CALL_RESULT: {
+      DEFINE_OPCODE(STORE_CALL_RESULT) {
         // lv5 reject `func() = 20`
         const JSVal w = POP();
         e->Report(Error::Reference, "target is not reference");
         SET_TOP(w);
-        break;
+        DISPATCH_ERROR();
       }
 
-      case OP::DELETE_CALL_RESULT: {
+      DEFINE_OPCODE(DELETE_CALL_RESULT) {
         // lv5 ignore `delete func()`
         SET_TOP(JSTrue);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DELETE_NAME: {
+      DEFINE_OPCODE(DELETE_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
           const bool res = current->DeleteBinding(ctx_, s);
@@ -380,15 +424,15 @@ MAIN_LOOP_START:
           // not found -> unresolvable reference
           PUSH(JSTrue);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::DELETE_LOCAL: {
+      DEFINE_OPCODE(DELETE_LOCAL) {
         PUSH(JSFalse);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DELETE_GLOBAL: {
+      DEFINE_OPCODE(DELETE_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
           const bool res = current->DeleteBinding(ctx_, s);
@@ -397,10 +441,10 @@ MAIN_LOOP_START:
           // not found -> unresolvable reference
           PUSH(JSTrue);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::DELETE_ELEMENT: {
+      DEFINE_OPCODE(DELETE_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
@@ -416,54 +460,54 @@ MAIN_LOOP_START:
           const bool result = obj->Delete(ctx_, s, strict, ERR);
           SET_TOP(JSVal::Bool(result));
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::DELETE_PROP: {
+      DEFINE_OPCODE(DELETE_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         base.CheckObjectCoercible(ERR);
         JSObject* const obj = base.ToObject(ctx_, ERR);
         const bool result = obj->Delete(ctx_, s, strict, ERR);
         SET_TOP(JSVal::Bool(result));
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_TOP: {
+      DEFINE_OPCODE(POP_TOP) {
         POP_UNUSED();
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_TOP_AND_RET: {
+      DEFINE_OPCODE(POP_TOP_AND_RET) {
         frame->ret_ = POP();
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_N: {
+      DEFINE_OPCODE(POP_N) {
         const int n = -static_cast<int>(oparg);
         STACKADJ(n);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_JUMP_IF_FALSE: {
+      DEFINE_OPCODE(POP_JUMP_IF_FALSE) {
         const JSVal v = POP();
         const bool x = v.ToBoolean(ERR);
         if (!x) {
           JUMPTO(oparg);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_JUMP_IF_TRUE: {
+      DEFINE_OPCODE(POP_JUMP_IF_TRUE) {
         const JSVal v = POP();
         const bool x = v.ToBoolean(ERR);
         if (x) {
           JUMPTO(oparg);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_IF_TRUE_OR_POP: {
+      DEFINE_OPCODE(JUMP_IF_TRUE_OR_POP) {
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         if (x) {
@@ -471,10 +515,10 @@ MAIN_LOOP_START:
         } else {
           POP_UNUSED();
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_IF_FALSE_OR_POP: {
+      DEFINE_OPCODE(JUMP_IF_FALSE_OR_POP) {
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         if (!x) {
@@ -482,57 +526,57 @@ MAIN_LOOP_START:
         } else {
           POP_UNUSED();
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_SUBROUTINE: {
+      DEFINE_OPCODE(JUMP_SUBROUTINE) {
         const JSVal addr = JSVal::UInt32(
             static_cast<uint32_t>(std::distance(first_instr, instr)));
         PUSH(JSEmpty);
         PUSH(addr);
         PUSH(JSVal::UInt32(0u));
         JUMPTO(oparg);
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_RETURN_HOOKED_SUBROUTINE: {
+      DEFINE_OPCODE(JUMP_RETURN_HOOKED_SUBROUTINE) {
         const JSVal addr = JSVal::UInt32(
             static_cast<uint32_t>(std::distance(first_instr, instr)));
         PUSH(addr);
         PUSH(JSVal::UInt32(1u));
         JUMPTO(oparg);
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_FORWARD: {
+      DEFINE_OPCODE(JUMP_FORWARD) {
         JUMPBY(oparg - 3);
-        continue;
+        DISPATCH();
       }
 
-      case OP::JUMP_ABSOLUTE: {
+      DEFINE_OPCODE(JUMP_ABSOLUTE) {
         JUMPTO(oparg);
-        continue;
+        DISPATCH();
       }
 
-      case OP::ROT_TWO: {
+      DEFINE_OPCODE(ROT_TWO) {
         const JSVal v = TOP();
         const JSVal w = SECOND();
         SET_TOP(w);
         SET_SECOND(v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::ROT_THREE: {
+      DEFINE_OPCODE(ROT_THREE) {
         const JSVal v = TOP();
         const JSVal w = SECOND();
         const JSVal x = THIRD();
         SET_TOP(w);
         SET_SECOND(x);
         SET_THIRD(v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::ROT_FOUR: {
+      DEFINE_OPCODE(ROT_FOUR) {
         const JSVal v = TOP();
         const JSVal w = SECOND();
         const JSVal x = THIRD();
@@ -541,97 +585,97 @@ MAIN_LOOP_START:
         SET_SECOND(x);
         SET_THIRD(y);
         SET_FOURTH(v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DUP_TOP: {
+      DEFINE_OPCODE(DUP_TOP) {
         const JSVal v = TOP();
         PUSH(v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DUP_TWO: {
+      DEFINE_OPCODE(DUP_TWO) {
         const JSVal v = TOP();
         const JSVal w = SECOND();
         PUSH(w);
         PUSH(v);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_NULL: {
+      DEFINE_OPCODE(PUSH_NULL) {
         PUSH(JSNull);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_TRUE: {
+      DEFINE_OPCODE(PUSH_TRUE) {
         PUSH(JSTrue);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_FALSE: {
+      DEFINE_OPCODE(PUSH_FALSE) {
         PUSH(JSFalse);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_EMPTY: {
+      DEFINE_OPCODE(PUSH_EMPTY) {
         PUSH(JSEmpty);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_UNDEFINED: {
+      DEFINE_OPCODE(PUSH_UNDEFINED) {
         PUSH(JSUndefined);
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_THIS: {
+      DEFINE_OPCODE(PUSH_THIS) {
         PUSH(frame->GetThis());
-        continue;
+        DISPATCH();
       }
 
-      case OP::PUSH_ARGUMENTS: {
+      DEFINE_OPCODE(PUSH_ARGUMENTS) {
         const JSVal w = LoadName(
             frame->lexical_env(),
             symbol::arguments, strict, ERR);
         PUSH(w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::UNARY_POSITIVE: {
+      DEFINE_OPCODE(UNARY_POSITIVE) {
         const JSVal& v = TOP();
         const double x = v.ToNumber(ctx_, ERR);
         SET_TOP(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::UNARY_NEGATIVE: {
+      DEFINE_OPCODE(UNARY_NEGATIVE) {
         const JSVal& v = TOP();
         const double x = v.ToNumber(ctx_, ERR);
         SET_TOP(-x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::UNARY_NOT: {
+      DEFINE_OPCODE(UNARY_NOT) {
         const JSVal& v = TOP();
         const bool x = v.ToBoolean(ERR);
         SET_TOP(JSVal::Bool(!x));
-        continue;
+        DISPATCH();
       }
 
-      case OP::UNARY_BIT_NOT: {
+      DEFINE_OPCODE(UNARY_BIT_NOT) {
         const JSVal& v = TOP();
         const double value = v.ToNumber(ctx_, ERR);
         SET_TOP(~core::DoubleToInt32(value));
-        continue;
+        DISPATCH();
       }
 
-      case OP::TYPEOF: {
+      DEFINE_OPCODE(TYPEOF) {
         const JSVal& v = TOP();
         const JSVal result = v.TypeOf(ctx_);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::TYPEOF_NAME: {
+      DEFINE_OPCODE(TYPEOF_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
           const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
@@ -640,16 +684,16 @@ MAIN_LOOP_START:
           // unresolvable reference
           PUSH(JSString::NewAsciiString(ctx_, "undefined"));
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::TYPEOF_LOCAL: {
+      DEFINE_OPCODE(TYPEOF_LOCAL) {
         const JSVal& expr = GETLOCAL(oparg);
         PUSH(expr.TypeOf(ctx_));
-        continue;
+        DISPATCH();
       }
 
-      case OP::TYPEOF_GLOBAL: {
+      DEFINE_OPCODE(TYPEOF_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
           const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
@@ -658,382 +702,382 @@ MAIN_LOOP_START:
           // unresolvable reference
           PUSH(JSString::NewAsciiString(ctx_, "undefined"));
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_NAME: {
+      DEFINE_OPCODE(DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_NAME: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_NAME: {
+      DEFINE_OPCODE(INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_NAME: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_LOCAL: {
+      DEFINE_OPCODE(DECREMENT_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev - 1;
         SETLOCAL(oparg, now);
         PUSH(now);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_LOCAL: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev - 1;
         SETLOCAL(oparg, now);
         PUSH(prev);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_LOCAL: {
+      DEFINE_OPCODE(INCREMENT_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev + 1;
         SETLOCAL(oparg, now);
         PUSH(now);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_LOCAL: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev + 1;
         SETLOCAL(oparg, now);
         PUSH(prev);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_LOCAL_IMMUTABLE: {
+      DEFINE_OPCODE(DECREMENT_LOCAL_IMMUTABLE) {
         assert(!strict);
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev - 1;
         PUSH(now);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_LOCAL_IMMUTABLE: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_LOCAL_IMMUTABLE) {
         assert(!strict);
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         PUSH(prev);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_LOCAL_IMMUTABLE: {
+      DEFINE_OPCODE(INCREMENT_LOCAL_IMMUTABLE) {
         assert(!strict);
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         const double now = prev + 1;
         PUSH(now);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_LOCAL_IMMUTABLE: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_LOCAL_IMMUTABLE) {
         assert(!strict);
         const JSVal& w = GETLOCAL(oparg);
         const double prev = w.ToNumber(ctx_, ERR);
         PUSH(prev);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_GLOBAL: {
+      DEFINE_OPCODE(DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_GLOBAL: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_GLOBAL: {
+      DEFINE_OPCODE(INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_GLOBAL: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_ELEMENT: {
+      DEFINE_OPCODE(DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         const double result =
             IncrementElement<-1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_ELEMENT: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         const double result =
             IncrementElement<-1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_ELEMENT: {
+      DEFINE_OPCODE(INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         const double result =
             IncrementElement<1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_ELEMENT: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         const double result =
             IncrementElement<1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_PROP: {
+      DEFINE_OPCODE(DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementProp<-1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_DECREMENT_PROP: {
+      DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementProp<-1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INCREMENT_PROP: {
+      DEFINE_OPCODE(INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementProp<1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::POSTFIX_INCREMENT_PROP: {
+      DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
-        continue;
+        DISPATCH();
       }
 
-      case OP::DECREMENT_CALL_RESULT:
-      case OP::POSTFIX_DECREMENT_CALL_RESULT:
-      case OP::INCREMENT_CALL_RESULT:
-      case OP::POSTFIX_INCREMENT_CALL_RESULT: {
+      DEFINE_OPCODE(DECREMENT_CALL_RESULT)
+      DEFINE_OPCODE(POSTFIX_DECREMENT_CALL_RESULT)
+      DEFINE_OPCODE(INCREMENT_CALL_RESULT)
+      DEFINE_OPCODE(POSTFIX_INCREMENT_CALL_RESULT) {
         const JSVal base = TOP();
         base.ToNumber(ctx_, ERR);
         e->Report(Error::Reference, "target is not reference");
-        break;
+        DISPATCH_ERROR();
       }
 
-      case OP::BINARY_ADD: {
+      DEFINE_OPCODE(BINARY_ADD) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryAdd(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_SUBTRACT: {
+      DEFINE_OPCODE(BINARY_SUBTRACT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinarySub(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_MULTIPLY: {
+      DEFINE_OPCODE(BINARY_MULTIPLY) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryMultiply(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_DIVIDE: {
+      DEFINE_OPCODE(BINARY_DIVIDE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryDivide(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_MODULO: {
+      DEFINE_OPCODE(BINARY_MODULO) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryModulo(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_LSHIFT: {
+      DEFINE_OPCODE(BINARY_LSHIFT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryLShift(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_RSHIFT: {
+      DEFINE_OPCODE(BINARY_RSHIFT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryRShift(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_RSHIFT_LOGICAL: {
+      DEFINE_OPCODE(BINARY_RSHIFT_LOGICAL) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryRShiftLogical(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_LT: {
+      DEFINE_OPCODE(BINARY_LT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryCompareLT(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_LTE: {
+      DEFINE_OPCODE(BINARY_LTE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryCompareLTE(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_GT: {
+      DEFINE_OPCODE(BINARY_GT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryCompareGT(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_GTE: {
+      DEFINE_OPCODE(BINARY_GTE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryCompareGTE(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_INSTANCEOF: {
+      DEFINE_OPCODE(BINARY_INSTANCEOF) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryInstanceof(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_IN: {
+      DEFINE_OPCODE(BINARY_IN) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryIn(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_EQ: {
+      DEFINE_OPCODE(BINARY_EQ) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryEqual(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_STRICT_EQ: {
+      DEFINE_OPCODE(BINARY_STRICT_EQ) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryStrictEqual(v, w);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_NE: {
+      DEFINE_OPCODE(BINARY_NE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryNotEqual(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_STRICT_NE: {
+      DEFINE_OPCODE(BINARY_STRICT_NE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryStrictNotEqual(v, w);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_BIT_AND: {  // &
+      DEFINE_OPCODE(BINARY_BIT_AND) {  // &
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryBitAnd(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_BIT_XOR: {  // ^
+      DEFINE_OPCODE(BINARY_BIT_XOR) {  // ^
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryBitXor(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BINARY_BIT_OR: {  // |
+      DEFINE_OPCODE(BINARY_BIT_OR) {  // |
         const JSVal w = POP();
         const JSVal& v = TOP();
         const JSVal res = BinaryBitOr(v, w, ERR);
         SET_TOP(res);
-        continue;
+        DISPATCH();
       }
 
-      case OP::RETURN: {
+      DEFINE_OPCODE(RETURN) {
         frame->ret_ = TOP();
         const JSVal ret =
             (frame->constructor_call_ && !frame->ret_.IsObject()) ?
@@ -1052,11 +1096,11 @@ MAIN_LOOP_START:
           names = &frame->code()->names();
           strict = frame->code()->strict();
           PUSH(ret);
-          continue;
+          DISPATCH();
         }
       }
 
-      case OP::RETURN_SUBROUTINE: {
+      DEFINE_OPCODE(RETURN_SUBROUTINE) {
         const JSVal flag = POP();
         const JSVal v = POP();
         assert(flag.IsUInt32());
@@ -1068,53 +1112,53 @@ MAIN_LOOP_START:
           POP_UNUSED();
           const uint32_t addr = v.uint32();
           JUMPTO(addr);
-          continue;
+          DISPATCH();
         } else if (f == 1) {
           // RETURN HOOK
           const uint32_t addr = v.uint32();
           JUMPTO(addr);
-          continue;
+          DISPATCH();
         } else {
           // ERROR FINALLY JUMP
           // rethrow error
           POP_UNUSED();
           e->Report(v);
-          break;
+          DISPATCH_ERROR();
         }
       }
 
-      case OP::SWITCH_CASE: {
+      DEFINE_OPCODE(SWITCH_CASE) {
         const JSVal v = POP();
         const JSVal w = TOP();
         if (internal::StrictEqual(v, w)) {
           POP_UNUSED();
           JUMPTO(oparg);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::SWITCH_DEFAULT: {
+      DEFINE_OPCODE(SWITCH_DEFAULT) {
         POP_UNUSED();
         JUMPTO(oparg);
-        continue;
+        DISPATCH();
       }
 
-      case OP::FORIN_SETUP: {
+      DEFINE_OPCODE(FORIN_SETUP) {
         const JSVal v = TOP();
         if (v.IsNull() || v.IsUndefined()) {
           // TODO(Constellation) more precise method
           JUMPTO(oparg);  // skip for-in stmt
-          continue;
+          DISPATCH();
         }
         POP_UNUSED();
         // TODO(Constellation) implement JSIterator
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
         PUSH(JSVal::Ptr(it));
-        continue;
+        DISPATCH();
       }
 
-      case OP::FORIN_ENUMERATE: {
+      DEFINE_OPCODE(FORIN_ENUMERATE) {
         NameIterator* it = reinterpret_cast<NameIterator*>(TOP().pointer());
         if (it->Has()) {
           const Symbol sym = it->Get();
@@ -1123,26 +1167,26 @@ MAIN_LOOP_START:
         } else {
           JUMPTO(oparg);
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::THROW: {
+      DEFINE_OPCODE(THROW) {
         frame->ret_ = POP();
         e->Report(frame->ret_);
-        break;
+        DISPATCH_ERROR();
       }
 
-      case OP::RAISE_IMMUTABLE: {
+      DEFINE_OPCODE(RAISE_IMMUTABLE) {
         const Symbol& s = GETITEM(&frame->code()->locals(), oparg);
         RaiseImmutable(s, e);
-        break;
+        DISPATCH_ERROR();
       }
 
-      case OP::DEBUGGER: {
-        continue;
+      DEFINE_OPCODE(DEBUGGER) {
+        DISPATCH();
       }
 
-      case OP::WITH_SETUP: {
+      DEFINE_OPCODE(WITH_SETUP) {
         const JSVal val = POP();
         JSObject* const obj = val.ToObject(ctx_, ERR);
         JSObjectEnv* const with_env =
@@ -1150,59 +1194,59 @@ MAIN_LOOP_START:
         with_env->set_provide_this(true);
         frame->set_lexical_env(with_env);
         frame->dynamic_env_level_ += 1;
-        continue;
+        DISPATCH();
       }
 
-      case OP::POP_ENV: {
+      DEFINE_OPCODE(POP_ENV) {
         frame->set_lexical_env(frame->lexical_env()->outer());
         frame->dynamic_env_level_ -= 1;
-        continue;
+        DISPATCH();
       }
 
-      case OP::TRY_CATCH_SETUP: {
+      DEFINE_OPCODE(TRY_CATCH_SETUP) {
         const Symbol& s = GETITEM(names, oparg);
         const JSVal error = POP();
         JSEnv* const catch_env =
             internal::NewStaticEnvironment(ctx_, frame->lexical_env(), s, error);
         frame->set_lexical_env(catch_env);
         frame->dynamic_env_level_ += 1;
-        continue;
+        DISPATCH();
       }
 
-      case OP::BUILD_ARRAY: {
+      DEFINE_OPCODE(BUILD_ARRAY) {
         JSArray* x = JSArray::ReservedNew(ctx_, oparg);
         PUSH(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::INIT_ARRAY_ELEMENT: {
+      DEFINE_OPCODE(INIT_ARRAY_ELEMENT) {
         const JSVal w = POP();
         JSArray* ary = static_cast<JSArray*>(TOP().object());
         ary->Set(oparg, w);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BUILD_OBJECT: {
+      DEFINE_OPCODE(BUILD_OBJECT) {
         JSObject* x = JSObject::New(ctx_);
         PUSH(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::MAKE_CLOSURE: {
+      DEFINE_OPCODE(MAKE_CLOSURE) {
         Code* target = frame->code()->codes()[oparg];
         JSFunction* x = JSVMFunction::New(ctx_, target, frame->lexical_env());
         PUSH(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::BUILD_REGEXP: {
+      DEFINE_OPCODE(BUILD_REGEXP) {
         const JSVal w = POP();
         JSRegExp* x = JSRegExp::New(ctx_, static_cast<JSRegExp*>(w.object()));
         PUSH(x);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_OBJECT_DATA: {
+      DEFINE_OPCODE(STORE_OBJECT_DATA) {
         const Symbol& name = GETITEM(names, oparg);
         const JSVal value = POP();
         const JSVal obj = TOP();
@@ -1213,10 +1257,10 @@ MAIN_LOOP_START:
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
             false, ERR);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_OBJECT_GET: {
+      DEFINE_OPCODE(STORE_OBJECT_GET) {
         const Symbol& name = GETITEM(names, oparg);
         const JSVal value = POP();
         const JSVal obj = TOP();
@@ -1227,10 +1271,10 @@ MAIN_LOOP_START:
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::UNDEF_SETTER),
             false, ERR);
-        continue;
+        DISPATCH();
       }
 
-      case OP::STORE_OBJECT_SET: {
+      DEFINE_OPCODE(STORE_OBJECT_SET) {
         const Symbol& name = GETITEM(names, oparg);
         const JSVal value = POP();
         const JSVal obj = TOP();
@@ -1241,15 +1285,15 @@ MAIN_LOOP_START:
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::UNDEF_GETTER),
             false, ERR);
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL: {
+      DEFINE_OPCODE(CALL) {
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e->Report(Error::Type, "not callable object");
-          break;
+          DISPATCH_ERROR();
         }
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
@@ -1261,7 +1305,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, false);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
-            break;
+            DISPATCH_ERROR();
           }
           frame = new_frame;
           first_instr = frame->data();
@@ -1277,18 +1321,18 @@ MAIN_LOOP_START:
           sp -= (argc + 2);
           PUSH(x);
           if (*e) {
-            break;
+            DISPATCH_ERROR();
           }
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::CONSTRUCT: {
+      DEFINE_OPCODE(CONSTRUCT) {
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e->Report(Error::Type, "not callable object");
-          break;
+          DISPATCH_ERROR();
         }
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
@@ -1300,7 +1344,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, true);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
-            break;
+            DISPATCH_ERROR();
           }
           frame = new_frame;
           first_instr = frame->data();
@@ -1322,19 +1366,19 @@ MAIN_LOOP_START:
           sp -= (argc + 2);
           PUSH(x);
           if (*e) {
-            break;
+            DISPATCH_ERROR();
           }
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::EVAL: {
+      DEFINE_OPCODE(EVAL) {
         // maybe direct call to eval
         const int argc = oparg;
         const JSVal v = sp[-(argc + 2)];
         if (!v.IsCallable()) {
           e->Report(Error::Type, "not callable object");
-          break;
+          DISPATCH_ERROR();
         }
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
@@ -1346,7 +1390,7 @@ MAIN_LOOP_START:
               static_cast<JSVMFunction*>(func)->scope(), instr, argc, false);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
-            break;
+            DISPATCH_ERROR();
           }
           frame = new_frame;
           first_instr = frame->data();
@@ -1362,13 +1406,13 @@ MAIN_LOOP_START:
           sp -= (argc + 2);
           PUSH(x);
           if (*e) {
-            break;
+            DISPATCH_ERROR();
           }
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_NAME: {
+      DEFINE_OPCODE(CALL_NAME) {
         const Symbol& s = GETITEM(names, oparg);
         JSVal res;
         if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
@@ -1377,19 +1421,19 @@ MAIN_LOOP_START:
           PUSH(target_env->ImplicitThisValue());
         } else {
           RaiseReferenceError(s, e);
-          break;
+          DISPATCH_ERROR();
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_LOCAL: {
+      DEFINE_OPCODE(CALL_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         PUSH(w);
         PUSH(frame->lexical_env()->ImplicitThisValue());
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_GLOBAL: {
+      DEFINE_OPCODE(CALL_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         JSVal res;
         if (JSEnv* target_env = GetEnv(ctx_->global_env(), s)) {
@@ -1398,32 +1442,32 @@ MAIN_LOOP_START:
           PUSH(target_env->ImplicitThisValue());
         } else {
           RaiseReferenceError(s, e);
-          break;
+          DISPATCH_ERROR();
         }
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_ELEMENT: {
+      DEFINE_OPCODE(CALL_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
         const JSVal res = LoadElement(sp, base, element, strict, ERR);
         SET_TOP(res);
         PUSH(base);
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_PROP: {
+      DEFINE_OPCODE(CALL_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
         const JSVal res = LoadProp(sp, base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
-        continue;
+        DISPATCH();
       }
 
-      case OP::CALL_CALL_RESULT: {
+      DEFINE_OPCODE(CALL_CALL_RESULT) {
         PUSH(frame->lexical_env()->ImplicitThisValue());
-        continue;
+        DISPATCH();
       }
 
       default: {
@@ -1431,7 +1475,9 @@ MAIN_LOOP_START:
         UNREACHABLE();
       }
     }  // switch
-
+#ifdef USE_DIRECT_THREADED_CODE
+ERROR_OCCURRED:
+#endif
     // search exception handler or finally handler.
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
@@ -1485,6 +1531,10 @@ MAIN_LOOP_START:
   }  // for main loop
   assert(*e);
   return std::make_pair(JSEmpty, THROW);
+#undef DISPATCH_ERROR
+#undef DISPATCH
+#undef DEFINE_OPCODE
+#undef USE_DIRECT_THREADED_CODE
 #undef NEXTOP
 #undef NEXTARG
 #undef PEEKARG

@@ -75,6 +75,7 @@ def Build():
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
     BoolVariable('nosse', '', 0),
+    BoolVariable('direct_threading', '', 0),
     BoolVariable('release', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
@@ -145,9 +146,13 @@ def Build():
         CCFLAGS=["-O3"],
         CPPDEFINES=["NDEBUG"])
 
+  if env['direct_threading']:
+    env.Append(CPPDEFINES="IV_USE_DIRECT_THREADED_CODE")
+  else:
+    env.Append(CCFLAGS="-pedantic")
+
   env.Append(
     CCFLAGS=[
-      "-pedantic",
       "-Wall", "-Wextra", "-Werror", '-pipe',
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
