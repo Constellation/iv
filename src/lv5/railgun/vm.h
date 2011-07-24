@@ -173,7 +173,7 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
 #define DEFINE_OPCODE(op)\
   case OP::op:\
   op:
-#define DISPATCH_ERROR() goto ERROR_OCCURRED
+#define DISPATCH_ERROR() break
 #define DISPATCH()\
   do {\
     FETCH();\
@@ -1484,9 +1484,7 @@ MAIN_LOOP_START:
         UNREACHABLE();
       }
     }  // switch
-#ifdef USE_DIRECT_THREADED_CODE
-ERROR_OCCURRED:
-#endif
+
     // search exception handler or finally handler.
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
