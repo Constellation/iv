@@ -129,9 +129,8 @@ class JSVMFunction : public JSFunction {
       const Code::Decl& decl = *it;
       const Symbol sym = std::get<0>(decl);
       const Code::DeclType type = std::get<1>(decl);
-      const bool immutable = std::get<2>(decl);
       if (type == Code::PARAM) {
-        const std::size_t param = std::get<3>(decl);
+        const std::size_t param = std::get<2>(decl);
         env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
         if (param >= arg_count) {
           env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
@@ -140,8 +139,8 @@ class JSVMFunction : public JSFunction {
         }
       } else if (type == Code::PARAM_LOCAL) {
         // initialize local value
-        const std::size_t param = std::get<3>(decl);
-        const std::size_t target = std::get<4>(decl);
+        const std::size_t param = std::get<2>(decl);
+        const std::size_t target = std::get<3>(decl);
         if (param >= arg_count) {
           frame->GetLocal()[target] = JSUndefined;
         } else {
@@ -157,7 +156,7 @@ class JSVMFunction : public JSFunction {
                              frame->arguments_rend(), env,
                              code_->strict(), IV_LV5_ERROR_VOID(e));
         if (type == Code::ARGUMENTS) {
-          if (immutable) {
+          if (code_->strict()) {
             env->CreateImmutableBinding(sym);
             env->InitializeImmutableBinding(sym, args_obj);
           } else {
@@ -166,7 +165,7 @@ class JSVMFunction : public JSFunction {
           }
         } else {
           // initialize local value
-          const std::size_t target = std::get<4>(decl);
+          const std::size_t target = std::get<3>(decl);
           frame->GetLocal()[target] = args_obj;
         }
       } else if (type == Code::VAR) {
@@ -177,7 +176,7 @@ class JSVMFunction : public JSFunction {
         env->InitializeImmutableBinding(sym, this);
       } else if (type == Code::FEXPR_LOCAL) {
         // initialize local value
-        const std::size_t target = std::get<4>(decl);
+        const std::size_t target = std::get<3>(decl);
         frame->GetLocal()[target] = this;
       }
     }

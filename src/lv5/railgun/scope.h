@@ -228,7 +228,7 @@ class FunctionScope : public VariableScope {
           const std::size_t point = std::get<1>(*it);
           const Type type = TypeUpgrade(std::get<0>(map_[sym]), std::get<2>(*it));
           if (type == STACK) {
-            const bool immutable = std::get<1>(map_[sym]);
+            const bool immutable = std::get<2>(map_[sym]);
             Code* from = std::get<3>(*it);
             const uint8_t op = (*data_)[point];
             (*data_)[point] = (immutable) ? OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
@@ -327,7 +327,6 @@ class FunctionScope : public VariableScope {
               std::make_tuple(
                   sym,
                   Code::PARAM,
-                  false,
                   it->second,
                   0u));
         } else {
@@ -336,7 +335,6 @@ class FunctionScope : public VariableScope {
               std::make_tuple(
                   sym,
                   Code::PARAM_LOCAL,
-                  false,
                   it->second,
                   f->second));
         }
@@ -353,7 +351,7 @@ class FunctionScope : public VariableScope {
                          SearchDecl(fn)) == code->decls_.end()) {
           needs_env = true;
           code->decls_.push_back(
-              std::make_tuple(fn, Code::FDECL, false, 0, 0u));
+              std::make_tuple(fn, Code::FDECL, 0, 0u));
         }
       }
     }
@@ -363,10 +361,10 @@ class FunctionScope : public VariableScope {
       if (f == locations.end()) {
         needs_env = true;
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, code->strict(), 0, 0u));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, 0, 0u));
       } else {
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS_LOCAL, code->strict(), 0, f->second));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS_LOCAL, 0, f->second));
       }
     }
 
@@ -377,7 +375,7 @@ class FunctionScope : public VariableScope {
                        code->decls_.end(),
                        SearchDecl(dn)) == code->decls_.end()) {
         needs_env = true;
-        code->decls_.push_back(std::make_tuple(dn, Code::VAR, false, 0, 0u));
+        code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, 0u));
       }
     }
     const FunctionLiteral::DeclType type = code->decl_type();
@@ -390,9 +388,9 @@ class FunctionScope : public VariableScope {
         const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(fn);
         if (f == locations.end()) {
           needs_env = true;
-          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true, 0, 0u));
+          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, 0, 0u));
         } else {
-          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR_LOCAL, true, 0, f->second));
+          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR_LOCAL, 0, f->second));
         }
       }
     }

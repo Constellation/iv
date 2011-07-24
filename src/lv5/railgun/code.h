@@ -46,8 +46,8 @@ class Code : public HeapObject {
   typedef std::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
-  // symbol, decl type, configurable, immutable
-  typedef std::tuple<Symbol, DeclType, bool, std::size_t, uint16_t> Decl;
+  // symbol, decl type, configurable, param point
+  typedef std::tuple<Symbol, DeclType, std::size_t, uint16_t> Decl;
   typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,
