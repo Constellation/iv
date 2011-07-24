@@ -176,9 +176,14 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
 #define DISPATCH_ERROR() goto ERROR_OCCURRED
 #define DISPATCH()\
   do {\
-    opcode = NEXTOP();\
-    oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;\
+    FETCH();\
     goto *kDispatchTable[opcode];\
+  } while (0)
+#define PREDICT(op)\
+  do {\
+    FETCH();\
+    assert(opcode == OP::op);\
+    goto op;\
   } while (0)
 
 #else
@@ -187,7 +192,7 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
   case OP::op:
 #define DISPATCH_ERROR() break
 #define DISPATCH() continue
-
+#define PREDICT(op) continue
 #endif
 
 #define ERR\
@@ -205,6 +210,11 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
 #define PEEKARG() ((instr[2] << 8) + instr[1])
 #define JUMPTO(x) (instr = first_instr + (x))
 #define JUMPBY(x) (instr += (x))
+#define FETCH()\
+  do {\
+    opcode = NEXTOP();\
+    oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;\
+  } while (0)
 
 #ifdef DEBUG
 #define PUSH(x)\
@@ -266,8 +276,7 @@ MAIN_LOOP_START:
 #undef V
     DISPATCH();
 #else
-    opcode = NEXTOP();
-    oparg = (OP::HasArg(opcode)) ?  NEXTARG() : 0;
+    FETCH();
 #endif
 
     // if ok, use DISPATCH.
@@ -1155,7 +1164,7 @@ MAIN_LOOP_START:
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
         PUSH(JSVal::Ptr(it));
-        DISPATCH();
+        PREDICT(FORIN_ENUMERATE);
       }
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
@@ -1533,8 +1542,10 @@ ERROR_OCCURRED:
   return std::make_pair(JSEmpty, THROW);
 #undef DISPATCH_ERROR
 #undef DISPATCH
+#undef PREDICT
 #undef DEFINE_OPCODE
 #undef USE_DIRECT_THREADED_CODE
+#undef FETCH
 #undef NEXTOP
 #undef NEXTARG
 #undef PEEKARG
