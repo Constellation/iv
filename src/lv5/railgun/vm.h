@@ -1089,6 +1089,12 @@ MAIN_LOOP_START:
         break;
       }
 
+      case OP::THROW_REFERENCE_ERROR: {
+        const Symbol& s = GETITEM(names, oparg);
+        RaiseReferenceError(s, e);
+        break;
+      }
+
       case OP::DEBUGGER: {
         continue;
       }

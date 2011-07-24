@@ -172,7 +172,7 @@ class FunctionScope : public VariableScope {
           (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
         const Symbol& name = code_->name();
         if (map_.find(name) == map_.end()) {
-          map_[name] = std::make_tuple(HEAP, 0, true);
+          map_[name] = std::make_tuple(STACK, 0, true);
         }
       }
     }

@@ -472,19 +472,24 @@ class Compiler
 
     stmt->cond()->Accept(this);
 
-    const std::size_t arg_index = CurrentSize() + 1;
+    if (stmt->body()->IsEffectiveStatement()) {
+      const std::size_t arg_index = CurrentSize() + 1;
 
-    Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
-    stack_depth_.Down();
+      Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+      stack_depth_.Down();
 
-    stmt->body()->Accept(this);  // STMT
-    assert(stack_depth_.IsBaseLine());
+      stmt->body()->Accept(this);  // STMT
+      assert(stack_depth_.IsBaseLine());
 
-    Emit<OP::JUMP_ABSOLUTE>(start_index);
-    EmitArgAt(CurrentSize(), arg_index);
-    jump.EmitJumps(CurrentSize(), start_index);
+      Emit<OP::JUMP_ABSOLUTE>(start_index);
+      EmitArgAt(CurrentSize(), arg_index);
+      jump.EmitJumps(CurrentSize(), start_index);
 
-    continuation_status_.ResolveJump(stmt);
+      continuation_status_.ResolveJump(stmt);
+    } else {
+      Emit<OP::POP_JUMP_IF_TRUE>(start_index);
+      stack_depth_.Down();
+    }
     if (continuation_status_.IsDeadStatement()) {
       continuation_status_.Insert(detail::kNextStatement);
     }

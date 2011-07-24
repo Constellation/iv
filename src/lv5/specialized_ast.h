@@ -58,6 +58,46 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   iv::lv5::JSRegExpImpl* regexp_;
 };
 
+
+template<>
+class StatementBase<iv::lv5::AstFactory>
+  : public Inherit<iv::lv5::AstFactory, kStatement> {
+ public:
+  virtual bool IsEffectiveStatement() const {
+    return true;
+  }
+};
+
+template<>
+class EmptyStatementBase<iv::lv5::AstFactory>
+  : public Inherit<iv::lv5::AstFactory, kEmptyStatement> {
+ public:
+  virtual bool IsEffectiveStatement() const {
+    return false;
+  }
+};
+
+template<>
+class BlockBase<iv::lv5::AstFactory>
+  : public Inherit<iv::lv5::AstFactory, kBlock> {
+ public:
+
+  struct FindEffectiveStatement {
+    template<typename T>
+    bool operator()(const T* stmt) const {
+      return stmt->IsEffectiveStatement();
+    }
+  };
+
+  virtual bool IsEffectiveStatement() const {
+    return std::find_if(
+        static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().begin(),
+        static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().end(),
+        FindEffectiveStatement()
+        ) !=  static_cast<const typename iv::core::ast::Block<typename iv::lv5::AstFactory>*>(this)->body().end();
+  }
+};
+
 } }  // namespace core::ast
 namespace lv5 {
 class AstFactory;
