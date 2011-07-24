@@ -56,6 +56,14 @@ class VM {
     e->Report(Error::Reference, builder.BuildUStringPiece());
   }
 
+  void RaiseImmutable(const Symbol& name, Error* e) const {
+    StringBuilder builder;
+    builder.Append("mutating immutable binding \"");
+    builder.Append(context::GetSymbolString(ctx_, name));
+    builder.Append("\" not allowed in strict mode");
+    e->Report(Error::Type, builder.BuildUStringPiece());
+  }
+
   JSEnv* GetEnv(JSEnv* env, const Symbol& name) const {
     JSEnv* current = env;
     while (current) {

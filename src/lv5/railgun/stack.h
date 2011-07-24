@@ -124,7 +124,7 @@ class Stack : core::Noncopyable<Stack> {
       frame->ret_ = JSUndefined;
       frame->argc_ = argc;
       frame->dynamic_env_level_ = 0;
-      frame->localc_ = code->locals();
+      frame->localc_ = code->locals().size();
       std::fill_n(frame->GetLocal(), frame->localc_, JSUndefined);
       frame->constructor_call_ = constructor_call;
       current_ = frame;

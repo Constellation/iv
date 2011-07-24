@@ -87,6 +87,7 @@ V(TYPEOF)\
 \
 /* opcodes over this requres argument */\
 V(HAVE_ARGUMENT)\
+V(NOP_ARGUMENT)\
 V(POP_N)\
 \
 V(STORE_OBJECT_DATA)\
@@ -119,8 +120,6 @@ V(SWITCH_CASE)\
 V(SWITCH_DEFAULT)\
 V(TRY_CATCH_SETUP)\
 \
-V(THROW_REFERENCE_ERROR)\
-\
 V(LOAD_NAME)\
 V(STORE_NAME)\
 V(DELETE_NAME)\
@@ -150,6 +149,13 @@ V(DECREMENT_GLOBAL)\
 V(POSTFIX_INCREMENT_GLOBAL)\
 V(POSTFIX_DECREMENT_GLOBAL)\
 V(TYPEOF_GLOBAL)\
+\
+V(STORE_LOCAL_IMMUTABLE)\
+V(INCREMENT_LOCAL_IMMUTABLE)\
+V(DECREMENT_LOCAL_IMMUTABLE)\
+V(POSTFIX_INCREMENT_LOCAL_IMMUTABLE)\
+V(POSTFIX_DECREMENT_LOCAL_IMMUTABLE)\
+V(RAISE_IMMUTABLE)\
 \
 V(CALL)\
 V(CONSTRUCT)\
@@ -214,6 +220,46 @@ struct OP {
   static OP::Type ToLocal(uint8_t op) {
     assert(IsNameLookup(static_cast<OP::Type>(op)));
     return static_cast<OP::Type>(op + (OP::LOAD_LOCAL - OP::LOAD_NAME));
+  }
+
+  static OP::Type ToLocalImmutable(uint8_t op, bool strict) {
+    assert(IsNameLookup(static_cast<OP::Type>(op)));
+    if (op == STORE_NAME) {
+      if (strict) {
+        return RAISE_IMMUTABLE;
+      } else {
+        return STORE_LOCAL_IMMUTABLE;
+      }
+    }
+    if (op == INCREMENT_NAME) {
+      if (strict) {
+        return RAISE_IMMUTABLE;
+      } else {
+        return INCREMENT_LOCAL_IMMUTABLE;
+      }
+    }
+    if (op == DECREMENT_NAME) {
+      if (strict) {
+        return RAISE_IMMUTABLE;
+      } else {
+        return DECREMENT_LOCAL_IMMUTABLE;
+      }
+    }
+    if (op == POSTFIX_INCREMENT_NAME) {
+      if (strict) {
+        return RAISE_IMMUTABLE;
+      } else {
+        return POSTFIX_INCREMENT_LOCAL_IMMUTABLE;
+      }
+    }
+    if (op == POSTFIX_DECREMENT_NAME) {
+      if (strict) {
+        return RAISE_IMMUTABLE;
+      } else {
+        return POSTFIX_DECREMENT_LOCAL_IMMUTABLE;
+      }
+    }
+    return ToLocal(op);
   }
 
   static inline const char* String(int op);

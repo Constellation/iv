@@ -33,8 +33,10 @@ class Code : public HeapObject {
     PARAM_LOCAL,
     FDECL,
     ARGUMENTS,
+    ARGUMENTS_LOCAL,
     VAR,
-    FEXPR
+    FEXPR,
+    FEXPR_LOCAL
   };
   friend class Compiler;
   friend class FunctionScope;
@@ -205,12 +207,8 @@ class Code : public HeapObject {
     return data_->data() + end_;
   }
 
-  std::size_t locals() const {
+  const Names& locals() const {
     return locals_;
-  }
-
-  void set_locals(std::size_t locals) {
-    locals_ = locals;
   }
 
   CodeType code_type() const {
@@ -248,7 +246,6 @@ class Code : public HeapObject {
   std::size_t start_position_;
   std::size_t end_position_;
   std::size_t stack_depth_;
-  std::size_t locals_;
   Data* data_;
   std::size_t start_;
   std::size_t end_;
@@ -256,6 +253,7 @@ class Code : public HeapObject {
   Names names_;
   Names varnames_;
   Names params_;
+  Names locals_;
   Decls decls_;
   JSVals constants_;
   ExceptionTable exception_table_;

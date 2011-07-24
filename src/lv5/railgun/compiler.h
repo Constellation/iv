@@ -1934,55 +1934,55 @@ class Compiler
   void EmitLoadName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::LOAD_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitStoreName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::STORE_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitCallName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::CALL_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitIncrementName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::INCREMENT_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitPostfixIncrementName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::POSTFIX_INCREMENT_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitDecrementName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::DECREMENT_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitPostfixDecrementName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::POSTFIX_DECREMENT_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitTypeofName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::TYPEOF_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitDeleteName(uint16_t index) {
     const std::size_t point = data_->size();
     Emit<OP::DELETE_NAME>(index);
-    current_variable_scope_->Lookup(code_->names_[index], point);
+    current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   std::size_t CurrentSize() const {

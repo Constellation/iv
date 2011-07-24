@@ -268,6 +268,10 @@ MAIN_LOOP_START:
         continue;
       }
 
+      case OP::NOP_ARGUMENT: {
+        continue;
+      }
+
       case OP::LOAD_CONST: {
         const JSVal x = GETITEM(constants, oparg);
         PUSH(x);
@@ -320,6 +324,11 @@ MAIN_LOOP_START:
       case OP::STORE_LOCAL: {
         const JSVal v = TOP();
         SETLOCAL(oparg, v);
+        continue;
+      }
+
+      case OP::STORE_LOCAL_IMMUTABLE: {
+        assert(!strict);
         continue;
       }
 
@@ -716,6 +725,40 @@ MAIN_LOOP_START:
         continue;
       }
 
+      case OP::DECREMENT_LOCAL_IMMUTABLE: {
+        assert(!strict);
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev - 1;
+        PUSH(now);
+        continue;
+      }
+
+      case OP::POSTFIX_DECREMENT_LOCAL_IMMUTABLE: {
+        assert(!strict);
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        PUSH(prev);
+        continue;
+      }
+
+      case OP::INCREMENT_LOCAL_IMMUTABLE: {
+        assert(!strict);
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        const double now = prev + 1;
+        PUSH(now);
+        continue;
+      }
+
+      case OP::POSTFIX_INCREMENT_LOCAL_IMMUTABLE: {
+        assert(!strict);
+        const JSVal& w = GETLOCAL(oparg);
+        const double prev = w.ToNumber(ctx_, ERR);
+        PUSH(prev);
+        continue;
+      }
+
       case OP::DECREMENT_GLOBAL: {
         const Symbol& s = GETITEM(names, oparg);
         const double result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
@@ -1089,9 +1132,9 @@ MAIN_LOOP_START:
         break;
       }
 
-      case OP::THROW_REFERENCE_ERROR: {
-        const Symbol& s = GETITEM(names, oparg);
-        RaiseReferenceError(s, e);
+      case OP::RAISE_IMMUTABLE: {
+        const Symbol& s = GETITEM(&frame->code()->locals(), oparg);
+        RaiseImmutable(s, e);
         break;
       }
 

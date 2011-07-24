@@ -27,9 +27,9 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     return upper_;
   }
 
-  void Lookup(Symbol sym, std::size_t target) {
+  void Lookup(Symbol sym, std::size_t target, Code* from) {
     // first, so this is stack
-    LookupImpl(sym, target, (InWith())? LOOKUP : STACK);
+    LookupImpl(sym, target, (InWith())? LOOKUP : STACK, from);
   }
 
   virtual bool InWith() const {
@@ -44,7 +44,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     return std::max<Type>(now, next);
   }
 
-  virtual void LookupImpl(Symbol sym, std::size_t target, Type type) = 0;
+  virtual void LookupImpl(Symbol sym, std::size_t target, Type type, Code* from) = 0;
 
   virtual void MakeUpperOfEval() { }
 
@@ -80,8 +80,8 @@ class WithScope : public VariableScope {
     return true;
   }
 
-  virtual void LookupImpl(Symbol sym, std::size_t target, Type type) {
-    upper_->LookupImpl(sym, target, TypeUpgrade(type, LOOKUP));
+  virtual void LookupImpl(Symbol sym, std::size_t target, Type type, Code* from) {
+    upper_->LookupImpl(sym, target, TypeUpgrade(type, LOOKUP), from);
   }
 };
 
@@ -93,9 +93,9 @@ class CatchScope : public VariableScope {
     assert(upper);
   }
 
-  virtual void LookupImpl(Symbol sym, std::size_t target, Type type) {
+  virtual void LookupImpl(Symbol sym, std::size_t target, Type type, Code* from) {
     if (sym != target_) {
-      upper_->LookupImpl(sym, target, TypeUpgrade(type, HEAP));
+      upper_->LookupImpl(sym, target, TypeUpgrade(type, HEAP), from);
     }
   }
 
@@ -106,7 +106,8 @@ class CatchScope : public VariableScope {
 class FunctionScope : public VariableScope {
  public:
 
-  typedef std::vector<std::tuple<Symbol, std::size_t, Type> > Labels;
+  // symbol, point, type, from
+  typedef std::vector<std::tuple<Symbol, std::size_t, Type, Code*> > Labels;
   // type, refcount, immutable
   typedef std::tuple<Type, std::size_t, bool> Variable;
   typedef std::unordered_map<Symbol, Variable> Variables;
@@ -137,7 +138,7 @@ class FunctionScope : public VariableScope {
       eval_target_scope_(scope.HasDirectCallToEval()) {
     if (!IsTop()) {
       // is global or not
-      map_[symbol::arguments] = std::make_tuple(HEAP, 0, code_->strict());
+      map_[symbol::arguments] = std::make_tuple(STACK, 0, code_->strict());
 
       // params
       for (Code::Names::const_iterator it = code->params().begin(),
@@ -205,11 +206,11 @@ class FunctionScope : public VariableScope {
             std::get<0>(map_[*it]) = TypeUpgrade(std::get<0>(map_[*it]), HEAP);
           }
         }
-        uint16_t locals = 0;
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
           if (std::get<0>(it->second) == STACK) {
             locations.insert(std::make_pair(it->first, locations.size()));
+            code_->locals_.push_back(it->first);
             // if this is variable?
             Code::Names::iterator f =
                 std::find(code_->varnames().begin(),
@@ -217,11 +218,9 @@ class FunctionScope : public VariableScope {
             if (f != code_->varnames().end()) {
               code_->varnames().erase(f);
             }
-            ++locals;
           }
         }
-        code_->set_locals(locals);
-        code_->set_stack_depth(code_->stack_depth() + locals);
+        code_->set_stack_depth(code_->stack_depth() + code_->locals().size());
 
         for (Labels::const_iterator it = labels_.begin(),
              last = labels_.end(); it != last; ++it) {
@@ -229,8 +228,10 @@ class FunctionScope : public VariableScope {
           const std::size_t point = std::get<1>(*it);
           const Type type = TypeUpgrade(std::get<0>(map_[sym]), std::get<2>(*it));
           if (type == STACK) {
+            const bool immutable = std::get<1>(map_[sym]);
+            Code* from = std::get<3>(*it);
             const uint8_t op = (*data_)[point];
-            (*data_)[point] = OP::ToLocal(op);
+            (*data_)[point] = (immutable) ? OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
             const uint16_t loc = locations[sym];
             (*data_)[point + 1] = (loc & 0xff);
             (*data_)[point + 2] = (loc >> 8);
@@ -245,7 +246,7 @@ class FunctionScope : public VariableScope {
     }
   }
 
-  virtual void LookupImpl(Symbol sym, std::size_t target, Type type) {
+  virtual void LookupImpl(Symbol sym, std::size_t target, Type type, Code* from) {
     if (map_.find(sym) == map_.end()) {
       if (IsTop()) {
         // this is global
@@ -254,9 +255,10 @@ class FunctionScope : public VariableScope {
             std::make_tuple(
                 sym,
                 target,
-                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type)));
+                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type),
+                from));
       } else {
-        upper_->LookupImpl(sym, target, TypeUpgrade(type, (IsEvalScope()) ? LOOKUP : HEAP));
+        upper_->LookupImpl(sym, target, TypeUpgrade(type, (IsEvalScope()) ? LOOKUP : HEAP), from);
       }
     } else {
       if (IsTop()) {
@@ -265,13 +267,18 @@ class FunctionScope : public VariableScope {
             std::make_tuple(
                 sym,
                 target,
-                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type)));
+                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type),
+                from));
       } else {
         const Type stored = (type == LOOKUP || type == GLOBAL) ? HEAP : type;
         std::get<0>(map_[sym]) = TypeUpgrade(std::get<0>(map_[sym]), stored);
         ++std::get<1>(map_[sym]);
         labels_.push_back(
-            std::make_tuple(sym, target, type));
+            std::make_tuple(
+                sym,
+                target,
+                type,
+                from));
       }
     }
   }
@@ -352,14 +359,14 @@ class FunctionScope : public VariableScope {
     }
 
     if (code->ShouldCreateArguments()) {
-      if (code->strict()) {
+      const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(symbol::arguments);
+      if (f == locations.end()) {
         needs_env = true;
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, true, 0, 0u));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS, code->strict(), 0, 0u));
       } else {
-        needs_env = true;
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, false, 0, 0u));
+            std::make_tuple(symbol::arguments, Code::ARGUMENTS_LOCAL, code->strict(), 0, f->second));
       }
     }
 
@@ -380,8 +387,13 @@ class FunctionScope : public VariableScope {
       if (std::find_if(code->decls_.begin(),
                        code->decls_.end(),
                        SearchDecl(fn)) == code->decls_.end()) {
-        needs_env = true;
-        code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true, 0, 0u));
+        const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(fn);
+        if (f == locations.end()) {
+          needs_env = true;
+          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, true, 0, 0u));
+        } else {
+          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR_LOCAL, true, 0, f->second));
+        }
       }
     }
     if (!needs_env) {
