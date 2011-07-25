@@ -95,6 +95,13 @@ class VM {
   JSVal LoadElement(JSVal* sp, const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
+    if (element.IsNumber()) {
+      const uint32_t index = static_cast<uint32_t>(element.number());
+      if (index == element.number()) {
+        // indexed access
+        return LoadIndexImpl(sp, base, index, strict, e);
+      }
+    }
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str);
     return LoadPropImpl(sp, base, s, strict, e);
@@ -140,6 +147,40 @@ class VM {
     }
   }
 
+  JSVal LoadIndexImpl(JSVal* sp, const JSVal& base,
+                      uint32_t index, bool strict, Error* e) {
+    if (base.IsPrimitive()) {
+      // section 8.7.1 special [[Get]]
+      if (base.IsString()) {
+        // string short circuit
+        JSString* str = base.string();
+        if (index < str->size()) {
+          return JSString::NewSingle(ctx_, str->GetAt(index));
+        }
+      }
+      const JSObject* const o = base.ToObject(ctx_, CHECK);
+      const PropertyDescriptor desc = o->GetPropertyWithIndex(ctx_, index);
+      if (desc.IsEmpty()) {
+        return JSUndefined;
+      }
+      if (desc.IsDataDescriptor()) {
+        return desc.AsDataDescriptor()->value();
+      } else {
+        assert(desc.IsAccessorDescriptor());
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        if (ac->get()) {
+          VMArguments args(ctx_, sp - 1, 0);
+          const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
+          return res;
+        } else {
+          return JSUndefined;
+        }
+      }
+    } else {
+      return base.object()->GetWithIndex(ctx_, index, e);
+    }
+  }
+
 #undef CHECK
 
 #define CHECK IV_LV5_ERROR_VOID(e)
@@ -162,6 +203,14 @@ class VM {
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
+    if (element.IsNumber()) {
+      const uint32_t index = static_cast<uint32_t>(element.number());
+      if (index == element.number()) {
+        // indexed access
+        StoreIndexImpl(base, index, stored, strict, e);
+        return;
+      }
+    }
     const JSString* str = element.ToString(ctx_, CHECK);
     const Symbol s = context::Intern(ctx_, str);
     StorePropImpl(base, s, stored, strict, e);
@@ -199,7 +248,8 @@ class VM {
         a[0] = stored;
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, CHECK);
+        ac->set()->AsCallable()->Call(&a, base, e);
+        return;
       } else {
         if (strict) {
           e->Report(Error::Type, "value to symbol in transient object");
@@ -207,7 +257,48 @@ class VM {
         }
       }
     } else {
-      base.object()->Put(ctx_, s, stored, strict, CHECK);
+      base.object()->Put(ctx_, s, stored, strict, e);
+      return;
+    }
+  }
+
+  void StoreIndexImpl(const JSVal& base, uint32_t index,
+                      const JSVal& stored, bool strict, Error* e) {
+    if (base.IsPrimitive()) {
+      JSObject* const o = base.ToObject(ctx_, CHECK);
+      if (!o->CanPutWithIndex(ctx_, index)) {
+        if (strict) {
+          e->Report(Error::Type, "cannot put value to object");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor own_desc = o->GetOwnPropertyWithIndex(ctx_, index);
+      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+        if (strict) {
+          e->Report(Error::Type,
+                    "value to symbol defined and not data descriptor");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor desc = o->GetPropertyWithIndex(ctx_, index);
+      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        ScopedArguments a(ctx_, 1, CHECK);
+        a[0] = stored;
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        assert(ac->set());
+        ac->set()->AsCallable()->Call(&a, base, e);
+        return;
+      } else {
+        if (strict) {
+          e->Report(Error::Type, "value to symbol in transient object");
+          return;
+        }
+      }
+    } else {
+      base.object()->PutWithIndex(ctx_, index, stored, strict, e);
+      return;
     }
   }
 #undef CHECK
@@ -414,14 +505,25 @@ class VM {
   double IncrementElement(JSVal* sp, const JSVal& base,
                           const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    const JSString* str = element.ToString(ctx_, CHECK);
-    const Symbol s = context::Intern(ctx_, str);
-    const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
-    std::tuple<double, double> results;
-    std::get<0>(results) = w.ToNumber(ctx_, CHECK);
-    std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
-    return std::get<Returned>(results);
+    if (element.IsNumber() &&
+        static_cast<uint32_t>(element.number()) == element.number()) {
+      const uint32_t index = static_cast<uint32_t>(element.number());
+      const JSVal w = LoadIndexImpl(sp, base, index, strict, CHECK);
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      StoreIndexImpl(base, index, std::get<1>(results), strict, CHECK);
+      return std::get<Returned>(results);
+    } else {
+      const JSString* str = element.ToString(ctx_, CHECK);
+      const Symbol s = context::Intern(ctx_, str);
+      const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
+      return std::get<Returned>(results);
+    }
   }
 
   template<int Target, std::size_t Returned>

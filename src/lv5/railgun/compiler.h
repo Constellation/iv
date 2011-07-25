@@ -1500,7 +1500,12 @@ class Compiler
     // new constant value
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth_.Up();
-    code_->constants_.push_back(lit->value());
+    const double val = lit->value();
+    if (static_cast<uint32_t>(val) == val) {
+      code_->constants_.push_back(JSVal::UInt32(static_cast<uint32_t>(val)));
+    } else {
+      code_->constants_.push_back(val);
+    }
     point.LevelCheck(1);
   }
 
