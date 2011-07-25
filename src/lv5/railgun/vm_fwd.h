@@ -529,6 +529,7 @@ class VM {
   template<int Target, std::size_t Returned>
   double IncrementProp(JSVal* sp, const JSVal& base,
                        const Symbol& s, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx_, CHECK);
