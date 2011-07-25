@@ -553,7 +553,6 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
           const bool pivot_is_hole =
               !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(pivot));
           const JSVal s = obj->GetWithIndex(ctx, pivot, IV_LV5_ERROR(e));
-          a[1] = s;
           int64_t i = l - 1;
           int64_t j = r + 1;
           while (true) {
@@ -591,6 +590,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                       continue;
                     } else {
                       a[0] = target;
+                      a[1] = s;
                       res = comparefn->Call(&a, JSUndefined, IV_LV5_ERROR(e));
                     }
                   }
@@ -638,6 +638,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                       break;
                     } else {
                       a[0] = target;
+                      a[1] = s;
                       res = comparefn->Call(&a, JSUndefined, IV_LV5_ERROR(e));
                     }
                   }
@@ -956,12 +957,11 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  arg_list[2] = obj;
-
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[1] = k;
+      arg_list[2] = obj;
       const JSVal test_result = callbackfn->Call(&arg_list,
                                                  this_binding,
                                                  IV_LV5_ERROR(e));
@@ -992,12 +992,11 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  arg_list[2] = obj;
-
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[1] = k;
+      arg_list[2] = obj;
       const JSVal test_result = callbackfn->Call(&arg_list,
                                                  this_binding,
                                                  IV_LV5_ERROR(e));
@@ -1028,12 +1027,11 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  arg_list[2] = obj;
-
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[1] = k;
+      arg_list[2] = obj;
       callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
     }
   }
@@ -1060,12 +1058,11 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  arg_list[2] = obj;
-
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[1] = k;
+      arg_list[2] = obj;
       const JSVal mapped_value = callbackfn->Call(&arg_list,
                                                   this_binding,
                                                   IV_LV5_ERROR(e));
@@ -1102,13 +1099,12 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  arg_list[2] = obj;
-
   for (uint32_t k = 0, to = 0; k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       const JSVal k_value = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[0] = k_value;
       arg_list[1] = k;
+      arg_list[2] = obj;
       const JSVal selected = callbackfn->Call(&arg_list,
                                               this_binding,
                                               IV_LV5_ERROR(e));
@@ -1176,13 +1172,12 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
   }
 
   ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
-  arg_list[3] = obj;
-
   for (;k < len; ++k) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[2] = k;
+      arg_list[3] = obj;
       accumulator = callbackfn->Call(&arg_list,
                                      JSUndefined,
                                      IV_LV5_ERROR(e));
@@ -1238,13 +1233,12 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   }
 
   ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
-  arg_list[3] = obj;
-
   while (k--) {
     if (obj->HasPropertyWithIndex(ctx, k)) {
       arg_list[0] = accumulator;
       arg_list[1] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
       arg_list[2] = k;
+      arg_list[3] = obj;
       accumulator = callbackfn->Call(&arg_list,
                                      JSUndefined,
                                      IV_LV5_ERROR(e));
