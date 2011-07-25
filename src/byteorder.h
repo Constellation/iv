@@ -2,7 +2,7 @@
 #define _IV_BYTEORDER_H_
 #include "platform.h"
 
-#if defined(OS_WIN)
+#if defined(IV_OS_WIN)
 // Windows is little endian only
 #define IV_IS_LITTLE_ENDIAN
 #else

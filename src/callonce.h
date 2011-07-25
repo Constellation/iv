@@ -1,6 +1,7 @@
 #ifndef _IV_CALLONCE_H_
 #define _IV_CALLONCE_H_
-#ifdef OS_WIN
+#include "platform.h"
+#ifdef IV_OS_WIN
 #include <windows.h>
 #endif
 #include "cas.h"
@@ -15,7 +16,7 @@ enum OnceState {
 
 struct Once {
   Once() : state_(0), counter_(0) { }
-#ifdef OS_WIN
+#ifdef IV_OS_WIN
   volatile LONG state_;
   volatile LONG counter_;
 #else

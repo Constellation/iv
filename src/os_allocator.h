@@ -13,11 +13,11 @@ class OSAllocator {
 };
 
 } }  // namespace iv::core
-#if defined(OS_WIN)
+#if defined(IV_OS_WIN)
 #include "os_allocator_win.h"
-#elif defined(OS_MACOSX)
+#elif defined(IV_OS_MACOSX)
 #include "os_allocator_mac.h"
 #else
 #include "os_allocator_posix.h"
-#endif  // OS_WIN
+#endif  // IV_OS_WIN
 #endif  // _IV_OS_ALLOCATOR_H_

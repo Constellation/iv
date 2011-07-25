@@ -219,7 +219,7 @@ inline const char* LocalTimeZone(double t) {
   if (core::IsNaN(t)) {
     return kNaNTimeZone;
   }
-#if defined(OS_WIN) || defined(OS_CYGWIN)
+#if defined(IV_OS_WIN) || defined(IV_OS_CYGWIN)
   static const char* value = "";
   return value;
 #else
@@ -338,7 +338,7 @@ inline double TimeClip(double time) {
 }
 
 } } }  // namespace iv::lv5::date
-#ifdef OS_WIN
+#if defined(IV_OS_WIN)
 #include "lv5/date_utils_win.h"
 #else
 #include "lv5/date_utils_posix.h"

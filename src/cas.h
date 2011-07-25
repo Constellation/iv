@@ -2,12 +2,12 @@
 #define _IV_CAS_H_
 #include "platform.h"
 
-#if defined(OS_WIN)
+#if defined(IV_OS_WIN)
 #include "cas_win.h"
-#elif defined(OS_MACOSX)
+#elif defined(IV_OS_MACOSX)
 #include "cas_mac.h"
 #else
 #include "cas_posix.h"
-#endif  // OS_WIN
+#endif  // IV_OS_WIN
 
 #endif  // _IV_CAS_H_

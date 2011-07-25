@@ -34,9 +34,9 @@ class ScopedLock : private Noncopyable<> {
 };
 
 } } }  // iv::core::thread
-#if defined(OS_WIN)
+#if defined(IV_OS_WIN)
 #include "thread_win.h"
 #else
 #include "thread_posix.h"
-#endif  // OS_WIN
+#endif  // IV_OS_WIN
 #endif  // _IV_LV5_THREAD_H_
