@@ -28,7 +28,9 @@ class Object;
 
 class JSEnv;
 
-class Context : private core::Noncopyable<> {
+class Context
+  : public gc_cleanup,
+    private core::Noncopyable<Context> {
  public:
   friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
   friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
@@ -38,6 +40,7 @@ class Context : private core::Noncopyable<> {
   friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
   Context();
+  virtual ~Context() { }
 
   const JSObject* global_obj() const {
     return global_data_.global_obj();

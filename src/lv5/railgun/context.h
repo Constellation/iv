@@ -10,9 +10,16 @@ namespace railgun {
 
 Context::Context()
   : lv5::Context(),
-    vm_(new VM) {
+    vm_() {
+  void* mem = GC_MALLOC_UNCOLLECTABLE(sizeof(VM));
+  vm_ = new (mem) VM();
   vm_->set_context(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
+}
+
+Context::~Context() {
+  vm_->~VM();
+  GC_FREE(static_cast<void*>(vm_));
 }
 
 JSVal* Context::StackGain(std::size_t size) {

@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RAILGUN_CONTEXT_FWD_H_
 #define _IV_LV5_RAILGUN_CONTEXT_FWD_H_
+#include <gc/gc_cpp.h>
 #include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
@@ -8,9 +9,10 @@ namespace railgun {
 class Context : public lv5::Context {
  public:
   explicit inline Context();
+  inline ~Context();
 
   VM* vm() {
-    return vm_.get();
+    return vm_;
   }
 
   inline JSVal* StackGain(std::size_t size);
@@ -18,7 +20,7 @@ class Context : public lv5::Context {
   inline void StackRelease(std::size_t size);
 
  private:
-  std::shared_ptr<VM> vm_;
+  VM* vm_;
 };
 
 
