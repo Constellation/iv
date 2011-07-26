@@ -95,13 +95,13 @@ class VM {
   JSVal LoadElement(JSVal* sp, const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    Symbol s;
     uint32_t index;
+    Symbol s;
     if (element.GetUInt32(&index)) {
       s = symbol::MakeSymbolFromIndex(index);
     } else {
       const JSString* str = element.ToString(ctx_, CHECK);
-      const Symbol s = context::Intern(ctx_, str);
+      s = context::Intern(ctx_, str);
     }
     return LoadPropImpl(sp, base, s, strict, e);
   }
@@ -168,8 +168,8 @@ class VM {
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    Symbol s;
     uint32_t index;
+    Symbol s;
     if (element.GetUInt32(&index)) {
       s = symbol::MakeSymbolFromIndex(index);
     } else {
@@ -185,7 +185,7 @@ class VM {
     StorePropImpl(base, s, stored, strict, e);
   }
 
-  void StorePropImpl(const JSVal& base, const Symbol& s,
+  void StorePropImpl(const JSVal& base, Symbol s,
                      const JSVal& stored, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       JSObject* const o = base.ToObject(ctx_, CHECK);
