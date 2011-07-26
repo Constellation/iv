@@ -67,8 +67,10 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
   OutputDisAssembler(FILE* file) : file_(file) { }
 
   void OutputLine(const core::StringPiece& str) {
-    std::fwrite(str.data(), str.size(), 1, file_);
-    std::fputc('\n', file_);
+    const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);
+    if (rv == str.size()) {
+      std::fputc('\n', file_);
+    }
   }
 
  private:

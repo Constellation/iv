@@ -45,18 +45,16 @@ class StringFiber : private core::Noncopyable<StringFiber> {
 
   template<typename String>
   static this_type* New(const String& piece) {
-    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
-        sizeof(size_type) + piece.size() * sizeof(char_type),
-        GC_true_type()));
+    this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
+        sizeof(size_type) + piece.size() * sizeof(char_type)));
     mem->size_ = piece.size();
     std::copy(piece.begin(), piece.end(), mem->begin());
     return mem;
   }
 
   static this_type* NewWithSize(std::size_t n) {
-    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
-        sizeof(size_type) + n * sizeof(char_type),
-        GC_true_type()));
+    this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
+        sizeof(size_type) + n * sizeof(char_type)));
     mem->size_ = n;
     return mem;
   }
@@ -64,9 +62,8 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   template<typename Iter>
   static this_type* New(Iter it, Iter last) {
     const std::size_t n = std::distance(it, last);
-    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
-        sizeof(size_type) + n * sizeof(char_type),
-        GC_true_type()));
+    this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
+        sizeof(size_type) + n * sizeof(char_type)));
     mem->size_ = n;
     std::copy(it, last, mem->begin());
     return mem;
@@ -74,9 +71,8 @@ class StringFiber : private core::Noncopyable<StringFiber> {
 
   template<typename Iter>
   static this_type* New(Iter it, std::size_t n) {
-    this_type* mem = static_cast<this_type*>(GC_selective_alloc(
-        sizeof(size_type) + n * sizeof(char_type),
-        GC_true_type()));
+    this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
+        sizeof(size_type) + n * sizeof(char_type)));
     mem->size_ = n;
     std::copy(it, it + n, mem->begin());
     return mem;
