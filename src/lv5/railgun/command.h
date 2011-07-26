@@ -47,8 +47,7 @@ Code* Compile(Context* ctx, const Source& src) {
 
 static void Execute(const core::StringPiece& data,
                     const std::string& filename, Error* e) {
-  VM vm;
-  Context ctx(&vm);
+  Context ctx;
   core::FileSource src(data, filename);
   Code* code = Compile(&ctx, src);
   if (!code) {
@@ -56,7 +55,7 @@ static void Execute(const core::StringPiece& data,
   }
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
-  vm.Run(code, e);
+  ctx.vm()->Run(code, e);
 }
 
 }  // namespace detail

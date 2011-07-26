@@ -7,10 +7,10 @@ namespace railgun {
 
 class Context : public lv5::Context {
  public:
-  explicit inline Context(VM* vm);
+  explicit inline Context();
 
   VM* vm() {
-    return vm_;
+    return vm_.get();
   }
 
   inline JSVal* StackGain(std::size_t size);
@@ -18,7 +18,7 @@ class Context : public lv5::Context {
   inline void StackRelease(std::size_t size);
 
  private:
-  VM* vm_;
+  std::shared_ptr<VM> vm_;
 };
 
 

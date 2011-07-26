@@ -8,10 +8,10 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-Context::Context(VM* vm)
+Context::Context()
   : lv5::Context(),
-    vm_(vm) {
-  vm->set_context(this);
+    vm_(new VM) {
+  vm_->set_context(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
 }
 

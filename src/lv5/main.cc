@@ -69,8 +69,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename) {
   iv::lv5::Error e;
-  iv::lv5::railgun::VM vm;
-  iv::lv5::railgun::Context ctx(&vm);
+  iv::lv5::railgun::Context ctx;
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
@@ -82,7 +81,7 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
-  vm.Run(code, &e);
+  ctx.vm()->Run(code, &e);
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
     e.Clear();
@@ -100,8 +99,7 @@ int Execute(const iv::core::StringPiece& data,
 
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
-  iv::lv5::railgun::VM vm;
-  iv::lv5::railgun::Context ctx(&vm);
+  iv::lv5::railgun::Context ctx;
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {

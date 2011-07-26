@@ -28,9 +28,7 @@ static const std::string kInteractiveOrigin = "(shell)";
 class Interactive {
  public:
   Interactive()
-    : vm_(),
-      ctx_(&vm_) {
-    vm_.set_context(&ctx_);
+    : ctx_() {
     ctx_.DefineFunction<&Print, 1>("print");
     ctx_.DefineFunction<&Quit, 1>("quit");
     ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
@@ -57,7 +55,7 @@ class Interactive {
       Code* code = Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
-        const std::pair<JSVal, VM::Status> pair = vm_.Run(code, &e);
+        const std::pair<JSVal, VM::Status> pair = ctx_.vm()->Run(code, &e);
         JSVal ret;
         if (e) {
           ret = iv::lv5::JSError::Detail(&ctx_, &e);
@@ -106,7 +104,6 @@ class Interactive {
     return Compile(&ctx_, *eval, script);
   }
 
-  VM vm_;
   Context ctx_;
 };
 
