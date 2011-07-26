@@ -361,7 +361,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
         symbol::MakeSymbolFromIndex(upper),
         IV_LV5_ERROR(e));
     const bool lower_exists = obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(lower));
-    const bool upper_exists = obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(lower));
+    const bool upper_exists = obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(upper));
     if (lower_exists && upper_exists) {
       obj->Put(ctx, symbol::MakeSymbolFromIndex(lower), upper_value, true, IV_LV5_ERROR(e));
       obj->Put(ctx, symbol::MakeSymbolFromIndex(upper), lower_value, true, IV_LV5_ERROR(e));

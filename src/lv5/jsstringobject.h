@@ -17,7 +17,7 @@ class JSStringObject : public JSObject {
     if (name == symbol::length) {
       return DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE);
     }
-    if (symbol::IsIndexSymbol(name)) {
+    if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, name);
       if (!desc.IsEmpty()) {

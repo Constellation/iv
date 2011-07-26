@@ -1501,7 +1501,7 @@ class Compiler
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth_.Up();
     const double val = lit->value();
-    if (static_cast<uint32_t>(val) == val) {
+    if ((!static_cast<bool>(core::Signbit(val))) && static_cast<uint32_t>(val) == val) {
       code_->constants_.push_back(JSVal::UInt32(static_cast<uint32_t>(val)));
     } else {
       code_->constants_.push_back(val);

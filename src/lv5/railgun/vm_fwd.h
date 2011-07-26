@@ -117,7 +117,7 @@ class VM {
         if (s == symbol::length) {
           return JSVal::UInt32(static_cast<uint32_t>(str->size()));
         }
-        if (symbol::IsIndexSymbol(s)) {
+        if (symbol::IsArrayIndexSymbol(s)) {
           const uint32_t index = symbol::GetIndexFromSymbol(s);
           if (index < str->size()) {
             return JSString::NewSingle(ctx_, str->GetAt(index));

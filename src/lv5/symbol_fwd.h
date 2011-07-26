@@ -165,6 +165,10 @@ inline bool IsIndexSymbol(Symbol sym) {
   return sym.index_.low_ & 0x1;
 }
 
+inline bool IsArrayIndexSymbol(Symbol sym) {
+  return (sym.index_.low_ & 0x1) && (sym.index_.high_ < UINT32_MAX);
+}
+
 inline bool IsStringSymbol(Symbol sym) {
   return !IsIndexSymbol(sym);
 }

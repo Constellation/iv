@@ -76,7 +76,7 @@ class JSArray : public JSObject {
   }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
-    if (symbol::IsIndexSymbol(name)) {
+    if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (detail::kMaxVectorSize > index) {
         // this target included in vector (if dense array)
@@ -134,7 +134,7 @@ class JSArray : public JSObject {
                          const PropertyDescriptor& desc,
                          bool th,
                          Error* e) {
-    if (symbol::IsIndexSymbol(name)) {
+    if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       // array index
       const uint32_t old_len = length_.value();
@@ -147,8 +147,7 @@ class JSArray : public JSObject {
           detail::IsDefaultDescriptor(desc);
       if (descriptor_is_default_property &&
           (dense_ ||
-           JSObject::GetOwnProperty(ctx,
-                                    context::Intern(ctx, index)).IsEmpty())) {
+           JSObject::GetOwnProperty(ctx, name).IsEmpty())) {
         JSVal target;
         if (desc.IsDataDescriptor()) {
           target = desc.AsDataDescriptor()->value();
@@ -170,8 +169,7 @@ class JSArray : public JSObject {
         }
       } else {
         const bool succeeded =
-            JSObject::DefineOwnProperty(ctx,
-                                        context::Intern(ctx, index),
+            JSObject::DefineOwnProperty(ctx, name,
                                         desc, false, IV_LV5_ERROR_WITH(e, false));
         if (succeeded) {
           dense_ = false;
@@ -281,7 +279,7 @@ class JSArray : public JSObject {
             std::set<uint32_t> ix;
             for (std::vector<Symbol>::const_iterator it = keys.begin(),
                  last = keys.end(); it != last; ++it) {
-              if (symbol::IsIndexSymbol(*it)) {
+              if (symbol::IsArrayIndexSymbol(*it)) {
                 ix.insert(symbol::GetIndexFromSymbol(*it));
               }
             }
@@ -339,7 +337,7 @@ class JSArray : public JSObject {
 #undef REJECT
 
   bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
-    if (symbol::IsIndexSymbol(name)) {
+    if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (detail::kMaxVectorSize > index) {
         if (vector_.size() > index) {
