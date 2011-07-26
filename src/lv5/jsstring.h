@@ -365,6 +365,23 @@ class JSString : public HeapObject {
     return new this_type(fiber);
   }
 
+  static this_type* New(Context* ctx, Symbol sym) {
+    if (symbol::IsIndexSymbol(sym)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(sym);
+      if (index < 10) {
+        return NewSingle(ctx, index + '0');
+      }
+      std::array<char, 15> buf;
+      const int len = snprintf(
+          buf.data(), buf.size(), "%lu",
+          static_cast<unsigned long>(index));
+      return New(ctx, buf.begin(), buf.begin() + len);
+    } else {
+      const core::UString* ident = symbol::GetStringFromSymbol(sym);
+      return New(ctx, ident->begin(), ident->end());
+    }
+  }
+
  private:
   std::size_t fiber_count() const {
     return fiber_count_;

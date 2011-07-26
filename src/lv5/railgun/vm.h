@@ -1172,7 +1172,7 @@ MAIN_LOOP_START:
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
-          PUSH(JSString::New(ctx_, symbol::GetSymbolString(sym)));
+          PUSH(JSString::New(ctx_, sym));
         } else {
           JUMPTO(oparg);
         }

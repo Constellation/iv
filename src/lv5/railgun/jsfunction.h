@@ -49,7 +49,7 @@ class JSVMFunction : public JSFunction {
       DefineOwnProperty(
           ctx, context::Intern(ctx, "name"),
           DataDescriptor(
-              JSString::New(ctx, symbol::GetSymbolString(code->name())),
+              JSString::New(ctx, code->name()),
               PropertyDescriptor::NONE),
           false, &e);
     }

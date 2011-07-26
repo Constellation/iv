@@ -477,7 +477,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
 
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
-    const JSVal rhs(JSString::New(ctx_, symbol::GetSymbolString(*it)));
+    const JSVal rhs(JSString::New(ctx_, *it));
     EVAL_IN_STMT(lexpr);
     const JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
