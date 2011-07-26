@@ -3,7 +3,6 @@
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
 #include "lv5/context_utils.h"
-#include "lv5/symbol_checker.h"
 namespace iv {
 namespace lv5 {
 
@@ -18,28 +17,22 @@ class JSStringObject : public JSObject {
     if (name == symbol::length) {
       return DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE);
     }
-    uint32_t index;
-    if (core::ConvertToUInt32(context::GetSymbolString(ctx, name), &index)) {
-      return JSStringObject::GetOwnPropertyWithIndex(ctx, index);
-    }
-    return JSObject::GetOwnProperty(ctx, name);
-  }
-
-  PropertyDescriptor GetOwnPropertyWithIndex(Context* ctx,
-                                             uint32_t index) const {
-    if (const SymbolChecker check = SymbolChecker(ctx, index)) {
-      PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, check.symbol());
+    if (symbol::IsIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, name);
       if (!desc.IsEmpty()) {
         return desc;
       }
+      const std::size_t len = value_->size();
+      if (len <= index) {
+        return JSUndefined;
+      }
+      return DataDescriptor(
+          JSString::NewSingle(ctx, value_->GetAt(index)),
+          PropertyDescriptor::ENUMERABLE);
+    } else {
+      return JSObject::GetOwnProperty(ctx, name);
     }
-    const std::size_t len = value_->size();
-    if (len <= index) {
-      return JSUndefined;
-    }
-    return DataDescriptor(
-        JSString::NewSingle(ctx, value_->GetAt(index)),
-        PropertyDescriptor::ENUMERABLE);
   }
 
   void GetOwnPropertyNames(Context* ctx,
@@ -52,11 +45,11 @@ class JSStringObject : public JSObject {
     }
     if (vec->empty()) {
       for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        vec->push_back(context::Intern(ctx, i));
+        vec->push_back(symbol::MakeSymbolFromIndex(i));
       }
     } else {
       for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        const Symbol sym = context::Intern(ctx, i);
+        const Symbol sym = symbol::MakeSymbolFromIndex(i);
         if (std::find(vec->begin(), vec->end(), sym) == vec->end()) {
           vec->push_back(sym);
         }

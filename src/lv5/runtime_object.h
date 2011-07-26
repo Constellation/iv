@@ -150,9 +150,9 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
       obj->GetOwnPropertyNames(ctx, &keys, JSObject::kIncludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++n) {
-        ary->DefineOwnPropertyWithIndex(
-            args.ctx(), n,
-            DataDescriptor(ctx->ToString(*it),
+        ary->DefineOwnProperty(
+            args.ctx(), symbol::MakeSymbolFromIndex(n),
+            DataDescriptor(JSString::New(ctx, symbol::GetSymbolString(*it)),
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
@@ -403,10 +403,10 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
       uint32_t index = 0;
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++index) {
-        ary->DefineOwnPropertyWithIndex(
-            ctx, index,
+        ary->DefineOwnProperty(
+            ctx, symbol::MakeSymbolFromIndex(index),
             DataDescriptor(
-                args.ctx()->ToString(*it),
+                JSString::New(args.ctx(), symbol::GetSymbolString(*it)),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),

@@ -477,7 +477,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
 
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
-    const JSVal rhs(ctx_->ToString(*it));
+    const JSVal rhs(JSString::New(ctx_, symbol::GetSymbolString(*it)));
     EVAL_IN_STMT(lexpr);
     const JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
@@ -1256,8 +1256,8 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     if (expr) {
       EVAL(expr.Address());
       const JSVal value = GetValue(ctx_->ret(), CHECK);
-      ary->DefineOwnPropertyWithIndex(
-          ctx_, current,
+      ary->DefineOwnProperty(
+          ctx_, symbol::MakeSymbolFromIndex(current),
           DataDescriptor(value, PropertyDescriptor::WRITABLE |
                                 PropertyDescriptor::ENUMERABLE |
                                 PropertyDescriptor::CONFIGURABLE),
@@ -1431,7 +1431,7 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
   if (ref->IsUnresolvableReference()) {
     StringBuilder builder;
     builder.Append('"');
-    builder.Append(context::GetSymbolString(ctx_, ref->GetReferencedName()));
+    builder.Append(symbol::GetSymbolString(ref->GetReferencedName()));
     builder.Append("\" not defined");
     error->Report(Error::Reference, builder.BuildUStringPiece());
     return JSUndefined;

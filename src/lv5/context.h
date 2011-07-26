@@ -26,14 +26,10 @@ namespace bind {
 class Object;
 }  // namespace bind
 
-class SymbolChecker;
 class JSEnv;
 
 class Context : private core::Noncopyable<> {
  public:
-  friend class SymbolChecker;
-  friend const core::UString& context::GetSymbolString(const Context* ctx,
-                                                       const Symbol& sym);
   friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
   friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
   friend Symbol context::Intern(Context* ctx, uint32_t index);
@@ -116,8 +112,6 @@ class Context : private core::Noncopyable<> {
   const GlobalData* global_data() const {
     return &global_data_;
   }
-
-  JSString* ToString(Symbol sym);
 
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);

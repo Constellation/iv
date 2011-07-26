@@ -17,11 +17,6 @@
 
 namespace iv {
 namespace lv5 {
-#ifdef IV_IS_LITTLE_ENDIAN
-static const bool kLittleEndian = true;
-#else
-static const bool kLittleEndian = false;
-#endif  // IS_LITTLE_ENDIAN
 
 class Error;
 class JSEnv;
@@ -180,7 +175,7 @@ class JSVal {
   typedef JSVal this_type;
   typedef detail::Layout<
             core::Size::kPointerSize,
-            kLittleEndian> value_type;
+            core::kLittleEndian> value_type;
 
   IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)

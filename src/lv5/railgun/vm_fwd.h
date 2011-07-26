@@ -51,7 +51,7 @@ class VM {
   void RaiseReferenceError(const Symbol& name, Error* e) const {
     StringBuilder builder;
     builder.Append('"');
-    builder.Append(context::GetSymbolString(ctx_, name));
+    builder.Append(symbol::GetSymbolString(name));
     builder.Append("\" not defined");
     e->Report(Error::Reference, builder.BuildUStringPiece());
   }
@@ -59,7 +59,7 @@ class VM {
   void RaiseImmutable(const Symbol& name, Error* e) const {
     StringBuilder builder;
     builder.Append("mutating immutable binding \"");
-    builder.Append(context::GetSymbolString(ctx_, name));
+    builder.Append(symbol::GetSymbolString(name));
     builder.Append("\" not allowed in strict mode");
     e->Report(Error::Type, builder.BuildUStringPiece());
   }
@@ -117,8 +117,8 @@ class VM {
         if (s == symbol::length) {
           return JSVal::UInt32(static_cast<uint32_t>(str->size()));
         }
-        uint32_t index;
-        if (core::ConvertToUInt32(context::GetSymbolString(ctx_, s), &index)) {
+        if (symbol::IsIndexSymbol(s)) {
+          const uint32_t index = symbol::GetIndexFromSymbol(s);
           if (index < str->size()) {
             return JSString::NewSingle(ctx_, str->GetAt(index));
           }
@@ -159,7 +159,7 @@ class VM {
         }
       }
       const JSObject* const o = base.ToObject(ctx_, CHECK);
-      const PropertyDescriptor desc = o->GetPropertyWithIndex(ctx_, index);
+      const PropertyDescriptor desc = o->GetProperty(ctx_, symbol::MakeSymbolFromIndex(index));
       if (desc.IsEmpty()) {
         return JSUndefined;
       }
@@ -177,7 +177,7 @@ class VM {
         }
       }
     } else {
-      return base.object()->GetWithIndex(ctx_, index, e);
+      return base.object()->Get(ctx_, symbol::MakeSymbolFromIndex(index), e);
     }
   }
 
@@ -266,14 +266,14 @@ class VM {
                       const JSVal& stored, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       JSObject* const o = base.ToObject(ctx_, CHECK);
-      if (!o->CanPutWithIndex(ctx_, index)) {
+      if (!o->CanPut(ctx_, symbol::MakeSymbolFromIndex(index))) {
         if (strict) {
           e->Report(Error::Type, "cannot put value to object");
           return;
         }
         return;
       }
-      const PropertyDescriptor own_desc = o->GetOwnPropertyWithIndex(ctx_, index);
+      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, symbol::MakeSymbolFromIndex(index));
       if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
         if (strict) {
           e->Report(Error::Type,
@@ -282,7 +282,7 @@ class VM {
         }
         return;
       }
-      const PropertyDescriptor desc = o->GetPropertyWithIndex(ctx_, index);
+      const PropertyDescriptor desc = o->GetProperty(ctx_, symbol::MakeSymbolFromIndex(index));
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
         ScopedArguments a(ctx_, 1, CHECK);
         a[0] = stored;
@@ -297,7 +297,7 @@ class VM {
         }
       }
     } else {
-      base.object()->PutWithIndex(ctx_, index, stored, strict, e);
+      base.object()->Put(ctx_, symbol::MakeSymbolFromIndex(index), stored, strict, e);
       return;
     }
   }
@@ -430,7 +430,7 @@ class VM {
     }
     uint32_t index;
     if (lhs.GetUInt32(&index)) {
-      return JSVal::Bool(rhs.object()->HasPropertyWithIndex(ctx_, index));
+      return JSVal::Bool(rhs.object()->HasProperty(ctx_, symbol::MakeSymbolFromIndex(index)));
     } else {
       const JSString* const name = lhs.ToString(ctx_, CHECK);
       return JSVal::Bool(

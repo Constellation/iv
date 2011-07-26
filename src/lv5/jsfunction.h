@@ -299,7 +299,7 @@ class JSInlinedFunction : public JSFunction {
     DefineOwnProperty(
         ctx, context::Intern(ctx, "name"),
         DataDescriptor(
-            JSString::New(ctx, context::GetSymbolString(ctx, name)),
+            JSString::New(ctx, symbol::GetSymbolString(name)),
             PropertyDescriptor::NONE),
             false, NULL);
   }

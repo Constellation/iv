@@ -88,8 +88,8 @@ inline JSVal StringSplit(Context* ctx,
       if (end == p) {
         ++q;
       } else {
-        ary->DefineOwnPropertyWithIndex(
-            ctx, length,
+        ary->DefineOwnProperty(
+            ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
                 JSString::New(ctx, target.begin() + p, target.begin() + q),
                 PropertyDescriptor::WRITABLE |
@@ -105,8 +105,8 @@ inline JSVal StringSplit(Context* ctx,
       }
     }
   }
-  ary->DefineOwnPropertyWithIndex(
-      ctx, length,
+  ary->DefineOwnProperty(
+      ctx, symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           JSString::New(ctx,
                         target.begin() + p,
@@ -852,11 +852,13 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 
   if (separator.IsUndefined()) {
     JSArray* const a = JSArray::New(ctx);
-    a->DefineOwnPropertyWithIndex(
-      ctx, 0, DataDescriptor(str,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+    a->DefineOwnProperty(
+      ctx,
+      symbol::MakeSymbolFromIndex(0u),
+      DataDescriptor(str,
+                     PropertyDescriptor::WRITABLE |
+                     PropertyDescriptor::ENUMERABLE |
+                     PropertyDescriptor::CONFIGURABLE),
       false, IV_LV5_ERROR(e));
     return a;
   }
@@ -873,8 +875,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (get<2>(detail::RegExpMatch(fiber, 0, *reg, &cap))) {
       return ary;
     }
-    ary->DefineOwnPropertyWithIndex(
-        ctx, 0,
+    ary->DefineOwnProperty(
+        ctx,
+        symbol::MakeSymbolFromIndex(0),
         DataDescriptor(str,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -897,8 +900,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (q == end && end == p) {
       ++q;
     } else {
-      ary->DefineOwnPropertyWithIndex(
-          ctx, length,
+      ary->DefineOwnProperty(
+          ctx,
+          symbol::MakeSymbolFromIndex(length),
           DataDescriptor(JSString::New(ctx,
                                        fiber.begin() + p,
                                        fiber.begin() + start_match),
@@ -916,8 +920,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
            last = cap.end(); it != last; ++it) {
         ++i;
         if (it->first != -1 && it->second != -1) {
-          ary->DefineOwnPropertyWithIndex(
-              ctx, length,
+          ary->DefineOwnProperty(
+              ctx,
+              symbol::MakeSymbolFromIndex(length),
               DataDescriptor(
                   JSString::New(ctx,
                                 fiber.begin() + it->first,
@@ -927,8 +932,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                              PropertyDescriptor::CONFIGURABLE),
               false, IV_LV5_ERROR(e));
         } else {
-          ary->DefineOwnPropertyWithIndex(
-              ctx, length,
+          ary->DefineOwnProperty(
+              ctx,
+              symbol::MakeSymbolFromIndex(length),
               DataDescriptor(JSUndefined,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
@@ -943,8 +949,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       q = p = end;
     }
   }
-  ary->DefineOwnPropertyWithIndex(
-      ctx, length,
+  ary->DefineOwnProperty(
+      ctx,
+      symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           JSString::New(ctx,
                         fiber.begin() + p,

@@ -12,17 +12,25 @@ namespace lv5 {
 class Context;
 class SymbolTable {
  public:
-  typedef std::vector<core::UString> Strings;
-  typedef std::vector<Symbol> Indexes;
-  typedef std::unordered_map<std::size_t, Indexes> Table;
+  typedef std::unordered_set<SymbolStringHolder> Set;
+
   SymbolTable()
     : sync_(),
-      table_(),
-      strings_() {
+      set_() {
     // insert default symbols
-#define V(sym) Lookup(#sym);
+#define V(sym) InsertDefaults(symbol::sym);
     IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
+  }
+
+  ~SymbolTable() {
+    for (Set::const_iterator it = set_.begin(),
+         last = set_.end(); it != last; ++it) {
+      const Symbol sym = detail::MakeSymbol(it->symbolized_);
+      if (!symbol::DefaultSymbolProvider::Instance()->IsDefaultSymbol(sym)) {
+        delete symbol::GetStringFromSymbol(sym);
+      }
+    }
   }
 
   template<class CharT>
@@ -33,67 +41,37 @@ class SymbolTable {
 
   template<class String>
   inline Symbol Lookup(const String& str) {
-    std::size_t hash = StringToHash(str);
-    core::UString target(str.begin(), str.end());
+    uint32_t index;
+    if (core::ConvertToUInt32(str.begin(), str.end(), &index)) {
+      return symbol::MakeSymbolFromIndex(index);
+    }
+    const core::UString target(str.begin(), str.end());
+    SymbolStringHolder holder = { &target };
     {
       core::thread::ScopedLock<core::thread::Mutex> lock(&sync_);
-      Table::iterator it = table_.find(hash);
-      if (it == table_.end()) {
-        const Symbol sym = { strings_.size() };
-        strings_.push_back(target);
-        Indexes vec(1, sym);
-        table_.insert(it, std::make_pair(hash, vec));
-        return sym;
+      typename Set::const_iterator it = set_.find(holder);
+      if (it != set_.end()) {
+        return detail::MakeSymbol(it->symbolized_);
       } else {
-        Indexes& vec = it->second;
-        for (typename Indexes::const_iterator iit = vec.begin(),
-             last = vec.end(); iit != last; ++iit) {
-          if (strings_[iit->value_as_index] == target) {
-            return *iit;
-          }
-        }
-        const Symbol sym = { strings_.size() };
-        strings_.push_back(target);
-        vec.push_back(sym);
-        return sym;
+        holder.symbolized_ = new core::UString(target);
+        set_.insert(holder);
+        return detail::MakeSymbol(holder.symbolized_);
       }
     }
-  }
-
-  template<class String>
-  inline Symbol LookupAndCheck(const String& str, bool* found) {
-    static const Symbol dummy = {0};
-    *found = true;
-    std::size_t hash = StringToHash(str);
-    core::UString target(str.begin(), str.end());
-    {
-      core::thread::ScopedLock<core::thread::Mutex> lock(&sync_);
-      Table::iterator it = table_.find(hash);
-      if (it == table_.end()) {
-        *found = false;
-        return dummy;
-      } else {
-        Indexes& vec = it->second;
-        for (typename Indexes::const_iterator iit = vec.begin(),
-             last = vec.end(); iit != last; ++iit) {
-          if (strings_[iit->value_as_index] == target) {
-            return *iit;
-          }
-        }
-        *found = false;
-        return dummy;
-      }
-    }
-  }
-
-  inline const core::UString& GetSymbolString(const Symbol& sym) const {
-    return strings_[sym.value_as_index];
   }
 
  private:
+  void InsertDefaults(Symbol sym) {
+    if (symbol::IsStringSymbol(sym)) {
+      SymbolStringHolder holder;
+      holder.symbolized_ = symbol::GetStringFromSymbol(sym);
+      assert(set_.find(holder) == set_.end());
+      set_.insert(holder);
+    }
+  }
+
   core::thread::Mutex sync_;
-  Table table_;
-  Strings strings_;
+  Set set_;
 };
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_SYMBOLTABLE_H_

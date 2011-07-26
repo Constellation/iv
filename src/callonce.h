@@ -41,7 +41,7 @@ inline void CallOnce(Once* once, Func func) {
   }
 }
 
-void ResetOnce(Once* once) {
+inline void ResetOnce(Once* once) {
   CompareAndSwap(&(once->state_), ONCE_INIT, ONCE_DONE);
   CompareAndSwap(&(once->counter_), 0, 1);
 }

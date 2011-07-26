@@ -84,9 +84,10 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     ScopedArguments args_list(ctx, len, IV_LV5_ERROR(e));
     uint32_t index = 0;
     while (index < len) {
-        args_list[index] = arg_array->GetWithIndex(
+        args_list[index] = arg_array->Get(
             ctx,
-            index, IV_LV5_ERROR(e));
+            symbol::MakeSymbolFromIndex(index),
+            IV_LV5_ERROR(e));
         ++index;
     }
     return func->Call(&args_list, args[0], e);

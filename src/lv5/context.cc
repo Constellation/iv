@@ -27,10 +27,6 @@ namespace iv {
 namespace lv5 {
 namespace context {
 
-const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym) {
-  return ctx->global_data()->GetSymbolString(sym);
-}
-
 const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type) {
   return ctx->global_data()->GetClassSlot(type);
 }
@@ -53,26 +49,6 @@ Symbol Intern(Context* ctx, uint32_t index) {
 
 Symbol Intern(Context* ctx, double number) {
   return ctx->global_data()->InternDouble(number);
-}
-
-Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res) {
-  return ctx->global_data()->CheckIntern(str, res);
-}
-
-Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res) {
-  return ctx->global_data()->CheckIntern(str, res);
-}
-
-Symbol Intern(Context* ctx, const JSString* str, bool* res) {
-  return ctx->global_data()->CheckIntern(*str->Flatten(), res);
-}
-
-Symbol Lookup(Context* ctx, uint32_t index, bool* res) {
-  return ctx->global_data()->CheckIntern(index, res);
-}
-
-Symbol Lookup(Context* ctx, double number, bool* res) {
-  return ctx->global_data()->CheckIntern(number, res);
 }
 
 GlobalData* Global(Context* ctx) {
@@ -121,10 +97,6 @@ Context::Context()
 
 double Context::Random() {
   return global_data_.Random();
-}
-
-JSString* Context::ToString(Symbol sym) {
-  return JSString::New(this, global_data_.GetSymbolString(sym));
 }
 
 void Context::InitContext(JSFunction* func_constructor,

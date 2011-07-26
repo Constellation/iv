@@ -460,7 +460,7 @@ MAIN_LOOP_START:
         uint32_t index;
         if (element.GetUInt32(&index)) {
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          const bool result = obj->DeleteWithIndex(ctx_, index, strict, ERR);
+          const bool result = obj->Delete(ctx_, symbol::MakeSymbolFromIndex(index), strict, ERR);
           SET_TOP(JSVal::Bool(result));
         } else {
           const JSString* str = element.ToString(ctx_, ERR);
@@ -1172,7 +1172,7 @@ MAIN_LOOP_START:
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
-          PUSH(ctx_->ToString(sym));
+          PUSH(JSString::New(ctx_, symbol::GetSymbolString(sym)));
         } else {
           JUMPTO(oparg);
         }

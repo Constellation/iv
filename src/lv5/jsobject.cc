@@ -2,7 +2,6 @@
 #include <algorithm>
 #include "lv5/jsobject.h"
 #include "lv5/context_utils.h"
-#include "lv5/symbol_checker.h"
 #include "lv5/property.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsval.h"
@@ -95,11 +94,6 @@ JSVal JSObject::Get(Context* ctx,
   }
 }
 
-JSVal JSObject::GetWithIndex(Context* ctx,
-                             uint32_t index, Error* e) {
-  return Get(ctx, context::Intern(ctx, index), e);
-}
-
 // not recursion
 PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   const JSObject* obj = this;
@@ -113,11 +107,6 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   return JSUndefined;
 }
 
-PropertyDescriptor JSObject::GetPropertyWithIndex(Context* ctx,
-                                                  uint32_t index) const {
-  return GetProperty(ctx, context::Intern(ctx, index));
-}
-
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   if (table_) {
     const Properties::const_iterator it = table_->find(name);
@@ -126,15 +115,6 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
     } else {
       return it->second;
     }
-  } else {
-    return JSUndefined;
-  }
-}
-
-PropertyDescriptor JSObject::GetOwnPropertyWithIndex(Context* ctx,
-                                                     uint32_t index) const {
-  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
-    return GetOwnProperty(ctx, check.symbol());
   } else {
     return JSUndefined;
   }
@@ -164,10 +144,6 @@ bool JSObject::CanPut(Context* ctx, Symbol name) const {
       return inherited.AsDataDescriptor()->IsWritable();
     }
   }
-}
-
-bool JSObject::CanPutWithIndex(Context* ctx, uint32_t index) const {
-  return CanPut(ctx, context::Intern(ctx, index));
 }
 
 #define REJECT(str)\
@@ -210,16 +186,6 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   return returned;
 }
 
-bool JSObject::DefineOwnPropertyWithIndex(Context* ctx,
-                                          uint32_t index,
-                                          const PropertyDescriptor& desc,
-                                          bool th,
-                                          Error* e) {
-  return DefineOwnProperty(ctx,
-                           context::Intern(ctx, index),
-                           desc, th, e);
-}
-
 #undef REJECT
 
 void JSObject::Put(Context* ctx,
@@ -259,18 +225,8 @@ void JSObject::Put(Context* ctx,
   }
 }
 
-void JSObject::PutWithIndex(Context* ctx,
-                            uint32_t index,
-                            const JSVal& val, bool th, Error* e) {
-  Put(ctx, context::Intern(ctx, index), val, th, e);
-}
-
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
   return !GetProperty(ctx, name).IsEmpty();
-}
-
-bool JSObject::HasPropertyWithIndex(Context* ctx, uint32_t index) const {
-  return HasProperty(ctx, context::Intern(ctx, index));
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
@@ -288,15 +244,6 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
       }
       return false;
     }
-  } else {
-    return true;
-  }
-}
-
-bool JSObject::DeleteWithIndex(Context* ctx, uint32_t index,
-                               bool th, Error* e) {
-  if (const SymbolChecker check = SymbolChecker(ctx, index)) {
-    return Delete(ctx, check.symbol(), th, e);
   } else {
     return true;
   }

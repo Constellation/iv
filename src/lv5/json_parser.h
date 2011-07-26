@@ -142,8 +142,8 @@ class JSONParser : private core::Noncopyable<> {
     bool trailing_comma = false;
     while (token_ != Token::TK_RBRACK) {
       const JSVal target = ParseJSONValue(CHECK);
-      ary->DefineOwnPropertyWithIndex(
-          ctx_, current,
+      ary->DefineOwnProperty(
+          ctx_, symbol::MakeSymbolFromIndex(current),
           DataDescriptor(target, PropertyDescriptor::WRITABLE |
                                  PropertyDescriptor::ENUMERABLE |
                                  PropertyDescriptor::CONFIGURABLE),

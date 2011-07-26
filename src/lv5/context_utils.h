@@ -18,8 +18,6 @@ class GlobalData;
 
 namespace context {
 
-const core::UString& GetSymbolString(const Context* ctx, const Symbol& sym);
-
 const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type);
 
 Symbol Intern(Context* ctx, const core::StringPiece& str);
@@ -27,12 +25,6 @@ Symbol Intern(Context* ctx, const core::UStringPiece& str);
 Symbol Intern(Context* ctx, const JSString* str);
 Symbol Intern(Context* ctx, uint32_t index);
 Symbol Intern(Context* ctx, double number);
-
-Symbol Lookup(Context* ctx, const core::StringPiece& str, bool* res);
-Symbol Lookup(Context* ctx, const core::UStringPiece& str, bool* res);
-Symbol Lookup(Context* ctx, const JSString* str, bool* res);
-Symbol Lookup(Context* ctx, uint32_t index, bool* res);
-Symbol Lookup(Context* ctx, double number, bool* res);
 
 GlobalData* Global(Context* ctx);
 

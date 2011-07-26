@@ -129,17 +129,17 @@ class JSRegExp : public JSObject {
 
     JSArray* ary = JSArray::New(ctx, 2 * (num_of_captures + 1));
     for (int i = 0, len = 2 * (num_of_captures + 1); i < len; i += 2) {
-      ary->DefineOwnPropertyWithIndex(
+      ary->DefineOwnProperty(
           ctx,
-          i,
+          symbol::MakeSymbolFromIndex(i),
           DataDescriptor((*offset_vector)[i],
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
           false, IV_LV5_ERROR(e));
-      ary->DefineOwnPropertyWithIndex(
+      ary->DefineOwnProperty(
           ctx,
-          i + 1,
+          symbol::MakeSymbolFromIndex(i + 1),
           DataDescriptor((*offset_vector)[i+1],
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -179,9 +179,9 @@ class JSRegExp : public JSObject {
       if (previous_index > size || previous_index < 0) {
         break;
       }
-      ary->DefineOwnPropertyWithIndex(
+      ary->DefineOwnProperty(
           ctx,
-          n,
+          symbol::MakeSymbolFromIndex(n),
           DataDescriptor(
               JSString::New(ctx,
                             fiber->begin() + offset_vector[0],
@@ -275,9 +275,9 @@ class JSRegExp : public JSObject {
       const int begin = offset_vector[i*2];
       const int end = offset_vector[i*2+1];
       if (begin != -1 && end != -1) {
-        ary->DefineOwnPropertyWithIndex(
+        ary->DefineOwnProperty(
             ctx,
-            i,
+            symbol::MakeSymbolFromIndex(i),
             DataDescriptor(
                 JSString::New(ctx,
                               fiber->begin() + offset_vector[i*2],
@@ -287,9 +287,9 @@ class JSRegExp : public JSObject {
                 PropertyDescriptor::CONFIGURABLE),
             true, IV_LV5_ERROR(e));
       } else {
-        ary->DefineOwnPropertyWithIndex(
+        ary->DefineOwnProperty(
             ctx,
-            i,
+            symbol::MakeSymbolFromIndex(i),
             DataDescriptor(JSUndefined,
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |

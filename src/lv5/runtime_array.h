@@ -58,8 +58,9 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
       }
     } else {
       JSArray* const ary = JSArray::New(ctx, 1);
-      ary->DefineOwnPropertyWithIndex(
-          ctx, 0,
+      ary->DefineOwnProperty(
+          ctx,
+          symbol::MakeSymbolFromIndex(0u),
           DataDescriptor(first, PropertyDescriptor::WRITABLE |
                                 PropertyDescriptor::ENUMERABLE |
                                 PropertyDescriptor::CONFIGURABLE),
@@ -71,8 +72,9 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
     uint32_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it, ++index) {
-      ary->DefineOwnPropertyWithIndex(
-          ctx, index,
+      ary->DefineOwnProperty(
+          ctx,
+          symbol::MakeSymbolFromIndex(index),
           DataDescriptor(*it, PropertyDescriptor::WRITABLE |
                               PropertyDescriptor::ENUMERABLE |
                               PropertyDescriptor::CONFIGURABLE),
@@ -126,7 +128,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
   StringBuilder builder;
   {
-    const JSVal first = array->GetWithIndex(ctx, 0, IV_LV5_ERROR(e));
+    const JSVal first = array->Get(ctx, symbol::MakeSymbolFromIndex(0u), IV_LV5_ERROR(e));
     if (!first.IsUndefined() && !first.IsNull()) {
       JSObject* const elm_obj = first.ToObject(ctx, IV_LV5_ERROR(e));
       const JSVal method = elm_obj->Get(ctx, toLocaleString, IV_LV5_ERROR(e));
@@ -145,9 +147,9 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   uint32_t k = 1;
   while (k < len) {
     builder.Append(separator);
-    const JSVal element = array->GetWithIndex(
+    const JSVal element = array->Get(
         ctx,
-        k,
+        symbol::MakeSymbolFromIndex(k),
         IV_LV5_ERROR(e));
     if (!element.IsUndefined() && !element.IsNull()) {
       JSObject* const elm_obj = element.ToObject(ctx, IV_LV5_ERROR(e));
@@ -180,11 +182,11 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
     uint32_t k = 0;
     const uint32_t len = internal::GetLength(ctx, elm, IV_LV5_ERROR(e));
     while (k < len) {
-      if (elm->HasPropertyWithIndex(ctx, k)) {
-        const JSVal subelm = elm->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
-        ary->DefineOwnPropertyWithIndex(
+      if (elm->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal subelm = elm->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        ary->DefineOwnProperty(
             ctx,
-            n,
+            symbol::MakeSymbolFromIndex(n),
             DataDescriptor(subelm,
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
@@ -195,9 +197,9 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++k;
     }
   } else {
-    ary->DefineOwnPropertyWithIndex(
+    ary->DefineOwnProperty(
         ctx,
-        n,
+        symbol::MakeSymbolFromIndex(n),
         DataDescriptor(obj,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::ENUMERABLE |
@@ -213,11 +215,11 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       uint32_t k = 0;
       const uint32_t len = internal::GetLength(ctx, elm, IV_LV5_ERROR(e));
       while (k < len) {
-        if (elm->HasPropertyWithIndex(ctx, k)) {
-          const JSVal subelm = elm->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
-          ary->DefineOwnPropertyWithIndex(
+        if (elm->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+          const JSVal subelm = elm->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+          ary->DefineOwnProperty(
               ctx,
-              n,
+              symbol::MakeSymbolFromIndex(n),
               DataDescriptor(subelm,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
@@ -228,9 +230,9 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
         ++k;
       }
     } else {
-      ary->DefineOwnPropertyWithIndex(
+      ary->DefineOwnProperty(
           ctx,
-          n,
+          symbol::MakeSymbolFromIndex(n),
           DataDescriptor(*it,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -261,7 +263,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   }
   StringBuilder builder;
   {
-    const JSVal element0 = obj->GetWithIndex(ctx, 0, IV_LV5_ERROR(e));
+    const JSVal element0 = obj->Get(ctx, symbol::MakeSymbolFromIndex(0u), IV_LV5_ERROR(e));
     if (!element0.IsUndefined() && !element0.IsNull()) {
       const JSString* const str = element0.ToString(ctx, IV_LV5_ERROR(e));
       builder.Append(*str);
@@ -270,9 +272,9 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   uint32_t k = 1;
   while (k < len) {
     builder.Append(*separator);
-    const JSVal element = obj->GetWithIndex(
+    const JSVal element = obj->Get(
         ctx,
-        k,
+        symbol::MakeSymbolFromIndex(k),
         IV_LV5_ERROR(e));
     if (!element.IsUndefined() && !element.IsNull()) {
       const JSString* const str = element.ToString(ctx, IV_LV5_ERROR(e));
@@ -295,8 +297,8 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
-    const JSVal element = obj->GetWithIndex(ctx, index, IV_LV5_ERROR(e));
-    obj->DeleteWithIndex(ctx, index, true, IV_LV5_ERROR(e));
+    const JSVal element = obj->Get(ctx, symbol::MakeSymbolFromIndex(index), IV_LV5_ERROR(e));
+    obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), true, IV_LV5_ERROR(e));
     obj->Put(ctx, symbol::length,
              JSVal::UInt32(index), true, IV_LV5_ERROR(e));
     return element;
@@ -313,9 +315,9 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   Arguments::const_iterator it = args.begin();
   const Arguments::const_iterator last = args.end();
   for (; it != last; ++it, ++n) {
-    obj->PutWithIndex(
+    obj->Put(
         ctx,
-        n,
+        symbol::MakeSymbolFromIndex(n),
         *it,
         true, IV_LV5_ERROR(e));
     if (n == UINT32_MAX) {
@@ -350,25 +352,25 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
   const uint32_t middle = len >> 1;
   for (uint32_t lower = 0; lower != middle; ++lower) {
     const uint32_t upper = len - lower - 1;
-    const JSVal lower_value = obj->GetWithIndex(
+    const JSVal lower_value = obj->Get(
         ctx,
-        lower,
+        symbol::MakeSymbolFromIndex(lower),
         IV_LV5_ERROR(e));
-    const JSVal upper_value = obj->GetWithIndex(
+    const JSVal upper_value = obj->Get(
         ctx,
-        upper,
+        symbol::MakeSymbolFromIndex(upper),
         IV_LV5_ERROR(e));
-    const bool lower_exists = obj->HasPropertyWithIndex(ctx, lower);
-    const bool upper_exists = obj->HasPropertyWithIndex(ctx, upper);
+    const bool lower_exists = obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(lower));
+    const bool upper_exists = obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(lower));
     if (lower_exists && upper_exists) {
-      obj->PutWithIndex(ctx, lower, upper_value, true, IV_LV5_ERROR(e));
-      obj->PutWithIndex(ctx, upper, lower_value, true, IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(lower), upper_value, true, IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(upper), lower_value, true, IV_LV5_ERROR(e));
     } else if (!lower_exists && upper_exists) {
-      obj->PutWithIndex(ctx, lower, upper_value, true, IV_LV5_ERROR(e));
-      obj->DeleteWithIndex(ctx, upper, true, IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(lower), upper_value, true, IV_LV5_ERROR(e));
+      obj->Delete(ctx, symbol::MakeSymbolFromIndex(upper), true, IV_LV5_ERROR(e));
     } else if (lower_exists && !upper_exists) {
-      obj->DeleteWithIndex(ctx, lower, true, IV_LV5_ERROR(e));
-      obj->PutWithIndex(ctx, upper, lower_value, true, IV_LV5_ERROR(e));
+      obj->Delete(ctx, symbol::MakeSymbolFromIndex(lower), true, IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(upper), lower_value, true, IV_LV5_ERROR(e));
     } else {
       // no action is required
     }
@@ -392,14 +394,14 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   uint32_t from = 0;
   for (uint32_t k = 1; k < len; ++k, to = from) {
     from = k;
-    if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_value = obj->GetWithIndex(ctx, from, IV_LV5_ERROR(e));
-      obj->PutWithIndex(ctx, to, from_value, true, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+      const JSVal from_value = obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(to), from_value, true, IV_LV5_ERROR(e));
     } else {
-      obj->DeleteWithIndex(ctx, to, true, IV_LV5_ERROR(e));
+      obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
     }
   }
-  obj->DeleteWithIndex(ctx, from, true, IV_LV5_ERROR(e));
+  obj->Delete(ctx, symbol::MakeSymbolFromIndex(from), true, IV_LV5_ERROR(e));
   obj->Put(ctx, symbol::length,
            JSVal::UInt32(len - 1), true, IV_LV5_ERROR(e));
   return first;
@@ -441,11 +443,11 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
     final = len;
   }
   for (uint32_t n = 0; k < final; ++k, ++n) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal kval = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
-      ary->DefineOwnPropertyWithIndex(
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      const JSVal kval = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      ary->DefineOwnProperty(
           ctx,
-          n,
+          symbol::MakeSymbolFromIndex(n),
           DataDescriptor(kval,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -493,13 +495,13 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
           // only 20 elements. using insertion sort
           for (int64_t i = l + 1; i <= r; ++i) {
             const bool t_is_hole =
-                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+                !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)));
             const JSVal t =
-                obj->GetWithIndex(ctx, static_cast<uint32_t>(i), IV_LV5_ERROR(e));
+                obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), IV_LV5_ERROR(e));
             int64_t j = i - 1;
             for (; j >= l; --j) {
               const bool t2_is_hole =
-                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(j));
+                  !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)));
               JSVal res;
               JSVal t2;
               if (t_is_hole) {
@@ -507,9 +509,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               } else {
                 if (t2_is_hole) {
                   res = JSVal::UInt32(1u);
-                  t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), IV_LV5_ERROR(e));
+                  t2 = obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
                 } else {
-                  t2 = obj->GetWithIndex(ctx, static_cast<uint32_t>(j), IV_LV5_ERROR(e));
+                  t2 = obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
                   if (t.IsUndefined()) {
                     break;
                   } else {
@@ -527,32 +529,32 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   internal::Compare<false>(ctx, zero, res, IV_LV5_ERROR(e));
               if (kind == internal::CMP_TRUE) {  // res > zero is true
                 if (t2_is_hole) {
-                  obj->DeleteWithIndex(
+                  obj->Delete(
                       ctx,
-                      static_cast<uint32_t>(j + 1), true, IV_LV5_ERROR(e));
+                      symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j + 1)), true, IV_LV5_ERROR(e));
                 } else {
-                  obj->PutWithIndex(
+                  obj->Put(
                       ctx,
-                      static_cast<uint32_t>(j + 1), t2, true, IV_LV5_ERROR(e));
+                      symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j + 1)), t2, true, IV_LV5_ERROR(e));
                 }
               } else {
                 break;
               }
             }
             if (t_is_hole) {
-              obj->DeleteWithIndex(ctx,
-                                   static_cast<uint32_t>(j + 1), true, IV_LV5_ERROR(e));
+              obj->Delete(ctx,
+                          symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j + 1)), true, IV_LV5_ERROR(e));
             } else {
-              obj->PutWithIndex(ctx,
-                                static_cast<uint32_t>(j + 1), t, true, IV_LV5_ERROR(e));
+              obj->Put(ctx,
+                       symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j + 1)), t, true, IV_LV5_ERROR(e));
             }
           }
         } else {
           // quick sort
           const int64_t pivot = (l + r) >> 1;
           const bool pivot_is_hole =
-              !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(pivot));
-          const JSVal s = obj->GetWithIndex(ctx, pivot, IV_LV5_ERROR(e));
+              !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(pivot)));
+          const JSVal s = obj->Get(ctx, symbol::MakeSymbolFromIndex(pivot), IV_LV5_ERROR(e));
           int64_t i = l - 1;
           int64_t j = r + 1;
           while (true) {
@@ -566,7 +568,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
               }
               JSVal res;
               const bool target_is_hole =
-                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+                  !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)));
               if (target_is_hole) {
                 if (pivot_is_hole) {
                   res = JSVal::UInt32(0u);
@@ -578,7 +580,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   continue;
                 } else {
                   const JSVal target =
-                      obj->GetWithIndex(ctx, static_cast<uint32_t>(i), IV_LV5_ERROR(e));
+                      obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), IV_LV5_ERROR(e));
                   if (target.IsUndefined()) {
                     if (s.IsUndefined()) {
                       res = JSVal::UInt32(0u);
@@ -614,7 +616,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
 
               JSVal res;
               const bool target_is_hole =
-                  !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(j));
+                  !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)));
               if (target_is_hole) {
                 if (pivot_is_hole) {
                   res = JSVal::UInt32(0u);
@@ -626,7 +628,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   break;
                 } else {
                   const JSVal target =
-                      obj->GetWithIndex(ctx, static_cast<uint32_t>(j), IV_LV5_ERROR(e));
+                      obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
                   if (target.IsUndefined()) {
                     if (s.IsUndefined()) {
                       break;
@@ -657,26 +659,26 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
 
             // swap
             const bool i_is_hole =
-                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+                !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)));
             const bool j_is_hole =
-                !obj->HasPropertyWithIndex(ctx, static_cast<uint32_t>(i));
+                !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)));
             const JSVal ival =
-                obj->GetWithIndex(ctx, static_cast<uint32_t>(i), IV_LV5_ERROR(e));
+                obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), IV_LV5_ERROR(e));
             const JSVal jval =
-                obj->GetWithIndex(ctx, static_cast<uint32_t>(j), IV_LV5_ERROR(e));
+                obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
             if (j_is_hole) {
-              obj->DeleteWithIndex(ctx,
-                                   static_cast<uint32_t>(i), true, IV_LV5_ERROR(e));
+              obj->Delete(ctx,
+                          symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), true, IV_LV5_ERROR(e));
             } else {
-              obj->PutWithIndex(ctx,
-                                static_cast<uint32_t>(i), jval, true, IV_LV5_ERROR(e));
+              obj->Put(ctx,
+                       symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), jval, true, IV_LV5_ERROR(e));
             }
             if (i_is_hole) {
-              obj->DeleteWithIndex(ctx,
-                                   static_cast<uint32_t>(j), true, IV_LV5_ERROR(e));
+              obj->Delete(ctx,
+                          symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), true, IV_LV5_ERROR(e));
             } else {
-              obj->PutWithIndex(ctx,
-                                static_cast<uint32_t>(j), ival, true, IV_LV5_ERROR(e));
+              obj->Put(ctx,
+                       symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), ival, true, IV_LV5_ERROR(e));
             }
           }
 
@@ -740,11 +742,11 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   }
   for (uint32_t k = 0; k < actual_delete_count; ++k) {
     const uint32_t from = actual_start + k;
-    if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_val = obj->GetWithIndex(ctx, from, IV_LV5_ERROR(e));
-      ary->DefineOwnPropertyWithIndex(
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+      const JSVal from_val = obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+      ary->DefineOwnProperty(
           ctx,
-          k,
+          symbol::MakeSymbolFromIndex(k),
           DataDescriptor(from_val,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -759,35 +761,35 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
          last = len - actual_delete_count; k < last; ++k) {
       const uint32_t from = k + actual_delete_count;
       const uint32_t to = k + item_count;
-      if (obj->HasPropertyWithIndex(ctx, from)) {
-        const JSVal from_value = obj->GetWithIndex(ctx, from, IV_LV5_ERROR(e));
-        obj->PutWithIndex(ctx, to, from_value, true, IV_LV5_ERROR(e));
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+        const JSVal from_value = obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+        obj->Put(ctx, symbol::MakeSymbolFromIndex(to), from_value, true, IV_LV5_ERROR(e));
       } else {
-        obj->DeleteWithIndex(ctx, to, true, IV_LV5_ERROR(e));
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
       }
     }
     for (uint32_t k = len, last = len + item_count - actual_delete_count;
          k > last; --k) {
-        obj->DeleteWithIndex(ctx, (k - 1), true, IV_LV5_ERROR(e));
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(k - 1), true, IV_LV5_ERROR(e));
     }
   } else if (item_count > actual_delete_count) {
     for (uint32_t k = len - actual_delete_count; actual_start < k; --k) {
       const uint32_t from = k + actual_delete_count - 1;
       const uint32_t to = k + item_count - 1;
-      if (obj->HasPropertyWithIndex(ctx, from)) {
-        const JSVal from_value = obj->GetWithIndex(ctx, from, IV_LV5_ERROR(e));
-        obj->PutWithIndex(ctx, to, from_value, true, IV_LV5_ERROR(e));
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+        const JSVal from_value = obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+        obj->Put(ctx, symbol::MakeSymbolFromIndex(to), from_value, true, IV_LV5_ERROR(e));
       } else {
-        obj->DeleteWithIndex(ctx, to, true, IV_LV5_ERROR(e));
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
       }
     }
   }
   Arguments::const_iterator it = args.begin();
   std::advance(it, 2);
   for (uint32_t k = 0; k < item_count ; ++k, ++it) {
-    obj->PutWithIndex(
+    obj->Put(
         ctx,
-        k + actual_start,
+        symbol::MakeSymbolFromIndex(k + actual_start),
         *it, true, IV_LV5_ERROR(e));
   }
   obj->Put(
@@ -808,20 +810,20 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   for (uint32_t k = len; k > 0; --k) {
     const uint32_t from = k - 1;
     const uint32_t to = k + arg_count - 1;
-    if (obj->HasPropertyWithIndex(ctx, from)) {
-      const JSVal from_value = obj->GetWithIndex(ctx, from, IV_LV5_ERROR(e));
-      obj->PutWithIndex(ctx, to, from_value, true, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+      const JSVal from_value = obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+      obj->Put(ctx, symbol::MakeSymbolFromIndex(to), from_value, true, IV_LV5_ERROR(e));
     } else {
-      obj->DeleteWithIndex(ctx, to, true, IV_LV5_ERROR(e));
+      obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
     }
   }
 
   uint32_t j = 0;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it, ++j) {
-    obj->PutWithIndex(
+    obj->Put(
         ctx,
-        j,
+        symbol::MakeSymbolFromIndex(j),
         *it,
         true, IV_LV5_ERROR(e));
   }
@@ -873,8 +875,8 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   }
 
   for (; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal element_k = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      const JSVal element_k = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       if (internal::StrictEqual(search_element, element_k)) {
         return k;
       }
@@ -924,8 +926,8 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   }
 
   while (true) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal element_k = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      const JSVal element_k = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       if (internal::StrictEqual(search_element, element_k)) {
         return k;
       }
@@ -958,8 +960,8 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      arg_list[0] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
       const JSVal test_result = callbackfn->Call(&arg_list,
@@ -993,8 +995,8 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      arg_list[0] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
       const JSVal test_result = callbackfn->Call(&arg_list,
@@ -1028,8 +1030,8 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      arg_list[0] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
       callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
@@ -1059,16 +1061,16 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      arg_list[0] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      arg_list[0] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
       const JSVal mapped_value = callbackfn->Call(&arg_list,
                                                   this_binding,
                                                   IV_LV5_ERROR(e));
-      ary->DefineOwnPropertyWithIndex(
+      ary->DefineOwnProperty(
           ctx,
-          k,
+          symbol::MakeSymbolFromIndex(k),
           DataDescriptor(mapped_value,
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
@@ -1100,8 +1102,8 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0, to = 0; k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
-      const JSVal k_value = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      const JSVal k_value = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[0] = k_value;
       arg_list[1] = k;
       arg_list[2] = obj;
@@ -1110,9 +1112,9 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
                                               IV_LV5_ERROR(e));
       const bool result = selected.ToBoolean(IV_LV5_ERROR(e));
       if (result) {
-        ary->DefineOwnPropertyWithIndex(
+        ary->DefineOwnProperty(
             ctx,
-            to,
+            symbol::MakeSymbolFromIndex(to),
             DataDescriptor(k_value,
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
@@ -1156,9 +1158,9 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
   } else {
     bool k_present = false;
     for (; k < len; ++k) {
-      if (obj->HasPropertyWithIndex(ctx, k)) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
         k_present = true;
-        accumulator = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+        accumulator = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
         ++k;
         break;
       }
@@ -1173,9 +1175,9 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
   for (;k < len; ++k) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       arg_list[0] = accumulator;
-      arg_list[1] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+      arg_list[1] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[2] = k;
       arg_list[3] = obj;
       accumulator = callbackfn->Call(&arg_list,
@@ -1218,9 +1220,9 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   } else {
     bool k_present = false;
     while (k--) {
-      if (obj->HasPropertyWithIndex(ctx, k)) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
         k_present = true;
-        accumulator = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+        accumulator = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
         break;
       }
     }
@@ -1234,9 +1236,9 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
 
   ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
   while (k--) {
-    if (obj->HasPropertyWithIndex(ctx, k)) {
+    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       arg_list[0] = accumulator;
-      arg_list[1] = obj->GetWithIndex(ctx, k, IV_LV5_ERROR(e));
+      arg_list[1] = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[2] = k;
       arg_list[3] = obj;
       accumulator = callbackfn->Call(&arg_list,

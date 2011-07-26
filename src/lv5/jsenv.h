@@ -197,7 +197,10 @@ class JSObjectEnv : public JSEnv {
       if (strict) {
         StringBuilder builder;
         builder.Append('"');
-        builder.Append(context::GetSymbolString(ctx, name));
+        if (symbol::IsIndexSymbol(name)) {
+        } else {
+          builder.Append(*symbol::GetStringFromSymbol(name));
+        }
         builder.Append("\" not defined");
         res->Report(Error::Reference,
                     builder.BuildUStringPiece());

@@ -66,7 +66,7 @@ class JSONStringifier : private core::Noncopyable<> {
    public:
     explicit SymbolToString(Context* ctx) : ctx_(ctx) { }
     JSString* operator()(const Symbol& sym) {
-      return ctx_->ToString(sym);
+      return JSString::New(ctx_, symbol::GetSymbolString(sym));
     }
    private:
     Context* ctx_;
@@ -292,14 +292,14 @@ class JSONStringifier : private core::Noncopyable<> {
                                        IV_LV5_ERROR(e));
       if (method.IsCallable()) {
         ScopedArguments args_list(ctx_, 1, IV_LV5_ERROR(e));
-        args_list[0] = ctx_->ToString(key);
+        args_list[0] = JSString::New(ctx_, symbol::GetSymbolString(key));
         value = method.object()->AsCallable()->Call(&args_list, target,
                                                     IV_LV5_ERROR(e));
       }
     }
     if (replacer_) {
       ScopedArguments args_list(ctx_, 2, IV_LV5_ERROR(e));
-      args_list[0] = ctx_->ToString(key);
+      args_list[0] = JSString::New(ctx_, symbol::GetSymbolString(key));
       args_list[1] = value;
       value = replacer_->Call(&args_list, holder, IV_LV5_ERROR(e));
     }

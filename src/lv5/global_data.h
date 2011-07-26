@@ -17,14 +17,12 @@
 namespace iv {
 namespace lv5 {
 
-class SymbolChecker;
 class JSRegExpImpl;
 class Context;
 
 // GlobalData has symboltable, global object
 class GlobalData {
  public:
-  friend class SymbolChecker;
   friend class Context;
   typedef Xor128 random_engine_type;
   typedef boost::uniform_real<double> random_distribution_type;
@@ -55,51 +53,19 @@ class GlobalData {
   }
 
   Symbol InternUInt32(uint32_t index) {
-    std::array<char, 15> buf;
-    return table_.Lookup(
-        core::StringPiece(
-            buf.data(),
-            snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(index))));  // NOLINT
+    return symbol::MakeSymbolFromIndex(index);
   }
 
   Symbol InternDouble(double number) {
-    std::array<char, 80> buffer;
-    const char* const str = core::DoubleToCString(number,
-                                                  buffer.data(),
-                                                  buffer.size());
-    return table_.Lookup(core::StringPiece(str));
-  }
-
-  Symbol CheckIntern(const core::StringPiece& str, bool* found) {
-    return table_.LookupAndCheck(str, found);
-  }
-
-  Symbol CheckIntern(const core::UStringPiece& str, bool* found) {
-    return table_.LookupAndCheck(str, found);
-  }
-
-  Symbol CheckIntern(uint32_t index, bool* found) {
-    std::array<char, 15> buf;
-    return table_.LookupAndCheck(
-        core::StringPiece(
-            buf.data(),
-            snprintf(
-                buf.data(), buf.size(), "%lu",
-                static_cast<unsigned long>(index))), found);  // NOLINT
-  }
-
-  Symbol CheckIntern(double number, bool* found) {
-    std::array<char, 80> buffer;
-    const char* const str = core::DoubleToCString(number,
-                                                  buffer.data(),
-                                                  buffer.size());
-    return table_.LookupAndCheck(core::StringPiece(str), found);
-  }
-
-  const core::UString& GetSymbolString(const Symbol& sym) const {
-    return table_.GetSymbolString(sym);
+    if (number == static_cast<uint32_t>(number)) {
+      return InternUInt32(static_cast<uint32_t>(number));
+    } else {
+      std::array<char, 80> buffer;
+      const char* const str = core::DoubleToCString(number,
+                                                    buffer.data(),
+                                                    buffer.size());
+      return table_.Lookup(core::StringPiece(str));
+    }
   }
 
   double Random() {

@@ -34,10 +34,10 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                                            context::Intern(ctx, i),
                                            reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          ary->DeleteWithIndex(ctx, i, false, IV_LV5_ERROR(e));
+          ary->Delete(ctx, symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
         } else {
-          ary->DefineOwnPropertyWithIndex(
-              ctx, i,
+          ary->DefineOwnProperty(
+              ctx, symbol::MakeSymbolFromIndex(i),
               DataDescriptor(new_element,
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
@@ -66,7 +66,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
     }
   }
   ScopedArguments args_list(ctx, 2, IV_LV5_ERROR(e));
-  args_list[0] = ctx->ToString(name);
+  args_list[0] = JSString::New(ctx, symbol::GetSymbolString(name));
   args_list[1] = val;
   return reviver->Call(&args_list, holder, e);
 }
@@ -139,7 +139,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       maybe = &property_list;
       const uint32_t len = internal::GetLength(ctx, rep, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
-        const JSVal v = rep->GetWithIndex(ctx, i, IV_LV5_ERROR(e));
+        const JSVal v = rep->Get(ctx, symbol::MakeSymbolFromIndex(i), IV_LV5_ERROR(e));
         JSString* item = NULL;
         if (v.IsString()) {
           item = v.string();
