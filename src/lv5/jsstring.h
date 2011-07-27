@@ -307,17 +307,16 @@ class JSString : public HeapObject {
             std::back_inserter(buffer)) != core::unicode::NO_ERROR) {
       buffer.clear();
     }
-    return new this_type(
-        core::UStringPiece(buffer.data(), buffer.size()));
+    return New(ctx, buffer.begin(), buffer.size());
   }
 
   static this_type* New(Context* ctx, const core::UStringPiece& str) {
-    return new this_type(str);
+    return New(ctx, str.begin(), str.size());
   }
 
   static this_type* NewAsciiString(Context* ctx,
                                    const core::StringPiece& str) {
-    return new this_type(str);
+    return New(ctx, str.begin(), str.size());
   }
 
   static this_type* NewSingle(Context* ctx, uint16_t ch) {
@@ -329,15 +328,19 @@ class JSString : public HeapObject {
 
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, Iter last) {
-    const std::size_t n = std::distance(it, last);
-    if (n <= 0) {
+    return New(ctx, it, std::distance(it, last));
+  }
+
+  template<typename Iter>
+  static this_type* New(Context* ctx, Iter it, std::size_t n) {
+    if (n <= 1) {
       if (n == 0) {
         return NewEmptyString(ctx);
       } else {
         return NewSingle(ctx, *it);
       }
     }
-    return new this_type(it, last, n);
+    return new this_type(it, n);
   }
 
   static this_type* NewEmptyString(Context* ctx) {
@@ -371,10 +374,9 @@ class JSString : public HeapObject {
       const int len = snprintf(
           buf.data(), buf.size(), "%lu",
           static_cast<unsigned long>(index));
-      return New(ctx, buf.begin(), buf.begin() + len);
+      return New(ctx, buf.begin(), len);
     } else {
-      const core::UString* ident = symbol::GetStringFromSymbol(sym);
-      return New(ctx, ident->begin(), ident->end());
+      return New(ctx, *symbol::GetStringFromSymbol(sym));
     }
   }
 
@@ -402,7 +404,7 @@ class JSString : public HeapObject {
   }
 
   template<typename Iter>
-  JSString(Iter it, Iter last, std::size_t n)
+  JSString(Iter it, std::size_t n)
     : size_(n),
       fiber_count_(1),
       fibers_() {

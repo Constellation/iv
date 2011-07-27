@@ -15,14 +15,15 @@ enum OnceState {
 };
 
 struct Once {
-  Once() : state_(0), counter_(0) { }
 #ifdef IV_OS_WIN
-  volatile LONG state_;
-  volatile LONG counter_;
+  typedef volatile LONG int_type;
 #else
-  volatile int state_;
-  volatile int counter_;
+  typedef volatile int int_type;
 #endif
+  Once() : state_(0), counter_(0) { }
+
+  int_type state_;
+  int_type counter_;
 };
 
 template<typename Func>
