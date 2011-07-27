@@ -111,6 +111,8 @@ class FunctionScope : public VariableScope {
   // type, refcount, immutable
   typedef std::tuple<Type, std::size_t, bool> Variable;
   typedef std::unordered_map<Symbol, Variable> Variables;
+  // Symbol -> used, location
+  typedef std::unordered_map<Symbol, std::tuple<bool, uint16_t> > Locations;
 
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
     : VariableScope(upper),
@@ -198,7 +200,8 @@ class FunctionScope : public VariableScope {
       }
     } else {
       assert(code_);
-      std::unordered_map<Symbol, uint16_t> locations;
+      Locations locations;
+      uint16_t location = 0;
       if (!upper_of_eval_) {
         if (code_->ShouldCreateArguments() && !code_->strict()) {
           for (Code::Names::const_iterator it = code_->params().begin(),
@@ -209,12 +212,12 @@ class FunctionScope : public VariableScope {
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
           if (std::get<0>(it->second) == STACK) {
-            if (it->first == symbol::arguments() &&
-                !code_->ShouldCreateArguments() && !code_->HasArgumentsAssign()) {
-              continue;
+            if (std::get<1>(it->second) == 0) {  // ref count is 0
+              locations.insert(std::make_pair(it->first, std::make_tuple(false, 0u)));
+            } else {
+              locations.insert(std::make_pair(it->first, std::make_tuple(true, location++)));
+              code_->locals_.push_back(it->first);
             }
-            locations.insert(std::make_pair(it->first, locations.size()));
-            code_->locals_.push_back(it->first);
             // if this is variable?
             Code::Names::iterator f =
                 std::find(code_->varnames().begin(),
@@ -236,7 +239,9 @@ class FunctionScope : public VariableScope {
             Code* from = std::get<3>(*it);
             const uint8_t op = (*data_)[point];
             (*data_)[point] = (immutable) ? OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
-            const uint16_t loc = locations[sym];
+            assert(locations.find(sym) != locations.end());
+            assert(std::get<0>(locations[sym]));
+            const uint16_t loc = std::get<1>(locations[sym]);
             (*data_)[point + 1] = (loc & 0xff);
             (*data_)[point + 2] = (loc >> 8);
           } else if (type == GLOBAL) {
@@ -312,8 +317,9 @@ class FunctionScope : public VariableScope {
   };
 
   void CleanUpDecls(Code* code,
-                    const std::unordered_map<Symbol, uint16_t>& locations) {
+                    const Locations& locations) {
     bool needs_env = false;
+    std::unordered_set<Symbol> already_decled;
     {
       std::size_t param_count = 0;
       std::unordered_map<Symbol, std::size_t> sym2c;
@@ -324,7 +330,7 @@ class FunctionScope : public VariableScope {
       for (std::unordered_map<Symbol, std::size_t>::const_iterator it = sym2c.begin(),
            last = sym2c.end(); it != last; ++it) {
         const Symbol sym = it->first;
-        const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(sym);
+        const Locations::const_iterator f = locations.find(sym);
         if (f == locations.end()) {
           needs_env = true;
           code->decls_.push_back(
@@ -335,13 +341,16 @@ class FunctionScope : public VariableScope {
                   0u));
         } else {
           // PARAM on STACK
-          code->decls_.push_back(
-              std::make_tuple(
-                  sym,
-                  Code::PARAM_LOCAL,
-                  it->second,
-                  f->second));
+          if (std::get<0>(f->second)) {  // used
+            code->decls_.push_back(
+                std::make_tuple(
+                    sym,
+                    Code::PARAM_LOCAL,
+                    it->second,
+                    std::get<1>(f->second)));
+          }
         }
+        already_decled.insert(sym);
       }
     }
 
@@ -350,52 +359,53 @@ class FunctionScope : public VariableScope {
       if ((*it)->IsFunctionDeclaration()) {
         const Symbol& fn = (*it)->name();
         if (locations.find(fn) == locations.end() &&
-            std::find_if(code->decls_.begin(),
-                         code->decls_.end(),
-                         SearchDecl(fn)) == code->decls_.end()) {
+            already_decled.find(fn) == already_decled.end()) {
           needs_env = true;
           code->decls_.push_back(
               std::make_tuple(fn, Code::FDECL, 0, 0u));
+          already_decled.insert(fn);
         }
       }
     }
 
     if (code->ShouldCreateArguments()) {
-      const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(symbol::arguments());
+      const Locations::const_iterator f = locations.find(symbol::arguments());
       if (f == locations.end()) {
         needs_env = true;
         code->decls_.push_back(
             std::make_tuple(symbol::arguments(), Code::ARGUMENTS, 0, 0u));
       } else {
+        assert(std::get<0>(f->second));  // used
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments(), Code::ARGUMENTS_LOCAL, 0, f->second));
+            std::make_tuple(symbol::arguments(), Code::ARGUMENTS_LOCAL, 0, std::get<1>(f->second)));
       }
+      already_decled.insert(symbol::arguments());
     }
 
     for (Code::Names::const_iterator it = code->varnames().begin(),
          last = code->varnames().end(); it != last; ++it) {
       const Symbol& dn = *it;
-      if (std::find_if(code->decls_.begin(),
-                       code->decls_.end(),
-                       SearchDecl(dn)) == code->decls_.end()) {
+      if (already_decled.find(dn) == already_decled.end()) {
         needs_env = true;
         code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, 0u));
       }
     }
+
     const FunctionLiteral::DeclType type = code->decl_type();
     if (type == FunctionLiteral::STATEMENT ||
         (type == FunctionLiteral::EXPRESSION && code->HasName())) {
       const Symbol& fn = code->name();
-      if (std::find_if(code->decls_.begin(),
-                       code->decls_.end(),
-                       SearchDecl(fn)) == code->decls_.end()) {
-        const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(fn);
+      if (already_decled.find(fn) == already_decled.end()) {
+        const Locations::const_iterator f = locations.find(fn);
         if (f == locations.end()) {
           needs_env = true;
           code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, 0, 0u));
         } else {
-          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR_LOCAL, 0, f->second));
+          if (std::get<0>(f->second)) {  // used
+            code->decls_.push_back(std::make_tuple(fn, Code::FEXPR_LOCAL, 0, std::get<1>(f->second)));
+          }
         }
+        already_decled.insert(fn);
       }
     }
     if (!needs_env) {
