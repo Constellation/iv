@@ -23,6 +23,19 @@ namespace lv5 {
 class Context;
 class GlobalData;
 
+// JSString structure is following
+//
+// + JSString
+//     have FiberSlots = {....} <Cons|StringFiber>*
+//
+// + FiberSlot
+//   + StringFiber
+//       have string content
+//       this class is published to world
+//   + Cons
+//       have Fiber array <Cons|StringFiber>*
+//       this class is only seen in JSString
+
 static const std::size_t kMaxFibers = 5;
 
 class FiberSlot : private core::Noncopyable<FiberSlot> {
