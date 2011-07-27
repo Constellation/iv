@@ -25,7 +25,23 @@ class GlobalData;
 
 static const std::size_t kMaxFibers = 5;
 
-class StringFiber : private core::Noncopyable<StringFiber> {
+class FiberSlot : private core::Noncopyable<FiberSlot> {
+ public:
+  typedef std::size_t size_type;
+  bool IsCons() const {
+    return is_cons_;
+  }
+
+  size_type size() const {
+    return size_;
+  }
+
+ protected:
+  size_type size_;
+  bool is_cons_;
+};
+
+class StringFiber : public FiberSlot {
  public:
   typedef StringFiber this_type;
   typedef uint16_t char_type;
@@ -46,16 +62,18 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   template<typename String>
   static this_type* New(const String& piece) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        sizeof(size_type) + piece.size() * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + piece.size() * sizeof(char_type)));
     mem->size_ = piece.size();
+    mem->is_cons_ = false;
     std::copy(piece.begin(), piece.end(), mem->begin());
     return mem;
   }
 
   static this_type* NewWithSize(std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        sizeof(size_type) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
     mem->size_ = n;
+    mem->is_cons_ = false;
     return mem;
   }
 
@@ -63,8 +81,9 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   static this_type* New(Iter it, Iter last) {
     const std::size_t n = std::distance(it, last);
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        sizeof(size_type) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
     mem->size_ = n;
+    mem->is_cons_ = false;
     std::copy(it, last, mem->begin());
     return mem;
   }
@@ -72,8 +91,9 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   template<typename Iter>
   static this_type* New(Iter it, std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        sizeof(size_type) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
     mem->size_ = n;
+    mem->is_cons_ = false;
     std::copy(it, it + n, mem->begin());
     return mem;
   }
@@ -91,11 +111,11 @@ class StringFiber : private core::Noncopyable<StringFiber> {
   }
 
   pointer data() {
-    return reinterpret_cast<pointer>(this + 1);
+    return reinterpret_cast<pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
   }
 
   const_pointer data() const {
-    return reinterpret_cast<const_pointer>(this + 1);
+    return reinterpret_cast<const_pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
   }
 
   iterator begin() {
@@ -138,10 +158,6 @@ class StringFiber : private core::Noncopyable<StringFiber> {
     return rend();
   }
 
-  size_type size() const {
-    return size_;
-  }
-
   int compare(const this_type& x) const {
     const int r =
         traits_type::compare(data(), x.data(), std::min(size_, x.size_));
@@ -182,21 +198,133 @@ class StringFiber : private core::Noncopyable<StringFiber> {
  private:
   StringFiber();  // hiding constructor
 
-  std::size_t size_;
 };
-
-IV_STATIC_ASSERT(sizeof(StringFiber) == sizeof(std::size_t));
 
 class JSString : public HeapObject {
  public:
   friend class GlobalData;
   typedef JSString this_type;
   typedef StringFiber Fiber;
-  typedef std::array<const Fiber*, kMaxFibers> Fibers;
+  typedef std::array<const FiberSlot*, kMaxFibers> FiberSlots;
   typedef Fiber::size_type size_type;
 
   struct FlattenTag { };
 
+ private:
+  class Cons : public FiberSlot {
+   private:
+    friend class JSString;
+    typedef Cons this_type;
+    typedef const FiberSlot* value_type;
+    typedef value_type* iterator;
+    typedef const value_type* const_iterator;
+    typedef value_type* pointer;
+    typedef const value_type* const_pointer;
+    typedef std::iterator_traits<iterator>::reference reference;
+    typedef std::iterator_traits<const_iterator>::reference const_reference;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::iterator_traits<iterator>::difference_type difference_type;
+    typedef std::size_t size_type;
+
+    const_reference operator[](size_type n) const {
+      return (data())[n];
+    }
+
+    reference operator[](size_type n) {
+      return (data())[n];
+    }
+
+    pointer data() {
+      return reinterpret_cast<pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
+    }
+
+    const_pointer data() const {
+      return reinterpret_cast<const_pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
+    }
+
+    iterator begin() {
+      return data();
+    }
+
+    const_iterator begin() const {
+      return data();
+    }
+
+    const_iterator cbegin() const {
+      return data();
+    }
+
+    iterator end() {
+      return begin() + fiber_count_;
+    }
+
+    const_iterator end() const {
+      return begin() + fiber_count_;
+    }
+
+    const_iterator cend() const {
+      return begin() + fiber_count_;
+    }
+
+    const_reverse_iterator rbegin() const {
+      return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator crbegin() const {
+      return rbegin();
+    }
+
+    const_reverse_iterator rend() const {
+      return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend() const {
+      return rend();
+    }
+
+    static this_type* New(const JSString* lhs, const JSString* rhs) {
+      const std::size_t size = lhs->size() + rhs->size();
+      const std::size_t fiber_count = lhs->fiber_count() + rhs->fiber_count();
+      this_type* mem = static_cast<this_type*>(GC_MALLOC(
+          (IV_ROUNDUP(sizeof(this_type),
+                      sizeof(value_type))) + fiber_count * sizeof(value_type)));
+      mem->size_ = size;
+      mem->is_cons_ = true;
+      mem->fiber_count_ = fiber_count;
+      std::copy(
+          rhs->fibers_.begin(),
+          rhs->fibers_.begin() + rhs->fiber_count(),
+          std::copy(lhs->fibers_.begin(),
+                    lhs->fibers_.begin() + lhs->fiber_count(),
+                    mem->begin()));
+      return mem;
+    }
+
+    template<typename OutputIter>
+    OutputIter Copy(OutputIter target) const {
+      for (const_iterator it = begin(),
+           last = end(); it != last; ++it) {
+        if ((*it)->IsCons()) {
+          target = static_cast<const Cons*>((*it))->Copy(target);
+        } else {
+          const Fiber* fiber = static_cast<const Fiber*>(*it);
+          target = std::copy(fiber->begin(), fiber->end(), target);
+        }
+      }
+      return target;
+    }
+
+    size_type fiber_count() const {
+      return fiber_count_;
+    }
+
+    size_type fiber_count_;
+  };
+
+  friend class Cons;
+
+ public:
   std::size_t size() const {
     return size_;
   }
@@ -206,19 +334,16 @@ class JSString : public HeapObject {
   }
 
   const Fiber* Flatten() const {
-    if (fiber_count_ != 1) {
+    if (fiber_count_ != 1 || fibers_[0]->IsCons()) {
       Fiber* fiber = Fiber::NewWithSize(size_);
-      Fiber::iterator target = fiber->begin();
-      for (Fibers::iterator it = fibers_.begin(),
-           last = it + fiber_count_; it != last; ++it) {
-        target = std::copy((*it)->begin(), (*it)->end(), target);
-        *it = NULL;
-      }
+      Copy(fiber->begin());
+      fibers_.assign(NULL);
       fiber_count_ = 1;
       fibers_[0] = fiber;
     }
     assert(fibers_[0]->size() == size());
-    return fibers_[0];
+    assert(!fibers_[0]->IsCons());
+    return static_cast<const Fiber*>(fibers_[0]);
   }
 
   std::string GetUTF8() const {
@@ -239,8 +364,8 @@ class JSString : public HeapObject {
   }
 
   uint16_t GetAt(size_type n) const {
-    if (fibers_[0]->size() > n) {
-      return (*fibers_.front())[n];
+    if (fibers_[0]->size() > n && !fibers_[0]->IsCons()) {
+      return (*static_cast<const Fiber*>(fibers_.front()))[n];
     }
     return (*Flatten())[n];
   }
@@ -264,11 +389,17 @@ class JSString : public HeapObject {
   }
 
   template<typename OutputIter>
-  void Copy(OutputIter target) const {
-    for (Fibers::iterator it = fibers_.begin(),
+  OutputIter Copy(OutputIter target) const {
+    for (FiberSlots::const_iterator it = fibers_.begin(),
          last = it + fiber_count_; it != last; ++it) {
-      target = std::copy((*it)->begin(), (*it)->end(), target);
+      if ((*it)->IsCons()) {
+        target = static_cast<const Cons*>((*it))->Copy(target);
+      } else {
+        const Fiber* fiber = static_cast<const Fiber*>(*it);
+        target = std::copy(fiber->begin(), fiber->end(), target);
+      }
     }
+    return target;
   }
 
   friend bool operator==(const this_type& x, const this_type& y) {
@@ -361,7 +492,7 @@ class JSString : public HeapObject {
   }
 
   static this_type* New(Context* ctx, const Fiber* fiber) {
-    return new this_type(fiber);
+    return new this_type(static_cast<const FiberSlot*>(fiber));
   }
 
   static this_type* New(Context* ctx, Symbol sym) {
@@ -438,22 +569,10 @@ class JSString : public HeapObject {
     : size_(lhs->size() + rhs->size()),
       fiber_count_(1),
       fibers_() {
-    Fiber* fiber = Fiber::NewWithSize(size_);
-    Fiber::iterator target = fiber->begin();
-    for (Fibers::const_iterator it = lhs->fibers_.begin(),
-         last = lhs->fibers_.begin() + lhs->fiber_count_;
-         it != last; ++it) {
-      target = std::copy((*it)->begin(), (*it)->end(), target);
-    }
-    for (Fibers::const_iterator it = rhs->fibers_.begin(),
-         last = rhs->fibers_.begin() + rhs->fiber_count_;
-         it != last; ++it) {
-      target = std::copy((*it)->begin(), (*it)->end(), target);
-    }
-    fibers_[0] = fiber;
+    fibers_[0] = Cons::New(lhs, rhs);
   }
 
-  explicit JSString(const Fiber* fiber)
+  explicit JSString(const FiberSlot* fiber)
     : size_(fiber->size()),
       fiber_count_(1),
       fibers_() {
@@ -462,7 +581,7 @@ class JSString : public HeapObject {
 
   std::size_t size_;
   mutable std::size_t fiber_count_;
-  mutable Fibers fibers_;
+  mutable FiberSlots fibers_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {

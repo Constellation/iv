@@ -33,6 +33,9 @@ class AlignOfImpl {
 
 #define AlignType(offset, type) AlignOffset(offset, AlignOf(type))
 
+#define IV_ROUNDUP(x, y)\
+  (((x) + (y - 1)) & ~(y - 1))
+
 template<class T>
 T LowestOneBit(T value) {
   return value & (~value + 1u);

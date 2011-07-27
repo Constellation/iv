@@ -11,9 +11,6 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-#define IV_ROUNDUP(x, y)\
-  (((x) + (y - 1)) & ~(y - 1))
-
 //
 // Frame structure is following
 //
