@@ -75,7 +75,6 @@ struct SymbolLayout<8, false> {
       uint32_t high_;
     } index_;
     struct {
-      uint32_t low_;
       const core::UString* str_;
     } str_;
     uint64_t bytes_;
