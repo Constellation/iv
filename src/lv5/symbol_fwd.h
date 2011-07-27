@@ -161,11 +161,11 @@ inline bool operator>=(SymbolStringHolder x, SymbolStringHolder y) {
 namespace symbol {
 
 inline bool IsIndexSymbol(Symbol sym) {
-  return sym.index_.low_ & 0x1;
+  return sym.index_.low_ == lv5::detail::kSymbolIsIndex;
 }
 
 inline bool IsArrayIndexSymbol(Symbol sym) {
-  return (sym.index_.low_ & 0x1) && (sym.index_.high_ < UINT32_MAX);
+  return (sym.index_.low_ == lv5::detail::kSymbolIsIndex) && (sym.index_.high_ < UINT32_MAX);
 }
 
 inline bool IsStringSymbol(Symbol sym) {
