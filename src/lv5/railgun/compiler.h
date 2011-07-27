@@ -21,6 +21,7 @@
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/scope.h"
+#include "lv5/railgun/condition.h"
 
 namespace iv {
 namespace lv5 {
@@ -394,21 +395,23 @@ class Compiler
   }
 
   void Visit(const IfStatement* stmt) {
-    // TODO(Constellation)
-    // if code like
-    //    if (true) {
-    //      print("OK");
-    //    }
-    // then, remove checker
-    stmt->cond()->Accept(this);
+    const Condition::Type cond = Condition::Analyze(stmt->cond());
+    if (cond == Condition::COND_INDETERMINATE) {
+      stmt->cond()->Accept(this);
+    }
     const std::size_t arg_index = CurrentSize() + 1;
 
-    Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
-    stack_depth_.Down();
+    if (cond == Condition::COND_INDETERMINATE) {
+      Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+      stack_depth_.Down();
+    }
 
     if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
-      // then statement block
-      stmt->then_statement()->Accept(this);  // STMT
+      if (cond != Condition::COND_FALSE) {
+        // then statement block
+        stmt->then_statement()->Accept(this);  // STMT
+      }
+
       if (continuation_status_.IsDeadStatement()) {
         continuation_status_.Insert(detail::kNextStatement);
       } else {
@@ -417,10 +420,14 @@ class Compiler
       assert(stack_depth_.IsBaseLine());
 
       const std::size_t second_label_index = CurrentSize();
-      Emit<OP::JUMP_FORWARD>(0);  // dummy index
-      EmitArgAt(CurrentSize(), arg_index);
+      if (cond == Condition::COND_INDETERMINATE) {
+        Emit<OP::JUMP_FORWARD>(0);  // dummy index
+        EmitArgAt(CurrentSize(), arg_index);
+      }
 
-      else_stmt.Address()->Accept(this);  // STMT
+      if (cond != Condition::COND_TRUE) {
+        else_stmt.Address()->Accept(this);  // STMT
+      }
       if (continuation_status_.Has(stmt)) {
         continuation_status_.Erase(stmt);
         if (continuation_status_.IsDeadStatement()) {
@@ -429,8 +436,14 @@ class Compiler
       }
       assert(stack_depth_.IsBaseLine());
 
-      EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
+      if (cond == Condition::COND_INDETERMINATE) {
+        EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
+      }
     } else {
+      if (cond == Condition::COND_FALSE) {
+        assert(stack_depth_.IsBaseLine());
+        return;
+      }
       // then statement block
       stmt->then_statement()->Accept(this);  // STMT
       if (continuation_status_.IsDeadStatement()) {
@@ -438,7 +451,9 @@ class Compiler
         continuation_status_.Insert(detail::kNextStatement);
       }
       assert(stack_depth_.IsBaseLine());
-      EmitArgAt(CurrentSize(), arg_index);
+      if (cond == Condition::COND_INDETERMINATE) {
+        EmitArgAt(CurrentSize(), arg_index);
+      }
     }
     assert(stack_depth_.IsBaseLine());
   }
@@ -470,26 +485,50 @@ class Compiler
     ContinueTarget jump(this, stmt);
     const std::size_t start_index = CurrentSize();
 
-    stmt->cond()->Accept(this);
+    const Condition::Type cond = Condition::Analyze(stmt->cond());
+    if (cond == Condition::COND_FALSE) {
+      // like:
+      //  while (false) {
+      //  }
+      return;
+    }
+
+    if (cond == Condition::COND_INDETERMINATE) {
+      stmt->cond()->Accept(this);
+    }
 
     if (stmt->body()->IsEffectiveStatement()) {
-      const std::size_t arg_index = CurrentSize() + 1;
+      if (cond == Condition::COND_INDETERMINATE) {
+        const std::size_t arg_index = CurrentSize() + 1;
 
-      Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
-      stack_depth_.Down();
+        Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+        stack_depth_.Down();
 
-      stmt->body()->Accept(this);  // STMT
-      assert(stack_depth_.IsBaseLine());
+        stmt->body()->Accept(this);  // STMT
+        assert(stack_depth_.IsBaseLine());
 
-      Emit<OP::JUMP_ABSOLUTE>(start_index);
-      EmitArgAt(CurrentSize(), arg_index);
+        Emit<OP::JUMP_ABSOLUTE>(start_index);
+        EmitArgAt(CurrentSize(), arg_index);
+      } else {
+        assert(cond == Condition::COND_TRUE);
+
+        stmt->body()->Accept(this);  // STMT
+        assert(stack_depth_.IsBaseLine());
+
+        Emit<OP::JUMP_ABSOLUTE>(start_index);
+      }
       jump.EmitJumps(CurrentSize(), start_index);
-
       continuation_status_.ResolveJump(stmt);
     } else {
-      Emit<OP::POP_JUMP_IF_TRUE>(start_index);
-      stack_depth_.Down();
+      if (cond == Condition::COND_INDETERMINATE) {
+        Emit<OP::POP_JUMP_IF_TRUE>(start_index);
+        stack_depth_.Down();
+      } else {
+        assert(cond == Condition::COND_TRUE);
+        Emit<OP::JUMP_ABSOLUTE>(start_index);
+      }
     }
+
     if (continuation_status_.IsDeadStatement()) {
       continuation_status_.Insert(detail::kNextStatement);
     }
