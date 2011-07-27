@@ -397,7 +397,7 @@ class JSString : public HeapObject {
   void AppendToString(Target* target) const {
     if (!empty()) {
       const Fiber* fiber = Flatten();
-      target->assign(fiber->data(), fiber->size());
+      target->append(fiber->data(), fiber->size());
     }
   }
 
