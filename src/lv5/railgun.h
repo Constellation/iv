@@ -7,8 +7,9 @@
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/context_fwd.h"
 #include "lv5/railgun/code.h"
+#include "lv5/railgun/frame.h"
+#include "lv5/railgun/stack.h"
 #include "lv5/railgun/vm_fwd.h"
-#include "lv5/railgun/analyzer.h"
 #include "lv5/railgun/scope.h"
 #include "lv5/railgun/compiler.h"
 #include "lv5/railgun/disassembler.h"
@@ -17,5 +18,6 @@
 #include "lv5/railgun/jsfunction.h"
 #include "lv5/railgun/vm.h"
 #include "lv5/railgun/context.h"
+#include "lv5/railgun/utility.h"
 
 #endif  // _IV_LV5_RAILGUN_H_
