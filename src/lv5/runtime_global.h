@@ -94,8 +94,8 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   std::array<uint16_t, 3> hexbuf;
   StringBuilder builder;
   hexbuf[0] = '%';
-  const StringFiber* fiber = str.Flatten();
-  for (StringFiber::const_iterator it = fiber->begin(),
+  const JSString::Fiber* fiber = str.Flatten();
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (URITraits::ContainsInEncode(ch)) {
@@ -142,7 +142,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
 template<typename URITraits>
 JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
   StringBuilder builder;
-  const StringFiber& str = *arg.Flatten();
+  const JSString::Fiber& str = *arg.Flatten();
   const uint32_t length = str.size();
   std::array<uint16_t, 3> buf;
   std::array<uint8_t, 4> octets;
@@ -265,7 +265,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
     } else {
       radix = 10;
     }
-    const StringFiber* fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->Flatten();
     return core::StringToIntegerWithRadix(fiber->begin(), fiber->end(),
                                           radix,
                                           strip_prefix);
@@ -384,8 +384,8 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   if (len == 0) {
     return str;  // empty string
   }
-  const StringFiber* fiber = str->Flatten();
-  for (StringFiber::const_iterator it = fiber->begin(),
+  const JSString::Fiber* fiber = str->Flatten();
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = it + len; it != last; ++it) {
     const uint16_t ch = *it;
     if (detail::Escape::ContainsInEncode(ch)) {
@@ -419,7 +419,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
     return s;  // empty string
   }
   StringBuilder builder;
-  const StringFiber* str = s->Flatten();
+  const JSString::Fiber* str = s->Flatten();
   std::size_t k = 0;
   while (k != len) {
     const uint16_t ch = (*str)[k];

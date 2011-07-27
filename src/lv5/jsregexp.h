@@ -158,7 +158,7 @@ class JSRegExp : public JSObject {
     int n = 0;
     const int start = previous_index;
     const int size = str->size();
-    const StringFiber* fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->Flatten();
     do {
       const int rc = impl_->ExecuteOnce(*fiber,
                                         previous_index, &offset_vector);
@@ -229,7 +229,7 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const StringFiber* fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->Flatten();
     const int rc = impl_->ExecuteOnce(*fiber,
                                       previous_index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||

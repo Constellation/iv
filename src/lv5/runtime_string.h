@@ -47,15 +47,15 @@ static inline bool IsTrimmed(uint16_t c) {
          core::character::IsLineTerminator(c);
 }
 
-inline int64_t SplitMatch(const StringFiber& str,
+inline int64_t SplitMatch(const JSString::Fiber& str,
                           uint32_t q,
-                          const StringFiber& rhs) {
+                          const JSString::Fiber& rhs) {
   const std::size_t rs = rhs.size();
   const std::size_t s = str.size();
   if (q + rs > s) {
     return -1;
   }
-  if (StringFiber::traits_type::compare(
+  if (JSString::Fiber::traits_type::compare(
           rhs.data(),
           str.data() + q,
           rs) != 0) {
@@ -65,7 +65,7 @@ inline int64_t SplitMatch(const StringFiber& str,
 }
 
 inline JSVal StringSplit(Context* ctx,
-                         const StringFiber& target,
+                         const JSString::Fiber& target,
                          const JSString& rstr, uint32_t lim) {
   Error e;
   uint32_t length = 0;
@@ -73,7 +73,7 @@ inline JSVal StringSplit(Context* ctx,
   uint32_t q = p;
   const uint32_t size = target.size();
   JSArray* const ary = JSArray::New(ctx);
-  const StringFiber& rhs = *rstr.Flatten();
+  const JSString::Fiber& rhs = *rstr.Flatten();
   if (size == 0) {
     if (detail::SplitMatch(target, q, rhs) != -1) {
       return ary;
@@ -119,7 +119,7 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(const StringFiber& str,
+inline regexp::MatchResult RegExpMatch(const JSString::Fiber& str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
@@ -190,7 +190,7 @@ class Replacer : private core::Noncopyable<> {
   }
 
   JSString* str_;
-  const StringFiber& str_fiber_;
+  const JSString::Fiber& str_fiber_;
   const JSRegExp& reg_;
   regexp::PairVector vec_;
 };
@@ -212,7 +212,7 @@ class StringReplacer : public Replacer<StringReplacer> {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
-    for (typename StringFiber::const_iterator it = replace_fiber_.begin(),
+    for (typename JSString::Fiber::const_iterator it = replace_fiber_.begin(),
          last = replace_fiber_.end(); it != last; ++it) {
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
@@ -339,7 +339,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
-  const StringFiber& replace_fiber_;
+  const JSString::Fiber& replace_fiber_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {
@@ -385,12 +385,12 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
 
 template<typename Builder>
 inline void ReplaceOnce(Builder* builder,
-                        const StringFiber& str,
+                        const JSString::Fiber& str,
                         const JSString& search_str,
-                        StringFiber::size_type loc,
-                        const StringFiber& replace_str) {
+                        JSString::Fiber::size_type loc,
+                        const JSString::Fiber& replace_str) {
   Replace::State state = Replace::kNormal;
-  for (StringFiber::const_iterator it = replace_str.begin(),
+  for (JSString::Fiber::const_iterator it = replace_str.begin(),
        last = replace_str.end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (state == Replace::kNormal) {
@@ -698,7 +698,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
-    const StringFiber* fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->Flatten();
     const core::UStringPiece base(*fiber);
     const core::UStringPiece::size_type loc = base.find(*search_str->Flatten(),
                                                         0);
@@ -778,7 +778,7 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   const uint32_t len = fiber.size();
   uint32_t start;
   if (args.size() > 0) {
@@ -822,7 +822,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
@@ -970,7 +970,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   const uint32_t len = fiber.size();
   uint32_t start;
   if (args.size() > 0) {
@@ -1008,9 +1008,9 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (StringFiber::const_iterator it = fiber.begin(),
+  for (JSString::Fiber::const_iterator it = fiber.begin(),
        last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
@@ -1023,9 +1023,9 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (StringFiber::const_iterator it = fiber.begin(),
+  for (JSString::Fiber::const_iterator it = fiber.begin(),
        last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
@@ -1038,9 +1038,9 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (StringFiber::const_iterator it = fiber.begin(),
+  for (JSString::Fiber::const_iterator it = fiber.begin(),
        last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
@@ -1053,9 +1053,9 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   StringBuilder builder;
-  for (StringFiber::const_iterator it = fiber.begin(),
+  for (JSString::Fiber::const_iterator it = fiber.begin(),
        last = fiber.end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
@@ -1068,9 +1068,9 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const StringFiber& fiber = *str->Flatten();
-  StringFiber::const_iterator lit = fiber.begin();
-  const StringFiber::const_iterator last = fiber.end();
+  const JSString::Fiber& fiber = *str->Flatten();
+  JSString::Fiber::const_iterator lit = fiber.begin();
+  const JSString::Fiber::const_iterator last = fiber.end();
   // trim leading space
   bool empty = true;
   for (; lit != last; ++lit) {
@@ -1083,7 +1083,7 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  StringFiber::const_iterator rit = fiber.end() - 1;
+  JSString::Fiber::const_iterator rit = fiber.end() - 1;
   for (; rit != lit; --rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
@@ -1099,7 +1099,7 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const StringFiber& fiber = *str->Flatten();
+  const JSString::Fiber& fiber = *str->Flatten();
   const double len = fiber.size();
 
   double start;
