@@ -65,7 +65,8 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
 
 #define V(sym)\
   inline Symbol sym() {\
-    return DefaultSymbolProvider::Instance()->sym();\
+    static const Symbol target = DefaultSymbolProvider::Instance()->sym();\
+    return target;\
   }
 IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
