@@ -113,7 +113,7 @@ class VM {
       if (base.IsString()) {
         // string short circuit
         JSString* str = base.string();
-        if (s == symbol::length) {
+        if (s == symbol::length()) {
           return JSVal::UInt32(static_cast<uint32_t>(str->size()));
         }
         if (symbol::IsArrayIndexSymbol(s)) {

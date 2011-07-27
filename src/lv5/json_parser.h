@@ -161,7 +161,7 @@ class JSONParser : private core::Noncopyable<> {
       RAISE();
     }
     Next();
-    ary->Put(ctx_, symbol::length,
+    ary->Put(ctx_, symbol::length(),
              JSVal::UInt32(current), false, CHECK);
     return ary;
   }

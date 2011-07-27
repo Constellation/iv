@@ -138,7 +138,7 @@ class FunctionScope : public VariableScope {
       eval_target_scope_(scope.HasDirectCallToEval()) {
     if (!IsTop()) {
       // is global or not
-      map_[symbol::arguments] = std::make_tuple(STACK, 0, code_->strict());
+      map_[symbol::arguments()] = std::make_tuple(STACK, 0, code_->strict());
 
       // params
       for (Code::Names::const_iterator it = code->params().begin(),
@@ -209,7 +209,7 @@ class FunctionScope : public VariableScope {
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
           if (std::get<0>(it->second) == STACK) {
-            if (it->first == symbol::arguments &&
+            if (it->first == symbol::arguments() &&
                 !code_->ShouldCreateArguments() && !code_->HasArgumentsAssign()) {
               continue;
             }
@@ -361,14 +361,14 @@ class FunctionScope : public VariableScope {
     }
 
     if (code->ShouldCreateArguments()) {
-      const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(symbol::arguments);
+      const std::unordered_map<Symbol, uint16_t>::const_iterator f = locations.find(symbol::arguments());
       if (f == locations.end()) {
         needs_env = true;
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS, 0, 0u));
+            std::make_tuple(symbol::arguments(), Code::ARGUMENTS, 0, 0u));
       } else {
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments, Code::ARGUMENTS_LOCAL, 0, f->second));
+            std::make_tuple(symbol::arguments(), Code::ARGUMENTS_LOCAL, 0, f->second));
       }
     }
 

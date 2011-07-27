@@ -426,7 +426,7 @@ inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
     return static_cast<JSArray*>(obj)->GetLength();
   }
   const JSVal length = obj->Get(ctx,
-                                symbol::length,
+                                symbol::length(),
                                 IV_LV5_ERROR_WITH(e, 0));
   return length.ToUInt32(ctx, e);
 }

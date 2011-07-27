@@ -18,7 +18,7 @@ class SymbolTable {
     : sync_(),
       set_() {
     // insert default symbols
-#define V(sym) InsertDefaults(symbol::sym);
+#define V(sym) InsertDefaults(symbol::sym());
     IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
   }

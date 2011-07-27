@@ -14,7 +14,7 @@ class JSStringObject : public JSObject {
   }
 
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
-    if (name == symbol::length) {
+    if (name == symbol::length()) {
       return DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE);
     }
     if (symbol::IsArrayIndexSymbol(name)) {
@@ -39,8 +39,8 @@ class JSStringObject : public JSObject {
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const {
     if (mode == kIncludeNotEnumerable) {
-      if (std::find(vec->begin(), vec->end(), symbol::length) == vec->end()) {
-        vec->push_back(symbol::length);
+      if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
+        vec->push_back(symbol::length());
       }
     }
     if (vec->empty()) {

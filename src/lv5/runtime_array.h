@@ -241,7 +241,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++n;
     }
   }
-  ary->Put(ctx, symbol::length,
+  ary->Put(ctx, symbol::length(),
            JSVal::UInt32(n), false, IV_LV5_ERROR(e));
   return ary;
 }
@@ -292,14 +292,14 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   if (len == 0) {
-    obj->Put(ctx, symbol::length,
+    obj->Put(ctx, symbol::length(),
              JSVal::UInt32(0u), true, IV_LV5_ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
     const JSVal element = obj->Get(ctx, symbol::MakeSymbolFromIndex(index), IV_LV5_ERROR(e));
     obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), true, IV_LV5_ERROR(e));
-    obj->Put(ctx, symbol::length,
+    obj->Put(ctx, symbol::length(),
              JSVal::UInt32(index), true, IV_LV5_ERROR(e));
     return element;
   }
@@ -337,7 +337,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   }
   obj->Put(
       ctx,
-      symbol::length,
+      symbol::length(),
       len,
       true, IV_LV5_ERROR(e));
   return len;
@@ -385,7 +385,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   if (len == 0) {
-    obj->Put(ctx, symbol::length,
+    obj->Put(ctx, symbol::length(),
              JSVal::UInt32(0u), true, IV_LV5_ERROR(e));
     return JSUndefined;
   }
@@ -402,7 +402,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
     }
   }
   obj->Delete(ctx, symbol::MakeSymbolFromIndex(from), true, IV_LV5_ERROR(e));
-  obj->Put(ctx, symbol::length,
+  obj->Put(ctx, symbol::length(),
            JSVal::UInt32(len - 1), true, IV_LV5_ERROR(e));
   return first;
 }
@@ -794,7 +794,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   }
   obj->Put(
       ctx,
-      symbol::length,
+      symbol::length(),
       JSVal::UInt32(len - actual_delete_count + item_count), true, IV_LV5_ERROR(e));
   return ary;
 }
@@ -829,7 +829,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   }
   obj->Put(
       ctx,
-      symbol::length,
+      symbol::length(),
       JSVal::UInt32(len + arg_count),
       true, IV_LV5_ERROR(e));
   return len + arg_count;

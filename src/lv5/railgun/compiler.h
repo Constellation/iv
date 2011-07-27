@@ -968,7 +968,7 @@ class Compiler
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint16_t index = SymbolToNameIndex(ident->symbol());
-        if (ident->symbol() == symbol::arguments) {
+        if (ident->symbol() == symbol::arguments()) {
           code_->set_code_has_arguments();
           // Emit<OP::PUSH_ARGUMENTS>();
           EmitLoadName(index);
@@ -1514,7 +1514,7 @@ class Compiler
     DepthPoint point(&stack_depth_);
     const Symbol name = lit->symbol();
     const uint16_t index = SymbolToNameIndex(name);
-    if (name == symbol::arguments) {
+    if (name == symbol::arguments()) {
       code_->set_code_has_arguments();
       // Emit<OP::PUSH_ARGUMENTS>();
       EmitLoadName(index);
@@ -1753,7 +1753,7 @@ class Compiler
         const uint16_t index = SymbolToNameIndex(ident->symbol());
         EmitCallName(index);
         stack_depth_.Up(2);
-        if (op == OP::CALL && ident->symbol() == symbol::eval) {
+        if (op == OP::CALL && ident->symbol() == symbol::eval()) {
           direct_call_to_eval = true;
         }
       } else if (const PropertyAccess* prop = target.AsPropertyAccess()) {
@@ -1819,7 +1819,7 @@ class Compiler
         const FunctionLiteral* const func = *it;
         Visit(func);
         const Symbol sym = func->name().Address()->symbol();
-        if (sym == symbol::arguments) {
+        if (sym == symbol::arguments()) {
           code_->set_code_hiding_arguments();
         }
         const uint16_t index = SymbolToNameIndex(sym);
@@ -2016,7 +2016,7 @@ class Compiler
     data_->push_back(op);
     data_->push_back(arg & 0xff);
     data_->push_back(arg >> 8);
-    if (code_->names()[arg] == symbol::arguments) {
+    if (code_->names()[arg] == symbol::arguments()) {
       if (op == OP::STORE_NAME) {
         code_->set_code_has_arguments_assign();
       } else {

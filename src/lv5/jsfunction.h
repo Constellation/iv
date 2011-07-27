@@ -37,7 +37,7 @@ class JSFunction : public JSObject {
     if (!val.IsObject()) {
       return false;
     }
-    const JSVal got = Get(ctx, symbol::prototype, e);
+    const JSVal got = Get(ctx, symbol::prototype(), e);
     if (*e) {
       return false;
     }
@@ -63,7 +63,7 @@ class JSFunction : public JSObject {
     if (*e) {
       return val;
     }
-    if (name == symbol::caller &&
+    if (name == symbol::caller() &&
         val.IsCallable() &&
         val.object()->AsCallable()->IsStrict()) {
       e->Report(Error::Type,
@@ -114,7 +114,7 @@ class JSNativeFunction : public JSFunction {
   JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
     : func_(func) {
     DefineOwnProperty(
-        ctx, symbol::length,
+        ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
@@ -241,31 +241,31 @@ class JSBoundFunction : public JSFunction {
     // step 15
     if (target_->IsClass<Class::Function>()) {
       // target [[Class]] is "Function"
-      const JSVal length = target_->Get(ctx, symbol::length, &e);
+      const JSVal length = target_->Get(ctx, symbol::length(), &e);
       assert(length.IsNumber());
       const uint32_t target_param_size = length.ToUInt32(ctx, &e);
       assert(target_param_size == length.number());
       const uint32_t len = (target_param_size >= bound_args_size) ?
           target_param_size - bound_args_size : 0;
       DefineOwnProperty(
-          ctx, symbol::length,
+          ctx, symbol::length(),
           DataDescriptor(JSVal::UInt32(len),
                          PropertyDescriptor::NONE),
                          false, &e);
     } else {
       DefineOwnProperty(
-          ctx, symbol::length,
+          ctx, symbol::length(),
           DataDescriptor(JSVal::UInt32(0u),
                          PropertyDescriptor::NONE),
                          false, &e);
     }
     JSFunction* const throw_type_error = context::throw_type_error(ctx);
-    DefineOwnProperty(ctx, symbol::caller,
+    DefineOwnProperty(ctx, symbol::caller(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
                       false, &e);
-    DefineOwnProperty(ctx, symbol::arguments,
+    DefineOwnProperty(ctx, symbol::arguments(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
                                          PropertyDescriptor::NONE),
@@ -284,7 +284,7 @@ class JSInlinedFunction : public JSFunction {
 
   explicit JSInlinedFunction(Context* ctx) {
     DefineOwnProperty(
-        ctx, symbol::length,
+        ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);
@@ -292,7 +292,7 @@ class JSInlinedFunction : public JSFunction {
 
   JSInlinedFunction(Context* ctx, const Symbol& name) {
     DefineOwnProperty(
-        ctx, symbol::length,
+        ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
                        PropertyDescriptor::NONE),
                        false, NULL);

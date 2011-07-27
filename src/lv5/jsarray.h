@@ -115,7 +115,7 @@ class JSArray : public JSObject {
       }
       return JSObject::GetOwnProperty(ctx, name);
     }
-    if (name == symbol::length) {
+    if (name == symbol::length()) {
       return length_;
     }
     return JSObject::GetOwnProperty(ctx, name);
@@ -194,7 +194,7 @@ class JSArray : public JSObject {
       }
       return true;
     }
-    if (name == symbol::length) {
+    if (name == symbol::length()) {
       if (desc.IsDataDescriptor()) {
         const DataDescriptor* const data = desc.AsDataDescriptor();
         if (data->IsValueAbsent()) {
@@ -364,7 +364,7 @@ class JSArray : public JSObject {
       }
       return JSObject::Delete(ctx, name, th, e);
     }
-    if (symbol::length == name) {
+    if (symbol::length() == name) {
       if (th) {
         e->Report(Error::Type, "delete failed");
       }
@@ -378,8 +378,8 @@ class JSArray : public JSObject {
                            EnumerationMode mode) const {
     uint32_t index = 0;
     if (length_.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
-      if (std::find(vec->begin(), vec->end(), symbol::length) == vec->end()) {
-        vec->push_back(symbol::length);
+      if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
+        vec->push_back(symbol::length());
       }
     }
     for (JSVals::const_iterator it = vector_.begin(),

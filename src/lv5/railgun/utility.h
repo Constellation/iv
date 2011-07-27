@@ -137,12 +137,12 @@ inline void Instantiate(Context* ctx,
                            frame->arguments_rend(), decl_env,
                            code->strict(), IV_LV5_ERROR_VOID(e));
       if (code->strict()) {
-        decl_env->CreateImmutableBinding(symbol::arguments);
-        decl_env->InitializeImmutableBinding(symbol::arguments, args_obj);
+        decl_env->CreateImmutableBinding(symbol::arguments());
+        decl_env->InitializeImmutableBinding(symbol::arguments(), args_obj);
       } else {
-        decl_env->CreateMutableBinding(ctx, symbol::arguments,
+        decl_env->CreateMutableBinding(ctx, symbol::arguments(),
                                        configurable_bindings, IV_LV5_ERROR_VOID(e));
-        decl_env->SetMutableBinding(ctx, symbol::arguments,
+        decl_env->SetMutableBinding(ctx, symbol::arguments(),
                                     args_obj, false, IV_LV5_ERROR_VOID(e));
       }
     }

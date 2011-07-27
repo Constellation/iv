@@ -142,7 +142,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
 
   // step 6, 7
   // TODO(Constellation) code check (function)
-  if (!env->HasBinding(ctx_, symbol::arguments)) {
+  if (!env->HasBinding(ctx_, symbol::arguments())) {
     JSArguments* const args_obj =
         JSArguments::New(ctx_, code,
                          code->code()->params(),
@@ -150,12 +150,12 @@ void Interpreter::Invoke(JSCodeFunction* code,
                          args.rend(), env,
                          ctx_->IsStrict(), CHECK_IN_STMT);
     if (ctx_->IsStrict()) {
-      env->CreateImmutableBinding(symbol::arguments);
-      env->InitializeImmutableBinding(symbol::arguments, args_obj);
+      env->CreateImmutableBinding(symbol::arguments());
+      env->InitializeImmutableBinding(symbol::arguments(), args_obj);
     } else {
-      env->CreateMutableBinding(ctx_, symbol::arguments,
+      env->CreateMutableBinding(ctx_, symbol::arguments(),
                                 configurable_bindings, CHECK_IN_STMT);
-      env->SetMutableBinding(ctx_, symbol::arguments,
+      env->SetMutableBinding(ctx_, symbol::arguments(),
                              args_obj, false, CHECK_IN_STMT);
     }
   }
@@ -1265,7 +1265,7 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
     }
     ++current;
   }
-  ary->Put(ctx_, symbol::length,
+  ary->Put(ctx_, symbol::length(),
            JSVal::UInt32(current), false, CHECK);
   ctx_->Return(ary);
 }
@@ -1378,7 +1378,7 @@ void Interpreter::Visit(const FunctionCall* call) {
             // this function is eval function
             const Identifier* const maybe_eval = call->target()->AsIdentifier();
             if (maybe_eval &&
-                maybe_eval->symbol() == symbol::eval) {
+                maybe_eval->symbol() == symbol::eval()) {
               // direct call to eval point
               args.set_this_binding(this_binding);
               ctx_->ret() = DirectCallToEval(args, CHECK);

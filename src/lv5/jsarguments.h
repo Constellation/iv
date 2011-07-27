@@ -38,23 +38,23 @@ class JSArguments : public JSObject {
     obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
     bind::Object binder(ctx, obj);
     binder
-        .def(symbol::length,
+        .def(symbol::length(),
              JSVal::UInt32(len), bind::W | bind::C);
     SetArguments(ctx, obj, &binder, names, it, last, len, strict);
 
     if (strict) {
       JSFunction* const throw_type_error = context::throw_type_error(ctx);
       binder
-          .def_accessor(symbol::caller,
+          .def_accessor(symbol::caller(),
                         throw_type_error,
                         throw_type_error,
                         bind::NONE)
-          .def_accessor(symbol::callee,
+          .def_accessor(symbol::callee(),
                         throw_type_error,
                         throw_type_error,
                         bind::NONE);
     } else {
-      binder.def(symbol::callee, func, bind::W | bind::C);
+      binder.def(symbol::callee(), func, bind::W | bind::C);
     }
     return obj;
   }
@@ -68,7 +68,7 @@ class JSArguments : public JSObject {
       if (*e) {
         return JSUndefined;
       }
-      if (name == symbol::caller &&
+      if (name == symbol::caller() &&
           v.IsCallable() &&
           v.object()->AsCallable()->IsStrict()) {
         e->Report(Error::Type,

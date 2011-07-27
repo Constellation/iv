@@ -82,7 +82,7 @@ class Code : public HeapObject {
     Names::iterator target = params_.begin();
     for (Identifiers::const_iterator it = func.params().begin(),
          last = func.params().end(); it != last; ++it, ++target) {
-      if ((*target = (*it)->symbol()) == symbol::arguments) {
+      if ((*target = (*it)->symbol()) == symbol::arguments()) {
         set_code_hiding_arguments();
       }
     }

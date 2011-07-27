@@ -644,7 +644,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(PUSH_ARGUMENTS) {
         const JSVal w = LoadName(
             frame->lexical_env(),
-            symbol::arguments, strict, ERR);
+            symbol::arguments(), strict, ERR);
         PUSH(w);
         DISPATCH();
       }
@@ -1363,7 +1363,7 @@ MAIN_LOOP_START:
           names = &frame->code()->names();
           strict = frame->code()->strict();
           JSObject* const obj = JSObject::New(ctx_);
-          const JSVal proto = func->Get(ctx_, symbol::prototype, ERR);
+          const JSVal proto = func->Get(ctx_, symbol::prototype(), ERR);
           if (proto.IsObject()) {
             obj->set_prototype(proto.object());
           }

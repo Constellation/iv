@@ -24,7 +24,7 @@ class JSVMFunction : public JSFunction {
       env_(env) {
     Error e;
     DefineOwnProperty(
-        ctx, symbol::length,
+        ctx, symbol::length(),
         DataDescriptor(
             JSVal::UInt32(static_cast<uint32_t>(code->params().size())),
             PropertyDescriptor::NONE),
@@ -35,13 +35,13 @@ class JSVMFunction : public JSFunction {
 
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(
-        ctx, symbol::constructor,
+        ctx, symbol::constructor(),
         DataDescriptor(this,
                        PropertyDescriptor::WRITABLE |
                        PropertyDescriptor::CONFIGURABLE),
         false, &e);
     DefineOwnProperty(
-        ctx, symbol::prototype,
+        ctx, symbol::prototype(),
         DataDescriptor(proto,
                        PropertyDescriptor::WRITABLE),
         false, &e);
@@ -55,12 +55,12 @@ class JSVMFunction : public JSFunction {
     }
     if (code->strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();
-      DefineOwnProperty(ctx, symbol::caller,
+      DefineOwnProperty(ctx, symbol::caller(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
                                            PropertyDescriptor::NONE),
                         false, &e);
-      DefineOwnProperty(ctx, symbol::arguments,
+      DefineOwnProperty(ctx, symbol::arguments(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
                                            PropertyDescriptor::NONE),
@@ -89,7 +89,7 @@ class JSVMFunction : public JSFunction {
   JSVal Construct(Arguments* args, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
     JSObject* const obj = JSObject::New(ctx);
-    const JSVal proto = Get(ctx, symbol::prototype, IV_LV5_ERROR(e));
+    const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }

@@ -61,13 +61,13 @@ JSVal JSObject::DefaultValue(Context* ctx,
   ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
-    TRY(ctx, symbol::toString, args, e);
-    TRY(ctx, symbol::valueOf, args, e);
+    TRY(ctx, symbol::toString(), args, e);
+    TRY(ctx, symbol::valueOf(), args, e);
   } else {
     // section 8.12.8
     // hint is NUMBER or NONE
-    TRY(ctx, symbol::valueOf, args, e);
-    TRY(ctx, symbol::toString, args, e);
+    TRY(ctx, symbol::valueOf(), args, e);
+    TRY(ctx, symbol::toString(), args, e);
   }
   e->Report(Error::Type, "invalid default value");
   return JSUndefined;

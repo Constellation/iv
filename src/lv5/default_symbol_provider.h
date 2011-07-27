@@ -63,7 +63,10 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
   std::unordered_set<Symbol> default_symbols_;
 };
 
-#define V(sym) static const Symbol sym = DefaultSymbolProvider::Instance()->sym();
+#define V(sym)\
+  inline Symbol sym() {\
+    return DefaultSymbolProvider::Instance()->sym();\
+  }
 IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
 
