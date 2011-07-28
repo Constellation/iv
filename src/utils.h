@@ -51,10 +51,9 @@ std::size_t PtrAlignOf(T* value) {
 // so ptr (void*) is the most biggest alignment of all
 class Size {
  public:
-  static const int KB = 1 << 10;
-  static const int MB = KB << 10;
-  static const int GB = MB << 10;
-  static const int TB = GB << 10;
+  static const std::size_t KB = 1 << 10;
+  static const std::size_t MB = KB << 10;
+  static const std::size_t GB = MB << 10;
 
   static const int kCharSize     = sizeof(char);      // NOLINT
   static const int kShortSize    = sizeof(short);     // NOLINT

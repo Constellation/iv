@@ -76,7 +76,7 @@ class WithScope : public VariableScope {
     assert(upper);
   }
 
-  bool InWith() {
+  bool InWith() const {
     return true;
   }
 
