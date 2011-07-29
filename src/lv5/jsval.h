@@ -154,6 +154,7 @@ static const uint32_t kInt32Tag       = 0xfffffff1;
 
 struct Int32Tag { };
 struct UInt32Tag { };
+struct UInt16Tag { };
 struct OtherPtrTag { };
 
 }  // namespace detail
@@ -551,6 +552,13 @@ class JSVal {
   }
 
   template<typename T>
+  static inline JSVal UInt16(
+      T val,
+      typename enable_if<std::is_same<uint16_t, T> >::type* = 0) {
+    return JSVal(val, detail::UInt16Tag());
+  }
+
+  template<typename T>
   static inline JSVal Int32(
       T val,
       typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
@@ -563,12 +571,17 @@ class JSVal {
   }
 
  protected:
-  JSVal(const uint32_t val, detail::UInt32Tag dummy)
+  JSVal(uint32_t val, detail::UInt32Tag dummy)
     : value_() {
     set_value_uint32(val);
   }
 
-  JSVal(const int32_t val, detail::Int32Tag dummy)
+  JSVal(uint16_t val, detail::UInt16Tag dummy)
+    : value_() {
+    set_value_int32(val);
+  }
+
+  JSVal(int32_t val, detail::Int32Tag dummy)
     : value_() {
     set_value_int32(val);
   }
