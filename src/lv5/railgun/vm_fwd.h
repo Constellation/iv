@@ -8,6 +8,22 @@
 namespace iv {
 namespace lv5 {
 namespace railgun {
+namespace detail {
+
+template<int Target>
+bool IsIncrementOverflowSafe(int32_t val);
+
+template<>
+inline bool IsIncrementOverflowSafe<-1>(int32_t val) {
+  return val > INT32_MIN;
+}
+
+template<>
+inline bool IsIncrementOverflowSafe<1>(int32_t val) {
+  return val < INT32_MAX;
+}
+
+}  // namespace detail
 
 class VM {
  public:
@@ -427,43 +443,72 @@ class VM {
 #define CHECK IV_LV5_ERROR_WITH(e, 0.0)
 
   template<int Target, std::size_t Returned>
-  double IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
+  JSVal IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, s)) {
       const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
-      std::tuple<double, double> results;
-      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
-      std::get<1>(results) = std::get<0>(results) + Target;
-      current->SetMutableBinding(ctx_, s,
-                                 std::get<1>(results), strict, CHECK);
-      return std::get<Returned>(results);
+      if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+        std::tuple<JSVal, JSVal> results;
+        const int32_t target = w.int32();
+        std::get<0>(results) = w;
+        std::get<1>(results) = JSVal::Int32(target + Target);
+        current->SetMutableBinding(
+            ctx_, s,
+            std::get<1>(results), strict, e);
+        return std::get<Returned>(results);
+      } else {
+        std::tuple<double, double> results;
+        std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+        std::get<1>(results) = std::get<0>(results) + Target;
+        current->SetMutableBinding(ctx_, s,
+                                   std::get<1>(results), strict, e);
+        return std::get<Returned>(results);
+      }
     }
     RaiseReferenceError(s, e);
     return 0.0;
   }
 
   template<int Target, std::size_t Returned>
-  double IncrementElement(JSVal* sp, const JSVal& base,
-                          const JSVal& element, bool strict, Error* e) {
+  JSVal IncrementElement(JSVal* sp, const JSVal& base,
+                         const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const Symbol s = GetSymbol(element, CHECK);
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
-    std::tuple<double, double> results;
-    std::get<0>(results) = w.ToNumber(ctx_, CHECK);
-    std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
-    return std::get<Returned>(results);
+    if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+      std::tuple<JSVal, JSVal> results;
+      const int32_t target = w.int32();
+      std::get<0>(results) = w;
+      std::get<1>(results) = JSVal::Int32(target + Target);
+      StorePropImpl(base, s, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    } else {
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      StorePropImpl(base, s, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    }
   }
 
   template<int Target, std::size_t Returned>
-  double IncrementProp(JSVal* sp, const JSVal& base,
-                       const Symbol& s, bool strict, Error* e) {
+  JSVal IncrementProp(JSVal* sp, const JSVal& base,
+                      const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
-    std::tuple<double, double> results;
-    std::get<0>(results) = w.ToNumber(ctx_, CHECK);
-    std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl(base, s, std::get<1>(results), strict, CHECK);
-    return std::get<Returned>(results);
+    if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+      std::tuple<JSVal, JSVal> results;
+      const int32_t target = w.int32();
+      std::get<0>(results) = w;
+      std::get<1>(results) = JSVal::Int32(target + Target);
+      StorePropImpl(base, s, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    } else {
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      StorePropImpl(base, s, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    }
   }
 
   Stack* stack() {

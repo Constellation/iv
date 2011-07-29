@@ -718,28 +718,28 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result = IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result = IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
@@ -816,28 +816,28 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result = IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result = IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result = IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
@@ -845,7 +845,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const double result =
+        const JSVal result =
             IncrementElement<-1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH();
@@ -854,7 +854,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const double result =
+        const JSVal result =
             IncrementElement<-1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH();
@@ -863,7 +863,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const double result =
+        const JSVal result =
             IncrementElement<1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH();
@@ -872,7 +872,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const double result =
+        const JSVal result =
             IncrementElement<1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH();
@@ -881,7 +881,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementProp<-1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = IncrementProp<-1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH();
       }
@@ -889,7 +889,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementProp<-1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = IncrementProp<-1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH();
       }
@@ -897,7 +897,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementProp<1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = IncrementProp<1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH();
       }
@@ -905,7 +905,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, oparg);
-        const double result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH();
       }
