@@ -267,35 +267,28 @@ class VM {
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     if (lhs.IsInt32() && rhs.IsInt32()) {
-      return lhs.int32() << (rhs.int32() & 0x1f);
+      return JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return core::DoubleToInt32(left_num)
-        << (core::DoubleToInt32(right_num) & 0x1f);
+    const int32_t left = lhs.ToInt32(ctx_, CHECK);
+    return JSVal::Int32(left << (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
   JSVal BinaryRShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     if (lhs.IsInt32() && rhs.IsInt32()) {
-      return lhs.int32() >> (rhs.int32() & 0x1f);
+      return JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return core::DoubleToInt32(left_num)
-        >> (core::DoubleToInt32(right_num) & 0x1f);
+    const int32_t left = lhs.ToInt32(ctx_, CHECK);
+    return JSVal::Int32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
   JSVal BinaryRShiftLogical(const JSVal& lhs,
                             const JSVal& rhs, Error* e) const {
-    uint32_t left;
-    if (lhs.GetUInt32(&left) && rhs.IsInt32()) {
-      return left >> (rhs.int32() & 0x1f);
+    uint32_t left_result;
+    if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
+      return JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    const uint32_t res = core::DoubleToUInt32(left_num)
-        >> (core::DoubleToInt32(right_num) & 0x1f);
-    return static_cast<double>(res);
+    const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
+    return JSVal::UInt32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
   JSVal BinaryCompareLT(const JSVal& lhs,
@@ -388,31 +381,28 @@ class VM {
   JSVal BinaryBitAnd(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
     if (lhs.IsInt32() && rhs.IsInt32()) {
-      return lhs.int32() & rhs.int32();
+      return JSVal::Int32(lhs.int32() & rhs.int32());
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return core::DoubleToInt32(left_num) & (core::DoubleToInt32(right_num));
+    const int32_t left = lhs.ToInt32(ctx_, CHECK);
+    return JSVal::Int32(left & rhs.ToInt32(ctx_, e));
   }
 
   JSVal BinaryBitXor(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
     if (lhs.IsInt32() && rhs.IsInt32()) {
-      return lhs.int32() ^ rhs.int32();
+      return JSVal::Int32(lhs.int32() ^ rhs.int32());
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return core::DoubleToInt32(left_num) ^ (core::DoubleToInt32(right_num));
+    const int32_t left = lhs.ToInt32(ctx_, CHECK);
+    return JSVal::Int32(left ^ rhs.ToInt32(ctx_, e));
   }
 
   JSVal BinaryBitOr(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
     if (lhs.IsInt32() && rhs.IsInt32()) {
-      return lhs.int32() | rhs.int32();
+      return JSVal::Int32(lhs.int32() | rhs.int32());
     }
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return core::DoubleToInt32(left_num) | (core::DoubleToInt32(right_num));
+    const int32_t left = lhs.ToInt32(ctx_, CHECK);
+    return JSVal::Int32(left | rhs.ToInt32(ctx_, e));
   }
 
 #undef CHECK

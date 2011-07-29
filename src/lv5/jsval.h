@@ -460,6 +460,14 @@ class JSVal {
 
   double ToNumber(Context* ctx, Error* e) const;
 
+  int32_t ToInt32(Context* ctx, Error* e) const {
+    if (IsInt32()) {
+      return int32();
+    } else {
+      return core::DoubleToInt32(ToNumber(ctx, e));
+    }
+  }
+
   uint32_t ToUInt32(Context* ctx, Error* e) const {
     if (IsInt32() && int32() >= 0) {
       return static_cast<uint32_t>(int32());
@@ -537,14 +545,14 @@ class JSVal {
 
   template<typename T>
   static inline JSVal UInt32(
-      const T& val,
+      T val,
       typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {
     return JSVal(val, detail::UInt32Tag());
   }
 
   template<typename T>
   static inline JSVal Int32(
-      const T& val,
+      T val,
       typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
     return JSVal(val, detail::Int32Tag());
   }

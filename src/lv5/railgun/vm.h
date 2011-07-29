@@ -539,20 +539,18 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(JUMP_SUBROUTINE) {
-        const JSVal addr = JSVal::UInt32(
-            static_cast<uint32_t>(std::distance(first_instr, instr)));
+        const JSVal addr = std::distance(first_instr, instr);
         PUSH(JSEmpty);
         PUSH(addr);
-        PUSH(JSVal::UInt32(0u));
+        PUSH(JSVal::Int32(0));
         JUMPTO(oparg);
         DISPATCH();
       }
 
       DEFINE_OPCODE(JUMP_RETURN_HOOKED_SUBROUTINE) {
-        const JSVal addr = JSVal::UInt32(
-            static_cast<uint32_t>(std::distance(first_instr, instr)));
+        const JSVal addr = std::distance(first_instr, instr);
         PUSH(addr);
-        PUSH(JSVal::UInt32(1u));
+        PUSH(JSVal::Int32(1));
         JUMPTO(oparg);
         DISPATCH();
       }
@@ -673,7 +671,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(UNARY_BIT_NOT) {
         const JSVal& v = TOP();
         if (v.IsInt32()) {
-          SET_TOP(~v.int32());
+          SET_TOP(JSVal::Int32(~v.int32()));
         } else {
           const double value = v.ToNumber(ctx_, ERR);
           SET_TOP(~core::DoubleToInt32(value));
@@ -1516,7 +1514,7 @@ MAIN_LOOP_START:
           PUSH(error);
           if (handler == Handler::FINALLY) {
             // finally jump if return or error raised
-            PUSH(JSVal::UInt32(2u));
+            PUSH(JSVal::Int32(2));
           }
           JUMPTO(end);
           goto MAIN_LOOP_START;
