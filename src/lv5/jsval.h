@@ -45,7 +45,7 @@ struct Layout<4, true> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
-        uint32_t uint32_;
+        int32_t int32_;
         void* pointer_;
       } payload_;
       uint32_t tag_;
@@ -71,7 +71,7 @@ struct Layout<8, true> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
-        uint32_t uint32_;
+        int32_t int32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -95,7 +95,7 @@ struct Layout<4, false> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
-        uint32_t uint32_;
+        int32_t int32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -120,7 +120,7 @@ struct Layout<8, false> {
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
-        uint32_t uint32_;
+        int32_t int32_;
         void* pointer_;
       } payload_;
     } struct_;
@@ -149,9 +149,10 @@ static const uint32_t kObjectTag      = 0xfffffff6;
 static const uint32_t kErrorTag       = 0xfffffff5;
 static const uint32_t kOtherPtrTag    = 0xfffffff4;
 static const uint32_t kJSValRefTag    = 0xfffffff3;  // use VM only
-static const uint32_t kNumberTag      = 0xfffffff1;
-static const uint32_t kUInt32Tag      = 0xfffffff0;
+static const uint32_t kNumberTag      = 0xfffffff2;
+static const uint32_t kInt32Tag       = 0xfffffff1;
 
+struct Int32Tag { };
 struct UInt32Tag { };
 struct OtherPtrTag { };
 
@@ -264,7 +265,13 @@ class JSVal {
   }
 
   inline void set_value(double val) {
-    value_.number_.as_ = (val == val) ? val : core::kNaN;
+    const int32_t i = static_cast<int32_t>(val);
+    if (val != i || (!i && core::Signbit(val))) {
+      // this value is not represented by int32_t
+      value_.number_.as_ = (val == val) ? val : core::kNaN;
+    } else {
+      set_value_int32(i);
+    }
   }
 
   template<typename T>
@@ -273,9 +280,17 @@ class JSVal {
     value_.struct_.tag_ = detail::kOtherPtrTag;
   }
 
+  inline void set_value_int32(int32_t val) {
+    value_.struct_.payload_.int32_ = val;
+    value_.struct_.tag_ = detail::kInt32Tag;
+  }
+
   inline void set_value_uint32(uint32_t val) {
-    value_.struct_.payload_.uint32_ = val;
-    value_.struct_.tag_ = detail::kUInt32Tag;
+    if (static_cast<int32_t>(val) < 0) {  // LSB is 1
+      value_.number_.as_ = val;
+    } else {
+      set_value_int32(static_cast<int32_t>(val));
+    }
   }
 
   inline void set_value(JSObject* val) {
@@ -358,16 +373,16 @@ class JSVal {
 
   inline double number() const {
     assert(IsNumber());
-    if (IsUInt32()) {
-      return uint32();
+    if (IsInt32()) {
+      return int32();
     } else {
       return value_.number_.as_;
     }
   }
 
-  inline uint32_t uint32() const {
-    assert(IsUInt32());
-    return value_.struct_.payload_.uint32_;
+  inline int32_t int32() const {
+    assert(IsInt32());
+    return value_.struct_.payload_.int32_;
   }
 
   inline bool boolean() const {
@@ -404,8 +419,8 @@ class JSVal {
     return value_.struct_.tag_ == detail::kObjectTag;
   }
 
-  inline bool IsUInt32() const {
-    return value_.struct_.tag_ == detail::kUInt32Tag;
+  inline bool IsInt32() const {
+    return value_.struct_.tag_ == detail::kInt32Tag;
   }
 
   inline bool IsNumber() const {
@@ -446,16 +461,23 @@ class JSVal {
   double ToNumber(Context* ctx, Error* e) const;
 
   uint32_t ToUInt32(Context* ctx, Error* e) const {
-    if (IsUInt32()) {
-      return uint32();
+    if (IsInt32() && int32() >= 0) {
+      return static_cast<uint32_t>(int32());
     } else {
       return core::DoubleToUInt32(ToNumber(ctx, e));
     }
   }
 
+  uint32_t GetUInt32() const {
+    assert(IsNumber());
+    uint32_t val;
+    GetUInt32(&val);
+    return val;
+  }
+
   bool GetUInt32(uint32_t* result) const {
-    if (IsUInt32()) {
-      *result = uint32();
+    if (IsInt32() && int32() >= 0) {
+      *result = static_cast<uint32_t>(int32());
       return true;
     } else if (IsNumber()) {
       const double val = number();
@@ -476,7 +498,7 @@ class JSVal {
 
   inline bool ToBoolean(Error* e) const {
     if (IsNumber()) {
-      const double& num = number();
+      const double num = number();
       return num != 0 && !core::IsNaN(num);
     } else if (IsString()) {
       return !string()->empty();
@@ -521,14 +543,26 @@ class JSVal {
   }
 
   template<typename T>
+  static inline JSVal Int32(
+      const T& val,
+      typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
+    return JSVal(val, detail::Int32Tag());
+  }
+
+  template<typename T>
   static inline JSVal Ptr(T* ptr) {
     return JSVal(ptr, detail::OtherPtrTag());
   }
 
  protected:
-  JSVal(const uint32_t& val, detail::UInt32Tag dummy)
+  JSVal(const uint32_t val, detail::UInt32Tag dummy)
     : value_() {
     set_value_uint32(val);
+  }
+
+  JSVal(const int32_t val, detail::Int32Tag dummy)
+    : value_() {
+    set_value_int32(val);
   }
 
   template<typename T>

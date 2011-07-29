@@ -7,7 +7,6 @@ namespace lv5 {
 
 class HeapObject : public gc {
  public:
-  inline virtual ~HeapObject() { }
 };
 
 } }  // namespace iv::lv5

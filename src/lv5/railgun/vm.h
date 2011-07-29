@@ -672,8 +672,12 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(UNARY_BIT_NOT) {
         const JSVal& v = TOP();
-        const double value = v.ToNumber(ctx_, ERR);
-        SET_TOP(~core::DoubleToInt32(value));
+        if (v.IsInt32()) {
+          SET_TOP(~v.int32());
+        } else {
+          const double value = v.ToNumber(ctx_, ERR);
+          SET_TOP(~core::DoubleToInt32(value));
+        }
         DISPATCH();
       }
 
@@ -1112,19 +1116,20 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(RETURN_SUBROUTINE) {
         const JSVal flag = POP();
         const JSVal v = POP();
-        assert(flag.IsUInt32());
-        const uint32_t f = flag.uint32();
+        assert(flag.IsInt32());
+        const int32_t f = flag.int32();
         if (f == 0) {
           // JUMP_SUBROUTINE
           // return to caller
-          // v is always UInt32
           POP_UNUSED();
-          const uint32_t addr = v.uint32();
+          assert(v.IsNumber());
+          const uint32_t addr = v.GetUInt32();
           JUMPTO(addr);
           DISPATCH();
         } else if (f == 1) {
           // RETURN HOOK
-          const uint32_t addr = v.uint32();
+          assert(v.IsNumber());
+          const uint32_t addr = v.GetUInt32();
           JUMPTO(addr);
           DISPATCH();
         } else {

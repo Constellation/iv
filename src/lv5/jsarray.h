@@ -43,12 +43,7 @@ DescriptorToArrayLengthSlot(const PropertyDescriptor& desc) {
   assert(desc.IsDataDescriptor());
   const JSVal val = desc.AsDataDescriptor()->value();
   assert(val.IsNumber());
-  uint32_t res;
-  if (val.IsUInt32()) {
-    res = val.uint32();
-  } else {
-    res = core::DoubleToUInt32(val.number());
-  }
+  const uint32_t res = val.GetUInt32();
   return DescriptorSlot::Data<uint32_t>(
       res,
       desc.attrs());

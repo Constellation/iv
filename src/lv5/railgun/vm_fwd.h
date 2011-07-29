@@ -95,14 +95,7 @@ class VM {
   JSVal LoadElement(JSVal* sp, const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    uint32_t index;
-    Symbol s;
-    if (element.GetUInt32(&index)) {
-      s = symbol::MakeSymbolFromIndex(index);
-    } else {
-      const JSString* str = element.ToString(ctx_, CHECK);
-      s = context::Intern(ctx_, str);
-    }
+    const Symbol s = GetSymbol(element, CHECK);
     return LoadPropImpl(sp, base, s, strict, e);
   }
 
@@ -168,14 +161,7 @@ class VM {
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    uint32_t index;
-    Symbol s;
-    if (element.GetUInt32(&index)) {
-      s = symbol::MakeSymbolFromIndex(index);
-    } else {
-      const JSString* str = element.ToString(ctx_, CHECK);
-      s = context::Intern(ctx_, str);
-    }
+    const Symbol s = GetSymbol(element, CHECK);
     StorePropImpl(base, s, stored, strict, e);
   }
 
@@ -280,6 +266,9 @@ class VM {
   }
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() << (rhs.int32() & 0x1f);
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num)
@@ -287,6 +276,9 @@ class VM {
   }
 
   JSVal BinaryRShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() >> (rhs.int32() & 0x1f);
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num)
@@ -295,6 +287,10 @@ class VM {
 
   JSVal BinaryRShiftLogical(const JSVal& lhs,
                             const JSVal& rhs, Error* e) const {
+    uint32_t left;
+    if (lhs.GetUInt32(&left) && rhs.IsInt32()) {
+      return left >> (rhs.int32() & 0x1f);
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     const uint32_t res = core::DoubleToUInt32(left_num)
@@ -351,41 +347,49 @@ class VM {
       e->Report(Error::Type, "in requires object");
       return JSEmpty;
     }
-    Symbol s;
-    uint32_t index;
-    if (lhs.GetUInt32(&index)) {
-      s = symbol::MakeSymbolFromIndex(index);
-    } else {
-      const JSString* const name = lhs.ToString(ctx_, CHECK);
-      s = context::Intern(ctx_, name);
-    }
+    const Symbol s = GetSymbol(lhs, CHECK);
     return JSVal::Bool(rhs.object()->HasProperty(ctx_, s));
   }
 
   JSVal BinaryEqual(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return JSVal::Bool(lhs.int32() == rhs.int32());
+    }
     const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(res);
   }
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
                           const JSVal& rhs) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return JSVal::Bool(lhs.int32() == rhs.int32());
+    }
     return JSVal::Bool(internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryNotEqual(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return JSVal::Bool(lhs.int32() != rhs.int32());
+    }
     const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(!res);
   }
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
                              const JSVal& rhs) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return JSVal::Bool(lhs.int32() != rhs.int32());
+    }
     return JSVal::Bool(!internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryBitAnd(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() & rhs.int32();
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num) & (core::DoubleToInt32(right_num));
@@ -393,6 +397,9 @@ class VM {
 
   JSVal BinaryBitXor(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() ^ rhs.int32();
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num) ^ (core::DoubleToInt32(right_num));
@@ -400,6 +407,9 @@ class VM {
 
   JSVal BinaryBitOr(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() | rhs.int32();
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return core::DoubleToInt32(left_num) | (core::DoubleToInt32(right_num));
@@ -429,14 +439,7 @@ class VM {
   double IncrementElement(JSVal* sp, const JSVal& base,
                           const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    uint32_t index;
-    Symbol s;
-    if (element.GetUInt32(&index)) {
-      s = symbol::MakeSymbolFromIndex(index);
-    } else {
-      const JSString* str = element.ToString(ctx_, CHECK);
-      s = context::Intern(ctx_, str);
-    }
+    const Symbol s = GetSymbol(element, CHECK);
     const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx_, CHECK);
@@ -468,6 +471,17 @@ class VM {
   void set_context(Context* ctx) {
     ctx_ = ctx;
     stack_.SetThis(ctx_->global_obj());
+  }
+
+  Symbol GetSymbol(const JSVal& val, Error* e) const {
+    uint32_t index;
+    if (val.GetUInt32(&index)) {
+      return symbol::MakeSymbolFromIndex(index);
+    } else {
+      const JSString* str =
+          val.ToString(ctx_, IV_LV5_ERROR_WITH(e, symbol::length()));
+      return context::Intern(ctx_, str);
+    }
   }
 
 #undef CHECK
