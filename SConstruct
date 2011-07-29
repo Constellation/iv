@@ -136,7 +136,7 @@ def Build():
 
   if not env['nosse']:
     env.Append(
-        CCFLAGS=["-msse2", "-mfpmath=sse"],
+        CCFLAGS=["-msse2"],
         CPPDEFINES=["IV_USE_SSE"])
 
   if env['debug']:
