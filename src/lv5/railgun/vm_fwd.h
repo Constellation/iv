@@ -289,7 +289,10 @@ class VM {
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     // check rhs it not 0 => NaN
-    if (lhs.IsInt32() && rhs.IsInt32() && rhs.int32() != 0) {
+    // lhs is >= 0 and rhs is > 0 because example like
+    //   -1 % -1
+    // should return -0.0, so this value is double
+    if (lhs.IsInt32() && rhs.IsInt32() && lhs.int32() >= 0 && rhs.int32() > 0) {
       return JSVal::Int32(lhs.int32() % rhs.int32());
     }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
