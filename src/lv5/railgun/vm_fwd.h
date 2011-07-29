@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RAILGUN_VM_FWD_H_
 #define _IV_LV5_RAILGUN_VM_FWD_H_
+#include "arith.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
@@ -215,7 +216,12 @@ class VM {
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
   JSVal BinaryAdd(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    // fast case check
+    // check overflow
+    // LSB and LSB - 1 bit is not 1
+    if (lhs.IsInt32() && rhs.IsInt32() &&
+        !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
+      return JSVal::Int32(lhs.int32() + rhs.int32());
+    }
     if (lhs.IsNumber() && rhs.IsNumber()) {
       return lhs.number() + rhs.number();
     }
@@ -242,6 +248,12 @@ class VM {
   }
 
   JSVal BinarySub(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+    // check overflow
+    // LSB and LSB - 1 bit is not 1
+    if (lhs.IsInt32() && rhs.IsInt32() &&
+        !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
+      return JSVal::Int32(lhs.int32() - rhs.int32());
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return left_num - right_num;
@@ -260,6 +272,10 @@ class VM {
   }
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+    // check rhs it not 0 => NaN
+    if (lhs.IsInt32() && rhs.IsInt32() && rhs.int32() != 0) {
+      return JSVal::Int32(lhs.int32() % rhs.int32());
+    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return std::fmod(left_num, right_num);
