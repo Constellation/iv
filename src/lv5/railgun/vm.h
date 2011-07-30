@@ -921,24 +921,38 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(BINARY_ADD) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryAdd(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        // check overflow
+        // LSB and LSB - 1 bit is not 1
+        if (lhs.IsInt32() && rhs.IsInt32() &&
+            !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
+          SET_TOP(JSVal::Int32(lhs.int32() + rhs.int32()));
+        } else {
+          const JSVal res = BinaryAdd(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_SUBTRACT) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinarySub(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        // check overflow
+        // LSB and LSB - 1 bit is not 1
+        if (lhs.IsInt32() && rhs.IsInt32() &&
+            !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
+          SET_TOP(JSVal::Int32(lhs.int32() - rhs.int32()));
+        } else {
+          const JSVal res = BinarySub(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_MULTIPLY) {
         const JSVal w = POP();
-        const JSVal& v = TOP();
+        const JSVal v = TOP();
         const JSVal res = BinaryMultiply(v, w, ERR);
         SET_TOP(res);
         DISPATCH();
@@ -946,41 +960,62 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(BINARY_DIVIDE) {
         const JSVal w = POP();
-        const JSVal& v = TOP();
+        const JSVal v = TOP();
         const JSVal res = BinaryDivide(v, w, ERR);
         SET_TOP(res);
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_MODULO) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryModulo(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        // check rhs it not 0 => NaN
+        // lhs is >= 0 and rhs is > 0 because example like
+        //   -1 % -1
+        // should return -0.0, so this value is double
+        if (lhs.IsInt32() && rhs.IsInt32() && lhs.int32() >= 0 && rhs.int32() > 0) {
+          SET_TOP(JSVal::Int32(lhs.int32() % rhs.int32()));
+        } else {
+          const JSVal res = BinaryModulo(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_LSHIFT) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryLShift(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f)));
+        } else {
+          const JSVal res = BinaryLShift(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryRShift(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f)));
+        } else {
+          const JSVal res = BinaryRShift(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT_LOGICAL) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryRShiftLogical(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        uint32_t left_result;
+        if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
+          SET_TOP(JSVal::UInt32(left_result >> (rhs.int32() & 0x1f)));
+        } else {
+          const JSVal res = BinaryRShiftLogical(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
@@ -1033,58 +1068,86 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(BINARY_EQ) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryEqual(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal& lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() == rhs.int32()));
+        } else {
+          const JSVal res = BinaryEqual(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_STRICT_EQ) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryStrictEqual(v, w);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() == rhs.int32()));
+        } else {
+          const JSVal res = BinaryStrictEqual(lhs, rhs);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_NE) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryNotEqual(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() != rhs.int32()));
+        } else {
+          const JSVal res = BinaryNotEqual(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_STRICT_NE) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryStrictNotEqual(v, w);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() != rhs.int32()));
+        } else {
+          const JSVal res = BinaryStrictNotEqual(lhs, rhs);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_BIT_AND) {  // &
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryBitAnd(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Int32(lhs.int32() & rhs.int32()));
+        } else {
+          const JSVal res = BinaryBitAnd(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_BIT_XOR) {  // ^
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryBitXor(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Int32(lhs.int32() ^ rhs.int32()));
+        } else {
+          const JSVal res = BinaryBitXor(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_BIT_OR) {  // |
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = BinaryBitOr(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Int32(lhs.int32() | rhs.int32()));
+        } else {
+          const JSVal res = BinaryBitOr(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 

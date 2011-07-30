@@ -232,12 +232,6 @@ class VM {
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
   JSVal BinaryAdd(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    // check overflow
-    // LSB and LSB - 1 bit is not 1
-    if (lhs.IsInt32() && rhs.IsInt32() &&
-        !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
-      return JSVal::Int32(lhs.int32() + rhs.int32());
-    }
     if (lhs.IsNumber() && rhs.IsNumber()) {
       return lhs.number() + rhs.number();
     }
@@ -264,12 +258,6 @@ class VM {
   }
 
   JSVal BinarySub(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    // check overflow
-    // LSB and LSB - 1 bit is not 1
-    if (lhs.IsInt32() && rhs.IsInt32() &&
-        !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
-      return JSVal::Int32(lhs.int32() - rhs.int32());
-    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return left_num - right_num;
@@ -288,40 +276,23 @@ class VM {
   }
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    // check rhs it not 0 => NaN
-    // lhs is >= 0 and rhs is > 0 because example like
-    //   -1 % -1
-    // should return -0.0, so this value is double
-    if (lhs.IsInt32() && rhs.IsInt32() && lhs.int32() >= 0 && rhs.int32() > 0) {
-      return JSVal::Int32(lhs.int32() % rhs.int32());
-    }
     const double left_num = lhs.ToNumber(ctx_, CHECK);
     const double right_num = rhs.ToNumber(ctx_, CHECK);
     return std::fmod(left_num, right_num);
   }
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
-    }
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left << (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
   JSVal BinaryRShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
-    }
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
   JSVal BinaryRShiftLogical(const JSVal& lhs,
                             const JSVal& rhs, Error* e) const {
-    uint32_t left_result;
-    if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
-      return JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
-    }
     const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
     return JSVal::UInt32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
@@ -381,61 +352,40 @@ class VM {
 
   JSVal BinaryEqual(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Bool(lhs.int32() == rhs.int32());
-    }
     const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(res);
   }
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
                           const JSVal& rhs) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Bool(lhs.int32() == rhs.int32());
-    }
     return JSVal::Bool(internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryNotEqual(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Bool(lhs.int32() != rhs.int32());
-    }
     const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
     return JSVal::Bool(!res);
   }
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
                              const JSVal& rhs) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Bool(lhs.int32() != rhs.int32());
-    }
     return JSVal::Bool(!internal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryBitAnd(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Int32(lhs.int32() & rhs.int32());
-    }
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left & rhs.ToInt32(ctx_, e));
   }
 
   JSVal BinaryBitXor(const JSVal& lhs,
                      const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Int32(lhs.int32() ^ rhs.int32());
-    }
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left ^ rhs.ToInt32(ctx_, e));
   }
 
   JSVal BinaryBitOr(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
-    if (lhs.IsInt32() && rhs.IsInt32()) {
-      return JSVal::Int32(lhs.int32() | rhs.int32());
-    }
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left | rhs.ToInt32(ctx_, e));
   }
