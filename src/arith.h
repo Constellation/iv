@@ -25,13 +25,5 @@ inline bool IsSubtractOverflow(int32_t lhs, int32_t rhs, int32_t* dif) {
   return (((*dif) ^ lhs) & ((*dif) ^ rhs)) & 0x80000000;
 }
 
-inline bool IsMultiplyOverflow(int32_t lhs, int32_t rhs) {
-  return true;
-}
-
-inline bool IsMultiplyOverflow(int32_t lhs, int32_t rhs, int32_t* sum) {
-  return true;
-}
-
 } }  // namespace iv::core
 #endif  // _IV_ARITH_H_
