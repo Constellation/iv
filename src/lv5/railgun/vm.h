@@ -924,7 +924,7 @@ MAIN_LOOP_START:
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
         // check overflow
-        // LSB and LSB - 1 bit is not 1
+        // MSB and MSB - 1 bit is not 1
         if (lhs.IsInt32() && rhs.IsInt32() &&
             !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
           SET_TOP(JSVal::Int32(lhs.int32() + rhs.int32()));
@@ -939,7 +939,7 @@ MAIN_LOOP_START:
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
         // check overflow
-        // LSB and LSB - 1 bit is not 1
+        // MSB and MSB - 1 bit is not 1
         if (lhs.IsInt32() && rhs.IsInt32() &&
             !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
           SET_TOP(JSVal::Int32(lhs.int32() - rhs.int32()));
@@ -951,17 +951,24 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(BINARY_MULTIPLY) {
-        const JSVal w = POP();
-        const JSVal v = TOP();
-        const JSVal res = BinaryMultiply(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        // if 1 bit is not found in MSB to MSB - 17 bits,
+        // this multiply is safe for overflow
+        if (lhs.IsInt32() && rhs.IsInt32() &&
+            !((lhs.int32() | rhs.int32()) >> 15)) {
+          SET_TOP(JSVal::Int32(lhs.int32() * rhs.int32()));
+        } else {
+          const JSVal res = BinaryMultiply(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH();
       }
 
       DEFINE_OPCODE(BINARY_DIVIDE) {
-        const JSVal w = POP();
-        const JSVal v = TOP();
-        const JSVal res = BinaryDivide(v, w, ERR);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        const JSVal res = BinaryDivide(lhs, rhs, ERR);
         SET_TOP(res);
         DISPATCH();
       }
