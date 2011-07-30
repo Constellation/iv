@@ -372,6 +372,13 @@ inline JSObjectEnv* NewObjectEnvironment(Context* ctx,
   return JSObjectEnv::New(ctx, env, val);
 }
 
+inline JSObjectEnv* NewGlobalEnvironment(Context* ctx, JSObject* val) {
+  assert(val);
+  JSObjectEnv* env = JSObjectEnv::New(ctx, NULL, val);
+  env->set_provide_this(true);
+  return env;
+}
+
 template<typename Builder>
 void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
   const std::size_t arg_count = args.size();

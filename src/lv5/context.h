@@ -50,22 +50,6 @@ class Context
     return global_data_.global_obj();
   }
 
-  JSEnv* lexical_env() const {
-    return lexical_env_;
-  }
-
-  void set_lexical_env(JSEnv* env) {
-    lexical_env_ = env;
-  }
-
-  JSEnv* variable_env() const {
-    return variable_env_;
-  }
-
-  void set_variable_env(JSEnv* env) {
-    variable_env_ = env;
-  }
-
   JSEnv* global_env() const {
     return global_env_;
   }
@@ -80,26 +64,24 @@ class Context
     Error e;
     JSFunction* const func = JSNativeFunction::New(this, f, n);
     const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
-    variable_env_->SetMutableBinding(this,
-                                     name,
-                                     func, false, &e);
+    global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
+    global_env_->SetMutableBinding(this, name, func, false, &e);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   void DefineFunction(const core::StringPiece& func_name) {
     Error e;
-    JSFunction* const f = JSInlinedFunction<func, n>::New(this);
     const Symbol name = context::Intern(this, func_name);
-    variable_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
-    variable_env_->SetMutableBinding(this, name,
-                                     f, false, &e);
+    JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
+    global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
+    global_env_->SetMutableBinding(this, name, f, false, &e);
   }
 
   template<JSAPI FunctionConstructor, JSAPI GlobalEval>
   void Initialize() {
-    InitContext(JSInlinedFunction<FunctionConstructor, 1>::NewPlain(this),
-                JSInlinedFunction<GlobalEval, 1>::NewPlain(this));
+    InitContext(
+        JSInlinedFunction<FunctionConstructor, 1>::NewPlain(this),
+        JSInlinedFunction<GlobalEval, 1>::NewPlain(this));
   }
 
   JSFunction* throw_type_error() {
@@ -152,8 +134,6 @@ class Context
 
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
-  JSEnv* lexical_env_;
-  JSEnv* variable_env_;
   JSEnv* global_env_;
 };
 

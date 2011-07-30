@@ -84,15 +84,7 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 Context::Context()
   : global_data_(),
     throw_type_error_(this),
-    lexical_env_(NULL),
-    variable_env_(NULL),
-    global_env_(NULL) {
-  JSObjectEnv* const env =
-      internal::NewObjectEnvironment(this, global_obj(), NULL);
-  lexical_env_ = env;
-  variable_env_ = env;
-  global_env_ = env;
-  env->set_provide_this(true);
+    global_env_(internal::NewGlobalEnvironment(this, global_obj())) {
 }
 
 double Context::Random() {

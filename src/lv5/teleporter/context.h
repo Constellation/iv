@@ -25,6 +25,8 @@ class Context : public iv::lv5::Context {
 
   Context()
     : iv::lv5::Context(),
+      lexical_env_(global_env()),
+      variable_env_(global_env()),
       interp_(new Interpreter(this)),
       binding_(global_data()->global_obj()),
       mode_(NORMAL),
@@ -58,6 +60,22 @@ class Context : public iv::lv5::Context {
                  script->type() == teleporter::JSScript::kEval);
     assert(!ret_.IsEmpty() || error_);
     return error_;
+  }
+
+  JSEnv* lexical_env() const {
+    return lexical_env_;
+  }
+
+  void set_lexical_env(JSEnv* env) {
+    lexical_env_ = env;
+  }
+
+  JSEnv* variable_env() const {
+    return variable_env_;
+  }
+
+  void set_variable_env(JSEnv* env) {
+    variable_env_ = env;
   }
 
   JSVal this_binding() const {
@@ -177,6 +195,8 @@ class Context : public iv::lv5::Context {
   }
 
  private:
+  JSEnv* lexical_env_;
+  JSEnv* variable_env_;
   std::shared_ptr<Interpreter> interp_;
   JSVal binding_;
   Mode mode_;
