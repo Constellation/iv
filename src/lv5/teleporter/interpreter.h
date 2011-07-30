@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cassert>
 #include <cmath>
-#include <boost/foreach.hpp>
 #include "detail/tuple.h"
 #include "detail/array.h"
 #include "token.h"
@@ -107,8 +106,9 @@ void Interpreter::Invoke(JSCodeFunction* code,
   {
     const std::size_t arg_count = args.size();
     std::size_t n = 0;
-    BOOST_FOREACH(const Identifier* const ident,
-                  code->code()->params()) {
+    for (Identifiers::const_iterator it = code->code()->params().begin(),
+         last = code->code()->params().end(); it != last; ++it) {
+      const Identifier* ident = *it;
       ++n;
       const Symbol arg_name = ident->symbol();
       if (!env->HasBinding(ctx_, arg_name)) {
@@ -126,8 +126,9 @@ void Interpreter::Invoke(JSCodeFunction* code,
   }
 
   // step 5
-  BOOST_FOREACH(const FunctionLiteral* const f,
-                scope.function_declarations()) {
+  for (Scope::FunctionLiterals::const_iterator it = scope.function_declarations().begin(),
+       last = scope.function_declarations().end(); it != last; ++it) {
+    const FunctionLiteral* f = *it;
     const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
@@ -161,7 +162,9 @@ void Interpreter::Invoke(JSCodeFunction* code,
   }
 
   // step 8
-  BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
+  for (Scope::Variables::const_iterator it = scope.variables().begin(),
+       last = scope.variables().end(); it != last; ++it) {
+    const Scope::Variable& var = *it;
     const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
@@ -183,7 +186,9 @@ void Interpreter::Invoke(JSCodeFunction* code,
     }
   }
 
-  BOOST_FOREACH(const Statement* const stmt, code->code()->body()) {
+  for (Statements::const_iterator it = code->code()->body().begin(),
+       last = code->code()->body().end(); it != last; ++it) {
+    const Statement* stmt = *it;
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       RETURN_STMT(Context::THROW, ctx_->ret(), NULL);
@@ -204,8 +209,9 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
   const bool is_global_env = (env->AsJSObjectEnv() == ctx_->global_env());
-  BOOST_FOREACH(const FunctionLiteral* const f,
-                scope.function_declarations()) {
+  for (Scope::FunctionLiterals::const_iterator it = scope.function_declarations().begin(),
+       last = scope.function_declarations().end(); it != last; ++it) {
+    const FunctionLiteral* f = *it;
     const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
@@ -244,7 +250,9 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     env->SetMutableBinding(ctx_, fn, fo, ctx_->IsStrict(), CHECK_IN_STMT);
   }
 
-  BOOST_FOREACH(const Scope::Variable& var, scope.variables()) {
+  for (Scope::Variables::const_iterator it = scope.variables().begin(),
+       last = scope.variables().end(); it != last; ++it) {
+    const Scope::Variable& var = *it;
     const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
@@ -256,7 +264,9 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
 
   JSVal value = JSUndefined;
   // section 14 Program
-  BOOST_FOREACH(const Statement* const stmt, global->body()) {
+  for (Statements::const_iterator it = global->body().begin(),
+       last = global->body().end(); it != last; ++it) {
+    const Statement* stmt = *it;
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -279,7 +289,9 @@ void Interpreter::Visit(const Block* block) {
   // section 12.1 Block
   ctx_->set_mode(Context::NORMAL);
   JSVal value = JSEmpty;
-  BOOST_FOREACH(const Statement* const stmt, block->body()) {
+  for (Statements::const_iterator it = block->body().begin(),
+       last = block->body().end(); it != last; ++it) {
+    const Statement* stmt = *it;
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
@@ -314,7 +326,9 @@ void Interpreter::Visit(const FunctionStatement* stmt) {
 
 void Interpreter::Visit(const VariableStatement* var) {
   // bool is_const = var->IsConst();
-  BOOST_FOREACH(const Declaration* const decl, var->decls()) {
+  for (Declarations::const_iterator it = var->decls().begin(),
+       last = var->decls().end(); it != last; ++it) {
+    const Declaration* decl = *it;
     Visit(decl->name());
     const JSVal lhs = ctx_->ret();
     if (const core::Maybe<const Expression> expr = decl->expr()) {
@@ -577,7 +591,9 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
       }
       // case's fall through
       if (found) {
-        BOOST_FOREACH(const Statement* const st, clause->body()) {
+        for (Statements::const_iterator it = clause->body().begin(),
+             last = clause->body().end(); it != last; ++it) {
+          const Statement* st = *it;
           EVAL_IN_STMT(st);
           if (!ctx_->ret().IsEmpty()) {
             value = ctx_->ret();
@@ -596,7 +612,9 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
     if (!finalize && !found && default_found) {
       for (CaseClauses::const_iterator it = default_it,
            last = clauses.end(); it != last; ++it) {
-        BOOST_FOREACH(const Statement* const st, (*it)->body()) {
+        for (Statements::const_iterator jt = (*it)->body().begin(),
+             jlast = (*it)->body().end(); jt != jlast; ++jt) {
+          const Statement* st = *jt;
           EVAL_IN_STMT(st);
           if (!ctx_->ret().IsEmpty()) {
             value = ctx_->ret();
@@ -1252,8 +1270,9 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
   // when in parse phase, have already removed last elision.
   JSArray* const ary = JSArray::New(ctx_);
   uint32_t current = 0;
-  BOOST_FOREACH(const core::Maybe<const Expression>& expr, literal->items()) {
-    if (expr) {
+  for (MaybeExpressions::const_iterator it = literal->items().begin(),
+       last = literal->items().end(); it != last; ++it) {
+    if (const core::Maybe<const Expression> expr = *it) {
       EVAL(expr.Address());
       const JSVal value = GetValue(ctx_->ret(), CHECK);
       ary->DefineOwnProperty(
@@ -1276,7 +1295,9 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
   JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5
-  BOOST_FOREACH(const ObjectLiteral::Property& prop, literal->properties()) {
+  for (ObjectLiteral::Properties::const_iterator it = literal->properties().begin(),
+       last = literal->properties().end(); it != last; ++it) {
+    const ObjectLiteral::Property& prop = *it;
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
     const Identifier* const ident = get<1>(prop);
     const Symbol name = ident->symbol();
@@ -1354,7 +1375,9 @@ void Interpreter::Visit(const FunctionCall* call) {
 
   ScopedArguments args(ctx_, call->args().size(), CHECK);
   std::size_t n = 0;
-  BOOST_FOREACH(const Expression* const expr, call->args()) {
+  for (Expressions::const_iterator it = call->args().begin(),
+       last = call->args().end(); it != last; ++it) {
+    const Expression* expr = *it;
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }
@@ -1400,7 +1423,9 @@ void Interpreter::Visit(const ConstructorCall* call) {
   ScopedArguments args(ctx_, call->args().size(), CHECK);
   args.set_constructor_call(true);
   std::size_t n = 0;
-  BOOST_FOREACH(const Expression* const expr, call->args()) {
+  for (Expressions::const_iterator it = call->args().begin(),
+       last = call->args().end(); it != last; ++it) {
+    const Expression* expr = *it;
     EVAL(expr);
     args[n++] = GetValue(ctx_->ret(), CHECK);
   }
