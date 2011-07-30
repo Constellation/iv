@@ -46,7 +46,7 @@ supporting internal functions that are not used by other modules. */
 #include "pcre_internal.h"
 
 #include <string.h>
-#include "array.h"
+#include "detail/array.h"
 #include "ASCIICType.h"
 
 /* Negative values for the firstchar and reqchar variables */
@@ -2035,8 +2035,8 @@ static int calculateCompiledPatternLength(const UChar* pattern, int patternLengt
     int branch_extra = 0;
     int lastitemlength = 0;
     unsigned brastackptr = 0;
-    std::tr1::array<int, BRASTACK_SIZE> brastack;
-    std::tr1::array<unsigned char, BRASTACK_SIZE> bralenstack;
+    std::array<int, BRASTACK_SIZE> brastack;
+    std::array<unsigned char, BRASTACK_SIZE> bralenstack;
     int bracount = 0;
     
     const UChar* ptr = (const UChar*)(pattern - 1);

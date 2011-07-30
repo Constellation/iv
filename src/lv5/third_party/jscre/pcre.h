@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef JSRegExp_h
 #define JSRegExp_h
 #include <cstddef>
-#include "cstdint.h"
+#include "detail/cstdint.h"
 
 #undef DEBUG
 
