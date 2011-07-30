@@ -923,11 +923,14 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_ADD) {
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
-        // check overflow
-        // MSB and MSB - 1 bit is not 1
-        if (lhs.IsInt32() && rhs.IsInt32() &&
-            !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
-          SET_TOP(JSVal::Int32(lhs.int32() + rhs.int32()));
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          int32_t sum;
+          if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {
+            SET_TOP(JSVal::Int32(sum));
+          } else {
+            SET_TOP(JSVal(static_cast<double>(lhs.int32()) +
+                          static_cast<double>(rhs.int32())));
+          }
         } else {
           const JSVal res = BinaryAdd(lhs, rhs, ERR);
           SET_TOP(res);
@@ -938,11 +941,14 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_SUBTRACT) {
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
-        // check overflow
-        // MSB and MSB - 1 bit is not 1
-        if (lhs.IsInt32() && rhs.IsInt32() &&
-            !(lhs.int32() | (rhs.int32() & 0xC0000000))) {
-          SET_TOP(JSVal::Int32(lhs.int32() - rhs.int32()));
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          int32_t dif;
+          if (!core::IsSubtractOverflow(lhs.int32(), rhs.int32(), &dif)) {
+            SET_TOP(JSVal::Int32(dif));
+          } else {
+            SET_TOP(JSVal(static_cast<double>(lhs.int32()) -
+                          static_cast<double>(rhs.int32())));
+          }
         } else {
           const JSVal res = BinarySub(lhs, rhs, ERR);
           SET_TOP(res);
