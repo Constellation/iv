@@ -143,7 +143,7 @@ def Build():
     env.Append(CCFLAGS=["-g"])
   else:
     env.Append(
-        CCFLAGS=["-O3"],
+        CCFLAGS=["-O3", "-fomit-frame-pointer"],
         CPPDEFINES=["NDEBUG"])
 
   if env['direct_threading']:
