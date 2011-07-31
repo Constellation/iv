@@ -1,7 +1,6 @@
 #ifndef _IV_LV5_JSARRAY_H_
 #define _IV_LV5_JSARRAY_H_
 #include <cstdlib>
-#include <iostream>
 #include <limits>
 #include <vector>
 #include <set>
@@ -164,8 +163,9 @@ class JSArray : public JSObject {
         }
       } else {
         const bool succeeded =
-            JSObject::DefineOwnProperty(ctx, name,
-                                        desc, false, IV_LV5_ERROR_WITH(e, false));
+            JSObject::DefineOwnProperty(
+                ctx, name,
+                desc, false, IV_LV5_ERROR_WITH(e, false));
         if (succeeded) {
           dense_ = false;
           if (detail::kMaxVectorSize > index) {
@@ -202,7 +202,8 @@ class JSArray : public JSObject {
           bool returned = false;
           if (IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e)) {
             length_ =
-                detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(desc, length_));
+                detail::DescriptorToArrayLengthSlot(
+                    PropertyDescriptor::Merge(desc, length_));
           }
           return returned;
         }
@@ -218,9 +219,12 @@ class JSArray : public JSObject {
         uint32_t old_len = length_.value();
         if (new_len >= old_len) {
           bool returned = false;
-          if (IsDefineOwnPropertyAccepted(length_, new_len_desc, th, &returned, e)) {
+          if (IsDefineOwnPropertyAccepted(length_,
+                                          new_len_desc,
+                                          th, &returned, e)) {
             length_ =
-                detail::DescriptorToArrayLengthSlot(PropertyDescriptor::Merge(new_len_desc, length_));
+                detail::DescriptorToArrayLengthSlot(
+                    PropertyDescriptor::Merge(new_len_desc, length_));
           }
           return returned;
         }
@@ -232,7 +236,8 @@ class JSArray : public JSObject {
         new_len_desc.set_writable(true);
 
         bool succeeded = false;
-        if (IsDefineOwnPropertyAccepted(length_, new_len_desc, th, &succeeded, e)) {
+        if (IsDefineOwnPropertyAccepted(length_,
+                                        new_len_desc, th, &succeeded, e)) {
           length_ =
               detail::DescriptorToArrayLengthSlot(
                   PropertyDescriptor::Merge(new_len_desc, length_));
@@ -258,7 +263,9 @@ class JSArray : public JSObject {
                   new_len_desc.set_writable(false);
                 }
                 bool wasted = false;
-                if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
+                if (IsDefineOwnPropertyAccepted(length_,
+                                                new_len_desc,
+                                                false, &wasted, e)) {
                   length_ =
                       detail::DescriptorToArrayLengthSlot(
                           PropertyDescriptor::Merge(new_len_desc, length_));
@@ -283,7 +290,8 @@ class JSArray : public JSObject {
               if (*it < new_len) {
                 break;
               }
-              const bool delete_succeeded = Delete(ctx, symbol::MakeSymbolFromIndex(*it), false, e);
+              const bool delete_succeeded =
+                  Delete(ctx, symbol::MakeSymbolFromIndex(*it), false, e);
               if (!delete_succeeded) {
                 const uint32_t result_len = *it + 1;
                 CompactionToLength(result_len);
@@ -292,7 +300,9 @@ class JSArray : public JSObject {
                   new_len_desc.set_writable(false);
                 }
                 bool wasted = false;
-                if (IsDefineOwnPropertyAccepted(length_, new_len_desc, false, &wasted, e)) {
+                if (IsDefineOwnPropertyAccepted(length_,
+                                                new_len_desc,
+                                                false, &wasted, e)) {
                   length_ =
                       detail::DescriptorToArrayLengthSlot(
                           PropertyDescriptor::Merge(new_len_desc, length_));
