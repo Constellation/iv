@@ -479,7 +479,7 @@ class JSVal {
 
   uint32_t GetUInt32() const {
     assert(IsNumber());
-    uint32_t val;
+    uint32_t val = 0;  // make gcc happy
     GetUInt32(&val);
     return val;
   }
