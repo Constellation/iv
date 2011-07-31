@@ -58,6 +58,10 @@ struct Frame {
     return this_binding();
   }
 
+  bool IsGlobalFrame() const {
+    return prev_ == NULL;
+  }
+
   JSVal this_binding() const {
     return *(reinterpret_cast<const JSVal*>(this) - (argc_ + 1));
   }

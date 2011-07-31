@@ -1517,7 +1517,11 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         PUSH(w);
-        PUSH(frame->lexical_env()->ImplicitThisValue());
+        if (frame->code()->HasDeclEnv()) {
+          PUSH(frame->lexical_env()->ImplicitThisValue());
+        } else {
+          PUSH(JSUndefined);
+        }
         DISPATCH();
       }
 
@@ -1554,7 +1558,11 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(CALL_CALL_RESULT) {
-        PUSH(frame->lexical_env()->ImplicitThisValue());
+        if (frame->code()->HasDeclEnv()) {
+          PUSH(frame->lexical_env()->ImplicitThisValue());
+        } else {
+          PUSH(JSUndefined);
+        }
         DISPATCH();
       }
 
