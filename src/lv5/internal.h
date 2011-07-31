@@ -374,9 +374,7 @@ inline JSObjectEnv* NewObjectEnvironment(Context* ctx,
 
 inline JSObjectEnv* NewGlobalEnvironment(Context* ctx, JSObject* val) {
   assert(val);
-  JSObjectEnv* env = JSObjectEnv::New(ctx, NULL, val);
-  env->set_provide_this(true);
-  return env;
+  return JSObjectEnv::New(ctx, NULL, val);
 }
 
 template<typename Builder>

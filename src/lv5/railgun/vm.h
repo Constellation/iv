@@ -1518,11 +1518,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_LOCAL) {
         const JSVal& w = GETLOCAL(oparg);
         PUSH(w);
-        if (frame->code()->HasDeclEnv()) {
-          PUSH(frame->lexical_env()->ImplicitThisValue());
-        } else {
-          PUSH(JSUndefined);
-        }
+        PUSH(JSUndefined);
         DISPATCH();
       }
 
@@ -1531,7 +1527,7 @@ MAIN_LOOP_START:
         if (ctx_->global_env()->HasBinding(ctx_, s)) {
           const JSVal w = ctx_->global_env()->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
-          PUSH(ctx_->global_obj());
+          PUSH(JSUndefined);
         } else {
           RaiseReferenceError(s, e);
           DISPATCH_ERROR();
@@ -1558,11 +1554,7 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(CALL_CALL_RESULT) {
-        if (frame->code()->HasDeclEnv()) {
-          PUSH(frame->lexical_env()->ImplicitThisValue());
-        } else {
-          PUSH(JSUndefined);
-        }
+        PUSH(JSUndefined);
         DISPATCH();
       }
 
