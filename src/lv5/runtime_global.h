@@ -245,13 +245,13 @@ JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
 
 }  // namespace detail
 
-inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("parseInt", args, error);
+inline JSVal GlobalParseInt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("parseInt", args, e);
   if (args.size() > 0) {
-    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
     int radix = 0;
     if (args.size() > 1) {
-      const double ret = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+      const double ret = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
       radix = core::DoubleToInt32(ret);
     }
     bool strip_prefix = true;
@@ -275,10 +275,10 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* error) {
 }
 
 // section 15.1.2.3 parseFloat(string)
-inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, error);
+inline JSVal GlobalParseFloat(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, e);
   if (args.size() > 0) {
-    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
     return core::StringToDouble(*str->Flatten(), true);
   } else {
     return JSNaN;
@@ -286,25 +286,27 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* error) {
 }
 
 // section 15.1.2.4 isNaN(number)
-inline JSVal GlobalIsNaN(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, error);
+inline JSVal GlobalIsNaN(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, e);
   if (args.size() > 0) {
-    const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
-    if (core::IsNaN(number)) {
-      return JSTrue;
-    } else {
+    if (args[0].IsInt32()) {  // int32_t short circuit
       return JSFalse;
     }
+    const double number = args[0].ToNumber(args.ctx(), e);
+    return JSVal::Bool(core::IsNaN(number));
   } else {
     return JSTrue;
   }
 }
 
 // section 15.1.2.5 isFinite(number)
-inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, error);
+inline JSVal GlobalIsFinite(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, e);
   if (args.size() > 0) {
-    const double number = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+    if (args[0].IsInt32()) { // int32_t short circuit
+      return JSTrue;
+    }
+    const double number = args[0].ToNumber(args.ctx(), e);
     return JSVal::Bool(core::IsFinite(number));
   } else {
     return JSFalse;
@@ -313,53 +315,53 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* error) {
 
 // section 15.1.3 URI Handling Function Properties
 // section 15.1.3.1 decodeURI(encodedURI)
-inline JSVal GlobalDecodeURI(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, error);
+inline JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, e);
   const JSString* uri_string;
   if (args.size() > 0) {
-    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
     uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  return detail::Decode<detail::URI>(args.ctx(), *uri_string, error);
+  return detail::Decode<detail::URI>(args.ctx(), *uri_string, e);
 }
 
 // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
-inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, error);
+inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, e);
   const JSString* component_string;
   if (args.size() > 0) {
-    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
   return detail::Decode<detail::URIComponent>(args.ctx(),
-                                              *component_string, error);
+                                              *component_string, e);
 }
 
 // section 15.1.3.3 encodeURI(uri)
-inline JSVal GlobalEncodeURI(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, error);
+inline JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, e);
   const JSString* uri_string;
   if (args.size() > 0) {
-    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
     uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
-  return detail::Encode<detail::URI>(args.ctx(), *uri_string, error);
+  return detail::Encode<detail::URI>(args.ctx(), *uri_string, e);
 }
 
 // section 15.1.3.4 encodeURIComponent(uriComponent)
-inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, error);
+inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, e);
   const JSString* component_string;
   if (args.size() > 0) {
-    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
     component_string = JSString::NewAsciiString(args.ctx(), "undefined");
   }
   return detail::Encode<detail::URIComponent>(args.ctx(),
-                                              *component_string, error);
+                                              *component_string, e);
 }
 
 inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
