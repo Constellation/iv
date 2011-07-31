@@ -1,14 +1,14 @@
 // this syslog header file only used in debug
-#ifndef _IV_LV5_SYSLOG_H_
-#define _IV_LV5_SYSLOG_H_
+#ifndef _IV_SYSLOG_H_
+#define _IV_SYSLOG_H_
 #include <cstdio>
 #include <string>
 #include <syslog.h>
 #include "noncopyable.h"
 namespace iv {
-namespace lv5 {
+namespace core {
 
-class Syslog : private core::Noncopyable<> {
+class Syslog : private Noncopyable<> {
  public:
   explicit Syslog(const std::string& ident) {
     openlog(ident.c_str(), LOG_CONS | LOG_PID, LOG_USER);
@@ -24,5 +24,5 @@ class Syslog : private core::Noncopyable<> {
   }
 };
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_SYSLOG_H_
+} }  // namespace iv::core
+#endif  // _IV_SYSLOG_H_
