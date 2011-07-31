@@ -252,33 +252,29 @@ class VM {
       JSString* const rstr = rprim.ToString(ctx_, CHECK);
       return JSString::New(ctx_, lstr, rstr);
     }
-    const double left_num = lprim.ToNumber(ctx_, CHECK);
-    const double right_num = rprim.ToNumber(ctx_, CHECK);
-    return left_num + right_num;
+
+    const double left = lprim.ToNumber(ctx_, CHECK);
+    return left + rprim.ToNumber(ctx_, e);
   }
 
   JSVal BinarySub(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return left_num - right_num;
+    const double left = lhs.ToNumber(ctx_, CHECK);
+    return left -  rhs.ToNumber(ctx_, e);
   }
 
   JSVal BinaryMultiply(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return left_num * right_num;
+    const double left = lhs.ToNumber(ctx_, CHECK);
+    return left * rhs.ToNumber(ctx_, e);
   }
 
   JSVal BinaryDivide(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return left_num / right_num;
+    const double left = lhs.ToNumber(ctx_, CHECK);
+    return left / rhs.ToNumber(ctx_, e);
   }
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
-    const double left_num = lhs.ToNumber(ctx_, CHECK);
-    const double right_num = rhs.ToNumber(ctx_, CHECK);
-    return std::fmod(left_num, right_num);
+    const double left = lhs.ToNumber(ctx_, CHECK);
+    return std::fmod(left, rhs.ToNumber(ctx_, e));
   }
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
@@ -299,30 +295,26 @@ class VM {
 
   JSVal BinaryCompareLT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    const internal::CompareKind res =
-        internal::Compare<true>(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(res == internal::CMP_TRUE);
+    return JSVal::Bool(
+        internal::Compare<true>(ctx_, lhs, rhs, e) == internal::CMP_TRUE);
   }
 
   JSVal BinaryCompareLTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    const internal::CompareKind res =
-        internal::Compare<false>(ctx_, rhs, lhs, CHECK);
-    return JSVal::Bool(res == internal::CMP_FALSE);
+    return JSVal::Bool(
+        internal::Compare<false>(ctx_, rhs, lhs, e) == internal::CMP_FALSE);
   }
 
   JSVal BinaryCompareGT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    const internal::CompareKind res =
-        internal::Compare<false>(ctx_, rhs, lhs, CHECK);
-    return JSVal::Bool(res == internal::CMP_TRUE);
+    return JSVal::Bool(
+        internal::Compare<false>(ctx_, rhs, lhs, e) == internal::CMP_TRUE);
   }
 
   JSVal BinaryCompareGTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    const internal::CompareKind res =
-        internal::Compare<true>(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(res == internal::CMP_FALSE);
+    return JSVal::Bool(
+        internal::Compare<true>(ctx_, lhs, rhs, e) == internal::CMP_FALSE);
   }
 
   JSVal BinaryInstanceof(const JSVal& lhs,
@@ -336,8 +328,7 @@ class VM {
       e->Report(Error::Type, "instanceof requires constructor");
       return JSEmpty;
     }
-    const bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
-    return JSVal::Bool(res);
+    return JSVal::Bool(robj->AsCallable()->HasInstance(ctx_, lhs, e));
   }
 
   JSVal BinaryIn(const JSVal& lhs,
@@ -352,8 +343,7 @@ class VM {
 
   JSVal BinaryEqual(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
-    const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(res);
+    return JSVal::Bool(internal::AbstractEqual(ctx_, lhs, rhs, e));
   }
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
@@ -363,8 +353,7 @@ class VM {
 
   JSVal BinaryNotEqual(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
-    const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
-    return JSVal::Bool(!res);
+    return JSVal::Bool(!internal::AbstractEqual(ctx_, lhs, rhs, e));
   }
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
