@@ -443,8 +443,8 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DELETE_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
-          const bool res = current->DeleteBinding(ctx_, s);
+        if (ctx_->global_env()->HasBinding(ctx_, s)) {
+          const bool res = ctx_->global_env()->DeleteBinding(ctx_, s);
           PUSH(JSVal::Bool(res));
         } else {
           // not found -> unresolvable reference
@@ -706,8 +706,9 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(TYPEOF_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        if (JSEnv* current = GetEnv(ctx_->global_env(), s)) {
-          const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
+        if (ctx_->global_env()->HasBinding(ctx_, s)) {
+          const JSVal expr =
+              ctx_->global_env()->GetBindingValue(ctx_, s, strict, ERR);
           PUSH(expr.TypeOf(ctx_));
         } else {
           // unresolvable reference
@@ -1527,11 +1528,10 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(CALL_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        JSVal res;
-        if (JSEnv* target_env = GetEnv(ctx_->global_env(), s)) {
-          const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
+        if (ctx_->global_env()->HasBinding(ctx_, s)) {
+          const JSVal w = ctx_->global_env()->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
-          PUSH(target_env->ImplicitThisValue());
+          PUSH(ctx_->global_obj());
         } else {
           RaiseReferenceError(s, e);
           DISPATCH_ERROR();

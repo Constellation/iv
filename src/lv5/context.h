@@ -26,7 +26,7 @@ namespace bind {
 class Object;
 }  // namespace bind
 
-class JSEnv;
+class JSObjectEnv;
 
 class Context
   : public gc_cleanup,
@@ -50,7 +50,7 @@ class Context
     return global_data_.global_obj();
   }
 
-  JSEnv* global_env() const {
+  JSObjectEnv* global_env() const {
     return global_env_;
   }
 
@@ -134,7 +134,7 @@ class Context
 
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
-  JSEnv* global_env_;
+  JSObjectEnv* global_env_;
 };
 
 } }  // namespace iv::lv5
