@@ -47,7 +47,7 @@ class Stack : core::Noncopyable<Stack> {
   static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
 
   // bytes. 4KB is page size.
-  static const size_type kCommitSize = 4 * 1024;
+  static const size_type kCommitSize = 4 * core::Size::KB;
 
   class Resource {
    public:
