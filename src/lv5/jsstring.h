@@ -385,8 +385,10 @@ class JSString : public HeapObject {
   }
 
   core::UString GetUString() const {
-    const Fiber* fiber = Flatten();
-    return core::UString(fiber->data(), fiber->size());
+    core::UString str;
+    str.resize(size());
+    Copy(str.begin());
+    return str;
   }
 
   uint16_t GetAt(size_type n) const {
