@@ -41,17 +41,17 @@ static const std::size_t kMaxFibers = 5;
 class FiberSlot : private core::Noncopyable<FiberSlot> {
  public:
   typedef std::size_t size_type;
-  bool IsCons() const {
-    return is_cons_;
-  }
+  virtual ~FiberSlot() { }  // virtual destructor
+  virtual bool IsCons() const = 0;
 
   size_type size() const {
     return size_;
   }
 
  protected:
+  explicit FiberSlot(std::size_t n) : size_(n) { }
+
   size_type size_;
-  bool is_cons_;
 };
 
 class StringFiber : public FiberSlot {
@@ -72,22 +72,36 @@ class StringFiber : public FiberSlot {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
+ private:
+  template<typename String>
+  explicit StringFiber(const String& piece)
+    : FiberSlot(piece.size()) {
+    std::copy(piece.begin(), piece.end(), begin());
+  }
+
+  explicit StringFiber(std::size_t n)
+    : FiberSlot(n) {
+  }
+
+  template<typename Iter>
+  StringFiber(Iter it, std::size_t n)
+    : FiberSlot(n) {
+    std::copy(it, it + n, begin());
+  }
+
+ public:
+
   template<typename String>
   static this_type* New(const String& piece) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
         (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + piece.size() * sizeof(char_type)));
-    mem->size_ = piece.size();
-    mem->is_cons_ = false;
-    std::copy(piece.begin(), piece.end(), mem->begin());
-    return mem;
+    return new (mem) StringFiber(piece);
   }
 
   static this_type* NewWithSize(std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
         (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
-    mem->size_ = n;
-    mem->is_cons_ = false;
-    return mem;
+    return new (mem) StringFiber(n);
   }
 
   template<typename Iter>
@@ -95,20 +109,18 @@ class StringFiber : public FiberSlot {
     const std::size_t n = std::distance(it, last);
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
         (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
-    mem->size_ = n;
-    mem->is_cons_ = false;
-    std::copy(it, last, mem->begin());
-    return mem;
+    return new (mem) StringFiber(it, n);
   }
 
   template<typename Iter>
   static this_type* New(Iter it, std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
         (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
-    mem->size_ = n;
-    mem->is_cons_ = false;
-    std::copy(it, it + n, mem->begin());
-    return mem;
+    return new (mem) StringFiber(it, n);
+  }
+
+  bool IsCons() const {
+    return false;
   }
 
   operator core::UStringPiece() const {
@@ -207,10 +219,6 @@ class StringFiber : public FiberSlot {
   friend bool operator>=(const this_type& x, const this_type& y) {
     return x.compare(y) >= 0;
   }
-
- private:
-  StringFiber();  // hiding constructor
-
 };
 
 class JSString : public HeapObject {
@@ -296,22 +304,27 @@ class JSString : public HeapObject {
       return rend();
     }
 
-    static this_type* New(const JSString* lhs, const JSString* rhs) {
-      const std::size_t size = lhs->size() + rhs->size();
-      const std::size_t fiber_count = lhs->fiber_count() + rhs->fiber_count();
-      this_type* mem = static_cast<this_type*>(GC_MALLOC(
-          (IV_ROUNDUP(sizeof(this_type),
-                      sizeof(value_type))) + fiber_count * sizeof(value_type)));
-      mem->size_ = size;
-      mem->is_cons_ = true;
-      mem->fiber_count_ = fiber_count;
+    bool IsCons() const {
+      return true;
+    }
+
+    Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
+      : FiberSlot(lhs->size() + rhs->size()),
+        fiber_count_(fiber_count) {
       std::copy(
           rhs->fibers_.begin(),
           rhs->fibers_.begin() + rhs->fiber_count(),
           std::copy(lhs->fibers_.begin(),
                     lhs->fibers_.begin() + lhs->fiber_count(),
-                    mem->begin()));
-      return mem;
+                    begin()));
+    }
+
+    static this_type* New(const JSString* lhs, const JSString* rhs) {
+      const std::size_t fiber_count = lhs->fiber_count() + rhs->fiber_count();
+      this_type* mem = static_cast<this_type*>(GC_MALLOC(
+          (IV_ROUNDUP(sizeof(this_type),
+                      sizeof(value_type))) + fiber_count * sizeof(value_type)));
+      return new (mem) Cons(lhs, rhs, fiber_count);
     }
 
     template<typename OutputIter>
