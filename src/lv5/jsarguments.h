@@ -151,7 +151,7 @@ class JSNormalArguments : public JSArguments {
     uint32_t index = len - 1;
     const std::size_t names_len = names.size();
     for (; it != last; ++it) {
-      const Symbol sym = context::Intern(ctx, index);
+      const Symbol sym = symbol::MakeSymbolFromIndex(index);
       binder->def(sym, *it, bind::W | bind::E | bind::C);
       if (index < names_len) {
         obj->map_.insert(
