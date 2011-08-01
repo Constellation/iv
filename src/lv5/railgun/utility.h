@@ -130,12 +130,21 @@ inline void Instantiate(Context* ctx,
   if (func) {
     if (code->ShouldCreateArguments()) {
       JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
-      JSArguments* const args_obj =
-          JSArguments::New(ctx, func,
-                           code->params(),
-                           frame->arguments_rbegin(),
-                           frame->arguments_rend(), decl_env,
-                           code->strict(), IV_LV5_ERROR_VOID(e));
+      JSArguments* args_obj = NULL;
+      if (!code->strict()) {
+        args_obj = JSNormalArguments::New(
+            ctx, func,
+            code->params(),
+            frame->arguments_rbegin(),
+            frame->arguments_rend(), decl_env,
+            IV_LV5_ERROR_VOID(e));
+      } else {
+        args_obj = JSStrictArguments::New(
+            ctx, func,
+            frame->arguments_rbegin(),
+            frame->arguments_rend(),
+            IV_LV5_ERROR_VOID(e));
+      }
       if (code->strict()) {
         decl_env->CreateImmutableBinding(symbol::arguments());
         decl_env->InitializeImmutableBinding(symbol::arguments(), args_obj);

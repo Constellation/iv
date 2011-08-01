@@ -142,14 +142,22 @@ void Interpreter::Invoke(JSCodeFunction* code,
   }
 
   // step 6, 7
-  // TODO(Constellation) code check (function)
   if (!env->HasBinding(ctx_, symbol::arguments())) {
-    JSArguments* const args_obj =
-        JSArguments::New(ctx_, code,
-                         code->code()->params(),
-                         args.rbegin(),
-                         args.rend(), env,
-                         ctx_->IsStrict(), CHECK_IN_STMT);
+    JSArguments* args_obj = NULL;
+    if (!ctx_->IsStrict()) {
+      args_obj = JSNormalArguments::New(
+          ctx_, code,
+          code->code()->params(),
+          args.rbegin(),
+          args.rend(), env,
+          CHECK_IN_STMT);
+    } else {
+      args_obj = JSStrictArguments::New(
+          ctx_, code,
+          args.rbegin(),
+          args.rend(),
+          CHECK_IN_STMT);
+    }
     if (ctx_->IsStrict()) {
       env->CreateImmutableBinding(symbol::arguments());
       env->InitializeImmutableBinding(symbol::arguments(), args_obj);

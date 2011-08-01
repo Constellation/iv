@@ -149,12 +149,21 @@ class JSVMFunction : public JSFunction {
       } else if (type == Code::FDECL) {
         env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
       } else if (type == Code::ARGUMENTS || type == Code::ARGUMENTS_LOCAL) {
-        JSArguments* const args_obj =
-            JSArguments::New(ctx, this,
-                             code_->params(),
-                             frame->arguments_rbegin(),
-                             frame->arguments_rend(), env,
-                             code_->strict(), IV_LV5_ERROR_VOID(e));
+        JSArguments* args_obj = NULL;
+        if (!code_->strict()) {
+          args_obj = JSNormalArguments::New(
+              ctx, this,
+              code_->params(),
+              frame->arguments_rbegin(),
+              frame->arguments_rend(), env,
+              IV_LV5_ERROR_VOID(e));
+        } else {
+          args_obj = JSStrictArguments::New(
+              ctx, this,
+              frame->arguments_rbegin(),
+              frame->arguments_rend(),
+              IV_LV5_ERROR_VOID(e));
+        }
         if (type == Code::ARGUMENTS) {
           if (code_->strict()) {
             env->CreateImmutableBinding(sym);

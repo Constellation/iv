@@ -17,22 +17,32 @@ class AstFactory;
 
 class JSArguments : public JSObject {
  public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Arguments",
+      Class::Arguments
+    };
+    return &cls;
+  }
+};
+
+class JSNormalArguments : public JSArguments {
+ public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
   typedef GCHashMap<Symbol, Symbol>::type Index2Param;
-  JSArguments(Context* ctx, JSDeclEnv* env)
+  JSNormalArguments(Context* ctx, JSDeclEnv* env)
     : env_(env),
       map_() { }
 
   template<typename Idents, typename ArgsReverseIter>
-  static JSArguments* New(Context* ctx,
-                          JSFunction* func,
-                          const Idents& names,
-                          ArgsReverseIter it,
-                          ArgsReverseIter last,
-                          JSDeclEnv* env,
-                          bool strict,
-                          Error* e) {
-    JSArguments* const obj = new JSArguments(ctx, env);
+  static JSNormalArguments* New(Context* ctx,
+                                JSFunction* func,
+                                const Idents& names,
+                                ArgsReverseIter it,
+                                ArgsReverseIter last,
+                                JSDeclEnv* env,
+                                Error* e) {
+    JSNormalArguments* const obj = new JSNormalArguments(ctx, env);
     const uint32_t len = std::distance(it, last);
     obj->set_cls(JSArguments::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
@@ -40,22 +50,8 @@ class JSArguments : public JSObject {
     binder
         .def(symbol::length(),
              JSVal::UInt32(len), bind::W | bind::C);
-    SetArguments(ctx, obj, &binder, names, it, last, len, strict);
-
-    if (strict) {
-      JSFunction* const throw_type_error = context::throw_type_error(ctx);
-      binder
-          .def_accessor(symbol::caller(),
-                        throw_type_error,
-                        throw_type_error,
-                        bind::NONE)
-          .def_accessor(symbol::callee(),
-                        throw_type_error,
-                        throw_type_error,
-                        bind::NONE);
-    } else {
-      binder.def(symbol::callee(), func, bind::W | bind::C);
-    }
+    SetArguments(ctx, obj, &binder, names, it, last, len);
+    binder.def(symbol::callee(), func, bind::W | bind::C);
     return obj;
   }
 
@@ -144,32 +140,22 @@ class JSArguments : public JSObject {
     return result;
   }
 
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Arguments",
-      Class::Arguments
-    };
-    return &cls;
-  }
-
  private:
   template<typename Idents, typename ArgsReverseIter>
   static void SetArguments(Context* ctx,
-                           JSArguments* obj,
+                           JSNormalArguments* obj,
                            bind::Object* binder,
                            const Idents& names,
                            ArgsReverseIter it, ArgsReverseIter last,
-                           uint32_t len, bool strict) {
+                           uint32_t len) {
     uint32_t index = len - 1;
     const std::size_t names_len = names.size();
     for (; it != last; ++it) {
       const Symbol sym = context::Intern(ctx, index);
       binder->def(sym, *it, bind::W | bind::E | bind::C);
       if (index < names_len) {
-        if (!strict) {
-          obj->map_.insert(
-              std::make_pair(sym, GetIdent(names, index)));
-        }
+        obj->map_.insert(
+            std::make_pair(sym, GetIdent(names, index)));
       }
       index -= 1;
     }
@@ -186,6 +172,55 @@ class JSArguments : public JSObject {
 
   JSDeclEnv* env_;
   Index2Param map_;
+};
+
+// not search environment
+class JSStrictArguments : public JSArguments {
+ public:
+  template<typename ArgsReverseIter>
+  static JSStrictArguments* New(Context* ctx,
+                                JSFunction* func,
+                                ArgsReverseIter it,
+                                ArgsReverseIter last,
+                                Error* e) {
+    JSStrictArguments* const obj = new JSStrictArguments();
+    const uint32_t len = std::distance(it, last);
+    obj->set_cls(JSArguments::GetClass());
+    obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
+    bind::Object binder(ctx, obj);
+    binder
+        .def(symbol::length(),
+             JSVal::UInt32(len), bind::W | bind::C);
+    uint32_t index = len - 1;
+    for (; it != last; ++it, --index) {
+      binder.def(symbol::MakeSymbolFromIndex(index),
+                 *it, bind::W | bind::E | bind::C);
+    }
+
+    JSFunction* const throw_type_error = context::throw_type_error(ctx);
+    binder
+        .def_accessor(symbol::caller(),
+                      throw_type_error,
+                      throw_type_error,
+                      bind::NONE)
+        .def_accessor(symbol::callee(),
+                      throw_type_error,
+                      throw_type_error,
+                      bind::NONE);
+    return obj;
+  }
+
+  JSVal Get(Context* ctx, Symbol name, Error* e) {
+    const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
+    if (name == symbol::caller() &&
+        v.IsCallable() &&
+        v.object()->AsCallable()->IsStrict()) {
+      e->Report(Error::Type,
+                "access to strict function \"caller\" not allowed");
+      return JSUndefined;
+    }
+    return v;
+  }
 };
 
 } }  // namespace iv::lv5
