@@ -95,6 +95,9 @@ def Build():
     '%EMAIL%': 'utatane.tea@gmail.com'
   }
 
+  if env['clang']:
+    env.Replace(CXX='clang++', CC='clang')
+
   if not env.GetOption('clean'):
     conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
 #    if not conf.CheckFunc('snprintf'):
@@ -128,16 +131,15 @@ def Build():
       LINKFLAGS=["-coverage"]
     )
 
-  if env['clang']:
-    env.Replace(CXX='clang++', CC='clang')
-
   if env['cxx0x']:
     env.Append(CXXFLAGS=["-std=c++0x"])
 
   if not env['nosse']:
     env.Append(
-        CCFLAGS=["-msse2", "-mfpmath=sse"],
+        CCFLAGS=["-msse2"],
         CPPDEFINES=["IV_USE_SSE"])
+    if env["CC"] == "gcc":
+      env.Append(CCFLAGS="-mfpmath=sse")
 
   if env['debug']:
     env.Append(CCFLAGS=["-g"])
