@@ -41,14 +41,16 @@ class VM {
                                           JSVal this_binding,
                                           Error* e);
   inline std::pair<JSVal, Status> Execute(Frame* frame, Error* e);
-  inline std::pair<JSVal, Status> Execute(const Arguments& args, JSVMFunction* func, Error* e);
+  inline std::pair<JSVal, Status> Execute(const Arguments& args,
+                                          JSVMFunction* func, Error* e);
 
   JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
     return func->Call(&args, sp[-(argc + 1)], e);
   }
 
-  JSVal InvokeMaybeEval(JSFunction* func, JSVal* sp, int argc, Frame* prev, Error* e) {
+  JSVal InvokeMaybeEval(JSFunction* func,
+                        JSVal* sp, int argc, Frame* prev, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
     const JSAPI native = func->NativeFunction();
     if (native && native == &GlobalEval) {

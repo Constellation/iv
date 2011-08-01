@@ -164,7 +164,7 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
   const Code::Names* names = &frame->code()->names();
   bool strict = frame->code()->strict();
 
-#if defined(IV_USE_DIRECT_THREADED_CODE) && defined(IV_COMPILER_GCC)
+#if defined(IV_USE_DIRECT_THREADED_CODE) && (defined(IV_COMPILER_GCC) || defined(IV_COMPILER_CLANG))  // NOLINT
 #define USE_DIRECT_THREADED_CODE
 #endif
 
@@ -235,7 +235,7 @@ do {\
   const uint16_t dynamic_env_level_shrink = (n);\
   JSEnv* dynamic_env_target = frame->lexical_env();\
   assert(frame->dynamic_env_level_ >= dynamic_env_level_shrink);\
-  for (uint16_t i = dynamic_env_level_shrink,\
+  for (uint16_t i = dynamic_env_level_shrink, \
        len = frame->dynamic_env_level_; i < len; ++i) {\
     dynamic_env_target = dynamic_env_target->outer();\
   }\
@@ -264,8 +264,7 @@ do {\
   // main loop
   int opcode = 0;
   uint32_t oparg = 0;
-  for (;;) {
-MAIN_LOOP_START:
+  for (;;) { MAIN_LOOP_START:
     // fetch opcode
 #ifdef USE_DIRECT_THREADED_CODE
 #define V(label) &&label,
@@ -460,7 +459,9 @@ MAIN_LOOP_START:
         uint32_t index;
         if (element.GetUInt32(&index)) {
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          const bool result = obj->Delete(ctx_, symbol::MakeSymbolFromIndex(index), strict, ERR);
+          const bool result =
+              obj->Delete(ctx_,
+                          symbol::MakeSymbolFromIndex(index), strict, ERR);
           SET_TOP(JSVal::Bool(result));
         } else {
           const JSString* str = element.ToString(ctx_, ERR);
@@ -719,28 +720,32 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
@@ -817,28 +822,32 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
-        const JSVal result = IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
+        const JSVal result =
+            IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH();
       }
@@ -987,7 +996,8 @@ MAIN_LOOP_START:
         // lhs is >= 0 and rhs is > 0 because example like
         //   -1 % -1
         // should return -0.0, so this value is double
-        if (lhs.IsInt32() && rhs.IsInt32() && lhs.int32() >= 0 && rhs.int32() > 0) {
+        if (lhs.IsInt32() && rhs.IsInt32() &&
+            lhs.int32() >= 0 && rhs.int32() > 0) {
           SET_TOP(JSVal::Int32(lhs.int32() % rhs.int32()));
         } else {
           const JSVal res = BinaryModulo(lhs, rhs, ERR);
@@ -1296,7 +1306,8 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, oparg);
         const JSVal error = POP();
         JSEnv* const catch_env =
-            internal::NewStaticEnvironment(ctx_, frame->lexical_env(), s, error);
+            internal::NewStaticEnvironment(ctx_,
+                                           frame->lexical_env(), s, error);
         frame->set_lexical_env(catch_env);
         frame->dynamic_env_level_ += 1;
         DISPATCH();
@@ -1403,7 +1414,8 @@ MAIN_LOOP_START:
           constants = &frame->constants();
           names = &frame->code()->names();
           strict = frame->code()->strict();
-          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_,
+                                                                frame, ERR);
         } else {
           // Native Function, so use Invoke
           const JSVal x = Invoke(func, sp, oparg, e);
@@ -1448,7 +1460,8 @@ MAIN_LOOP_START:
             obj->set_prototype(proto.object());
           }
           frame->set_this_binding(obj);
-          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_,
+                                                                frame, ERR);
         } else {
           // Native Function, so use Invoke
           const JSVal x = Construct(func, sp, oparg, e);
@@ -1488,7 +1501,8 @@ MAIN_LOOP_START:
           constants = &frame->constants();
           names = &frame->code()->names();
           strict = frame->code()->strict();
-          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_,
+                                                                frame, ERR);
         } else {
           // Native Function, so use Invoke
           const JSVal x = InvokeMaybeEval(func, sp, oparg, frame, e);
@@ -1525,7 +1539,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_GLOBAL) {
         const Symbol& s = GETITEM(names, oparg);
         if (ctx_->global_env()->HasBinding(ctx_, s)) {
-          const JSVal w = ctx_->global_env()->GetBindingValue(ctx_, s, false, ERR);
+          const JSVal w =
+              ctx_->global_env()->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
           PUSH(JSUndefined);
         } else {
