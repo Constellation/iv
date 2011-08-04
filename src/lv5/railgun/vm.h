@@ -1606,7 +1606,10 @@ MAIN_LOOP_START:
         const uint16_t stack_base_level = std::get<3>(*it);
         const uint16_t env_level = std::get<4>(*it);
         const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
-        if (begin <= offset && offset <= end) {
+        if (offset < begin) {
+          break;  // not found in this exception table
+        } else if (offset < end) {
+          assert(begin <= offset);
           const JSVal error = JSError::Detail(ctx_, e);
           e->Clear();
           UNWIND_STACK(stack_base_level);
