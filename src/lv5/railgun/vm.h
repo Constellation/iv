@@ -1644,8 +1644,10 @@ MAIN_LOOP_START:
   }  // for main loop
   assert(*e);
   return std::make_pair(JSEmpty, THROW);
+#undef INCREMENT_NEXT
 #undef DISPATCH_ERROR
 #undef DISPATCH
+#undef DISPATCH_WITH_NO_INCREMENT
 #undef PREDICT
 #undef DEFINE_OPCODE
 #undef JUMPTO
