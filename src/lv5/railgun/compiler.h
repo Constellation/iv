@@ -1554,11 +1554,34 @@ class Compiler
   void Visit(const NumberLiteral* lit) {
     DepthPoint point(&stack_depth_);
     uint32_t i = 0;
+    const double val = lit->value();
+
+    const int32_t i32 = static_cast<int32_t>(val);
+    if (val == i32 && (i32 || !core::Signbit(val))) {
+      // boxing int32_t
+      Instruction inst(0u);
+      inst.i32 = i32;
+      Emit<OP::PUSH_INT32>(inst);
+      stack_depth_.Up();
+      point.LevelCheck(1);
+      return;
+    }
+
+    const uint32_t ui32 = static_cast<uint32_t>(val);
+    if (val == ui32 && (ui32 || !core::Signbit(val))) {
+      // boxing uint32_t
+      Emit<OP::PUSH_UINT32>(ui32);
+      stack_depth_.Up();
+      point.LevelCheck(1);
+      return;
+    }
+
+    // double fall back
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
-      if (it->IsNumber() && it->number() == lit->value() &&
+      if (it->IsNumber() && it->number() == val &&
           (static_cast<bool>(core::Signbit(it->number())) ==
-           static_cast<bool>(core::Signbit(lit->value())))) {
+           static_cast<bool>(core::Signbit(val)))) {
         // duplicate constant pool
         Emit<OP::LOAD_CONST>(i);
         stack_depth_.Up();
@@ -1566,10 +1589,10 @@ class Compiler
         return;
       }
     }
+
     // new constant value
     Emit<OP::LOAD_CONST>(code_->constants_.size());
     stack_depth_.Up();
-    const double val = lit->value();
     code_->constants_.push_back(val);
     point.LevelCheck(1);
   }
@@ -2066,7 +2089,7 @@ class Compiler
   }
 
   template<OP::Type op>
-  void Emit(uint32_t arg,
+  void Emit(Instruction arg,
             typename disable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OPLength<op>::value == 2);
     data_->push_back(op);
@@ -2074,12 +2097,12 @@ class Compiler
   }
 
   template<OP::Type op>
-  void Emit(uint32_t arg,
+  void Emit(Instruction arg,
             typename enable_if<OP::IsNameLookupOP<op> >::type* = 0) {
     IV_STATIC_ASSERT(OPLength<op>::value == 2);
     data_->push_back(op);
     data_->push_back(arg);
-    if (code_->names()[arg] == symbol::arguments()) {
+    if (code_->names()[arg.value] == symbol::arguments()) {
       if (op == OP::STORE_NAME) {
         code_->set_code_has_arguments_assign();
       } else {
@@ -2092,7 +2115,7 @@ class Compiler
     data_->push_back(op);
   }
 
-  void Emit(OP::Type op, uint32_t arg) {
+  void Emit(OP::Type op, Instruction arg) {
     data_->push_back(op);
     data_->push_back(arg);
   }
@@ -2101,7 +2124,7 @@ class Compiler
     (*data_)[code_->start() + index] = op;
   }
 
-  void EmitArgAt(uint32_t arg, std::size_t index) {
+  void EmitArgAt(Instruction arg, std::size_t index) {
     (*data_)[code_->start() + index] = arg;
   }
 

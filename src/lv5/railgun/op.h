@@ -104,6 +104,8 @@ V(POSTFIX_INCREMENT_PROP, 2)\
 V(POSTFIX_DECREMENT_PROP, 2)\
 \
 V(LOAD_CONST, 2)\
+V(PUSH_UINT32, 2)\
+V(PUSH_INT32, 2)\
 \
 V(JUMP_FORWARD, 2)\
 V(JUMP_SUBROUTINE, 2)\
@@ -289,12 +291,11 @@ const char* OP::String(int op) {
 }
 
 struct Instruction {
-  Instruction(const void* l) : label(l) { }  // NOLINT
   Instruction(uint32_t arg) : value(arg) { }  // NOLINT
-  Instruction(OP::Type op) : value(op) { }  // NOLINT
   union {
     const void* label;  // use for direct threading
     uint32_t value;
+    int32_t i32;
   };
 };
 

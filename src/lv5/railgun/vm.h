@@ -665,6 +665,16 @@ MAIN_LOOP_START:
         DISPATCH(PUSH_THIS);
       }
 
+      DEFINE_OPCODE(PUSH_UINT32) {
+        PUSH(JSVal::UInt32(instr[1].value));
+        DISPATCH(PUSH_UINT32);
+      }
+
+      DEFINE_OPCODE(PUSH_INT32) {
+        PUSH(JSVal::Int32(instr[1].i32));
+        DISPATCH(PUSH_INT32);
+      }
+
       DEFINE_OPCODE(UNARY_POSITIVE) {
         const JSVal& v = TOP();
         const double x = v.ToNumber(ctx_, ERR);
