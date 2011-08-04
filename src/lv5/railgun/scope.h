@@ -8,6 +8,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
+#include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -112,7 +113,7 @@ class FunctionScope : public VariableScope {
   typedef std::tuple<Type, std::size_t, bool> Variable;
   typedef std::unordered_map<Symbol, Variable> Variables;
   // Symbol -> used, location
-  typedef std::unordered_map<Symbol, std::tuple<bool, uint16_t> > Locations;
+  typedef std::unordered_map<Symbol, std::tuple<bool, uint32_t> > Locations;
 
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
     : VariableScope(upper),
@@ -193,7 +194,7 @@ class FunctionScope : public VariableScope {
           const Type type = TypeUpgrade(std::get<0>(map_[sym]), std::get<2>(*it));
           if (type == GLOBAL) {
             // emit global opt
-            const uint8_t op = (*data_)[point];
+            const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToGlobal(op);
           }
         }
@@ -201,7 +202,7 @@ class FunctionScope : public VariableScope {
     } else {
       assert(code_);
       Locations locations;
-      uint16_t location = 0;
+      uint32_t location = 0;
       if (!upper_of_eval_) {
         if (code_->ShouldCreateArguments() && !code_->strict()) {
           for (Code::Names::const_iterator it = code_->params().begin(),
@@ -237,16 +238,16 @@ class FunctionScope : public VariableScope {
           if (type == STACK) {
             const bool immutable = std::get<2>(map_[sym]);
             Code* from = std::get<3>(*it);
-            const uint8_t op = (*data_)[point];
-            (*data_)[point] = (immutable) ? OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
+            const uint32_t op = (*data_)[point].value;
+            (*data_)[point] = (immutable) ?
+                OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
             assert(locations.find(sym) != locations.end());
             assert(std::get<0>(locations[sym]));
-            const uint16_t loc = std::get<1>(locations[sym]);
-            (*data_)[point + 1] = (loc & 0xff);
-            (*data_)[point + 2] = (loc >> 8);
+            const uint32_t loc = std::get<1>(locations[sym]);
+            (*data_)[point + 1] = loc;
           } else if (type == GLOBAL) {
             // emit global opt
-            const uint8_t op = (*data_)[point];
+            const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToGlobal(op);
           }
         }

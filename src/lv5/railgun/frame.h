@@ -7,6 +7,7 @@
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
+#include "lv5/railgun/op.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -94,7 +95,11 @@ struct Frame {
     return code_;
   }
 
-  const uint8_t* data() const {
+  Instruction* data() {
+    return code_->data();
+  }
+
+  const Instruction* data() const {
     return code_->data();
   }
 
@@ -123,7 +128,7 @@ struct Frame {
   }
 
   Code* code_;
-  const uint8_t* prev_pc_;
+  Instruction* prev_pc_;
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;

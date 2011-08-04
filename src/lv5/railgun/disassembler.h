@@ -8,6 +8,7 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/code.h"
+#include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -15,7 +16,8 @@ namespace railgun {
 template<typename Derived>
 class DisAssembler : private core::Noncopyable<> {
  public:
-  DisAssembler() { }
+  DisAssembler(Context* ctx)
+    : table_(ctx->vm()->direct_threading_dispatch_table()) { }
 
   void DisAssemble(const Code& code) {
     {
@@ -28,27 +30,23 @@ class DisAssembler : private core::Noncopyable<> {
     std::vector<char> line;
     int index = 0;
     std::array<char, 30> buf;
-    for (const uint8_t* it = code.begin(),
-         *last = code.end(); it != last; ++it, ++index) {
-      const uint8_t opcode = *it;
-      const bool has_arg = OP::HasArg(opcode);
+    for (const Instruction* it = code.begin(),
+         *last = code.end(); it != last;) {
+      const uint32_t opcode = it->value;
+      const uint32_t code_length = kOPLength[opcode];
       const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);
-      uint16_t oparg = 0;
-      if (has_arg) {
-        oparg = *(++it);
-        oparg += ((*(++it)) << 8);
-        index += 2;
-      }
       line.insert(line.end(), buf.data(), buf.data() + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
-      line.push_back(' ');
-      if (has_arg) {
-        std::string val = core::DoubleToStringWithRadix(oparg, 10);
+      for (uint32_t first = 1; first < code_length; ++first) {
+        line.push_back(' ');
+        std::string val = core::DoubleToStringWithRadix(it[first].value, 10);
         line.insert(line.end(), val.begin(), val.end());
       }
       OutputLine(core::StringPiece(line.data(), line.size()));
       line.clear();
+      std::advance(it, code_length);
+      index += code_length;
     }
     for (Code::Codes::const_iterator it = codes.begin(),
          last = codes.end(); it != last; ++it) {
@@ -60,11 +58,13 @@ class DisAssembler : private core::Noncopyable<> {
   void OutputLine(const core::StringPiece& str) {
     static_cast<Derived*>(this)->OutputLine(str);
   }
+  const DirectThreadingDispatchTable* table_;
 };
 
 class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
  public:
-  OutputDisAssembler(FILE* file) : file_(file) { }
+  OutputDisAssembler(Context* ctx, FILE* file)
+    : DisAssembler<OutputDisAssembler>(ctx), file_(file) { }
 
   void OutputLine(const core::StringPiece& str) {
     const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);

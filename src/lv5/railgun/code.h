@@ -41,13 +41,13 @@ class Code : public HeapObject {
   friend class Compiler;
   friend class FunctionScope;
   typedef GCVector<Symbol>::type Names;
-  typedef GCVector<uint8_t>::type Data;
+  typedef GCVector<Instruction>::type Data;
   typedef GCVector<Code*>::type Codes;
   typedef std::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
           ExceptionHandler;
   typedef GCVector<ExceptionHandler>::type ExceptionTable;
   // symbol, decl type, configurable, param point
-  typedef std::tuple<Symbol, DeclType, std::size_t, uint16_t> Decl;
+  typedef std::tuple<Symbol, DeclType, std::size_t, uint32_t> Decl;
   typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,
@@ -88,7 +88,11 @@ class Code : public HeapObject {
     }
   }
 
-  const uint8_t* data() const {
+  const Instruction* data() const {
+    return data_->data() + start_;
+  }
+
+  Instruction* data() {
     return data_->data() + start_;
   }
 
@@ -208,11 +212,19 @@ class Code : public HeapObject {
     return start_;
   }
 
-  const uint8_t* begin() const {
+  const Instruction* begin() const {
     return data_->data() + start_;
   }
 
-  const uint8_t* end() const {
+  Instruction* begin() {
+    return data_->data() + start_;
+  }
+
+  const Instruction* end() const {
+    return data_->data() + end_;
+  }
+
+  Instruction* end() {
     return data_->data() + end_;
   }
 
@@ -230,6 +242,10 @@ class Code : public HeapObject {
 
   void set_has_declarative_env(bool val) {
     has_declarative_env_ = val;
+  }
+
+  Data* GetData() {
+    return data_;
   }
 
  private:

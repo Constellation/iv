@@ -5,6 +5,7 @@
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/stack.h"
+#include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -32,7 +33,6 @@ class VM {
     RETURN,
     THROW
   };
-
   inline std::pair<JSVal, Status> Run(Code* code, Error* e);
   inline std::pair<JSVal, Status> RunGlobal(Code* code, Error* e);
   inline std::pair<JSVal, Status> RunEval(Code* code,
@@ -43,6 +43,12 @@ class VM {
   inline std::pair<JSVal, Status> Execute(Frame* frame, Error* e);
   inline std::pair<JSVal, Status> Execute(const Arguments& args,
                                           JSVMFunction* func, Error* e);
+
+  VM() {
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+    Execute(NULL, NULL);
+#endif
+  }
 
   JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
@@ -479,11 +485,16 @@ class VM {
     }
   }
 
+  const DirectThreadingDispatchTable* direct_threading_dispatch_table() const {
+    return direct_threading_dispatch_table_;
+  }
+
 #undef CHECK
 
  private:
   Context* ctx_;
   Stack stack_;
+  const DirectThreadingDispatchTable* direct_threading_dispatch_table_;
 };
 
 } } }  // namespace iv::lv5::railgun

@@ -18,6 +18,7 @@ extern "C" {
 #include "lv5/internal.h"
 #include "lv5/jsval.h"
 #include "lv5/railgun/frame.h"
+#include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -106,7 +107,7 @@ class Stack : core::Noncopyable<Stack> {
                       JSVal* sp,
                       Code* code,
                       JSEnv* env,
-                      const uint8_t* pc,
+                      Instruction* pc,
                       std::size_t argc,
                       bool constructor_call) {
     assert(code);

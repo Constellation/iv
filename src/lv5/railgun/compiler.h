@@ -22,6 +22,7 @@
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/scope.h"
 #include "lv5/railgun/condition.h"
+#include "lv5/railgun/direct_threading.h"
 
 namespace iv {
 namespace lv5 {
@@ -200,39 +201,51 @@ class Compiler
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
-    script_ = script;
-    data_ = new (GC) Code::Data();
-    data_->reserve(4 * core::Size::KB);
-    current_variable_scope_ = std::shared_ptr<VariableScope>();
-    Code* code = new Code(ctx_, script_, global, data_, Code::GLOBAL);
-    EmitFunctionCode(global, code, current_variable_scope_);
-    assert(!current_variable_scope_);
+    Code* code = NULL;
+    {
+      script_ = script;
+      data_ = new (GC) Code::Data();
+      data_->reserve(4 * core::Size::KB);
+      current_variable_scope_ = std::shared_ptr<VariableScope>();
+      code = new Code(ctx_, script_, global, data_, Code::GLOBAL);
+      EmitFunctionCode(global, code, current_variable_scope_);
+      assert(!current_variable_scope_);
+    }
+    CompileEpilogue(code);
     return code;
   }
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
-    script_ = script;
-    data_ = new (GC) Code::Data();
-    data_->reserve(core::Size::KB);
-    // create dummy global scope
-    current_variable_scope_ =
-        std::shared_ptr<VariableScope>(new FunctionScope(std::shared_ptr<VariableScope>(), data_));
-    std::shared_ptr<VariableScope> target = current_variable_scope_;
-    Code* code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
-    EmitFunctionCode(function, code, current_variable_scope_);
-    current_variable_scope_ = current_variable_scope_->upper();
-    assert(!current_variable_scope_);
+    Code* code = NULL;
+    {
+      script_ = script;
+      data_ = new (GC) Code::Data();
+      data_->reserve(core::Size::KB);
+      // create dummy global scope
+      current_variable_scope_ =
+          std::shared_ptr<VariableScope>(new FunctionScope(std::shared_ptr<VariableScope>(), data_));
+      std::shared_ptr<VariableScope> target = current_variable_scope_;
+      code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
+      EmitFunctionCode(function, code, current_variable_scope_);
+      current_variable_scope_ = current_variable_scope_->upper();
+      assert(!current_variable_scope_);
+    }
+    CompileEpilogue(code);
     return code;
   }
 
   Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
-    script_ = script;
-    data_ = new (GC) Code::Data();
-    data_->reserve(core::Size::KB);
-    current_variable_scope_ = std::shared_ptr<VariableScope>();
-    Code* code = new Code(ctx_, script_, eval, data_, Code::EVAL);
-    EmitFunctionCode(eval, code, current_variable_scope_);
-    assert(!current_variable_scope_);
+    Code* code = NULL;
+    {
+      script_ = script;
+      data_ = new (GC) Code::Data();
+      data_->reserve(core::Size::KB);
+      current_variable_scope_ = std::shared_ptr<VariableScope>();
+      code = new Code(ctx_, script_, eval, data_, Code::EVAL);
+      EmitFunctionCode(eval, code, current_variable_scope_);
+      assert(!current_variable_scope_);
+    }
+    CompileEpilogue(code);
     return code;
   }
 
@@ -335,6 +348,23 @@ class Compiler
     Compiler* compiler_;
   };
 
+  void CompileEpilogue(Code* code) {
+    // optimiazation or direct threading
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+    // direct threading label translation
+    const DirectThreadingDispatchTable* table =
+        ctx_->vm()->direct_threading_dispatch_table();
+    Code::Data* data = code->GetData();
+    for (Code::Data::iterator it = data->begin(),
+         last = data->end(); it != last;) {
+      const uint32_t opcode = it->value;
+      const uint32_t code_length = kOPLength[opcode];
+      it->label = (*table)[opcode];
+      std::advance(it, code_length);
+    }
+#endif
+  }
+
   void CodeContextPrologue(Code* code) {
     set_code(code);
     ClearJumpTable();
@@ -369,7 +399,7 @@ class Compiler
   void Visit(const FunctionStatement* stmt) {
     const FunctionLiteral& func = *stmt->function();
     assert(func.name());  // FunctionStatement must have name
-    const uint16_t index = SymbolToNameIndex(func.name().Address()->symbol());
+    const uint32_t index = SymbolToNameIndex(func.name().Address()->symbol());
     Visit(&func);
     EmitStoreName(index);
     Emit<OP::POP_TOP>();
@@ -620,7 +650,7 @@ class Compiler
       // TODO(Constellation) abstraction...
       if (const Identifier* ident = lhs->AsIdentifier()) {
         // Identifier
-        const uint16_t index = SymbolToNameIndex(ident->symbol());
+        const uint32_t index = SymbolToNameIndex(ident->symbol());
         EmitStoreName(index);
       } else if (lhs->AsPropertyAccess()) {
         // PropertyAccess
@@ -628,7 +658,7 @@ class Compiler
           // IdentifierAccess
           ac->target()->Accept(this);
           Emit<OP::ROT_TWO>();
-          const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::STORE_PROP>(index);
           stack_depth_.Down();
         } else {
@@ -638,13 +668,13 @@ class Compiler
           const Expression& key = *idx.key();
           if (const StringLiteral* str = key.AsStringLiteral()) {
             Emit<OP::ROT_TWO>();
-            const uint16_t index =
+            const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, str->value()));
             Emit<OP::STORE_PROP>(index);
             stack_depth_.Down();
           } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
             Emit<OP::ROT_TWO>();
-            const uint16_t index =
+            const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, num->value()));
             Emit<OP::STORE_PROP>(index);
             stack_depth_.Down();
@@ -1006,7 +1036,7 @@ class Compiler
       assert(lhs.IsValidLeftHandSide());
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
-        const uint16_t index = SymbolToNameIndex(ident->symbol());
+        const uint32_t index = SymbolToNameIndex(ident->symbol());
         if (ident->symbol() == symbol::arguments()) {
           code_->set_code_has_arguments();
           // Emit<OP::PUSH_ARGUMENTS>();
@@ -1028,7 +1058,7 @@ class Compiler
           Emit<OP::DUP_TOP>();
           stack_depth_.Up();
 
-          const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::LOAD_PROP>(index);
           rhs.Accept(this);
           EmitAssignedBinaryOperation(token);
@@ -1042,7 +1072,7 @@ class Compiler
           if (const StringLiteral* str = key.AsStringLiteral()) {
             Emit<OP::DUP_TOP>();
             stack_depth_.Up();
-            const uint16_t index =
+            const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, str->value()));
             Emit<OP::LOAD_PROP>(index);
             rhs.Accept(this);
@@ -1052,7 +1082,7 @@ class Compiler
           } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
             Emit<OP::DUP_TOP>();
             stack_depth_.Up();
-            const uint16_t index =
+            const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, num->value()));
             Emit<OP::LOAD_PROP>(index);
             rhs.Accept(this);
@@ -1330,7 +1360,7 @@ class Compiler
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
               // IdentifierAccess
               ac->target()->Accept(this);
-              const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+              const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
               Emit<OP::DELETE_PROP>(index);
             } else {
               // IndexAccess
@@ -1380,7 +1410,7 @@ class Compiler
         const Expression& expr = *unary->expr();
         assert(expr.IsValidLeftHandSide());
         if (const Identifier* ident = expr.AsIdentifier()) {
-          const uint16_t index = SymbolToNameIndex(ident->symbol());
+          const uint32_t index = SymbolToNameIndex(ident->symbol());
           if (token == Token::TK_INC) {
             EmitIncrementName(index);
             stack_depth_.Up();
@@ -1392,7 +1422,7 @@ class Compiler
           if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
             // IdentifierAccess
             ac->target()->Accept(this);
-            const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+            const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
             if (token == Token::TK_INC) {
               Emit<OP::INCREMENT_PROP>(index);
             } else {
@@ -1457,7 +1487,7 @@ class Compiler
     const Token::Type token = postfix->op();
     assert(expr.IsValidLeftHandSide());
     if (const Identifier* ident = expr.AsIdentifier()) {
-      const uint16_t index = SymbolToNameIndex(ident->symbol());
+      const uint32_t index = SymbolToNameIndex(ident->symbol());
       if (token == Token::TK_INC) {
         EmitPostfixIncrementName(index);
         stack_depth_.Up();
@@ -1469,7 +1499,7 @@ class Compiler
       if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
         // IdentifierAccess
         ac->target()->Accept(this);
-        const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+        const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
         if (token == Token::TK_INC) {
           Emit<OP::POSTFIX_INCREMENT_PROP>(index);
         } else {
@@ -1499,7 +1529,7 @@ class Compiler
 
   void Visit(const StringLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    uint16_t i = 0;
+    uint32_t i = 0;
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
       if (it->IsString()) {
@@ -1523,7 +1553,7 @@ class Compiler
 
   void Visit(const NumberLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    uint16_t i = 0;
+    uint32_t i = 0;
     for (JSVals::const_iterator it = code_->constants_.begin(),
          last = code_->constants_.end(); it != last; ++it, ++i) {
       if (it->IsNumber() && it->number() == lit->value() &&
@@ -1552,7 +1582,7 @@ class Compiler
     // directlly extract value and set to top version
     DepthPoint point(&stack_depth_);
     const Symbol name = lit->symbol();
-    const uint16_t index = SymbolToNameIndex(name);
+    const uint32_t index = SymbolToNameIndex(name);
     if (name == symbol::arguments()) {
       code_->set_code_has_arguments();
       // Emit<OP::PUSH_ARGUMENTS>();
@@ -1609,7 +1639,7 @@ class Compiler
     const Items& items = lit->items();
     Emit<OP::BUILD_ARRAY>(items.size());
     stack_depth_.Up();
-    uint16_t current = 0;
+    uint32_t current = 0;
     for (Items::const_iterator it = items.begin(),
          last = items.end(); it != last; ++it, ++current) {
       const core::Maybe<const Expression>& expr = *it;
@@ -1634,7 +1664,7 @@ class Compiler
       const ObjectLiteral::Property& prop = *it;
       const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
       const Symbol name = get<1>(prop)->symbol();
-      const uint16_t index = SymbolToNameIndex(name);
+      const uint32_t index = SymbolToNameIndex(name);
       get<2>(prop)->Accept(this);
       if (type == ObjectLiteral::DATA) {
         Emit<OP::STORE_OBJECT_DATA>(index);
@@ -1653,7 +1683,7 @@ class Compiler
   void Visit(const FunctionLiteral* lit) {
     DepthPoint point(&stack_depth_);
     Code* const code = new Code(ctx_, script_, *lit, data_, Code::FUNCTION);
-    const uint16_t index = code_->codes_.size();
+    const uint32_t index = code_->codes_.size();
     code_->codes_.push_back(code);
     code_info_stack_.push_back(std::make_tuple(code, lit, current_variable_scope_));
     Emit<OP::MAKE_CLOSURE>(index);
@@ -1664,7 +1694,7 @@ class Compiler
   void Visit(const IdentifierAccess* prop) {
     DepthPoint point(&stack_depth_);
     prop->target()->Accept(this);
-    const uint16_t index = SymbolToNameIndex(prop->key()->symbol());
+    const uint32_t index = SymbolToNameIndex(prop->key()->symbol());
     Emit<OP::LOAD_PROP>(index);
     point.LevelCheck(1);
   }
@@ -1690,7 +1720,7 @@ class Compiler
 
   void Visit(const Declaration* decl) {
     DepthPoint point(&stack_depth_);
-    const uint16_t index = SymbolToNameIndex(decl->name()->symbol());
+    const uint32_t index = SymbolToNameIndex(decl->name()->symbol());
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
       EmitStoreName(index);
@@ -1702,7 +1732,7 @@ class Compiler
 
   void Visit(const CaseClause* dummy) { }
 
-  uint16_t SymbolToNameIndex(const Symbol& sym) {
+  uint32_t SymbolToNameIndex(const Symbol& sym) {
     const Code::Names::const_iterator it =
         std::find(code_->names_.begin(), code_->names_.end(), sym);
     if (it != code_->names_.end()) {
@@ -1719,11 +1749,11 @@ class Compiler
     prop.target()->Accept(this);
     const Expression& key = *prop.key();
     if (const StringLiteral* str = key.AsStringLiteral()) {
-      const uint16_t index =
+      const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, str->value()));
       Emit<PropOP>(index);
     } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
-      const uint16_t index =
+      const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, num->value()));
       Emit<PropOP>(index);
     } else {
@@ -1737,7 +1767,7 @@ class Compiler
     assert(lhs.IsValidLeftHandSide());
     if (const Identifier* ident = lhs.AsIdentifier()) {
       // Identifier
-      const uint16_t index = SymbolToNameIndex(ident->symbol());
+      const uint32_t index = SymbolToNameIndex(ident->symbol());
       rhs.Accept(this);
       EmitStoreName(index);
     } else if (lhs.AsPropertyAccess()) {
@@ -1746,7 +1776,7 @@ class Compiler
         // IdentifierAccess
         ac->target()->Accept(this);
         rhs.Accept(this);
-        const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+        const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
         Emit<OP::STORE_PROP>(index);
         stack_depth_.Down();
       } else {
@@ -1755,13 +1785,13 @@ class Compiler
         idx.target()->Accept(this);
         const Expression& key = *idx.key();
         if (const StringLiteral* str = key.AsStringLiteral()) {
-          const uint16_t index =
+          const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, str->value()));
           rhs.Accept(this);
           Emit<OP::STORE_PROP>(index);
           stack_depth_.Down();
         } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
-          const uint16_t index =
+          const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, num->value()));
           rhs.Accept(this);
           Emit<OP::STORE_PROP>(index);
@@ -1789,7 +1819,7 @@ class Compiler
     const Expression& target = *call.target();
     if (target.IsValidLeftHandSide()) {
       if (const Identifier* ident = target.AsIdentifier()) {
-        const uint16_t index = SymbolToNameIndex(ident->symbol());
+        const uint32_t index = SymbolToNameIndex(ident->symbol());
         EmitCallName(index);
         stack_depth_.Up(2);
         if (op == OP::CALL && ident->symbol() == symbol::eval()) {
@@ -1799,7 +1829,7 @@ class Compiler
         if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
           // IdentifierAccess
           prop->target()->Accept(this);
-          const uint16_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
           Emit<OP::CALL_PROP>(index);
           stack_depth_.Up();
         } else {
@@ -1861,7 +1891,7 @@ class Compiler
         if (sym == symbol::arguments()) {
           code_->set_code_hiding_arguments();
         }
-        const uint16_t index = SymbolToNameIndex(sym);
+        const uint32_t index = SymbolToNameIndex(sym);
         EmitStoreName(index);
         Emit<OP::POP_TOP>();
         stack_depth_.Down();
@@ -1975,55 +2005,55 @@ class Compiler
     stack_depth_.Down();
   }
 
-  void EmitLoadName(uint16_t index) {
+  void EmitLoadName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::LOAD_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitStoreName(uint16_t index) {
+  void EmitStoreName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::STORE_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitCallName(uint16_t index) {
+  void EmitCallName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::CALL_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitIncrementName(uint16_t index) {
+  void EmitIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::INCREMENT_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitPostfixIncrementName(uint16_t index) {
+  void EmitPostfixIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::POSTFIX_INCREMENT_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitDecrementName(uint16_t index) {
+  void EmitDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::DECREMENT_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitPostfixDecrementName(uint16_t index) {
+  void EmitPostfixDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::POSTFIX_DECREMENT_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitTypeofName(uint16_t index) {
+  void EmitTypeofName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::TYPEOF_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
-  void EmitDeleteName(uint16_t index) {
+  void EmitDeleteName(uint32_t index) {
     const std::size_t point = data_->size();
     Emit<OP::DELETE_NAME>(index);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
@@ -2035,26 +2065,24 @@ class Compiler
 
   template<OP::Type op>
   void Emit() {
-    IV_STATIC_ASSERT(op < OP::HAVE_ARGUMENT);
+    IV_STATIC_ASSERT(OPLength<op>::value == 1);
     data_->push_back(op);
   }
 
   template<OP::Type op>
-  void Emit(uint16_t arg,
+  void Emit(uint32_t arg,
             typename disable_if<OP::IsNameLookupOP<op> >::type* = 0) {
-    IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
+    IV_STATIC_ASSERT(OPLength<op>::value == 2);
     data_->push_back(op);
-    data_->push_back(arg & 0xff);
-    data_->push_back(arg >> 8);
+    data_->push_back(arg);
   }
 
   template<OP::Type op>
-  void Emit(uint16_t arg,
+  void Emit(uint32_t arg,
             typename enable_if<OP::IsNameLookupOP<op> >::type* = 0) {
-    IV_STATIC_ASSERT(OP::HAVE_ARGUMENT < op);
+    IV_STATIC_ASSERT(OPLength<op>::value == 2);
     data_->push_back(op);
-    data_->push_back(arg & 0xff);
-    data_->push_back(arg >> 8);
+    data_->push_back(arg);
     if (code_->names()[arg] == symbol::arguments()) {
       if (op == OP::STORE_NAME) {
         code_->set_code_has_arguments_assign();
@@ -2068,19 +2096,17 @@ class Compiler
     data_->push_back(op);
   }
 
-  void Emit(OP::Type op, uint16_t arg) {
+  void Emit(OP::Type op, uint32_t arg) {
     data_->push_back(op);
-    data_->push_back(arg & 0xff);
-    data_->push_back(arg >> 8);
+    data_->push_back(arg);
   }
 
   void EmitOPAt(OP::Type op, std::size_t index) {
     (*data_)[code_->start() + index] = op;
   }
 
-  void EmitArgAt(uint16_t arg, std::size_t index) {
-    (*data_)[code_->start() + index] = (arg & 0xff);
-    (*data_)[code_->start() + index + 1] = (arg >> 8);
+  void EmitArgAt(uint32_t arg, std::size_t index) {
+    (*data_)[code_->start() + index] = arg;
   }
 
   void set_code(Code* code) {
