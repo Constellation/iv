@@ -293,7 +293,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   if (len == 0) {
     obj->Put(ctx, symbol::length(),
-             JSVal::UInt32(0u), true, IV_LV5_ERROR(e));
+             JSVal::Int32(0), true, IV_LV5_ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
@@ -386,7 +386,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   if (len == 0) {
     obj->Put(ctx, symbol::length(),
-             JSVal::UInt32(0u), true, IV_LV5_ERROR(e));
+             JSVal::Int32(0), true, IV_LV5_ERROR(e));
     return JSUndefined;
   }
   const JSVal first = obj->Get(ctx, context::Intern(ctx, "0"), IV_LV5_ERROR(e));
@@ -508,7 +508,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                 break;
               } else {
                 if (t2_is_hole) {
-                  res = JSVal::UInt32(1u);
+                  res = JSVal::Int32(1);
                   t2 = obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
                 } else {
                   t2 = obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)), IV_LV5_ERROR(e));
@@ -516,7 +516,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                     break;
                   } else {
                     if (t2.IsUndefined()) {
-                      res = JSVal::UInt32(1u);
+                      res = JSVal::Int32(1);
                     } else {
                       a[0] = t2;
                       a[1] = t;
@@ -571,7 +571,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)));
               if (target_is_hole) {
                 if (pivot_is_hole) {
-                  res = JSVal::UInt32(0u);
+                  res = JSVal::Int32(0);
                 } else {
                   break;
                 }
@@ -583,9 +583,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                       obj->Get(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(i)), IV_LV5_ERROR(e));
                   if (target.IsUndefined()) {
                     if (s.IsUndefined()) {
-                      res = JSVal::UInt32(0u);
+                      res = JSVal::Int32(0);
                     } else {
-                      res = JSVal::UInt32(1u);
+                      res = JSVal::Int32(1);
                     }
                   } else {
                     if (s.IsUndefined()) {
@@ -619,7 +619,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(j)));
               if (target_is_hole) {
                 if (pivot_is_hole) {
-                  res = JSVal::UInt32(0u);
+                  res = JSVal::Int32(0);
                 } else {
                   continue;
                 }
@@ -633,7 +633,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                     if (s.IsUndefined()) {
                       break;
                     } else {
-                      res = JSVal::UInt32(1u);
+                      res = JSVal::Int32(1);
                     }
                   } else {
                     if (s.IsUndefined()) {
