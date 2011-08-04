@@ -6,26 +6,26 @@
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-#ifndef OS_WIN
-#define OS_WIN 1
+#ifndef IV_OS_WIN
+#define IV_OS_WIN 1
 #define NOMINMAX
-#endif  // OS_WIN
+#endif  // IV_OS_WIN
 #elif defined(__APPLE__) || defined(__darwin__)
-#ifndef OS_MACOSX
-#define OS_MACOSX 1
-#endif  // OS_MACOSX
+#ifndef IV_OS_MACOSX
+#define IV_OS_MACOSX 1
+#endif  // IV_OS_MACOSX
 #elif defined(__linux__)
-#ifndef OS_LINUX
-#define OS_LINUX 1
-#endif  // OS_LINUX
+#ifndef IV_OS_LINUX
+#define IV_OS_LINUX 1
+#endif  // IV_OS_LINUX
 #elif defined(BSD)
-#ifndef OS_BSD
-#define OS_BSD 1
-#endif  // OS_BSD
+#ifndef IV_OS_BSD
+#define IV_OS_BSD 1
+#endif  // IV_OS_BSD
 #elif defined(__CYGWIN__)
-#ifndef OS_CYGWIN
-#define OS_CYGWIN 1
-#endif  // OS_CYGWIN
+#ifndef IV_OS_CYGWIN
+#define IV_OS_CYGWIN 1
+#endif  // IV_OS_CYGWIN
 #endif
 
 // compiler
