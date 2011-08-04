@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include "detail/array.h"
+#include "detail/unordered_map.h"
 #include "noncopyable.h"
 #include "stringpiece.h"
 #include "lv5/railgun/fwd.h"
@@ -17,7 +18,16 @@ template<typename Derived>
 class DisAssembler : private core::Noncopyable<> {
  public:
   DisAssembler(Context* ctx)
-    : table_(ctx->vm()->direct_threading_dispatch_table()) { }
+    : table_() {
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+    const DirectThreadingDispatchTable* table = ctx->vm()->direct_threading_dispatch_table();
+    std::size_t index = 0;
+    for (DirectThreadingDispatchTable::const_iterator it = table->begin(),
+         last = table->end(); it != last; ++it, ++index) {
+      table_[*it] = static_cast<OP::Type>(index);
+    }
+#endif
+  }
 
   void DisAssemble(const Code& code) {
     {
@@ -32,7 +42,11 @@ class DisAssembler : private core::Noncopyable<> {
     std::array<char, 30> buf;
     for (const Instruction* it = code.begin(),
          *last = code.end(); it != last;) {
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+      const uint32_t opcode = table_[it->label];
+#else
       const uint32_t opcode = it->value;
+#endif
       const uint32_t code_length = kOPLength[opcode];
       const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);
       line.insert(line.end(), buf.data(), buf.data() + len);
@@ -58,7 +72,8 @@ class DisAssembler : private core::Noncopyable<> {
   void OutputLine(const core::StringPiece& str) {
     static_cast<Derived*>(this)->OutputLine(str);
   }
-  const DirectThreadingDispatchTable* table_;
+
+  std::unordered_map<const void*, OP::Type> table_;
 };
 
 class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {

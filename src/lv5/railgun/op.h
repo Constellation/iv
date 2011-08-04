@@ -87,7 +87,6 @@ V(POSTFIX_DECREMENT_CALL_RESULT, 1)\
 V(TYPEOF, 1)\
 \
 /* opcodes over this requres argument */\
-V(HAVE_ARGUMENT, 1)\
 V(NOP_ARGUMENT, 2)\
 V(POP_N, 2)\
 \
@@ -165,10 +164,7 @@ V(EVAL, 2)\
 V(MAKE_CLOSURE, 2)\
 \
 V(INIT_ARRAY_ELEMENT, 2)\
-V(BUILD_ARRAY, 2)\
-\
-/* opcodes over this requres 2 argument */\
-V(HAVE_EX_ARGUMENT, 1)\
+V(BUILD_ARRAY, 2)
 
 struct ERR {
   enum Type {
@@ -186,10 +182,6 @@ struct OP {
 #undef IV_LV5_RAILGUN_DEFINE_ENUM
 
   IV_STATIC_ASSERT(NUM_OF_OP <= 256);
-
-  static inline bool HasArg(uint8_t opcode) {
-    return opcode >= HAVE_ARGUMENT;
-  }
 
 #define IS_NAME_LOOKUP_OP(op)\
   ((op) == OP::LOAD_NAME ||\

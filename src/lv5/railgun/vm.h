@@ -312,12 +312,6 @@ MAIN_LOOP_START:
         DISPATCH(NOP_ARGUMENT);
       }
 
-      // wasted opcodes... (for direct threading)
-      DEFINE_OPCODE(HAVE_ARGUMENT)
-      DEFINE_OPCODE(HAVE_EX_ARGUMENT) {
-        UNREACHABLE();
-      }
-
       DEFINE_OPCODE(STOP_CODE) {
         // no return at last
         // return undefined
