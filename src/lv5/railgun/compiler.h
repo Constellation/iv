@@ -2111,6 +2111,23 @@ class Compiler
     }
   }
 
+  template<OP::Type op>
+  void Emit(Instruction arg1, Instruction arg2) {
+    IV_STATIC_ASSERT(OPLength<op>::value == 3);
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+  }
+
+  template<OP::Type op>
+  void Emit(Instruction arg1, Instruction arg2, Instruction arg3) {
+    IV_STATIC_ASSERT(OPLength<op>::value == 4);
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+    data_->push_back(arg3);
+  }
+
   void Emit(OP::Type op) {
     data_->push_back(op);
   }
