@@ -16,7 +16,7 @@ namespace iv {
 namespace lv5 {
 
 inline JSVal Print(const Arguments& args, Error* e) {
-  if (args.size() > 0) {
+  if (!args.empty()) {
     Context* const ctx = args.ctx();
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last;) {
@@ -34,11 +34,8 @@ inline JSVal Print(const Arguments& args, Error* e) {
 }
 
 inline JSVal Quit(const Arguments& args, Error* e) {
-  int code = 0;
-  if (args.size() > 0) {
-    const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    code = core::DoubleToInt32(val);
-  }
+  const int32_t code = (args.empty()) ?
+      0 : args.front().ToInt32(args.ctx(), IV_LV5_ERROR(e));
   std::exit(code);
   return JSUndefined;
 }

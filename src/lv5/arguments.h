@@ -105,6 +105,22 @@ class Arguments : private core::Noncopyable<> {
     return stack_[n + 1];
   }
 
+  reference front() {
+    return (*this)[0];
+  }
+
+  const_reference front() const {
+    return (*this)[0];
+  }
+
+  reference back() {
+    return (*this)[size_ - 1];  // no check
+  }
+
+  const_reference back() const {
+    return (*this)[size_ - 1];  // no check
+  }
+
   JSVal At(size_type n) const {
     if (n < size_) {
       return stack_[n + 1];

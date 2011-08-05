@@ -23,14 +23,14 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
   const JSVal& lhs = args[0];
   const JSVal& rhs = args[1];
   if (internal::StrictEqual(lhs, rhs)) {
-    return 0.0;
+    return JSVal::Int32(0);
   }
   const JSString* const lhs_str = lhs.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString* const rhs_str = rhs.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (*lhs_str == *rhs_str) {
-    return 0.0;
+    return JSVal::Int32(0);
   }
-  return (*lhs_str < *rhs_str) ? -1.0 : 1.0;
+  return JSVal::Int32((*lhs_str < *rhs_str) ? -1 : 1);
 }
 
 }  // namespace detail
@@ -253,7 +253,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   JSString* separator;
-  if (args.size() > 0 && !args[0].IsUndefined()) {
+  if (!args.empty() && !args[0].IsUndefined()) {
     separator = args[0].ToString(ctx, IV_LV5_ERROR(e));
   } else {
     separator = JSString::NewAsciiString(ctx, ",");
@@ -415,7 +415,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   JSArray* const ary = JSArray::New(ctx);
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   uint32_t k;
-  if (args.size() > 0) {
+  if (!args.empty()) {
     double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(e));
     relative_start = core::DoubleToInteger(relative_start);
     if (relative_start < 0) {
@@ -466,7 +466,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   JSFunction* comparefn;
-  if (args.size() > 0 && args[0].IsCallable()) {
+  if (!args.empty() && args[0].IsCallable()) {
     comparefn = args[0].object()->AsCallable();
   } else {
     comparefn = JSInlinedFunction<&detail::CompareFn, 2>::New(ctx);
