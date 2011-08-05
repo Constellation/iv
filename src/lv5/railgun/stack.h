@@ -8,15 +8,12 @@
 #include <algorithm>
 #include <iterator>
 #include <new>
-#include <gc/gc.h>
-extern "C" {
-#include <gc/gc_mark.h>
-}
 #include "noncopyable.h"
 #include "singleton.h"
 #include "os_allocator.h"
 #include "lv5/internal.h"
 #include "lv5/jsval.h"
+#include "lv5/gc_hook.h"
 #include "lv5/railgun/frame.h"
 #include "lv5/railgun/direct_threading.h"
 namespace iv {
@@ -27,7 +24,6 @@ class Stack : core::Noncopyable<Stack> {
  public:
   typedef JSVal* iterator;
   typedef const JSVal* const_iterator;
-  typedef struct GC_ms_entry GCMSEntry;
 
   typedef std::iterator_traits<iterator>::value_type value_type;
 
@@ -50,34 +46,37 @@ class Stack : core::Noncopyable<Stack> {
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * core::Size::KB;
 
-  class Resource {
+  class Resource : public GCHook<Resource> {
    public:
     explicit Resource(Stack* stack)
-      : stack_(stack) { }
+      : stack_(stack) {
+    }
+
     Stack* stack() const {
       return stack_;
     }
+
+    GC_ms_entry* MarkChildren(GC_word* top,
+                              GC_ms_entry* entry,
+                              GC_ms_entry* mark_sp_limit,
+                              GC_word env) {
+      if (stack_) {
+        Frame* current = stack_->current_;
+        if (current) {
+          // mark Frame member
+          entry = MarkFrame(entry, mark_sp_limit, current, stack_->stack_pointer_);
+          // traverse frames
+          for (Frame *next = current, *now = current->prev_;
+               now; next = now, now = next->prev_) {
+            entry = MarkFrame(entry, mark_sp_limit, now, next->GetFrameBase());
+          }
+        }
+      }
+      return entry;
+    }
+
    private:
     Stack* stack_;
-  };
-
-  class GCKind : public core::Singleton<GCKind> {
-   public:
-    friend class core::Singleton<GCKind>;
-
-    int GetKind() const {
-      return stack_kind_;
-    }
-
-   private:
-    GCKind()
-      : stack_kind_(GC_new_kind(GC_new_free_list(),
-                                GC_MAKE_PROC(GC_new_proc(&Mark), 0), 0, 1)) {
-    }
-
-    ~GCKind() { }  // private destructor
-
-    volatile int stack_kind_;
   };
 
   Stack()
@@ -91,9 +90,7 @@ class Stack : core::Noncopyable<Stack> {
             core::OSAllocator::Allocate(kStackBytes));
     stack_pointer_ += 1;  // for Global This
     // register root
-    resource_ =
-        new (GC_generic_malloc(sizeof(Resource),
-                               GCKind::Instance()->GetKind())) Resource(this);
+    resource_ = new Resource(this);
   }
 
   ~Stack() {
@@ -195,27 +192,6 @@ class Stack : core::Noncopyable<Stack> {
     return current_;
   }
 
-  static GCMSEntry* Mark(GC_word* top,
-                         GCMSEntry* entry,
-                         GCMSEntry* mark_sp_limit,
-                         GC_word env) {
-    // GC bug...
-    Stack* stack = reinterpret_cast<Resource*>(top)->stack();
-    if (stack) {
-      Frame* current = stack->current_;
-      if (current) {
-        // mark Frame member
-        entry = MarkFrame(entry, mark_sp_limit, current, stack->stack_pointer_);
-        // traverse frames
-        for (Frame *next = current, *now = current->prev_;
-             now; next = now, now = next->prev_) {
-          entry = MarkFrame(entry, mark_sp_limit, now, next->GetFrameBase());
-        }
-      }
-    }
-    return entry;
-  }
-
   const_iterator begin() const {
     return stack_;
   }
@@ -265,9 +241,9 @@ class Stack : core::Noncopyable<Stack> {
   }
 
  private:
-  static GCMSEntry* MarkFrame(GCMSEntry* entry,
-                              GCMSEntry* mark_sp_limit,
-                              Frame* frame, JSVal* last) {
+  static GC_ms_entry* MarkFrame(GC_ms_entry* entry,
+                                GC_ms_entry* mark_sp_limit,
+                                Frame* frame, JSVal* last) {
     entry = GC_MARK_AND_PUSH(frame->code_,
                              entry, mark_sp_limit,
                              reinterpret_cast<void**>(&frame));
