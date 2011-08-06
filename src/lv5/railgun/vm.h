@@ -354,9 +354,23 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(LOAD_GLOBAL) {
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          PUSH(global->GetByOffset(instr[3].value));
+          DISPATCH(LOAD_GLOBAL);
+        }
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
-        PUSH(w);
+        Slot slot;
+        if (!global->GetAsSlot(ctx, s, &slot, e)) {
+          RaiseReferenceError(e);
+          DISPATCH_ERROR();
+        }
+        if (slot.IsCacheable()) {  // not getter
+          instr[2] = global->map();
+          instr[3] = slot.offset();
+        }
+        PUSH(slot.value());
         DISPATCH(LOAD_GLOBAL);
       }
 

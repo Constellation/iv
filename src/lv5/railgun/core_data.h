@@ -31,7 +31,7 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
           VM::IsOP<OP::TYPEOF_GLOBAL>(**it)) {
         // OPCODE | SYM | MAP
         entry = GC_MARK_AND_PUSH(
-            (*it + 2)->map,
+            (*it)[2].map,
             entry, mark_sp_limit, reinterpret_cast<void**>(this));
       }
       std::advance(it, (*it)->GetLength());

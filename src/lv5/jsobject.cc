@@ -238,12 +238,11 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
     if (desc.IsConfigurable()) {
       table_->erase(name);
       return true;
-    } else {
-      if (th) {
-        e->Report(Error::Type, "delete failed");
-      }
-      return false;
     }
+    if (th) {
+      e->Report(Error::Type, "delete failed");
+    }
+    return false;
   } else {
     return true;
   }

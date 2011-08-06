@@ -42,11 +42,11 @@ class Context
   Context();
   virtual ~Context() { }
 
-  const JSObject* global_obj() const {
+  const JSGlobal* global_obj() const {
     return global_data_.global_obj();
   }
 
-  JSObject* global_obj() {
+  JSGlobal* global_obj() {
     return global_data_.global_obj();
   }
 
