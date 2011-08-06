@@ -2029,55 +2029,55 @@ class Compiler
 
   void EmitLoadName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::LOAD_NAME>(index);
+    Emit<OP::LOAD_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitStoreName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::STORE_NAME>(index);
+    Emit<OP::STORE_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitCallName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::CALL_NAME>(index);
+    Emit<OP::CALL_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::INCREMENT_NAME>(index);
+    Emit<OP::INCREMENT_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitPostfixIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::POSTFIX_INCREMENT_NAME>(index);
+    Emit<OP::POSTFIX_INCREMENT_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::DECREMENT_NAME>(index);
+    Emit<OP::DECREMENT_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitPostfixDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::POSTFIX_DECREMENT_NAME>(index);
+    Emit<OP::POSTFIX_DECREMENT_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitTypeofName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::TYPEOF_NAME>(index);
+    Emit<OP::TYPEOF_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
   void EmitDeleteName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::DELETE_NAME>(index);
+    Emit<OP::DELETE_NAME>(index, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
@@ -2092,26 +2092,10 @@ class Compiler
   }
 
   template<OP::Type op>
-  void Emit(Instruction arg,
-            typename disable_if<OP::IsNameLookupOP<op> >::type* = 0) {
+  void Emit(Instruction arg) {
     IV_STATIC_ASSERT(OPLength<op>::value == 2);
     data_->push_back(op);
     data_->push_back(arg);
-  }
-
-  template<OP::Type op>
-  void Emit(Instruction arg,
-            typename enable_if<OP::IsNameLookupOP<op> >::type* = 0) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 2);
-    data_->push_back(op);
-    data_->push_back(arg);
-    if (code_->names()[arg.value] == symbol::arguments()) {
-      if (op == OP::STORE_NAME) {
-        code_->set_code_has_arguments_assign();
-      } else {
-        code_->set_code_has_arguments();
-      }
-    }
   }
 
   template<OP::Type op>
@@ -2120,6 +2104,14 @@ class Compiler
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
+    if (OP::IsNameLookupOP<op>::value &&
+        code_->names()[arg1.value] == symbol::arguments()) {
+      if (op == OP::STORE_NAME) {
+        code_->set_code_has_arguments_assign();
+      } else {
+        code_->set_code_has_arguments();
+      }
+    }
   }
 
   template<OP::Type op>
