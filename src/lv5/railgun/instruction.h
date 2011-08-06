@@ -10,7 +10,7 @@ namespace railgun {
 
 OP::Type Instruction::GetOP() const {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
-  assert(VM::LabelTable().find(label) != VM::LabelTable.end());
+  assert(VM::LabelTable().find(label) != VM::LabelTable().end());
   return VM::LabelTable().find(label)->second;
 #else
   return static_cast<OP::Type>(value);

@@ -1385,7 +1385,8 @@ MAIN_LOOP_START:
                            PropertyDescriptor::WRITABLE |
                            PropertyDescriptor::ENUMERABLE |
                            PropertyDescriptor::CONFIGURABLE),
-            false, ERR);
+            false, e);
+        assert(!*e);
         DISPATCH(STORE_OBJECT_DATA);
       }
 
@@ -1399,7 +1400,8 @@ MAIN_LOOP_START:
                                PropertyDescriptor::ENUMERABLE |
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::UNDEF_SETTER),
-            false, ERR);
+            false, e);
+        assert(!*e);
         DISPATCH(STORE_OBJECT_GET);
       }
 
@@ -1413,7 +1415,8 @@ MAIN_LOOP_START:
                                PropertyDescriptor::ENUMERABLE |
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::UNDEF_GETTER),
-            false, ERR);
+            false, e);
+        assert(!*e);
         DISPATCH(STORE_OBJECT_SET);
       }
 
