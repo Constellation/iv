@@ -72,18 +72,9 @@ class JSVMFunction : public JSFunction {
     Context* const ctx = static_cast<Context*>(args->ctx());
     VM* const vm = ctx->vm();
     args->set_this_binding(this_binding);
-    const std::pair<JSVal, VM::Status> res =
-        vm->Execute(*args, this, IV_LV5_ERROR(e));
+    const JSVal res = vm->Execute(*args, this, IV_LV5_ERROR(e));
     assert(res.second != VM::THROW);
-    if (res.second == VM::RETURN) {
-      return res.first;
-    } else {
-      if (args->IsConstructorCalled()) {
-        return res.first;
-      } else {
-        return JSUndefined;
-      }
-    }
+    return res;
   }
 
   JSVal Construct(Arguments* args, Error* e) {
@@ -93,6 +84,7 @@ class JSVMFunction : public JSFunction {
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }
+    assert(args.IsConstructorCalled());
     return Call(args, obj, IV_LV5_ERROR(e));
   }
 

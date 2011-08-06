@@ -55,13 +55,10 @@ class Interactive {
       Code* code = Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
-        const std::pair<JSVal, VM::Status> pair = ctx_.vm()->Run(code, &e);
-        JSVal ret;
+        JSVal ret = ctx_.vm()->Run(code, &e);
         if (e) {
           ret = iv::lv5::JSError::Detail(&ctx_, &e);
           e.Clear();
-        } else {
-          ret = pair.first;
         }
         if (!ret.IsUndefined()) {
           const JSString* const str = ret.ToString(&ctx_, &e);

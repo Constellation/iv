@@ -61,28 +61,25 @@ class JSValRef : public JSVal {
 };
 
 // Global start
-std::pair<JSVal, VM::Status> VM::Run(Code* code, Error* e) {
+JSVal VM::Run(Code* code, Error* e) {
   Frame* frame = stack_.NewGlobalFrame(ctx_, code);
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
   Instantiate(ctx_, code, frame, false, true, NULL, e);
   if (*e) {
     stack_.Unwind(frame);
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
-  const std::pair<JSVal, Status> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
 // Global
-std::pair<JSVal, VM::Status> VM::RunGlobal(Code* code, Error* e) {
-  ScopedArguments args(ctx_, 0, e);
-  if (*e) {
-    return std::make_pair(JSEmpty, THROW);
-  }
+JSVal VM::RunGlobal(Code* code, Error* e) {
+  ScopedArguments args(ctx_, 0, IV_LV5_ERROR(e));
   args.set_this_binding(ctx_->global_obj());
   Frame* frame = stack_.NewEvalFrame(
       ctx_,
@@ -92,28 +89,25 @@ std::pair<JSVal, VM::Status> VM::RunGlobal(Code* code, Error* e) {
       ctx_->global_env());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
   Instantiate(ctx_, code, frame, false, true, NULL, e);
   if (*e) {
     stack_.Unwind(frame);
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
-  const std::pair<JSVal, Status> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
 // Eval
-std::pair<JSVal, VM::Status> VM::RunEval(Code* code,
-                                         JSEnv* variable_env,
-                                         JSEnv* lexical_env,
-                                         JSVal this_binding,
-                                         Error* e) {
-  ScopedArguments args(ctx_, 0, e);
-  if (*e) {
-    return std::make_pair(JSEmpty, THROW);
-  }
+JSVal VM::RunEval(Code* code,
+                  JSEnv* variable_env,
+                  JSEnv* lexical_env,
+                  JSVal this_binding,
+                  Error* e) {
+  ScopedArguments args(ctx_, 0, IV_LV5_ERROR(e));
   args.set_this_binding(this_binding);
   Frame* frame = stack_.NewEvalFrame(
       ctx_,
@@ -123,20 +117,20 @@ std::pair<JSVal, VM::Status> VM::RunEval(Code* code,
       lexical_env);
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
   Instantiate(ctx_, code, frame, true, false, NULL, e);
   if (*e) {
     stack_.Unwind(frame);
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
-  const std::pair<JSVal, Status> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args,
-                                         JSVMFunction* func, Error* e) {
+JSVal VM::Execute(const Arguments& args,
+                  JSVMFunction* func, Error* e) {
   Frame* frame = stack_.NewCodeFrame(
       ctx_,
       args.GetEnd(),
@@ -144,19 +138,19 @@ std::pair<JSVal, VM::Status> VM::Execute(const Arguments& args,
       func->scope(), NULL, args.size(), args.IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
   func->InstantiateBindings(ctx_, frame, e);
   if (*e) {
     stack_.Unwind(frame);
-    return std::make_pair(JSEmpty, THROW);
+    return JSEmpty;
   }
-  const std::pair<JSVal, Status> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
+JSVal VM::Execute(Frame* start, Error* e) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
   if (!start) {
     // if start frame is NULL, this pass is getting labels table for
@@ -168,7 +162,7 @@ std::pair<JSVal, VM::Status> VM::Execute(Frame* start, Error* e) {
     } };
     // get direct threading dispatch table
     direct_threading_dispatch_table_ = &kDispatchTable;
-    return std::make_pair(JSEmpty, STOP);
+    return JSEmpty;
 #undef V
   }
 #endif
@@ -322,7 +316,7 @@ MAIN_LOOP_START:
           const JSVal ret =
               (frame->constructor_call_ && !frame->ret_.IsObject()) ?
               frame->GetThis() : frame->ret_;
-          return std::make_pair(ret, STOP);
+          return ret;
         }
         frame->ret_ = JSUndefined;
         const JSVal ret =
@@ -1211,7 +1205,7 @@ MAIN_LOOP_START:
         // if previous code is not native code, unwind frame and jump
         if (frame->prev_pc_ == NULL) {
           // this code is invoked by native function
-          return std::make_pair(ret, RETURN);
+          return ret;
         }
         // this code is invoked by JS code
         instr = frame->prev_pc_ + 2;  // EVAL / CALL / CONSTRUCT => 2
@@ -1660,7 +1654,7 @@ MAIN_LOOP_START:
     break;
   }  // for main loop
   assert(*e);
-  return std::make_pair(JSEmpty, THROW);
+  return JSEmpty;
 #undef INCREMENT_NEXT
 #undef DISPATCH_ERROR
 #undef DISPATCH

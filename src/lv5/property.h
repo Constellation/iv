@@ -53,6 +53,11 @@ class AccessorDescriptor; class PropertyDescriptor {
       value_() {
   }
 
+  PropertyDescriptor(JSEmptyKeywordType val)  // NOLINT
+    : attrs_(kDefaultAttr | EMPTY),
+      value_() {
+  }
+
   PropertyDescriptor()
     : attrs_(kDefaultAttr | EMPTY),
       value_() {

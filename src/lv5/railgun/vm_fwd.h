@@ -28,21 +28,13 @@ static bool IsIncrementOverflowSafe<1>(int32_t val) {
 
 class VM {
  public:
-  enum Status {
-    STOP,
-    RETURN,
-    THROW
-  };
-  inline std::pair<JSVal, Status> Run(Code* code, Error* e);
-  inline std::pair<JSVal, Status> RunGlobal(Code* code, Error* e);
-  inline std::pair<JSVal, Status> RunEval(Code* code,
-                                          JSEnv* variable_env,
-                                          JSEnv* lexical_env,
-                                          JSVal this_binding,
-                                          Error* e);
-  inline std::pair<JSVal, Status> Execute(Frame* frame, Error* e);
-  inline std::pair<JSVal, Status> Execute(const Arguments& args,
-                                          JSVMFunction* func, Error* e);
+  inline JSVal Run(Code* code, Error* e);
+  inline JSVal RunGlobal(Code* code, Error* e);
+  inline JSVal RunEval(Code* code,
+                       JSEnv* variable_env, JSEnv* lexical_env,
+                       JSVal this_binding, Error* e);
+  inline JSVal Execute(Frame* frame, Error* e);
+  inline JSVal Execute(const Arguments& args, JSVMFunction* func, Error* e);
 
   // normal pass
   VM()

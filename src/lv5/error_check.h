@@ -12,7 +12,7 @@
   }
 
 #define IV_LV5_ERROR_GUARD(error)\
-  IV_LV5_ERROR_GUARD_WITH(error, JSUndefined)
+  IV_LV5_ERROR_GUARD_WITH(error, JSEmpty)
 
 #define IV_LV5_ERROR_VOID(error)\
   error);\
@@ -29,6 +29,6 @@
 #undef DUMMY
 
 #define IV_LV5_ERROR(error)\
-  IV_LV5_ERROR_WITH(error, JSUndefined)
+  IV_LV5_ERROR_WITH(error, JSEmpty)
 
 #endif  // _IV_LV5_ERROR_CHECK_H_
