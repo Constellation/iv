@@ -19,6 +19,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
+#include "lv5/railgun/instruction_fwd.h"
 #include "lv5/railgun/core_data.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/scope.h"

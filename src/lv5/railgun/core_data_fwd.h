@@ -3,6 +3,7 @@
 #include "lv5/gc_template.h"
 #include "lv5/gc_hook.h"
 #include "lv5/railgun/op.h"
+#include "lv5/railgun/instruction_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {

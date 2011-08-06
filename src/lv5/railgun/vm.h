@@ -20,6 +20,7 @@
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/frame.h"
+#include "lv5/railgun/instruction_fwd.h"
 #include "lv5/railgun/jsfunction.h"
 #include "lv5/railgun/stack.h"
 #include "lv5/railgun/direct_threading.h"

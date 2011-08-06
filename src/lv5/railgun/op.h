@@ -8,6 +8,9 @@
 #include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
+
+class Map;
+
 namespace railgun {
 
 // opcode name and length
@@ -290,20 +293,7 @@ const char* OP::String(int op) {
   return kOPString[op];
 }
 
-struct Instruction {
-  Instruction(uint32_t arg) : value(arg) { }  // NOLINT
-  union {
-    const void* label;  // use for direct threading
-    uint32_t value;
-    int32_t i32;
-  };
-};
-
 typedef std::array<const void*, OP::NUM_OF_OP + 1> DirectThreadingDispatchTable;
 
 } } }  // namespace iv::lv5::railgun
-
-// global scope
-GC_DECLARE_PTRFREE(iv::lv5::railgun::Instruction);
-
 #endif  // _IV_LV5_RAILGUN_OP_H_
