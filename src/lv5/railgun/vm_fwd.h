@@ -12,15 +12,15 @@ namespace railgun {
 namespace detail {
 
 template<int Target>
-bool IsIncrementOverflowSafe(int32_t val);
+static bool IsIncrementOverflowSafe(int32_t val);
 
 template<>
-inline bool IsIncrementOverflowSafe<-1>(int32_t val) {
+static bool IsIncrementOverflowSafe<-1>(int32_t val) {
   return val > INT32_MIN;
 }
 
 template<>
-inline bool IsIncrementOverflowSafe<1>(int32_t val) {
+static bool IsIncrementOverflowSafe<1>(int32_t val) {
   return val < INT32_MAX;
 }
 
@@ -44,10 +44,21 @@ class VM {
   inline std::pair<JSVal, Status> Execute(const Arguments& args,
                                           JSVMFunction* func, Error* e);
 
-  VM() {
-#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
-    Execute(NULL, NULL);
-#endif
+  // normal pass
+  VM()
+    : ctx_(NULL),
+      stack_(),
+      direct_threading_dispatch_table_(NULL) {
+  }
+
+  static const DirectThreadingDispatchTable& DispatchTable() {
+    static const VM vm(0, DispatchTableTag());
+    return *vm.direct_threading_dispatch_table_;
+  }
+
+  template<OP::Type op>
+  static const void* GetLabel() {
+    return DispatchTable()[op];
   }
 
   JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
@@ -485,13 +496,19 @@ class VM {
     }
   }
 
-  const DirectThreadingDispatchTable* direct_threading_dispatch_table() const {
-    return direct_threading_dispatch_table_;
-  }
-
 #undef CHECK
 
  private:
+  // dispatch table get pass
+  explicit VM(int, DispatchTableTag tag)
+    : ctx_(NULL),
+      stack_(tag),
+      direct_threading_dispatch_table_(NULL) {
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+    Execute(NULL, NULL);
+#endif
+  }
+
   Context* ctx_;
   Stack stack_;
   const DirectThreadingDispatchTable* direct_threading_dispatch_table_;

@@ -93,10 +93,14 @@ class Stack : core::Noncopyable<Stack> {
     resource_ = new Resource(this);
   }
 
+  explicit Stack(DispatchTableTag tag) { }  // empty
+
   ~Stack() {
-    core::OSAllocator::Decommit(stack_, kStackBytes);
-    core::OSAllocator::Deallocate(stack_, kStackBytes);
-    GC_free(resource_);
+    if (stack_) {  // normal pass
+      core::OSAllocator::Decommit(stack_, kStackBytes);
+      core::OSAllocator::Deallocate(stack_, kStackBytes);
+      GC_free(resource_);
+    }
   }
 
   // returns new frame for function call

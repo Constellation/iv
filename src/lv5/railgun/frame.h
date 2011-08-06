@@ -7,7 +7,6 @@
 #include "lv5/jsval.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/code.h"
-#include "lv5/railgun/op.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {

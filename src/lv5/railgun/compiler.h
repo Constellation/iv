@@ -189,6 +189,7 @@ class Compiler
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
+      core_(NULL),
       data_(NULL),
       script_(NULL),
       code_info_stack_(),
@@ -204,10 +205,11 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      data_ = new (GC) Code::Data();
+      core_ = new Code::CoreData();
+      data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
-      code = new Code(ctx_, script_, global, data_, Code::GLOBAL);
+      code = new Code(ctx_, script_, global, core_, Code::GLOBAL);
       EmitFunctionCode(global, code, current_variable_scope_);
       assert(!current_variable_scope_);
     }
@@ -219,13 +221,14 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      data_ = new (GC) Code::Data();
+      core_ = new Code::CoreData();
+      data_ = core_->data();
       data_->reserve(core::Size::KB);
       // create dummy global scope
       current_variable_scope_ =
           std::shared_ptr<VariableScope>(new FunctionScope(std::shared_ptr<VariableScope>(), data_));
       std::shared_ptr<VariableScope> target = current_variable_scope_;
-      code = new Code(ctx_, script_, function, data_, Code::FUNCTION);
+      code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
       EmitFunctionCode(function, code, current_variable_scope_);
       current_variable_scope_ = current_variable_scope_->upper();
       assert(!current_variable_scope_);
@@ -238,10 +241,11 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      data_ = new (GC) Code::Data();
+      core_ = new Code::CoreData();
+      data_ = core_->data();
       data_->reserve(core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
-      code = new Code(ctx_, script_, eval, data_, Code::EVAL);
+      code = new Code(ctx_, script_, eval, core_, Code::EVAL);
       EmitFunctionCode(eval, code, current_variable_scope_);
       assert(!current_variable_scope_);
     }
@@ -352,15 +356,13 @@ class Compiler
     // optimiazation or direct threading
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
     // direct threading label translation
-    const DirectThreadingDispatchTable* table =
-        ctx_->vm()->direct_threading_dispatch_table();
+    const DirectThreadingDispatchTable& table = VM::DispatchTable();
     Code::Data* data = code->GetData();
     for (Code::Data::iterator it = data->begin(),
          last = data->end(); it != last;) {
       const uint32_t opcode = it->value;
-      const uint32_t code_length = kOPLength[opcode];
-      it->label = (*table)[opcode];
-      std::advance(it, code_length);
+      it->label = table[opcode];
+      std::advance(it, kOPLength[opcode]);
     }
 #endif
   }
@@ -1701,7 +1703,7 @@ class Compiler
 
   void Visit(const FunctionLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    Code* const code = new Code(ctx_, script_, *lit, data_, Code::FUNCTION);
+    Code* const code = new Code(ctx_, script_, *lit, core_, Code::FUNCTION);
     const uint32_t index = code_->codes_.size();
     code_->codes_.push_back(code);
     code_info_stack_.push_back(std::make_tuple(code, lit, current_variable_scope_));
@@ -2247,6 +2249,7 @@ class Compiler
 
   Context* ctx_;
   Code* code_;
+  Code::CoreData* core_;
   Code::Data* data_;
   JSScript* script_;
   CodeInfoStack code_info_stack_;

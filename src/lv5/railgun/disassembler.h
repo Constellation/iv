@@ -20,10 +20,10 @@ class DisAssembler : private core::Noncopyable<> {
   DisAssembler(Context* ctx)
     : table_() {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
-    const DirectThreadingDispatchTable* table = ctx->vm()->direct_threading_dispatch_table();
+    const DirectThreadingDispatchTable& table = VM::DispatchTable();
     std::size_t index = 0;
-    for (DirectThreadingDispatchTable::const_iterator it = table->begin(),
-         last = table->end(); it != last; ++it, ++index) {
+    for (DirectThreadingDispatchTable::const_iterator it = table.begin(),
+         last = table.end(); it != last; ++it, ++index) {
       table_[*it] = static_cast<OP::Type>(index);
     }
 #endif
