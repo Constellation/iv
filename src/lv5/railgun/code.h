@@ -7,9 +7,10 @@
 #include "lv5/gc_template.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/heap_object.h"
-#include "lv5/gc_hook.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
+#include "lv5/railgun/core_data_fwd.h"
+#include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -50,41 +51,6 @@ class Code : public HeapObject {
   // symbol, decl type, configurable, param point
   typedef std::tuple<Symbol, DeclType, std::size_t, uint32_t> Decl;
   typedef GCVector<Decl>::type Decls;
-  typedef GCVector<Instruction*>::type InstTargets;
-
-  class CoreData : public GCHook<CoreData> {
-   public:
-    GC_ms_entry* MarkChildren(GC_word* top,
-                              GC_ms_entry* entry,
-                              GC_ms_entry* mark_sp_limit,
-                              GC_word env) {
-      for (InstTargets::const_iterator it = targets_.begin(),
-           last = targets_.end(); it != last; ++it) {
-        // loop and search Map pointer operations
-      }
-      return entry;
-    }
-
-    Data* data() {
-      return &data_;
-    }
-
-    const Data* data() const {
-      return &data_;
-    }
-
-    InstTargets* targets() {
-      return &targets_;
-    }
-
-    const InstTargets* targets() const {
-      return &targets_;
-    }
-
-   private:
-    Data data_;
-    InstTargets targets_;
-  };
 
   Code(Context* ctx,
        JSScript* script,

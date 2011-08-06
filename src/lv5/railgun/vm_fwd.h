@@ -61,6 +61,19 @@ class VM {
     return DispatchTable()[op];
   }
 
+  static const void* GetLabel(OP::Type op) {
+    return DispatchTable()[op];
+  }
+
+  template<OP::Type op>
+  static bool IsOP(const Instruction& inst) {
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+    return GetLabel<op>() == inst.label;
+#else
+    return op == inst.value;
+#endif
+  }
+
   JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
     VMArguments args(ctx_, sp - argc - 1, argc);
     return func->Call(&args, sp[-(argc + 1)], e);

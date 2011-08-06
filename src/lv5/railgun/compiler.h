@@ -19,6 +19,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
+#include "lv5/railgun/core_data.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/scope.h"
 #include "lv5/railgun/condition.h"
@@ -205,7 +206,7 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new Code::CoreData();
+      core_ = new CoreData();
       data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
@@ -221,7 +222,7 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new Code::CoreData();
+      core_ = new CoreData();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
       // create dummy global scope
@@ -241,7 +242,7 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new Code::CoreData();
+      core_ = new CoreData();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
@@ -2249,7 +2250,7 @@ class Compiler
 
   Context* ctx_;
   Code* code_;
-  Code::CoreData* core_;
+  CoreData* core_;
   Code::Data* data_;
   JSScript* script_;
   CodeInfoStack code_info_stack_;
