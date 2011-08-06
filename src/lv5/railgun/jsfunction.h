@@ -69,12 +69,8 @@ class JSVMFunction : public JSFunction {
   }
 
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
-    Context* const ctx = static_cast<Context*>(args->ctx());
-    VM* const vm = ctx->vm();
     args->set_this_binding(this_binding);
-    const JSVal res = vm->Execute(*args, this, IV_LV5_ERROR(e));
-    assert(res.second != VM::THROW);
-    return res;
+    return static_cast<Context*>(args->ctx())->vm()->Execute(*args, this, e);
   }
 
   JSVal Construct(Arguments* args, Error* e) {
@@ -85,7 +81,7 @@ class JSVMFunction : public JSFunction {
       obj->set_prototype(proto.object());
     }
     assert(args.IsConstructorCalled());
-    return Call(args, obj, IV_LV5_ERROR(e));
+    return Call(args, obj, e);
   }
 
   JSEnv* scope() const {
