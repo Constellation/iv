@@ -33,20 +33,20 @@ class DisAssembler : private core::Noncopyable<> {
     for (const Instruction* it = code.begin(),
          *last = code.end(); it != last;) {
       const uint32_t opcode = it->GetOP();
-      const uint32_t code_length = kOPLength[opcode];
+      const uint32_t length = kOPLength[opcode];
       const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);
       line.insert(line.end(), buf.data(), buf.data() + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
-      for (uint32_t first = 1; first < code_length; ++first) {
+      for (uint32_t first = 1; first < length; ++first) {
         line.push_back(' ');
         std::string val = core::DoubleToStringWithRadix(it[first].value, 10);
         line.insert(line.end(), val.begin(), val.end());
       }
       OutputLine(core::StringPiece(line.data(), line.size()));
       line.clear();
-      std::advance(it, code_length);
-      index += code_length;
+      std::advance(it, length);
+      index += length;
     }
     for (Code::Codes::const_iterator it = codes.begin(),
          last = codes.end(); it != last; ++it) {

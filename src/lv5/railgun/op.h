@@ -3,6 +3,7 @@
 #include <cassert>
 #include "detail/cstdint.h"
 #include "detail/array.h"
+#include "detail/unordered_map.h"
 #include "static_assert.h"
 #include "lv5/symbol.h"
 #include "lv5/railgun/direct_threading.h"
@@ -294,6 +295,7 @@ const char* OP::String(int op) {
 }
 
 typedef std::array<const void*, OP::NUM_OF_OP + 1> DirectThreadingDispatchTable;
+typedef std::unordered_map<const void*, OP::Type> LabelOPTable;
 
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_OP_H_

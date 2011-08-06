@@ -51,9 +51,16 @@ class VM {
       direct_threading_dispatch_table_(NULL) {
   }
 
+  // opcode to label table
   static const DirectThreadingDispatchTable& DispatchTable() {
     static const VM vm(0, DispatchTableTag());
     return *vm.direct_threading_dispatch_table_;
+  }
+
+  // label to opcode table
+  static const LabelOPTable& LabelTable() {
+    static const LabelOPTable table(CreateLabelTable());
+    return table;
   }
 
   template<OP::Type op>
@@ -520,6 +527,17 @@ class VM {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
     Execute(NULL, NULL);
 #endif
+  }
+
+  static LabelOPTable CreateLabelTable() {
+    LabelOPTable result;
+    const DirectThreadingDispatchTable& table = VM::DispatchTable();
+    std::size_t index = 0;
+    for (DirectThreadingDispatchTable::const_iterator it = table.begin(),
+         last = table.end(); it != last; ++it, ++index) {
+      result.insert(std::make_pair(*it, static_cast<OP::Type>(index)));
+    }
+    return result;
   }
 
   Context* ctx_;

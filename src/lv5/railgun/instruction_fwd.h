@@ -15,6 +15,9 @@ struct Instruction {
   };
 
   inline OP::Type GetOP() const;
+  std::size_t GetLength() const {
+    return kOPLength[GetOP()];
+  }
 };
 
 } } }  // namespace iv::lv5::railgun

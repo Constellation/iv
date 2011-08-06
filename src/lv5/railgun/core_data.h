@@ -33,7 +33,7 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
           (*it + 2)->map,
           entry, mark_sp_limit, reinterpret_cast<void**>(this));
     }
-    std::advance(it, kOPLength[(*it)->GetOP()]);
+    std::advance(it, (*it)->GetLength());
   }
   return entry;
 }
