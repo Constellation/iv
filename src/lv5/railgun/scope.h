@@ -389,6 +389,7 @@ class FunctionScope : public VariableScope {
       if (already_decled.find(dn) == already_decled.end()) {
         needs_env = true;
         code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, 0u));
+        already_decled.insert(dn);
       }
     }
 

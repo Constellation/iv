@@ -1927,8 +1927,10 @@ class Compiler
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
         const Symbol name = it->first->symbol();
-        SymbolToNameIndex(name);
-        code_->varnames_.push_back(name);
+        if (std::find(code_->varnames().begin(),
+                      code_->varnames().end(), name) == code_->varnames().end()) {
+          code_->varnames_.push_back(name);
+        }
       }
     }
     {
