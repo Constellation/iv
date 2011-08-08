@@ -33,6 +33,18 @@ class Map : public gc {
   typedef GCVector<std::size_t>::type Deleted;
   typedef GCHashMap<Symbol, Map*>::type Transitions;
 
+  static Map* NewUniqueMap(Context* ctx) {
+    return new Map();
+  }
+
+  static Map* NewEmptyMap(Context* ctx) {
+    return New(ctx, NULL);
+  }
+
+  static Map* New(Context* ctx, Map* previous) {
+    return new Map(previous);
+  }
+
   explicit Map(Map* previous)
     : previous_(previous),
       table_(NULL),
@@ -43,13 +55,15 @@ class Map : public gc {
   }
 
   // empty start table
-  Map(Kind kind)
+  // this is unique map. so only used in unique object, like
+  // Object.prototype, Array.prototype, GlobalObject...
+  Map()
     : previous_(NULL),
       table_(new (GC) TargetTable()),
       transitions_(),
       deleted_(NULL),
       added_(),
-      unique_(kind == GLOBAL) {
+      unique_(true) {
   }
 
   std::size_t Get(Context* ctx, Symbol name) {

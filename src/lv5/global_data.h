@@ -29,7 +29,7 @@ class GlobalData {
   typedef boost::variate_generator<
       random_engine_type, random_distribution_type> random_generator;
 
-  GlobalData()
+  GlobalData(Context* ctx)
     : random_engine_(random_engine_type(),
                      random_distribution_type(0, 1)),
       regs_(),
@@ -37,8 +37,7 @@ class GlobalData {
       classes_(),
       string_cache_(),
       empty_(new JSString()),
-      map_(Map::GLOBAL),
-      global_obj_(&map_) {
+      global_obj_(ctx) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();

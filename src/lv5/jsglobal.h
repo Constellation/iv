@@ -20,9 +20,9 @@ class JSGlobal : public JSObject {
     return &cls;
   }
 
-  explicit JSGlobal(Map* map)
+  explicit JSGlobal(Context* ctx)
     : slots_(),
-      map_(map) {
+      map_(Map::NewUniqueMap(ctx)) {
     assert(map_->GetSlotsSize() == 0);
   }
 

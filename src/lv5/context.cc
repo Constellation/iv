@@ -86,7 +86,7 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 }  // namespace context
 
 Context::Context()
-  : global_data_(),
+  : global_data_(this),
     throw_type_error_(this),
     global_env_(internal::NewGlobalEnvironment(this, global_obj())) {
 }
