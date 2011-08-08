@@ -112,7 +112,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());
     }
 
-    const JSVal this_binding = (args_size > 0) ? args[0] : JSUndefined;
+    const JSVal this_binding((args_size > 0) ? args[0] : JSUndefined);
     return func->Call(&args_list, this_binding, e);
   }
   e->Report(Error::Type,
@@ -125,14 +125,8 @@ inline JSVal FunctionBind(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, error);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
-    const std::size_t args_size = args.size();
     JSFunction* const target = obj.object()->AsCallable();
-    JSVal this_binding;
-    if (args_size == 0) {
-      this_binding = JSUndefined;
-    } else {
-      this_binding = args[0];
-    }
+    const JSVal this_binding((args.empty()) ? args.front() : JSUndefined);
     return JSBoundFunction::New(args.ctx(), target, this_binding, args);
   }
   error->Report(Error::Type,

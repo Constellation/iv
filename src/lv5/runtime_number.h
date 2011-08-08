@@ -20,18 +20,18 @@ namespace runtime {
 
 // section 15.7.1.1 Number([value])
 // section 15.7.2.1 new Number([value])
-inline JSVal NumberConstructor(const Arguments& args, Error* error) {
+inline JSVal NumberConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     double res = 0.0;
-    if (args.size() > 0) {
-      res = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+    if (!args.empty()) {
+      res = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
     }
     return JSNumberObject::New(args.ctx(), res);
   } else {
-    if (args.size() > 0) {
-      return args[0].ToNumber(args.ctx(), error);
+    if (args.empty()) {
+      return JSVal::Int32(0);
     } else {
-      return 0.0;
+      return args.front().ToNumber(args.ctx(), e);
     }
   }
 }
@@ -52,7 +52,7 @@ inline JSVal NumberToString(const Arguments& args, Error* error) {
   } else {
     num = obj.number();
   }
-  if (args.size() > 0) {
+  if (!args.empty()) {
     const JSVal& first = args[0];
     double radix;
     if (first.IsUndefined()) {
@@ -138,10 +138,9 @@ inline JSVal NumberValueOf(const Arguments& args, Error* error) {
 // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
 inline JSVal NumberToFixed(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toFixed", args, error);
-  const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
   double fd;
-  if (arg_count == 0) {
+  if (args.empty()) {
     fd = 0.0;
   } else {
     const JSVal& first = args[0];
@@ -186,7 +185,6 @@ inline JSVal NumberToFixed(const Arguments& args, Error* error) {
 // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
 inline JSVal NumberToExponential(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, error);
-  const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
 
   const JSVal& obj = args.this_binding();
@@ -215,7 +213,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
 
   JSVal fractionDigits;
   double fd;
-  if (arg_count == 0) {
+  if (args.empty()) {
     fd = 0.0;
   } else {
     fractionDigits = args[0];
@@ -245,7 +243,6 @@ inline JSVal NumberToExponential(const Arguments& args, Error* error) {
 // section 15.7.4.7 Number.prototype.toPrecision(precision)
 inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, error);
-  const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
 
   const JSVal& obj = args.this_binding();
@@ -263,7 +260,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
   }
 
   double p;
-  if (arg_count == 0) {
+  if (args.empty()) {
     return obj.ToString(ctx, error);
   } else {
     const JSVal& precision = args[0];
