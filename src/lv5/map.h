@@ -36,10 +36,11 @@ class Map : public gc {
   struct UniqueTag { };
 
   static Map* NewUniqueMap(Context* ctx) {
-    return new Map(NULL, UniqueTag());
+    return new Map(UniqueTag());
   }
 
   static Map* NewUniqueMap(Context* ctx, Map* previous) {
+    assert(previous);
     return new Map(previous, UniqueTag());
   }
 
@@ -71,10 +72,10 @@ class Map : public gc {
     assert(GetSlotsSize() > 0);
     Map* map;
     if (IsUnique()) {
+      map = NewUniqueMap(ctx, this);
+    } else {
       map = New(ctx, this);
       map->AllocateTable(this);
-    } else {
-      map = NewUniqueMap(ctx, this);
     }
     map->Delete(ctx, name);
     if (deleted_ && !deleted_->empty()) {
@@ -161,12 +162,21 @@ class Map : public gc {
   // empty start table
   // this is unique map. so only used in unique object, like
   // Object.prototype, Array.prototype, GlobalObject...
-  Map(Map* previous, UniqueTag dummy)
-    : previous_(previous),
+  Map(UniqueTag dummy)
+    : previous_(NULL),
       table_(new (GC) TargetTable()),
       transitions_(NULL),
       deleted_(NULL),
       added_() {
+  }
+
+  Map(Map* previous, UniqueTag dummy)
+    : previous_(previous),
+      table_(NULL),
+      transitions_(NULL),
+      deleted_(NULL),
+      added_() {
+    AllocateTable(this);
   }
 
   void Delete(Context* ctx, Symbol name) {
