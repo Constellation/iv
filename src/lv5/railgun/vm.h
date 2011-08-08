@@ -369,6 +369,7 @@ MAIN_LOOP_START:
             const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
             PUSH(val);
           } else {
+            instr[2].map = NULL;
             const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
             PUSH(w);
           }
@@ -425,6 +426,7 @@ MAIN_LOOP_START:
             instr[3].value = slot;
             global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
           } else {
+            instr[2].map = NULL;
             StoreName(ctx_->global_env(), s, v, strict, ERR);
           }
         }
@@ -888,6 +890,7 @@ MAIN_LOOP_START:
             const JSVal val = IncrementGlobal<-1, 1>(global, slot, strict, ERR);
             PUSH(val);
           } else {
+            instr[2].map = NULL;
             const JSVal val =
                 IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
@@ -912,6 +915,7 @@ MAIN_LOOP_START:
             const JSVal val = IncrementGlobal<-1, 0>(global, slot, strict, ERR);
             PUSH(val);
           } else {
+            instr[2].map = NULL;
             const JSVal val =
                 IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
@@ -936,6 +940,7 @@ MAIN_LOOP_START:
             const JSVal val = IncrementGlobal<1, 1>(global, slot, strict, ERR);
             PUSH(val);
           } else {
+            instr[2].map = NULL;
             const JSVal val =
                 IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
@@ -960,6 +965,7 @@ MAIN_LOOP_START:
             const JSVal val = IncrementGlobal<1, 0>(global, slot, strict, ERR);
             PUSH(val);
           } else {
+            instr[2].map = NULL;
             const JSVal val =
                 IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
