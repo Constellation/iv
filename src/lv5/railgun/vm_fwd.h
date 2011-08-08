@@ -12,15 +12,15 @@ namespace railgun {
 namespace detail {
 
 template<int Target>
-static bool IsIncrementOverflowSafe(int32_t val);
+inline bool IsIncrementOverflowSafe(int32_t val);
 
 template<>
-static bool IsIncrementOverflowSafe<-1>(int32_t val) {
+inline bool IsIncrementOverflowSafe<-1>(int32_t val) {
   return val > INT32_MIN;
 }
 
 template<>
-static bool IsIncrementOverflowSafe<1>(int32_t val) {
+inline bool IsIncrementOverflowSafe<1>(int32_t val) {
   return val < INT32_MAX;
 }
 
