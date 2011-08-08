@@ -70,21 +70,23 @@ class Map : public gc {
 
   Map* DeletePropertyTransition(Context* ctx, Symbol name) {
     assert(GetSlotsSize() > 0);
-    Map* map;
     if (IsUnique()) {
-      map = NewUniqueMap(ctx, this);
+      // unique map, so after transition, this map is not avaiable
+      Map* map = NewUniqueMap(ctx, this);
+      map->Delete(ctx, name);
+      return map;
     } else {
-      map = New(ctx, this);
+      Map* map = New(ctx, this);
       map->AllocateTable(this);
+      map->Delete(ctx, name);
+      if (deleted_) {
+        map->deleted_->insert(
+            map->deleted_->end(),
+            deleted_->begin(),
+            deleted_->end());
+      }
+      return map;
     }
-    map->Delete(ctx, name);
-    if (deleted_) {
-      map->deleted_->insert(
-          map->deleted_->end(),
-          deleted_->begin(),
-          deleted_->end());
-    }
-    return map;
   }
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
@@ -175,7 +177,7 @@ class Map : public gc {
     : previous_(previous),
       table_(NULL),
       transitions_(NULL),
-      deleted_(NULL),
+      deleted_(previous->deleted_),
       added_() {
     AllocateTable(this);
   }
