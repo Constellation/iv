@@ -51,25 +51,6 @@ class Map : public gc {
     return new Map(previous);
   }
 
-  explicit Map(Map* previous)
-    : previous_(previous),
-      table_(NULL),
-      transitions_(new (GC) Transitions()),
-      deleted_(NULL),
-      added_() {
-  }
-
-  // empty start table
-  // this is unique map. so only used in unique object, like
-  // Object.prototype, Array.prototype, GlobalObject...
-  Map(Map* previous, UniqueTag dummy)
-    : previous_(previous),
-      table_(new (GC) TargetTable()),
-      transitions_(NULL),
-      deleted_(NULL),
-      added_() {
-  }
-
   bool IsUnique() const {
     return transitions_ == NULL;
   }
@@ -103,17 +84,6 @@ class Map : public gc {
           deleted_->end());
     }
     return map;
-  }
-
-  void Delete(Context* ctx, Symbol name) {
-    assert(HasTable());
-    const TargetTable::const_iterator it = table_->find(name);
-    assert(it != table_->end());
-    if (!deleted_) {
-      deleted_ = new (GC) Deleted();
-    }
-    deleted_->push_back(it->second);
-    table_->erase(it);
   }
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
@@ -174,6 +144,42 @@ class Map : public gc {
                                   std::vector<Symbol>* vec,
                                   JSObject::EnumerationMode mode);
 
+  bool HasTable() const {
+    return table_;
+  }
+
+ private:
+
+  explicit Map(Map* previous)
+    : previous_(previous),
+      table_(NULL),
+      transitions_(new (GC) Transitions()),
+      deleted_(NULL),
+      added_() {
+  }
+
+  // empty start table
+  // this is unique map. so only used in unique object, like
+  // Object.prototype, Array.prototype, GlobalObject...
+  Map(Map* previous, UniqueTag dummy)
+    : previous_(previous),
+      table_(new (GC) TargetTable()),
+      transitions_(NULL),
+      deleted_(NULL),
+      added_() {
+  }
+
+  void Delete(Context* ctx, Symbol name) {
+    assert(HasTable());
+    const TargetTable::const_iterator it = table_->find(name);
+    assert(it != table_->end());
+    if (!deleted_) {
+      deleted_ = new (GC) Deleted();
+    }
+    deleted_->push_back(it->second);
+    table_->erase(it);
+  }
+
   void AllocateTable(Map* start) {
     assert(start);
     TargetTable* table = NULL;
@@ -199,11 +205,6 @@ class Map : public gc {
     table_ = table;
   }
 
-  bool HasTable() const {
-    return table_;
-  }
-
- private:
   Map* previous_;
   TargetTable* table_;
   Transitions* transitions_;
