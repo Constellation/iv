@@ -107,10 +107,6 @@ class GlobalData {
     return NULL;
   }
 
-  Map* GetGlobalMap() {
-    return &map_;
-  }
-
  private:
   random_generator random_engine_;
   trace::Vector<JSRegExpImpl*>::type regs_;
@@ -118,7 +114,6 @@ class GlobalData {
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0xFF + 1> string_cache_;
   JSString* empty_;
-  Map map_;
   JSGlobal global_obj_;
 };
 

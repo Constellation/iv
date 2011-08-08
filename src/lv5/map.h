@@ -33,8 +33,14 @@ class Map : public gc {
   typedef GCVector<std::size_t>::type Deleted;
   typedef GCHashMap<Symbol, Map*>::type Transitions;
 
+  struct UniqueTag { };
+
   static Map* NewUniqueMap(Context* ctx) {
-    return new Map();
+    return new Map(NULL, UniqueTag());
+  }
+
+  static Map* NewUniqueMap(Context* ctx, Map* previous) {
+    return new Map(previous, UniqueTag());
   }
 
   static Map* NewEmptyMap(Context* ctx) {
@@ -48,22 +54,24 @@ class Map : public gc {
   explicit Map(Map* previous)
     : previous_(previous),
       table_(NULL),
-      transitions_(),
+      transitions_(new (GC) Transitions()),
       deleted_(NULL),
-      added_(),
-      unique_(false) {
+      added_() {
   }
 
   // empty start table
   // this is unique map. so only used in unique object, like
   // Object.prototype, Array.prototype, GlobalObject...
-  Map()
-    : previous_(NULL),
+  Map(Map* previous, UniqueTag dummy)
+    : previous_(previous),
       table_(new (GC) TargetTable()),
-      transitions_(),
+      transitions_(NULL),
       deleted_(NULL),
-      added_(),
-      unique_(true) {
+      added_() {
+  }
+
+  bool IsUnique() const {
+    return transitions_ == NULL;
   }
 
   std::size_t Get(Context* ctx, Symbol name) {
@@ -80,9 +88,13 @@ class Map : public gc {
 
   Map* DeletePropertyTransition(Context* ctx, Symbol name) {
     assert(GetSlotsSize() > 0);
-    Map* map = new Map(this);
-    map->unique_ = unique_;
-    map->AllocateTable(this);
+    Map* map;
+    if (IsUnique()) {
+      map = New(ctx, this);
+      map->AllocateTable(this);
+    } else {
+      map = NewUniqueMap(ctx, this);
+    }
     map->Delete(ctx, name);
     if (deleted_ && !deleted_->empty()) {
       map->deleted_->insert(
@@ -105,7 +117,7 @@ class Map : public gc {
   }
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
-    if (unique_) {
+    if (IsUnique()) {
       // extend this map with not transition
       assert(table_);
       std::size_t slot;
@@ -121,12 +133,13 @@ class Map : public gc {
       *offset = slot;
       return this;
     } else {
-      const Transitions::const_iterator it = transitions_.find(name);
-      if (it != transitions_.end()) {
+      assert(transitions_);
+      const Transitions::const_iterator it = transitions_->find(name);
+      if (it != transitions_->end()) {
         // found already created map. so, move to this
         return it->second;
       }
-      Map* map = new Map(this);
+      Map* map = New(ctx, this);
       if (deleted_) {
         assert(!deleted_->empty());
         // use deleted slot as new slot
@@ -142,7 +155,7 @@ class Map : public gc {
       } else {
         map->added_ = std::make_pair(name, GetSlotsSize());
       }
-      transitions_.insert(std::make_pair(name, map));
+      transitions_->insert(std::make_pair(name, map));
       *offset = map->added_.second;
       return map;
     }
@@ -193,10 +206,9 @@ class Map : public gc {
  private:
   Map* previous_;
   TargetTable* table_;
-  Transitions transitions_;
+  Transitions* transitions_;
   Deleted* deleted_;  // store deleted index for reuse
   std::pair<Symbol, std::size_t> added_;
-  bool unique_;
 };
 
 } }  // namespace iv::lv5
