@@ -1,8 +1,12 @@
 #ifndef _IV_LV5_JSGLOBAL_H_
 #define _IV_LV5_JSGLOBAL_H_
+#include "lv5/error_check.h"
 #include "lv5/map.h"
 #include "lv5/jsobject.h"
+#include "lv5/jsfunction.h"
 #include "lv5/class.h"
+#include "lv5/arguments.h"
+#include "lv5/object_utils.h"
 namespace iv {
 namespace lv5 {
 
@@ -16,48 +20,60 @@ class JSGlobal : public JSObject {
     return &cls;
   }
 
-  const JSVal& GetByOffset(uint32_t value) {
-    return slot_[value];
+  explicit JSGlobal(Map* map)
+    : slots_(),
+      map_(map) {
+    assert(map_->GetSlotsSize() == 0);
   }
 
-  virtual JSVal DefaultValue(Context* ctx,
-                             Hint::Object hint, Error* res);
+  inline JSVal Get(Context* ctx,
+                   Symbol name, Error* e);
 
-  virtual JSVal Get(Context* ctx,
-                    Symbol name, Error* res);
+  inline PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
 
-  virtual PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+  inline bool Delete(Context* ctx, Symbol name, bool th, Error* e);
 
-  virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  inline bool DefineOwnProperty(Context* ctx,
+                               Symbol name,
+                               const PropertyDescriptor& desc,
+                               bool th,
+                               Error* e);
 
-  virtual bool CanPut(Context* ctx, Symbol name) const;
+  inline JSVal GetFromSlot(Context* ctx,
+                           std::size_t offset, Error* e);
 
-  virtual void Put(Context* context, Symbol name,
-                   const JSVal& val, bool th, Error* res);
+  inline void PutToSlot(Context* ctx,
+                        std::size_t offset,
+                        const JSVal& val,
+                        bool th,
+                        Error* e);
 
-  virtual bool HasProperty(Context* ctx, Symbol name) const;
+  inline void GetPropertyNames(Context* ctx,
+                               std::vector<Symbol>* vec, EnumerationMode mode) const;
 
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* res);
+  inline void GetOwnPropertyNames(Context* ctx,
+                                  std::vector<Symbol>* vec,
+                                  EnumerationMode mode) const;
 
-  virtual bool DefineOwnProperty(Context* ctx,
-                                 Symbol name,
-                                 const PropertyDescriptor& desc,
-                                 bool th,
-                                 Error* res);
+  inline std::size_t GetOwnPropertySlot(Context* ctx, Symbol name) const;
 
-  void GetPropertyNames(Context* ctx,
-                        std::vector<Symbol>* vec, EnumerationMode mode) const;
+  inline void CreateProperty(Context* ctx,
+                             Symbol name, const PropertyDescriptor& desc);
 
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   std::vector<Symbol>* vec,
-                                   EnumerationMode mode) const;
+  const PropertyDescriptor& GetSlot(std::size_t n) const {
+    return slots_[n];
+  }
+
+  PropertyDescriptor& GetSlot(std::size_t n) {
+    return slots_[n];
+  }
 
   Map* map() const {
     return map_;
   }
 
  private:
-  JSVal* slot_;  // not vector, because length value is included by Map object
+  GCVector<PropertyDescriptor>::type slots_;
   Map* map_;
 };
 
@@ -82,65 +98,20 @@ JSVal JSGlobal::Get(Context* ctx,
   }
 }
 
-// not recursion
-PropertyDescriptor JSGlobal::GetProperty(Context* ctx, Symbol name) const {
-  const JSObject* obj = this;
-  do {
-    const PropertyDescriptor prop = obj->GetOwnProperty(ctx, name);
-    if (!prop.IsEmpty()) {
-      return prop;
-    }
-    obj = obj->prototype();
-  } while (obj);
-  return JSUndefined;
+std::size_t JSGlobal::GetOwnPropertySlot(Context* ctx, Symbol name) const {
+  return map_->Get(ctx, name);
 }
 
 PropertyDescriptor JSGlobal::GetOwnProperty(Context* ctx, Symbol name) const {
-  if (table_) {
-    const Properties::const_iterator it = table_->find(name);
-    if (it == table_->end()) {
-      return JSUndefined;
-    } else {
-      return it->second;
-    }
+  const std::size_t offset = GetOwnPropertySlot(ctx, name);
+  if (offset != kNotFound) {
+    // found
+    return slots_[offset];
   } else {
+    // not found
     return JSUndefined;
   }
 }
-
-bool JSGlobal::CanPut(Context* ctx, Symbol name) const {
-  const PropertyDescriptor desc = GetOwnProperty(ctx, name);
-  if (!desc.IsEmpty()) {
-    if (desc.IsAccessorDescriptor()) {
-      return desc.AsAccessorDescriptor()->set();
-    } else {
-      assert(desc.IsDataDescriptor());
-      return desc.AsDataDescriptor()->IsWritable();
-    }
-  }
-  if (!prototype_) {
-    return extensible_;
-  }
-  const PropertyDescriptor inherited = prototype_->GetProperty(ctx, name);
-  if (inherited.IsEmpty()) {
-    return extensible_;
-  } else {
-    if (inherited.IsAccessorDescriptor()) {
-      return inherited.AsAccessorDescriptor()->set();
-    } else {
-      assert(inherited.IsDataDescriptor());
-      return inherited.AsDataDescriptor()->IsWritable();
-    }
-  }
-}
-
-#define REJECT(str)\
-  do {\
-    if (th) {\
-      e->Report(Error::Type, str);\
-    }\
-    return false;\
-  } while (0)
 
 bool JSGlobal::DefineOwnProperty(Context* ctx,
                                  Symbol name,
@@ -148,127 +119,136 @@ bool JSGlobal::DefineOwnProperty(Context* ctx,
                                  bool th,
                                  Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
-  const PropertyDescriptor current = GetOwnProperty(ctx, name);
-
-  // empty check
-  if (current.IsEmpty()) {
-    if (!extensible_) {
-      REJECT("object not extensible");
-    } else {
-      AllocateTable();
-      if (!desc.IsAccessorDescriptor()) {
-        assert(desc.IsDataDescriptor() || desc.IsGenericDescriptor());
-        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
-      } else {
-        assert(desc.IsAccessorDescriptor());
-        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
+  const std::size_t offset = map_->Get(ctx, name);
+  if (offset != kNotFound) {
+    // found
+    const PropertyDescriptor current = slots_[offset];
+    bool returned = false;
+    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+      slots_[offset] = PropertyDescriptor::Merge(desc, current);
+    }
+    return returned;
+  } else {
+    // not found
+    if (!IsExtensible()) {
+      if (th) {
+        e->Report(Error::Type, "object not extensible");\
       }
+      return false;
+    } else {
+      // newly create property => map transition
+      CreateProperty(ctx, name, PropertyDescriptor::SetDefault(desc));
       return true;
     }
   }
-  bool returned = false;
-  if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-    AllocateTable();
-    (*table_)[name] = PropertyDescriptor::Merge(desc, current);
-  }
-  return returned;
 }
 
-#undef REJECT
 
-void JSGlobal::Put(Context* ctx,
-                   Symbol name,
-                   const JSVal& val, bool th, Error* e) {
-  if (!CanPut(ctx, name)) {
+JSVal JSGlobal::GetFromSlot(Context* ctx,
+                            std::size_t offset, Error* e) {
+  const PropertyDescriptor& desc = slots_[offset];
+  if (desc.IsDataDescriptor()) {
+    return desc.AsDataDescriptor()->value();
+  } else {
+    assert(desc.IsAccessorDescriptor());
+    JSObject* const getter = desc.AsAccessorDescriptor()->get();
+    if (getter) {
+      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
+      return getter->AsCallable()->Call(&a, this, e);
+    } else {
+      return JSUndefined;
+    }
+  }
+}
+
+void JSGlobal::PutToSlot(Context* ctx,
+                         std::size_t offset, const JSVal& val,
+                         bool th, Error* e) {
+  // not empty is already checked
+  const PropertyDescriptor current = GetSlot(offset);
+  // can put check
+  if ((current.IsAccessorDescriptor() && !current.AsAccessorDescriptor()->set()) ||
+      (current.IsDataDescriptor() && !current.AsDataDescriptor()->IsWritable())) {
     if (th) {
       e->Report(Error::Type, "put failed");
     }
     return;
   }
-  const PropertyDescriptor own_desc = GetOwnProperty(ctx, name);
-  if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-    DefineOwnProperty(ctx,
-                      name,
-                      DataDescriptor(
-                          val,
-                          PropertyDescriptor::UNDEF_ENUMERABLE |
-                          PropertyDescriptor::UNDEF_CONFIGURABLE |
-                          PropertyDescriptor::UNDEF_WRITABLE), th, e);
-    return;
-  }
-  const PropertyDescriptor desc = GetProperty(ctx, name);
-  if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-    const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
+  assert(!current.IsEmpty());
+  if (current.IsDataDescriptor()) {
+    const DataDescriptor desc(
+        val,
+        PropertyDescriptor::UNDEF_ENUMERABLE |
+        PropertyDescriptor::UNDEF_CONFIGURABLE |
+        PropertyDescriptor::UNDEF_WRITABLE);
+    bool returned = false;
+    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+      slots_[offset] = PropertyDescriptor::Merge(desc, current);
+    }
+  } else {
+    const AccessorDescriptor* const accs = current.AsAccessorDescriptor();
     assert(accs->set());
     ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
     args[0] = val;
     accs->set()->AsCallable()->Call(&args, this, e);
-  } else {
-    DefineOwnProperty(ctx, name,
-                      DataDescriptor(val,
-                                     PropertyDescriptor::WRITABLE |
-                                     PropertyDescriptor::ENUMERABLE |
-                                     PropertyDescriptor::CONFIGURABLE),
-                      th, e);
   }
 }
 
-bool JSGlobal::HasProperty(Context* ctx, Symbol name) const {
-  return !GetProperty(ctx, name).IsEmpty();
+void JSGlobal::CreateProperty(Context* ctx,
+                              Symbol name, const PropertyDescriptor& desc) {
+  // add property transition
+  // searching already created maps and if this is available, move to this
+  std::size_t offset;
+  map_ = map_->AddPropertyTransition(ctx, name, &offset);
+  slots_.resize(map_->GetSlotsSize(), JSUndefined);
+  slots_[offset] = desc;  // set newly created property
 }
 
 bool JSGlobal::Delete(Context* ctx, Symbol name, bool th, Error* e) {
-  if (table_) {
-    const PropertyDescriptor desc = GetOwnProperty(ctx, name);
-    if (desc.IsEmpty()) {
-      return true;
-    }
-    if (desc.IsConfigurable()) {
-      table_->erase(name);
-      return true;
-    }
+  const std::size_t offset = map_->Get(ctx, name);
+  if (offset == kNotFound) {
+    return true;  // not found
+  }
+  if (!slots_[offset].IsConfigurable()) {
     if (th) {
       e->Report(Error::Type, "delete failed");
     }
     return false;
-  } else {
-    return true;
   }
-}
 
-void JSGlobal::GetPropertyNames(Context* ctx,
-                                std::vector<Symbol>* vec,
-                                EnumerationMode mode) const {
-  GetOwnPropertyNames(ctx, vec, mode);
-  const JSObject* obj = prototype_;
-  while (obj) {
-    obj->GetOwnPropertyNames(ctx, vec, mode);
-    obj = obj->prototype();
-  }
+  // delete property transition
+  // if previous map is avaiable shape, move to this.
+  // and if that is not avaiable, create new map and move to it.
+  // newly created slots size is always smaller than before
+  map_ = map_->DeletePropertyTransition(ctx, name);
+  slots_[offset] = JSUndefined;
+  return true;
 }
 
 void JSGlobal::GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const {
-  if (table_) {
-    if (vec->empty()) {
-      for (JSObject::Properties::const_iterator it = table_->begin(),
-           last = table_->end(); it != last; ++it) {
-        if (it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
-          vec->push_back(it->first);
-        }
-      }
-    } else {
-      for (JSObject::Properties::const_iterator it = table_->begin(),
-           last = table_->end(); it != last; ++it) {
-        if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
-            (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
-          vec->push_back(it->first);
-        }
-      }
+  map_->GetOwnPropertyNames(this, ctx, vec, mode);
+}
+
+
+void Map::GetOwnPropertyNames(const JSGlobal* obj,
+                              Context* ctx,
+                              std::vector<Symbol>* vec,
+                              JSObject::EnumerationMode mode) {
+  if (!HasTable()) {
+    AllocateTable(this);
+  }
+  for (TargetTable::const_iterator it = table_->begin(),
+       last = table_->end(); it != last; ++it) {
+    if ((mode == JSObject::kIncludeNotEnumerable ||
+         obj->GetSlot(it->second).IsEnumerable()) &&
+        (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
+      vec->push_back(it->first);
     }
   }
 }
+
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSGLOBAL_H_

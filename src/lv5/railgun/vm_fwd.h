@@ -442,6 +442,28 @@ class VM {
   }
 
   template<int Target, std::size_t Returned>
+  JSVal IncrementGlobal(JSGlobal* global, std::size_t slot, bool strict, Error* e) {
+    const JSVal w = global->GetFromSlot(ctx_, slot, e);
+    if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+      std::tuple<JSVal, JSVal> results;
+      const int32_t target = w.int32();
+      std::get<0>(results) = w;
+      std::get<1>(results) = JSVal::Int32(target + Target);
+      global->PutToSlot(
+          ctx_, slot,
+          std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    } else {
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      global->PutToSlot(ctx_, slot,
+                        std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    }
+  }
+
+  template<int Target, std::size_t Returned>
   JSVal IncrementElement(JSVal* sp, const JSVal& base,
                          const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);

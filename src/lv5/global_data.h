@@ -11,8 +11,8 @@
 #include "lv5/gc_template.h"
 #include "lv5/xorshift.h"
 #include "lv5/jsstring.h"
-#include "lv5/jsglobal.h"
 #include "lv5/jsfunction.h"
+#include "lv5/jsglobal.h"
 #include "lv5/symboltable.h"
 namespace iv {
 namespace lv5 {
@@ -32,12 +32,13 @@ class GlobalData {
   GlobalData()
     : random_engine_(random_engine_type(),
                      random_distribution_type(0, 1)),
-      global_obj_(),
       regs_(),
       table_(),
       classes_(),
       string_cache_(),
-      empty_(new JSString()) {
+      empty_(new JSString()),
+      map_(),
+      global_obj_(&map_) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();
@@ -107,14 +108,19 @@ class GlobalData {
     return NULL;
   }
 
+  Map* GetEmptyMap() {
+    return &map_;
+  }
+
  private:
   random_generator random_engine_;
-  JSGlobal global_obj_;
   trace::Vector<JSRegExpImpl*>::type regs_;
   SymbolTable table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0xFF + 1> string_cache_;
   JSString* empty_;
+  Map map_;
+  JSGlobal global_obj_;
 };
 
 } }  // namespace iv::lv5

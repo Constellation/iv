@@ -168,13 +168,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       REJECT("object not extensible");
     } else {
       AllocateTable();
-      if (!desc.IsAccessorDescriptor()) {
-        assert(desc.IsDataDescriptor() || desc.IsGenericDescriptor());
-        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
-      } else {
-        assert(desc.IsAccessorDescriptor());
-        (*table_)[name] = PropertyDescriptor::SetDefault(desc);
-      }
+      (*table_)[name] = PropertyDescriptor::SetDefault(desc);
       return true;
     }
   }

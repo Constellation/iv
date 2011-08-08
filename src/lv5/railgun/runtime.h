@@ -69,7 +69,6 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
         env,
         vm->stack()->current()->GetThis(),
         IV_LV5_ERROR(e));
-    assert(res.second != VM::THROW);
     return res;
   } else {
     VM* const vm = ctx->vm();
@@ -79,7 +78,6 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
         ctx->global_env(),
         ctx->global_obj(),
         IV_LV5_ERROR(e));
-    assert(res.second != VM::THROW);
     return res;
   }
 }
@@ -134,7 +132,6 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
         env,
         vm->stack()->current()->GetThis(),
         IV_LV5_ERROR(e));
-    assert(res.second != VM::THROW);
     return res;
   } else {
     VM* const vm = ctx->vm();
@@ -144,7 +141,6 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
         vm->stack()->current()->lexical_env(),
         vm->stack()->current()->GetThis(),
         IV_LV5_ERROR(e));
-    assert(res.second != VM::THROW);
     return res;
   }
 }

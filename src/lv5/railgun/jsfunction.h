@@ -80,7 +80,7 @@ class JSVMFunction : public JSFunction {
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }
-    assert(args.IsConstructorCalled());
+    assert(args->IsConstructorCalled());
     return Call(args, obj, e);
   }
 

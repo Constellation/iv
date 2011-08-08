@@ -10,6 +10,13 @@ class DataDescriptor;
 class AccessorDescriptor; class PropertyDescriptor {
  public:
   typedef PropertyDescriptor this_type;
+  union PropertyLayout {
+    struct Accessors {
+      JSObject* getter_;
+      JSObject* setter_;
+    } accessor_;
+    JSVal::value_type data_;
+  };
   enum Attribute {
     NONE = 0,
     WRITABLE = 1,
@@ -71,6 +78,10 @@ class AccessorDescriptor; class PropertyDescriptor {
 
   int attrs() const {
     return attrs_;
+  }
+
+  const PropertyLayout& GetLayout() const {
+    return value_;
   }
 
   int type() const {
@@ -204,13 +215,7 @@ class AccessorDescriptor; class PropertyDescriptor {
   }
 
   int attrs_;
-  union PropertyLayout {
-    struct Accessors {
-      JSObject* getter_;
-      JSObject* setter_;
-    } accessor_;
-    JSVal::value_type data_;
-  } value_;
+  PropertyLayout value_;
 };
 
 class AccessorDescriptor : public PropertyDescriptor {

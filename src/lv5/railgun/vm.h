@@ -357,20 +357,22 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          PUSH(global->GetByOffset(instr[3].value));
-          DISPATCH(LOAD_GLOBAL);
+          const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+          PUSH(val);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+            PUSH(val);
+          } else {
+            const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
+            PUSH(w);
+          }
         }
-        const Symbol& s = GETITEM(names, instr[1].value);
-        Slot slot;
-        if (!global->GetAsSlot(ctx, s, &slot, e)) {
-          RaiseReferenceError(e);
-          DISPATCH_ERROR();
-        }
-        if (slot.IsCacheable()) {  // not getter
-          instr[2] = global->map();
-          instr[3] = slot.offset();
-        }
-        PUSH(slot.value());
         DISPATCH(LOAD_GLOBAL);
       }
 
@@ -409,9 +411,23 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(STORE_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        StoreName(ctx_->global_env(), s, v, strict, ERR);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
+          } else {
+            StoreName(ctx_->global_env(), s, v, strict, ERR);
+          }
+        }
         DISPATCH(STORE_GLOBAL);
       }
 
@@ -857,34 +873,98 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result =
-            IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
-        PUSH(result);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          const JSVal val = IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
+          PUSH(val);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = IncrementGlobal<-1, 1>(global, slot, strict, ERR);
+            PUSH(val);
+          } else {
+            const JSVal val =
+                IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
+            PUSH(val);
+          }
+        }
         DISPATCH(DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result =
-            IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
-        PUSH(result);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          const JSVal val = IncrementGlobal<-1, 0>(global, instr[3].value, strict, ERR);
+          PUSH(val);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = IncrementGlobal<-1, 0>(global, slot, strict, ERR);
+            PUSH(val);
+          } else {
+            const JSVal val =
+                IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
+            PUSH(val);
+          }
+        }
         DISPATCH(POSTFIX_DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result =
-            IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
-        PUSH(result);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          const JSVal val = IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
+          PUSH(val);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = IncrementGlobal<1, 1>(global, slot, strict, ERR);
+            PUSH(val);
+          } else {
+            const JSVal val =
+                IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
+            PUSH(val);
+          }
+        }
         DISPATCH(INCREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result =
-            IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
-        PUSH(result);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          const JSVal val = IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
+          PUSH(val);
+        } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = IncrementGlobal<1, 0>(global, slot, strict, ERR);
+            PUSH(val);
+          } else {
+            const JSVal val =
+                IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
+            PUSH(val);
+          }
+        }
         DISPATCH(POSTFIX_INCREMENT_GLOBAL);
       }
 
@@ -1571,16 +1651,26 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(CALL_GLOBAL) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        if (ctx_->global_env()->HasBinding(ctx_, s)) {
-          const JSVal w =
-              ctx_->global_env()->GetBindingValue(ctx_, s, false, ERR);
-          PUSH(w);
-          PUSH(JSUndefined);
+        JSGlobal* global = ctx_->global_obj();
+        if (instr[2].map == global->map()) {
+          // map is cached, so use previous index code
+          const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+          PUSH(val);
         } else {
-          RaiseReferenceError(s, e);
-          DISPATCH_ERROR();
+          const Symbol& s = GETITEM(names, instr[1].value);
+          const std::size_t slot =
+              global->GetOwnPropertySlot(ctx_, s);
+          if (slot != kNotFound) {
+            instr[2].map = global->map();
+            instr[3].value = slot;
+            const JSVal val = global->GetFromSlot(ctx_, slot, ERR);
+            PUSH(val);
+          } else {
+            const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
+            PUSH(w);
+          }
         }
+        PUSH(JSUndefined);
         DISPATCH(CALL_GLOBAL);
       }
 

@@ -63,6 +63,10 @@ JSString* LookupSingleString(Context* ctx, uint16_t ch) {
   return ctx->global_data()->GetSingleString(ch);
 }
 
+Map* NewEmptyMap(Context* ctx) {
+  return ctx->global_data()->GetEmptyMap();
+}
+
 JSFunction* throw_type_error(Context* ctx) {
   return ctx->throw_type_error();
 }

@@ -92,5 +92,6 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
 #undef REJECT
 }
 
+
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_OBJECT_UTILS_H_
