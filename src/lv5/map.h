@@ -152,6 +152,10 @@ class Map : public gc {
     return table_;
   }
 
+  void MakeTransitionable(Context* ctx) {
+    transitions_ = new (GC) Transitions();
+  }
+
  private:
 
   explicit Map(Map* previous)
