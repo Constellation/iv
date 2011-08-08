@@ -38,7 +38,8 @@ class Map : public gc {
       table_(NULL),
       transitions_(),
       deleted_(NULL),
-      added_() {
+      added_(),
+      unique_(false) {
   }
 
   // empty start table
@@ -91,7 +92,7 @@ class Map : public gc {
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
     if (unique_) {
-      // extend this map
+      // extend this map with not transition
       assert(table_);
       std::size_t slot;
       if (deleted_) {
