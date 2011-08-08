@@ -78,7 +78,7 @@ class Map : public gc {
       map->AllocateTable(this);
     }
     map->Delete(ctx, name);
-    if (deleted_ && !deleted_->empty()) {
+    if (deleted_) {
       map->deleted_->insert(
           map->deleted_->end(),
           deleted_->begin(),
@@ -94,7 +94,8 @@ class Map : public gc {
       std::size_t slot;
       if (deleted_) {
         slot = deleted_->back();
-        if (deleted_->size() == 1) {
+        deleted_->pop_back();
+        if (deleted_->empty()) {
           deleted_ = NULL;
         }
       } else {
@@ -213,6 +214,7 @@ class Map : public gc {
       table->insert((*it)->added_);
     }
     table_ = table;
+    previous_ = NULL;  // shut down Map chain
   }
 
   Map* previous_;
