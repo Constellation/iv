@@ -37,7 +37,7 @@ class GlobalData {
       classes_(),
       string_cache_(),
       empty_(new JSString()),
-      map_(),
+      map_(Map::GLOBAL),
       global_obj_(&map_) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
@@ -108,7 +108,7 @@ class GlobalData {
     return NULL;
   }
 
-  Map* GetEmptyMap() {
+  Map* GetGlobalMap() {
     return &map_;
   }
 

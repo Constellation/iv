@@ -32,8 +32,6 @@ GlobalData* Global(Context* ctx);
 JSString* EmptyString(Context* ctx);
 JSString* LookupSingleString(Context* ctx, uint16_t ch);
 
-Map* NewEmptyMap(Context* ctx);
-
 JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);

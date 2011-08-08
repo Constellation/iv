@@ -26,8 +26,7 @@ class JSGlobal : public JSObject {
     assert(map_->GetSlotsSize() == 0);
   }
 
-  inline JSVal Get(Context* ctx,
-                   Symbol name, Error* e);
+  inline JSVal Get(Context* ctx, Symbol name, Error* e);
 
   inline PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
 
