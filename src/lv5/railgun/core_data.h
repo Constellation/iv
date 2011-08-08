@@ -27,8 +27,7 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
           VM::IsOP<OP::INCREMENT_GLOBAL>(**it) ||
           VM::IsOP<OP::DECREMENT_GLOBAL>(**it) ||
           VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(**it) ||
-          VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(**it) ||
-          VM::IsOP<OP::TYPEOF_GLOBAL>(**it)) {
+          VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(**it)) {
         // OPCODE | SYM | MAP
         entry = GC_MARK_AND_PUSH(
             (*it)[2].map,
