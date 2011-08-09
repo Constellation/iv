@@ -673,7 +673,7 @@ class LabelledStatement : public LabelledStatementBase<Factory> {
 
 // CaseClause
 template<typename Factory>
-class Inherit<Factory, kCaseClause> : public AstNode<Factory> {
+class Inherit<Factory, kCaseClause> : public Statement<Factory> {
 };
 INHERIT(CaseClause);
 
