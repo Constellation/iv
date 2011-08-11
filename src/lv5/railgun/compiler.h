@@ -102,8 +102,7 @@ class DepthPoint : private core::Noncopyable<> {
     : depth_(depth),
       current_(depth->GetCurrent())
 #endif  // DEBUG
-  {
-  }
+  { }
 
   void LevelCheck(std::size_t i) {
     assert(depth_->GetCurrent() == (current_ + i));
@@ -176,7 +175,9 @@ class Compiler
                      std::vector<std::size_t>*,
                      std::vector<std::size_t>*> JumpEntry;
   typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
-  typedef std::tuple<Code*, const FunctionLiteral*, std::shared_ptr<VariableScope> > CodeInfo;
+  typedef std::tuple<Code*,
+                     const FunctionLiteral*,
+                     std::shared_ptr<VariableScope> > CodeInfo;
   typedef std::vector<CodeInfo> CodeInfoStack;
 
   enum LevelType {
@@ -228,7 +229,8 @@ class Compiler
       data_->reserve(core::Size::KB);
       // create dummy global scope
       current_variable_scope_ =
-          std::shared_ptr<VariableScope>(new FunctionScope(std::shared_ptr<VariableScope>(), data_));
+          std::shared_ptr<VariableScope>(
+              new FunctionScope(std::shared_ptr<VariableScope>(), data_));
       std::shared_ptr<VariableScope> target = current_variable_scope_;
       code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
       EmitFunctionCode(function, code, current_variable_scope_);
@@ -1708,7 +1710,8 @@ class Compiler
     Code* const code = new Code(ctx_, script_, *lit, core_, Code::FUNCTION);
     const uint32_t index = code_->codes_.size();
     code_->codes_.push_back(code);
-    code_info_stack_.push_back(std::make_tuple(code, lit, current_variable_scope_));
+    code_info_stack_.push_back(
+        std::make_tuple(code, lit, current_variable_scope_));
     Emit<OP::MAKE_CLOSURE>(index);
     stack_depth_.Up();
     point.LevelCheck(1);
@@ -1896,7 +1899,8 @@ class Compiler
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(new FunctionScope(upper, ctx_, code, data_, scope));
+        std::shared_ptr<VariableScope>(
+            new FunctionScope(upper, ctx_, code, data_, scope));
     const std::size_t code_info_stack_size = code_info_stack_.size();
 
     {
@@ -1927,8 +1931,9 @@ class Compiler
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
         const Symbol name = it->first->symbol();
-        if (std::find(code_->varnames().begin(),
-                      code_->varnames().end(), name) == code_->varnames().end()) {
+        if (std::find(
+                code_->varnames().begin(),
+                code_->varnames().end(), name) == code_->varnames().end()) {
           code_->varnames_.push_back(name);
         }
       }
@@ -1953,7 +1958,8 @@ class Compiler
       // lazy code compile
       std::size_t code_info_stack_index = code_info_stack_size;
       for (Code::Codes::const_iterator it = code_->codes().begin(),
-           last = code_->codes().end(); it != last; ++it, ++code_info_stack_index) {
+           last = code_->codes().end();
+           it != last; ++it, ++code_info_stack_index) {
         const CodeInfo info = code_info_stack_[code_info_stack_index];
         assert(std::get<0>(info) == *it);
         EmitFunctionCode(*std::get<1>(info), *it, std::get<2>(info));
