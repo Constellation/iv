@@ -20,6 +20,7 @@ class JSObjectEnv;
 class JSEnv : public HeapObject {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
+  virtual bool HasBinding(Context* ctx, Symbol name, uint32_t count) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
   virtual void CreateMutableBinding(Context* ctx, Symbol name,
                                     bool del, Error* err) = 0;
@@ -67,6 +68,14 @@ class JSDeclEnv : public JSEnv {
 
   bool HasBinding(Context* ctx, Symbol name) const {
     return record_.find(name) != record_.end();
+  }
+
+  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
+    if (mutated_) {
+      return record_.find(name) != record_.end();
+    } else {
+      return count == scope_nest_count_;
+    }
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {
@@ -190,6 +199,10 @@ class JSObjectEnv : public JSEnv {
     return record_->HasProperty(ctx, name);
   }
 
+  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
+    return HasBinding(ctx, name);
+  }
+
   bool DeleteBinding(Context* ctx, Symbol name) {
     return record_->Delete(ctx, name, false, NULL);
   }
@@ -285,6 +298,10 @@ class JSStaticEnv : public JSEnv {
 
   bool HasBinding(Context* ctx, Symbol name) const {
     return name == symbol_;
+  }
+
+  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
+    return HasBinding(ctx, name);
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {

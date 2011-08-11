@@ -138,18 +138,11 @@ class VM {
                  const Symbol& name,
                  bool strict, uint32_t scope_nest_count, Error* e) {
     while (env) {
-      if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
-        if (decl->scope_nest_count() == scope_nest_count ||
-            (decl->IsLookupNeeded() && decl->HasBinding(ctx_, name))) {
-          return decl->GetBindingValue(ctx_, name, strict, e);
-        }
+      if (env->HasBinding(ctx_, name, scope_nest_count)) {
+        return env->GetBindingValue(ctx_, name, strict, e);
       } else {
-        // mutable environment
-        if (env->IsLookupNeeded() && env->HasBinding(ctx_, name)) {
-          return env->GetBindingValue(ctx_, name, strict, e);
-        }
+        env = env->outer();
       }
-      env = env->outer();
     }
     RaiseReferenceError(name, e);
     return JSEmpty;
@@ -231,20 +224,12 @@ class VM {
                  const JSVal& stored, bool strict,
                  uint32_t scope_nest_count, Error* e) {
     while (env) {
-      if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
-        if (decl->scope_nest_count() == scope_nest_count ||
-            (decl->IsLookupNeeded() && decl->HasBinding(ctx_, name))) {
-          decl->SetMutableBinding(ctx_, name, stored, strict, e);
-          return;
-        }
+      if (env->HasBinding(ctx_, name, scope_nest_count)) {
+        env->SetMutableBinding(ctx_, name, stored, strict, e);
+        return;
       } else {
-        // mutable environment
-        if (env->IsLookupNeeded() && env->HasBinding(ctx_, name)) {
-          env->SetMutableBinding(ctx_, name, stored, strict, e);
-          return;
-        }
+        env = env->outer();
       }
-      env = env->outer();
     }
     if (strict) {
       e->Report(Error::Reference,
