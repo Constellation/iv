@@ -1896,7 +1896,7 @@ class Compiler
   void EmitFunctionCode(const FunctionLiteral& lit,
                         Code* code,
                         std::shared_ptr<VariableScope> upper,
-                        std::size_t function_scope_nest_count) {
+                        uint32_t function_scope_nest_count) {
     // preserve function scope nest count
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();

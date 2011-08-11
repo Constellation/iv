@@ -136,7 +136,7 @@ class FunctionScope : public VariableScope {
                 Code* code,
                 Code::Data* data,
                 const Scope& scope,
-                std::size_t scope_nest_count)
+                uint32_t scope_nest_count)
     : VariableScope(upper),
       map_(),
       labels_(),
@@ -447,7 +447,7 @@ class FunctionScope : public VariableScope {
   bool upper_of_eval_;
   bool eval_top_scope_;
   bool eval_target_scope_;
-  std::size_t scope_nest_count_;
+  uint32_t scope_nest_count_;
 };
 
 } } }  // namespace iv::lv5::railgun

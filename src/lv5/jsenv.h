@@ -56,7 +56,7 @@ class JSDeclEnv : public JSEnv {
     DELETABLE = 8
   };
   typedef GCHashMap<Symbol, std::pair<int, JSVal> >::type Record;
-  explicit JSDeclEnv(JSEnv* outer, std::size_t scope_nest_count)
+  explicit JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
     : JSEnv(outer),
       record_(),
       scope_nest_count_(scope_nest_count) {
@@ -153,7 +153,7 @@ class JSDeclEnv : public JSEnv {
 
   static JSDeclEnv* New(Context* ctx,
                         JSEnv* outer,
-                        std::size_t scope_nest_count) {
+                        uint32_t scope_nest_count) {
     return new JSDeclEnv(outer, scope_nest_count);
   }
 
@@ -161,13 +161,13 @@ class JSDeclEnv : public JSEnv {
     return false;
   }
 
-  std::size_t scope_nest_count() const {
+  uint32_t scope_nest_count() const {
     return scope_nest_count_;
   }
 
  private:
   Record record_;
-  std::size_t scope_nest_count_;
+  uint32_t scope_nest_count_;
 };
 
 class JSEvalDeclEnv : public JSDeclEnv {
