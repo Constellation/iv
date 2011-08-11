@@ -134,6 +134,27 @@ class VM {
     return JSEmpty;
   }
 
+  JSVal LoadHeap(JSEnv* env,
+                 const Symbol& name,
+                 bool strict, uint32_t scope_nest_count, Error* e) {
+    while (env) {
+      if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
+        if (decl->scope_nest_count() == scope_nest_count ||
+            (decl->IsLookupNeeded() && decl->HasBinding(ctx_, name))) {
+          return decl->GetBindingValue(ctx_, name, strict, e);
+        }
+      } else {
+        // mutable environment
+        if (env->IsLookupNeeded() && env->HasBinding(ctx_, name)) {
+          return env->GetBindingValue(ctx_, name, strict, e);
+        }
+      }
+      env = env->outer();
+    }
+    RaiseReferenceError(name, e);
+    return JSEmpty;
+  }
+
   JSVal LoadProp(JSVal* sp, const JSVal& base,
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
@@ -203,6 +224,34 @@ class VM {
       } else {
         ctx_->global_obj()->Put(ctx_, name, stored, strict, e);
       }
+    }
+  }
+
+  void StoreHeap(JSEnv* env, const Symbol& name,
+                 const JSVal& stored, bool strict,
+                 uint32_t scope_nest_count, Error* e) {
+    while (env) {
+      if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
+        if (decl->scope_nest_count() == scope_nest_count ||
+            (decl->IsLookupNeeded() && decl->HasBinding(ctx_, name))) {
+          decl->SetMutableBinding(ctx_, name, stored, strict, e);
+          return;
+        }
+      } else {
+        // mutable environment
+        if (env->IsLookupNeeded() && env->HasBinding(ctx_, name)) {
+          env->SetMutableBinding(ctx_, name, stored, strict, e);
+          return;
+        }
+      }
+      env = env->outer();
+    }
+    if (strict) {
+      e->Report(Error::Reference,
+                "putting to unresolvable reference "
+                "not allowed in strict reference");
+    } else {
+      ctx_->global_obj()->Put(ctx_, name, stored, strict, e);
     }
   }
 

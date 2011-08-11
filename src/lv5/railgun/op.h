@@ -156,6 +156,16 @@ V(POSTFIX_INCREMENT_GLOBAL, 4)\
 V(POSTFIX_DECREMENT_GLOBAL, 4)\
 V(TYPEOF_GLOBAL, 4)\
 \
+V(LOAD_HEAP, 4)\
+V(STORE_HEAP, 4)\
+V(DELETE_HEAP, 2)\
+V(CALL_HEAP, 4)\
+V(INCREMENT_HEAP, 4)\
+V(DECREMENT_HEAP, 4)\
+V(POSTFIX_INCREMENT_HEAP, 4)\
+V(POSTFIX_DECREMENT_HEAP, 4)\
+V(TYPEOF_HEAP, 4)\
+\
 V(STORE_LOCAL_IMMUTABLE, 4)\
 V(INCREMENT_LOCAL_IMMUTABLE, 4)\
 V(DECREMENT_LOCAL_IMMUTABLE, 4)\
@@ -219,6 +229,11 @@ struct OP {
   static OP::Type ToLocal(uint8_t op) {
     assert(IsNameLookup(static_cast<OP::Type>(op)));
     return static_cast<OP::Type>(op + (OP::LOAD_LOCAL - OP::LOAD_NAME));
+  }
+
+  static OP::Type ToHeap(uint8_t op) {
+    assert(IsNameLookup(static_cast<OP::Type>(op)));
+    return static_cast<OP::Type>(op + (OP::LOAD_HEAP - OP::LOAD_NAME));
   }
 
   static OP::Type ToLocalImmutable(uint8_t op, bool strict) {

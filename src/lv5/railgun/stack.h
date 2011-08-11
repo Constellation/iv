@@ -118,8 +118,8 @@ class Stack : core::Noncopyable<Stack> {
       frame->code_ = code;
       frame->prev_pc_ = pc;
       if (code->HasDeclEnv()) {
-        frame->variable_env_ =
-            frame->lexical_env_ = JSDeclEnv::New(ctx, env, 0);
+        frame->variable_env_ = frame->lexical_env_ =
+            JSDeclEnv::New(ctx, env, code->scope_nest_count());
       } else {
         frame->variable_env_ = frame->lexical_env_ = env;
       }

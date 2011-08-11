@@ -208,10 +208,14 @@ class FunctionScope : public VariableScope {
           }
         }
       }
+      if (code_) {
+        code_->set_scope_nest_count(0);
+      }
     } else {
       assert(code_);
       Locations locations;
       uint32_t location = 0;
+      // TODO(Constellation) LOAD_HEAP op is available in upper of eval
       if (!upper_of_eval_) {
         if (code_->ShouldCreateArguments() && !code_->strict()) {
           for (Code::Names::const_iterator it = code_->params().begin(),
@@ -261,10 +265,16 @@ class FunctionScope : public VariableScope {
             // emit global opt
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToGlobal(op);
+          } else if (type == HEAP) {
+            // emit heap opt
+            const uint32_t op = (*data_)[point].value;
+            (*data_)[point] = OP::ToHeap(op);
+            (*data_)[point + 2] = scope_nest_count_;
           }
         }
       }
       CleanUpDecls(code_, locations);
+      code_->set_scope_nest_count(scope_nest_count_);
     }
   }
 

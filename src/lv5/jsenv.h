@@ -55,11 +55,14 @@ class JSDeclEnv : public JSEnv {
     MUTABLE = 4,
     DELETABLE = 8
   };
+
   typedef GCHashMap<Symbol, std::pair<int, JSVal> >::type Record;
-  explicit JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
+  explicit JSDeclEnv(JSEnv* outer,
+                     uint32_t scope_nest_count)
     : JSEnv(outer),
       record_(),
-      scope_nest_count_(scope_nest_count) {
+      scope_nest_count_(scope_nest_count),
+      mutated_(false) {
   }
 
   bool HasBinding(Context* ctx, Symbol name) const {
@@ -158,22 +161,21 @@ class JSDeclEnv : public JSEnv {
   }
 
   bool IsLookupNeeded() const {
-    return false;
+    return mutated_;
   }
 
   uint32_t scope_nest_count() const {
     return scope_nest_count_;
   }
 
+  void MarkMutated() {
+    mutated_ = true;
+  }
+
  private:
   Record record_;
   uint32_t scope_nest_count_;
-};
-
-class JSEvalDeclEnv : public JSDeclEnv {
-  bool IsLookupNeeded() const {
-    return true;
-  }
+  bool mutated_;
 };
 
 class JSObjectEnv : public JSEnv {

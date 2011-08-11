@@ -60,7 +60,9 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
   Code* code = Compile(ctx, *eval, script);
   if (code->strict()) {
-    JSDeclEnv* const env = JSDeclEnv::New(ctx, ctx->global_env(), 0);
+    JSDeclEnv* const env = JSDeclEnv::New(ctx,
+                                          ctx->global_env(),
+                                          code->scope_nest_count());
     VM* const vm = ctx->vm();
     const JSVal res = vm->RunEval(
         code,
@@ -123,7 +125,9 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   if (code->strict()) {
     VM* const vm = ctx->vm();
     JSDeclEnv* const env =
-        JSDeclEnv::New(ctx, vm->stack()->current()->lexical_env(), 0);
+        JSDeclEnv::New(ctx,
+                       vm->stack()->current()->lexical_env(),
+                       code->scope_nest_count());
     const JSVal res = vm->RunEval(
         code,
         env,
@@ -132,7 +136,12 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
         IV_LV5_ERROR(e));
     return res;
   } else {
+    // TODO(Constellation)
+    // if not mutating environment, not mark env
     VM* const vm = ctx->vm();
+    if (JSDeclEnv* decl = vm->stack()->current()->variable_env()->AsJSDeclEnv()) {
+      decl->MarkMutated();
+    }
     const JSVal res = vm->RunEval(
         code,
         vm->stack()->current()->variable_env(),

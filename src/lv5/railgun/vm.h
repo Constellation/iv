@@ -347,6 +347,13 @@ MAIN_LOOP_START:
         DISPATCH(LOAD_NAME);
       }
 
+      DEFINE_OPCODE(LOAD_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal w = LoadHeap(frame->lexical_env(), s, strict, instr[2].value, ERR);
+        PUSH(w);
+        DISPATCH(LOAD_HEAP);
+      }
+
       DEFINE_OPCODE(LOAD_LOCAL) {
         const JSVal& w = GETLOCAL(instr[1].value);
         PUSH(w);
@@ -398,6 +405,13 @@ MAIN_LOOP_START:
         const JSVal v = TOP();
         StoreName(frame->lexical_env(), s, v, strict, ERR);
         DISPATCH(STORE_NAME);
+      }
+
+      DEFINE_OPCODE(STORE_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal v = TOP();
+        StoreHeap(frame->lexical_env(), s, v, strict, instr[2].value, ERR);
+        DISPATCH(STORE_HEAP);
       }
 
       DEFINE_OPCODE(STORE_LOCAL) {
@@ -475,6 +489,18 @@ MAIN_LOOP_START:
           PUSH(JSTrue);
         }
         DISPATCH(DELETE_NAME);
+      }
+
+      DEFINE_OPCODE(DELETE_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
+          const bool res = current->DeleteBinding(ctx_, s);
+          PUSH(JSVal::Bool(res));
+        } else {
+          // not found -> unresolvable reference
+          PUSH(JSTrue);
+        }
+        DISPATCH(DELETE_HEAP);
       }
 
       DEFINE_OPCODE(DELETE_LOCAL) {
@@ -753,6 +779,18 @@ MAIN_LOOP_START:
         DISPATCH(TYPEOF_NAME);
       }
 
+      DEFINE_OPCODE(TYPEOF_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
+          const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
+          PUSH(expr.TypeOf(ctx_));
+        } else {
+          // unresolvable reference
+          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
+        }
+        DISPATCH(TYPEOF_HEAP);
+      }
+
       DEFINE_OPCODE(TYPEOF_LOCAL) {
         const JSVal& expr = GETLOCAL(instr[1].value);
         PUSH(expr.TypeOf(ctx_));
@@ -802,6 +840,38 @@ MAIN_LOOP_START:
             IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_NAME);
+      }
+
+      DEFINE_OPCODE(DECREMENT_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal result =
+            IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+        PUSH(result);
+        DISPATCH(DECREMENT_HEAP);
+      }
+
+      DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal result =
+            IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+        PUSH(result);
+        DISPATCH(POSTFIX_DECREMENT_HEAP);
+      }
+
+      DEFINE_OPCODE(INCREMENT_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal result =
+            IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+        PUSH(result);
+        DISPATCH(INCREMENT_HEAP);
+      }
+
+      DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal result =
+            IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+        PUSH(result);
+        DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
 
       DEFINE_OPCODE(DECREMENT_LOCAL) {
@@ -1647,6 +1717,20 @@ MAIN_LOOP_START:
           DISPATCH_ERROR();
         }
         DISPATCH(CALL_NAME);
+      }
+
+      DEFINE_OPCODE(CALL_HEAP) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        JSVal res;
+        if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
+          const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
+          PUSH(w);
+          PUSH(target_env->ImplicitThisValue());
+        } else {
+          RaiseReferenceError(s, e);
+          DISPATCH_ERROR();
+        }
+        DISPATCH(CALL_HEAP);
       }
 
       DEFINE_OPCODE(CALL_LOCAL) {

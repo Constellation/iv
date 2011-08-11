@@ -246,6 +246,14 @@ class Code : public HeapObject {
     has_declarative_env_ = val;
   }
 
+  void set_scope_nest_count(uint32_t count) {
+    scope_nest_count_ = count;
+  }
+
+  uint32_t scope_nest_count() const {
+    return scope_nest_count_;
+  }
+
   Data* GetData() {
     return core_->data();
   }
@@ -268,6 +276,7 @@ class Code : public HeapObject {
   bool has_name_;
   bool has_declarative_env_;
   bool arguments_hiding_;
+  uint32_t scope_nest_count_;
   FunctionLiteral::DeclType decl_type_;
   Symbol name_;
   JSScript* script_;
