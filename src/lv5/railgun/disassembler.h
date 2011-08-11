@@ -38,7 +38,7 @@ class DisAssembler : private core::Noncopyable<> {
       line.insert(line.end(), buf.data(), buf.data() + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
-      if (length != 0) {
+      if (length != 1) {
         line.push_back(' ');
         std::string val = core::DoubleToStringWithRadix(it[1].value, 10);
         line.insert(line.end(), val.begin(), val.end());
