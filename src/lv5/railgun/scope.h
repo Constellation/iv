@@ -135,7 +135,8 @@ class FunctionScope : public VariableScope {
                 Context* ctx,
                 Code* code,
                 Code::Data* data,
-                const Scope& scope)
+                const Scope& scope,
+                std::size_t scope_nest_count)
     : VariableScope(upper),
       map_(),
       labels_(),
@@ -144,7 +145,7 @@ class FunctionScope : public VariableScope {
       upper_of_eval_(false),
       eval_top_scope_(code->code_type() == Code::EVAL),
       eval_target_scope_(scope.HasDirectCallToEval()),
-      scope_nest_count_(0) {
+      scope_nest_count_(scope_nest_count) {
     if (!IsTop()) {
       // is global or not
       map_[symbol::arguments()] = std::make_tuple(STACK, 0, code_->strict());
