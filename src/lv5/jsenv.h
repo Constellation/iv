@@ -32,11 +32,18 @@ class JSEnv : public HeapObject {
   virtual JSVal ImplicitThisValue() const = 0;
   virtual JSDeclEnv* AsJSDeclEnv() = 0;
   virtual JSObjectEnv* AsJSObjectEnv() = 0;
+  virtual bool IsLookupNeeded() const = 0;
   inline JSEnv* outer() const {
     return outer_;
   }
+
  protected:
-  explicit JSEnv(JSEnv* outer) : outer_(outer) { }
+  explicit JSEnv(JSEnv* outer)
+    : outer_(outer) {
+  }
+
+ private:
+
   JSEnv* outer_;
 };
 
@@ -49,9 +56,10 @@ class JSDeclEnv : public JSEnv {
     DELETABLE = 8
   };
   typedef GCHashMap<Symbol, std::pair<int, JSVal> >::type Record;
-  explicit JSDeclEnv(JSEnv* outer)
+  explicit JSDeclEnv(JSEnv* outer, std::size_t scope_nest_count)
     : JSEnv(outer),
-      record_() {
+      record_(),
+      scope_nest_count_(scope_nest_count) {
   }
 
   bool HasBinding(Context* ctx, Symbol name) const {
@@ -143,14 +151,30 @@ class JSDeclEnv : public JSEnv {
     return record_;
   }
 
-  static JSDeclEnv* New(Context* ctx, JSEnv* outer) {
-    return new JSDeclEnv(outer);
+  static JSDeclEnv* New(Context* ctx,
+                        JSEnv* outer,
+                        std::size_t scope_nest_count) {
+    return new JSDeclEnv(outer, scope_nest_count);
+  }
+
+  bool IsLookupNeeded() const {
+    return false;
+  }
+
+  std::size_t scope_nest_count() const {
+    return scope_nest_count_;
   }
 
  private:
   Record record_;
+  std::size_t scope_nest_count_;
 };
 
+class JSEvalDeclEnv : public JSDeclEnv {
+  bool IsLookupNeeded() const {
+    return true;
+  }
+};
 
 class JSObjectEnv : public JSEnv {
  public:
@@ -239,6 +263,10 @@ class JSObjectEnv : public JSEnv {
     return new JSObjectEnv(outer, rec);
   }
 
+  bool IsLookupNeeded() const {
+    return true;
+  }
+
  private:
   JSObject* record_;
   bool provide_this_;
@@ -294,6 +322,10 @@ class JSStaticEnv : public JSEnv {
   static JSStaticEnv* New(Context* ctx, JSEnv* outer,
                           Symbol sym, const JSVal& value) {
     return new JSStaticEnv(outer, sym, value);
+  }
+
+  bool IsLookupNeeded() const {
+    return true;
   }
 
  private:

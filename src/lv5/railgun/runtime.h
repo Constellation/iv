@@ -60,8 +60,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
   Code* code = Compile(ctx, *eval, script);
   if (code->strict()) {
-    JSDeclEnv* const env =
-        internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
+    JSDeclEnv* const env = JSDeclEnv::New(ctx, ctx->global_env(), 0);
     VM* const vm = ctx->vm();
     const JSVal res = vm->RunEval(
         code,
@@ -124,8 +123,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   if (code->strict()) {
     VM* const vm = ctx->vm();
     JSDeclEnv* const env =
-        internal::NewDeclarativeEnvironment(
-            ctx, vm->stack()->current()->lexical_env());
+        JSDeclEnv::New(ctx, vm->stack()->current()->lexical_env(), 0);
     const JSVal res = vm->RunEval(
         code,
         env,

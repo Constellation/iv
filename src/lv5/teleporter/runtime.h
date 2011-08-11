@@ -42,8 +42,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   JSScript* const script = CompileScript(ctx, str,
                                          false, IV_LV5_ERROR(e));
   if (script->function()->strict()) {
-    JSDeclEnv* const env =
-        internal::NewDeclarativeEnvironment(ctx, ctx->global_env());
+    JSDeclEnv* const env = JSDeclEnv::New(ctx, ctx->global_env(), 0);
     const ContextSwitcher switcher(ctx,
                                    env,
                                    env,
@@ -94,8 +93,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   JSScript* const script = CompileScript(ctx, str,
                                          ctx->IsStrict(), IV_LV5_ERROR(e));
   if (script->function()->strict()) {
-    JSDeclEnv* const env =
-        internal::NewDeclarativeEnvironment(ctx, ctx->lexical_env());
+    JSDeclEnv* const env = JSDeclEnv::New(ctx, ctx->lexical_env(), 0);
     const ContextSwitcher switcher(ctx,
                                    env,
                                    env,

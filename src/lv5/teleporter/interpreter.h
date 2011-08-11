@@ -94,8 +94,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   const Scope& scope = code->code()->scope();
 
   // step 1
-  JSDeclEnv* const env =
-     internal::NewDeclarativeEnvironment(ctx_, code->scope());
+  JSDeclEnv* const env = JSDeclEnv::New(ctx_, code->scope(), 0);
   const ContextSwitcher switcher(ctx_, env, env, this_value,
                                  code->IsStrict());
 
@@ -665,11 +664,8 @@ void Interpreter::Visit(const TryStatement* stmt) {
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
-      JSEnv* const catch_env =
-          internal::NewDeclarativeEnvironment(ctx_, old_env);
       const Symbol name = stmt->catch_name().Address()->symbol();
-      catch_env->CreateMutableBinding(ctx_, name, false, CHECK_IN_STMT);
-      catch_env->SetMutableBinding(ctx_, name, ex, false, CHECK_IN_STMT);
+      JSStaticEnv* const catch_env = JSStaticEnv::New(ctx_, old_env, name, ex);
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);
         // evaluate with no error check (finally)

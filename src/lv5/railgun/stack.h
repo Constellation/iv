@@ -64,7 +64,8 @@ class Stack : core::Noncopyable<Stack> {
         Frame* current = stack_->current_;
         if (current) {
           // mark Frame member
-          entry = MarkFrame(entry, mark_sp_limit, current, stack_->stack_pointer_);
+          entry = MarkFrame(entry, mark_sp_limit,
+                            current, stack_->stack_pointer_);
           // traverse frames
           for (Frame *next = current, *now = current->prev_;
                now; next = now, now = next->prev_) {
@@ -117,8 +118,8 @@ class Stack : core::Noncopyable<Stack> {
       frame->code_ = code;
       frame->prev_pc_ = pc;
       if (code->HasDeclEnv()) {
-        frame->variable_env_ = frame->lexical_env_ =
-            internal::NewDeclarativeEnvironment(ctx, env);
+        frame->variable_env_ =
+            frame->lexical_env_ = JSDeclEnv::New(ctx, env, 0);
       } else {
         frame->variable_env_ = frame->lexical_env_ = env;
       }

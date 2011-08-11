@@ -357,10 +357,6 @@ CompareKind Compare(Context* ctx,
   }
 }
 
-inline JSDeclEnv* NewDeclarativeEnvironment(Context* ctx, JSEnv* env) {
-  return JSDeclEnv::New(ctx, env);
-}
-
 inline JSStaticEnv* NewStaticEnvironment(Context* ctx, JSEnv* env,
                                          Symbol sym, const JSVal& value) {
   return JSStaticEnv::New(ctx, env, sym, value);
