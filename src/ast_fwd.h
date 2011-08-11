@@ -24,7 +24,8 @@ V(SwitchStatement)\
 V(ThrowStatement)\
 V(TryStatement)\
 V(LabelledStatement)\
-V(FunctionDeclaration)
+V(FunctionDeclaration)\
+V(CaseClause)
 
 #define IV_STATEMENT_NODE_LIST(V)\
 V(Statement)\
@@ -67,8 +68,7 @@ V(Call)\
 IV_EXPRESSION_DERIVED_NODE_LIST(V)
 
 #define IV_OTHER_DERIVED_NODE_LIST(V)\
-V(Declaration)\
-V(CaseClause)
+V(Declaration)
 
 #define IV_OTHER_NODE_LIST(V)\
 V(AstNode)\
