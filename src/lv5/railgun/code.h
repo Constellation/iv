@@ -65,19 +65,24 @@ class Code : public HeapObject {
       has_name_(func.name()),
       has_declarative_env_(true),
       arguments_hiding_(false),
+      scope_nest_count_(0),
       decl_type_(func.type()),
       name_(),
       script_(script),
       start_position_(func.start_position()),
       end_position_(func.end_position()),
+      stack_depth_(0),
       core_(core),
       start_(),
+      end_(),
       codes_(),
       names_(),
       varnames_(),
       params_(func.params().size()),
+      locals_(),
       decls_(),
-      constants_() {
+      constants_(),
+      exception_table_() {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }

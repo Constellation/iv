@@ -2276,7 +2276,6 @@ inline Code* Compile(Context* ctx,
   return compiler.Compile(global, script);
 }
 
-
 inline Code* CompileFunction(Context* ctx,
                              const FunctionLiteral& func, JSScript* script) {
   Compiler compiler(ctx);
@@ -2285,6 +2284,13 @@ inline Code* CompileFunction(Context* ctx,
 
 inline Code* CompileEval(Context* ctx,
                          const FunctionLiteral& eval, JSScript* script) {
+  Compiler compiler(ctx);
+  return compiler.CompileEval(eval, script);
+}
+
+inline Code* CompileEval(Context* ctx,
+                         const FunctionLiteral& eval,
+                         JSScript* script, JSEnv* variable, JSEnv* lexical) {
   Compiler compiler(ctx);
   return compiler.CompileEval(eval, script);
 }
