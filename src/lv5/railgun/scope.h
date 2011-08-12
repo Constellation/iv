@@ -216,13 +216,28 @@ class FunctionScope : public VariableScope {
       Locations locations;
       uint32_t location = 0;
       // TODO(Constellation) LOAD_HEAP op is available in upper of eval
-      if (!upper_of_eval_) {
-        if (code_->ShouldCreateArguments() && !code_->strict()) {
-          for (Code::Names::const_iterator it = code_->params().begin(),
-               last = code_->params().end(); it != last; ++it) {
-            std::get<0>(map_[*it]) = TypeUpgrade(std::get<0>(map_[*it]), HEAP);
+      if (code_->IsShouldCreateHeapArguments()) {
+        for (Code::Names::const_iterator it = code_->params().begin(),
+             last = code_->params().end(); it != last; ++it) {
+          std::get<0>(map_[*it]) = TypeUpgrade(std::get<0>(map_[*it]), HEAP);
+        }
+      }
+      if (upper_of_eval_) {
+        // only HEAP analyzer is allowed
+        for (Labels::const_iterator it = labels_.begin(),
+             last = labels_.end(); it != last; ++it) {
+          const Symbol sym = std::get<0>(*it);
+          const std::size_t point = std::get<1>(*it);
+          const Type type = TypeUpgrade(std::get<0>(map_[sym]),
+                                        std::get<2>(*it));
+          if (type == HEAP) {  // not LOOKUP
+            // emit heap opt
+            const uint32_t op = (*data_)[point].value;
+            (*data_)[point] = OP::ToHeap(op);
+            (*data_)[point + 2] = scope_nest_count_;
           }
         }
+      } else {
         for (Variables::const_iterator it = map_.begin(),
              last = map_.end(); it != last; ++it) {
           if (std::get<0>(it->second) == STACK) {
@@ -265,7 +280,7 @@ class FunctionScope : public VariableScope {
             // emit global opt
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToGlobal(op);
-          } else if (type == HEAP) {
+          } else if (type == HEAP) {  // Not Lookup
             // emit heap opt
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToHeap(op);
@@ -397,7 +412,7 @@ class FunctionScope : public VariableScope {
       }
     }
 
-    if (code->ShouldCreateArguments()) {
+    if (code->IsShouldCreateArguments()) {
       const Locations::const_iterator f = locations.find(symbol::arguments());
       if (f == locations.end()) {
         needs_env = true;

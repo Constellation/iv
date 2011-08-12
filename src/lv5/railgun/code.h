@@ -158,8 +158,12 @@ class Code : public HeapObject {
     return has_declarative_env_;
   }
 
-  bool ShouldCreateArguments() const {
+  bool IsShouldCreateArguments() const {
     return !arguments_hiding_ && (has_arguments_ || has_eval_);
+  }
+
+  bool IsShouldCreateHeapArguments() const {
+     return IsShouldCreateArguments() && !strict();
   }
 
   bool IsFunctionDeclaration() const {

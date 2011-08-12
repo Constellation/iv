@@ -16,6 +16,7 @@ namespace lv5 {
 
 class JSDeclEnv;
 class JSObjectEnv;
+class JSStaticEnv;
 
 class JSEnv : public HeapObject {
  public:
@@ -33,6 +34,7 @@ class JSEnv : public HeapObject {
   virtual JSVal ImplicitThisValue() const = 0;
   virtual JSDeclEnv* AsJSDeclEnv() = 0;
   virtual JSObjectEnv* AsJSObjectEnv() = 0;
+  virtual JSStaticEnv* AsJSStaticEnv() = 0;
   virtual bool IsLookupNeeded() const = 0;
   inline JSEnv* outer() const {
     return outer_;
@@ -159,6 +161,10 @@ class JSDeclEnv : public JSEnv {
     return NULL;
   }
 
+  JSStaticEnv* AsJSStaticEnv() {
+    return NULL;
+  }
+
   Record& record() {
     return record_;
   }
@@ -262,6 +268,10 @@ class JSObjectEnv : public JSEnv {
     return this;
   }
 
+  JSStaticEnv* AsJSStaticEnv() {
+    return NULL;
+  }
+
   JSObject* record() {
     return record_;
   }
@@ -336,6 +346,10 @@ class JSStaticEnv : public JSEnv {
 
   JSObjectEnv* AsJSObjectEnv() {
     return NULL;
+  }
+
+  JSStaticEnv* AsJSStaticEnv() {
+    return this;
   }
 
   static JSStaticEnv* New(Context* ctx, JSEnv* outer,

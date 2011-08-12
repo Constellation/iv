@@ -128,7 +128,7 @@ inline void Instantiate(Context* ctx,
 
   // step 6, 7
   if (func) {
-    if (code->ShouldCreateArguments()) {
+    if (code->IsShouldCreateArguments()) {
       JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
       JSArguments* args_obj = NULL;
       if (!code->strict()) {

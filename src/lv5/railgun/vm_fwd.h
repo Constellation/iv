@@ -138,6 +138,7 @@ class VM {
                  const Symbol& name,
                  bool strict, uint32_t scope_nest_count, Error* e) {
     while (env) {
+      assert(env->AsJSDeclEnv() || env->AsJSStaticEnv());
       if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
         if (decl->scope_nest_count() == scope_nest_count) {
           return decl->GetBindingValue(ctx_, name, strict, e);
@@ -225,6 +226,7 @@ class VM {
                  const JSVal& stored, bool strict,
                  uint32_t scope_nest_count, Error* e) {
     while (env) {
+      assert(env->AsJSDeclEnv() || env->AsJSStaticEnv());
       if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
         if (decl->scope_nest_count() == scope_nest_count) {
           decl->SetMutableBinding(ctx_, name, stored, strict, e);
