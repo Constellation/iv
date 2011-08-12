@@ -2080,7 +2080,7 @@ class Compiler
 
   void EmitDeleteName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::DELETE_NAME>(index);
+    Emit<OP::DELETE_NAME>(index, 0, 0);
     current_variable_scope_->Lookup(code_->names_[index], point, code_);
   }
 
