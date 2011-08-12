@@ -16,14 +16,10 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-inline Code* CompileFunction(Context* ctx,
-                             const JSString* str,
-                             bool is_strict,
-                             bool is_one_function, Error* e) {
+inline Code* CompileFunction(Context* ctx, const JSString* str, Error* e) {
   std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory factory(ctx);
   core::Parser<AstFactory, EvalSource> parser(&factory, *src);
-  parser.set_strict(is_strict);
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
     e->Report(Error::Syntax, parser.error());

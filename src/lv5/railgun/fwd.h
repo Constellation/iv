@@ -40,10 +40,7 @@ class JSGlobalScript;
 class JSVMFunction;
 
 
-Code* CompileFunction(Context* ctx,
-                      const JSString* str,
-                      bool is_strict,
-                      bool is_one_function, Error* e);
+Code* CompileFunction(Context* ctx, const JSString* str, Error* e);
 
 void Instantiate(Context* ctx,
                  Code* code,

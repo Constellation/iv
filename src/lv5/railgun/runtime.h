@@ -16,8 +16,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   StringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
-  JSString* const source = builder.Build(ctx);
-  Code* const code = CompileFunction(ctx, source, false, true, IV_LV5_ERROR(e));
+  Code* const code = CompileFunction(ctx, builder.Build(ctx), IV_LV5_ERROR(e));
   return JSVMFunction::New(ctx, code, ctx->global_env());
 }
 
