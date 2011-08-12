@@ -59,9 +59,14 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     }
   }
 
+  uint32_t scope_nest_count() const {
+    return scope_nest_count_;
+  }
+
  protected:
   explicit VariableScope(std::shared_ptr<VariableScope> upper)
-    : upper_(upper) {
+    : upper_(upper),
+      scope_nest_count_(upper ? (upper->scope_nest_count() + 1) : 0) {
   }
 
   VariableScope* GetRawUpper() const {
@@ -69,6 +74,7 @@ class VariableScope : private core::Noncopyable<VariableScope> {
   }
 
   std::shared_ptr<VariableScope> upper_;
+  uint32_t scope_nest_count_;
 };
 
 class WithScope : public VariableScope {
@@ -127,16 +133,14 @@ class FunctionScope : public VariableScope {
       data_(data),
       upper_of_eval_(false),
       eval_top_scope_(false),
-      eval_target_scope_(false),
-      scope_nest_count_(0) {
+      eval_target_scope_(false) {
   }
 
   FunctionScope(std::shared_ptr<VariableScope> upper,
                 Context* ctx,
                 Code* code,
                 Code::Data* data,
-                const Scope& scope,
-                uint32_t scope_nest_count)
+                const Scope& scope)
     : VariableScope(upper),
       map_(),
       labels_(),
@@ -144,8 +148,7 @@ class FunctionScope : public VariableScope {
       data_(data),
       upper_of_eval_(false),
       eval_top_scope_(code->code_type() == Code::EVAL),
-      eval_target_scope_(scope.HasDirectCallToEval()),
-      scope_nest_count_(scope_nest_count) {
+      eval_target_scope_(scope.HasDirectCallToEval()) {
     if (!IsTop()) {
       // is global or not
       map_[symbol::arguments()] = std::make_tuple(STACK, 0, code_->strict());
@@ -246,7 +249,7 @@ class FunctionScope : public VariableScope {
         code_->set_stack_depth(code_->stack_depth() + code_->locals().size());
       }
 
-      code_->set_scope_nest_count(scope_nest_count_);
+      code_->set_scope_nest_count(scope_nest_count());
       InsertDecls(code_, locations);
 
       // opcode optimization
@@ -262,7 +265,7 @@ class FunctionScope : public VariableScope {
             // emit heap opt
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToHeap(op);
-            (*data_)[point + 2] = scope_nest_count_;
+            (*data_)[point + 2] = scope_nest_count();
           }
         }
       } else {
@@ -290,7 +293,7 @@ class FunctionScope : public VariableScope {
             // emit heap opt
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToHeap(op);
-            (*data_)[point + 2] = scope_nest_count_;
+            (*data_)[point + 2] = scope_nest_count();
           }
         }
       }
@@ -474,7 +477,6 @@ class FunctionScope : public VariableScope {
   bool upper_of_eval_;
   bool eval_top_scope_;
   bool eval_target_scope_;
-  uint32_t scope_nest_count_;
 };
 
 } } }  // namespace iv::lv5::railgun

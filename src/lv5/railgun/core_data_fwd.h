@@ -13,9 +13,10 @@ class CoreData : public GCHook<CoreData> {
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Instruction*>::type InstTargets;
 
-  CoreData()
-    : data_(new (GC) Data()),
-      targets_(new (GC) InstTargets()) {
+  static CoreData* New() {
+    Data* data = new(GC)Data();
+    InstTargets* targets = new(GC)InstTargets();
+    return new CoreData(data, targets);
   }
 
   inline GC_ms_entry* MarkChildren(GC_word* top,
@@ -40,6 +41,11 @@ class CoreData : public GCHook<CoreData> {
   }
 
  private:
+  CoreData(Data* data, InstTargets* targets)
+    : data_(data),
+      targets_(targets) {
+  }
+
   Data* data_;
   InstTargets* targets_;
 };

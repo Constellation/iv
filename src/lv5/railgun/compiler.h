@@ -208,12 +208,12 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new CoreData();
+      core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, global, core_, Code::GLOBAL);
-      EmitFunctionCode(global, code, current_variable_scope_, 0);
+      EmitFunctionCode(global, code, current_variable_scope_);
       assert(!current_variable_scope_);
     }
     CompileEpilogue(code);
@@ -224,7 +224,7 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new CoreData();
+      core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
       // create dummy global scope
@@ -233,7 +233,7 @@ class Compiler
               new FunctionScope(std::shared_ptr<VariableScope>(), data_));
       std::shared_ptr<VariableScope> target = current_variable_scope_;
       code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
-      EmitFunctionCode(function, code, current_variable_scope_, 1);
+      EmitFunctionCode(function, code, current_variable_scope_);
       current_variable_scope_ = current_variable_scope_->upper();
       assert(!current_variable_scope_);
     }
@@ -245,12 +245,12 @@ class Compiler
     Code* code = NULL;
     {
       script_ = script;
-      core_ = new CoreData();
+      core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, eval, core_, Code::EVAL);
-      EmitFunctionCode(eval, code, current_variable_scope_, 1);
+      EmitFunctionCode(eval, code, current_variable_scope_);
       assert(!current_variable_scope_);
     }
     CompileEpilogue(code);
@@ -1895,8 +1895,7 @@ class Compiler
 
   void EmitFunctionCode(const FunctionLiteral& lit,
                         Code* code,
-                        std::shared_ptr<VariableScope> upper,
-                        uint32_t function_scope_nest_count) {
+                        std::shared_ptr<VariableScope> upper) {
     // preserve function scope nest count
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
@@ -1906,8 +1905,7 @@ class Compiler
                               ctx_,
                               code,
                               data_,
-                              scope,
-                              function_scope_nest_count));
+                              scope));
     const std::size_t code_info_stack_size = code_info_stack_.size();
 
     {
@@ -1966,10 +1964,7 @@ class Compiler
            it != last; ++it, ++code_info_stack_index) {
         const CodeInfo info = code_info_stack_[code_info_stack_index];
         assert(std::get<0>(info) == *it);
-        EmitFunctionCode(*std::get<1>(info),
-                         *it,
-                         std::get<2>(info),
-                         function_scope_nest_count + 1);
+        EmitFunctionCode(*std::get<1>(info), *it, std::get<2>(info));
       }
     }
     current_variable_scope_ = target->upper();
