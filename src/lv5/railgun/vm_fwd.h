@@ -136,12 +136,13 @@ class VM {
 
   JSVal LoadHeap(JSEnv* env,
                  const Symbol& name,
-                 bool strict, uint32_t scope_nest_count, Error* e) {
+                 bool strict, uint32_t scope_nest_count, uint32_t offset, Error* e) {
     while (env) {
       assert(env->AsJSDeclEnv() || env->AsJSStaticEnv());
       if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
         if (decl->scope_nest_count() == scope_nest_count) {
-          return decl->GetBindingValue(ctx_, name, strict, e);
+          return decl->GetByOffset(offset, strict, e);
+          // return decl->GetBindingValue(ctx_, name, strict, e);
         }
       }
       env = env->outer();
@@ -224,12 +225,13 @@ class VM {
 
   void StoreHeap(JSEnv* env, const Symbol& name,
                  const JSVal& stored, bool strict,
-                 uint32_t scope_nest_count, Error* e) {
+                 uint32_t scope_nest_count, uint32_t offset, Error* e) {
     while (env) {
       assert(env->AsJSDeclEnv() || env->AsJSStaticEnv());
       if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
         if (decl->scope_nest_count() == scope_nest_count) {
-          decl->SetMutableBinding(ctx_, name, stored, strict, e);
+          decl->SetByOffset(offset, stored, strict, e);
+          // decl->SetMutableBinding(ctx_, name, stored, strict, e);
           return;
         }
       }

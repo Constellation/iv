@@ -123,6 +123,7 @@ class FunctionScope : public VariableScope {
   typedef std::unordered_map<Symbol, Variable> Variables;
   // Symbol -> used, location
   typedef std::unordered_map<Symbol, std::tuple<bool, uint32_t> > Locations;
+  typedef std::unordered_map<Symbol, uint32_t> HeapOffsetMap;
 
   // this is dummy global environment constructor
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
@@ -250,7 +251,8 @@ class FunctionScope : public VariableScope {
       }
 
       code_->set_scope_nest_count(scope_nest_count());
-      InsertDecls(code_, locations);
+      HeapOffsetMap offsets;
+      InsertDecls(code_, locations, &offsets);
 
       // opcode optimization
       if (upper_of_eval_) {
@@ -266,6 +268,7 @@ class FunctionScope : public VariableScope {
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToHeap(op);
             (*data_)[point + 2] = scope_nest_count();
+            (*data_)[point + 3] = offsets[sym];
           }
         }
       } else {
@@ -294,6 +297,7 @@ class FunctionScope : public VariableScope {
             const uint32_t op = (*data_)[point].value;
             (*data_)[point] = OP::ToHeap(op);
             (*data_)[point + 2] = scope_nest_count();
+            (*data_)[point + 3] = offsets[sym];
           }
         }
       }
@@ -365,7 +369,9 @@ class FunctionScope : public VariableScope {
     Symbol sym_;
   };
 
-  void InsertDecls(Code* code, const Locations& locations) {
+  void InsertDecls(Code* code,
+                   const Locations& locations,
+                   HeapOffsetMap* offsets) {
     bool needs_env = false;
     std::unordered_set<Symbol> already_decled;
     {
@@ -382,12 +388,14 @@ class FunctionScope : public VariableScope {
         const Locations::const_iterator f = locations.find(sym);
         if (f == locations.end()) {
           needs_env = true;
+          const uint32_t offset = offsets->size();
+          offsets->insert(std::make_pair(sym, offset));
           code->decls_.push_back(
               std::make_tuple(
                   sym,
                   Code::PARAM,
                   it->second,
-                  0u));
+                  offset));
         } else {
           // PARAM on STACK
           if (std::get<0>(f->second)) {  // used
@@ -410,8 +418,10 @@ class FunctionScope : public VariableScope {
         if (locations.find(fn) == locations.end() &&
             already_decled.find(fn) == already_decled.end()) {
           needs_env = true;
+          const uint32_t offset = offsets->size();
+          offsets->insert(std::make_pair(fn, offset));
           code->decls_.push_back(
-              std::make_tuple(fn, Code::FDECL, 0, 0u));
+              std::make_tuple(fn, Code::FDECL, 0, offset));
           already_decled.insert(fn);
         }
       }
@@ -421,8 +431,10 @@ class FunctionScope : public VariableScope {
       const Locations::const_iterator f = locations.find(symbol::arguments());
       if (f == locations.end()) {
         needs_env = true;
+        const uint32_t offset = offsets->size();
+        offsets->insert(std::make_pair(symbol::arguments(), offset));
         code->decls_.push_back(
-            std::make_tuple(symbol::arguments(), Code::ARGUMENTS, 0, 0u));
+            std::make_tuple(symbol::arguments(), Code::ARGUMENTS, 0, offset));
       } else {
         assert(std::get<0>(f->second));  // used
         code->decls_.push_back(
@@ -439,7 +451,9 @@ class FunctionScope : public VariableScope {
       const Symbol& dn = *it;
       if (already_decled.find(dn) == already_decled.end()) {
         needs_env = true;
-        code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, 0u));
+        const uint32_t offset = offsets->size();
+        offsets->insert(std::make_pair(dn, offset));
+        code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, offset));
         already_decled.insert(dn);
       }
     }
@@ -452,7 +466,9 @@ class FunctionScope : public VariableScope {
         const Locations::const_iterator f = locations.find(fn);
         if (f == locations.end()) {
           needs_env = true;
-          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, 0, 0u));
+          const uint32_t offset = offsets->size();
+          offsets->insert(std::make_pair(fn, offset));
+          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, 0, offset));
         } else {
           if (std::get<0>(f->second)) {  // used
             code->decls_.push_back(
@@ -467,6 +483,8 @@ class FunctionScope : public VariableScope {
     }
     if (!needs_env) {
       code->set_has_declarative_env(false);
+    } else {
+      code->set_reserved_record_size(offsets->size());
     }
   }
 

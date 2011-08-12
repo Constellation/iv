@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 #include <string>
+#include "notfound.h"
 #include "detail/memory.h"
 #include "detail/cstdint.h"
 #include "detail/tuple.h"
@@ -349,7 +350,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(LOAD_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadHeap(frame->lexical_env(), s, strict, instr[2].value, ERR);
+        const JSVal w = LoadHeap(frame->lexical_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(w);
         DISPATCH(LOAD_HEAP);
       }
@@ -370,7 +371,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
@@ -410,7 +411,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(STORE_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        StoreHeap(frame->lexical_env(), s, v, strict, instr[2].value, ERR);
+        StoreHeap(frame->lexical_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -435,7 +436,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
@@ -954,7 +955,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = IncrementGlobal<-1, 1>(global, slot, strict, ERR);
@@ -979,7 +980,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = IncrementGlobal<-1, 0>(global, slot, strict, ERR);
@@ -1004,7 +1005,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = IncrementGlobal<1, 1>(global, slot, strict, ERR);
@@ -1029,7 +1030,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = IncrementGlobal<1, 0>(global, slot, strict, ERR);
@@ -1611,8 +1612,7 @@ MAIN_LOOP_START:
           constants = &frame->constants();
           names = &frame->code()->names();
           strict = frame->code()->strict();
-          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_,
-                                                                frame, ERR);
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -1750,7 +1750,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           const std::size_t slot =
               global->GetOwnPropertySlot(ctx_, s);
-          if (slot != kNotFound) {
+          if (slot != core::kNotFound) {
             instr[2].map = global->map();
             instr[3].value = slot;
             const JSVal val = global->GetFromSlot(ctx_, slot, ERR);

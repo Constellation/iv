@@ -66,6 +66,7 @@ class Code : public HeapObject {
       has_declarative_env_(true),
       arguments_hiding_(false),
       scope_nest_count_(0),
+      reserved_record_size_(0),
       decl_type_(func.type()),
       name_(),
       script_(script),
@@ -255,6 +256,14 @@ class Code : public HeapObject {
     has_declarative_env_ = val;
   }
 
+  void set_reserved_record_size(uint32_t size) {
+    reserved_record_size_ = size;
+  }
+
+  uint32_t reserved_record_size() const {
+    return reserved_record_size_;
+  }
+
   void set_scope_nest_count(uint32_t count) {
     scope_nest_count_ = count;
   }
@@ -286,6 +295,7 @@ class Code : public HeapObject {
   bool has_declarative_env_;
   bool arguments_hiding_;
   uint32_t scope_nest_count_;
+  uint32_t reserved_record_size_;
   FunctionLiteral::DeclType decl_type_;
   Symbol name_;
   JSScript* script_;

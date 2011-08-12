@@ -119,11 +119,13 @@ class JSVMFunction : public JSFunction {
       const Code::DeclType type = std::get<1>(decl);
       if (type == Code::PARAM) {
         const std::size_t param = std::get<2>(decl);
-        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+        // env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
         if (param >= arg_count) {
-          env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+          env->CreateAndSetMutable(sym, std::get<3>(decl), JSUndefined);
+          // env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
         } else {
-          env->SetMutableBinding(ctx, sym, args[param], code_->strict(), IV_LV5_ERROR_VOID(e));
+          env->CreateAndSetMutable(sym, std::get<3>(decl), args[param]);
+          // env->SetMutableBinding(ctx, sym, args[param], code_->strict(), IV_LV5_ERROR_VOID(e));
         }
       } else if (type == Code::PARAM_LOCAL) {
         // initialize local value
@@ -135,7 +137,8 @@ class JSVMFunction : public JSFunction {
           frame->GetLocal()[target] = args[param];
         }
       } else if (type == Code::FDECL) {
-        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+        env->CreateAndSetMutable(sym, std::get<3>(decl), JSUndefined);
+        // env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
       } else if (type == Code::ARGUMENTS || type == Code::ARGUMENTS_LOCAL) {
         JSArguments* args_obj = NULL;
         if (!code_->strict()) {
@@ -154,11 +157,13 @@ class JSVMFunction : public JSFunction {
         }
         if (type == Code::ARGUMENTS) {
           if (code_->strict()) {
-            env->CreateImmutableBinding(sym);
-            env->InitializeImmutableBinding(sym, args_obj);
+            env->CreateAndSetImmutable(sym, std::get<3>(decl), args_obj);
+//            env->CreateImmutableBinding(sym);
+//            env->InitializeImmutableBinding(sym, args_obj);
           } else {
-            env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
-            env->SetMutableBinding(ctx, sym, args_obj, false, IV_LV5_ERROR_VOID(e));
+            env->CreateAndSetMutable(sym, std::get<3>(decl), args_obj);
+//            env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+//            env->SetMutableBinding(ctx, sym, args_obj, false, IV_LV5_ERROR_VOID(e));
           }
         } else {
           // initialize local value
@@ -166,11 +171,13 @@ class JSVMFunction : public JSFunction {
           frame->GetLocal()[target] = args_obj;
         }
       } else if (type == Code::VAR) {
-        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
-        env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
+        env->CreateAndSetMutable(sym, std::get<3>(decl), JSUndefined);
+//        env->CreateMutableBinding(ctx, sym, false, IV_LV5_ERROR_VOID(e));
+//        env->SetMutableBinding(ctx, sym, JSUndefined, code_->strict(), IV_LV5_ERROR_VOID(e));
       } else if (type == Code::FEXPR) {
-        env->CreateImmutableBinding(sym);
-        env->InitializeImmutableBinding(sym, this);
+        env->CreateAndSetImmutable(sym, std::get<3>(decl), this);
+//        env->CreateImmutableBinding(sym);
+//        env->InitializeImmutableBinding(sym, this);
       } else if (type == Code::FEXPR_LOCAL) {
         // initialize local value
         const std::size_t target = std::get<3>(decl);

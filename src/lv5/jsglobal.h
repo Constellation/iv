@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_JSGLOBAL_H_
 #define _IV_LV5_JSGLOBAL_H_
+#include "notfound.h"
 #include "lv5/error_check.h"
 #include "lv5/map.h"
 #include "lv5/jsobject.h"
@@ -103,7 +104,7 @@ std::size_t JSGlobal::GetOwnPropertySlot(Context* ctx, Symbol name) const {
 
 PropertyDescriptor JSGlobal::GetOwnProperty(Context* ctx, Symbol name) const {
   const std::size_t offset = GetOwnPropertySlot(ctx, name);
-  if (offset != kNotFound) {
+  if (offset != core::kNotFound) {
     // found
     return slots_[offset];
   } else {
@@ -119,7 +120,7 @@ bool JSGlobal::DefineOwnProperty(Context* ctx,
                                  Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
   const std::size_t offset = map_->Get(ctx, name);
-  if (offset != kNotFound) {
+  if (offset != core::kNotFound) {
     // found
     const PropertyDescriptor current = slots_[offset];
     bool returned = false;
@@ -205,7 +206,7 @@ void JSGlobal::CreateProperty(Context* ctx,
 
 bool JSGlobal::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   const std::size_t offset = map_->Get(ctx, name);
-  if (offset == kNotFound) {
+  if (offset == core::kNotFound) {
     return true;  // not found
   }
   if (!slots_[offset].IsConfigurable()) {

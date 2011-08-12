@@ -1,7 +1,9 @@
 #ifndef _IV_LV5_JSENV_H_
 #define _IV_LV5_JSENV_H_
 #include <cassert>
+#include <iostream>
 #include <gc/gc_cpp.h>
+#include "notfound.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
@@ -21,7 +23,6 @@ class JSStaticEnv;
 class JSEnv : public HeapObject {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
-  virtual bool HasBinding(Context* ctx, Symbol name, uint32_t count) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
   virtual void CreateMutableBinding(Context* ctx, Symbol name,
                                     bool del, Error* err) = 0;
@@ -59,83 +60,99 @@ class JSDeclEnv : public JSEnv {
     DELETABLE = 8
   };
 
-  typedef GCHashMap<Symbol, std::pair<int, JSVal> >::type Record;
-  explicit JSDeclEnv(JSEnv* outer,
-                     uint32_t scope_nest_count)
+  struct Entry {
+    Entry() : attribute(0), value(JSEmpty) { }
+    Entry(int attr) : attribute(attr), value(JSUndefined) { }
+    Entry(int attr, const JSVal& val) : attribute(attr), value(val) { }
+
+    int attribute;
+    JSVal value;
+  };
+
+  typedef GCVector<Entry>::type Record;
+  typedef GCHashMap<Symbol, std::size_t>::type Offsets;
+
+  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
     : JSEnv(outer),
       record_(),
+      offsets_(),
       scope_nest_count_(scope_nest_count),
       mutated_(false) {
   }
 
-  bool HasBinding(Context* ctx, Symbol name) const {
-    return record_.find(name) != record_.end();
+  // for VM optimization only
+  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count, std::size_t reserved)
+    : JSEnv(outer),
+      record_(reserved),
+      offsets_(),
+      scope_nest_count_(scope_nest_count),
+      mutated_(false) {
+    assert(record_.size() == reserved);
   }
 
-  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
-    if (mutated_) {
-      return record_.find(name) != record_.end();
-    } else {
-      return count == scope_nest_count_;
-    }
+  bool HasBinding(Context* ctx, Symbol name) const {
+    return offsets_.find(name) != offsets_.end();
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {
-    const Record::const_iterator it(record_.find(name));
-    if (it == record_.end()) {
+    const Offsets::const_iterator it = offsets_.find(name);
+    if (it == offsets_.end()) {
       return true;
     }
-    if (it->second.first & DELETABLE) {
-      record_.erase(it);
+    if (record_[it->second].attribute & DELETABLE) {
+      // TODO(Constellation) record deleted counts?
+      record_[it->second] = Entry();
+      offsets_.erase(it);
       return true;
     } else {
       return false;
     }
   }
 
-  void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
-    assert(record_.find(name) == record_.end());
+  void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* e) {
+    assert(offsets_.find(name) == offsets_.end());
     int flag = MUTABLE;
     if (del) {
       flag |= DELETABLE;
     }
-    record_[name] = std::make_pair(flag, JSUndefined);
+    offsets_[name] = record_.size();
+    record_.push_back(Entry(flag));
   }
 
   void SetMutableBinding(Context* ctx,
                          Symbol name,
                          const JSVal& val,
-                         bool strict, Error* res) {
-    const Record::const_iterator it(record_.find(name));
-    assert(it != record_.end());
-    if (it->second.first & MUTABLE) {
-      record_[name] = std::make_pair(it->second.first, val);
+                         bool strict, Error* e) {
+    const Offsets::const_iterator it = offsets_.find(name);
+    assert(it != offsets_.end());
+    if (record_[it->second].attribute & MUTABLE) {
+      record_[it->second].value = val;
     } else {
       if (strict) {
-        res->Report(Error::Type, "mutating immutable binding not allowed");
+        e->Report(Error::Type, "mutating immutable binding not allowed");
       }
     }
   }
 
-  JSVal GetBindingValue(Context* ctx, Symbol name,
-                        bool strict, Error* res) const {
-    const Record::const_iterator it(record_.find(name));
-    assert(it != record_.end());
-    if (it->second.first & IM_UNINITIALIZED) {
+  JSVal GetBindingValue(Context* ctx,
+                        Symbol name, bool strict, Error* e) const {
+    const Offsets::const_iterator it = offsets_.find(name);
+    assert(it != offsets_.end());
+    if (record_[it->second].attribute & IM_UNINITIALIZED) {
       if (strict) {
-        res->Report(Error::Reference,
-                    "uninitialized value access not allowed in strict code");
+        e->Report(Error::Reference,
+                  "uninitialized value access not allowed in strict code");
       }
       return JSUndefined;
     } else {
-      return it->second.second;
+      return record_[it->second].value;
     }
   }
 
   JSVal GetBindingValue(Symbol name) const {
-    const Record::const_iterator it(record_.find(name));
-    assert(it != record_.end() && !(it->second.first & IM_UNINITIALIZED));
-    return it->second.second;
+    const Offsets::const_iterator it = offsets_.find(name);
+    assert(it != offsets_.end() && !(record_[it->second].attribute & IM_UNINITIALIZED));
+    return record_[it->second].value;
   }
 
   JSVal ImplicitThisValue() const {
@@ -143,14 +160,15 @@ class JSDeclEnv : public JSEnv {
   }
 
   void CreateImmutableBinding(Symbol name) {
-    assert(record_.find(name) == record_.end());
-    record_[name] = std::make_pair(IM_UNINITIALIZED, JSUndefined);
+    assert(offsets_.find(name) == offsets_.end());
+    offsets_[name] = record_.size();
+    record_.push_back(Entry(IM_UNINITIALIZED));
   }
 
   void InitializeImmutableBinding(Symbol name, const JSVal& val) {
-    assert(record_.find(name) != record_.end() &&
-           (record_.find(name)->second.first & IM_UNINITIALIZED));
-    record_[name] = std::make_pair(IM_INITIALIZED, val);
+    assert(offsets_.find(name) != offsets_.end() &&
+           (record_[offsets_.find(name)->second].attribute & IM_UNINITIALIZED));
+    record_[offsets_.find(name)->second] = Entry(IM_INITIALIZED, val);
   }
 
   JSDeclEnv* AsJSDeclEnv() {
@@ -169,10 +187,21 @@ class JSDeclEnv : public JSEnv {
     return record_;
   }
 
+  const Record& record() const {
+    return record_;
+  }
+
   static JSDeclEnv* New(Context* ctx,
                         JSEnv* outer,
                         uint32_t scope_nest_count) {
     return new JSDeclEnv(outer, scope_nest_count);
+  }
+
+  static JSDeclEnv* New(Context* ctx,
+                        JSEnv* outer,
+                        uint32_t scope_nest_count,
+                        uint32_t reserved) {
+    return new JSDeclEnv(outer, scope_nest_count, reserved);
   }
 
   bool IsLookupNeeded() const {
@@ -187,8 +216,48 @@ class JSDeclEnv : public JSEnv {
     mutated_ = true;
   }
 
+  // for VM optimization methods
+  void CreateAndSetMutable(Symbol name, std::size_t offset, const JSVal& val) {
+    offsets_[name] = offset;
+    record_[offset] = Entry(MUTABLE, val);
+  }
+
+  void CreateAndSetImmutable(Symbol name, std::size_t offset, const JSVal& val) {
+    offsets_[name] = offset;
+    record_[offset] = Entry(IM_INITIALIZED, val);
+  }
+
+  void CreateFDecl(Symbol name, std::size_t offset) {
+    offsets_[name] = offset;
+    record_[offset] = Entry(MUTABLE);
+  }
+
+  void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
+    Entry& entry = record_[offset];
+    if (entry.attribute & MUTABLE) {
+      entry.value = value;
+    } else {
+      if (strict) {
+        e->Report(Error::Type, "mutating immutable binding not allowed");
+      }
+    }
+  }
+
+  JSVal GetByOffset(uint32_t offset, bool strict, Error* e) const {
+    const Entry& entry = record_[offset];
+    if (entry.attribute & IM_UNINITIALIZED) {
+      if (strict) {
+        e->Report(Error::Reference,
+                  "uninitialized value access not allowed in strict code");
+      }
+      return JSUndefined;
+    }
+    return entry.value;
+  }
+
  private:
   Record record_;
+  Offsets offsets_;
   uint32_t scope_nest_count_;
   bool mutated_;
 };
@@ -203,10 +272,6 @@ class JSObjectEnv : public JSEnv {
 
   bool HasBinding(Context* ctx, Symbol name) const {
     return record_->HasProperty(ctx, name);
-  }
-
-  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
-    return HasBinding(ctx, name);
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {
@@ -308,10 +373,6 @@ class JSStaticEnv : public JSEnv {
 
   bool HasBinding(Context* ctx, Symbol name) const {
     return name == symbol_;
-  }
-
-  bool HasBinding(Context* ctx, Symbol name, uint32_t count) const {
-    return HasBinding(ctx, name);
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {

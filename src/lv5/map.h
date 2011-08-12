@@ -9,6 +9,7 @@
 #include <gc/gc_cpp.h>
 #include <string>
 #include <limits>
+#include "notfound.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
 #include "lv5/property.h"
@@ -21,8 +22,6 @@ namespace lv5 {
 // more clear deleted
 
 class JSGlobal;
-
-static const std::size_t kNotFound = std::numeric_limits<std::size_t>::max();
 
 class Map : public gc {
  public:
@@ -64,7 +63,7 @@ class Map : public gc {
     if (it != table_->end()) {
       return it->second;
     } else {
-      return kNotFound;
+      return core::kNotFound;
     }
   }
 
