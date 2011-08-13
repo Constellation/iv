@@ -350,7 +350,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(LOAD_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadHeap(frame->lexical_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        const JSVal w = LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(w);
         DISPATCH(LOAD_HEAP);
       }
@@ -411,7 +411,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(STORE_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        StoreHeap(frame->lexical_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
+        StoreHeap(frame->variable_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -846,7 +846,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+            IncrementHeap<-1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(DECREMENT_HEAP);
       }
@@ -854,7 +854,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+            IncrementHeap<-1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_DECREMENT_HEAP);
       }
@@ -862,7 +862,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+            IncrementHeap<1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(INCREMENT_HEAP);
       }
@@ -870,7 +870,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+            IncrementHeap<1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
@@ -1707,7 +1707,6 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(CALL_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        JSVal res;
         if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
           const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
@@ -1720,13 +1719,12 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(CALL_HEAP) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        JSVal res;
-        if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
-          const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
+        if (JSDeclEnv* target = GetHeapEnv(frame->variable_env(), instr[2].value)) {
+          const JSVal w = target->GetByOffset(instr[3].value, false, e);
           PUSH(w);
-          PUSH(target_env->ImplicitThisValue());
+          PUSH(target->ImplicitThisValue());
         } else {
+          const Symbol& s = GETITEM(names, instr[1].value);
           RaiseReferenceError(s, e);
           DISPATCH_ERROR();
         }
