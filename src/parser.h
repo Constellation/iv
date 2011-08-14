@@ -280,7 +280,7 @@ class Parser
             // and one token lexed is not in strict
             // so rescan
             if (token_ == Token::TK_IDENTIFIER) {
-              typedef detail::Keyword<IdentifyReservedWords> KeywordChecker;
+              typedef Keyword<IdentifyReservedWords> KeywordChecker;
               token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
               break;
             }
