@@ -605,7 +605,7 @@ class Lexer: private Noncopyable<> {
       }
     }
 
-    return detail::Keyword<LexType>::Detect(buffer16_, strict);
+    return Keyword<LexType>::Detect(buffer16_, strict);
   }
 
   Token::Type ScanString() {

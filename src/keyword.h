@@ -10,7 +10,6 @@ class IdentifyReservedWords { };
 class IgnoreReservedWords { };
 class IgnoreReservedWordsAndIdentifyGetterOrSetter { };
 
-namespace detail {
 template<typename LexType>
 class Keyword;
 
@@ -456,5 +455,5 @@ class Keyword<IgnoreReservedWordsAndIdentifyGetterOrSetter> {
 
 
 
-} } }  // namespace iv::core::detail
+} }  // namespace iv::core
 #endif  // _IV_KEYWORD_H_
