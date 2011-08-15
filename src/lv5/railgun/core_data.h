@@ -11,10 +11,16 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
                                     GC_ms_entry* entry,
                                     GC_ms_entry* mark_sp_limit,
                                     GC_word env) {
-  entry = GC_MARK_AND_PUSH(data_,
-                           entry, mark_sp_limit, reinterpret_cast<void**>(this));
-  entry = GC_MARK_AND_PUSH(targets_,
-                           entry, mark_sp_limit, reinterpret_cast<void**>(this));
+  entry = GC_MARK_AND_PUSH(
+      data_,
+      entry,
+      mark_sp_limit,
+      reinterpret_cast<void**>(this));
+  entry = GC_MARK_AND_PUSH(
+      targets_,
+      entry,
+      mark_sp_limit,
+      reinterpret_cast<void**>(this));
   if (targets_) {
     for (InstTargets::const_iterator it = targets_->begin(),
          last = targets_->end(); it != last; ++it) {
