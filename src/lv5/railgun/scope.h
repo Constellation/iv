@@ -219,13 +219,6 @@ class FunctionScope : public VariableScope {
               locations.insert(std::make_pair(it->first, std::make_tuple(true, location++)));
               code_->locals_.push_back(it->first);
             }
-            // if this is variable?
-            Code::Names::iterator f =
-                std::find(code_->varnames().begin(),
-                          code_->varnames().end(), it->first);
-            if (f != code_->varnames().end()) {
-              code_->varnames().erase(f);
-            }
           }
         }
         code_->set_stack_depth(code_->stack_depth() + code_->locals().size());
@@ -386,7 +379,8 @@ class FunctionScope : public VariableScope {
     for (Code::Names::const_iterator it = code->varnames().begin(),
          last = code->varnames().end(); it != last; ++it) {
       const Symbol& dn = *it;
-      if (already_decled.find(dn) == already_decled.end()) {
+      if (locations.find(dn) == locations.end() &&
+          already_decled.find(dn) == already_decled.end()) {
         needs_env = true;
         code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, 0u));
         already_decled.insert(dn);
