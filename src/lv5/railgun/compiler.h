@@ -1934,15 +1934,15 @@ class Compiler
     }
     {
       // variables
+      std::unordered_set<Symbol> already_declared;
       typedef Scope::Variables Variables;
       const Variables& vars = scope.variables();
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
         const Symbol name = it->first->symbol();
-        if (std::find(
-                code_->varnames().begin(),
-                code_->varnames().end(), name) == code_->varnames().end()) {
+        if (already_declared.find(name) == already_declared.end()) {
           code_->varnames_.push_back(name);
+          already_declared.insert(name);
         }
       }
     }
