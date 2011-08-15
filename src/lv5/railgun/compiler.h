@@ -199,6 +199,7 @@ class Compiler
       jump_table_(),
       level_stack_(),
       stack_depth_(),
+      symbol_to_index_map_(),
       dynamic_env_level_(0),
       continuation_status_(),
       current_variable_scope_() {
@@ -378,6 +379,7 @@ class Compiler
     ClearStackDepth();
     set_dynamic_env_level(0);
     ClearContinuation();
+    ClearSymbolToIndexMap();
     code->set_start(data_->size());
   }
 
@@ -1759,14 +1761,18 @@ class Compiler
   void Visit(const CaseClause* dummy) { }
 
   uint32_t SymbolToNameIndex(const Symbol& sym) {
-    const Code::Names::const_iterator it =
-        std::find(code_->names_.begin(), code_->names_.end(), sym);
-    if (it != code_->names_.end()) {
-      return std::distance<
-          Code::Names::const_iterator>(code_->names_.begin(), it);
+    const std::unordered_map<Symbol, uint32_t>::const_iterator it =
+        symbol_to_index_map_.find(sym);
+    if (it != symbol_to_index_map_.end()) {
+      // found, so return this index
+      return it->second;
     }
+    // not found, so push_back it to code
+    const uint32_t index = code_->names_.size();
+    symbol_to_index_map_[sym] = index;
     code_->names_.push_back(sym);
-    return code_->names_.size() - 1;
+    assert(symbol_to_index_map_.size() == code_->names_.size());
+    return index;
   }
 
   template<OP::Type PropOP,
@@ -2247,6 +2253,10 @@ class Compiler
     stack_depth_.Clear();
   }
 
+  void ClearSymbolToIndexMap() {
+    symbol_to_index_map_.clear();
+  }
+
   void ClearContinuation() {
     continuation_status_.Clear();
   }
@@ -2260,6 +2270,7 @@ class Compiler
   JumpTable jump_table_;
   LevelStack level_stack_;
   StackDepth stack_depth_;
+  std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
   uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
