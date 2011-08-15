@@ -8,8 +8,10 @@
 #include "lv5/default_symbol_provider.h"
 namespace iv {
 namespace lv5 {
-namespace symbol {
 
+typedef const core::UString* StringSymbol;
+
+namespace symbol {
 
 } } }  // namespace iv::lv5::symbol
 #endif  // _IV_LV5_SYMBOL_H_
