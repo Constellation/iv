@@ -1,5 +1,6 @@
 #ifndef _IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
 #define _IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
+#include "lv5/symbol.h"
 #include "lv5/railgun/op.h"
 namespace iv {
 namespace lv5 {
@@ -12,6 +13,7 @@ struct Instruction {
     uint32_t value;
     int32_t i32;
     Map* map;
+    StringSymbol symbol;
   };
 
   inline OP::Type GetOP() const;
