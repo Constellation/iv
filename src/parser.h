@@ -193,7 +193,7 @@ class Parser
   };
 
   Parser(Factory* factory, const Source& source)
-    : lexer_(source),
+    : lexer_(&source),
       error_(),
       strict_(false),
       error_state_(0),

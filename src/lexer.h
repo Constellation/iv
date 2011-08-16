@@ -31,7 +31,20 @@ class Lexer: private Noncopyable<> {
 
   typedef Source source_type;
 
-  explicit Lexer(const Source& src)
+  // incomplete lexer constructor
+  Lexer()
+      : source_(),
+        buffer8_(),
+        buffer16_(kInitialReadBufferCapacity),
+        pos_(0),
+        end_(),
+        has_line_terminator_before_next_(false),
+        line_number_(1),
+        previous_location_(),
+        location_() {
+  }
+
+  explicit Lexer(const Source* src)
       : source_(),
         buffer8_(),
         buffer16_(kInitialReadBufferCapacity),
@@ -44,8 +57,8 @@ class Lexer: private Noncopyable<> {
     Initialize(src);
   }
 
-  void Initialize(const Source& src) {
-    source_ = &src;
+  void Initialize(const Source* src) {
+    source_ = src;
     end_ = source_->size();
     Advance();
   }
