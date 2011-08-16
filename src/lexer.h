@@ -472,6 +472,7 @@ class Lexer: private Noncopyable<> {
     return true;
   }
 
+ private:
   static const std::size_t kInitialReadBufferCapacity = 32;
 
   inline void StorePreviousLocation() {
@@ -945,8 +946,6 @@ class Lexer: private Noncopyable<> {
     }
     ++line_number_;
   }
-
- private:
 
   const Source& source_;
   std::vector<char> buffer8_;
