@@ -455,12 +455,15 @@ class Lexer: private Noncopyable<> {
     while (c_ != '/' || character) {
       // invalid RegExp pattern
       if (c_ < 0 || character::IsLineTerminator(c_)) {
+        token_ = Token::TK_ILLEGAL;
+        Advance();  // for ILLEGAL
         return false;
       }
       if (c_ == '\\') {
         // escape
         Record16Advance();
         if (c_ < 0 || character::IsLineTerminator(c_)) {
+          token_ = Token::TK_ILLEGAL;
           return false;
         }
         Record16Advance();
