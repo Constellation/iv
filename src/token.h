@@ -16,7 +16,7 @@ typedef detail::TokenContents<None> TokenContents;
 class Token {
  public:
   enum Type {
-    TK_EOS,             // EOS
+    TK_EOS = 0,             // EOS
     TK_ILLEGAL,         // ILLEGAL
 
     TK_PERIOD,          // .

@@ -36,9 +36,13 @@ class Lexer: private Noncopyable<> {
       : source_(),
         buffer8_(),
         buffer16_(kInitialReadBufferCapacity),
+        numeric_(0.0),
+        type_(NONE),
+        token_(Token::TK_NUM_TOKENS),
         pos_(0),
         end_(),
         has_line_terminator_before_next_(false),
+        c_(-1),
         line_number_(1),
         previous_location_(),
         location_() {
@@ -48,9 +52,13 @@ class Lexer: private Noncopyable<> {
       : source_(),
         buffer8_(),
         buffer16_(kInitialReadBufferCapacity),
+        numeric_(0.0),
+        type_(NONE),
+        token_(Token::TK_NUM_TOKENS),
         pos_(0),
         end_(),
         has_line_terminator_before_next_(false),
+        c_(-1),
         line_number_(1),
         previous_location_(),
         location_() {
@@ -366,7 +374,8 @@ class Lexer: private Noncopyable<> {
     } else {
       location_.set_end_position(pos() - 1);
     }
-    return token;
+    token_ = token;
+    return token_;
   }
 
   inline const std::vector<uint16_t>& Buffer() const {
@@ -389,6 +398,10 @@ class Lexer: private Noncopyable<> {
   inline State StringEscapeType() const {
     assert(type_ == NONE || type_ == ESCAPE || type_ == OCTAL);
     return type_;
+  }
+
+  Token::Type Peek() const {
+    return token_;
   }
 
   inline bool has_line_terminator_before_next() const {
@@ -971,6 +984,7 @@ class Lexer: private Noncopyable<> {
   std::vector<uint16_t> buffer16_;
   double numeric_;
   State type_;
+  Token::Type token_;
   std::size_t pos_;
   std::size_t end_;
   bool has_line_terminator_before_next_;
