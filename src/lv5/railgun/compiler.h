@@ -1866,7 +1866,6 @@ class Compiler
           stack_depth_.Up();
         } else {
           // IndexAccess
-          // TODO(Constellation) this is patching ->Up()
           EmitElement<OP::CALL_PROP,
                       OP::CALL_ELEMENT>(*prop->AsIndexAccess());
           stack_depth_.Up();
