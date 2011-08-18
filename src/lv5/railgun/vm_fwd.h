@@ -153,7 +153,7 @@ class VM {
     if (JSDeclEnv* target = GetHeapEnv(env, scope_nest_count)) {
         return target->GetByOffset(offset, strict, e);
     }
-    RaiseReferenceError(name, e);
+    UNREACHABLE();
     return JSEmpty;
   }
 
@@ -236,13 +236,7 @@ class VM {
       target->SetByOffset(offset, stored, strict, e);
       return;
     }
-    if (strict) {
-      e->Report(Error::Reference,
-                "putting to unresolvable reference "
-                "not allowed in strict reference");
-    } else {
-      ctx_->global_obj()->Put(ctx_, name, stored, strict, e);
-    }
+    UNREACHABLE();
   }
 
   void StoreElement(const JSVal& base, const JSVal& element,
@@ -499,7 +493,7 @@ class VM {
         return std::get<Returned>(results);
       }
     }
-    RaiseReferenceError(s, e);
+    UNREACHABLE();
     return JSEmpty;
   }
 

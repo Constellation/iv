@@ -493,14 +493,7 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(DELETE_HEAP) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
-          const bool res = current->DeleteBinding(ctx_, s);
-          PUSH(JSVal::Bool(res));
-        } else {
-          // not found -> unresolvable reference
-          PUSH(JSTrue);
-        }
+        PUSH(JSFalse);
         DISPATCH(DELETE_HEAP);
       }
 
@@ -781,14 +774,10 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(TYPEOF_HEAP) {
-        const Symbol& s = GETITEM(names, instr[1].value);
-        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
-          const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
-          PUSH(expr.TypeOf(ctx_));
-        } else {
-          // unresolvable reference
-          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
-        }
+        JSDeclEnv* decl = GetHeapEnv(frame->variable_env(), instr[2].value);
+        assert(decl);
+        const JSVal expr = decl->GetByOffset(instr[3].value, strict, ERR);
+        PUSH(expr.TypeOf(ctx_));
         DISPATCH(TYPEOF_HEAP);
       }
 
@@ -1719,15 +1708,10 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(CALL_HEAP) {
-        if (JSDeclEnv* target = GetHeapEnv(frame->variable_env(), instr[2].value)) {
-          const JSVal w = target->GetByOffset(instr[3].value, false, e);
-          PUSH(w);
-          PUSH(target->ImplicitThisValue());
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          RaiseReferenceError(s, e);
-          DISPATCH_ERROR();
-        }
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal w = LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        PUSH(w);
+        PUSH(JSUndefined);
         DISPATCH(CALL_HEAP);
       }
 
