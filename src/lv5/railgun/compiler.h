@@ -1902,7 +1902,6 @@ class Compiler
   void EmitFunctionCode(const FunctionLiteral& lit,
                         Code* code,
                         std::shared_ptr<VariableScope> upper) {
-    // preserve function scope nest count
     CodeContextPrologue(code);
     const Scope& scope = lit.scope();
     current_variable_scope_ =
@@ -1924,6 +1923,12 @@ class Compiler
         Visit(func);
         const Symbol sym = func->name().Address()->symbol();
         if (sym == symbol::arguments()) {
+          // arguments hiding optimization
+          // example:
+          //   function test() {
+          //     function arguments() { }
+          //   }
+          // arguments of test is hiding, not reachable.
           code_->set_code_hiding_arguments();
         }
         const uint32_t index = SymbolToNameIndex(sym);
