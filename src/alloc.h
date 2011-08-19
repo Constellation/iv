@@ -67,7 +67,7 @@ class Pool {
 class Arena {
  public:
   static const unsigned int kPoolNum = 64;
-  static const uintptr_t kAlignment = 8;
+  static const uintptr_t kAlignment = 8;  // double or 64bit ptr size
   static const unsigned int kArenaSize = (Pool::kPoolSize * kPoolNum) +
                                 ((Pool::kPoolSize <= kAlignment) ?
                                   0 : (Pool::kPoolSize - kAlignment));
@@ -181,7 +181,7 @@ class Space {
   }
 
  private:
-  static const std::size_t kThreshold = 256;
+  static const std::size_t kThreshold = Size::kPointerSize * 64;
   static const std::size_t kInitArenas = N;
 
   inline Arena* NewArena() {
