@@ -74,8 +74,14 @@ class type##Base\
 }
 
 template<typename Factory>
-class Scope : public SpaceObject,
-              private Noncopyable<Scope<Factory> > {
+class Inherit<Factory, kScope>
+  : public SpaceObject,
+    private Noncopyable<Inherit<Factory, kScope> > {
+};
+INHERIT(Scope);
+
+template<typename Factory>
+class Scope : public ScopeBase<Factory> {
  public:
   typedef std::pair<Identifier<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
