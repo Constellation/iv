@@ -58,8 +58,6 @@ class DisAssembler : private core::Noncopyable<> {
   void OutputLine(const core::StringPiece& str) {
     static_cast<Derived*>(this)->OutputLine(str);
   }
-
-  std::unordered_map<const void*, OP::Type> table_;
 };
 
 class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
