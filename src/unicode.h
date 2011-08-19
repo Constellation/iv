@@ -15,6 +15,8 @@
 #include <algorithm>
 #include "detail/cstdint.h"
 #include "detail/array.h"
+#include "stringpiece.h"
+#include "ustringpiece.h"
 namespace iv {
 namespace core {
 namespace unicode {
@@ -37,7 +39,8 @@ static const uint32_t kSurrogateMin = kHighSurrogateMin;
 static const uint32_t kSurrogateMax = kLowSurrogateMax;
 static const uint32_t kSurrogateMask = (1 << (kSurrogateBits + 1)) - 1;
 
-static const uint32_t kHighSurrogateOffset = kHighSurrogateMin - (0x10000 >> 10);
+static const uint32_t kHighSurrogateOffset =
+  kHighSurrogateMin - (0x10000 >> 10);
 
 static const uint32_t kUnicodeMin = 0x000000;
 static const uint32_t kUnicodeMax = 0x10FFFF;
@@ -58,8 +61,7 @@ static const std::array<uint8_t, 3> kUTF8BOM = { {
 
 // bit mask template
 // see http://d.hatena.ne.jp/tt_clown/20090616/p1
-template<std::size_t LowerBits,
-         class Type = unsigned long>
+template<std::size_t LowerBits, class Type = unsigned long>  // NOLINT
 struct BitMask {
   static const Type full = ~(Type(0));
   static const Type upper = ~((Type(1) << LowerBits) - 1);
@@ -162,10 +164,10 @@ UTF8ByteCount(UC8InputIter it) {
 template<typename UC8InputIter>
 inline typename std::iterator_traits<UC8InputIter>::difference_type
 UTF8ByteCharLength(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
-  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_type;
-  diff_type sum = 0;
+  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_t;
+  diff_t sum = 0;
   while (it != last) {
-    const diff_type len = UTF8ByteCount(it);
+    const diff_t len = UTF8ByteCount(it);
     if (len == 0) {
       *e = INVALID_SEQUENCE;
       return sum;
@@ -350,9 +352,10 @@ inline UC8OutputIter Append(uint32_t uc, UC8OutputIter result) {
 }
 
 template<typename UC8InputIter>
-inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last, uint32_t* out, UTF8Error* e) {
-  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_type;
-  const diff_type len = UTF8ByteCount(it);
+inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last,
+                                     uint32_t* out, UTF8Error* e) {
+  typedef typename std::iterator_traits<UC8InputIter>::difference_type diff_t;
+  const diff_t len = UTF8ByteCount(it);
   if (len == 0) {
     *e = INVALID_SEQUENCE;
     return it;
@@ -383,7 +386,8 @@ inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last, uint32_
 }
 
 template<typename UC8InputIter, typename UC32OutputIter>
-inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, UC32OutputIter result) {
+inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last,
+                            UC32OutputIter result) {
   UTF8Error error = NO_ERROR;
   uint32_t res;
   while (it != last) {
@@ -397,8 +401,9 @@ inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last, UC32OutputIter r
   return NO_ERROR;
 }
 
-template<typename UC8InputIter, typename uint16_tOutputIter>
-inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, uint16_tOutputIter result) {
+template<typename UC8InputIter, typename UTF16OutputIter>
+inline UTF8Error UTF8ToUTF16(UC8InputIter it,
+                             UC8InputIter last, UTF16OutputIter result) {
   UTF8Error error = NO_ERROR;
   uint32_t res;
   while (it != last) {
@@ -419,6 +424,13 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it, UC8InputIter last, uint16_tOutputI
   return NO_ERROR;
 }
 
+
+template<typename UTF16OutputIter>
+inline UTF8Error UTF8ToUTF16(const StringPiece& piece,
+                             UTF16OutputIter result) {
+  return UTF8ToUTF16(piece.begin(), piece.end(), result);
+}
+
 // return wirte length
 template<typename UC8OutputIter>
 inline typename std::iterator_traits<UC8OutputIter>::difference_type
@@ -428,7 +440,9 @@ UCS4OneCharToUTF8(uint32_t uc, UC8OutputIter result) {
 }
 
 template<typename UC32InputIter, typename UC8OutputIter>
-inline UTF8Error UCS4ToUTF8(UC32InputIter it, UC32InputIter last, UC8OutputIter result) {
+inline UTF8Error UCS4ToUTF8(UC32InputIter it,
+                            UC32InputIter last,
+                            UC8OutputIter result) {
   while (it != last) {
     result = Append(*it++, result);
   }
@@ -436,7 +450,9 @@ inline UTF8Error UCS4ToUTF8(UC32InputIter it, UC32InputIter last, UC8OutputIter 
 }
 
 template<typename UTF16InputIter, typename UC8OutputIter>
-inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, UC8OutputIter result) {
+inline UTF8Error UTF16ToUTF8(UTF16InputIter it,
+                             UTF16InputIter last,
+                             UC8OutputIter result) {
   while (it != last) {
     uint32_t res = Mask<16>(*it++);
     if (IsSurrogate(res)) {
@@ -459,6 +475,11 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it, UTF16InputIter last, UC8OutputIt
   return NO_ERROR;
 }
 
+template<typename UC8OutputIter>
+inline UTF8Error UTF16ToUTF8(const UStringPiece& piece, UC8OutputIter result) {
+  return UTF16ToUTF8(piece.begin(), piece.end(), result);
+}
+
 template<typename UTF16InputIter>
 inline int FPutsUTF16(FILE* file, UTF16InputIter it, UTF16InputIter last) {
   std::string str;
@@ -467,8 +488,13 @@ inline int FPutsUTF16(FILE* file, UTF16InputIter it, UTF16InputIter last) {
   return std::fputs(str.c_str(), file);
 }
 
+inline int FPutsUTF16(FILE* file, const UStringPiece& piece) {
+  return FPutsUTF16(file, piece);
+}
+
 template<typename UTF16InputIter>
-inline std::ostream& OutputUTF16(std::ostream& os, UTF16InputIter it, UTF16InputIter last) {
+inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
+                                 UTF16InputIter it, UTF16InputIter last) {
   std::string str;
   str.reserve(std::distance(it, last));
   UTF16ToUTF8(it, last, std::back_inserter(str));
