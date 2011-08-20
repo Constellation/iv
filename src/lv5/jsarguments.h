@@ -8,6 +8,7 @@
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
 #include "lv5/arguments.h"
+#include "lv5/error_check.h"
 #include "lv5/bind.h"
 namespace iv {
 namespace lv5 {
@@ -60,10 +61,7 @@ class JSNormalArguments : public JSArguments {
     if (it != map_.end()) {
       return env_->GetBindingValue(ctx, it->second, true, e);
     } else {
-      const JSVal v = JSObject::Get(ctx, name, e);
-      if (*e) {
-        return JSUndefined;
-      }
+      const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
       if (name == symbol::caller() &&
           v.IsCallable() &&
           v.object()->AsCallable()->IsStrict()) {
