@@ -17,14 +17,11 @@ namespace lv5 {
 namespace runtime {
 namespace detail {
 
-static const std::string kErrorSplitter(": ");
-
-static inline JSString* ErrorMessageString(const Arguments& args,
-                                           Error* error) {
-  if (args.size() > 0) {
-    const JSVal& msg = args[0];
+static inline JSString* ErrorMessageString(const Arguments& args, Error* e) {
+  if (!args.empty()) {
+    const JSVal& msg = args.front();
     if (!msg.IsUndefined()) {
-      return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(error, NULL));
+      return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, NULL));
     } else {
       return NULL;
     }
@@ -37,14 +34,14 @@ static inline JSString* ErrorMessageString(const Arguments& args,
 
 // section 15.11.1.1 Error(message)
 // section 15.11.2.1 new Error(message)
-inline JSVal ErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal ErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSError::New(args.ctx(), Error::User, message);
 }
 
 // section 15.11.4.4 Error.prototype.toString()
-inline JSVal ErrorToString(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("Error.prototype.toString", args, error);
+inline JSVal ErrorToString(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Error.prototype.toString", args, e);
   const JSVal& obj = args.this_binding();
   Context* const ctx = args.ctx();
   if (obj.IsObject()) {
@@ -52,22 +49,22 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     {
       const JSVal target = obj.object()->Get(ctx,
                                              context::Intern(ctx, "name"),
-                                             IV_LV5_ERROR(error));
+                                             IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
         name = JSString::NewAsciiString(ctx, "Error");
       } else {
-        name = target.ToString(ctx, IV_LV5_ERROR(error));
+        name = target.ToString(ctx, IV_LV5_ERROR(e));
       }
     }
     JSString* msg;
     {
       const JSVal target = obj.object()->Get(ctx,
                                              context::Intern(ctx, "message"),
-                                             IV_LV5_ERROR(error));
+                                             IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
         msg = JSString::NewEmptyString(ctx);
       } else {
-        msg = target.ToString(ctx, IV_LV5_ERROR(error));
+        msg = target.ToString(ctx, IV_LV5_ERROR(e));
       }
     }
     if (name->empty() && msg->empty()) {
@@ -81,47 +78,47 @@ inline JSVal ErrorToString(const Arguments& args, Error* error) {
     }
     StringBuilder builder;
     builder.Append(*name);
-    builder.Append(detail::kErrorSplitter);
+    builder.Append(": ");
     builder.Append(*msg);
     return builder.Build(ctx);
   }
-  error->Report(Error::Type, "base must be object");
+  e->Report(Error::Type, "base must be object");
   return JSUndefined;
 }
 
 // section 15.11.6.1 EvalError
-inline JSVal EvalErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal EvalErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSEvalError::New(args.ctx(), message);
 }
 
 // section 15.11.6.2 RangeError
-inline JSVal RangeErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal RangeErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSRangeError::New(args.ctx(), message);
 }
 
 // section 15.11.6.3 ReferenceError
-inline JSVal ReferenceErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal ReferenceErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSReferenceError::New(args.ctx(), message);
 }
 
 // section 15.11.6.4 SyntaxError
-inline JSVal SyntaxErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal SyntaxErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSSyntaxError::New(args.ctx(), message);
 }
 
 // section 15.11.6.5 TypeError
-inline JSVal TypeErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal TypeErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSTypeError::New(args.ctx(), message);
 }
 
 // section 15.11.6.6 URIError
-inline JSVal URIErrorConstructor(const Arguments& args, Error* error) {
-  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(error));
+inline JSVal URIErrorConstructor(const Arguments& args, Error* e) {
+  JSString* message = detail::ErrorMessageString(args, IV_LV5_ERROR(e));
   return JSURIError::New(args.ctx(), message);
 }
 
