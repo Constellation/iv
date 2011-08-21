@@ -26,7 +26,6 @@ v8_dtoa = context.SConscript(
   exports="context"
 )
 conf = Configure(context.Clone())
-#conf.CheckLib(library='boost_thread', language='cxx')
 conf.CheckLib('pthread')
 conf.CheckLib('gc')
 env = conf.Finish()

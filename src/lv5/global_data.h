@@ -1,7 +1,7 @@
 #ifndef _IV_LV5_GLOBAL_DATA_H_
 #define _IV_LV5_GLOBAL_DATA_H_
-#include <boost/random.hpp>
 #include "detail/array.h"
+#include "detail/random.h"
 #include "dtoa.h"
 #include "conversions.h"
 #include "stringpiece.h"
@@ -25,8 +25,8 @@ class GlobalData {
  public:
   friend class Context;
   typedef Xor128 random_engine_type;
-  typedef boost::uniform_real<double> random_distribution_type;
-  typedef boost::variate_generator<
+  typedef std::uniform_real<double> random_distribution_type;
+  typedef std::variate_generator<
       random_engine_type, random_distribution_type> random_generator;
 
   GlobalData(Context* ctx)

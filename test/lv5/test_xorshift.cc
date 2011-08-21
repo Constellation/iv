@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <boost/random.hpp>
 #include <iostream>
 #include "lv5/xorshift.h"
+#include "detail/random.h"
 
 TEST(XorshiftCase, Test) {
   iv::lv5::Xor128 g;
@@ -12,27 +12,28 @@ TEST(XorshiftCase, Test) {
   }
 }
 
-TEST(XorshiftCase, DistIntTest) {
-  typedef iv::lv5::Xor128 engine_type;
-  typedef boost::uniform_int<int> distribution_type;
-  typedef boost::variate_generator<engine_type, distribution_type> generator;
-  generator gen(engine_type(), distribution_type(0, 100));
-  for (int i = 0; i < 1000; ++i) {
-    const int res = gen();
-    ASSERT_LE(0, res);
-    ASSERT_GE(100, res);
-  }
-}
+// old g++ has bug in uniform_int
+// see detail/random.h
+//TEST(XorshiftCase, DistIntTest) {
+//  typedef iv::lv5::Xor128 engine_type;
+//  typedef std::uniform_int<int> distribution_type;
+//  typedef std::variate_generator<engine_type, distribution_type> generator;
+//  generator gen(engine_type(), distribution_type(0, 100));
+//  for (int i = 0; i < 10000000; ++i) {
+//    const int res = gen();
+//    ASSERT_LE(0, res);
+//    ASSERT_GE(100, res);
+//  }
+//}
 
 TEST(XorshiftCase, DistRealTest) {
   typedef iv::lv5::Xor128 engine_type;
-  typedef boost::uniform_real<double> distribution_type;
-  typedef boost::variate_generator<engine_type, distribution_type> generator;
-  generator gen(engine_type(), distribution_type(0, 1));
-  for (int i = 0; i < 1000; ++i) {
+  typedef std::uniform_real<double> distribution_type;
+  typedef std::variate_generator<engine_type, distribution_type> generator;
+  generator gen(engine_type(), distribution_type(0.0, 1.0));
+  for (int i = 0; i < 10000000; ++i) {
     const double res = gen();
-    ASSERT_LE(0, res);
-    ASSERT_GE(1, res);
+    ASSERT_LE(0.0, res);
+    ASSERT_GE(1.0, res);
   }
 }
-

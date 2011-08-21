@@ -19,7 +19,6 @@ Aims at the most precise engine of The ECMA262 5th Specification.
 
 + scons
 + libgc (Boehm GC)
-+ libboost (boost.foreach)
 
 ## INSTALL
 
