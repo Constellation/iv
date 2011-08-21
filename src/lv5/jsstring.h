@@ -329,13 +329,23 @@ class JSString : public HeapObject {
 
     template<typename OutputIter>
     OutputIter Copy(OutputIter target) const {
-      for (const_iterator it = begin(),
-           last = end(); it != last; ++it) {
-        if ((*it)->IsCons()) {
-          target = static_cast<const Cons*>((*it))->Copy(target);
+      std::vector<const FiberSlot*> slots(rbegin(), rend());
+      while (true) {
+        const FiberSlot* current = slots.back();
+        slots.pop_back();
+        if (current->IsCons()) {
+          slots.insert(slots.end(),
+                       static_cast<const Cons*>(current)->rbegin(),
+                       static_cast<const Cons*>(current)->rend());
+          current = slots.back();
         } else {
-          const Fiber* fiber = static_cast<const Fiber*>(*it);
-          target = std::copy(fiber->begin(), fiber->end(), target);
+          target = std::copy(
+              static_cast<const Fiber*>(current)->begin(),
+              static_cast<const Fiber*>(current)->end(),
+              target);
+          if (slots.empty()) {
+            break;
+          }
         }
       }
       return target;
@@ -418,13 +428,23 @@ class JSString : public HeapObject {
 
   template<typename OutputIter>
   OutputIter Copy(OutputIter target) const {
-    for (FiberSlots::const_iterator it = fibers_.begin(),
-         last = it + fiber_count_; it != last; ++it) {
-      if ((*it)->IsCons()) {
-        target = static_cast<const Cons*>((*it))->Copy(target);
+    std::vector<const FiberSlot*> slots(fibers_.rbegin() + (kMaxFibers - fiber_count_), fibers_.rend());
+    while (true) {
+      const FiberSlot* current = slots.back();
+      slots.pop_back();
+      if (current->IsCons()) {
+        slots.insert(slots.end(),
+                     static_cast<const Cons*>(current)->rbegin(),
+                     static_cast<const Cons*>(current)->rend());
+        current = slots.back();
       } else {
-        const Fiber* fiber = static_cast<const Fiber*>(*it);
-        target = std::copy(fiber->begin(), fiber->end(), target);
+        target = std::copy(
+            static_cast<const Fiber*>(current)->begin(),
+            static_cast<const Fiber*>(current)->end(),
+            target);
+        if (slots.empty()) {
+          break;
+        }
       }
     }
     return target;
