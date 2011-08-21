@@ -36,8 +36,6 @@ class GlobalData;
 //       have Fiber array <Cons|StringFiber>*
 //       this class is only seen in JSString
 
-static const std::size_t kMaxFibers = 5;
-
 class FiberSlot : private core::Noncopyable<FiberSlot> {
  public:
   typedef std::size_t size_type;
@@ -226,6 +224,11 @@ class JSString : public HeapObject {
   friend class GlobalData;
   typedef JSString this_type;
   typedef StringFiber Fiber;
+
+  // FiberSlots has FiberSlot by reverse order
+  // for example, string "THIS" and "IS" to
+  // [ "IS", "THIS", NULL, NULL, NULL ]
+  static const std::size_t kMaxFibers = 5;
   typedef std::array<const FiberSlot*, kMaxFibers> FiberSlots;
   typedef Fiber::size_type size_type;
 
@@ -311,11 +314,12 @@ class JSString : public HeapObject {
     Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
       : FiberSlot(lhs->size() + rhs->size()),
         fiber_count_(fiber_count) {
+      // insert fibers by reverse order (rhs first)
       std::copy(
-          rhs->fibers_.begin(),
-          rhs->fibers_.begin() + rhs->fiber_count(),
-          std::copy(lhs->fibers_.begin(),
-                    lhs->fibers_.begin() + lhs->fiber_count(),
+          lhs->fibers_.begin(),
+          lhs->fibers_.begin() + lhs->fiber_count(),
+          std::copy(rhs->fibers_.begin(),
+                    rhs->fibers_.begin() + rhs->fiber_count(),
                     begin()));
     }
 
@@ -329,15 +333,15 @@ class JSString : public HeapObject {
 
     template<typename OutputIter>
     OutputIter Copy(OutputIter target) const {
-      std::vector<const FiberSlot*> slots(rbegin(), rend());
+      std::vector<const FiberSlot*> slots(begin(), end());
       while (true) {
         const FiberSlot* current = slots.back();
+        assert(!slots.empty());
         slots.pop_back();
         if (current->IsCons()) {
           slots.insert(slots.end(),
-                       static_cast<const Cons*>(current)->rbegin(),
-                       static_cast<const Cons*>(current)->rend());
-          current = slots.back();
+                       static_cast<const Cons*>(current)->begin(),
+                       static_cast<const Cons*>(current)->end());
         } else {
           target = std::copy(
               static_cast<const Fiber*>(current)->begin(),
@@ -402,8 +406,10 @@ class JSString : public HeapObject {
   }
 
   uint16_t GetAt(size_type n) const {
-    if (fibers_[0]->size() > n && !fibers_[0]->IsCons()) {
-      return (*static_cast<const Fiber*>(fibers_.front()))[n];
+    const FiberSlot* first = fibers_[fiber_count_ - 1];
+    if (first->size() > n &&
+        !first->IsCons()) {
+      return (*static_cast<const Fiber*>(first))[n];
     }
     return (*Flatten())[n];
   }
@@ -428,15 +434,16 @@ class JSString : public HeapObject {
 
   template<typename OutputIter>
   OutputIter Copy(OutputIter target) const {
-    std::vector<const FiberSlot*> slots(fibers_.rbegin() + (kMaxFibers - fiber_count_), fibers_.rend());
+    std::vector<const FiberSlot*> slots(fibers_.begin(),
+                                        fibers_.begin() + fiber_count_);
     while (true) {
       const FiberSlot* current = slots.back();
+      assert(!slots.empty());
       slots.pop_back();
       if (current->IsCons()) {
         slots.insert(slots.end(),
-                     static_cast<const Cons*>(current)->rbegin(),
-                     static_cast<const Cons*>(current)->rend());
-        current = slots.back();
+                     static_cast<const Cons*>(current)->begin(),
+                     static_cast<const Cons*>(current)->end());
       } else {
         target = std::copy(
             static_cast<const Fiber*>(current)->begin(),
@@ -604,11 +611,13 @@ class JSString : public HeapObject {
       fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
       fibers_() {
     assert(fiber_count_ <= kMaxFibers);
+    // reverse order
+    // rhs first
     std::copy(
-        rhs->fibers_.begin(),
-        rhs->fibers_.begin() + rhs->fiber_count_,
-        std::copy(lhs->fibers_.begin(),
-                  lhs->fibers_.begin() + lhs->fiber_count_,
+        lhs->fibers_.begin(),
+        lhs->fibers_.begin() + lhs->fiber_count_,
+        std::copy(rhs->fibers_.begin(),
+                  rhs->fibers_.begin() + rhs->fiber_count_,
                   fibers_.begin()));
   }
 
