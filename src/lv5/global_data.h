@@ -7,9 +7,9 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
+#include "xorshift.h"
 #include "lv5/class.h"
 #include "lv5/gc_template.h"
-#include "lv5/xorshift.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsglobal.h"
@@ -24,7 +24,7 @@ class Context;
 class GlobalData {
  public:
   friend class Context;
-  typedef Xor128 random_engine_type;
+  typedef core::Xor128 random_engine_type;
   typedef std::uniform_real<double> random_distribution_type;
   typedef std::variate_generator<
       random_engine_type, random_distribution_type> random_generator;

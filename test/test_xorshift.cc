@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <iostream>
-#include "lv5/xorshift.h"
+#include "xorshift.h"
 #include "detail/random.h"
 
 TEST(XorshiftCase, Test) {
-  iv::lv5::Xor128 g;
+  iv::core::Xor128 g;
   for (int i = 0; i < 1000; ++i) {
-    iv::lv5::Xor128::result_type res = g();
+    iv::core::Xor128::result_type res = g();
     ASSERT_LE(g.min(), res);
     ASSERT_GE(g.max(), res);
   }
@@ -15,7 +15,7 @@ TEST(XorshiftCase, Test) {
 // old g++ has bug in uniform_int
 // see detail/random.h
 //TEST(XorshiftCase, DistIntTest) {
-//  typedef iv::lv5::Xor128 engine_type;
+//  typedef iv::core::Xor128 engine_type;
 //  typedef std::uniform_int<int> distribution_type;
 //  typedef std::variate_generator<engine_type, distribution_type> generator;
 //  generator gen(engine_type(), distribution_type(0, 100));
@@ -27,7 +27,7 @@ TEST(XorshiftCase, Test) {
 //}
 
 TEST(XorshiftCase, DistRealTest) {
-  typedef iv::lv5::Xor128 engine_type;
+  typedef iv::core::Xor128 engine_type;
   typedef std::uniform_real<double> distribution_type;
   typedef std::variate_generator<engine_type, distribution_type> generator;
   generator gen(engine_type(), distribution_type(0.0, 1.0));

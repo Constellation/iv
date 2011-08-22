@@ -1,10 +1,9 @@
-#ifndef _IV_LV5_XORSHIFT_H_
-#define _IV_LV5_XORSHIFT_H_
+#ifndef _IV_XORSHIFT_H_
+#define _IV_XORSHIFT_H_
 #include <ctime>
 #include "detail/cstdint.h"
-
 namespace iv {
-namespace lv5 {
+namespace core {
 
 class Xor128 {
  public:
@@ -69,5 +68,5 @@ class Xor128 {
   int_t w_;
 };
 
-} }  // namespace iv::lv5
-#endif  // _IV_LV5_XORSHIFT_H_
+} }  // namespace iv::core
+#endif  // _IV_XORSHIFT_H_
