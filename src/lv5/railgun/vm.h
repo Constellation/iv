@@ -1174,7 +1174,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_MODULO) {
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
-        // check rhs it not 0 => NaN
+        // check rhs is more than 0 (n % 0 == NaN)
         // lhs is >= 0 and rhs is > 0 because example like
         //   -1 % -1
         // should return -0.0, so this value is double
