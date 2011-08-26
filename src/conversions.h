@@ -7,6 +7,7 @@
 #include <vector>
 #include "detail/array.h"
 #include "detail/cstdint.h"
+#include "detail/cinttypes.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "character.h"
@@ -428,7 +429,7 @@ inline int64_t DoubleToInt64(double d) {
   const int32_t lo = DoubleToInt32(
       std::fmod(d, detail::kDoubleToInt32_Two32));
   const int32_t hi = DoubleToInt32(d / detail::kDoubleToInt32_Two32);
-  return hi * 4294967296ULL + lo;
+  return hi * INT64_C(4294967296) + lo;
 }
 
 inline uint64_t DoubleToUInt64(double d) {

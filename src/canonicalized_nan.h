@@ -1,5 +1,6 @@
 #ifndef _IV_CANONICALIZED_NAN_H_
 #define _IV_CANONICALIZED_NAN_H_
+#include "detail/cinttypes.h"
 namespace iv {
 namespace core {
 namespace detail {
@@ -10,7 +11,7 @@ union Trans64 {
 };
 
 // 111111111111000000000000000000000000000000000000000000000000000
-static const Trans64 kNaNTrans = { 0x7FF8000000000000LL };
+static const Trans64 kNaNTrans = { UINT64_C(0x7FF8000000000000) };
 
 }  // namespace detail
 
