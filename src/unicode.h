@@ -61,7 +61,7 @@ static const std::array<uint8_t, 3> kUTF8BOM = { {
 
 // bit mask template
 // see http://d.hatena.ne.jp/tt_clown/20090616/p1
-template<std::size_t LowerBits, class Type = unsigned long>  // NOLINT
+template<std::size_t LowerBits, class Type = uint32_t>  // NOLINT
 struct BitMask {
   static const Type full = ~(Type(0));
   static const Type upper = ~((Type(1) << LowerBits) - 1);

@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include "detail/cstdint.h"
+#include "detail/cinttypes.h"
 #include "detail/unordered_map.h"
 #include "detail/unordered_set.h"
 #include "detail/type_traits.h"
@@ -2313,9 +2315,9 @@ class Parser
   void SetErrorHeader(std::size_t line) {
     std::array<char, 40> buf;
     error_.append(lexer_.filename());
-    const int num = snprintf(buf.data(), buf.size(),
-                             ":%lu: SyntaxError: ",
-                             static_cast<unsigned long>(line));  // NOLINT
+    const int num = snprintf(
+        buf.data(), buf.size(),
+        ":" "%"PRIu64 ": SyntaxError: ", static_cast<uint64_t>(line));
     error_.append(buf.data(), num);
   }
 

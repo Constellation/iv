@@ -7,6 +7,8 @@
 #include <functional>
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
+#include "detail/cstdint.h"
+#include "detail/cinttypes.h"
 #include "unicode.h"
 #include "conversions.h"
 #include "noncopyable.h"
@@ -92,13 +94,15 @@ class StringFiber : public FiberSlot {
   template<typename String>
   static this_type* New(const String& piece) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + piece.size() * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) +
+        piece.size() * sizeof(char_type)));
     return new (mem) StringFiber(piece);
   }
 
   static this_type* NewWithSize(std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) +
+        n * sizeof(char_type)));
     return new (mem) StringFiber(n);
   }
 
@@ -106,14 +110,16 @@ class StringFiber : public FiberSlot {
   static this_type* New(Iter it, Iter last) {
     const std::size_t n = std::distance(it, last);
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) +
+        n * sizeof(char_type)));
     return new (mem) StringFiber(it, n);
   }
 
   template<typename Iter>
   static this_type* New(Iter it, std::size_t n) {
     this_type* mem = static_cast<this_type*>(GC_MALLOC_ATOMIC(
-        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) + n * sizeof(char_type)));
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type))) +
+        n * sizeof(char_type)));
     return new (mem) StringFiber(it, n);
   }
 
@@ -134,11 +140,13 @@ class StringFiber : public FiberSlot {
   }
 
   pointer data() {
-    return reinterpret_cast<pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
+    return reinterpret_cast<pointer>(this) +
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
   }
 
   const_pointer data() const {
-    return reinterpret_cast<const_pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
+    return reinterpret_cast<const_pointer>(this) +
+        (IV_ROUNDUP(sizeof(this_type), sizeof(char_type)) / sizeof(char_type));
   }
 
   iterator begin() {
@@ -260,11 +268,13 @@ class JSString : public HeapObject {
     }
 
     pointer data() {
-      return reinterpret_cast<pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
+      return reinterpret_cast<pointer>(this) +
+          (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
     }
 
     const_pointer data() const {
-      return reinterpret_cast<const_pointer>(this) + (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
+      return reinterpret_cast<const_pointer>(this) +
+          (IV_ROUNDUP(sizeof(this_type), sizeof(value_type)) / sizeof(value_type));
     }
 
     iterator begin() {
@@ -558,8 +568,7 @@ class JSString : public HeapObject {
       }
       std::array<char, 15> buf;
       const int len = snprintf(
-          buf.data(), buf.size(), "%lu",
-          static_cast<unsigned long>(index));
+          buf.data(), buf.size(), "%"PRIu32, index);
       return New(ctx, buf.begin(), len);
     } else {
       return New(ctx, *symbol::GetStringFromSymbol(sym));
@@ -580,7 +589,7 @@ class JSString : public HeapObject {
   }
 
   // single char string
-  JSString(uint16_t ch)
+  explicit JSString(uint16_t ch)
     : size_(1),
       fiber_count_(1),
       fibers_() {

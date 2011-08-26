@@ -3,6 +3,7 @@
 #include <gc/gc_allocator.h>
 #include <functional>
 #include "detail/cstdint.h"
+#include "detail/cinttypes.h"
 #include "detail/functional.h"
 #include "ustring.h"
 #include "ustringpiece.h"
@@ -193,8 +194,7 @@ inline core::UString GetIndexStringFromSymbol(Symbol sym) {
   return core::UString(
       buf.data(),
       buf.data() + snprintf(
-          buf.data(), buf.size(), "%lu",
-          static_cast<unsigned long>(index)));  // NOLINT
+          buf.data(), buf.size(), "%"PRIu32, index));
 }
 
 inline core::UString GetSymbolString(Symbol sym) {
