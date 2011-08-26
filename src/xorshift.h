@@ -37,8 +37,8 @@ class Xor128 {
     z_ ^= RotateLeft<31>(x0);
     w_ ^= RotateLeft<18>(x0);
   }
-  void discard(unsigned long long count) {  // NOLINT
-    for (unsigned long long i = 0; i < count; ++i) {  // NOLINT
+  void discard(std::size_t count) {
+    for (std::size_t i = 0; i < count; ++i) {
       (*this)();
     }
   }
