@@ -29,220 +29,206 @@ class GlobalData;
 // JSString structure is following
 //
 // + JSString
-//     have FiberSlots = {....} <Cons|StringFiber>*
+//     have FiberSlots = {....} <Cons|Fiber>*
 //
 // + FiberSlot
-//   + StringFiber
+//   + Fiber
 //       have string content
 //       this class is published to world
 //   + Cons
-//       have Fiber array <Cons|StringFiber>*
+//       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
 
-class FiberSlot : private core::Noncopyable<FiberSlot> {
- public:
-  typedef std::size_t size_type;
-  virtual ~FiberSlot() = 0;  // virtual destructor
-  virtual bool IsCons() const = 0;
-
-  void operator delete(void* p) {
-    // this type memory is allocated by malloc
-    if (p) {
-      std::free(p);
-    }
-  }
-
-  size_type size() const {
-    return size_;
-  }
-
- protected:
-  explicit FiberSlot(std::size_t n) : size_(n) { }
-
-  size_type size_;
-};
-
-inline FiberSlot::~FiberSlot() { }
-
-class StringFiber : public FiberSlot {
- public:
-  typedef StringFiber this_type;
-  typedef uint16_t char_type;
-  typedef std::char_traits<char_type> traits_type;
-
-  typedef char_type* iterator;
-  typedef const char_type* const_iterator;
-  typedef std::iterator_traits<iterator>::value_type value_type;
-  typedef std::iterator_traits<iterator>::pointer pointer;
-  typedef std::iterator_traits<const_iterator>::pointer const_pointer;
-  typedef std::iterator_traits<iterator>::reference reference;
-  typedef std::iterator_traits<const_iterator>::reference const_reference;
-  typedef std::reverse_iterator<iterator> reverse_iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-  typedef std::iterator_traits<iterator>::difference_type difference_type;
-  typedef std::size_t size_type;
-
-  static std::size_t GetControlSize() {
-    return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
-  }
-
+class JSString : public gc_cleanup {
  private:
-  template<typename String>
-  explicit StringFiber(const String& piece)
-    : FiberSlot(piece.size()) {
-    std::copy(piece.begin(), piece.end(), begin());
-  }
+  class FiberSlot : private core::Noncopyable<FiberSlot> {
+   public:
+    typedef std::size_t size_type;
+    virtual ~FiberSlot() = 0;  // virtual destructor
+    virtual bool IsCons() const = 0;
 
-  explicit StringFiber(std::size_t n)
-    : FiberSlot(n) {
-  }
-
-  template<typename Iter>
-  StringFiber(Iter it, std::size_t n)
-    : FiberSlot(n) {
-    std::copy(it, it + n, begin());
-  }
-
- public:
-
-  template<typename String>
-  static std::shared_ptr<this_type> New(const String& piece) {
-    void* mem = std::malloc(GetControlSize() + piece.size() * sizeof(char_type));
-    return std::shared_ptr<this_type>(new (mem) StringFiber(piece));
-  }
-
-  static std::shared_ptr<this_type> NewWithSize(std::size_t n) {
-    void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-    return std::shared_ptr<this_type>(new (mem) StringFiber(n));
-  }
-
-  template<typename Iter>
-  static std::shared_ptr<this_type> New(Iter it, Iter last) {
-    return New(it, std::distance(it, last));
-  }
-
-  template<typename Iter>
-  static std::shared_ptr<this_type> New(Iter it, std::size_t n) {
-    void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-    return std::shared_ptr<this_type>(new (mem) StringFiber(it, n));
-  }
-
-  bool IsCons() const {
-    return false;
-  }
-
-  operator core::UStringPiece() const {
-    return core::UStringPiece(data(), size());
-  }
-
-  const_reference operator[](size_type n) const {
-    return (data())[n];
-  }
-
-  reference operator[](size_type n) {
-    return (data())[n];
-  }
-
-  pointer data() {
-    return reinterpret_cast<pointer>(this) + GetControlSize() / sizeof(char_type);
-  }
-
-  const_pointer data() const {
-    return reinterpret_cast<const_pointer>(this) + GetControlSize() / sizeof(char_type);
-  }
-
-  iterator begin() {
-    return data();
-  }
-
-  const_iterator begin() const {
-    return data();
-  }
-
-  const_iterator cbegin() const {
-    return data();
-  }
-
-  iterator end() {
-    return begin() + size_;
-  }
-
-  const_iterator end() const {
-    return begin() + size_;
-  }
-
-  const_iterator cend() const {
-    return begin() + size_;
-  }
-
-  const_reverse_iterator rbegin() const {
-    return const_reverse_iterator(end());
-  }
-
-  const_reverse_iterator crbegin() const {
-    return rbegin();
-  }
-
-  const_reverse_iterator rend() const {
-    return const_reverse_iterator(begin());
-  }
-
-  const_reverse_iterator crend() const {
-    return rend();
-  }
-
-  int compare(const this_type& x) const {
-    const int r =
-        traits_type::compare(data(), x.data(), std::min(size_, x.size_));
-    if (r == 0) {
-      if (size_ < x.size_) {
-        return -1;
-      } else if (size_ > x.size_) {
-        return 1;
+    void operator delete(void* p) {
+      // this type memory is allocated by malloc
+      if (p) {
+        std::free(p);
       }
     }
-    return r;
-  }
 
-  friend bool operator==(const this_type& x, const this_type& y) {
-    return x.compare(y) == 0;
-  }
+    size_type size() const {
+      return size_;
+    }
 
-  friend bool operator!=(const this_type& x, const this_type& y) {
-    return !(x == y);
-  }
+   protected:
+    explicit FiberSlot(std::size_t n) : size_(n) { }
 
-  friend bool operator<(const this_type& x, const this_type& y) {
-    return x.compare(y) < 0;
-  }
+    size_type size_;
+  };
 
-  friend bool operator>(const this_type& x, const this_type& y) {
-    return x.compare(y) > 0;
-  }
-
-  friend bool operator<=(const this_type& x, const this_type& y) {
-    return x.compare(y) <= 0;
-  }
-
-  friend bool operator>=(const this_type& x, const this_type& y) {
-    return x.compare(y) >= 0;
-  }
-};
-
-class JSString : public gc_cleanup {
  public:
-  friend class GlobalData;
-  typedef JSString this_type;
-  typedef StringFiber Fiber;
+  class Fiber : public FiberSlot {
+   public:
+    typedef Fiber this_type;
+    typedef uint16_t char_type;
+    typedef std::char_traits<char_type> traits_type;
 
-  // FiberSlots has FiberSlot by reverse order
-  // for example, string "THIS" and "IS" to
-  // [ "IS", "THIS", NULL, NULL, NULL ]
-  static const std::size_t kMaxFibers = 5;
-  typedef std::array<std::shared_ptr<const FiberSlot>, kMaxFibers> FiberSlots;
-  typedef Fiber::size_type size_type;
+    typedef char_type* iterator;
+    typedef const char_type* const_iterator;
+    typedef std::iterator_traits<iterator>::value_type value_type;
+    typedef std::iterator_traits<iterator>::pointer pointer;
+    typedef std::iterator_traits<const_iterator>::pointer const_pointer;
+    typedef std::iterator_traits<iterator>::reference reference;
+    typedef std::iterator_traits<const_iterator>::reference const_reference;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::iterator_traits<iterator>::difference_type difference_type;
+    typedef std::size_t size_type;
 
-  struct FlattenTag { };
+    static std::size_t GetControlSize() {
+      return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
+    }
+
+   private:
+    template<typename String>
+    explicit Fiber(const String& piece)
+      : FiberSlot(piece.size()) {
+      std::copy(piece.begin(), piece.end(), begin());
+    }
+
+    explicit Fiber(std::size_t n)
+      : FiberSlot(n) {
+    }
+
+    template<typename Iter>
+    Fiber(Iter it, std::size_t n)
+      : FiberSlot(n) {
+      std::copy(it, it + n, begin());
+    }
+
+   public:
+
+    template<typename String>
+    static std::shared_ptr<this_type> New(const String& piece) {
+      void* mem = std::malloc(GetControlSize() + piece.size() * sizeof(char_type));
+      return std::shared_ptr<this_type>(new (mem) Fiber(piece));
+    }
+
+    static std::shared_ptr<this_type> NewWithSize(std::size_t n) {
+      void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
+      return std::shared_ptr<this_type>(new (mem) Fiber(n));
+    }
+
+    template<typename Iter>
+    static std::shared_ptr<this_type> New(Iter it, Iter last) {
+      return New(it, std::distance(it, last));
+    }
+
+    template<typename Iter>
+    static std::shared_ptr<this_type> New(Iter it, std::size_t n) {
+      void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
+      return std::shared_ptr<this_type>(new (mem) Fiber(it, n));
+    }
+
+    bool IsCons() const {
+      return false;
+    }
+
+    operator core::UStringPiece() const {
+      return core::UStringPiece(data(), size());
+    }
+
+    const_reference operator[](size_type n) const {
+      return (data())[n];
+    }
+
+    reference operator[](size_type n) {
+      return (data())[n];
+    }
+
+    pointer data() {
+      return reinterpret_cast<pointer>(this) + GetControlSize() / sizeof(char_type);
+    }
+
+    const_pointer data() const {
+      return reinterpret_cast<const_pointer>(this) + GetControlSize() / sizeof(char_type);
+    }
+
+    iterator begin() {
+      return data();
+    }
+
+    const_iterator begin() const {
+      return data();
+    }
+
+    const_iterator cbegin() const {
+      return data();
+    }
+
+    iterator end() {
+      return begin() + size_;
+    }
+
+    const_iterator end() const {
+      return begin() + size_;
+    }
+
+    const_iterator cend() const {
+      return begin() + size_;
+    }
+
+    const_reverse_iterator rbegin() const {
+      return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator crbegin() const {
+      return rbegin();
+    }
+
+    const_reverse_iterator rend() const {
+      return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend() const {
+      return rend();
+    }
+
+    int compare(const this_type& x) const {
+      const int r =
+          traits_type::compare(data(), x.data(), std::min(size_, x.size_));
+      if (r == 0) {
+        if (size_ < x.size_) {
+          return -1;
+        } else if (size_ > x.size_) {
+          return 1;
+        }
+      }
+      return r;
+    }
+
+    friend bool operator==(const this_type& x, const this_type& y) {
+      return x.compare(y) == 0;
+    }
+
+    friend bool operator!=(const this_type& x, const this_type& y) {
+      return !(x == y);
+    }
+
+    friend bool operator<(const this_type& x, const this_type& y) {
+      return x.compare(y) < 0;
+    }
+
+    friend bool operator>(const this_type& x, const this_type& y) {
+      return x.compare(y) > 0;
+    }
+
+    friend bool operator<=(const this_type& x, const this_type& y) {
+      return x.compare(y) <= 0;
+    }
+
+    friend bool operator>=(const this_type& x, const this_type& y) {
+      return x.compare(y) >= 0;
+    }
+  };
 
  private:
   class Cons : public FiberSlot {
@@ -391,9 +377,20 @@ class JSString : public gc_cleanup {
     size_type fiber_count_;
   };
 
-  friend class Cons;
-
  public:
+  friend class Cons;
+  friend class GlobalData;
+  typedef JSString this_type;
+
+  // FiberSlots has FiberSlot by reverse order
+  // for example, string "THIS" and "IS" to
+  // [ "IS", "THIS", NULL, NULL, NULL ]
+  static const std::size_t kMaxFibers = 5;
+  typedef std::array<std::shared_ptr<const FiberSlot>, kMaxFibers> FiberSlots;
+  typedef Fiber::size_type size_type;
+
+  struct FlattenTag { };
+
   std::size_t size() const {
     return size_;
   }
@@ -406,7 +403,7 @@ class JSString : public gc_cleanup {
     if (fiber_count_ != 1) {
       if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
         // use fast case flatten
-        // StringFiber and StringFiber
+        // Fiber and Fiber
         std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
         const Fiber* head = static_cast<const Fiber*>(fibers_[1].get());
         const Fiber* tail = static_cast<const Fiber*>(fibers_[0].get());
@@ -762,6 +759,8 @@ class StringBuilder : protected std::vector<uint16_t> {
     return core::UString(data(), size());
   }
 };
+
+inline JSString::FiberSlot::~FiberSlot() { }
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSSTRING_H_
