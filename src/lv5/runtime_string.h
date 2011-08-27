@@ -47,17 +47,17 @@ static inline bool IsTrimmed(uint16_t c) {
          core::character::IsLineTerminator(c);
 }
 
-inline int64_t SplitMatch(const JSString::Fiber& str,
+inline int64_t SplitMatch(const std::shared_ptr<const JSString::Fiber>& str,
                           uint32_t q,
-                          const JSString::Fiber& rhs) {
-  const std::size_t rs = rhs.size();
-  const std::size_t s = str.size();
+                          const std::shared_ptr<const JSString::Fiber>& rhs) {
+  const std::size_t rs = rhs->size();
+  const std::size_t s = str->size();
   if (q + rs > s) {
     return -1;
   }
   if (JSString::Fiber::traits_type::compare(
-          rhs.data(),
-          str.data() + q,
+          rhs->data(),
+          str->data() + q,
           rs) != 0) {
     return -1;
   }
@@ -65,15 +65,15 @@ inline int64_t SplitMatch(const JSString::Fiber& str,
 }
 
 inline JSVal StringSplit(Context* ctx,
-                         const JSString::Fiber& target,
+                         const std::shared_ptr<const JSString::Fiber>& target,
                          const JSString& rstr, uint32_t lim) {
   Error e;
   uint32_t length = 0;
   uint32_t p = 0;
   uint32_t q = p;
-  const uint32_t size = target.size();
+  const uint32_t size = target->size();
   JSArray* const ary = JSArray::New(ctx);
-  const JSString::Fiber& rhs = *rstr.Flatten();
+  const std::shared_ptr<const JSString::Fiber>& rhs = rstr.Flatten();
   if (size == 0) {
     if (detail::SplitMatch(target, q, rhs) != -1) {
       return ary;
@@ -91,7 +91,7 @@ inline JSVal StringSplit(Context* ctx,
         ary->DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
-                JSString::New(ctx, target.begin() + p, target.begin() + q),
+                JSString::New(ctx, target->begin() + p, target->begin() + q),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
@@ -109,8 +109,8 @@ inline JSVal StringSplit(Context* ctx,
       ctx, symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           JSString::New(ctx,
-                        target.begin() + p,
-                        target.begin() + size),
+                        target->begin() + p,
+                        target->begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
@@ -119,12 +119,12 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(const JSString::Fiber& str,
+inline regexp::MatchResult RegExpMatch(const std::shared_ptr<const JSString::Fiber>& str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
   vec->clear();
-  return reg.Match(str, q, vec);
+  return reg.Match(*str, q, vec);
 }
 
 struct Replace {
@@ -145,10 +145,10 @@ class Replacer : private core::Noncopyable<> {
     using std::get;
     const regexp::MatchResult res = RegExpMatch(str_fiber_, 0, reg_, &vec_);
     if (get<2>(res)) {
-      builder->Append(str_fiber_.begin(), str_fiber_.begin() + get<0>(res));
+      builder->Append(str_fiber_->begin(), str_fiber_->begin() + get<0>(res));
       static_cast<T*>(this)->DoReplace(builder, res, e);
     }
-    builder->Append(str_fiber_.begin() + get<1>(res), str_fiber_.end());
+    builder->Append(str_fiber_->begin() + get<1>(res), str_fiber_->end());
   }
 
   template<typename Builder>
@@ -156,7 +156,7 @@ class Replacer : private core::Noncopyable<> {
     using std::get;
     int previous_index = 0;
     int not_matched_index = previous_index;
-    const int size = str_fiber_.size();
+    const int size = str_fiber_->size();
     do {
       const regexp::MatchResult res = detail::RegExpMatch(str_fiber_,
                                                           previous_index,
@@ -164,8 +164,8 @@ class Replacer : private core::Noncopyable<> {
       if (!get<2>(res)) {
         break;
       }
-      builder->Append(str_fiber_.begin() + not_matched_index,
-                      str_fiber_.begin() + get<0>(res));
+      builder->Append(str_fiber_->begin() + not_matched_index,
+                      str_fiber_->begin() + get<0>(res));
       const int this_index = get<1>(res);
       not_matched_index = this_index;
       if (previous_index == this_index) {
@@ -178,19 +178,19 @@ class Replacer : private core::Noncopyable<> {
         break;
       }
     } while (true);
-    builder->Append(str_fiber_.begin() + not_matched_index, str_fiber_.end());
+    builder->Append(str_fiber_->begin() + not_matched_index, str_fiber_->end());
   }
 
  protected:
   Replacer(JSString* str, const JSRegExp& reg)
     : str_(str),
-      str_fiber_(*str->Flatten()),
+      str_fiber_(str->Flatten()),
       reg_(reg),
       vec_() {
   }
 
   JSString* str_;
-  const JSString::Fiber& str_fiber_;
+  std::shared_ptr<const JSString::Fiber> str_fiber_;
   const JSRegExp& reg_;
   regexp::PairVector vec_;
 };
@@ -204,7 +204,7 @@ class StringReplacer : public Replacer<StringReplacer> {
                  const JSString& replace)
     : super_type(str, reg),
       replace_(replace),
-      replace_fiber_(*replace_.Flatten()) {
+      replace_fiber_(replace_.Flatten()) {
   }
 
   template<typename Builder>
@@ -212,8 +212,8 @@ class StringReplacer : public Replacer<StringReplacer> {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
-    for (typename JSString::Fiber::const_iterator it = replace_fiber_.begin(),
-         last = replace_fiber_.end(); it != last; ++it) {
+    for (typename JSString::Fiber::const_iterator it = replace_fiber_->begin(),
+         last = replace_fiber_->end(); it != last; ++it) {
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
@@ -230,19 +230,19 @@ class StringReplacer : public Replacer<StringReplacer> {
 
           case '&':  // $& pattern
             state = Replace::kNormal;
-            builder->Append(str_fiber_.begin() + get<0>(res),
-                            str_fiber_.begin() + get<1>(res));
+            builder->Append(str_fiber_->begin() + get<0>(res),
+                            str_fiber_->begin() + get<1>(res));
             break;
 
           case '`':  // $` pattern
             state = Replace::kNormal;
-            builder->Append(str_fiber_.begin(),
-                            str_fiber_.begin() + get<0>(res));
+            builder->Append(str_fiber_->begin(),
+                            str_fiber_->begin() + get<0>(res));
             break;
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
-            builder->Append(str_fiber_.begin() + get<1>(res), str_fiber_.end());
+            builder->Append(str_fiber_->begin() + get<1>(res), str_fiber_->end());
             break;
 
           default:
@@ -262,16 +262,16 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_fiber_.begin() + pair.first,
-                              str_fiber_.begin() + pair.second);
+              builder->Append(str_fiber_->begin() + pair.first,
+                              str_fiber_->begin() + pair.second);
             }
           } else {
             // single digit pattern search
             if (vec_.size() >= single_n) {
               const regexp::PairVector::value_type& pair = vec_[single_n - 1];
               if (pair.first != -1 && pair.second != -1) {  // check undefined
-                builder->Append(str_fiber_.begin() + pair.first,
-                                str_fiber_.begin() + pair.second);
+                builder->Append(str_fiber_->begin() + pair.first,
+                                str_fiber_->begin() + pair.second);
               }
             } else {
               builder->Append('$');
@@ -284,8 +284,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_fiber_.begin() + pair.first,
-                              str_fiber_.begin() + pair.second);
+              builder->Append(str_fiber_->begin() + pair.first,
+                              str_fiber_->begin() + pair.second);
             }
           } else {
             builder->Append('$');
@@ -302,8 +302,8 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              builder->Append(str_fiber_.begin() + pair.first,
-                              str_fiber_.begin() + pair.second);
+              builder->Append(str_fiber_->begin() + pair.first,
+                              str_fiber_->begin() + pair.second);
             }
           } else {
             builder->Append("$0");
@@ -325,8 +325,8 @@ class StringReplacer : public Replacer<StringReplacer> {
       if (vec_.size() >= n) {
         const regexp::PairVector::value_type& pair = vec_[n - 1];
         if (pair.first != -1 && pair.second != -1) {  // check undefined
-          builder->Append(str_fiber_.begin() + pair.first,
-                          str_fiber_.begin() + pair.second);
+          builder->Append(str_fiber_->begin() + pair.first,
+                          str_fiber_->begin() + pair.second);
         }
       } else {
         builder->Append('$');
@@ -339,7 +339,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
-  const JSString::Fiber& replace_fiber_;
+  std::shared_ptr<const JSString::Fiber> replace_fiber_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {
@@ -360,15 +360,15 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     using std::get;
     ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
     a[0] = JSString::New(ctx_,
-                         str_fiber_.begin() + get<0>(res),
-                         str_fiber_.begin() + get<1>(res));
+                         str_fiber_->begin() + get<0>(res),
+                         str_fiber_->begin() + get<1>(res));
     std::size_t i = 1;
     for (regexp::PairVector::const_iterator it = vec_.begin(),
          last = vec_.end(); it != last; ++it, ++i) {
       if (it->first != -1 && it->second != -1) {  // check undefined
         a[i] = JSString::New(ctx_,
-                             str_fiber_.begin() + it->first,
-                             str_fiber_.begin() + it->second);
+                             str_fiber_->begin() + it->first,
+                             str_fiber_->begin() + it->second);
       }
     }
     a[i++] = get<0>(res);
@@ -385,13 +385,13 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
 
 template<typename Builder>
 inline void ReplaceOnce(Builder* builder,
-                        const JSString::Fiber& str,
+                        const std::shared_ptr<const JSString::Fiber>& str,
                         const JSString& search_str,
                         JSString::Fiber::size_type loc,
-                        const JSString::Fiber& replace_str) {
+                        const std::shared_ptr<const JSString::Fiber>& replace_str) {
   Replace::State state = Replace::kNormal;
-  for (JSString::Fiber::const_iterator it = replace_str.begin(),
-       last = replace_str.end(); it != last; ++it) {
+  for (JSString::Fiber::const_iterator it = replace_str->begin(),
+       last = replace_str->end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (state == Replace::kNormal) {
       if (ch == '$') {
@@ -414,12 +414,12 @@ inline void ReplaceOnce(Builder* builder,
 
         case '`':  // $` pattern
           state = Replace::kNormal;
-          builder->Append(str.begin(), str.begin() + loc);
+          builder->Append(str->begin(), str->begin() + loc);
           break;
 
         case '\'':  // $' pattern
           state = Replace::kNormal;
-          builder->Append(str.begin() + loc + search_str.size(), str.end());
+          builder->Append(str->begin() + loc + search_str.size(), str->end());
           break;
 
         default:
@@ -697,10 +697,10 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
-    const JSString::Fiber* fiber = str->Flatten();
+    const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
     const core::UStringPiece base(*fiber);
-    const core::UStringPiece::size_type loc = base.find(*search_str->Flatten(),
-                                                        0);
+    const core::UStringPiece::size_type loc =
+        base.find(*search_str->Flatten(), 0);
     if (loc == core::UStringPiece::npos) {
       // not found
       return str;
@@ -725,8 +725,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
       detail::ReplaceOnce(&builder,
-                          *fiber, *search_str,
-                          loc, *replace_value->Flatten());
+                          fiber, *search_str,
+                          loc, replace_value->Flatten());
     }
     builder.Append(fiber->begin() + loc + search_str->size(), fiber->end());
     return builder.Build(ctx);
@@ -777,8 +777,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
-  const uint32_t len = fiber.size();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
+  const uint32_t len = fiber->size();
   uint32_t start;
   if (args.size() > 0) {
     double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -809,8 +809,8 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
   }
   const uint32_t span = (end < start) ? 0 : end - start;
   return JSString::New(ctx,
-                       fiber.begin() + start,
-                       fiber.begin() + start + span);
+                       fiber->begin() + start,
+                       fiber->begin() + start + span);
 }
 
 // section 15.5.4.14 String.prototype.split(separator, limit)
@@ -821,7 +821,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const JSString::Fiber& fiber = *str->Flatten();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
@@ -869,7 +869,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
   JSArray* const ary = JSArray::New(ctx);
   regexp::PairVector cap;
-  const uint32_t size = fiber.size();
+  const uint32_t size = fiber->size();
   if (size == 0) {
     if (get<2>(detail::RegExpMatch(fiber, 0, *reg, &cap))) {
       return ary;
@@ -903,8 +903,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
           ctx,
           symbol::MakeSymbolFromIndex(length),
           DataDescriptor(JSString::New(ctx,
-                                       fiber.begin() + p,
-                                       fiber.begin() + start_match),
+                                       fiber->begin() + p,
+                                       fiber->begin() + start_match),
                          PropertyDescriptor::WRITABLE |
                          PropertyDescriptor::ENUMERABLE |
                          PropertyDescriptor::CONFIGURABLE),
@@ -924,8 +924,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(
                   JSString::New(ctx,
-                                fiber.begin() + it->first,
-                                fiber.begin() + it->second),
+                                fiber->begin() + it->first,
+                                fiber->begin() + it->second),
                              PropertyDescriptor::WRITABLE |
                              PropertyDescriptor::ENUMERABLE |
                              PropertyDescriptor::CONFIGURABLE),
@@ -953,8 +953,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           JSString::New(ctx,
-                        fiber.begin() + p,
-                        fiber.begin() + size),
+                        fiber->begin() + p,
+                        fiber->begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
@@ -969,8 +969,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
-  const uint32_t len = fiber.size();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
+  const uint32_t len = fiber->size();
   uint32_t start;
   if (args.size() > 0) {
     double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
@@ -997,8 +997,8 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   const uint32_t from = std::min<uint32_t>(start, end);
   const uint32_t to = std::max<uint32_t>(start, end);
   return JSString::New(ctx,
-                       fiber.begin() + from,
-                       fiber.begin() + to);
+                       fiber->begin() + from,
+                       fiber->begin() + to);
 }
 
 // section 15.5.4.16 String.prototype.toLowerCase()
@@ -1007,10 +1007,10 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
   StringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber.begin(),
-       last = fiber.end(); it != last; ++it) {
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
+       last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1022,10 +1022,10 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
   StringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber.begin(),
-       last = fiber.end(); it != last; ++it) {
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
+       last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1037,10 +1037,10 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
   StringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber.begin(),
-       last = fiber.end(); it != last; ++it) {
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
+       last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1052,10 +1052,10 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
   StringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber.begin(),
-       last = fiber.end(); it != last; ++it) {
+  for (JSString::Fiber::const_iterator it = fiber->begin(),
+       last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
   return builder.Build(args.ctx());
@@ -1067,9 +1067,9 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(error));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
-  const JSString::Fiber& fiber = *str->Flatten();
-  JSString::Fiber::const_iterator lit = fiber.begin();
-  const JSString::Fiber::const_iterator last = fiber.end();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
+  JSString::Fiber::const_iterator lit = fiber->begin();
+  const JSString::Fiber::const_iterator last = fiber->end();
   // trim leading space
   bool empty = true;
   for (; lit != last; ++lit) {
@@ -1082,7 +1082,7 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  JSString::Fiber::const_iterator rit = fiber.end() - 1;
+  JSString::Fiber::const_iterator rit = fiber->end() - 1;
   for (; rit != lit; --rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
@@ -1098,8 +1098,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber& fiber = *str->Flatten();
-  const double len = fiber.size();
+  const std::shared_ptr<const JSString::Fiber>& fiber = str->Flatten();
+  const double len = fiber->size();
 
   double start;
   if (args.size() > 0) {
@@ -1138,8 +1138,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const uint32_t capacity = core::DoubleToUInt32(result6);
   const uint32_t start_position = core::DoubleToUInt32(result5);
   return JSString::New(ctx,
-                       fiber.begin() + start_position,
-                       fiber.begin() + start_position + capacity);
+                       fiber->begin() + start_position,
+                       fiber->begin() + start_position + capacity);
 }
 
 } } }  // namespace iv::lv5::runtime

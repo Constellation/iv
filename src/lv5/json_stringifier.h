@@ -76,7 +76,7 @@ class JSONStringifier : private core::Noncopyable<> {
     static const char kHexDigits[17] = "0123456789ABCDEF";
     StringBuilder builder;
     builder.Append('"');
-    const JSString::Fiber* fiber = str.Flatten();
+    const std::shared_ptr<const JSString::Fiber> fiber = str.Flatten();
     for (JSString::Fiber::const_iterator it = fiber->begin(),
          last = fiber->end(); it != last; ++it) {
       const uint16_t c = *it;
