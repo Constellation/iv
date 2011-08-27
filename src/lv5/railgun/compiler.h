@@ -1542,7 +1542,7 @@ class Compiler
          last = code_->constants_.end(); it != last; ++it, ++i) {
       if (it->IsString()) {
         const JSString& str = *it->string();
-        core::UStringPiece temp(*str.Flatten());
+        core::UStringPiece temp(*str.GetFiber());
         if (temp.compare(lit->value()) == 0) {
           // duplicate constant pool
           Emit<OP::LOAD_CONST>(i);

@@ -40,7 +40,7 @@ Symbol Intern(Context* ctx, const core::UStringPiece& str) {
 }
 
 Symbol Intern(Context* ctx, const JSString* str) {
-  return ctx->global_data()->Intern(*str->Flatten());
+  return ctx->global_data()->Intern(*str->GetFiber());
 }
 
 Symbol Intern(Context* ctx, uint32_t index) {

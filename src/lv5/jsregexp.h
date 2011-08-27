@@ -76,7 +76,7 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx, JSRegExp* r) {
     const JSString* const source = r->source(ctx);
-    JSRegExp* const reg = new JSRegExp(ctx, *source->Flatten(), r->impl());
+    JSRegExp* const reg = new JSRegExp(ctx, *source->GetFiber(), r->impl());
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
@@ -158,7 +158,7 @@ class JSRegExp : public JSObject {
     int n = 0;
     const int start = previous_index;
     const int size = str->size();
-    const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->GetFiber();
     do {
       const int rc = impl_->ExecuteOnce(*fiber,
                                         previous_index, &offset_vector);
@@ -229,7 +229,7 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->GetFiber();
     const int rc = impl_->ExecuteOnce(*fiber,
                                       previous_index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||

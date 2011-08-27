@@ -78,7 +78,7 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
-    return core::StringToDouble(*string()->Flatten(), false);
+    return core::StringToDouble(*string()->GetFiber(), false);
   } else if (IsBoolean()) {
     return boolean() ? 1 : +0;
   } else if (IsNull()) {

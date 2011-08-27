@@ -43,7 +43,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
     reg = JSRegExp::New(ctx, pattern, core::UStringPiece());
   } else {
     JSString* flags = args[1].ToString(ctx, IV_LV5_ERROR(e));
-    reg = JSRegExp::New(ctx, pattern, *flags->Flatten());
+    reg = JSRegExp::New(ctx, pattern, *flags->GetFiber());
   }
   if (reg->IsValid()) {
     return reg;

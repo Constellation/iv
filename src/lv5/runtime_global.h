@@ -94,7 +94,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   std::array<uint16_t, 3> hexbuf;
   StringBuilder builder;
   hexbuf[0] = '%';
-  const std::shared_ptr<const JSString::Fiber> fiber = str.Flatten();
+  const JSString::Fiber* fiber = str.GetFiber();
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     const uint16_t ch = *it;
@@ -142,7 +142,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
 template<typename URITraits>
 JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
   StringBuilder builder;
-  const std::shared_ptr<const JSString::Fiber> str = arg.Flatten();
+  const JSString::Fiber* str = arg.GetFiber();
   const uint32_t length = str->size();
   std::array<uint16_t, 3> buf;
   std::array<uint8_t, 4> octets;
@@ -265,7 +265,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* e) {
     } else {
       radix = 10;
     }
-    const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->GetFiber();
     return core::StringToIntegerWithRadix(fiber->begin(), fiber->end(),
                                           radix,
                                           strip_prefix);
@@ -279,7 +279,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, e);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
-    return core::StringToDouble(*str->Flatten(), true);
+    return core::StringToDouble(*str->GetFiber(), true);
   } else {
     return JSNaN;
   }
@@ -386,7 +386,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   if (len == 0) {
     return str;  // empty string
   }
-  const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+  const JSString::Fiber* fiber = str->GetFiber();
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = it + len; it != last; ++it) {
     const uint16_t ch = *it;
@@ -421,7 +421,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
     return s;  // empty string
   }
   StringBuilder builder;
-  const std::shared_ptr<const JSString::Fiber> str = s->Flatten();
+  const JSString::Fiber* str = s->GetFiber();
   std::size_t k = 0;
   while (k != len) {
     const uint16_t ch = (*str)[k];

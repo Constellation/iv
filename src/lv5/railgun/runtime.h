@@ -34,7 +34,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2) {
-    const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->GetFiber();
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
@@ -96,7 +96,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2 && !strict) {
-    const std::shared_ptr<const JSString::Fiber> fiber = str->Flatten();
+    const JSString::Fiber* fiber = str->GetFiber();
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
