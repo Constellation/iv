@@ -204,7 +204,7 @@ class StringReplacer : public Replacer<StringReplacer> {
                  const JSString& replace)
     : super_type(str, reg),
       replace_(replace),
-      replace_fiber_(replace_.GetSharedFiber()) {
+      replace_fiber_(replace_.GetFiber()) {
   }
 
   template<typename Builder>
@@ -339,7 +339,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
-  std::shared_ptr<const JSString::Fiber> replace_fiber_;
+  const JSString::Fiber* replace_fiber_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {

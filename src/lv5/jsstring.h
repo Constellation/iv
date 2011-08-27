@@ -431,11 +431,6 @@ class JSString : public gc_cleanup {
     return static_cast<const Fiber*>(fibers_[0].get());
   }
 
-  std::shared_ptr<const Fiber> GetSharedFiber() const {
-    Flatten();
-    return std::static_pointer_cast<const Fiber>(fibers_[0]);
-  }
-
   std::string GetUTF8() const {
     const Fiber* fiber = GetFiber();
     std::string str;
