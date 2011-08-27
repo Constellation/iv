@@ -564,7 +564,7 @@ class JSString : public gc_cleanup {
     if (this_type* res = context::LookupSingleString(ctx, ch)) {
       return res;
     }
-    return new this_type(ch);
+    return new (PointerFreeGC) this_type(ch);
   }
 
   template<typename Iter>
@@ -581,7 +581,7 @@ class JSString : public gc_cleanup {
         return NewSingle(ctx, *it);
       }
     }
-    return new this_type(it, n);
+    return new (PointerFreeGC) this_type(it, n);
   }
 
   static this_type* NewEmptyString(Context* ctx) {
@@ -594,10 +594,10 @@ class JSString : public gc_cleanup {
     } else if (rhs->empty()) {
       return lhs;
     } else if ((lhs->fiber_count_ + rhs->fiber_count_) <= kMaxFibers) {
-      return new this_type(lhs, rhs);
+      return new (PointerFreeGC) this_type(lhs, rhs);
     } else {
       // flatten version
-      return new this_type(lhs, rhs, FlattenTag());
+      return new (PointerFreeGC) this_type(lhs, rhs, FlattenTag());
     }
   }
 
