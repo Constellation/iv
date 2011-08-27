@@ -357,7 +357,7 @@ class JSString : public gc_cleanup {
     template<typename OutputIter>
     OutputIter Copy(OutputIter target) const {
       std::vector<const FiberSlot*> slots;
-      slots.reserve(fiber_count_ + 4);
+      slots.reserve(32);
       for (const_iterator it = begin(), last = end(); it != last; ++it) {
         slots.push_back(it->get());
       }
@@ -366,7 +366,6 @@ class JSString : public gc_cleanup {
         assert(!slots.empty());
         slots.pop_back();
         if (current->IsCons()) {
-          slots.reserve(slots.size() + static_cast<const Cons*>(current)->fiber_count_);
           for (const_iterator it = static_cast<const Cons*>(current)->begin(),
                last = static_cast<const Cons*>(current)->end();
                it != last; ++it) {
@@ -404,12 +403,27 @@ class JSString : public gc_cleanup {
   }
 
   void Flatten() const {
-    if (fiber_count_ != 1 || fibers_[0]->IsCons()) {
-      std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
-      Copy(fiber->begin());
-      fibers_.assign(std::shared_ptr<const FiberSlot>());
-      fiber_count_ = 1;
-      fibers_[0] = fiber;
+    if (fiber_count_ != 1) {
+      if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
+        // use fast case flatten
+        // StringFiber and StringFiber
+        std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
+        const Fiber* head = static_cast<const Fiber*>(fibers_[1].get());
+        const Fiber* tail = static_cast<const Fiber*>(fibers_[0].get());
+        std::copy(
+            tail->begin(),
+            tail->end(),
+            std::copy(
+                head->begin(),
+                head->end(),
+                fiber->begin()));
+        fiber_count_ = 1;
+        fibers_[0] = fiber;
+      } else {
+        SlowFlatten();
+      }
+    } else if (fibers_[0]->IsCons()) {
+      SlowFlatten();
     }
     assert(fibers_[0]->size() == size());
     assert(!fibers_[0]->IsCons());
@@ -473,7 +487,7 @@ class JSString : public gc_cleanup {
   template<typename OutputIter>
   OutputIter Copy(OutputIter target) const {
     std::vector<const FiberSlot*> slots;
-    slots.reserve(fiber_count_ + 4);
+    slots.reserve(32);
     for (FiberSlots::const_iterator it = fibers_.begin(),
          last = fibers_.begin() + fiber_count_; it != last; ++it) {
       slots.push_back(it->get());
@@ -483,7 +497,6 @@ class JSString : public gc_cleanup {
       assert(!slots.empty());
       slots.pop_back();
       if (current->IsCons()) {
-        slots.reserve(slots.size() + static_cast<const Cons*>(current)->fiber_count_);
         for (Cons::const_iterator it = static_cast<const Cons*>(current)->begin(),
              last = static_cast<const Cons*>(current)->end();
              it != last; ++it) {
@@ -607,6 +620,14 @@ class JSString : public gc_cleanup {
   }
 
  private:
+  void SlowFlatten() const {
+    std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
+    Copy(fiber->begin());
+    fibers_.assign(std::shared_ptr<const FiberSlot>());
+    fiber_count_ = 1;
+    fibers_[0] = fiber;
+  }
+
   std::size_t fiber_count() const {
     return fiber_count_;
   }
