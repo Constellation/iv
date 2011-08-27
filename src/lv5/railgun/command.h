@@ -79,7 +79,6 @@ class TickTimer : private core::Noncopyable<TickTimer> {
 };
 
 inline JSVal Run(const Arguments& args, Error* e) {
-  TickTimer timer;
   if (args.size() > 0) {
     const JSVal val = args[0];
     if (val.IsString()) {
@@ -87,13 +86,15 @@ inline JSVal Run(const Arguments& args, Error* e) {
       std::vector<char> buffer;
       const std::string filename(f->GetUTF8());
       if (detail::ReadFile(filename, &buffer)) {
+        TickTimer timer;
         detail::Execute(
             core::StringPiece(buffer.data(), buffer.size()),
             filename, IV_LV5_ERROR(e));
+        return timer.GetTime();
       }
     }
   }
-  return timer.GetTime();
+  return JSUndefined;
 }
 
 } } }  // namespace iv::lv5::railgun
