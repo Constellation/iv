@@ -12,11 +12,11 @@ class RefCounted : private iv::core::Noncopyable<T> {
     : ref_(count) {
   }
 
-  void Retain() {
+  inline void Retain() {
     ++ref_;
   }
 
-  void Release() {
+  inline void Release() {
     assert(ref_ != 0);
     if (!(--ref_)) {  // ref counter will be 0
       delete static_cast<T*>(this);

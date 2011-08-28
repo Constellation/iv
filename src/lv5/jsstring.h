@@ -17,6 +17,7 @@
 #include "ustringpiece.h"
 #include "ustring.h"
 #include "static_assert.h"
+#include "thread_safe_ref_counted.h"
 #include "lv5/gc_template.h"
 #include "lv5/heap_object.h"
 #include "lv5/context_utils.h"
@@ -41,17 +42,28 @@ class GlobalData;
 
 class JSString : public gc_cleanup {
  private:
-  class FiberSlot : private core::Noncopyable<FiberSlot> {
+  struct Releaser {
+    template<typename T>
+    void operator()(T* ptr) {
+      ptr->Release();
+    }
+  };
+
+  class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
    public:
     typedef std::size_t size_type;
-    virtual ~FiberSlot() = 0;  // virtual destructor
-    virtual bool IsCons() const = 0;
 
-    void operator delete(void* p) {
+    inline void operator delete(void* p) {
       // this type memory is allocated by malloc
       if (p) {
         std::free(p);
       }
+    }
+
+    inline ~FiberSlot();
+
+    bool IsCons() const {
+      return is_cons_;
     }
 
     size_type size() const {
@@ -59,9 +71,13 @@ class JSString : public gc_cleanup {
     }
 
    protected:
-    explicit FiberSlot(std::size_t n) : size_(n) { }
+    explicit FiberSlot(std::size_t n, bool is_cons)
+      : size_(n),
+        is_cons_(is_cons) {
+    }
 
     size_type size_;
+    bool is_cons_;
   };
 
  public:
@@ -90,42 +106,42 @@ class JSString : public gc_cleanup {
    private:
     template<typename String>
     explicit Fiber(const String& piece)
-      : FiberSlot(piece.size()) {
+      : FiberSlot(piece.size(), false) {
       std::copy(piece.begin(), piece.end(), begin());
     }
 
     explicit Fiber(std::size_t n)
-      : FiberSlot(n) {
+      : FiberSlot(n, false) {
     }
 
     template<typename Iter>
     Fiber(Iter it, std::size_t n)
-      : FiberSlot(n) {
+      : FiberSlot(n, false) {
       std::copy(it, it + n, begin());
     }
 
    public:
 
     template<typename String>
-    static std::shared_ptr<this_type> New(const String& piece) {
+    static this_type* New(const String& piece) {
       void* mem = std::malloc(GetControlSize() + piece.size() * sizeof(char_type));
-      return std::shared_ptr<this_type>(new (mem) Fiber(piece));
+      return new (mem) Fiber(piece);
     }
 
-    static std::shared_ptr<this_type> NewWithSize(std::size_t n) {
+    static this_type* NewWithSize(std::size_t n) {
       void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-      return std::shared_ptr<this_type>(new (mem) Fiber(n));
+      return new (mem) Fiber(n);
     }
 
     template<typename Iter>
-    static std::shared_ptr<this_type> New(Iter it, Iter last) {
+    static this_type* New(Iter it, Iter last) {
       return New(it, std::distance(it, last));
     }
 
     template<typename Iter>
-    static std::shared_ptr<this_type> New(Iter it, std::size_t n) {
+    static this_type* New(Iter it, std::size_t n) {
       void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-      return std::shared_ptr<this_type>(new (mem) Fiber(it, n));
+      return new (mem) Fiber(it, n);
     }
 
     bool IsCons() const {
@@ -235,7 +251,7 @@ class JSString : public gc_cleanup {
    public:
     friend class JSString;
     typedef Cons this_type;
-    typedef std::shared_ptr<const FiberSlot> value_type;
+    typedef FiberSlot* value_type;
     typedef value_type* iterator;
     typedef const value_type* const_iterator;
     typedef value_type* pointer;
@@ -312,51 +328,46 @@ class JSString : public gc_cleanup {
     }
 
     Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
-      : FiberSlot(lhs->size() + rhs->size()),
+      : FiberSlot(lhs->size() + rhs->size(), true),
         fiber_count_(fiber_count) {
       // insert fibers by reverse order (rhs first)
-      std::uninitialized_copy(
-          lhs->fibers_.begin(),
-          lhs->fibers_.begin() + lhs->fiber_count(),
-          std::uninitialized_copy(rhs->fibers_.begin(),
-                    rhs->fibers_.begin() + rhs->fiber_count(),
-                    begin()));
-    }
-
-    ~Cons() {
-      for (const_iterator it = begin(), last = end(); it != last; ++it) {
-        Destroy(*it);
+      iterator target = begin();
+      for (FiberSlots::iterator it = rhs->fibers_.begin(),
+           last = rhs->fibers_.begin() + rhs->fiber_count();
+           it != last; ++it, ++target) {
+        (*it)->Retain();
+        *target = *it;
       }
+      for (FiberSlots::iterator it = lhs->fibers_.begin(),
+           last = lhs->fibers_.begin() + lhs->fiber_count();
+           it != last; ++it, ++target) {
+        (*it)->Retain();
+        *target = *it;
+      }
+      assert(target == end());
     }
 
-    template<typename T>
-    static void Destroy(const T& t) {
-      t.~T();
+    static inline void Destroy(Cons* cons) {
+      std::for_each(cons->begin(), cons->end(), Releaser());
     }
 
-    static std::shared_ptr<this_type> New(const JSString* lhs, const JSString* rhs) {
+    static this_type* New(const JSString* lhs, const JSString* rhs) {
       const std::size_t fiber_count = lhs->fiber_count() + rhs->fiber_count();
       void* mem = std::malloc(GetControlSize() + fiber_count * sizeof(value_type));
-      return std::shared_ptr<this_type>(new (mem) Cons(lhs, rhs, fiber_count));
+      return new (mem) Cons(lhs, rhs, fiber_count);
     }
 
     template<typename OutputIter>
     OutputIter Copy(OutputIter target) const {
-      std::vector<const FiberSlot*> slots;
-      slots.reserve(32);
-      for (const_iterator it = begin(), last = end(); it != last; ++it) {
-        slots.push_back(it->get());
-      }
+      std::vector<const FiberSlot*> slots(begin(), end());
       while (true) {
         const FiberSlot* current = slots.back();
         assert(!slots.empty());
         slots.pop_back();
         if (current->IsCons()) {
-          for (const_iterator it = static_cast<const Cons*>(current)->begin(),
-               last = static_cast<const Cons*>(current)->end();
-               it != last; ++it) {
-            slots.push_back(it->get());
-          }
+          slots.insert(slots.end(),
+                       static_cast<const Cons*>(current)->begin(),
+                       static_cast<const Cons*>(current)->end());
         } else {
           target = std::copy(
               static_cast<const Fiber*>(current)->begin(),
@@ -386,7 +397,7 @@ class JSString : public gc_cleanup {
   // for example, string "THIS" and "IS" to
   // [ "IS", "THIS", NULL, NULL, NULL ]
   static const std::size_t kMaxFibers = 5;
-  typedef std::array<std::shared_ptr<const FiberSlot>, kMaxFibers> FiberSlots;
+  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
   typedef Fiber::size_type size_type;
 
   struct FlattenTag { };
@@ -399,14 +410,14 @@ class JSString : public gc_cleanup {
     return size_ == 0;
   }
 
-  void Flatten() const {
+  inline void Flatten() const {
     if (fiber_count_ != 1) {
       if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
         // use fast case flatten
         // Fiber and Fiber
-        std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
-        const Fiber* head = static_cast<const Fiber*>(fibers_[1].get());
-        const Fiber* tail = static_cast<const Fiber*>(fibers_[0].get());
+        Fiber* fiber = Fiber::NewWithSize(size_);
+        Fiber* head = static_cast<Fiber*>(fibers_[1]);
+        Fiber* tail = static_cast<Fiber*>(fibers_[0]);
         std::copy(
             tail->begin(),
             tail->end(),
@@ -414,6 +425,8 @@ class JSString : public gc_cleanup {
                 head->begin(),
                 head->end(),
                 fiber->begin()));
+        head->Release();
+        tail->Release();
         fiber_count_ = 1;
         fibers_[0] = fiber;
       } else {
@@ -426,9 +439,9 @@ class JSString : public gc_cleanup {
     assert(!fibers_[0]->IsCons());
   }
 
-  const Fiber* GetFiber() const {
+  inline const Fiber* GetFiber() const {
     Flatten();
-    return static_cast<const Fiber*>(fibers_[0].get());
+    return static_cast<const Fiber*>(fibers_[0]);
   }
 
   std::string GetUTF8() const {
@@ -451,9 +464,9 @@ class JSString : public gc_cleanup {
   }
 
   uint16_t GetAt(size_type n) const {
-    const std::shared_ptr<const FiberSlot>& first = fibers_[fiber_count_ - 1];
+    const FiberSlot* first = fibers_[fiber_count_ - 1];
     if (first->size() > n && !first->IsCons()) {
-      return (*static_cast<const Fiber*>(first.get()))[n];
+      return (*static_cast<const Fiber*>(first))[n];
     }
     return (*GetFiber())[n];
   }
@@ -478,22 +491,15 @@ class JSString : public gc_cleanup {
 
   template<typename OutputIter>
   OutputIter Copy(OutputIter target) const {
-    std::vector<const FiberSlot*> slots;
-    slots.reserve(32);
-    for (FiberSlots::const_iterator it = fibers_.begin(),
-         last = fibers_.begin() + fiber_count_; it != last; ++it) {
-      slots.push_back(it->get());
-    }
+    std::vector<const FiberSlot*> slots(fibers_.begin(), fibers_.begin() + fiber_count());
     while (true) {
       const FiberSlot* current = slots.back();
       assert(!slots.empty());
       slots.pop_back();
       if (current->IsCons()) {
-        for (Cons::const_iterator it = static_cast<const Cons*>(current)->begin(),
-             last = static_cast<const Cons*>(current)->end();
-             it != last; ++it) {
-          slots.push_back(it->get());
-        }
+        slots.insert(slots.end(),
+                     static_cast<const Cons*>(current)->begin(),
+                     static_cast<const Cons*>(current)->end());
       } else {
         target = std::copy(
             static_cast<const Fiber*>(current)->begin(),
@@ -611,11 +617,15 @@ class JSString : public gc_cleanup {
     }
   }
 
+  ~JSString() {
+    std::for_each(fibers_.begin(), fibers_.begin() + fiber_count(), Releaser());
+  }
+
  private:
   void SlowFlatten() const {
-    std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(size_);
+    Fiber* fiber = Fiber::NewWithSize(size_);
     Copy(fiber->begin());
-    fibers_.assign(std::shared_ptr<const FiberSlot>());
+    std::for_each(fibers_.begin(), fibers_.begin() + fiber_count(), Releaser());
     fiber_count_ = 1;
     fibers_[0] = fiber;
   }
@@ -629,7 +639,7 @@ class JSString : public gc_cleanup {
     : size_(0),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber::NewWithSize(size_);
+    fibers_[0] = Fiber::NewWithSize(0);
   }
 
   // single char string
@@ -637,9 +647,7 @@ class JSString : public gc_cleanup {
     : size_(1),
       fiber_count_(1),
       fibers_() {
-    std::shared_ptr<Fiber> fiber = Fiber::NewWithSize(1);
-    (*fiber)[0] = ch;
-    fibers_[0] = fiber;
+    fibers_[0] = Fiber::New(&ch, 1);
   }
 
   template<typename Iter>
@@ -666,12 +674,19 @@ class JSString : public gc_cleanup {
     assert(fiber_count_ <= kMaxFibers);
     // reverse order
     // rhs first
-    std::copy(
-        lhs->fibers_.begin(),
-        lhs->fibers_.begin() + lhs->fiber_count_,
-        std::copy(rhs->fibers_.begin(),
-                  rhs->fibers_.begin() + rhs->fiber_count_,
-                  fibers_.begin()));
+    FiberSlots::iterator target = fibers_.begin();
+    for (FiberSlots::iterator it = rhs->fibers_.begin(),
+         last = rhs->fibers_.begin() + rhs->fiber_count();
+         it != last; ++it, ++target) {
+      (*it)->Retain();
+      *target = *it;
+    }
+    for (FiberSlots::iterator it = lhs->fibers_.begin(),
+         last = lhs->fibers_.begin() + lhs->fiber_count();
+         it != last; ++it, ++target) {
+      (*it)->Retain();
+      *target = *it;
+    }
   }
 
   // flatten version
@@ -755,7 +770,11 @@ class StringBuilder : protected std::vector<uint16_t> {
   }
 };
 
-inline JSString::FiberSlot::~FiberSlot() { }
+JSString::FiberSlot::~FiberSlot() {
+  if (IsCons()) {
+    Cons::Destroy(static_cast<Cons*>(this));
+  }
+}
 
 } }  // namespace iv::lv5
 #endif  // _IV_LV5_JSSTRING_H_
