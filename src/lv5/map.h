@@ -18,16 +18,10 @@
 namespace iv {
 namespace lv5 {
 
-// TODO(Constellation)
-// more clear deleted
-
 class JSGlobal;
 
 class Map : public gc {
  public:
-  enum Kind {
-    GLOBAL = 0
-  };
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
   typedef GCVector<std::size_t>::type Deleted;
   typedef GCHashMap<Symbol, Map*>::type Transitions;
@@ -38,17 +32,8 @@ class Map : public gc {
     return new Map(UniqueTag());
   }
 
-  static Map* NewUniqueMap(Context* ctx, Map* previous) {
-    assert(previous);
-    return new Map(previous, UniqueTag());
-  }
-
   static Map* NewEmptyMap(Context* ctx) {
     return New(ctx, NULL);
-  }
-
-  static Map* New(Context* ctx, Map* previous) {
-    return new Map(previous);
   }
 
   bool IsUnique() const {
@@ -156,6 +141,14 @@ class Map : public gc {
   }
 
  private:
+  static Map* NewUniqueMap(Context* ctx, Map* previous) {
+    assert(previous);
+    return new Map(previous, UniqueTag());
+  }
+
+  static Map* New(Context* ctx, Map* previous) {
+    return new Map(previous);
+  }
 
   explicit Map(Map* previous)
     : previous_(previous),
