@@ -5,6 +5,7 @@
 #include "detail/cstdint.h"
 #include "detail/type_traits.h"
 #include "byteorder.h"
+#include "gc_template.h"
 #include "enable_if.h"
 #include "static_assert.h"
 #include "platform_math.h"
