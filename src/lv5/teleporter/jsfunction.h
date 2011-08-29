@@ -28,7 +28,7 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env)
-    : JSFunction(Map::NewUniqueMap(ctx)),
+    : JSFunction(ctx),
       function_(func),
       script_(script),
       env_(env) {

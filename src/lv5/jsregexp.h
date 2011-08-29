@@ -22,7 +22,7 @@ class JSRegExp : public JSObject {
   JSRegExp(Context* ctx,
            const core::UStringPiece& value,
            const core::UStringPiece& flags)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetRegExpMap(ctx)),
       impl_(new JSRegExpImpl(value, flags)) {
     InitializeProperty(ctx, JSString::New(ctx, value));
   }
@@ -30,13 +30,13 @@ class JSRegExp : public JSObject {
   JSRegExp(Context* ctx,
            const core::UStringPiece& value,
            const JSRegExpImpl* reg)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetRegExpMap(ctx)),
       impl_(reg) {
     InitializeProperty(ctx, JSString::New(ctx, value));
   }
 
   explicit JSRegExp(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetRegExpMap(ctx)),
       impl_(new JSRegExpImpl()) {
     InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }

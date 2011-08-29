@@ -20,7 +20,7 @@ class JSVMFunction : public JSFunction {
  public:
   JSVMFunction(Context* ctx,
                railgun::Code* code, JSEnv* env)
-    : JSFunction(Map::NewUniqueMap(ctx)),
+    : JSFunction(ctx),
       code_(code),
       env_(env) {
     Error e;

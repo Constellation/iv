@@ -55,6 +55,42 @@ GlobalData* Global(Context* ctx) {
   return ctx->global_data();
 }
 
+Map* GetEmptyObjectMap(Context* ctx) {
+  return ctx->global_data()->GetEmptyObjectMap();
+}
+
+Map* GetFunctionMap(Context* ctx) {
+  return ctx->global_data()->GetFunctionMap();
+}
+
+Map* GetArrayMap(Context* ctx) {
+  return ctx->global_data()->GetArrayMap();
+}
+
+Map* GetStringMap(Context* ctx) {
+  return ctx->global_data()->GetStringMap();
+}
+
+Map* GetBooleanMap(Context* ctx) {
+  return ctx->global_data()->GetBooleanMap();
+}
+
+Map* GetNumberMap(Context* ctx) {
+  return ctx->global_data()->GetNumberMap();
+}
+
+Map* GetDateMap(Context* ctx) {
+  return ctx->global_data()->GetDateMap();
+}
+
+Map* GetRegExpMap(Context* ctx) {
+  return ctx->global_data()->GetRegExpMap();
+}
+
+Map* GetErrorMap(Context* ctx) {
+  return ctx->global_data()->GetErrorMap();
+}
+
 JSString* EmptyString(Context* ctx) {
   return ctx->global_data()->GetEmptyString();
 }

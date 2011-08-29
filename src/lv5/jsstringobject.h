@@ -11,7 +11,7 @@ namespace lv5 {
 class JSStringObject : public JSObject {
  public:
   JSStringObject(Context* ctx, JSString* value)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetStringMap(ctx)),
       value_(value),
       length_(static_cast<uint32_t>(value->size())) {
   }

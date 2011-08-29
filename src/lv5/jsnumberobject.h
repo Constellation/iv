@@ -10,7 +10,7 @@ class JSNumberObject : public JSObject {
  public:
   explicit JSNumberObject(Context* ctx,
                           const double& value)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetNumberMap(ctx)),
       value_(value) {
   }
 

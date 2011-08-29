@@ -32,6 +32,16 @@ GlobalData* Global(Context* ctx);
 JSString* EmptyString(Context* ctx);
 JSString* LookupSingleString(Context* ctx, uint16_t ch);
 
+Map* GetEmptyObjectMap(Context* ctx);
+Map* GetFunctionMap(Context* ctx);
+Map* GetArrayMap(Context* ctx);
+Map* GetStringMap(Context* ctx);
+Map* GetBooleanMap(Context* ctx);
+Map* GetNumberMap(Context* ctx);
+Map* GetDateMap(Context* ctx);
+Map* GetRegExpMap(Context* ctx);
+Map* GetErrorMap(Context* ctx);
+
 JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);

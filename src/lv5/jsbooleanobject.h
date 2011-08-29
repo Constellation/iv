@@ -9,7 +9,7 @@ namespace lv5 {
 class JSBooleanObject : public JSObject {
  public:
   explicit JSBooleanObject(Context* ctx, bool value)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetBooleanMap(ctx)),
       value_(value) {
   }
 

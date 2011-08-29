@@ -16,7 +16,7 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
-  JSFunction(Map* map) : JSObject(map) { }
+  JSFunction(Context* ctx) : JSObject(context::GetFunctionMap(ctx)) { }
 
   bool IsCallable() const {
     return true;
@@ -111,10 +111,10 @@ class JSFunction : public JSObject {
 class JSNativeFunction : public JSFunction {
  public:
   JSNativeFunction(Context* ctx)
-    : JSFunction(Map::NewUniqueMap(ctx)), func_() { }
+    : JSFunction(ctx), func_() { }
 
   JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
-    : JSFunction(Map::NewUniqueMap(ctx)),
+    : JSFunction(ctx),
       func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
@@ -230,7 +230,7 @@ class JSBoundFunction : public JSFunction {
                   JSFunction* target,
                   const JSVal& this_binding,
                   const Arguments& args)
-    : JSFunction(Map::NewUniqueMap(ctx)),
+    : JSFunction(ctx),
       target_(target),
       this_binding_(this_binding),
       arguments_(args.size() == 0 ? 0 : args.size() - 1) {
@@ -286,7 +286,7 @@ class JSInlinedFunction : public JSFunction {
   typedef JSInlinedFunction<func, n> this_type;
 
   explicit JSInlinedFunction(Context* ctx)
-    : JSFunction(Map::NewUniqueMap(ctx)) {
+    : JSFunction(ctx) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
@@ -295,7 +295,7 @@ class JSInlinedFunction : public JSFunction {
   }
 
   JSInlinedFunction(Context* ctx, const Symbol& name)
-    : JSFunction(Map::NewUniqueMap(ctx)) {
+    : JSFunction(ctx) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),

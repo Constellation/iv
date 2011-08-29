@@ -82,7 +82,7 @@ class JSArray : public JSObject {
   typedef GCMap<uint32_t, JSVal>::type SparseArray;
 
   JSArray(Context* ctx, uint32_t len)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(context::GetArrayMap(ctx)),
       vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
