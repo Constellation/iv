@@ -21,7 +21,10 @@ class Slot {
   }
 
   void set_descriptor(const PropertyDescriptor& desc) {
+    cacheable_ = false;
+    base_ = NULL;
     desc_ = desc;
+    offset_ = core::kNotFound;
   }
 
   void set_descriptor(const PropertyDescriptor& desc,
