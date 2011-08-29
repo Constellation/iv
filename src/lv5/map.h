@@ -189,7 +189,6 @@ class Map : public gc {
   explicit Map(Map* previous)
     : previous_(previous),
       table_(NULL),
-      // table_(new (GC) TargetTable(*previous->table_)),
       transitions_(new (GC) Transitions()),
       deleted_(previous->deleted_),
       added_(),
@@ -231,7 +230,12 @@ class Map : public gc {
     if (previous->IsUnique()) {
       table_ = previous->table_;
     } else {
-      AllocateTable();
+      // not include this table
+      if (!previous->previous_) {
+        table_ = new TargetTable();
+      } else {
+      }
+      AllocateTable(previous);
     }
   }
 
@@ -241,18 +245,18 @@ class Map : public gc {
         // empty top table
         return false;
       }
-      AllocateTable();
+      AllocateTable(this);
     }
     return true;
   }
 
-  void AllocateTable() {
+  void AllocateTable(Map* start) {
     std::vector<Map*> stack;
     stack.reserve(8);
     assert(!HasTable());
-    assert(previous_);
-    stack.push_back(this);
-    Map* current = previous_;
+    assert(start->previous_);
+    stack.push_back(start);
+    Map* current = start->previous_;
     while (true) {
       if (current->HasTable()) {
         table_ = new (GC) TargetTable(*current->table());
@@ -274,7 +278,7 @@ class Map : public gc {
       assert(table_->find((*it)->added_.first) == table_->end());
       table_->insert((*it)->added_);
     }
-    assert(table_->size() == calculated_size_);
+    assert(GetSlotsSize() == calculated_size_);
   }
 
   TargetTable* table() const {
