@@ -26,6 +26,8 @@ class Map : public gc {
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
   typedef GCHashMap<Symbol, Map*>::type Transitions;
 
+  static const std::size_t kMaxTransition = 64;
+
   class DeleteEntry {
    public:
     DeleteEntry(DeleteEntry* prev, std::size_t offset)
@@ -90,8 +92,11 @@ class Map : public gc {
   }
 
   std::size_t Get(Context* ctx, Symbol name) {
-    const TargetTable::const_iterator it = table_.find(name);
-    if (it != table_.end()) {
+    if (!AllocateTableIfNeeded()) {
+      return core::kNotFound;
+    }
+    const TargetTable::const_iterator it = table_->find(name);
+    if (it != table_->end()) {
       return it->second;
     } else {
       return core::kNotFound;
@@ -102,46 +107,63 @@ class Map : public gc {
     assert(GetSlotsSize() > 0);
     Map* map = NewUniqueMap(ctx, this);
     map->Delete(ctx, name);
+    assert(GetSlotsSize() == map->GetSlotsSize());
     return map;
   }
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
     if (IsUnique()) {
       // extend this map with not transition
+      assert(HasTable());
       std::size_t slot;
       if (!deleted_.empty()) {
         slot = deleted_.Pop();
       } else {
         slot = GetSlotsSize();
       }
-      table_.insert(std::make_pair(name, slot));
+      table_->insert(std::make_pair(name, slot));
       *offset = slot;
       return this;
     } else {
       assert(transitions_);
+      // existing transition check
       const Transitions::const_iterator it = transitions_->find(name);
       if (it != transitions_->end()) {
         // found already created map. so, move to this
-        *offset = it->second->added_;
+        *offset = it->second->added_.second;
         return it->second;
       }
+
+      if (transit_count_ > kMaxTransition) {
+        // stop transition
+        Map* map = NewUniqueMap(ctx, this);
+        // go to above unique path
+        return map->AddPropertyTransition(ctx, name, offset);
+      }
+
       Map* map = New(ctx, this);
       if (!map->deleted_.empty()) {
         const std::size_t slot = map->deleted_.Pop();
-        map->added_ = slot;
+        map->added_ = std::make_pair(name, slot);
+        map->calculated_size_ = GetSlotsSize();
       } else {
-        map->added_ = GetSlotsSize();
+        map->added_ = std::make_pair(name, GetSlotsSize());
+        map->calculated_size_ = GetSlotsSize() + 1;
       }
-      map->table_.insert(std::make_pair(name, map->added_));
+      map->transit_count_ = transit_count_ + 1;
       transitions_->insert(std::make_pair(name, map));
-      *offset = map->added_;
-      assert(map->GetSlotsSize() > map->added_);
+      *offset = map->added_.second;
+      assert(map->GetSlotsSize() > map->added_.second);
       return map;
     }
   }
 
   std::size_t GetSlotsSize() const {
-    return table_.size() + deleted_.size();
+    return (table_) ? table_->size() + deleted_.size() : calculated_size_;
+  }
+
+  bool HasTable() const {
+    return table_;
   }
 
   inline void GetOwnPropertyNames(const JSObject* obj,
@@ -166,18 +188,23 @@ class Map : public gc {
 
   explicit Map(Map* previous)
     : previous_(previous),
-      table_(previous->table_),
+      table_(NULL),
+      // table_(new (GC) TargetTable(*previous->table_)),
       transitions_(new (GC) Transitions()),
       deleted_(previous->deleted_),
-      added_(0) {
+      added_(),
+      calculated_size_(previous->GetSlotsSize()),
+      transit_count_(0) {
   }
 
-  explicit Map()
+  Map()
     : previous_(NULL),
-      table_(),
+      table_(NULL),
       transitions_(new (GC) Transitions()),
       deleted_(),
-      added_(0) {
+      added_(),
+      calculated_size_(0),
+      transit_count_(0) {
   }
 
   // empty start table
@@ -185,32 +212,89 @@ class Map : public gc {
   // Object.prototype, Array.prototype, GlobalObject...
   Map(UniqueTag dummy)
     : previous_(NULL),
-      table_(),
+      table_(new (GC) TargetTable()),
       transitions_(NULL),
       deleted_(),
-      added_(0) {
+      added_(),
+      calculated_size_(0),
+      transit_count_(0) {
   }
 
   Map(Map* previous, UniqueTag dummy)
     : previous_(previous),
-      table_(previous->table_),
+      table_(NULL),
       transitions_(NULL),
       deleted_(previous->deleted_),
-      added_(0) {
+      added_(),
+      calculated_size_(previous->GetSlotsSize()),
+      transit_count_(0) {
+    if (previous->IsUnique()) {
+      table_ = previous->table_;
+    } else {
+      AllocateTable();
+    }
+  }
+
+  bool AllocateTableIfNeeded() {
+    if (!HasTable()) {
+      if (!previous_) {
+        // empty top table
+        return false;
+      }
+      AllocateTable();
+    }
+    return true;
+  }
+
+  void AllocateTable() {
+    std::vector<Map*> stack;
+    stack.reserve(8);
+    assert(!HasTable());
+    assert(previous_);
+    stack.push_back(this);
+    Map* current = previous_;
+    while (true) {
+      if (current->HasTable()) {
+        table_ = new (GC) TargetTable(*current->table());
+        break;
+      } else {
+        if (current->previous_) {
+          stack.push_back(current);
+        } else {
+          table_ = new (GC) TargetTable();
+          break;
+        }
+      }
+      current = current->previous_;
+    }
+    assert(table_);
+
+    for (std::vector<Map*>::const_reverse_iterator it = stack.rbegin(),
+         last = stack.rend(); it != last; ++it) {
+      assert(table_->find((*it)->added_.first) == table_->end());
+      table_->insert((*it)->added_);
+    }
+    assert(table_->size() == calculated_size_);
+  }
+
+  TargetTable* table() const {
+    return table_;
   }
 
   void Delete(Context* ctx, Symbol name) {
-    const TargetTable::const_iterator it = table_.find(name);
-    assert(it != table_.end());
+    const TargetTable::const_iterator it = table_->find(name);
+    assert(it != table_->end());
     deleted_.Push(it->second);
-    table_.erase(it);
+    table_->erase(it);
   }
 
   Map* previous_;
-  TargetTable table_;
+  TargetTable* table_;
   Transitions* transitions_;
   DeleteEntryHolder deleted_;
-  std::size_t added_;
+  std::pair<Symbol, std::size_t> added_;
+  std::size_t calculated_size_;
+  std::size_t transit_count_;
 };
 
 } }  // namespace iv::lv5
