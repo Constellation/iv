@@ -7,6 +7,7 @@
 #include "lv5/gc_template.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/heap_object.h"
+#include "lv5/map.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/core_data_fwd.h"
@@ -83,7 +84,8 @@ class Code : public HeapObject {
       locals_(),
       decls_(),
       constants_(),
-      exception_table_() {
+      exception_table_(),
+      construct_map_(NULL) {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }
@@ -276,6 +278,13 @@ class Code : public HeapObject {
     return core_->data();
   }
 
+  Map* ConstructMap(Context* ctx) {
+    if (!construct_map_) {
+      construct_map_ = Map::New(ctx);
+    }
+    return construct_map_;
+  }
+
  private:
 
   void set_start(std::size_t start) {
@@ -313,6 +322,7 @@ class Code : public HeapObject {
   Decls decls_;
   JSVals constants_;
   ExceptionTable exception_table_;
+  Map* construct_map_;
 };
 
 } } }  // namespace iv::lv5::railgun

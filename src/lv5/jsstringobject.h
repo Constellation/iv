@@ -2,6 +2,8 @@
 #define _IV_LV5_JSSTRINGOBJECT_H_
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
+#include "lv5/map.h"
+#include "lv5/slot.h"
 #include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
@@ -9,29 +11,34 @@ namespace lv5 {
 class JSStringObject : public JSObject {
  public:
   JSStringObject(Context* ctx, JSString* value)
-    : value_(value),
+    : JSObject(Map::NewUniqueMap(ctx)),
+      value_(value),
       length_(static_cast<uint32_t>(value->size())) {
   }
 
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
+  bool GetOwnPropertySlot(Context* ctx,
+                          Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
-      return DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE);
+      slot->set_descriptor(
+          DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE));
+      return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, name);
-      if (!desc.IsEmpty()) {
-        return desc;
+      if (JSObject::GetOwnPropertySlot(ctx, name, slot)) {
+        return true;
       }
       const std::size_t len = value_->size();
       if (len <= index) {
-        return JSUndefined;
+        return false;
       }
-      return DataDescriptor(
-          JSString::NewSingle(ctx, value_->GetAt(index)),
-          PropertyDescriptor::ENUMERABLE);
+      slot->set_descriptor(
+          DataDescriptor(
+              JSString::NewSingle(ctx, value_->GetAt(index)),
+              PropertyDescriptor::ENUMERABLE));
+      return true;
     } else {
-      return JSObject::GetOwnProperty(ctx, name);
+      return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
   }
 

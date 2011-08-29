@@ -9,6 +9,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/jsarray.h"
 #include "lv5/jsstring.h"
+#include "lv5/map.h"
 #include "lv5/jsregexp_impl.h"
 #include "lv5/context_utils.h"
 #include "lv5/match_result.h"
@@ -21,19 +22,22 @@ class JSRegExp : public JSObject {
   JSRegExp(Context* ctx,
            const core::UStringPiece& value,
            const core::UStringPiece& flags)
-    : impl_(new JSRegExpImpl(value, flags)) {
+    : JSObject(Map::NewUniqueMap(ctx)),
+      impl_(new JSRegExpImpl(value, flags)) {
     InitializeProperty(ctx, JSString::New(ctx, value));
   }
 
   JSRegExp(Context* ctx,
            const core::UStringPiece& value,
            const JSRegExpImpl* reg)
-    : impl_(reg) {
+    : JSObject(Map::NewUniqueMap(ctx)),
+      impl_(reg) {
     InitializeProperty(ctx, JSString::New(ctx, value));
   }
 
   explicit JSRegExp(Context* ctx)
-    : impl_(new JSRegExpImpl()) {
+    : JSObject(Map::NewUniqueMap(ctx)),
+      impl_(new JSRegExpImpl()) {
     InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }
 

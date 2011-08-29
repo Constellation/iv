@@ -9,10 +9,11 @@
 #include "lv5/symbol.h"
 #include "lv5/heap_object.h"
 #include "lv5/class.h"
-
 namespace iv {
 namespace lv5 {
 
+class Map;
+class Slot;
 class JSVal;
 class JSFunction;
 class Callable;
@@ -28,43 +29,52 @@ class JSObject : public HeapObject {
   };
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
-  JSObject();
-  JSObject(JSObject* proto, Class* cls, bool extensible);
-  JSObject(Properties* table);
+  JSObject(Map* map);
+  JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
 
   virtual ~JSObject() { }
 
   virtual JSVal DefaultValue(Context* ctx,
-                             Hint::Object hint, Error* res);
+                             Hint::Object hint, Error* e);
 
-  virtual JSVal Get(Context* ctx,
-                    Symbol name, Error* res);
+  virtual JSVal Get(Context* ctx, Symbol name, Error* e);
 
-  virtual PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+  // this is not virtual function
+  // if you handle it, override GetOwnPropertySlot
+  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+
+  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
 
   virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
 
   virtual bool CanPut(Context* ctx, Symbol name) const;
 
   virtual void Put(Context* context, Symbol name,
-                   const JSVal& val, bool th, Error* res);
+                   const JSVal& val, bool th, Error* e);
 
   virtual bool HasProperty(Context* ctx, Symbol name) const;
 
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* res);
+  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e);
 
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
-                                 bool th,
-                                 Error* res);
+                                 bool th, Error* e);
 
-  void GetPropertyNames(Context* ctx,
-                        std::vector<Symbol>* vec, EnumerationMode mode) const;
+  virtual void GetPropertyNames(Context* ctx,
+                                std::vector<Symbol>* vec, EnumerationMode mode) const;
 
   virtual void GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const;
+
+  JSVal GetFromDescriptor(Context* ctx,
+                          const PropertyDescriptor& desc, Error* e);
+
+  JSVal GetBySlotOffset(Context* ctx, std::size_t n, Error* e);
+
+  void PutToSlotOffset(Context* ctx, std::size_t offset,
+                       const JSVal& val, bool th, Error* e);
 
   virtual bool IsCallable() const {
     return false;
@@ -112,7 +122,9 @@ class JSObject : public HeapObject {
   }
 
   static JSObject* New(Context* ctx);
+  static JSObject* New(Context* ctx, Map* map);
   static JSObject* NewPlain(Context* ctx);
+  static JSObject* NewPlain(Context* ctx, Map* map);
 
   static const Class* GetClass() {
     static const Class cls = {
@@ -122,40 +134,27 @@ class JSObject : public HeapObject {
     return &cls;
   }
 
- private:
-  void AllocateTable() {
-    if (!table_) {
-      table_ = new(GC)Properties();
-    }
+  const PropertyDescriptor& GetSlot(std::size_t n) const {
+    assert(slots_.size() > n);
+    return slots_[n];
   }
+
+  PropertyDescriptor& GetSlot(std::size_t n) {
+    assert(slots_.size() > n);
+    return slots_[n];
+  }
+
+  Map* map() const {
+    return map_;
+  }
+
+ private:
 
   const Class* cls_;
   JSObject* prototype_;
   bool extensible_;
-  Properties* table_;
-};
-
-template<std::size_t N>
-class JSObjectWithSlot : public JSObject {
- public:
-  static const std::size_t kSlotSize = N;
-
-  std::size_t GetSlotSize() {
-    return N;
-  }
-
-  JSVal& GetSlot(std::size_t n) {
-    assert(n < N);
-    return slots_[n];
-  }
-
-  const JSVal& GetSlot(std::size_t n) const {
-    assert(n < N);
-    return slots_[n];
-  }
-
- protected:
-  std::array<JSVal, N> slots_;
+  Map* map_;
+  GCVector<PropertyDescriptor>::type slots_;
 };
 
 } }  // namespace iv::lv5

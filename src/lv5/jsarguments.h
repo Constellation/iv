@@ -7,6 +7,8 @@
 #include "lv5/property.h"
 #include "lv5/jsenv.h"
 #include "lv5/jsobject.h"
+#include "lv5/map.h"
+#include "lv5/slot.h"
 #include "lv5/arguments.h"
 #include "lv5/error_check.h"
 #include "lv5/bind.h"
@@ -16,7 +18,8 @@ namespace lv5 {
 class Context;
 class AstFactory;
 
-class JSArguments : public JSObject {
+// only class placeholder
+class JSArguments {
  public:
   static const Class* GetClass() {
     static const Class cls = {
@@ -27,12 +30,13 @@ class JSArguments : public JSObject {
   }
 };
 
-class JSNormalArguments : public JSArguments {
+class JSNormalArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
   typedef GCHashMap<Symbol, Symbol>::type Index2Param;
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
-    : env_(env),
+    : JSObject(Map::NewUniqueMap(ctx)),
+      env_(env),
       map_() { }
 
   template<typename Idents, typename ArgsReverseIter>
@@ -73,18 +77,20 @@ class JSNormalArguments : public JSArguments {
     }
   }
 
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
-    const PropertyDescriptor desc = JSObject::GetOwnProperty(ctx, name);
-    if (desc.IsEmpty()) {
-      return desc;
+  bool GetOwnPropertySlot(Context* ctx,
+                          Symbol name, Slot* slot) const {
+    if (!JSObject::GetOwnPropertySlot(ctx, name, slot)) {
+      return false;
     }
     const Index2Param::const_iterator it = map_.find(name);
     if (it != map_.end()) {
       const JSVal val = env_->GetBindingValue(it->second);
-      return DataDescriptor(val,
-                            desc.attrs() & PropertyDescriptor::kDataAttrField);
+      slot->set_descriptor(
+          DataDescriptor(val,
+                         slot->desc().attrs() & PropertyDescriptor::kDataAttrField));
+      return true;
     }
-    return desc;
+    return true;
   }
 
   bool DefineOwnProperty(Context* ctx, Symbol name,
@@ -173,15 +179,19 @@ class JSNormalArguments : public JSArguments {
 };
 
 // not search environment
-class JSStrictArguments : public JSArguments {
+class JSStrictArguments : public JSObject {
  public:
+  explicit JSStrictArguments(Context* ctx)
+    : JSObject(Map::NewUniqueMap(ctx)) {
+  }
+
   template<typename ArgsReverseIter>
   static JSStrictArguments* New(Context* ctx,
                                 JSFunction* func,
                                 ArgsReverseIter it,
                                 ArgsReverseIter last,
                                 Error* e) {
-    JSStrictArguments* const obj = new JSStrictArguments();
+    JSStrictArguments* const obj = new JSStrictArguments(ctx);
     const uint32_t len = std::distance(it, last);
     obj->set_cls(JSArguments::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);

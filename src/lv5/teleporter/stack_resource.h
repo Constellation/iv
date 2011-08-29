@@ -39,7 +39,7 @@ class StackResource : private core::Noncopyable<> {
                               GC_word env) {
     // first JSVal is pointer to Stack
     const Stack* vmstack = reinterpret_cast<Stack*>(stack);
-    GCMSEntry* entry = GC_mark_and_push(stack, mark_sp, mark_sp_limit, NULL);
+    GCMSEntry* entry = GC_MARK_AND_PUSH(stack, mark_sp, mark_sp_limit, NULL);
 
     for (Stack::iterator it = vmstack->stack_pointer_begin(),
          last = vmstack->stack_pointer(); it != last; ++it) {
@@ -47,7 +47,7 @@ class StackResource : private core::Noncopyable<> {
         void* ptr = it->pointer();
         if (GC_least_plausible_heap_addr < ptr &&
             ptr < GC_greatest_plausible_heap_addr) {
-          entry = GC_mark_and_push(ptr,
+          entry = GC_MARK_AND_PUSH(ptr,
                                    entry, mark_sp_limit,
                                    reinterpret_cast<void**>(&stack));
         }

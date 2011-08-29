@@ -87,20 +87,22 @@ class Stack : core::Noncopyable<Stack> {
       base_(NULL),
       current_(NULL) {
     stack_pointer_ = stack_ =
-        reinterpret_cast<JSVal*>(
-            core::OSAllocator::Allocate(kStackBytes));
+        reinterpret_cast<JSVal*>(GC_MALLOC(kStackBytes));
+//    stack_pointer_ = stack_ =
+//        reinterpret_cast<JSVal*>(
+//            core::OSAllocator::Allocate(kStackBytes));
     stack_pointer_ += 1;  // for Global This
     // register root
-    resource_ = new Resource(this);
+    // resource_ = new Resource(this);
   }
 
   explicit Stack(DispatchTableTag tag) { }  // empty
 
   ~Stack() {
     if (stack_) {  // normal pass
-      core::OSAllocator::Decommit(stack_, kStackBytes);
-      core::OSAllocator::Deallocate(stack_, kStackBytes);
-      GC_free(resource_);
+//      core::OSAllocator::Decommit(stack_, kStackBytes);
+//      core::OSAllocator::Deallocate(stack_, kStackBytes);
+      // GC_free(resource_);
     }
   }
 

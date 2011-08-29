@@ -7,6 +7,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
 #include "lv5/class.h"
+#include "lv5/map.h"
 #include "lv5/arguments.h"
 namespace iv {
 namespace lv5 {
@@ -15,7 +16,7 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
-  JSFunction() : JSObject() { }
+  JSFunction(Map* map) : JSObject(map) { }
 
   bool IsCallable() const {
     return true;
@@ -109,10 +110,12 @@ class JSFunction : public JSObject {
 
 class JSNativeFunction : public JSFunction {
  public:
-  JSNativeFunction() : func_() { }
+  JSNativeFunction(Context* ctx)
+    : JSFunction(Map::NewUniqueMap(ctx)), func_() { }
 
   JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
-    : func_(func) {
+    : JSFunction(Map::NewUniqueMap(ctx)),
+      func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
@@ -167,7 +170,6 @@ class JSNativeFunction : public JSFunction {
 
 class JSBoundFunction : public JSFunction {
  public:
-
   bool IsStrict() const {
     return false;
   }
@@ -228,7 +230,8 @@ class JSBoundFunction : public JSFunction {
                   JSFunction* target,
                   const JSVal& this_binding,
                   const Arguments& args)
-    : target_(target),
+    : JSFunction(Map::NewUniqueMap(ctx)),
+      target_(target),
       this_binding_(this_binding),
       arguments_(args.size() == 0 ? 0 : args.size() - 1) {
     Error e;
@@ -282,7 +285,8 @@ class JSInlinedFunction : public JSFunction {
  public:
   typedef JSInlinedFunction<func, n> this_type;
 
-  explicit JSInlinedFunction(Context* ctx) {
+  explicit JSInlinedFunction(Context* ctx)
+    : JSFunction(Map::NewUniqueMap(ctx)) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),
@@ -290,7 +294,8 @@ class JSInlinedFunction : public JSFunction {
                        false, NULL);
   }
 
-  JSInlinedFunction(Context* ctx, const Symbol& name) {
+  JSInlinedFunction(Context* ctx, const Symbol& name)
+    : JSFunction(Map::NewUniqueMap(ctx)) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n),

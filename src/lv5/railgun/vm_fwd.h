@@ -163,6 +163,74 @@ class VM {
     return LoadPropImpl(sp, base, s, strict, e);
   }
 
+  JSVal LoadProp(JSVal* sp, Instruction* instr,
+                 OP::Type generic,
+                 const JSVal& base,
+                 const Symbol& s, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
+    if (base.IsPrimitive()) {
+      // section 8.7.1 special [[Get]]
+      if (base.IsString()) {
+        // string short circuit
+        JSString* str = base.string();
+        if (s == symbol::length()) {
+          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
+        }
+        if (symbol::IsArrayIndexSymbol(s)) {
+          const uint32_t index = symbol::GetIndexFromSymbol(s);
+          if (index < str->size()) {
+            return JSString::NewSingle(ctx_, str->GetAt(index));
+          }
+        }
+      }
+      const JSObject* const o = base.ToObject(ctx_, CHECK);
+      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+      if (desc.IsEmpty()) {
+        return JSUndefined;
+      }
+      if (desc.IsDataDescriptor()) {
+        return desc.AsDataDescriptor()->value();
+      } else {
+        assert(desc.IsAccessorDescriptor());
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        if (ac->get()) {
+          VMArguments args(ctx_, sp - 1, 0);
+          const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
+          return res;
+        } else {
+          return JSUndefined;
+        }
+      }
+    } else {
+      // cache patten
+      JSObject* obj = base.object();
+      if (instr[2].map == obj->map()) {
+        // map is cached, so use previous index code
+        return obj->GetBySlotOffset(ctx_, instr[3].value, e);
+      } else {
+        Slot slot;
+        if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
+          if (slot.IsCachable()) {
+            instr[2].map = obj->map();
+            instr[3].value = slot.offset();
+          } else {
+            // TODO:(Constellation)
+            // fix this phase.
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+            instr[0].label = VM::DispatchTable()[generic];
+#else
+            instr[0].value = generic;
+#endif
+          }
+          return slot.Get(ctx_, obj, CHECK);
+        } else {
+          instr[2].map = NULL;
+          return obj->Get(ctx_, s, e);
+        }
+      }
+    }
+  }
+
   JSVal LoadElement(JSVal* sp, const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
@@ -250,6 +318,77 @@ class VM {
                  const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     StorePropImpl(base, s, stored, strict, e);
+  }
+
+  void StoreProp(const JSVal& base,
+                 Instruction* instr,
+                 OP::Type generic,
+                 const Symbol& s,
+                 const JSVal& stored, bool strict, Error* e) {
+    base.CheckObjectCoercible(CHECK);
+    if (base.IsPrimitive()) {
+      JSObject* const o = base.ToObject(ctx_, CHECK);
+      if (!o->CanPut(ctx_, s)) {
+        if (strict) {
+          e->Report(Error::Type, "cannot put value to object");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+        if (strict) {
+          e->Report(Error::Type,
+                    "value to symbol defined and not data descriptor");
+          return;
+        }
+        return;
+      }
+      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+        ScopedArguments a(ctx_, 1, CHECK);
+        a[0] = stored;
+        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+        assert(ac->set());
+        ac->set()->AsCallable()->Call(&a, base, e);
+        return;
+      } else {
+        if (strict) {
+          e->Report(Error::Type, "value to symbol in transient object");
+          return;
+        }
+      }
+    } else {
+      // cache patten
+      JSObject* obj = base.object();
+      if (instr[2].map == obj->map()) {
+        // map is cached, so use previous index code
+        return obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
+      } else {
+        Slot slot;
+        if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
+          if (slot.IsCachable()) {
+            instr[2].map = obj->map();
+            instr[3].value = slot.offset();
+            obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
+          } else {
+            // TODO:(Constellation)
+            // fix this phase.
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+            instr[0].label = VM::DispatchTable()[generic];
+#else
+            instr[0].value = generic;
+#endif
+            obj->Put(ctx_, s, stored, strict, e);
+          }
+          return;
+        } else {
+          instr[2].map = NULL;
+          obj->Put(ctx_, s, stored, strict, e);
+          return;
+        }
+      }
+    }
   }
 
   void StorePropImpl(const JSVal& base, Symbol s,
@@ -499,13 +638,13 @@ class VM {
 
   template<int Target, std::size_t Returned>
   JSVal IncrementGlobal(JSGlobal* global, std::size_t slot, bool strict, Error* e) {
-    const JSVal w = global->GetFromSlot(ctx_, slot, e);
+    const JSVal w = global->GetBySlotOffset(ctx_, slot, e);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();
       std::get<0>(results) = w;
       std::get<1>(results) = JSVal::Int32(target + Target);
-      global->PutToSlot(
+      global->PutToSlotOffset(
           ctx_, slot,
           std::get<1>(results), strict, e);
       return std::get<Returned>(results);
@@ -513,8 +652,8 @@ class VM {
       std::tuple<double, double> results;
       std::get<0>(results) = w.ToNumber(ctx_, CHECK);
       std::get<1>(results) = std::get<0>(results) + Target;
-      global->PutToSlot(ctx_, slot,
-                        std::get<1>(results), strict, e);
+      global->PutToSlotOffset(ctx_, slot,
+                              std::get<1>(results), strict, e);
       return std::get<Returned>(results);
     }
   }

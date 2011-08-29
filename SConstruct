@@ -145,7 +145,7 @@ def Build():
       env.Append(CCFLAGS="-mfpmath=sse")
 
   if env['debug']:
-    env.Append(CCFLAGS=["-g"])
+    env.Append(CCFLAGS=["-g3"])
   else:
     env.Append(
         CCFLAGS=["-O3", "-fomit-frame-pointer"],

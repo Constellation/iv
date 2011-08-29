@@ -126,7 +126,7 @@ inline void Instantiate(Context* ctx,
   if (func) {
     if (code->IsShouldCreateArguments()) {
       JSDeclEnv* decl_env = static_cast<JSDeclEnv*>(env);
-      JSArguments* args_obj = NULL;
+      JSObject* args_obj = NULL;
       if (!code->strict()) {
         args_obj = JSNormalArguments::New(
             ctx, func,

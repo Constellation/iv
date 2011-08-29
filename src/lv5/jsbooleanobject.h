@@ -1,13 +1,18 @@
 #ifndef _IV_LV5_JSBOOLEANOBJECT_H_
 #define _IV_LV5_JSBOOLEANOBJECT_H_
 #include "lv5/jsobject.h"
+#include "lv5/map.h"
 #include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
 
 class JSBooleanObject : public JSObject {
  public:
-  explicit JSBooleanObject(bool value) : value_(value) { }
+  explicit JSBooleanObject(Context* ctx, bool value)
+    : JSObject(Map::NewUniqueMap(ctx)),
+      value_(value) {
+  }
+
   bool value() const {
     return value_;
   }
@@ -21,14 +26,14 @@ class JSBooleanObject : public JSObject {
   }
 
   static JSBooleanObject* New(Context* ctx, bool value) {
-    JSBooleanObject* const obj = new JSBooleanObject(value);
+    JSBooleanObject* const obj = new JSBooleanObject(ctx, value);
     obj->set_cls(JSBooleanObject::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Boolean).prototype);
     return obj;
   }
 
   static JSBooleanObject* NewPlain(Context* ctx, bool value) {
-    return new JSBooleanObject(value);
+    return new JSBooleanObject(ctx, value);
   }
 
  private:

@@ -11,33 +11,29 @@
 #include "lv5/object_utils.h"
 #include "lv5/jsbooleanobject.h"
 #include "lv5/jsnumberobject.h"
-#include "lv5/jshashobject.h"
+#include "lv5/map.h"
+#include "lv5/slot.h"
 #include "lv5/error_check.h"
-
 namespace iv {
 namespace lv5 {
 
-JSObject::JSObject()
+JSObject::JSObject(Map* map)
   : cls_(NULL),
     prototype_(NULL),
     extensible_(true),
-    table_(NULL) {
+    map_(map),
+    slots_() {
 }
 
-JSObject::JSObject(JSObject* proto,
+JSObject::JSObject(Map* map,
+                   JSObject* proto,
                    Class* cls,
                    bool extensible)
   : cls_(cls),
     prototype_(proto),
     extensible_(extensible),
-    table_(NULL) {
-}
-
-JSObject::JSObject(Properties* table)
-  : cls_(NULL),
-    prototype_(NULL),
-    extensible_(true),
-    table_(table) {
+    map_(map),
+    slots_() {
 }
 
 #define TRY(context, sym, arg, error)\
@@ -108,13 +104,9 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
 }
 
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
-  if (table_) {
-    const Properties::const_iterator it = table_->find(name);
-    if (it == table_->end()) {
-      return JSUndefined;
-    } else {
-      return it->second;
-    }
+  Slot slot;
+  if (GetOwnPropertySlot(ctx, name, &slot)) {
+    return slot.desc();
   } else {
     return JSUndefined;
   }
@@ -146,41 +138,41 @@ bool JSObject::CanPut(Context* ctx, Symbol name) const {
   }
 }
 
-#define REJECT(str)\
-  do {\
-    if (th) {\
-      e->Report(Error::Type, str);\
-    }\
-    return false;\
-  } while (0)
-
 bool JSObject::DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
-  const PropertyDescriptor current = GetOwnProperty(ctx, name);
-
-  // empty check
-  if (current.IsEmpty()) {
-    if (!extensible_) {
-      REJECT("object not extensible");
+  const std::size_t offset = map_->Get(ctx, name);
+  if (offset != core::kNotFound) {
+    // found
+    const PropertyDescriptor current = GetSlot(offset);
+    assert(!current.IsEmpty());
+    bool returned = false;
+    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+      GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+    }
+    return returned;
+  } else {
+    // not found
+    if (!IsExtensible()) {
+      if (th) {
+        e->Report(Error::Type, "object not extensible");\
+      }
+      return false;
     } else {
-      AllocateTable();
-      (*table_)[name] = PropertyDescriptor::SetDefault(desc);
+      // add property transition
+      // searching already created maps and if this is available, move to this
+      std::size_t offset;
+      map_ = map_->AddPropertyTransition(ctx, name, &offset);
+      slots_.resize(map_->GetSlotsSize(), JSUndefined);
+      // set newly created property
+      GetSlot(offset) = PropertyDescriptor::SetDefault(desc);
       return true;
     }
   }
-  bool returned = false;
-  if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-    AllocateTable();
-    (*table_)[name] = PropertyDescriptor::Merge(desc, current);
-  }
-  return returned;
 }
-
-#undef REJECT
 
 void JSObject::Put(Context* ctx,
                    Symbol name,
@@ -224,22 +216,24 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
-  if (table_) {
-    const PropertyDescriptor desc = GetOwnProperty(ctx, name);
-    if (desc.IsEmpty()) {
-      return true;
-    }
-    if (desc.IsConfigurable()) {
-      table_->erase(name);
-      return true;
-    }
+  const std::size_t offset = map_->Get(ctx, name);
+  if (offset == core::kNotFound) {
+    return true;  // not found
+  }
+  if (!GetSlot(offset).IsConfigurable()) {
     if (th) {
       e->Report(Error::Type, "delete failed");
     }
     return false;
-  } else {
-    return true;
   }
+
+  // delete property transition
+  // if previous map is avaiable shape, move to this.
+  // and if that is not avaiable, create new map and move to it.
+  // newly created slots size is always smaller than before
+  map_ = map_->DeletePropertyTransition(ctx, name);
+  GetSlot(offset) = JSUndefined;
+  return true;
 }
 
 void JSObject::GetPropertyNames(Context* ctx,
@@ -256,32 +250,91 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const {
-  if (table_) {
-    if (vec->empty()) {
-      for (JSObject::Properties::const_iterator it = table_->begin(),
-           last = table_->end(); it != last; ++it) {
-        if (it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
-          vec->push_back(it->first);
-        }
-      }
+  map_->GetOwnPropertyNames(this, ctx, vec, mode);
+}
+
+JSVal JSObject::GetBySlotOffset(Context* ctx, std::size_t n, Error* e) {
+  return GetFromDescriptor(ctx, GetSlot(n), e);
+}
+
+JSVal JSObject::GetFromDescriptor(Context* ctx,
+                                  const PropertyDescriptor& desc, Error* e) {
+  if (desc.IsDataDescriptor()) {
+    return desc.AsDataDescriptor()->value();
+  } else {
+    assert(desc.IsAccessorDescriptor());
+    JSObject* const getter = desc.AsAccessorDescriptor()->get();
+    if (getter) {
+      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
+      return getter->AsCallable()->Call(&a, this, e);
     } else {
-      for (JSObject::Properties::const_iterator it = table_->begin(),
-           last = table_->end(); it != last; ++it) {
-        if ((it->second.IsEnumerable() || (mode == kIncludeNotEnumerable)) &&
-            (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
-          vec->push_back(it->first);
-        }
-      }
+      return JSUndefined;
     }
   }
 }
 
+void JSObject::PutToSlotOffset(Context* ctx,
+                               std::size_t offset, const JSVal& val,
+                               bool th, Error* e) {
+  // not empty is already checked
+  const PropertyDescriptor current = GetSlot(offset);
+  // can put check
+  if ((current.IsAccessorDescriptor() && !current.AsAccessorDescriptor()->set()) ||
+      (current.IsDataDescriptor() && !current.AsDataDescriptor()->IsWritable())) {
+    if (th) {
+      e->Report(Error::Type, "put failed");
+    }
+    return;
+  }
+  assert(!current.IsEmpty());
+  if (current.IsDataDescriptor()) {
+    const DataDescriptor desc(
+        val,
+        PropertyDescriptor::UNDEF_ENUMERABLE |
+        PropertyDescriptor::UNDEF_CONFIGURABLE |
+        PropertyDescriptor::UNDEF_WRITABLE);
+    bool returned = false;
+    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+      GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+    }
+  } else {
+    const AccessorDescriptor* const accs = current.AsAccessorDescriptor();
+    assert(accs->set());
+    ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
+    args[0] = val;
+    accs->set()->AsCallable()->Call(&args, this, e);
+  }
+}
+
+bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
+  const std::size_t offset = map()->Get(ctx, name);
+  if (offset != core::kNotFound) {
+    slot->set_descriptor(GetSlot(offset), this, offset);
+    return true;
+  }
+  return false;
+}
+
 JSObject* JSObject::New(Context* ctx) {
-  return JSHashObject::New(ctx);
+  JSObject* const obj = NewPlain(ctx);
+  obj->set_cls(JSObject::GetClass());
+  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
+  return obj;
+}
+
+JSObject* JSObject::New(Context* ctx, Map* map) {
+  JSObject* const obj = NewPlain(ctx, map);
+  obj->set_cls(JSObject::GetClass());
+  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
+  return obj;
 }
 
 JSObject* JSObject::NewPlain(Context* ctx) {
-  return JSHashObject::NewPlain(ctx);
+  return new JSObject(Map::NewUniqueMap(ctx));
+}
+
+JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
+  return new JSObject(map);
 }
 
 } }  // namespace iv::lv5

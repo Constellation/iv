@@ -9,7 +9,8 @@ namespace lv5 {
 class JSDate : public JSObject {
  public:
   JSDate(Context* ctx, double val)
-    : value_(val) {
+    : JSObject(Map::NewUniqueMap(ctx)),
+      value_(val) {
   }
 
 

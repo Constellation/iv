@@ -11,6 +11,8 @@
 #include "lv5/property.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
+#include "lv5/map.h"
+#include "lv5/slot.h"
 #include "lv5/class.h"
 #include "lv5/context_utils.h"
 #include "lv5/object_utils.h"
@@ -22,17 +24,39 @@ namespace detail {
 static const uint32_t kMaxVectorSize = 10000;
 
 static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
+  // only accept
+  // { enumrable: true, configurable: true, writable:true, value: VAL }
   if (!desc.IsEnumerable()) {
     return false;
   }
   if (!desc.IsConfigurable()) {
     return false;
   }
-  if (desc.IsAccessorDescriptor()) { return false;
+  if (desc.IsAccessorDescriptor()) {
+    return false;
   }
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     return data->IsWritable();
+  }
+  return true;
+}
+
+static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
+  if (!desc.IsEnumerable() && !desc.IsEnumerableAbsent()) {
+    // explicitly not enumerable
+    return false;
+  }
+  if (!desc.IsConfigurable() && !desc.IsConfigurableAbsent()) {
+    // explicitly not configurable
+    return false;
+  }
+  if (desc.IsAccessorDescriptor()) {
+    return false;
+  }
+  if (desc.IsDataDescriptor()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    return data->IsWritable() || data->IsWritableAbsent();
   }
   return true;
 }
@@ -55,10 +79,10 @@ class Context;
 class JSArray : public JSObject {
  public:
   friend class railgun::VM;
-  typedef GCMap<uint32_t, JSVal>::type Map;
+  typedef GCMap<uint32_t, JSVal>::type SparseArray;
 
   JSArray(Context* ctx, uint32_t len)
-    : JSObject(),
+    : JSObject(Map::NewUniqueMap(ctx)),
       vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
@@ -69,7 +93,7 @@ class JSArray : public JSObject {
     return length_.value();
   }
 
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const {
+  bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (detail::kMaxVectorSize > index) {
@@ -78,41 +102,46 @@ class JSArray : public JSObject {
           const JSVal& val = vector_[index];
           if (!val.IsEmpty()) {
             // current is target
-            return DataDescriptor(val,
-                                  PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE |
-                                  PropertyDescriptor::WRITABLE);
+            slot->set_descriptor(
+                DataDescriptor(val,
+                               PropertyDescriptor::ENUMERABLE |
+                               PropertyDescriptor::CONFIGURABLE |
+                               PropertyDescriptor::WRITABLE));
+            return true;
           } else if (dense_) {
             // if dense array, target is undefined
-            return JSUndefined;
+            return false;
           }
         }
       } else {
         // target is index and included in map
         if (map_) {
-          const Map::const_iterator it = map_->find(index);
+          const SparseArray::const_iterator it = map_->find(index);
           if (it != map_->end()) {
             // target is found
-            return DataDescriptor(it->second,
-                                  PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE |
-                                  PropertyDescriptor::WRITABLE);
+            slot->set_descriptor(
+                DataDescriptor(it->second,
+                               PropertyDescriptor::ENUMERABLE |
+                               PropertyDescriptor::CONFIGURABLE |
+                               PropertyDescriptor::WRITABLE));
+            return true;
           } else if (dense_) {
             // if target is not found and dense array,
             // target is undefined
-            return JSUndefined;
+            return false;
           }
         } else if (dense_) {
           // if map is none and dense array, target is undefined
-          return JSUndefined;
+          return false;
         }
       }
-      return JSObject::GetOwnProperty(ctx, name);
+      return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
     if (name == symbol::length()) {
-      return length_;
+      slot->set_descriptor(length_);
+      return true;
     }
-    return JSObject::GetOwnProperty(ctx, name);
+    return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
 
 #define REJECT(str)\
@@ -137,11 +166,10 @@ class JSArray : public JSObject {
       }
 
       // define step
-      const bool descriptor_is_default_property =
-          detail::IsDefaultDescriptor(desc);
-      if (descriptor_is_default_property &&
-          (dense_ ||
-           JSObject::GetOwnProperty(ctx, name).IsEmpty())) {
+      Slot slot;
+      if ((detail::IsDefaultDescriptor(desc) ||
+           (index < old_len && detail::IsAbsentDescriptor(desc))) &&
+           (dense_ || !JSObject::GetOwnPropertySlot(ctx, name, &slot))) {
         JSVal target;
         if (desc.IsDataDescriptor()) {
           target = desc.AsDataDescriptor()->value();
@@ -157,7 +185,7 @@ class JSArray : public JSObject {
           }
         } else {
           if (!map_) {
-            map_ = new(GC)Map();
+            map_ = new (GC) SparseArray();
           }
           (*map_)[index] = target;
         }
@@ -174,7 +202,7 @@ class JSArray : public JSObject {
             }
           } else {
             if (map_) {
-              const Map::iterator it = map_->find(index);
+              const SparseArray::iterator it = map_->find(index);
               if (it != map_->end()) {
                 map_->erase(it);
               }
@@ -356,7 +384,7 @@ class JSArray : public JSObject {
         }
       } else {
         if (map_) {
-          const Map::iterator it = map_->find(index);
+          const SparseArray::iterator it = map_->find(index);
           if (it != map_->end()) {
             map_->erase(it);
             return true;
@@ -397,7 +425,7 @@ class JSArray : public JSObject {
       }
     }
     if (map_) {
-      for (Map::const_iterator it = map_->begin(),
+      for (SparseArray::const_iterator it = map_->begin(),
            last = map_->end(); it != last; ++it) {
         if (!it->second.IsEmpty()) {
           const Symbol sym = symbol::MakeSymbolFromIndex(it->first);
@@ -464,7 +492,7 @@ class JSArray : public JSObject {
   void Reserve(uint32_t len) {
     if (len > detail::kMaxVectorSize) {
       // alloc map
-      map_ = new(GC)Map();
+      map_ = new (GC) SparseArray();
     }
   }
 
@@ -477,7 +505,7 @@ class JSArray : public JSObject {
   }
 
   JSVals vector_;
-  Map* map_;
+  SparseArray* map_;
   bool dense_;
   DescriptorSlot::Data<uint32_t> length_;
 };

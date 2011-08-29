@@ -23,7 +23,8 @@ class JSURIError;
 class JSError : public JSObject {
  public:
   JSError(Context* ctx, Error::Code code, JSString* str)
-    : code_(code) {
+    : JSObject(Map::NewUniqueMap(ctx)),
+      code_(code) {
     if (str) {
       DefineOwnProperty(ctx, context::Intern(ctx, "message"),
                              DataDescriptor(str,

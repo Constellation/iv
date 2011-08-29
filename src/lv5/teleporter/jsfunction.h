@@ -5,6 +5,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/error.h"
 #include "lv5/class.h"
+#include "lv5/map.h"
 #include "lv5/arguments.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/error_check.h"
@@ -27,7 +28,8 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env)
-    : function_(func),
+    : JSFunction(Map::NewUniqueMap(ctx)),
+      function_(func),
       script_(script),
       env_(env) {
     Error e;

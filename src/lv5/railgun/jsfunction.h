@@ -20,7 +20,8 @@ class JSVMFunction : public JSFunction {
  public:
   JSVMFunction(Context* ctx,
                railgun::Code* code, JSEnv* env)
-    : code_(code),
+    : JSFunction(Map::NewUniqueMap(ctx)),
+      code_(code),
       env_(env) {
     Error e;
     DefineOwnProperty(
@@ -75,7 +76,7 @@ class JSVMFunction : public JSFunction {
 
   JSVal Construct(Arguments* args, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
-    JSObject* const obj = JSObject::New(ctx);
+    JSObject* const obj = JSObject::New(ctx, code_->ConstructMap(ctx));
     const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
@@ -136,7 +137,7 @@ class JSVMFunction : public JSFunction {
       } else if (type == Code::FDECL) {
         env->CreateAndSetMutable(sym, std::get<3>(decl), JSUndefined);
       } else if (type == Code::ARGUMENTS || type == Code::ARGUMENTS_LOCAL) {
-        JSArguments* args_obj = NULL;
+        JSObject* args_obj = NULL;
         if (!code_->strict()) {
           args_obj = JSNormalArguments::New(
               ctx, this,

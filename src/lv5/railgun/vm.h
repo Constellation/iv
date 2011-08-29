@@ -15,6 +15,7 @@
 #include "lv5/jsregexp.h"
 #include "lv5/property.h"
 #include "lv5/internal.h"
+#include "lv5/slot.h"
 #include "lv5/name_iterator.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/vm_fwd.h"
@@ -365,16 +366,20 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+          const JSVal val = global->GetBySlotOffset(ctx_, instr[3].value, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
-            instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
+            if (slot.IsCachable()) {
+              instr[2].map = global->map();
+              instr[3].value = slot.offset();
+            } else {
+              // not implemented yet
+              UNREACHABLE();
+            }
+            const JSVal val = slot.Get(ctx_, global, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
@@ -394,11 +399,23 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(LOAD_PROP) {
+        // opcode | name | map | offset | nop | nop
+        const JSVal& base = TOP();
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal res = LoadProp(sp, instr,
+                                   OP::LOAD_PROP_GENERIC,
+                                   base, s, strict, ERR);
+        SET_TOP(res);
+        DISPATCH(LOAD_PROP);
+      }
+
+      DEFINE_OPCODE(LOAD_PROP_GENERIC) {
+        // no cache
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal res = LoadProp(sp, base, s, strict, ERR);
         SET_TOP(res);
-        DISPATCH(LOAD_PROP);
+        DISPATCH(LOAD_PROP_GENERIC);
       }
 
       DEFINE_OPCODE(STORE_NAME) {
@@ -431,15 +448,14 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
+          global->PutToSlotOffset(ctx_, instr[3].value, v, strict, ERR);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
-            instr[3].value = slot;
-            global->PutToSlot(ctx_, instr[3].value, v, strict, ERR);
+            instr[3].value = slot.offset();
+            global->PutToSlotOffset(ctx_, instr[3].value, v, strict, ERR);
           } else {
             instr[2].map = NULL;
             StoreName(ctx_->global_env(), s, v, strict, ERR);
@@ -461,9 +477,18 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal w = POP();
         const JSVal base = TOP();
-        StoreProp(base, s, w, strict, ERR);
+        StoreProp(base, instr, OP::STORE_PROP_GENERIC, s, w, strict, ERR);
         SET_TOP(w);
         DISPATCH(STORE_PROP);
+      }
+
+      DEFINE_OPCODE(STORE_PROP_GENERIC) {
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal w = POP();
+        const JSVal base = TOP();
+        StoreProp(base, s, w, strict, ERR);
+        SET_TOP(w);
+        DISPATCH(STORE_PROP_GENERIC);
       }
 
       DEFINE_OPCODE(STORE_CALL_RESULT) {
@@ -942,12 +967,12 @@ MAIN_LOOP_START:
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = IncrementGlobal<-1, 1>(global, slot, strict, ERR);
+            instr[3].value = slot.offset();
+            const JSVal val = IncrementGlobal<-1, 1>(global,
+                                                     instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
@@ -967,12 +992,13 @@ MAIN_LOOP_START:
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = IncrementGlobal<-1, 0>(global, slot, strict, ERR);
+            instr[3].value = slot.offset();
+            const JSVal val =
+                IncrementGlobal<-1, 0>(global,
+                                       instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
@@ -992,12 +1018,13 @@ MAIN_LOOP_START:
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = IncrementGlobal<1, 1>(global, slot, strict, ERR);
+            instr[3].value = slot.offset();
+            const JSVal val =
+                IncrementGlobal<1, 1>(global,
+                                      instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
@@ -1017,12 +1044,13 @@ MAIN_LOOP_START:
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = IncrementGlobal<1, 0>(global, slot, strict, ERR);
+            instr[3].value = slot.offset();
+            const JSVal val =
+                IncrementGlobal<1, 0>(global,
+                                      instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
@@ -1510,7 +1538,7 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(BUILD_OBJECT) {
-        JSObject* x = JSObject::New(ctx_);
+        JSObject* x = JSObject::New(ctx_, instr[1].map);
         PUSH(x);
         DISPATCH(BUILD_OBJECT);
       }
@@ -1621,10 +1649,11 @@ MAIN_LOOP_START:
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
+          Code* code = static_cast<JSVMFunction*>(func)->code();
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               sp,
-              static_cast<JSVMFunction*>(func)->code(),
+              code,
               static_cast<JSVMFunction*>(func)->scope(),
               instr, argc, true);
           if (!new_frame) {
@@ -1635,10 +1664,10 @@ MAIN_LOOP_START:
           first_instr = frame->data();
           instr = first_instr;
           sp = frame->stacktop();
-          constants = &frame->constants();
-          names = &frame->code()->names();
-          strict = frame->code()->strict();
-          JSObject* const obj = JSObject::New(ctx_);
+          constants = &code->constants();
+          names = &code->names();
+          strict = code->strict();
+          JSObject* const obj = JSObject::New(ctx_, code->ConstructMap(ctx_));
           const JSVal proto = func->Get(ctx_, symbol::prototype(), ERR);
           if (proto.IsObject()) {
             obj->set_prototype(proto.object());
@@ -1726,16 +1755,20 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = global->GetFromSlot(ctx_, instr[3].value, ERR);
+          const JSVal val = global->GetBySlotOffset(ctx_, instr[3].value, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
-          const std::size_t slot =
-              global->GetOwnPropertySlot(ctx_, s);
-          if (slot != core::kNotFound) {
-            instr[2].map = global->map();
-            instr[3].value = slot;
-            const JSVal val = global->GetFromSlot(ctx_, slot, ERR);
+          Slot slot;
+          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
+            if (slot.IsCachable()) {
+              instr[2].map = global->map();
+              instr[3].value = slot.offset();
+            } else {
+              // not implemented yet
+              UNREACHABLE();
+            }
+            const JSVal val = slot.Get(ctx_, global, ERR);
             PUSH(val);
           } else {
             const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
@@ -1758,10 +1791,21 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = LoadProp(sp, base, s, strict, ERR);
+        const JSVal res = LoadProp(sp, instr,
+                                   OP::CALL_PROP_GENERIC,
+                                   base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP);
+      }
+
+      DEFINE_OPCODE(CALL_PROP_GENERIC) {
+        const JSVal base = TOP();
+        const Symbol& s = GETITEM(names, instr[1].value);
+        const JSVal res = LoadProp(sp, base, s, strict, ERR);
+        SET_TOP(res);
+        PUSH(base);
+        DISPATCH(CALL_PROP_GENERIC);
       }
 
       DEFINE_OPCODE(CALL_CALL_RESULT) {

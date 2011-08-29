@@ -5,6 +5,7 @@
 extern "C" {
 #include <gc/gc_mark.h>
 }
+#include "detail/unordered_set.h"
 #include "noncopyable.h"
 #include "singleton.h"
 namespace iv {
@@ -21,9 +22,32 @@ class GCHook {
       return stack_kind_;
     }
 
+    void* Malloc(std::size_t size) {
+      void* mem = GC_generic_malloc(size, GCKind::Instance()->GetKind());
+      allocated_.insert(mem);
+      GC_REGISTER_FINALIZER_NO_ORDER(mem,
+                                     RemoveSet,
+                                     NULL,
+                                     NULL, NULL);
+      return mem;
+    }
+
+    static void RemoveSet(void* obj, void* client_data) {
+      GCKind::Instance()->Remove(reinterpret_cast<void*>(obj));
+    }
+
+    void Remove(void* ptr) {
+      allocated_.erase(ptr);
+    }
+
+    bool IsAllocated(void* ptr) {
+      return allocated_.find(ptr) != allocated_.end();
+    }
+
    private:
     GCKind()
-      : stack_kind_(
+      : allocated_(),
+        stack_kind_(
           GC_new_kind(GC_new_free_list(),
                       GC_MAKE_PROC(
                           GC_new_proc(&GCHook<Target>::Mark), 0), 0, 1)) {
@@ -31,22 +55,29 @@ class GCHook {
 
     ~GCKind() { }  // private destructor
 
+    std::unordered_set<void*> allocated_;
     volatile int stack_kind_;
   };
 
   void* operator new(std::size_t size) {
-    return GC_generic_malloc(size, GCKind::Instance()->GetKind());
+    return GCKind::Instance()->Malloc(size);
   }
 
   void operator delete(void* obj) {
+    GC_REGISTER_FINALIZER_NO_ORDER(obj, NULL, NULL, NULL, NULL);
     GC_FREE(obj);
   }
 
   static GC_ms_entry* Mark(GC_word* top, GC_ms_entry* entry,
                            GC_ms_entry* mark_sp_limit, GC_word env) {
-    return reinterpret_cast<Target*>(top)->MarkChildren(top,
-                                                        entry,
-                                                        mark_sp_limit, env);
+    if (top && GCKind::Instance()->IsAllocated(top)) {
+      entry = reinterpret_cast<Target*>(top)->MarkChildren(top,
+                                                          entry,
+                                                          mark_sp_limit, env);
+      return entry;
+    } else {
+      return entry;
+    }
   }
 };
 

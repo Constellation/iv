@@ -14,9 +14,7 @@ class CoreData : public GCHook<CoreData> {
   typedef GCVector<Instruction*>::type InstTargets;
 
   static CoreData* New() {
-    Data* data = new(GC)Data();
-    InstTargets* targets = new(GC)InstTargets();
-    return new CoreData(data, targets);
+    return new CoreData(new (GC) Data());
   }
 
   inline GC_ms_entry* MarkChildren(GC_word* top,
@@ -32,22 +30,18 @@ class CoreData : public GCHook<CoreData> {
     return data_;
   }
 
-  InstTargets* targets() {
-    return targets_;
-  }
-
-  const InstTargets* targets() const {
-    return targets_;
+  void SetCompiled() {
+    compiled_ = true;
   }
 
  private:
-  CoreData(Data* data, InstTargets* targets)
+  CoreData(Data* data)
     : data_(data),
-      targets_(targets) {
+      compiled_(false) {
   }
 
   Data* data_;
-  InstTargets* targets_;
+  bool compiled_;
 };
 
 } } }  // namespace iv::lv5::railgun

@@ -1,13 +1,19 @@
 #ifndef _IV_LV5_JSNUMBEROBJECT_H_
 #define _IV_LV5_JSNUMBEROBJECT_H_
 #include "lv5/jsobject.h"
+#include "lv5/map.h"
 #include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
 
 class JSNumberObject : public JSObject {
  public:
-  explicit JSNumberObject(const double& value) : value_(value) { }
+  explicit JSNumberObject(Context* ctx,
+                          const double& value)
+    : JSObject(Map::NewUniqueMap(ctx)),
+      value_(value) {
+  }
+
   const double& value() const {
     return value_;
   }
@@ -21,14 +27,14 @@ class JSNumberObject : public JSObject {
   }
 
   static JSNumberObject* New(Context* ctx, const double& value) {
-    JSNumberObject* const obj = new JSNumberObject(value);
+    JSNumberObject* const obj = new JSNumberObject(ctx, value);
     obj->set_cls(JSNumberObject::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Number).prototype);
     return obj;
   }
 
   static JSNumberObject* NewPlain(Context* ctx, const double& value) {
-    return new JSNumberObject(value);
+    return new JSNumberObject(ctx, value);
   }
 
  private:

@@ -142,7 +142,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
 
   // step 6, 7
   if (!env->HasBinding(ctx_, symbol::arguments())) {
-    JSArguments* args_obj = NULL;
+    JSObject* args_obj = NULL;
     if (!ctx_->IsStrict()) {
       args_obj = JSNormalArguments::New(
           ctx_, code,

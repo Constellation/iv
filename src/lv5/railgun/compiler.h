@@ -202,7 +202,8 @@ class Compiler
       symbol_to_index_map_(),
       dynamic_env_level_(0),
       continuation_status_(),
-      current_variable_scope_() {
+      current_variable_scope_(),
+      temporary_() {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
@@ -369,6 +370,7 @@ class Compiler
       it->label = table[opcode];
       std::advance(it, kOPLength[opcode]);
     }
+    core_->SetCompiled();
 #endif
   }
 
@@ -667,7 +669,7 @@ class Compiler
           ac->target()->Accept(this);
           Emit<OP::ROT_TWO>();
           const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
-          Emit<OP::STORE_PROP>(index);
+          Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Down();
         } else {
           // IndexAccess
@@ -678,13 +680,13 @@ class Compiler
             Emit<OP::ROT_TWO>();
             const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, str->value()));
-            Emit<OP::STORE_PROP>(index);
+            Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
             stack_depth_.Down();
           } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
             Emit<OP::ROT_TWO>();
             const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, num->value()));
-            Emit<OP::STORE_PROP>(index);
+            Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
             stack_depth_.Down();
           } else {
             Emit<OP::ROT_TWO>();
@@ -1067,10 +1069,10 @@ class Compiler
           stack_depth_.Up();
 
           const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
-          Emit<OP::LOAD_PROP>(index);
+          Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
           rhs.Accept(this);
           EmitAssignedBinaryOperation(token);
-          Emit<OP::STORE_PROP>(index);
+          Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Down();
         } else {
           // IndexAccess
@@ -1082,20 +1084,20 @@ class Compiler
             stack_depth_.Up();
             const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, str->value()));
-            Emit<OP::LOAD_PROP>(index);
+            Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
             rhs.Accept(this);
             EmitAssignedBinaryOperation(token);
-            Emit<OP::STORE_PROP>(index);
+            Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
             stack_depth_.Down();
           } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
             Emit<OP::DUP_TOP>();
             stack_depth_.Up();
             const uint32_t index =
                 SymbolToNameIndex(context::Intern(ctx_, num->value()));
-            Emit<OP::LOAD_PROP>(index);
+            Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
             rhs.Accept(this);
             EmitAssignedBinaryOperation(token);
-            Emit<OP::STORE_PROP>(index);
+            Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
             stack_depth_.Down();
           } else {
             key.Accept(this);
@@ -1369,7 +1371,7 @@ class Compiler
               // IdentifierAccess
               ac->target()->Accept(this);
               const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
-              Emit<OP::DELETE_PROP>(index);
+              Emit<OP::DELETE_PROP>(index, 0, 0, 0, 0);
             } else {
               // IndexAccess
               EmitElement<OP::DELETE_PROP,
@@ -1432,9 +1434,9 @@ class Compiler
             ac->target()->Accept(this);
             const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
             if (token == Token::TK_INC) {
-              Emit<OP::INCREMENT_PROP>(index);
+              Emit<OP::INCREMENT_PROP>(index, 0, 0, 0, 0);
             } else {
-              Emit<OP::DECREMENT_PROP>(index);
+              Emit<OP::DECREMENT_PROP>(index, 0, 0, 0, 0);
             }
           } else {
             // IndexAccess
@@ -1509,9 +1511,9 @@ class Compiler
         ac->target()->Accept(this);
         const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
         if (token == Token::TK_INC) {
-          Emit<OP::POSTFIX_INCREMENT_PROP>(index);
+          Emit<OP::POSTFIX_INCREMENT_PROP>(index, 0, 0, 0, 0);
         } else {
-          Emit<OP::POSTFIX_DECREMENT_PROP>(index);
+          Emit<OP::POSTFIX_DECREMENT_PROP>(index, 0, 0, 0, 0);
         }
       } else {
         // IndexAccess
@@ -1683,7 +1685,11 @@ class Compiler
     using std::get;
     typedef ObjectLiteral::Properties Properties;
     DepthPoint point(&stack_depth_);
-    Emit<OP::BUILD_OBJECT>();
+    Map* map = Map::New(ctx_);
+    temporary_.push_back(map);
+    Instruction inst(0u);
+    inst.map = map;
+    Emit<OP::BUILD_OBJECT>(inst);
     stack_depth_.Up();
     const Properties& properties = lit->properties();
     for (Properties::const_iterator it = properties.begin(),
@@ -1723,14 +1729,13 @@ class Compiler
     DepthPoint point(&stack_depth_);
     prop->target()->Accept(this);
     const uint32_t index = SymbolToNameIndex(prop->key()->symbol());
-    Emit<OP::LOAD_PROP>(index);
+    Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
     point.LevelCheck(1);
   }
 
   void Visit(const IndexAccess* prop) {
     DepthPoint point(&stack_depth_);
-    EmitElement<OP::LOAD_PROP,
-                OP::LOAD_ELEMENT>(*prop);
+    EmitElement<OP::LOAD_PROP, OP::LOAD_ELEMENT>(*prop);
     point.LevelCheck(1);
   }
 
@@ -1783,11 +1788,11 @@ class Compiler
     if (const StringLiteral* str = key.AsStringLiteral()) {
       const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, str->value()));
-      Emit<PropOP>(index);
+      Emit<PropOP>(index, 0, 0, 0, 0);
     } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
       const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, num->value()));
-      Emit<PropOP>(index);
+      Emit<PropOP>(index, 0, 0, 0, 0);
     } else {
       prop.key()->Accept(this);
       Emit<ElementOP>();
@@ -1809,7 +1814,7 @@ class Compiler
         ac->target()->Accept(this);
         rhs.Accept(this);
         const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
-        Emit<OP::STORE_PROP>(index);
+        Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
         stack_depth_.Down();
       } else {
         // IndexAccess
@@ -1820,13 +1825,13 @@ class Compiler
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, str->value()));
           rhs.Accept(this);
-          Emit<OP::STORE_PROP>(index);
+          Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Down();
         } else if (const NumberLiteral* num = key.AsNumberLiteral()) {
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, num->value()));
           rhs.Accept(this);
-          Emit<OP::STORE_PROP>(index);
+          Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Down();
         } else {
           idx.key()->Accept(this);
@@ -1862,7 +1867,7 @@ class Compiler
           // IdentifierAccess
           prop->target()->Accept(this);
           const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
-          Emit<OP::CALL_PROP>(index);
+          Emit<OP::CALL_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Up();
         } else {
           // IndexAccess
@@ -2144,6 +2149,29 @@ class Compiler
     }
   }
 
+  template<OP::Type op>
+  void Emit(Instruction arg1, Instruction arg2,
+            Instruction arg3, Instruction arg4) {
+    IV_STATIC_ASSERT(OPLength<op>::value == 5);
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+    data_->push_back(arg3);
+    data_->push_back(arg4);
+  }
+
+  template<OP::Type op>
+  void Emit(Instruction arg1, Instruction arg2,
+            Instruction arg3, Instruction arg4, Instruction arg5) {
+    IV_STATIC_ASSERT(OPLength<op>::value == 6);
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+    data_->push_back(arg3);
+    data_->push_back(arg4);
+    data_->push_back(arg5);
+  }
+
   void Emit(OP::Type op) {
     data_->push_back(op);
   }
@@ -2278,6 +2306,7 @@ class Compiler
   uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
+  trace::Vector<Map*>::type temporary_;
 };
 
 inline Code* Compile(Context* ctx,
