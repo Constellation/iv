@@ -106,6 +106,9 @@ class Map : public gc {
   Map* DeletePropertyTransition(Context* ctx, Symbol name) {
     assert(GetSlotsSize() > 0);
     Map* map = NewUniqueMap(ctx, this);
+    if (!map->HasTable()) {
+      map->AllocateTable();
+    }
     map->Delete(ctx, name);
     assert(GetSlotsSize() == map->GetSlotsSize());
     return map;
@@ -114,6 +117,9 @@ class Map : public gc {
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
     if (IsUnique()) {
       // extend this map with not transition
+      if (!HasTable()) {
+        AllocateTable();
+      }
       assert(HasTable());
       std::size_t slot;
       if (!deleted_.empty()) {
@@ -191,7 +197,7 @@ class Map : public gc {
       table_(NULL),
       transitions_(new (GC) Transitions()),
       deleted_(previous->deleted_),
-      added_(),
+      added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
       transit_count_(0) {
   }
@@ -201,7 +207,7 @@ class Map : public gc {
       table_(NULL),
       transitions_(new (GC) Transitions()),
       deleted_(),
-      added_(),
+      added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(0),
       transit_count_(0) {
   }
@@ -211,32 +217,26 @@ class Map : public gc {
   // Object.prototype, Array.prototype, GlobalObject...
   Map(UniqueTag dummy)
     : previous_(NULL),
-      table_(new (GC) TargetTable()),
+      table_(NULL),
       transitions_(NULL),
       deleted_(),
-      added_(),
+      added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(0),
       transit_count_(0) {
   }
 
   Map(Map* previous, UniqueTag dummy)
     : previous_(previous),
-      table_(NULL),
+      table_((previous->IsUnique()) ? previous->table_ : NULL),
       transitions_(NULL),
       deleted_(previous->deleted_),
-      added_(),
+      added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
       transit_count_(0) {
-    if (previous->IsUnique()) {
-      table_ = previous->table_;
-    } else {
-      // not include this table
-      if (!previous->previous_) {
-        table_ = new TargetTable();
-      } else {
-      }
-      AllocateTable(previous);
-    }
+  }
+
+  bool IsAddingMap() const {
+    return added_.second != core::kNotFound;
   }
 
   bool AllocateTableIfNeeded() {
@@ -245,28 +245,32 @@ class Map : public gc {
         // empty top table
         return false;
       }
-      AllocateTable(this);
+      AllocateTable();
     }
     return true;
   }
 
-  void AllocateTable(Map* start) {
+  void AllocateTable() {
     std::vector<Map*> stack;
     stack.reserve(8);
     assert(!HasTable());
-    assert(start->previous_);
-    stack.push_back(start);
-    Map* current = start->previous_;
+    assert(previous_ || IsUnique());
+    if (IsAddingMap()) {
+      stack.push_back(this);
+    }
+    Map* current = previous_;
     while (true) {
-      if (current->HasTable()) {
-        table_ = new (GC) TargetTable(*current->table());
+      if (!current) {
+        table_ = new (GC) TargetTable();
         break;
       } else {
-        if (current->previous_) {
-          stack.push_back(current);
-        } else {
-          table_ = new (GC) TargetTable();
+        if (current->HasTable()) {
+          table_ = new (GC) TargetTable(*current->table());
           break;
+        } else {
+          if (current->IsAddingMap()) {
+            stack.push_back(current);
+          }
         }
       }
       current = current->previous_;
@@ -275,6 +279,7 @@ class Map : public gc {
 
     for (std::vector<Map*>::const_reverse_iterator it = stack.rbegin(),
          last = stack.rend(); it != last; ++it) {
+      assert((*it)->IsAddingMap());
       assert(table_->find((*it)->added_.first) == table_->end());
       table_->insert((*it)->added_);
     }
@@ -286,6 +291,7 @@ class Map : public gc {
   }
 
   void Delete(Context* ctx, Symbol name) {
+    assert(HasTable());
     const TargetTable::const_iterator it = table_->find(name);
     assert(it != table_->end());
     deleted_.Push(it->second);
