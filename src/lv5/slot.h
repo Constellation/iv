@@ -1,3 +1,8 @@
+// Slot object
+// this is holder for lookup Map and determine making this lookup to PIC or not
+//
+// see also map.h
+//
 #ifndef _IV_LV5_SLOT_H_
 #define _IV_LV5_SLOT_H_
 #include "notfound.h"

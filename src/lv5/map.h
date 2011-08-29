@@ -7,19 +7,13 @@
 #ifndef _IV_LV5_MAP_H_
 #define _IV_LV5_MAP_H_
 #include <gc/gc_cpp.h>
-#include <string>
-#include <iostream>
-#include <limits>
 #include "notfound.h"
+#include "debug.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
-#include "lv5/property.h"
 #include "lv5/gc_template.h"
-#include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
-
-class JSGlobal;
 
 class Map : public gc {
  public:
@@ -28,67 +22,12 @@ class Map : public gc {
 
   static const std::size_t kMaxTransition = 64;
 
-  class DeleteEntry {
-   public:
-    DeleteEntry(DeleteEntry* prev, std::size_t offset)
-      : prev_(prev),
-        offset_(offset) {
-    }
-
-    std::size_t offset() const {
-      return offset_;
-    }
-
-    DeleteEntry* previous() const {
-      return prev_;
-    }
-
-   private:
-    DeleteEntry* prev_;
-    std::size_t offset_;
-  };
-
-  class DeleteEntryHolder {
-   public:
-    DeleteEntryHolder() : entry_(NULL), size_(0) { }
-    std::size_t size() const {
-      return size_;
-    }
-
-    void Push(std::size_t offset) {
-      entry_ = new (GC) DeleteEntry(entry_, offset);
-      ++size_;
-    }
-
-    std::size_t Pop() {
-      assert(entry_);
-      const std::size_t res = entry_->offset();
-      entry_ = entry_->previous();
-      --size_;
-      return res;
-    }
-
-    bool empty() const {
-      return size_ == 0;
-    }
-
-   private:
-    DeleteEntry* entry_;
-    std::size_t size_;
-  };
-
-  struct UniqueTag { };
-
   static Map* NewUniqueMap(Context* ctx) {
     return new Map(UniqueTag());
   }
 
   static Map* New(Context* ctx) {
     return new Map();
-  }
-
-  bool IsUnique() const {
-    return transitions_ == NULL;
   }
 
   std::size_t Get(Context* ctx, Symbol name) {
@@ -168,10 +107,6 @@ class Map : public gc {
     return (table_) ? table_->size() + deleted_.size() : calculated_size_;
   }
 
-  bool HasTable() const {
-    return table_;
-  }
-
   inline void GetOwnPropertyNames(const JSObject* obj,
                                   Context* ctx,
                                   std::vector<Symbol>* vec,
@@ -182,6 +117,65 @@ class Map : public gc {
   }
 
  private:
+  class DeleteEntry {
+   public:
+    DeleteEntry(DeleteEntry* prev, std::size_t offset)
+      : prev_(prev),
+        offset_(offset) {
+    }
+
+    std::size_t offset() const {
+      return offset_;
+    }
+
+    DeleteEntry* previous() const {
+      return prev_;
+    }
+
+   private:
+    DeleteEntry* prev_;
+    std::size_t offset_;
+  };
+
+  class DeleteEntryHolder {
+   public:
+    DeleteEntryHolder() : entry_(NULL), size_(0) { }
+    std::size_t size() const {
+      return size_;
+    }
+
+    void Push(std::size_t offset) {
+      entry_ = new (GC) DeleteEntry(entry_, offset);
+      ++size_;
+    }
+
+    std::size_t Pop() {
+      assert(entry_);
+      const std::size_t res = entry_->offset();
+      entry_ = entry_->previous();
+      --size_;
+      return res;
+    }
+
+    bool empty() const {
+      return size_ == 0;
+    }
+
+   private:
+    DeleteEntry* entry_;
+    std::size_t size_;
+  };
+
+  struct UniqueTag { };
+
+  bool IsUnique() const {
+    return transitions_ == NULL;
+  }
+
+  bool HasTable() const {
+    return table_;
+  }
+
   static Map* NewUniqueMap(Context* ctx, Map* previous) {
     assert(previous);
     return new Map(previous, UniqueTag());

@@ -16,6 +16,7 @@
 #include "lv5/property.h"
 #include "lv5/internal.h"
 #include "lv5/slot.h"
+#include "lv5/chain.h"
 #include "lv5/name_iterator.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/vm_fwd.h"

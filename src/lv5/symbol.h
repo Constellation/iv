@@ -1,9 +1,6 @@
 #ifndef _IV_LV5_SYMBOL_H_
 #define _IV_LV5_SYMBOL_H_
 #include <cstddef>
-#include "detail/type_traits.h"
-#include "debug.h"
-#include "static_assert.h"
 #include "lv5/symbol_fwd.h"
 #include "lv5/default_symbol_provider.h"
 namespace iv {
@@ -12,6 +9,9 @@ namespace lv5 {
 typedef const core::UString* StringSymbol;
 
 namespace symbol {
+
+static const Symbol kDummySymbol =
+    detail::MakeSymbol(static_cast<core::UString*>(NULL));
 
 } } }  // namespace iv::lv5::symbol
 #endif  // _IV_LV5_SYMBOL_H_

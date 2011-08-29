@@ -138,7 +138,5 @@ struct Frame {
   bool constructor_call_;
 };
 
-#undef IV_ROUNDUP
-
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_FRAME_H_
