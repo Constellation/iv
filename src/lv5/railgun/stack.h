@@ -13,7 +13,7 @@
 #include "os_allocator.h"
 #include "lv5/internal.h"
 #include "lv5/jsval.h"
-#include "lv5/gc_hook.h"
+#include "lv5/gc_kind.h"
 #include "lv5/railgun/frame.h"
 #include "lv5/railgun/direct_threading.h"
 namespace iv {
@@ -46,7 +46,7 @@ class Stack : core::Noncopyable<Stack> {
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * core::Size::KB;
 
-  class Resource : public GCHook<Resource> {
+  class Resource : public GCKind<Resource> {
    public:
     explicit Resource(Stack* stack)
       : stack_(stack) {

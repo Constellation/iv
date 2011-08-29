@@ -1,14 +1,14 @@
 #ifndef _IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #define _IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #include "lv5/gc_template.h"
-#include "lv5/gc_hook.h"
+#include "lv5/gc_kind.h"
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/instruction_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class CoreData : public GCHook<CoreData> {
+class CoreData : public GCKind<CoreData> {
  public:
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Instruction*>::type InstTargets;

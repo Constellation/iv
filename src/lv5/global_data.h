@@ -11,6 +11,7 @@
 #include "lv5/map.h"
 #include "lv5/class.h"
 #include "lv5/gc_template.h"
+#include "lv5/gc_hook.h"
 #include "lv5/jsstring.h"
 #include "lv5/jsfunction.h"
 #include "lv5/jsglobal.h"
@@ -47,7 +48,8 @@ class GlobalData {
       number_map_(Map::New(ctx)),
       date_map_(Map::New(ctx)),
       regexp_map_(Map::New(ctx)),
-      error_map_(Map::New(ctx)) {
+      error_map_(Map::New(ctx)),
+      gc_hook_(this) {
     // discard random
     for (std::size_t i = 0; i < 20; ++i) {
       Random();
@@ -153,6 +155,9 @@ class GlobalData {
     return error_map_;
   }
 
+  void OnGarbageCollect() {
+  }
+
  private:
   random_generator random_engine_;
   trace::Vector<JSRegExpImpl*>::type regs_;
@@ -172,6 +177,8 @@ class GlobalData {
   Map* date_map_;
   Map* regexp_map_;
   Map* error_map_;
+
+  GCHook<GlobalData> gc_hook_;
 };
 
 } }  // namespace iv::lv5
