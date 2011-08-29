@@ -330,7 +330,7 @@ JSObject* JSObject::New(Context* ctx, Map* map) {
 }
 
 JSObject* JSObject::NewPlain(Context* ctx) {
-  return new JSObject(Map::NewUniqueMap(ctx));
+  return new JSObject(Map::New(ctx));
 }
 
 JSObject* JSObject::NewPlain(Context* ctx, Map* map) {

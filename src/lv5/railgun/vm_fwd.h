@@ -169,38 +169,7 @@ class VM {
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
-      // section 8.7.1 special [[Get]]
-      if (base.IsString()) {
-        // string short circuit
-        JSString* str = base.string();
-        if (s == symbol::length()) {
-          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
-        }
-        if (symbol::IsArrayIndexSymbol(s)) {
-          const uint32_t index = symbol::GetIndexFromSymbol(s);
-          if (index < str->size()) {
-            return JSString::NewSingle(ctx_, str->GetAt(index));
-          }
-        }
-      }
-      const JSObject* const o = base.ToObject(ctx_, CHECK);
-      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-      if (desc.IsEmpty()) {
-        return JSUndefined;
-      }
-      if (desc.IsDataDescriptor()) {
-        return desc.AsDataDescriptor()->value();
-      } else {
-        assert(desc.IsAccessorDescriptor());
-        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-        if (ac->get()) {
-          VMArguments args(ctx_, sp - 1, 0);
-          const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
-          return res;
-        } else {
-          return JSUndefined;
-        }
-      }
+      return LoadPropPrimitive(sp, base, s, strict, e);
     } else {
       // cache patten
       JSObject* obj = base.object();
@@ -214,13 +183,8 @@ class VM {
             instr[2].map = obj->map();
             instr[3].value = slot.offset();
           } else {
-            // TODO:(Constellation)
-            // fix this phase.
-#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
-            instr[0].label = VM::DispatchTable()[generic];
-#else
-            instr[0].value = generic;
-#endif
+            // dispatch generic path
+            instr[0] = Instruction::GetOPInstruction(generic);
           }
           return slot.Get(ctx_, obj, CHECK);
         } else {
@@ -241,40 +205,46 @@ class VM {
   JSVal LoadPropImpl(JSVal* sp, const JSVal& base,
                      const Symbol& s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
-      // section 8.7.1 special [[Get]]
-      if (base.IsString()) {
-        // string short circuit
-        JSString* str = base.string();
-        if (s == symbol::length()) {
-          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
-        }
-        if (symbol::IsArrayIndexSymbol(s)) {
-          const uint32_t index = symbol::GetIndexFromSymbol(s);
-          if (index < str->size()) {
-            return JSString::NewSingle(ctx_, str->GetAt(index));
-          }
-        }
-      }
-      const JSObject* const o = base.ToObject(ctx_, CHECK);
-      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-      if (desc.IsEmpty()) {
-        return JSUndefined;
-      }
-      if (desc.IsDataDescriptor()) {
-        return desc.AsDataDescriptor()->value();
-      } else {
-        assert(desc.IsAccessorDescriptor());
-        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-        if (ac->get()) {
-          VMArguments args(ctx_, sp - 1, 0);
-          const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
-          return res;
-        } else {
-          return JSUndefined;
-        }
-      }
+      return LoadPropPrimitive(sp, base, s, strict, e);
     } else {
       return base.object()->Get(ctx_, s, e);
+    }
+  }
+
+  JSVal LoadPropPrimitive(JSVal* sp, const JSVal& base,
+                          const Symbol& s, bool strict, Error* e) {
+    // section 8.7.1 special [[Get]]
+    assert(base.IsPrimitive());
+    if (base.IsString()) {
+      // string short circuit
+      JSString* str = base.string();
+      if (s == symbol::length()) {
+        return JSVal::UInt32(static_cast<uint32_t>(str->size()));
+      }
+      if (symbol::IsArrayIndexSymbol(s)) {
+        const uint32_t index = symbol::GetIndexFromSymbol(s);
+        if (index < str->size()) {
+          return JSString::NewSingle(ctx_, str->GetAt(index));
+        }
+      }
+    }
+    const JSObject* const o = base.ToObject(ctx_, CHECK);
+    const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+    if (desc.IsEmpty()) {
+      return JSUndefined;
+    }
+    if (desc.IsDataDescriptor()) {
+      return desc.AsDataDescriptor()->value();
+    } else {
+      assert(desc.IsAccessorDescriptor());
+      const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+      if (ac->get()) {
+        VMArguments args(ctx_, sp - 1, 0);
+        const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
+        return res;
+      } else {
+        return JSUndefined;
+      }
     }
   }
 
@@ -327,37 +297,7 @@ class VM {
                  const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
-      JSObject* const o = base.ToObject(ctx_, CHECK);
-      if (!o->CanPut(ctx_, s)) {
-        if (strict) {
-          e->Report(Error::Type, "cannot put value to object");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-        if (strict) {
-          e->Report(Error::Type,
-                    "value to symbol defined and not data descriptor");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, 1, CHECK);
-        a[0] = stored;
-        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-        assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, e);
-        return;
-      } else {
-        if (strict) {
-          e->Report(Error::Type, "value to symbol in transient object");
-          return;
-        }
-      }
+      StorePropPrimitive(base, s, stored, strict, e);
     } else {
       // cache patten
       JSObject* obj = base.object();
@@ -372,14 +312,9 @@ class VM {
             instr[3].value = slot.offset();
             obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
           } else {
-            // TODO:(Constellation)
-            // fix this phase.
-#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
-            instr[0].label = VM::DispatchTable()[generic];
-#else
-            instr[0].value = generic;
-#endif
+            // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
+            instr[0] = Instruction::GetOPInstruction(generic);
           }
           return;
         } else {
@@ -394,40 +329,47 @@ class VM {
   void StorePropImpl(const JSVal& base, Symbol s,
                      const JSVal& stored, bool strict, Error* e) {
     if (base.IsPrimitive()) {
-      JSObject* const o = base.ToObject(ctx_, CHECK);
-      if (!o->CanPut(ctx_, s)) {
-        if (strict) {
-          e->Report(Error::Type, "cannot put value to object");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-        if (strict) {
-          e->Report(Error::Type,
-                    "value to symbol defined and not data descriptor");
-          return;
-        }
-        return;
-      }
-      const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, 1, CHECK);
-        a[0] = stored;
-        const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-        assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, e);
-        return;
-      } else {
-        if (strict) {
-          e->Report(Error::Type, "value to symbol in transient object");
-          return;
-        }
-      }
+      StorePropPrimitive(base, s, stored, strict, e);
     } else {
       base.object()->Put(ctx_, s, stored, strict, e);
       return;
+    }
+  }
+
+  void StorePropPrimitive(const JSVal& base,
+                          const Symbol& s,
+                          const JSVal& stored, bool strict, Error* e) {
+    assert(base.IsPrimitive());
+    JSObject* const o = base.ToObject(ctx_, CHECK);
+    if (!o->CanPut(ctx_, s)) {
+      if (strict) {
+        e->Report(Error::Type, "cannot put value to object");
+        return;
+      }
+      return;
+    }
+    const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
+    if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+      if (strict) {
+        e->Report(Error::Type,
+                  "value to symbol defined and not data descriptor");
+        return;
+      }
+      return;
+    }
+    const PropertyDescriptor desc = o->GetProperty(ctx_, s);
+    if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+      ScopedArguments a(ctx_, 1, CHECK);
+      a[0] = stored;
+      const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+      assert(ac->set());
+      ac->set()->AsCallable()->Call(&a, base, e);
+      return;
+    } else {
+      if (strict) {
+        e->Report(Error::Type, "value to symbol in transient object");
+        return;
+      }
     }
   }
 #undef CHECK

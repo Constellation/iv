@@ -17,6 +17,9 @@ struct Instruction {
   };
 
   inline OP::Type GetOP() const;
+
+  static inline Instruction GetOPInstruction(OP::Type op);
+
   std::size_t GetLength() const {
     return kOPLength[GetOP()];
   }

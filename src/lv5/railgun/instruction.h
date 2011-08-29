@@ -17,5 +17,14 @@ OP::Type Instruction::GetOP() const {
 #endif
 }
 
+Instruction Instruction::GetOPInstruction(OP::Type op) {
+  Instruction instr(op);
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+  instr.label = VM::DispatchTable()[op];
+#endif
+  return instr;
+}
+
+
 } } }  // namespace iv::lv5::railgun
 #endif  // _IV_LV5_RAILGUN_INSTRUCTION_H_
