@@ -1,5 +1,6 @@
 #ifndef NETLIB_DTOA_CONFIG_H_
 #define NETLIB_DTOA_CONFIG_H_
+
 #include "byteorder.h"
 
 #ifdef IV_IS_LITTLE_ENDIAN

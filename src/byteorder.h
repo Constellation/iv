@@ -37,6 +37,7 @@
 #error BYTE_ORDER not defined. you shoud define __LITTLE_ENDIAN or __BIG_ENDIAN
 #endif
 
+#ifdef __cplusplus
 namespace iv {
 namespace core {
 
@@ -47,4 +48,5 @@ static const bool kLittleEndian = false;
 #endif  // IS_LITTLE_ENDIAN
 
 } }  // namespace iv::core
+#endif
 #endif  // IV_BYTEORDER_H_
