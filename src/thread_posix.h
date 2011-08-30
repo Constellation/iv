@@ -22,7 +22,7 @@ class PosixMutex : private Noncopyable<> {
     assert(result == 0);
     result = pthread_mutex_init(&mutex_, &attrs);
     assert(result == 0);
-    unused_variable_warning(result);
+    ignore_unused_variable_warning(result);
   }
 
   ~PosixMutex() {
