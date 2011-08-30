@@ -4,8 +4,8 @@
 //
 // JSObject is base all Objects, and not have default hash table,
 // but, JSHashObject has hash table by default.
-#ifndef _IV_LV5_JSHASHOBJECT_H_
-#define _IV_LV5_JSHASHOBJECT_H_
+#ifndef IV_LV5_JSHASHOBJECT_H_
+#define IV_LV5_JSHASHOBJECT_H_
 #include "lv5/jsobject.h"
 namespace iv {
 namespace lv5 {
@@ -41,4 +41,4 @@ class JSHashObject : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSHASHOBJECT_H_
+#endif  // IV_LV5_JSHASHOBJECT_H_

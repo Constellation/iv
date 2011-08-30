@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_CONTEXT_UTILS_H_
-#define _IV_LV5_CONTEXT_UTILS_H_
+#ifndef IV_LV5_CONTEXT_UTILS_H_
+#define IV_LV5_CONTEXT_UTILS_H_
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
@@ -42,4 +42,4 @@ void StackRelease(Context* ctx, std::size_t size);
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
 } } }  // namespace iv::lv5::context
-#endif  // _IV_LV5_CONTEXT_UTILS_H_
+#endif  // IV_LV5_CONTEXT_UTILS_H_

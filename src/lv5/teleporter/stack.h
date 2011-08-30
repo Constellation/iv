@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_STACK_H_
-#define _IV_LV5_TELEPORTER_STACK_H_
+#ifndef IV_LV5_TELEPORTER_STACK_H_
+#define IV_LV5_TELEPORTER_STACK_H_
 #include <iterator>
 #include "platform.h"
 #include "noncopyable.h"
@@ -111,4 +111,4 @@ class Stack : private core::Noncopyable<> {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_STACK_H_
+#endif  // IV_LV5_TELEPORTER_STACK_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_NUMBER_H_
-#define _IV_LV5_RUNTIME_NUMBER_H_
+#ifndef IV_LV5_RUNTIME_NUMBER_H_
+#define IV_LV5_RUNTIME_NUMBER_H_
 #include <cstdlib>
 #include "detail/array.h"
 #include "detail/cstdint.h"
@@ -293,4 +293,4 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* error) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_NUMBER_H_
+#endif  // IV_LV5_RUNTIME_NUMBER_H_

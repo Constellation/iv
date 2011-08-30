@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_INTERPRETER_H_
-#define _IV_LV5_TELEPORTER_INTERPRETER_H_
+#ifndef IV_LV5_TELEPORTER_INTERPRETER_H_
+#define IV_LV5_TELEPORTER_INTERPRETER_H_
 #include <cstdio>
 #include <cassert>
 #include <cmath>
@@ -1614,4 +1614,4 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
 
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_INTERPRETER_H_
+#endif  // IV_LV5_TELEPORTER_INTERPRETER_H_

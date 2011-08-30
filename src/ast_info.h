@@ -1,5 +1,5 @@
-#ifndef _IV_AST_INFO_H_
-#define _IV_AST_INFO_H_
+#ifndef IV_AST_INFO_H_
+#define IV_AST_INFO_H_
 #include "ast.h"
 #include "space.h"
 namespace iv {
@@ -18,4 +18,4 @@ struct AstInfo {
 #undef V
 };
 } } }  // namespace iv::core::ast
-#endif  // _IV_AST_INFO_H_
+#endif  // IV_AST_INFO_H_

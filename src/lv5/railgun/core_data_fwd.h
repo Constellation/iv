@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_CORE_DATA_FWD_H_
-#define _IV_LV5_RAILGUN_CORE_DATA_FWD_H_
+#ifndef IV_LV5_RAILGUN_CORE_DATA_FWD_H_
+#define IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #include "lv5/gc_template.h"
 #include "lv5/gc_hook.h"
 #include "lv5/railgun/op.h"
@@ -51,4 +51,4 @@ class CoreData : public GCHook<CoreData> {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_CORE_DATA_FWD_H_
+#endif  // IV_LV5_RAILGUN_CORE_DATA_FWD_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_STATICASSERT_H_
-#define _IV_STATICASSERT_H_
+#ifndef IV_STATICASSERT_H_
+#define IV_STATICASSERT_H_
 namespace iv {
 namespace detail {
 template<bool b>
@@ -27,4 +27,4 @@ struct StaticAssertTest {
     <sizeof(::iv::detail::StaticAssertFailure<static_cast<bool>((cond))>)>\
     IV_CONCAT(StaticAssertTypedef, __LINE__)
 
-#endif  // _IV_STATICASSERT_H_
+#endif  // IV_STATICASSERT_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LEXER_H_
-#define _IV_LEXER_H_
+#ifndef IV_LEXER_H_
+#define IV_LEXER_H_
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -999,4 +999,4 @@ class Lexer: private Noncopyable<> {
 
 
 } }  // namespace iv::core
-#endif  // _IV_LEXER_H_
+#endif  // IV_LEXER_H_

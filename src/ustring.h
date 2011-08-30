@@ -1,5 +1,5 @@
-#ifndef _IV_USTRING_H_
-#define _IV_USTRING_H_
+#ifndef IV_USTRING_H_
+#define IV_USTRING_H_
 #include <string>
 #include "detail/functional.h"
 #include "detail/cstdint.h"
@@ -31,4 +31,4 @@ struct hash<iv::core::UString>
 
 } IV_HASH_NAMESPACE_END
 
-#endif  // _IV_USTRING_H_
+#endif  // IV_USTRING_H_

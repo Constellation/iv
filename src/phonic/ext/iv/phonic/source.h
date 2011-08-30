@@ -1,5 +1,5 @@
-#ifndef _IV_PHONIC_SOURCE_H_
-#define _IV_PHONIC_SOURCE_H_
+#ifndef IV_PHONIC_SOURCE_H_
+#define IV_PHONIC_SOURCE_H_
 #include <cstddef>
 #include <cassert>
 #include <string>
@@ -141,4 +141,4 @@ class UTF16BESource {
 };
 
 } }  // namespace iv::phonic
-#endif  // _IV_PHONIC_SOURCE_H_
+#endif  // IV_PHONIC_SOURCE_H_

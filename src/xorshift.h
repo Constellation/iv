@@ -1,5 +1,5 @@
-#ifndef _IV_XORSHIFT_H_
-#define _IV_XORSHIFT_H_
+#ifndef IV_XORSHIFT_H_
+#define IV_XORSHIFT_H_
 #include <ctime>
 #include "detail/cstdint.h"
 namespace iv {
@@ -69,4 +69,4 @@ class Xor128 {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_XORSHIFT_H_
+#endif  // IV_XORSHIFT_H_

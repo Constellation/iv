@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_CODE_H_
-#define _IV_LV5_RAILGUN_CODE_H_
+#ifndef IV_LV5_RAILGUN_CODE_H_
+#define IV_LV5_RAILGUN_CODE_H_
 #include <algorithm>
 #include "detail/tuple.h"
 #include "lv5/jsval.h"
@@ -316,4 +316,4 @@ class Code : public HeapObject {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_CODE_H_
+#endif  // IV_LV5_RAILGUN_CODE_H_

@@ -5,8 +5,8 @@
 //  RFC2781: UTF16, an encoding of ISO 10646
 //    http://www.ietf.org/rfc/rfc2781.txt
 //  http://www5d.biglobe.ne.jp/~noocyte/Programming/CharCode.html
-#ifndef _IV_UNICODE_H_
-#define _IV_UNICODE_H_
+#ifndef IV_UNICODE_H_
+#define IV_UNICODE_H_
 #include <cassert>
 #include <cstdio>
 #include <iosfwd>
@@ -502,4 +502,4 @@ inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
 }
 
 } } }  // namespace iv::core::unicode
-#endif  // _IV_UNICODE_H_
+#endif  // IV_UNICODE_H_

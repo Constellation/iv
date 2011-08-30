@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_INTERNAL_H_
-#define _IV_LV5_INTERNAL_H_
+#ifndef IV_LV5_INTERNAL_H_
+#define IV_LV5_INTERNAL_H_
 #include "platform_math.h"
 #include "lv5/error_check.h"
 #include "lv5/factory.h"
@@ -466,4 +466,4 @@ inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
 //}
 
 } } }  // namespace iv::lv5::internal
-#endif  // _IV_LV5_INTERNAL_H_
+#endif  // IV_LV5_INTERNAL_H_

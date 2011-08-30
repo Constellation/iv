@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_GLOBAL_DATA_H_
-#define _IV_LV5_GLOBAL_DATA_H_
+#ifndef IV_LV5_GLOBAL_DATA_H_
+#define IV_LV5_GLOBAL_DATA_H_
 #include "detail/array.h"
 #include "detail/random.h"
 #include "dtoa.h"
@@ -118,4 +118,4 @@ class GlobalData {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_GLOBAL_DATA_H_
+#endif  // IV_LV5_GLOBAL_DATA_H_

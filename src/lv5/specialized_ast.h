@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_SPECIALIZED_AST_H_
-#define _IV_LV5_SPECIALIZED_AST_H_
+#ifndef IV_LV5_SPECIALIZED_AST_H_
+#define IV_LV5_SPECIALIZED_AST_H_
 #include <vector>
 #include <cassert>
 #include "ast.h"
@@ -115,4 +115,4 @@ typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;
 typedef core::ast::ExpressionVisitor<AstFactory>::const_type ExpressionVisitor;
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_SPECIALIZED_AST_H_
+#endif  // IV_LV5_SPECIALIZED_AST_H_

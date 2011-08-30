@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_INSTRUCTION_H_
-#define _IV_LV5_RAILGUN_INSTRUCTION_H_
+#ifndef IV_LV5_RAILGUN_INSTRUCTION_H_
+#define IV_LV5_RAILGUN_INSTRUCTION_H_
 #include "debug.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/op.h"
@@ -18,4 +18,4 @@ OP::Type Instruction::GetOP() const {
 }
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_INSTRUCTION_H_
+#endif  // IV_LV5_RAILGUN_INSTRUCTION_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_PHONIC_AST_FWD_H_
-#define _IV_PHONIC_AST_FWD_H_
+#ifndef IV_PHONIC_AST_FWD_H_
+#define IV_PHONIC_AST_FWD_H_
 #include <iv/ast.h>
 
 namespace iv {
@@ -61,4 +61,4 @@ namespace phonic {
 typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;
 
 } }  // namespace iv::phonic
-#endif  // _IV_PHONIC_AST_FWD_H_
+#endif  // IV_PHONIC_AST_FWD_H_

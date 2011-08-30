@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSDTOA_H_
-#define _IV_LV5_JSDTOA_H_
+#ifndef IV_LV5_JSDTOA_H_
+#define IV_LV5_JSDTOA_H_
 #include "dtoa.h"
 #include "round.h"
 #include "lv5/jsstring.h"
@@ -22,4 +22,4 @@ class JSStringDToA : public core::dtoa::DToA<JSStringDToA, JSString*> {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSDTOA_H_
+#endif  // IV_LV5_JSDTOA_H_

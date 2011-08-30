@@ -1,5 +1,5 @@
-#ifndef _IV_STRINGPIECE_H_
-#define _IV_STRINGPIECE_H_
+#ifndef IV_STRINGPIECE_H_
+#define IV_STRINGPIECE_H_
 #include <climits>
 #include <algorithm>
 #include <functional>
@@ -553,4 +553,4 @@ BasicStringPiece<CharT, Traits>::npos =
 typedef BasicStringPiece<char, std::char_traits<char> > StringPiece;
 
 } }  // namespace iv::core
-#endif  // _IV_STRINGPIECE_H_
+#endif  // IV_STRINGPIECE_H_

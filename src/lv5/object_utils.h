@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_OBJECT_UTILS_H_
-#define _IV_LV5_OBJECT_UTILS_H_
+#ifndef IV_LV5_OBJECT_UTILS_H_
+#define IV_LV5_OBJECT_UTILS_H_
 #include "lv5/property.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -94,4 +94,4 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
 
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_OBJECT_UTILS_H_
+#endif  // IV_LV5_OBJECT_UTILS_H_

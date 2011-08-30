@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_INTERACTIVE_H_
-#define _IV_LV5_TELEPORTER_INTERACTIVE_H_
+#ifndef IV_LV5_TELEPORTER_INTERACTIVE_H_
+#define IV_LV5_TELEPORTER_INTERACTIVE_H_
 #include <cstdlib>
 #include <cstdio>
 #include "detail/memory.h"
@@ -109,4 +109,4 @@ class Interactive {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_INTERACTIVE_H_
+#endif  // IV_LV5_TELEPORTER_INTERACTIVE_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_FACTORY_H_
-#define _IV_LV5_FACTORY_H_
+#ifndef IV_LV5_FACTORY_H_
+#define IV_LV5_FACTORY_H_
 #include <vector>
 #include "symbol.h"
 #include "alloc.h"
@@ -59,4 +59,4 @@ class AstFactory
   DestReqs regexps_;
 };
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_FACTORY_H_
+#endif  // IV_LV5_FACTORY_H_

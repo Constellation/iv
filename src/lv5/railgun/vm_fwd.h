@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_VM_FWD_H_
-#define _IV_LV5_RAILGUN_VM_FWD_H_
+#ifndef IV_LV5_RAILGUN_VM_FWD_H_
+#define IV_LV5_RAILGUN_VM_FWD_H_
 #include "arith.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
@@ -616,4 +616,4 @@ class VM {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_VM_FWD_H_
+#endif  // IV_LV5_RAILGUN_VM_FWD_H_

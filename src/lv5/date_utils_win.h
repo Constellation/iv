@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_DATE_UTILS_WIN_H_
-#define _IV_LV5_DATE_UTILS_WIN_H_
+#ifndef IV_LV5_DATE_UTILS_WIN_H_
+#define IV_LV5_DATE_UTILS_WIN_H_
 #include <windows.h>
 #include "singleton.h"
 #include "platform_math.h"
@@ -114,4 +114,4 @@ inline double HighResTime() {
 }
 
 } } }  // namespace iv::lv5::date
-#endif  // _IV_LV5_DATE_UTILS_WIN_H_
+#endif  // IV_LV5_DATE_UTILS_WIN_H_

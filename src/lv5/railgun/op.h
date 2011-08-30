@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_OP_H_
-#define _IV_LV5_RAILGUN_OP_H_
+#ifndef IV_LV5_RAILGUN_OP_H_
+#define IV_LV5_RAILGUN_OP_H_
 #include <cassert>
 #include "detail/cstdint.h"
 #include "detail/array.h"
@@ -313,4 +313,4 @@ typedef std::array<const void*, OP::NUM_OF_OP + 1> DirectThreadingDispatchTable;
 typedef std::unordered_map<const void*, OP::Type> LabelOPTable;
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_OP_H_
+#endif  // IV_LV5_RAILGUN_OP_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_REGEXP_H_
-#define _IV_LV5_RUNTIME_REGEXP_H_
+#ifndef IV_LV5_RUNTIME_REGEXP_H_
+#define IV_LV5_RUNTIME_REGEXP_H_
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
@@ -123,4 +123,4 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_REGEXP_H_
+#endif  // IV_LV5_RUNTIME_REGEXP_H_

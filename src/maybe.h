@@ -1,5 +1,5 @@
-#ifndef _IV_MAYBE_H_
-#define _IV_MAYBE_H_
+#ifndef IV_MAYBE_H_
+#define IV_MAYBE_H_
 #include <cassert>
 #include <algorithm>
 #include "detail/type_traits.h"
@@ -69,4 +69,4 @@ class Maybe {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_MAYBE_H_
+#endif  // IV_MAYBE_H_

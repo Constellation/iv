@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSOBJECT_H_
-#define _IV_LV5_JSOBJECT_H_
+#ifndef IV_LV5_JSOBJECT_H_
+#define IV_LV5_JSOBJECT_H_
 #include <vector>
 #include <gc/gc_cpp.h>
 #include "ast.h"
@@ -159,4 +159,4 @@ class JSObjectWithSlot : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSOBJECT_H_
+#endif  // IV_LV5_JSOBJECT_H_

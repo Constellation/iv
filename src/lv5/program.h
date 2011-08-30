@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_PROGRAM_H_
-#define _IV_LV5_PROGRAM_H_
+#ifndef IV_LV5_PROGRAM_H_
+#define IV_LV5_PROGRAM_H_
 #include <string>
 #include <vector>
 
@@ -54,4 +54,4 @@ void Init(int argc, char ** argv) {
 }
 
 } } }  // namespace iv::lv5::program
-#endif  // _IV_LV5_PROGRAM_H_
+#endif  // IV_LV5_PROGRAM_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_SYMBOL_H_
-#define _IV_LV5_SYMBOL_H_
+#ifndef IV_LV5_SYMBOL_H_
+#define IV_LV5_SYMBOL_H_
 #include <cstddef>
 #include "detail/type_traits.h"
 #include "debug.h"
@@ -14,4 +14,4 @@ typedef const core::UString* StringSymbol;
 namespace symbol {
 
 } } }  // namespace iv::lv5::symbol
-#endif  // _IV_LV5_SYMBOL_H_
+#endif  // IV_LV5_SYMBOL_H_

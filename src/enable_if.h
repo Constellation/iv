@@ -1,5 +1,5 @@
-#ifndef _IV_ENABLE_IF_H_
-#define _IV_ENABLE_IF_H_
+#ifndef IV_ENABLE_IF_H_
+#define IV_ENABLE_IF_H_
 namespace iv {
 
 template<bool B, class T = void>
@@ -29,4 +29,4 @@ struct disable_if : public disable_if_c<Cond::value, T> { };
 
 
 }  // namespace iv
-#endif  // _IV_ENABLE_IF_H_
+#endif  // IV_ENABLE_IF_H_

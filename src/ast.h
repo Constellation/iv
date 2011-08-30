@@ -1,5 +1,5 @@
-#ifndef _IV_AST_H_
-#define _IV_AST_H_
+#ifndef IV_AST_H_
+#define IV_AST_H_
 #include <vector>
 #include <functional>
 #include "detail/unordered_map.h"
@@ -1435,4 +1435,4 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
 #undef DECLARE_NODE_TYPE
 #undef DECLARE_DERIVED_NODE_TYPE
 #undef INHERIT
-#endif  // _IV_AST_H_
+#endif  // IV_AST_H_

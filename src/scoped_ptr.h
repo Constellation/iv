@@ -1,5 +1,5 @@
-#ifndef _IV_SCOPRED_PTR_H_
-#define _IV_SCOPRED_PTR_H_
+#ifndef IV_SCOPRED_PTR_H_
+#define IV_SCOPRED_PTR_H_
 #include "noncopyable.h"
 namespace iv {
 namespace core {
@@ -145,4 +145,4 @@ bool operator!=(T* lhs, const ScopedPtr<T[]>& rhs) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_SCOPRED_PTR_H_
+#endif  // IV_SCOPRED_PTR_H_

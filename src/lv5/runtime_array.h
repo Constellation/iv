@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_ARRAY_H_
-#define _IV_LV5_RUNTIME_ARRAY_H_
+#ifndef IV_LV5_RUNTIME_ARRAY_H_
+#define IV_LV5_RUNTIME_ARRAY_H_
 #include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
@@ -1250,4 +1250,4 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_ARRAY_H_
+#endif  // IV_LV5_RUNTIME_ARRAY_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_MATCH_RESULT_H_
-#define _IV_LV5_MATCH_RESULT_H_
+#ifndef IV_LV5_MATCH_RESULT_H_
+#define IV_LV5_MATCH_RESULT_H_
 #include "detail/tuple.h"
 #include "detail/cstdint.h"
 
@@ -11,4 +11,4 @@ typedef std::tuple<uint32_t, uint32_t, bool> MatchResult;
 typedef std::vector<std::pair<int, int> > PairVector;
 
 } } }  // namespace iv::lv5
-#endif  // _IV_LV5_MATCH_RESULT_H_
+#endif  // IV_LV5_MATCH_RESULT_H_

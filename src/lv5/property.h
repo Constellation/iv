@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_PROPERTY_H_
-#define _IV_LV5_PROPERTY_H_
+#ifndef IV_LV5_PROPERTY_H_
+#define IV_LV5_PROPERTY_H_
 #include <cassert>
 #include "lv5/jsval.h"
 namespace iv {
@@ -510,4 +510,4 @@ class DescriptorSlot {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_PROPERTY_H_
+#endif  // IV_LV5_PROPERTY_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_HEAP_OBJECT_H_
-#define _IV_LV5_HEAP_OBJECT_H_
+#ifndef IV_LV5_HEAP_OBJECT_H_
+#define IV_LV5_HEAP_OBJECT_H_
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
 namespace iv {
@@ -10,4 +10,4 @@ class HeapObject : public gc {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_HEAP_OBJECT_H_
+#endif  // IV_LV5_HEAP_OBJECT_H_

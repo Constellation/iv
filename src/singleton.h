@@ -1,5 +1,5 @@
-#ifndef _IV_SINGLETON_H_
-#define _IV_SINGLETON_H_
+#ifndef IV_SINGLETON_H_
+#define IV_SINGLETON_H_
 #include <cstdlib>
 #include "noncopyable.h"
 #include "callonce.h"
@@ -39,4 +39,4 @@ T* Singleton<T>::instance_ = NULL;
 
 
 } }  // namespace iv::core
-#endif  // _IV_SINGLETON_H_
+#endif  // IV_SINGLETON_H_

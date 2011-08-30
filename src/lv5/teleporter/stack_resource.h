@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_STACK_RESOURCE_H_
-#define _IV_LV5_TELEPORTER_STACK_RESOURCE_H_
+#ifndef IV_LV5_TELEPORTER_STACK_RESOURCE_H_
+#define IV_LV5_TELEPORTER_STACK_RESOURCE_H_
 #include <new>
 #include <gc/gc.h>
 extern "C" {
@@ -64,4 +64,4 @@ class StackResource : private core::Noncopyable<> {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_STACK_RESOURCE_H_
+#endif  // IV_LV5_TELEPORTER_STACK_RESOURCE_H_

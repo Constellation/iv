@@ -28,8 +28,8 @@
 // This file contains 100.000 decimal representations of random doubles. They
 // have been generated using Gay's dtoa to produce the fixed representation:
 //         dtoa(v, 3, number_digits, &decimal_point, &sign, NULL);
-#ifndef _IV_TEST_DTOA_FIXED_H_
-#define _IV_TEST_DTOA_FIXED_H_
+#ifndef IV_TEST_DTOA_FIXED_H_
+#define IV_TEST_DTOA_FIXED_H_
 #include "detail/array.h"
 
 struct PrecomputedFixed {
@@ -42,4 +42,4 @@ struct PrecomputedFixed {
 typedef std::array<PrecomputedFixed, 100000> FixedTestContainerType;
 const FixedTestContainerType& FixedTestContainer();
 
-#endif  // _IV_TEST_DTOA_FIXED_H_
+#endif  // IV_TEST_DTOA_FIXED_H_

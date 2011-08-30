@@ -1,6 +1,6 @@
 // arithmetic functions
-#ifndef _IV_ARITH_H_
-#define _IV_ARITH_H_
+#ifndef IV_ARITH_H_
+#define IV_ARITH_H_
 namespace iv {
 namespace core {
 
@@ -26,4 +26,4 @@ inline bool IsSubtractOverflow(int32_t lhs, int32_t rhs, int32_t* dif) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_ARITH_H_
+#endif  // IV_ARITH_H_

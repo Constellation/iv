@@ -1,5 +1,5 @@
-#ifndef _IV_THREAD_POSIX_H_
-#define _IV_THREAD_POSIX_H_
+#ifndef IV_THREAD_POSIX_H_
+#define IV_THREAD_POSIX_H_
 #include <cerrno>
 #include <cassert>
 #include <cstdlib>
@@ -59,4 +59,4 @@ inline void YieldCPU() {
 }
 
 } } }  // namespace iv::core::thread
-#endif  // _IV_THREAD_POSIX_H_
+#endif  // IV_THREAD_POSIX_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_JSSCRIPT_H_
-#define _IV_LV5_RAILGUN_JSSCRIPT_H_
+#ifndef IV_LV5_RAILGUN_JSSCRIPT_H_
+#define IV_LV5_RAILGUN_JSSCRIPT_H_
 #include "lv5/jsscript.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/eval_source.h"
@@ -87,4 +87,4 @@ class JSGlobalScript : public JSScript {
 
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_JSSCRIPT_H_
+#endif  // IV_LV5_RAILGUN_JSSCRIPT_H_

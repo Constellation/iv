@@ -1,5 +1,5 @@
-#ifndef _IV_SPACE_H_
-#define _IV_SPACE_H_
+#ifndef IV_SPACE_H_
+#define IV_SPACE_H_
 #include <cassert>
 #include <cstddef>
 #include <new>
@@ -181,4 +181,4 @@ struct hash<std::basic_string<uint16_t,
 };
 
 } IV_HASH_NAMESPACE_END
-#endif  // _IV_SPACE_H_
+#endif  // IV_SPACE_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_ERROR_CHECK_H_
-#define _IV_LV5_ERROR_CHECK_H_
+#ifndef IV_LV5_ERROR_CHECK_H_
+#define IV_LV5_ERROR_CHECK_H_
 
 #define IV_LV5_ERROR_GUARD_VOID(error)\
   if (*error) {\
@@ -31,4 +31,4 @@
 #define IV_LV5_ERROR(error)\
   IV_LV5_ERROR_WITH(error, JSEmpty)
 
-#endif  // _IV_LV5_ERROR_CHECK_H_
+#endif  // IV_LV5_ERROR_CHECK_H_

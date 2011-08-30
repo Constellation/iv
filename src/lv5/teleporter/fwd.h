@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_FWD_H_
-#define _IV_LV5_TELEPORTER_FWD_H_
+#ifndef IV_LV5_TELEPORTER_FWD_H_
+#define IV_LV5_TELEPORTER_FWD_H_
 #include "lv5/jsval.h"
 #include "lv5/arguments.h"
 #include "lv5/error.h"
@@ -20,4 +20,4 @@ JSVal GlobalEval(const Arguments& args, Error* e);
 JSVal DirectCallToEval(const Arguments& args, Error* e);
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_FWD_H_
+#endif  // IV_LV5_TELEPORTER_FWD_H_

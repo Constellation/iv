@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSSTRINGOBJECT_H_
-#define _IV_LV5_JSSTRINGOBJECT_H_
+#ifndef IV_LV5_JSSTRINGOBJECT_H_
+#define IV_LV5_JSSTRINGOBJECT_H_
 #include "lv5/jsobject.h"
 #include "lv5/jsstring.h"
 #include "lv5/context_utils.h"
@@ -87,4 +87,4 @@ class JSStringObject : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSSTRINGOBJECT_H_
+#endif  // IV_LV5_JSSTRINGOBJECT_H_

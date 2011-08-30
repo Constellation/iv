@@ -1,5 +1,5 @@
-#ifndef _IV_DIGIT_ITERATOR_H_
-#define _IV_DIGIT_ITERATOR_H_
+#ifndef IV_DIGIT_ITERATOR_H_
+#define IV_DIGIT_ITERATOR_H_
 #include <iterator>
 #include "detail/cstdint.h"
 #include "character.h"
@@ -92,4 +92,4 @@ class DigitIterator : public std::iterator<std::forward_iterator_tag, int> {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_DIGIT_ITERATOR_H_
+#endif  // IV_DIGIT_ITERATOR_H_

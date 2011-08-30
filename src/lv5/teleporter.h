@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_H_
-#define _IV_LV5_TELEPORTER_H_
+#ifndef IV_LV5_TELEPORTER_H_
+#define IV_LV5_TELEPORTER_H_
 // teleporter is lv5 interpreter
 
 #include "lv5/teleporter/fwd.h"
@@ -13,4 +13,4 @@
 #include "lv5/teleporter/runtime.h"
 #include "lv5/teleporter/interpreter.h"
 
-#endif  // _IV_LV5_TELEPORTER_H_
+#endif  // IV_LV5_TELEPORTER_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_JSON_H_
-#define _IV_LV5_RUNTIME_JSON_H_
+#ifndef IV_LV5_RUNTIME_JSON_H_
+#define IV_LV5_RUNTIME_JSON_H_
 #include <vector>
 #include "conversions.h"
 #include "lv5/error_check.h"
@@ -208,4 +208,4 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_JSON_H_
+#endif  // IV_LV5_RUNTIME_JSON_H_

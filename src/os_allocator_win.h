@@ -1,5 +1,5 @@
-#ifndef _IV_OS_ALLOCATOR_WIN_H_
-#define _IV_OS_ALLOCATOR_WIN_H_
+#ifndef IV_OS_ALLOCATOR_WIN_H_
+#define IV_OS_ALLOCATOR_WIN_H_
 #include <windows.h>
 namespace iv {
 namespace core {
@@ -34,4 +34,4 @@ inline void OSAllocator::Decommit(void* addr, std::size_t bytes) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_OS_ALLOCATOR_WIN_H_
+#endif  // IV_OS_ALLOCATOR_WIN_H_

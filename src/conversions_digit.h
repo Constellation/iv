@@ -1,5 +1,5 @@
-#ifndef _IV_CONVERSIONS_DIGIT_H_
-#define _IV_CONVERSIONS_DIGIT_H_
+#ifndef IV_CONVERSIONS_DIGIT_H_
+#define IV_CONVERSIONS_DIGIT_H_
 namespace iv {
 namespace core {
 
@@ -37,4 +37,4 @@ inline int Radix36Value(const int c) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_CONVERSIONS_DIGIT_H_
+#endif  // IV_CONVERSIONS_DIGIT_H_

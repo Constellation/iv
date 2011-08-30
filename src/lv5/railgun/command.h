@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_COMMAND_H_
-#define _IV_LV5_RAILGUN_COMMAND_H_
+#ifndef IV_LV5_RAILGUN_COMMAND_H_
+#define IV_LV5_RAILGUN_COMMAND_H_
 #include "file_source.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/error_check.h"
@@ -98,4 +98,4 @@ inline JSVal Run(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_COMMAND_H_
+#endif  // IV_LV5_RAILGUN_COMMAND_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_DATE_UTILS_POSIX_H_
-#define _IV_LV5_DATE_UTILS_POSIX_H_
+#ifndef IV_LV5_DATE_UTILS_POSIX_H_
+#define IV_LV5_DATE_UTILS_POSIX_H_
 #include <sys/time.h>
 #include <unistd.h>
 #include "platform_math.h"
@@ -40,4 +40,4 @@ inline double HighResTime() {
 }
 
 } } }  // namespace iv::lv5::date
-#endif  // _IV_LV5_DATE_UTILS_POSIX_H_
+#endif  // IV_LV5_DATE_UTILS_POSIX_H_

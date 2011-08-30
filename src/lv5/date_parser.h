@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_DATE_PARSER_H_
-#define _IV_LV5_DATE_PARSER_H_
+#ifndef IV_LV5_DATE_PARSER_H_
+#define IV_LV5_DATE_PARSER_H_
 #include <algorithm>
 #include <limits>
 #include "detail/array.h"
@@ -443,4 +443,4 @@ double Parse(const String& str) {
 }
 
 } } }  // namespace iv::lv5::date
-#endif  // _IV_LV5_DATE_PARSER_H_
+#endif  // IV_LV5_DATE_PARSER_H_

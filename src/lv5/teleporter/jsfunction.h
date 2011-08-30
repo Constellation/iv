@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_JSFUNCTION_H_
-#define _IV_LV5_TELEPORTER_JSFUNCTION_H_
+#ifndef IV_LV5_TELEPORTER_JSFUNCTION_H_
+#define IV_LV5_TELEPORTER_JSFUNCTION_H_
 #include "ustringpiece.h"
 #include "lv5/context_utils.h"
 #include "lv5/jsobject.h"
@@ -164,4 +164,4 @@ class JSCodeFunction : public JSFunction {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_JSFUNCTION_H_
+#endif  // IV_LV5_TELEPORTER_JSFUNCTION_H_

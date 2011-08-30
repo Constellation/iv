@@ -1,5 +1,5 @@
-#ifndef _IV_OS_ALLOCATOR_POSIX_H_
-#define _IV_OS_ALLOCATOR_POSIX_H_
+#ifndef IV_OS_ALLOCATOR_POSIX_H_
+#define IV_OS_ALLOCATOR_POSIX_H_
 #include <cerrno>
 #include <cstdlib>
 #include <sys/types.h>
@@ -42,4 +42,4 @@ inline void OSAllocator::Decommit(void* addr, std::size_t bytes) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_OS_ALLOCATOR_POSIX_H_
+#endif  // IV_OS_ALLOCATOR_POSIX_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_CAS_WIN_H_
-#define _IV_CAS_WIN_H_
+#ifndef IV_CAS_WIN_H_
+#define IV_CAS_WIN_H_
 #include <windows.h>
 namespace iv {
 namespace core {
@@ -11,4 +11,4 @@ inline int CompareAndSwap(volatile LONG* target,
 }
 
 } } }  // iv::core::thread
-#endif  // _IV_CAS_WIN_H_
+#endif  // IV_CAS_WIN_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSVAL_H_
-#define _IV_LV5_JSVAL_H_
+#ifndef IV_LV5_JSVAL_H_
+#define IV_LV5_JSVAL_H_
 #include <cmath>
 #include <algorithm>
 #include "detail/cstdint.h"
@@ -676,4 +676,4 @@ inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
 typedef GCVector<JSVal>::type JSVals;
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSVAL_H_
+#endif  // IV_LV5_JSVAL_H_

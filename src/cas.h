@@ -1,5 +1,5 @@
-#ifndef _IV_CAS_H_
-#define _IV_CAS_H_
+#ifndef IV_CAS_H_
+#define IV_CAS_H_
 #include "platform.h"
 
 #if defined(IV_OS_WIN)
@@ -10,4 +10,4 @@
 #include "cas_posix.h"
 #endif  // IV_OS_WIN
 
-#endif  // _IV_CAS_H_
+#endif  // IV_CAS_H_

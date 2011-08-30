@@ -8,8 +8,8 @@
 // If you like, you can build AST at actions handler, and Incremental Parser
 // provides error recovery state for SyntaxError. This is designed by Compiler
 // Book, recovery section.
-#ifndef _IV_INCREMENTAL_PARSER_H_
-#define _IV_INCREMENTAL_PARSER_H_
+#ifndef IV_INCREMENTAL_PARSER_H_
+#define IV_INCREMENTAL_PARSER_H_
 #include "debug.h"
 #include "ast.h"
 #include "lexer.h"
@@ -600,4 +600,4 @@ class IncrementalParser
 #undef UNEXPECT
 
 } }  // namespace iv::core
-#endif  // _IV_INCREMENTAL_PARSER_H_
+#endif  // IV_INCREMENTAL_PARSER_H_

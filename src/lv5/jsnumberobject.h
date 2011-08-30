@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSNUMBEROBJECT_H_
-#define _IV_LV5_JSNUMBEROBJECT_H_
+#ifndef IV_LV5_JSNUMBEROBJECT_H_
+#define IV_LV5_JSNUMBEROBJECT_H_
 #include "lv5/jsobject.h"
 #include "lv5/context_utils.h"
 namespace iv {
@@ -36,4 +36,4 @@ class JSNumberObject : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSNUMBEROBJECT_H_
+#endif  // IV_LV5_JSNUMBEROBJECT_H_

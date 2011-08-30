@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_STRING_H_
-#define _IV_LV5_RUNTIME_STRING_H_
+#ifndef IV_LV5_RUNTIME_STRING_H_
+#define IV_LV5_RUNTIME_STRING_H_
 #include <cassert>
 #include <vector>
 #include <limits>
@@ -1143,4 +1143,4 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_STRING_H_
+#endif  // IV_LV5_RUNTIME_STRING_H_

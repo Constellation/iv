@@ -1,5 +1,5 @@
-#ifndef _IV_KEYWORD_H_
-#define _IV_KEYWORD_H_
+#ifndef IV_KEYWORD_H_
+#define IV_KEYWORD_H_
 #include <cstddef>
 #include "token.h"
 namespace iv {
@@ -456,4 +456,4 @@ class Keyword<IgnoreReservedWordsAndIdentifyGetterOrSetter> {
 
 
 } }  // namespace iv::core
-#endif  // _IV_KEYWORD_H_
+#endif  // IV_KEYWORD_H_

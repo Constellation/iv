@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_UTILITY_H_
-#define _IV_LV5_RAILGUN_UTILITY_H_
+#ifndef IV_LV5_RAILGUN_UTILITY_H_
+#define IV_LV5_RAILGUN_UTILITY_H_
 #include "detail/memory.h"
 #include "parser.h"
 #include "lv5/factory.h"
@@ -167,4 +167,4 @@ inline void Instantiate(Context* ctx,
 }
 
 } } }  // iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_UTILITY_H_
+#endif  // IV_LV5_RAILGUN_UTILITY_H_

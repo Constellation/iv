@@ -9,8 +9,8 @@
 // All rights reserved.
 // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/mt.html
 
-#ifndef _IV_MT19937_H_
-#define _IV_MT19937_H_
+#ifndef IV_MT19937_H_
+#define IV_MT19937_H_
 #include <vector>
 #include "detail/cstdint.h"
 
@@ -172,4 +172,4 @@ class UniformRealDistribution {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_MT19937_H_
+#endif  // IV_MT19937_H_

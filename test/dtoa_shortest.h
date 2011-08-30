@@ -28,8 +28,8 @@
 // This file contains 100.000 decimal representations of random doubles. They
 // have been generated using Gay's dtoa to produce the shortest representation:
 //          decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
-#ifndef _IV_TEST_DTOA_SHORTEST_H_
-#define _IV_TEST_DTOA_SHORTEST_H_
+#ifndef IV_TEST_DTOA_SHORTEST_H_
+#define IV_TEST_DTOA_SHORTEST_H_
 #include "detail/array.h"
 
 struct PrecomputedShortest {
@@ -40,4 +40,4 @@ struct PrecomputedShortest {
 
 typedef std::array<PrecomputedShortest, 100000> ShortestTestContainerType;
 const ShortestTestContainerType& ShortestTestContainer();
-#endif  // _IV_TEST_DTOA_SHORTEST_H_
+#endif  // IV_TEST_DTOA_SHORTEST_H_

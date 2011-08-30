@@ -1,5 +1,5 @@
-#ifndef _IV_AST_FACTORY_H_
-#define _IV_AST_FACTORY_H_
+#ifndef IV_AST_FACTORY_H_
+#define IV_AST_FACTORY_H_
 #include "detail/type_traits.h"
 #include "functor.h"
 #include "location.h"
@@ -380,4 +380,4 @@ template<typename Derived>
 class AstFactory : public core::Space<1>, public BasicAstFactory<Derived> { };
 
 } } }  // namespace iv::core::ast
-#endif  // _IV_AST_FACTORY_H_
+#endif  // IV_AST_FACTORY_H_

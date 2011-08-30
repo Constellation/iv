@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_FPU_H_
-#define _IV_LV5_FPU_H_
+#ifndef IV_LV5_FPU_H_
+#define IV_LV5_FPU_H_
 #include "noncopyable.h"
 #if (!defined(IV_USE_SSE) && defined(__GNUC__) && defined(__i386__) && !defined(__CYGWIN__))
 #include <fpu_control.h>
@@ -37,4 +37,4 @@ class FPU : private core::Noncopyable<> {
 
 } }  // namespace iv::lv5
 #endif
-#endif  // _IV_LV5_FPU_H_
+#endif  // IV_LV5_FPU_H_

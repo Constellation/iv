@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_GC_TEMPLATE_H_
-#define _IV_LV5_GC_TEMPLATE_H_
+#ifndef IV_LV5_GC_TEMPLATE_H_
+#define IV_LV5_GC_TEMPLATE_H_
 #include <string>
 #include <vector>
 #include <map>
@@ -81,4 +81,4 @@ typedef std::basic_string<uint16_t,
                           gc_allocator<uint16_t> > GCUString;
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_GC_TEMPLATE_H_
+#endif  // IV_LV5_GC_TEMPLATE_H_

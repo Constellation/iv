@@ -1,5 +1,5 @@
-#ifndef _IV_FIXED_CONTAINER_H_
-#define _IV_FIXED_CONTAINER_H_
+#ifndef IV_FIXED_CONTAINER_H_
+#define IV_FIXED_CONTAINER_H_
 #include <cstddef>
 #include <cassert>
 #include <iterator>
@@ -143,4 +143,4 @@ class FixedContainer {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_FIXED_CONTAINER_H_
+#endif  // IV_FIXED_CONTAINER_H_

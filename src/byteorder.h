@@ -1,5 +1,5 @@
-#ifndef _IV_BYTEORDER_H_
-#define _IV_BYTEORDER_H_
+#ifndef IV_BYTEORDER_H_
+#define IV_BYTEORDER_H_
 #include "platform.h"
 
 #if defined(IV_OS_WIN)
@@ -47,4 +47,4 @@ static const bool kLittleEndian = false;
 #endif  // IS_LITTLE_ENDIAN
 
 } }  // namespace iv::core
-#endif  // _IV_BYTEORDER_H_
+#endif  // IV_BYTEORDER_H_

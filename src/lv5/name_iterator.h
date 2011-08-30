@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_NAME_ITERATOR_H_
-#define _IV_LV5_NAME_ITERATOR_H_
+#ifndef IV_LV5_NAME_ITERATOR_H_
+#define IV_LV5_NAME_ITERATOR_H_
 #include <gc/gc_cpp.h>
 #include "lv5/jsobject.h"
 namespace iv {
@@ -36,4 +36,4 @@ class NameIterator : public gc_cleanup {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_NAME_ITERATOR_H_
+#endif  // IV_LV5_NAME_ITERATOR_H_

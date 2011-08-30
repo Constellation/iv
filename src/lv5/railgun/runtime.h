@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_RUNTIME_H_
-#define _IV_LV5_RAILGUN_RUNTIME_H_
+#ifndef IV_LV5_RAILGUN_RUNTIME_H_
+#define IV_LV5_RAILGUN_RUNTIME_H_
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/internal.h"
@@ -152,4 +152,4 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
 }
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_RUNTIME_H_
+#endif  // IV_LV5_RAILGUN_RUNTIME_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSREGEXP_H_
-#define _IV_LV5_JSREGEXP_H_
+#ifndef IV_LV5_JSREGEXP_H_
+#define IV_LV5_JSREGEXP_H_
 #include <vector>
 #include <utility>
 #include "stringpiece.h"
@@ -359,4 +359,4 @@ class JSRegExp : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSREGEXP_H_
+#endif  // IV_LV5_JSREGEXP_H_

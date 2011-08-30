@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_COMMAND_H_
-#define _IV_LV5_COMMAND_H_
+#ifndef IV_LV5_COMMAND_H_
+#define IV_LV5_COMMAND_H_
 #include <cstdio>
 #include <cstdlib>
 extern "C" {
@@ -50,4 +50,4 @@ inline JSVal CollectGarbage(const Arguments& args, Error* e) {
 }
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_COMMAND_H_
+#endif  // IV_LV5_COMMAND_H_

@@ -3,8 +3,8 @@
 // Licensed to the ASF
 // Apache License
 //
-#ifndef _IV_CHARACTER_H_
-#define _IV_CHARACTER_H_
+#ifndef IV_CHARACTER_H_
+#define IV_CHARACTER_H_
 #include <cassert>
 #include <algorithm>
 #include "detail/cstdint.h"
@@ -868,4 +868,4 @@ inline uint16_t ToUpperCase(uint16_t c) {
 
 }  // namespace iv::core::character
 } }  // namespace iv::core
-#endif  // _IV_CHARACTER_H_
+#endif  // IV_CHARACTER_H_

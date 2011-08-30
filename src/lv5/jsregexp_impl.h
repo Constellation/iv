@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSREGEXP_IMPL_H_
-#define _IV_LV5_JSREGEXP_IMPL_H_
+#ifndef IV_LV5_JSREGEXP_IMPL_H_
+#define IV_LV5_JSREGEXP_IMPL_H_
 #include <cstdlib>
 #include <cstring>
 #include <gc/gc_cpp.h>
@@ -139,4 +139,4 @@ class JSRegExpImpl : public gc_cleanup {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSREGEXP_IMPL_H_
+#endif  // IV_LV5_JSREGEXP_IMPL_H_
