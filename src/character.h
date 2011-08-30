@@ -802,7 +802,8 @@ inline uint16_t ToLowerCase(uint16_t c) {
     return c;
   }
   if (c < 1000) {
-    return kLowerCaseCache[c - 192];
+    const int index = static_cast<int>(c) - 192;
+    return kLowerCaseCache[index];
   }
   std::array<uint16_t, 101>::const_iterator it =
       std::upper_bound(kLowerCaseKeys.begin(),
@@ -837,6 +838,7 @@ inline uint16_t ToUpperCase(uint16_t c) {
     return c;
   }
   if (c < 1000) {
+    const int index = static_cast<int>(c) - 181;
     return kUpperCaseCache[c - 181];
   }
   std::array<uint16_t, 113>::const_iterator it =
