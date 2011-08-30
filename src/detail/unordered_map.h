@@ -11,6 +11,8 @@ namespace std { using namespace tr1; }
 
 #else
 
+// G++ 4.6 patching... including list before tr1/unordered_map
+#include <list>
 #include <tr1/unordered_map>
 namespace std { using namespace tr1; }
 
