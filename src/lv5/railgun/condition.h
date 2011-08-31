@@ -3,8 +3,8 @@
 // condition value is
 //   TRUE / FALSE / INDETERMINATE
 //
-#ifndef _IV_LV5_RAILGUN_CONDITION_H_
-#define _IV_LV5_RAILGUN_CONDITION_H_
+#ifndef IV_LV5_RAILGUN_CONDITION_H_
+#define IV_LV5_RAILGUN_CONDITION_H_
 #include "lv5/specialized_ast.h"
 #include "lv5/railgun/fwd.h"
 namespace iv {
@@ -59,4 +59,4 @@ class Condition {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_CONDITION_H_
+#endif  // IV_LV5_RAILGUN_CONDITION_H_

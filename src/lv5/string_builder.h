@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_STRING_BUILDER_H_
-#define _IV_LV5_STRING_BUILDER_H_
+#ifndef IV_LV5_STRING_BUILDER_H_
+#define IV_LV5_STRING_BUILDER_H_
 #include <vector>
 #include <iterator>
 #include "lv5/jsstring_fwd.h"
@@ -76,4 +76,4 @@ class BasicStringBuilder : protected std::vector<CharT> {
 typedef BasicStringBuilder<uint16_t> StringBuilder;
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_STRING_BUILDER_H_
+#endif  // IV_LV5_STRING_BUILDER_H_

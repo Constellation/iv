@@ -3,8 +3,8 @@
 // Licensed to the ASF
 // Apache License
 //
-#ifndef _IV_CHARACTER_H_
-#define _IV_CHARACTER_H_
+#ifndef IV_CHARACTER_H_
+#define IV_CHARACTER_H_
 #include <cassert>
 #include <algorithm>
 #include "detail/cstdint.h"
@@ -712,13 +712,12 @@ static const std::array<uint16_t, 226> kUpperCaseValues = { {
 } };
 
 inline Category GetCategory(uint16_t c) {
-  using std::upper_bound;
   if (c < 1000) {
     return static_cast<Category>(kCategoryCache[c]);
   }
   const int result =
-      static_cast<int>(upper_bound(kCategoryKeys.begin(),
-                                   kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1);
+      static_cast<int>(std::upper_bound(kCategoryKeys.begin(),
+                                        kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1);
   assert(result < static_cast<int>(kCategoryKeys.size()));
   const int high = kCategoryValues[result * 2];
   if (c <= high) {
@@ -795,7 +794,6 @@ inline bool IsIdentifierPart(uint16_t c) {
 }
 
 inline uint16_t ToLowerCase(uint16_t c) {
-  using std::upper_bound;
   if ('A' <= c && c <= 'Z') {
     return c + ('a' - 'A');
   }
@@ -804,11 +802,12 @@ inline uint16_t ToLowerCase(uint16_t c) {
     return c;
   }
   if (c < 1000) {
-    return kLowerCaseCache[c - 192];
+    const int index = static_cast<int>(c) - 192;
+    return kLowerCaseCache[index];
   }
   std::array<uint16_t, 101>::const_iterator it =
-      upper_bound(kLowerCaseKeys.begin(),
-                  kLowerCaseKeys.end(), c) - 1;
+      std::upper_bound(kLowerCaseKeys.begin(),
+                       kLowerCaseKeys.end(), c) - 1;
   const int result = static_cast<int>(it - kLowerCaseKeys.begin());
   assert(result < 101);
   if (result >= 0) {
@@ -831,7 +830,6 @@ inline uint16_t ToLowerCase(uint16_t c) {
 }
 
 inline uint16_t ToUpperCase(uint16_t c) {
-  using std::upper_bound;
   if ('a' <= c && c <= 'z') {
     return c - ('a' - 'A');
   }
@@ -840,11 +838,12 @@ inline uint16_t ToUpperCase(uint16_t c) {
     return c;
   }
   if (c < 1000) {
-    return kUpperCaseCache[c - 181];
+    const int index = static_cast<int>(c) - 181;
+    return kUpperCaseCache[index];
   }
   std::array<uint16_t, 113>::const_iterator it =
-      upper_bound(kUpperCaseKeys.begin(),
-                  kUpperCaseKeys.end(), c) - 1;
+      std::upper_bound(kUpperCaseKeys.begin(),
+                       kUpperCaseKeys.end(), c) - 1;
   const int result = static_cast<int>(it - kUpperCaseKeys.begin());
   assert(result < 113);
   if (result >= 0) {
@@ -868,4 +867,4 @@ inline uint16_t ToUpperCase(uint16_t c) {
 
 }  // namespace iv::core::character
 } }  // namespace iv::core
-#endif  // _IV_CHARACTER_H_
+#endif  // IV_CHARACTER_H_

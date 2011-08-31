@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
-#define _IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
+#ifndef IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
+#define IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
 #include "detail/cstdint.h"
 #include "detail/type_traits.h"
 #include "detail/unordered_set.h"
@@ -72,4 +72,4 @@ IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
 
 } } }  // namespace iv::lv5::symbol
-#endif  // _IV_LV5_SYMBOL_H_
+#endif  // IV_LV5_SYMBOL_H_

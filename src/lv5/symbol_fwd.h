@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_SYMBOL_FWD_H_
-#define _IV_LV5_SYMBOL_FWD_H_
+#ifndef IV_LV5_SYMBOL_FWD_H_
+#define IV_LV5_SYMBOL_FWD_H_
 #include <gc/gc_allocator.h>
 #include <functional>
 #include "detail/cstdint.h"
@@ -230,4 +230,4 @@ struct hash<iv::lv5::SymbolStringHolder>
 };
 
 } IV_HASH_NAMESPACE_END
-#endif  // _IV_LV5_SYMBOL_FWD_H_
+#endif  // IV_LV5_SYMBOL_FWD_H_

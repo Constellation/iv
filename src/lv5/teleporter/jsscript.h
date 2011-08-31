@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_JSSCRIPT_H_
-#define _IV_LV5_TELEPORTER_JSSCRIPT_H_
+#ifndef IV_LV5_TELEPORTER_JSSCRIPT_H_
+#define IV_LV5_TELEPORTER_JSSCRIPT_H_
 #include "detail/memory.h"
 #include "source_traits.h"
 #include "lv5/jsscript.h"
@@ -114,4 +114,4 @@ class JSGlobalScript : public JSScript {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_JSSCRIPT_H_
+#endif  // IV_LV5_TELEPORTER_JSSCRIPT_H_

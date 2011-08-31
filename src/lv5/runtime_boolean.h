@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_BOOLEAN_H_
-#define _IV_LV5_RUNTIME_BOOLEAN_H_
+#ifndef IV_LV5_RUNTIME_BOOLEAN_H_
+#define IV_LV5_RUNTIME_BOOLEAN_H_
 #include "lv5/error_check.h"
 #include "lv5/constructor_check.h"
 #include "lv5/arguments.h"
@@ -73,4 +73,4 @@ inline JSVal BooleanValueOf(const Arguments& args, Error* error) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_STRING_H_
+#endif  // IV_LV5_RUNTIME_STRING_H_

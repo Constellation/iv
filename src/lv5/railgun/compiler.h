@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_COMPILER_H_
-#define _IV_LV5_RAILGUN_COMPILER_H_
+#ifndef IV_LV5_RAILGUN_COMPILER_H_
+#define IV_LV5_RAILGUN_COMPILER_H_
 #include <algorithm>
 #include <gc/gc.h>
 #include "detail/tuple.h"
@@ -2335,4 +2335,4 @@ inline Code* CompileEval(Context* ctx,
 }
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_COMPILER_H_
+#endif  // IV_LV5_RAILGUN_COMPILER_H_

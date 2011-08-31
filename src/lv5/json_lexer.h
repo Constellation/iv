@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSON_LEXER_H_
-#define _IV_LV5_JSON_LEXER_H_
+#ifndef IV_LV5_JSON_LEXER_H_
+#define IV_LV5_JSON_LEXER_H_
 #include <cassert>
 #include <cstdlib>
 #include <vector>
@@ -301,4 +301,4 @@ class JSONLexer : private core::Noncopyable<> {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSON_LEXER_H_
+#endif  // IV_LV5_JSON_LEXER_H_

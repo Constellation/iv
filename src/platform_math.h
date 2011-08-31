@@ -1,5 +1,5 @@
-#ifndef _IV_PLATFORM_MATH_H_
-#define _IV_PLATFORM_MATH_H_
+#ifndef IV_PLATFORM_MATH_H_
+#define IV_PLATFORM_MATH_H_
 #include "platform.h"
 #if defined(IV_COMPILER_MSVC)
 namespace iv {
@@ -47,4 +47,4 @@ inline int IsInf(double x) {
 
 } }  // namespace iv::core
 #endif
-#endif  // _IV_PLATFORM_MATH_H_
+#endif  // IV_PLATFORM_MATH_H_

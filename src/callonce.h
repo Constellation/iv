@@ -1,5 +1,5 @@
-#ifndef _IV_CALLONCE_H_
-#define _IV_CALLONCE_H_
+#ifndef IV_CALLONCE_H_
+#define IV_CALLONCE_H_
 #include "platform.h"
 #ifdef IV_OS_WIN
 #include <windows.h>
@@ -48,4 +48,4 @@ inline void ResetOnce(Once* once) {
 }
 
 } } }  // iv::core::thread
-#endif  // _IV_CALLONCE_H_
+#endif  // IV_CALLONCE_H_

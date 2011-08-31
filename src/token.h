@@ -1,5 +1,5 @@
-#ifndef _IV_TOKEN_H_
-#define _IV_TOKEN_H_
+#ifndef IV_TOKEN_H_
+#define IV_TOKEN_H_
 #include <cstddef>
 #include <cassert>
 #include "none.h"
@@ -329,4 +329,4 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
 
 }  // namespace iv::core::detail
 } }  // namespace iv::core
-#endif  // _IV_TOKEN_H_
+#endif  // IV_TOKEN_H_

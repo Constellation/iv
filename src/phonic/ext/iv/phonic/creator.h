@@ -1,5 +1,5 @@
-#ifndef _IV_PHONIC_CREATOR_H_
-#define _IV_PHONIC_CREATOR_H_
+#ifndef IV_PHONIC_CREATOR_H_
+#define IV_PHONIC_CREATOR_H_
 extern "C" {
 #include <ruby.h>
 }
@@ -611,4 +611,4 @@ class Creator : public iv::core::ast::AstVisitor<AstFactory>::const_type {
 } }  // namespace iv::phonic
 
 #undef SYM
-#endif  // _IV_PHONIC_CREATOR_H_
+#endif  // IV_PHONIC_CREATOR_H_

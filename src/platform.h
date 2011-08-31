@@ -1,5 +1,5 @@
-#ifndef _IV_PLATFORM_H_
-#define _IV_PLATFORM_H_
+#ifndef IV_PLATFORM_H_
+#define IV_PLATFORM_H_
 
 #if (defined(__unix__) || defined(unix)) && !defined(USG)
 #include <sys/param.h>
@@ -47,4 +47,4 @@
 #define snprintf _snprintf
 #endif
 
-#endif  // _IV_PLATFORM_H_
+#endif  // IV_PLATFORM_H_

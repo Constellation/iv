@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSARGUMENTS_H_
-#define _IV_LV5_JSARGUMENTS_H_
+#ifndef IV_LV5_JSARGUMENTS_H_
+#define IV_LV5_JSARGUMENTS_H_
 #include "ast.h"
 #include "lv5/symbol.h"
 #include "lv5/gc_template.h"
@@ -232,4 +232,4 @@ class JSStrictArguments : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSARGUMENTS_H_
+#endif  // IV_LV5_JSARGUMENTS_H_

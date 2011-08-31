@@ -1,5 +1,5 @@
-#ifndef _IV_AST_VISITOR_H_
-#define _IV_AST_VISITOR_H_
+#ifndef IV_AST_VISITOR_H_
+#define IV_AST_VISITOR_H_
 #include "detail/type_traits.h"
 #include "noncopyable.h"
 #include "ast_fwd.h"
@@ -162,4 +162,4 @@ struct ExpressionVisitor {
 };
 
 } } }  // namespace iv::core::ast
-#endif  // _IV_AST_VISITOR_H_
+#endif  // IV_AST_VISITOR_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_FILE_SOURCE_H_
-#define _IV_FILE_SOURCE_H_
+#ifndef IV_FILE_SOURCE_H_
+#define IV_FILE_SOURCE_H_
 #include <cstddef>
 #include <cassert>
 #include <string>
@@ -131,4 +131,4 @@ struct SourceTraits<FileSource> {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_FILE_SOURCE_H_
+#endif  // IV_FILE_SOURCE_H_

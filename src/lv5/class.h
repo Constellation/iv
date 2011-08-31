@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_CLASS_H_
-#define _IV_LV5_CLASS_H_
+#ifndef IV_LV5_CLASS_H_
+#define IV_LV5_CLASS_H_
 #include "none.h"
 #include "lv5/symbol.h"
 namespace iv {
@@ -51,4 +51,4 @@ struct ClassSlot {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_CLASS_H_
+#endif  // IV_LV5_CLASS_H_

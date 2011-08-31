@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_ADAPTER_SELECT2ND_H_
-#define _IV_LV5_ADAPTER_SELECT2ND_H_
+#ifndef IV_LV5_ADAPTER_SELECT2ND_H_
+#define IV_LV5_ADAPTER_SELECT2ND_H_
 #include <functional>
 namespace iv {
 namespace lv5 {
@@ -16,4 +16,4 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type> 
 };
 
 } } }  // namespace iv::lv5::adapter
-#endif  // _IV_LV5_ADAPTER_SELECT2ND_H_
+#endif  // IV_LV5_ADAPTER_SELECT2ND_H_

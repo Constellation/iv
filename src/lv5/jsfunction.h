@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSFUNCTION_H_
-#define _IV_LV5_JSFUNCTION_H_
+#ifndef IV_LV5_JSFUNCTION_H_
+#define IV_LV5_JSFUNCTION_H_
 #include <algorithm>
 #include "ustringpiece.h"
 #include "lv5/error_check.h"
@@ -355,4 +355,4 @@ class JSInlinedFunction : public JSFunction {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSFUNCTION_H_
+#endif  // IV_LV5_JSFUNCTION_H_

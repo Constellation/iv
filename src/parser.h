@@ -1,5 +1,5 @@
-#ifndef _IV_PARSER_H_
-#define _IV_PARSER_H_
+#ifndef IV_PARSER_H_
+#define IV_PARSER_H_
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -2500,4 +2500,4 @@ class Parser
 #undef RAISE_RECOVERVABLE
 #undef CHECK
 } }  // namespace iv::core
-#endif  // _IV_PARSER_H_
+#endif  // IV_PARSER_H_

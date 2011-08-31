@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_DATE_H_
-#define _IV_LV5_RUNTIME_DATE_H_
+#ifndef IV_LV5_RUNTIME_DATE_H_
+#define IV_LV5_RUNTIME_DATE_H_
 #include <ctime>
 #include <cmath>
 #include <cstring>
@@ -1443,4 +1443,4 @@ inline JSVal DateSetYear(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_STRING_H_
+#endif  // IV_LV5_RUNTIME_STRING_H_

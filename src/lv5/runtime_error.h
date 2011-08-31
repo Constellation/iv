@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_ERROR_H_
-#define _IV_LV5_RUNTIME_ERROR_H_
+#ifndef IV_LV5_RUNTIME_ERROR_H_
+#define IV_LV5_RUNTIME_ERROR_H_
 #include "conversions.h"
 #include "ustring.h"
 #include "ustringpiece.h"
@@ -123,4 +123,4 @@ inline JSVal URIErrorConstructor(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_ERROR_H_
+#endif  // IV_LV5_RUNTIME_ERROR_H_

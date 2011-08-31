@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSENV_H_
-#define _IV_LV5_JSENV_H_
+#ifndef IV_LV5_JSENV_H_
+#define IV_LV5_JSENV_H_
 #include <cassert>
 #include <iostream>
 #include <gc/gc_cpp.h>
@@ -429,4 +429,4 @@ class JSStaticEnv : public JSEnv {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSENV_H_
+#endif  // IV_LV5_JSENV_H_

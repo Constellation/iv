@@ -1,5 +1,5 @@
-#ifndef _IV_UTILS_H_
-#define _IV_UTILS_H_
+#ifndef IV_UTILS_H_
+#define IV_UTILS_H_
 #include <cstddef>
 #include "debug.h"
 #include "detail/cstdint.h"
@@ -75,4 +75,4 @@ class Size {
 #define UNREACHABLE() assert(!"UNREACHABLE")
 
 } }  // namespace iv::core
-#endif  // _IV_UTILS_H_
+#endif  // IV_UTILS_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_REFERENCE_H_
-#define _IV_LV5_REFERENCE_H_
+#ifndef IV_LV5_REFERENCE_H_
+#define IV_LV5_REFERENCE_H_
 #include <gc/gc_cpp.h>
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
@@ -46,4 +46,4 @@ class JSReference : public HeapObject {
   bool is_strict_;
 };
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSREFERENCE_H_
+#endif  // IV_LV5_JSREFERENCE_H_

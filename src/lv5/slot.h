@@ -3,8 +3,8 @@
 //
 // see also map.h
 //
-#ifndef _IV_LV5_SLOT_H_
-#define _IV_LV5_SLOT_H_
+#ifndef IV_LV5_SLOT_H_
+#define IV_LV5_SLOT_H_
 #include "notfound.h"
 #include "lv5/property.h"
 #include "lv5/jsval.h"
@@ -64,4 +64,4 @@ class Slot {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_SLOT_H_
+#endif  // IV_LV5_SLOT_H_

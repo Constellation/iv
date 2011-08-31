@@ -1,6 +1,6 @@
 // BoehmGC original GC Kind maker
-#ifndef _IV_LV5_GC_KIND_H_
-#define _IV_LV5_GC_KIND_H_
+#ifndef IV_LV5_GC_KIND_H_
+#define IV_LV5_GC_KIND_H_
 #include <gc/gc.h>
 extern "C" {
 #include <gc/gc_mark.h>
@@ -82,4 +82,4 @@ class GCKind {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_GC_KIND_H_
+#endif  // IV_LV5_GC_KIND_H_

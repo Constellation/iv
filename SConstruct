@@ -145,7 +145,8 @@ def Build():
       env.Append(CCFLAGS="-mfpmath=sse")
 
   if env['debug']:
-    env.Append(CCFLAGS=["-g3"])
+    # -Werror is defined in debug mode only
+    env.Append(CCFLAGS=["-g3", "-Werror"])
   else:
     env.Append(
         CCFLAGS=["-O3", "-fomit-frame-pointer"],
@@ -158,7 +159,7 @@ def Build():
 
   env.Append(
     CCFLAGS=[
-      "-Wall", "-Wextra", "-Werror", '-pipe',
+      "-Wall", "-Wextra", '-pipe',
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
     CPPPATH=[join(root_dir, 'src'), join(root_dir, 'obj', 'src')],

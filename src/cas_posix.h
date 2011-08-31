@@ -1,5 +1,5 @@
-#ifndef _IV_CAS_POSIX_H_
-#define _IV_CAS_POSIX_H_
+#ifndef IV_CAS_POSIX_H_
+#define IV_CAS_POSIX_H_
 #include "platform.h"
 #include "thread.h"
 namespace iv {
@@ -33,4 +33,4 @@ inline int CompareAndSwap(volatile int* target,
 #endif
 
 } } }  // iv::core::thread
-#endif  // _IV_CAS_POSIX_H_
+#endif  // IV_CAS_POSIX_H_

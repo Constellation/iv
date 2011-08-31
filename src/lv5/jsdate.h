@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSDATE_H_
-#define _IV_LV5_JSDATE_H_
+#ifndef IV_LV5_JSDATE_H_
+#define IV_LV5_JSDATE_H_
 #include "lv5/jsobject.h"
 #include "lv5/context_utils.h"
 
@@ -57,4 +57,4 @@ class JSDate : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSDATE_H_
+#endif  // IV_LV5_JSDATE_H_

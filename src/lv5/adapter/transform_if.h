@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_ADAPTER_TRANSFORM_IF_H_
-#define _IV_LV5_ADAPTER_TRANSFORM_IF_H_
+#ifndef IV_LV5_ADAPTER_TRANSFORM_IF_H_
+#define IV_LV5_ADAPTER_TRANSFORM_IF_H_
 namespace iv {
 namespace lv5 {
 namespace adapter {
@@ -23,4 +23,4 @@ inline OutputIterator transform_if(InputIterator first,
 }
 
 } } }  // namespace iv::lv5::adapter
-#endif  // _IV_LV5_ADAPTER_TRANSFORM_IF_H_
+#endif  // IV_LV5_ADAPTER_TRANSFORM_IF_H_

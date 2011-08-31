@@ -1,5 +1,5 @@
-#ifndef _IV_OS_ALLOCATOR_H_
-#define _IV_OS_ALLOCATOR_H_
+#ifndef IV_OS_ALLOCATOR_H_
+#define IV_OS_ALLOCATOR_H_
 #include "platform.h"
 namespace iv {
 namespace core {
@@ -20,4 +20,4 @@ class OSAllocator {
 #else
 #include "os_allocator_posix.h"
 #endif  // IV_OS_WIN
-#endif  // _IV_OS_ALLOCATOR_H_
+#endif  // IV_OS_ALLOCATOR_H_

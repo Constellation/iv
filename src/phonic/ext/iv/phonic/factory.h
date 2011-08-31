@@ -1,5 +1,5 @@
-#ifndef _IV_PHONIC_FACTORY_H_
-#define _IV_PHONIC_FACTORY_H_
+#ifndef IV_PHONIC_FACTORY_H_
+#define IV_PHONIC_FACTORY_H_
 #include <tr1/array>
 extern "C" {
 #include <ruby.h>
@@ -411,4 +411,4 @@ class AstFactory : public core::Space<2> {
 
 
 } }  // namespace iv::phonic
-#endif  // _IV_PHONIC_FACTORY_H_
+#endif  // IV_PHONIC_FACTORY_H_

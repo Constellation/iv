@@ -1,5 +1,5 @@
-#ifndef _IV_AST_FWD_H_
-#define _IV_AST_FWD_H_
+#ifndef IV_AST_FWD_H_
+#define IV_AST_FWD_H_
 namespace iv {
 namespace core {
 namespace ast {
@@ -104,4 +104,4 @@ IV_AST_NODE_LIST(V)
 #undef V
 
 } } }  // namespace iv::core::ast
-#endif  // _IV_AST_FWD_H_
+#endif  // IV_AST_FWD_H_

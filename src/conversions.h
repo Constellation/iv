@@ -1,5 +1,5 @@
-#ifndef _IV_CONVERSIONS_H_
-#define _IV_CONVERSIONS_H_
+#ifndef IV_CONVERSIONS_H_
+#define IV_CONVERSIONS_H_
 #include <cstdio>
 #include <cmath>
 #include <string>
@@ -536,4 +536,4 @@ inline std::string DoubleToStringWithRadix(double v, int radix) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_CONVERSIONS_H_
+#endif  // IV_CONVERSIONS_H_

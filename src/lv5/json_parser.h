@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSON_PARSER_H_
-#define _IV_LV5_JSON_PARSER_H_
+#ifndef IV_LV5_JSON_PARSER_H_
+#define IV_LV5_JSON_PARSER_H_
 #include <cassert>
 #include <cstdlib>
 #include <vector>
@@ -198,4 +198,4 @@ class JSONParser : private core::Noncopyable<> {
 #undef UNEXPECT
 #undef RAISE
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSON_PARSER_H_
+#endif  // IV_LV5_JSON_PARSER_H_

@@ -17,8 +17,8 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
  ***************************************************************/
-#ifndef _IV_DTOA_BIGINT_H_
-#define _IV_DTOA_BIGINT_H_
+#ifndef IV_DTOA_BIGINT_H_
+#define IV_DTOA_BIGINT_H_
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
@@ -1359,4 +1359,4 @@ class StringPieceDToA : public DToA<StringPieceDToA, void> {
 
 #undef Scale_Bit
 } } }  // namespace iv::core::dtoa
-#endif  // _IV_DTOA_BIGINT_H_
+#endif  // IV_DTOA_BIGINT_H_

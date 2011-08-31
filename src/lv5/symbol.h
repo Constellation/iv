@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_SYMBOL_H_
-#define _IV_LV5_SYMBOL_H_
+#ifndef IV_LV5_SYMBOL_H_
+#define IV_LV5_SYMBOL_H_
 #include <cstddef>
 #include "lv5/symbol_fwd.h"
 #include "lv5/default_symbol_provider.h"
@@ -14,4 +14,4 @@ static const Symbol kDummySymbol =
     detail::MakeSymbol(static_cast<core::UString*>(NULL));
 
 } } }  // namespace iv::lv5::symbol
-#endif  // _IV_LV5_SYMBOL_H_
+#endif  // IV_LV5_SYMBOL_H_

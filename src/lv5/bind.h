@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_BIND_H_
-#define _IV_LV5_BIND_H_
+#ifndef IV_LV5_BIND_H_
+#define IV_LV5_BIND_H_
 #include "stringpiece.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -168,4 +168,4 @@ class Object : public Scope {
 };
 
 } } }  // namespace iv::lv5::bind
-#endif  // _IV_LV5_BIND_H_
+#endif  // IV_LV5_BIND_H_

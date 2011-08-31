@@ -1,5 +1,5 @@
-#ifndef _IV_ANY_H_
-#define _IV_ANY_H_
+#ifndef IV_ANY_H_
+#define IV_ANY_H_
 #include <algorithm>
 namespace iv {
 namespace core {
@@ -68,4 +68,4 @@ class Any {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_ANY_H_
+#endif  // IV_ANY_H_

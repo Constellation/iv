@@ -1,5 +1,5 @@
-#ifndef _IV_NONCOPYABLE_H_
-#define _IV_NONCOPYABLE_H_
+#ifndef IV_NONCOPYABLE_H_
+#define IV_NONCOPYABLE_H_
 
 namespace iv {
 namespace core {
@@ -37,4 +37,4 @@ class Noncopyable<void> {
 using noncopyable_::Noncopyable;
 
 } }  // namespace iv::core
-#endif  // _IV_NONCOPYABLE_H_
+#endif  // IV_NONCOPYABLE_H_

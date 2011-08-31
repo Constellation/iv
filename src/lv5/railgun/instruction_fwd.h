@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
-#define _IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
+#ifndef IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
+#define IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
 #include "lv5/symbol.h"
 #include "lv5/railgun/op.h"
 namespace iv {
@@ -30,4 +30,4 @@ struct Instruction {
 // global scope
 GC_DECLARE_PTRFREE(iv::lv5::railgun::Instruction);
 
-#endif  // _IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
+#endif  // IV_LV5_RAILGUN_INSTRUCTION_FWD_H_

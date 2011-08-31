@@ -29,8 +29,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef _IV_CMDLINE_H
-#define _IV_CMDLINE_H_
+#ifndef IV_CMDLINE_H
+#define IV_CMDLINE_H_
 
 #include <sstream>
 #include <iterator>
@@ -929,4 +929,4 @@ class Parser {
 };
 
 } }  // namespace iv::cmdline
-#endif  // _IV_CMDLINE_H_
+#endif  // IV_CMDLINE_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_SYMBOLTABLE_H_
-#define _IV_LV5_SYMBOLTABLE_H_
+#ifndef IV_LV5_SYMBOLTABLE_H_
+#define IV_LV5_SYMBOLTABLE_H_
 #include <string>
 #include <vector>
 #include "detail/unordered_map.h"
@@ -74,4 +74,4 @@ class SymbolTable {
   Set set_;
 };
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_SYMBOLTABLE_H_
+#endif  // IV_LV5_SYMBOLTABLE_H_

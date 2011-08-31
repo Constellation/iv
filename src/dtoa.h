@@ -1,5 +1,5 @@
-#ifndef _IV_DTOA_H_
-#define _IV_DTOA_H_
+#ifndef IV_DTOA_H_
+#define IV_DTOA_H_
 #include "dtoa_bigint.h"
 extern "C" char* dtoa(double d, int mode, int ndigits,
                       int *decpt, int *sign, char **rve);
@@ -19,4 +19,4 @@ namespace core {
 using v8::internal::DoubleToCString;
 
 } }  // namespace iv::core::dtoa
-#endif  // _IV_DTOA_H_
+#endif  // IV_DTOA_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_H_
-#define _IV_LV5_RUNTIME_H_
+#ifndef IV_LV5_RUNTIME_H_
+#define IV_LV5_RUNTIME_H_
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/error.h"
@@ -16,4 +16,4 @@
 #include "lv5/runtime_error.h"
 #include "lv5/runtime_json.h"
 
-#endif  // _IV_LV5_RUNTIME_H_
+#endif  // IV_LV5_RUNTIME_H_

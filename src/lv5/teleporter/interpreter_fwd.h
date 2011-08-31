@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_INTERPRETER_FWD_H_
-#define _IV_LV5_TELEPORTER_INTERPRETER_FWD_H_
+#ifndef IV_LV5_TELEPORTER_INTERPRETER_FWD_H_
+#define IV_LV5_TELEPORTER_INTERPRETER_FWD_H_
 #include "ast.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
@@ -87,4 +87,4 @@ class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_INTERPRETER_FWD_H_
+#endif  // IV_LV5_TELEPORTER_INTERPRETER_FWD_H_

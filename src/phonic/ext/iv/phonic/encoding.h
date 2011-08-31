@@ -1,5 +1,5 @@
-#ifndef _IV_PHONIC_ENCODING_H_
-#define _IV_PHONIC_ENCODING_H_
+#ifndef IV_PHONIC_ENCODING_H_
+#define IV_PHONIC_ENCODING_H_
 extern "C" {
 #include <ruby.h>
 #include <ruby/encoding.h>
@@ -109,4 +109,4 @@ class Encoding {
 };
 
 } }  // namespace iv::phonic
-#endif  // _IV_PHONIC_ENCODING_H_
+#endif  // IV_PHONIC_ENCODING_H_

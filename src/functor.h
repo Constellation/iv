@@ -1,5 +1,5 @@
-#ifndef _IV_FUNCTOR_H_
-#define _IV_FUNCTOR_H_
+#ifndef IV_FUNCTOR_H_
+#define IV_FUNCTOR_H_
 #include <functional>
 namespace iv {
 namespace core {
@@ -19,4 +19,4 @@ struct Deleter<T[]> : public std::unary_function<T[], void> {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_FUNCTOR_H_
+#endif  // IV_FUNCTOR_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_ROUND_H_
-#define _IV_ROUND_H_
+#ifndef IV_ROUND_H_
+#define IV_ROUND_H_
 #include <cmath>
 namespace iv {
 namespace core {
@@ -14,4 +14,4 @@ inline double Round(const double& value) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_ROUND_H_
+#endif  // IV_ROUND_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_THREAD_H_
-#define _IV_THREAD_H_
+#ifndef IV_THREAD_H_
+#define IV_THREAD_H_
 #include <cassert>
 #include "platform.h"
 #include "noncopyable.h"
@@ -39,4 +39,4 @@ class ScopedLock : private Noncopyable<> {
 #else
 #include "thread_posix.h"
 #endif  // IV_OS_WIN
-#endif  // _IV_LV5_THREAD_H_
+#endif  // IV_LV5_THREAD_H_

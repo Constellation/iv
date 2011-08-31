@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_CONTEXT_H_
-#define _IV_LV5_TELEPORTER_CONTEXT_H_
+#ifndef IV_LV5_TELEPORTER_CONTEXT_H_
+#define IV_LV5_TELEPORTER_CONTEXT_H_
 #include "detail/memory.h"
 #include "lv5/context.h"
 #include "lv5/jserror.h"
@@ -210,4 +210,4 @@ class Context : public iv::lv5::Context {
 };
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_CONTEXT_H_
+#endif  // IV_LV5_TELEPORTER_CONTEXT_H_

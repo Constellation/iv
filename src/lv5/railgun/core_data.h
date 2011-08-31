@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_CORE_DATA_H_
-#define _IV_LV5_RAILGUN_CORE_DATA_H_
+#ifndef IV_LV5_RAILGUN_CORE_DATA_H_
+#define IV_LV5_RAILGUN_CORE_DATA_H_
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/core_data_fwd.h"
 #include "lv5/railgun/instruction.h"
@@ -58,4 +58,4 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
 }
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_CORE_DATA_H_
+#endif  // IV_LV5_RAILGUN_CORE_DATA_H_

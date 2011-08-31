@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSGLOBAL_H_
-#define _IV_LV5_JSGLOBAL_H_
+#ifndef IV_LV5_JSGLOBAL_H_
+#define IV_LV5_JSGLOBAL_H_
 #include "notfound.h"
 #include "lv5/error_check.h"
 #include "lv5/map.h"
@@ -44,4 +44,4 @@ void Map::GetOwnPropertyNames(const JSObject* obj,
 }
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSGLOBAL_H_
+#endif  // IV_LV5_JSGLOBAL_H_

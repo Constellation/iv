@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_CONTEXT_FWD_H_
-#define _IV_LV5_RAILGUN_CONTEXT_FWD_H_
+#ifndef IV_LV5_RAILGUN_CONTEXT_FWD_H_
+#define IV_LV5_RAILGUN_CONTEXT_FWD_H_
 #include <gc/gc_cpp.h>
 #include "lv5/railgun/fwd.h"
 namespace iv {
@@ -25,4 +25,4 @@ class Context : public lv5::Context {
 
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_CONTEXT_FWD_H_
+#endif  // IV_LV5_RAILGUN_CONTEXT_FWD_H_

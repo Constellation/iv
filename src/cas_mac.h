@@ -1,5 +1,5 @@
-#ifndef _IV_CAS_MAC_H_
-#define _IV_CAS_MAC_H_
+#ifndef IV_CAS_MAC_H_
+#define IV_CAS_MAC_H_
 #include <libkern/OSAtomic.h>
 #include "thread.h"
 namespace iv {
@@ -19,4 +19,4 @@ inline int CompareAndSwap(volatile int* target,
 }
 
 } } }  // iv::core::thread
-#endif  // _IV_CAS_MAC_H_
+#endif  // IV_CAS_MAC_H_

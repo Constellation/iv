@@ -1,5 +1,5 @@
-#ifndef _IV_AST_SERIALIZER_H_
-#define _IV_AST_SERIALIZER_H_
+#ifndef IV_AST_SERIALIZER_H_
+#define IV_AST_SERIALIZER_H_
 #include <cstdio>
 #include <ostream>  // NOLINT
 #include <sstream>
@@ -584,4 +584,4 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 };
 
 } } }  // namespace iv::core::ast
-#endif  // _IV_AST_SERIALIZER_H_
+#endif  // IV_AST_SERIALIZER_H_

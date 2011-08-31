@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSEXCEPTION_H_
-#define _IV_LV5_JSEXCEPTION_H_
+#ifndef IV_LV5_JSEXCEPTION_H_
+#define IV_LV5_JSEXCEPTION_H_
 #include <cassert>
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
@@ -195,4 +195,4 @@ JSVal JSError::Detail(Context* ctx, const Error* error) {
 }
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSEXCEPTION_H_
+#endif  // IV_LV5_JSEXCEPTION_H_

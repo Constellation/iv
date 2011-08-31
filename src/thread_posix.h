@@ -1,5 +1,5 @@
-#ifndef _IV_THREAD_POSIX_H_
-#define _IV_THREAD_POSIX_H_
+#ifndef IV_THREAD_POSIX_H_
+#define IV_THREAD_POSIX_H_
 #include <cerrno>
 #include <cassert>
 #include <cstdlib>
@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include "noncopyable.h"
+#include "ignore_unused_variable_warning.h"
 namespace iv {
 namespace core {
 namespace thread {
@@ -21,6 +22,7 @@ class PosixMutex : private Noncopyable<> {
     assert(result == 0);
     result = pthread_mutex_init(&mutex_, &attrs);
     assert(result == 0);
+    ignore_unused_variable_warning(result);
   }
 
   ~PosixMutex() {
@@ -57,4 +59,4 @@ inline void YieldCPU() {
 }
 
 } } }  // namespace iv::core::thread
-#endif  // _IV_THREAD_POSIX_H_
+#endif  // IV_THREAD_POSIX_H_

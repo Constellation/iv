@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_GLOBAL_H_
-#define _IV_LV5_RUNTIME_GLOBAL_H_
+#ifndef IV_LV5_RUNTIME_GLOBAL_H_
+#define IV_LV5_RUNTIME_GLOBAL_H_
 #include <cmath>
 #include "detail/cstdint.h"
 #include "noncopyable.h"
@@ -461,4 +461,4 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_GLOBAL_H_
+#endif  // IV_LV5_RUNTIME_GLOBAL_H_

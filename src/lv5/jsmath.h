@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSMATH_H_
-#define _IV_LV5_JSMATH_H_
+#ifndef IV_LV5_JSMATH_H_
+#define IV_LV5_JSMATH_H_
 #include "lv5/jsobject.h"
 #include "lv5/class.h"
 namespace iv {
@@ -18,4 +18,4 @@ class JSMath : public JSObject {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSMATH_H_
+#endif  // IV_LV5_JSMATH_H_

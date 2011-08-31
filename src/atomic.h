@@ -1,5 +1,5 @@
-#ifndef _IV_ATOMIC_H_
-#define _IV_ATOMIC_H_
+#ifndef IV_ATOMIC_H_
+#define IV_ATOMIC_H_
 #include "platform.h"
 
 #if defined(IV_OS_WIN)
@@ -37,4 +37,4 @@ inline int AtomicDecrement(volatile int* target) {
 #endif
 
 } }  // namespace iv::core
-#endif  // _IV_ATOMIC_H_
+#endif  // IV_ATOMIC_H_

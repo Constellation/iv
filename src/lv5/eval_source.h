@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_EVAL_SOURCE_H_
-#define _IV_LV5_EVAL_SOURCE_H_
+#ifndef IV_LV5_EVAL_SOURCE_H_
+#define IV_LV5_EVAL_SOURCE_H_
 #include "noncopyable.h"
 #include "source_traits.h"
 #include "lv5/jsstring.h"
@@ -52,4 +52,4 @@ struct SourceTraits<lv5::EvalSource> {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_LV5_EVAL_SOURCE_H_
+#endif  // IV_LV5_EVAL_SOURCE_H_

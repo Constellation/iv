@@ -1,5 +1,5 @@
-#ifndef _IV_BYTEORDER_H_
-#define _IV_BYTEORDER_H_
+#ifndef IV_BYTEORDER_H_
+#define IV_BYTEORDER_H_
 #include "platform.h"
 
 #if defined(IV_OS_WIN)
@@ -37,6 +37,7 @@
 #error BYTE_ORDER not defined. you shoud define __LITTLE_ENDIAN or __BIG_ENDIAN
 #endif
 
+#ifdef __cplusplus
 namespace iv {
 namespace core {
 
@@ -47,4 +48,5 @@ static const bool kLittleEndian = false;
 #endif  // IS_LITTLE_ENDIAN
 
 } }  // namespace iv::core
-#endif  // _IV_BYTEORDER_H_
+#endif
+#endif  // IV_BYTEORDER_H_

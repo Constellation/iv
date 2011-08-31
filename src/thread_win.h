@@ -1,5 +1,5 @@
-#ifndef _IV_THREAD_WIN_H_
-#define _IV_THREAD_WIN_H_
+#ifndef IV_THREAD_WIN_H_
+#define IV_THREAD_WIN_H_
 #include <windows.h>
 namespace iv {
 namespace core {
@@ -40,4 +40,4 @@ inline void YieldCPU() {
 }
 
 } } }  // namespace iv::core::thread
-#endif  // _IV_THREAD_WIN_H_
+#endif  // IV_THREAD_WIN_H_

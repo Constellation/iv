@@ -1,7 +1,7 @@
 // FixedStringBuilder is inspired from V8 StringBuilder
 // New BSD License
-#ifndef _IV_FIXED_STRING_BUILDER_H_
-#define _IV_FIXED_STRING_BUILDER_H_
+#ifndef IV_FIXED_STRING_BUILDER_H_
+#define IV_FIXED_STRING_BUILDER_H_
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -86,4 +86,4 @@ class BasicFixedStringBuilder {
 typedef BasicFixedStringBuilder<char> FixedStringBuilder;
 
 } }  // namespace iv::core
-#endif  // _IV_FIXED_STRING_BUILDER_H_
+#endif  // IV_FIXED_STRING_BUILDER_H_

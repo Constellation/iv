@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RUNTIME_OBJECT_H_
-#define _IV_LV5_RUNTIME_OBJECT_H_
+#ifndef IV_LV5_RUNTIME_OBJECT_H_
+#define IV_LV5_RUNTIME_OBJECT_H_
 #include <cstddef>
 #include <vector>
 #include <utility>
@@ -529,4 +529,4 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // _IV_LV5_RUNTIME_OBJECT_H_
+#endif  // IV_LV5_RUNTIME_OBJECT_H_

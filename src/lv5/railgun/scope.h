@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_SCOPE_H_
-#define _IV_LV5_RAILGUN_SCOPE_H_
+#ifndef IV_LV5_RAILGUN_SCOPE_H_
+#define IV_LV5_RAILGUN_SCOPE_H_
 #include <algorithm>
 #include "detail/memory.h"
 #include "detail/unordered_map.h"
@@ -492,4 +492,4 @@ class FunctionScope : public VariableScope {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_SCOPE_H_
+#endif  // IV_LV5_RAILGUN_SCOPE_H_

@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSON_H_
-#define _IV_LV5_JSON_H_
+#ifndef IV_LV5_JSON_H_
+#define IV_LV5_JSON_H_
 #include "ustringpiece.h"
 #include "json_lexer.h"
 #include "json_parser.h"
@@ -14,4 +14,4 @@ inline JSVal ParseJSON(Context* ctx, const core::UStringPiece& str, Error* e) {
 }
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSON_H_
+#endif  // IV_LV5_JSON_H_

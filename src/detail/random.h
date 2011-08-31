@@ -1,5 +1,5 @@
-#ifndef _IV_DETAIL_RANDOM_H_
-#define _IV_DETAIL_RANDOM_H_
+#ifndef IV_DETAIL_RANDOM_H_
+#define IV_DETAIL_RANDOM_H_
 // old g++ uniform_int has fatal bug
 // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33128
 // so make uniform_int by myself
@@ -19,4 +19,4 @@ namespace std { using namespace tr1; }
 
 #endif
 
-#endif  // _IV_DETAIL_RANDOM_H_
+#endif  // IV_DETAIL_RANDOM_H_

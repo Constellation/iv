@@ -1,5 +1,5 @@
-#ifndef _IV_LOCATION_H_
-#define _IV_LOCATION_H_
+#ifndef IV_LOCATION_H_
+#define IV_LOCATION_H_
 #include <cstddef>
 #include "detail/type_traits.h"
 #include "static_assert.h"
@@ -28,4 +28,4 @@ IV_STATIC_ASSERT(std::is_pod<Location>::value);
 #endif
 
 } }  // namespace iv::core
-#endif  // _IV_LOCATION_H_
+#endif  // IV_LOCATION_H_

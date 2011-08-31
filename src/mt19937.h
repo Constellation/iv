@@ -8,12 +8,10 @@
 // Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
 // All rights reserved.
 // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/mt.html
-
-#ifndef _IV_MT19937_H_
-#define _IV_MT19937_H_
+#ifndef IV_MT19937_H_
+#define IV_MT19937_H_
 #include <vector>
 #include "detail/cstdint.h"
-
 namespace iv {
 namespace core {
 
@@ -136,6 +134,8 @@ class MT19937 {
   int mti_;
 };
 
+namespace detail {
+
 template<typename T>
 class UniformIntDistribution {
  public:
@@ -171,5 +171,5 @@ class UniformRealDistribution {
   const T max_;
 };
 
-} }  // namespace iv::core
-#endif  // _IV_MT19937_H_
+} } }  // namespace iv::core::detail
+#endif  // IV_MT19937_H_

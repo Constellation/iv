@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_RAILGUN_DISASSEMBLER_H_
-#define _IV_LV5_RAILGUN_DISASSEMBLER_H_
+#ifndef IV_LV5_RAILGUN_DISASSEMBLER_H_
+#define IV_LV5_RAILGUN_DISASSEMBLER_H_
 #include <vector>
 #include <sstream>
 #include "detail/array.h"
@@ -77,4 +77,4 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
 };
 
 } } }  // namespace iv::lv5::railgun
-#endif  // _IV_LV5_RAILGUN_DISASSEMBLER_H_
+#endif  // IV_LV5_RAILGUN_DISASSEMBLER_H_

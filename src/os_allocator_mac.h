@@ -1,5 +1,5 @@
-#ifndef _IV_OS_ALLOCATOR_MAC_H_
-#define _IV_OS_ALLOCATOR_MAC_H_
+#ifndef IV_OS_ALLOCATOR_MAC_H_
+#define IV_OS_ALLOCATOR_MAC_H_
 #include <mach/mach_error.h>
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
@@ -36,4 +36,4 @@ inline void OSAllocator::Commit(void* address, std::size_t bytes) { }
 inline void OSAllocator::Decommit(void* addr, std::size_t bytes) { }
 
 } }  // namespace iv::core
-#endif  // _IV_OS_ALLOCATOR_MAC_H_
+#endif  // IV_OS_ALLOCATOR_MAC_H_

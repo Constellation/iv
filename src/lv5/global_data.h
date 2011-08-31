@@ -1,13 +1,14 @@
-#ifndef _IV_LV5_GLOBAL_DATA_H_
-#define _IV_LV5_GLOBAL_DATA_H_
+#ifndef IV_LV5_GLOBAL_DATA_H_
+#define IV_LV5_GLOBAL_DATA_H_
+#include <ctime>
 #include "detail/array.h"
-#include "detail/random.h"
 #include "dtoa.h"
 #include "conversions.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "ustring.h"
 #include "xorshift.h"
+#include "random.h"
 #include "lv5/map.h"
 #include "lv5/class.h"
 #include "lv5/gc_template.h"
@@ -26,14 +27,10 @@ class Context;
 class GlobalData {
  public:
   friend class Context;
-  typedef core::Xor128 random_engine_type;
-  typedef std::uniform_real<double> random_distribution_type;
-  typedef std::variate_generator<
-      random_engine_type, random_distribution_type> random_generator;
+  typedef core::UniformRandomGenerator<core::Xor128> RandomGenerator;
 
   GlobalData(Context* ctx)
-    : random_engine_(random_engine_type(),
-                     random_distribution_type(0, 1)),
+    : random_generator_(0, 1, std::time(NULL)),
       regs_(),
       table_(),
       classes_(),
@@ -50,10 +47,6 @@ class GlobalData {
       regexp_map_(Map::New(ctx)),
       error_map_(Map::New(ctx)),
       gc_hook_(this) {
-    // discard random
-    for (std::size_t i = 0; i < 20; ++i) {
-      Random();
-    }
   }
 
   Symbol Intern(const core::StringPiece& str) {
@@ -81,7 +74,7 @@ class GlobalData {
   }
 
   double Random() {
-    return random_engine_();
+    return random_generator_.get();
   }
 
   const JSGlobal* global_obj() const {
@@ -159,7 +152,7 @@ class GlobalData {
   }
 
  private:
-  random_generator random_engine_;
+  RandomGenerator random_generator_;
   trace::Vector<JSRegExpImpl*>::type regs_;
   SymbolTable table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
@@ -182,4 +175,4 @@ class GlobalData {
 };
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_GLOBAL_DATA_H_
+#endif  // IV_LV5_GLOBAL_DATA_H_

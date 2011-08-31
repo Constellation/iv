@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_JSSTRING_FWD_H_
-#define _IV_LV5_JSSTRING_FWD_H_
+#ifndef IV_LV5_JSSTRING_FWD_H_
+#define IV_LV5_JSSTRING_FWD_H_
 #include <cstdlib>
 #include <algorithm>
 #include <iterator>
@@ -726,4 +726,4 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
 }
 
 } }  // namespace iv::lv5
-#endif  // _IV_LV5_JSSTRING_FWD_H_
+#endif  // IV_LV5_JSSTRING_FWD_H_

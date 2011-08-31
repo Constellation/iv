@@ -28,8 +28,8 @@
 // This file contains 100.000 decimal representations of random doubles. They
 // have been generated using Gay's dtoa to produce the precision representation:
 //         dtoa(v, 2, number_digits, &decimal_point, &sign, NULL);
-#ifndef _IV_TEST_DTOA_PRECISION_H_
-#define _IV_TEST_DTOA_PRECISION_H_
+#ifndef IV_TEST_DTOA_PRECISION_H_
+#define IV_TEST_DTOA_PRECISION_H_
 #include "detail/array.h"
 
 struct PrecomputedPrecision {
@@ -41,4 +41,4 @@ struct PrecomputedPrecision {
 
 typedef std::array<PrecomputedPrecision, 100000> PrecisionTestContainerType;
 const PrecisionTestContainerType& PrecisionTestContainer();
-#endif  // _IV_TEST_DTOA_PRECISION_H_
+#endif  // IV_TEST_DTOA_PRECISION_H_

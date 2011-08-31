@@ -1,5 +1,5 @@
-#ifndef _IV_REF_COUNTED_H_
-#define _IV_REF_COUNTED_H_
+#ifndef IV_REF_COUNTED_H_
+#define IV_REF_COUNTED_H_
 #include "noncopyable.h"
 #include "platform.h"
 namespace iv {
@@ -43,4 +43,4 @@ inline void intrusive_ptr_release(RefCounted<T>* obj) {
 }
 
 } }  // namespace iv::core
-#endif  // _IV_REF_COUNTED_H_
+#endif  // IV_REF_COUNTED_H_

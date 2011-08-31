@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_TELEPORTER_UTILITY_H_
-#define _IV_LV5_TELEPORTER_UTILITY_H_
+#ifndef IV_LV5_TELEPORTER_UTILITY_H_
+#define IV_LV5_TELEPORTER_UTILITY_H_
 #include "detail/memory.h"
 #include "parser.h"
 #include "lv5/factory.h"
@@ -97,4 +97,4 @@ inline JSScript* CompileScript(Context* ctx, const JSString* str,
 }
 
 } } }  // namespace iv::lv5::teleporter
-#endif  // _IV_LV5_TELEPORTER_UTILITY_H_
+#endif  // IV_LV5_TELEPORTER_UTILITY_H_

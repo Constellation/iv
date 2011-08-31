@@ -1,5 +1,5 @@
-#ifndef _IV_SOURCE_TRAITS_H_
-#define _IV_SOURCE_TRAITS_H_
+#ifndef IV_SOURCE_TRAITS_H_
+#define IV_SOURCE_TRAITS_H_
 #include <string>
 namespace iv {
 namespace core {
@@ -12,4 +12,4 @@ struct SourceTraits {
 };
 
 } }  // namespace iv::core
-#endif  // _IV_SOURCE_TRAITS_H_
+#endif  // IV_SOURCE_TRAITS_H_

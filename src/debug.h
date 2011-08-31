@@ -1,5 +1,5 @@
-#ifndef _IV_DEBUG_H_
-#define _IV_DEBUG_H_
+#ifndef IV_DEBUG_H_
+#define IV_DEBUG_H_
 #include <cassert>
 
 #ifdef NDEBUG
@@ -10,4 +10,4 @@
 #endif
 #endif
 
-#endif  // _IV_DEBUG_H_
+#endif  // IV_DEBUG_H_

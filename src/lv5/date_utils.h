@@ -1,5 +1,5 @@
-#ifndef _IV_LV5_DATE_UTILS_H_
-#define _IV_LV5_DATE_UTILS_H_
+#ifndef IV_LV5_DATE_UTILS_H_
+#define IV_LV5_DATE_UTILS_H_
 #include <ctime>
 #include <cmath>
 #include <cstring>
@@ -343,4 +343,4 @@ inline double TimeClip(double time) {
 #else
 #include "lv5/date_utils_posix.h"
 #endif  // OS_WIN
-#endif  // _IV_LV5_DATE_UTILS_H_
+#endif  // IV_LV5_DATE_UTILS_H_

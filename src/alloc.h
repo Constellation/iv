@@ -1,5 +1,5 @@
-#ifndef _IV_ALLOC_H_
-#define _IV_ALLOC_H_
+#ifndef IV_ALLOC_H_
+#define IV_ALLOC_H_
 #include <cstdlib>
 #include <new>
 #include <vector>
@@ -220,4 +220,4 @@ inline Space<1>::Space()
 }
 
 } }  // namespace iv::core
-#endif  // _IV_ALLOC_H_
+#endif  // IV_ALLOC_H_
