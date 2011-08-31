@@ -370,8 +370,8 @@ class Compiler
       it->label = table[opcode];
       std::advance(it, kOPLength[opcode]);
     }
-    core_->SetCompiled();
 #endif
+    core_->SetCompiled();
   }
 
   void CodeContextPrologue(Code* code) {
