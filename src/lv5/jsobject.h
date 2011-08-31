@@ -19,7 +19,6 @@ class JSFunction;
 class Callable;
 class Context;
 class Error;
-class JSString;
 
 class JSObject : public HeapObject {
  public:

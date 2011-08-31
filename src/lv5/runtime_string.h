@@ -65,22 +65,28 @@ inline int64_t SplitMatch(const JSString::Fiber* str,
 }
 
 inline JSVal StringSplit(Context* ctx,
-                         const JSString::Fiber* target,
-                         const JSString& rstr, uint32_t lim) {
-  Error e;
-  uint32_t length = 0;
+                         const JSString* target,
+                         const JSString* rstr, uint32_t lim, Error* e) {
+  const uint32_t rsize = rstr->size();
+  JSArray* const ary = JSArray::New(ctx);
+  if (rsize == 0) {
+    if (target->empty()) {
+      // "".split("") => []
+      return ary;
+    } else {
+      return target->Split(ctx, ary, lim, e);
+    }
+  } else if (rsize == 1) {
+    return target->Split(ctx, ary, (*rstr->GetFiber())[0], lim, e);
+  }
+  const uint32_t size = target->size();
+  const JSString::Fiber* fiber = target->GetFiber();
   uint32_t p = 0;
   uint32_t q = p;
-  const uint32_t size = target->size();
-  JSArray* const ary = JSArray::New(ctx);
-  const JSString::Fiber* rhs = rstr.GetFiber();
-  if (size == 0) {
-    if (detail::SplitMatch(target, q, rhs) != -1) {
-      return ary;
-    }
-  }
+  const JSString::Fiber* rhs = rstr->GetFiber();
+  uint32_t length = 0;
   while (q != size) {
-    const int64_t rs = detail::SplitMatch(target, q, rhs);
+    const int64_t rs = detail::SplitMatch(fiber, q, rhs);
     if (rs == -1) {
       ++q;
     } else {
@@ -91,14 +97,13 @@ inline JSVal StringSplit(Context* ctx,
         ary->DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
-                JSString::New(ctx, target->begin() + p, target->begin() + q),
+                JSString::New(ctx, fiber->begin() + p, fiber->begin() + q),
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
                 PropertyDescriptor::CONFIGURABLE),
-            false, &e);
+            false, e);
         ++length;
         if (length == lim) {
-          assert(!e);
           return ary;
         }
         q = p = end;
@@ -109,13 +114,12 @@ inline JSVal StringSplit(Context* ctx,
       ctx, symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           JSString::New(ctx,
-                        target->begin() + p,
-                        target->begin() + size),
+                        fiber->begin() + p,
+                        fiber->begin() + size),
           PropertyDescriptor::WRITABLE |
           PropertyDescriptor::ENUMERABLE |
           PropertyDescriptor::CONFIGURABLE),
-      false, &e);
-  assert(!e);
+      false, e);
   return ary;
 }
 
@@ -242,7 +246,8 @@ class StringReplacer : public Replacer<StringReplacer> {
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
-            builder->Append(str_fiber_->begin() + get<1>(res), str_fiber_->end());
+            builder->Append(str_fiber_->begin() + get<1>(res),
+                            str_fiber_->end());
             break;
 
           default:
@@ -374,7 +379,8 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     a[i++] = get<0>(res);
     a[i++] = str_;
     const JSVal result = function_->Call(&a, JSUndefined, IV_LV5_ERROR_VOID(e));
-    const JSString* const replaced_str = result.ToString(ctx_, IV_LV5_ERROR_VOID(e));
+    const JSString* const replaced_str =
+        result.ToString(ctx_, IV_LV5_ERROR_VOID(e));
     builder->Append(*replaced_str);
   }
 
@@ -821,7 +827,6 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
   const uint32_t args_count = args.size();
   uint32_t lim;
   if (args_count < 2 || args[1].IsUndefined()) {
@@ -863,15 +868,17 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   }
 
   if (!regexp) {
-    return detail::StringSplit(ctx, fiber, *target.string(), lim);
+    assert(target.IsString());
+    return detail::StringSplit(ctx, str, target.string(), lim, e);
   }
 
+  assert(target.IsObject());
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
   JSArray* const ary = JSArray::New(ctx);
   regexp::PairVector cap;
-  const uint32_t size = fiber->size();
+  const uint32_t size = str->size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(fiber, 0, *reg, &cap))) {
+    if (get<2>(detail::RegExpMatch(str->GetFiber(), 0, *reg, &cap))) {
       return ary;
     }
     ary->DefineOwnProperty(
@@ -885,6 +892,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     return ary;
   }
 
+  const JSString::Fiber* fiber = str->GetFiber();
   uint32_t p = 0;
   uint32_t q = p;
   uint32_t start_match = 0;

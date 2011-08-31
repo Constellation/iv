@@ -2,7 +2,7 @@
 #define _IV_LV5_STRING_BUILDER_H_
 #include <vector>
 #include <iterator>
-#include "lv5/jsstring.h"
+#include "lv5/jsstring_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -57,6 +57,8 @@ class BasicStringBuilder : protected std::vector<CharT> {
   using container_type::insert;
 
   using container_type::assign;
+
+  using container_type::clear;
 
   JSString* Build(Context* ctx) const {
     return JSString::New(ctx, container_type::begin(), container_type::end());

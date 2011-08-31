@@ -14,7 +14,7 @@
 #include "none.h"
 #include "utils.h"
 #include "lv5/hint.h"
-#include "lv5/jsstring.h"
+#include "lv5/jsstring_fwd.h"
 
 namespace iv {
 namespace lv5 {
