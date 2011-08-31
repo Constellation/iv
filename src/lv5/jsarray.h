@@ -21,8 +21,6 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-static const uint32_t kMaxVectorSize = 10000;
-
 static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
   // only accept
   // { enumrable: true, configurable: true, writable:true, value: VAL }
@@ -81,9 +79,11 @@ class JSArray : public JSObject {
   friend class railgun::VM;
   typedef GCMap<uint32_t, JSVal>::type SparseArray;
 
+  static const uint32_t kMaxVectorSize = 10000;
+
   JSArray(Context* ctx, uint32_t len)
     : JSObject(context::GetArrayMap(ctx)),
-      vector_((len <= detail::kMaxVectorSize) ? len : 4, JSEmpty),
+      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
       length_(len, PropertyDescriptor::WRITABLE) {
@@ -96,7 +96,7 @@ class JSArray : public JSObject {
   bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (detail::kMaxVectorSize > index) {
+      if (kMaxVectorSize > index) {
         // this target included in vector (if dense array)
         if (vector_.size() > index) {
           const JSVal& val = vector_[index];
@@ -176,7 +176,7 @@ class JSArray : public JSObject {
         } else {
           target = JSUndefined;
         }
-        if (detail::kMaxVectorSize > index) {
+        if (kMaxVectorSize > index) {
           if (vector_.size() > index) {
             vector_[index] = target;
           } else {
@@ -196,7 +196,7 @@ class JSArray : public JSObject {
                 desc, false, IV_LV5_ERROR_WITH(e, false));
         if (succeeded) {
           dense_ = false;
-          if (detail::kMaxVectorSize > index) {
+          if (kMaxVectorSize > index) {
             if (vector_.size() > index) {
               vector_[index] = JSEmpty;
             }
@@ -372,7 +372,7 @@ class JSArray : public JSObject {
   bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
     if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (detail::kMaxVectorSize > index) {
+      if (kMaxVectorSize > index) {
         if (vector_.size() > index) {
           JSVal& val = vector_[index];
           if (!val.IsEmpty()) {
@@ -466,7 +466,7 @@ class JSArray : public JSObject {
 
  private:
   void CompactionToLength(uint32_t length) {
-    if (length > detail::kMaxVectorSize) {
+    if (length > kMaxVectorSize) {
       if (map_) {
         map_->erase(
             map_->upper_bound(length - 1), map_->end());
@@ -490,14 +490,14 @@ class JSArray : public JSObject {
   }
 
   void Reserve(uint32_t len) {
-    if (len > detail::kMaxVectorSize) {
+    if (len > kMaxVectorSize) {
       // alloc map
       map_ = new (GC) SparseArray();
     }
   }
 
   void Set(uint32_t index, const JSVal& val) {
-    if (detail::kMaxVectorSize > index) {
+    if (kMaxVectorSize > index) {
       vector_[index] = val;
     } else {
       (*map_)[index] = val;
