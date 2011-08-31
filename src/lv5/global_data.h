@@ -24,7 +24,7 @@ class Context;
 class GlobalData {
  public:
   friend class Context;
-  typedef core::NormalRandomGenerator<core::Xor128> RandomGenerator;
+  typedef core::UniformRandomGenerator<core::Xor128> RandomGenerator;
 
   GlobalData(Context* ctx)
     : random_generator_(0, 1, std::time(NULL)),
