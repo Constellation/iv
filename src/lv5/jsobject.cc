@@ -144,14 +144,24 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  bool th,
                                  Error* e) {
   // section 8.12.9 [[DefineOwnProperty]]
-  const std::size_t offset = map_->Get(ctx, name);
-  if (offset != core::kNotFound) {
+  Slot slot;
+  if (GetOwnPropertySlot(ctx, name, &slot)) {
     // found
-    const PropertyDescriptor current = GetSlot(offset);
+    const PropertyDescriptor current = slot.desc();
     assert(!current.IsEmpty());
     bool returned = false;
     if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-      GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+      if (slot.IsCachable()) {
+        GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
+      } else {
+        // add property transition
+        // searching already created maps and if this is available, move to this
+        std::size_t offset;
+        map_ = map_->AddPropertyTransition(ctx, name, &offset);
+        slots_.resize(map_->GetSlotsSize(), JSUndefined);
+        // set newly created property
+        GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+      }
     }
     return returned;
   } else {
