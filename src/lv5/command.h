@@ -20,8 +20,9 @@ inline JSVal Print(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last;) {
-      const JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
-      std::fputs(str->GetUTF8().c_str(), stdout);
+      JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
+      const JSString::Fiber* fiber = str->GetFiber();
+      iv::core::unicode::FPutsUTF16(stdout, fiber->begin(), fiber->end());
       if (++it != last) {
         std::fputc(' ', stdout);
       } else {
