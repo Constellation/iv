@@ -10,7 +10,8 @@ template<class T>
 class Singleton : private core::Noncopyable<T> {
  public:
   static T* Instance() {
-    thread::CallOnce(&once_, &Singleton<T>::Initialize);
+    static thread::Once once = IV_ONCE_INIT;
+    thread::CallOnce(&once, &Singleton<T>::Initialize);
     return instance_;
   }
 
@@ -24,19 +25,13 @@ class Singleton : private core::Noncopyable<T> {
   static void Destroy() {
     delete instance_;
     instance_ = NULL;
-    thread::ResetOnce(&once_);
   }
 
-  static thread::Once once_;
   static T* instance_;
 };
 
 template<class T>
-thread::Once Singleton<T>::once_;
-
-template<class T>
 T* Singleton<T>::instance_ = NULL;
-
 
 } }  // namespace iv::core
 #endif  // IV_SINGLETON_H_
