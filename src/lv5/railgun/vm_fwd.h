@@ -30,7 +30,7 @@ class VM {
   VM(Context* ctx)
     : ctx_(ctx),
       operation_(ctx),
-      stack_(),
+      stack_(ctx->global_obj()),
       direct_threading_dispatch_table_(NULL) {
   }
 
