@@ -928,100 +928,33 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
-        if (instr[2].map == global->map()) {
-          // map is cached, so use previous index code
-          const JSVal val = operation_.IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
-          PUSH(val);
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          Slot slot;
-          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            instr[2].map = global->map();
-            instr[3].value = slot.offset();
-            const JSVal val = operation_.IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
-            PUSH(val);
-          } else {
-            instr[2].map = NULL;
-            const JSVal val =
-                operation_.IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
-            PUSH(val);
-          }
-        }
+        const JSVal val =
+            operation_.IncrementGlobal<-1, 1>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+        PUSH(val);
         DISPATCH(DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
-        if (instr[2].map == global->map()) {
-          // map is cached, so use previous index code
-          const JSVal val = operation_.IncrementGlobal<-1, 0>(global, instr[3].value, strict, ERR);
-          PUSH(val);
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          Slot slot;
-          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            instr[2].map = global->map();
-            instr[3].value = slot.offset();
-            const JSVal val =
-                operation_.IncrementGlobal<-1, 0>(global,
-                                                  instr[3].value, strict, ERR);
-            PUSH(val);
-          } else {
-            instr[2].map = NULL;
-            const JSVal val =
-                operation_.IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
-            PUSH(val);
-          }
-        }
+        const JSVal val =
+            operation_.IncrementGlobal<-1, 0>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+        PUSH(val);
         DISPATCH(POSTFIX_DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
-        if (instr[2].map == global->map()) {
-          // map is cached, so use previous index code
-          const JSVal val = operation_.IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
-          PUSH(val);
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          Slot slot;
-          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            instr[2].map = global->map();
-            instr[3].value = slot.offset();
-            const JSVal val =
-                operation_.IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
-            PUSH(val);
-          } else {
-            instr[2].map = NULL;
-            const JSVal val =
-                operation_.IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
-            PUSH(val);
-          }
-        }
+        const JSVal val =
+            operation_.IncrementGlobal<1, 1>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+        PUSH(val);
         DISPATCH(INCREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
-        if (instr[2].map == global->map()) {
-          // map is cached, so use previous index code
-          const JSVal val = operation_.IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
-          PUSH(val);
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          Slot slot;
-          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            instr[2].map = global->map();
-            instr[3].value = slot.offset();
-            const JSVal val =
-                operation_.IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
-            PUSH(val);
-          } else {
-            instr[2].map = NULL;
-            const JSVal val = operation_.IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
-            PUSH(val);
-          }
-        }
+        const JSVal val =
+            operation_.IncrementGlobal<1, 0>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+        PUSH(val);
         DISPATCH(POSTFIX_INCREMENT_GLOBAL);
       }
 

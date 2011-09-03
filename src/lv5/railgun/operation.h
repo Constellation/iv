@@ -482,11 +482,6 @@ class Operation {
     return JSVal::Int32(left | rhs.ToInt32(ctx_, e));
   }
 
-#undef CHECK
-
-
-#define CHECK IV_LV5_ERROR_WITH(e, 0.0)
-
   template<int Target, std::size_t Returned>
   JSVal IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, s)) {
@@ -612,6 +607,26 @@ class Operation {
       const JSString* str =
           val.ToString(ctx_, IV_LV5_ERROR_WITH(e, symbol::length()));
       return context::Intern(ctx_, str);
+    }
+  }
+
+  template<int Target, std::size_t Returned>
+  JSVal IncrementGlobal(JSGlobal* global,
+                        Instruction* instr,
+                        const Symbol& s, bool strict, Error* e) {
+    if (instr[2].map == global->map()) {
+      // map is cached, so use previous index code
+      return IncrementGlobal<Target, Returned>(global, instr[3].value, strict, e);
+    } else {
+      Slot slot;
+      if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
+        instr[2].map = global->map();
+        instr[3].value = slot.offset();
+        return IncrementGlobal<Target, Returned>(global, instr[3].value, strict, e);
+      } else {
+        instr[2].map = NULL;
+        return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
+      }
     }
   }
 
