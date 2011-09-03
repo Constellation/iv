@@ -132,7 +132,7 @@ void Context::InitContext(JSFunction* func_constructor,
   bind::Object global_binder(this, global_obj());
 
   // Object and Function
-  JSObject* const obj_proto = JSObject::NewPlain(this);
+  JSObject* const obj_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const obj_constructor =
       JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
 

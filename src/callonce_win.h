@@ -10,7 +10,8 @@ enum OnceState {
   ONCE_DONE
 };
 
-#define IV_ONCE_INIT { 0, 0 }
+#define IV_ONCE_INIT\
+  { ::iv::core::thread::ONCE_INIT, ::iv::core::thread::ONCE_INIT }
 
 struct Once {
 #ifdef IV_OS_WIN
