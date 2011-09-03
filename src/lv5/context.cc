@@ -828,9 +828,9 @@ void Context::InitError(const ClassSlot& func_cls,
       // section 15.11.4.1 Error.prototype.constructor
       .def(symbol::constructor(), constructor, bind::W | bind::C)
       // section 15.11.4.2 Error.prototype.name
-      .def("name", JSString::NewAsciiString(this, "Error"), bind::NONE)
+      .def("name", JSString::NewAsciiString(this, "Error"), bind::W | bind::C)
       // section 15.11.4.3 Error.prototype.message
-      .def("message", JSString::NewEmptyString(this), bind::NONE)
+      .def("message", JSString::NewEmptyString(this), bind::W | bind::C)
       // section 15.11.4.4 Error.prototype.toString()
       .def<&runtime::ErrorToString, 0>(symbol::toString());
 
@@ -860,8 +860,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
   {
     // section 15.11.6.2 RangeError
@@ -889,8 +889,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
   {
     // section 15.11.6.3 ReferenceError
@@ -918,8 +918,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
   {
     // section 15.11.6.4 SyntaxError
@@ -947,8 +947,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
   {
     // section 15.11.6.5 TypeError
@@ -976,8 +976,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
   {
     // section 15.11.6.6 URIError
@@ -1005,8 +1005,8 @@ void Context::InitError(const ClassSlot& func_cls,
         .prototype(proto)
         .def(symbol::constructor(),
              sub_constructor, bind::W | bind::C)
-        .def("name", sub_cls.name_string, bind::NONE)
-        .def("message", JSString::NewEmptyString(this), bind::NONE);
+        .def("name", sub_cls.name_string, bind::W | bind::C)
+        .def("message", JSString::NewEmptyString(this), bind::W | bind::C);
   }
 }
 

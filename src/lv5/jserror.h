@@ -26,12 +26,12 @@ class JSError : public JSObject {
     : JSObject(context::GetErrorMap(ctx)),
       code_(code) {
     if (str) {
-      DefineOwnProperty(ctx, context::Intern(ctx, "message"),
-                             DataDescriptor(str,
-                                            PropertyDescriptor::CONFIGURABLE |
-                                            PropertyDescriptor::ENUMERABLE |
-                                            PropertyDescriptor::WRITABLE),
-                                            false, NULL);
+      DefineOwnProperty(ctx,
+                        context::Intern(ctx, "message"),
+                        DataDescriptor(str,
+                                       PropertyDescriptor::CONFIGURABLE |
+                                       PropertyDescriptor::WRITABLE),
+                                       false, NULL);
     }
   }
 
