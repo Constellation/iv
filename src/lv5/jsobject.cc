@@ -92,20 +92,29 @@ JSVal JSObject::Get(Context* ctx,
 
 // not recursion
 PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  if (GetPropertySlot(ctx, name, &slot)) {
+    return slot.desc();
+  }
+  return JSUndefined;
+}
+
+bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   const JSObject* obj = this;
   do {
-    const PropertyDescriptor prop = obj->GetOwnProperty(ctx, name);
-    if (!prop.IsEmpty()) {
-      return prop;
+    if (obj->GetOwnPropertySlot(ctx, name, slot)) {
+      assert(!slot.desc().IsEmpty());
+      return true;
     }
     obj = obj->prototype();
   } while (obj);
-  return JSUndefined;
+  return false;
 }
 
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   Slot slot;
   if (GetOwnPropertySlot(ctx, name, &slot)) {
+    assert(!slot.desc().IsEmpty());
     return slot.desc();
   } else {
     return JSUndefined;

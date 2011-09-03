@@ -38,13 +38,16 @@ class JSObject : public HeapObject {
 
   virtual JSVal Get(Context* ctx, Symbol name, Error* e);
 
-  // this is not virtual function
   // if you handle it, override GetOwnPropertySlot
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
 
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-
   virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+
+  // hook these functions
+
+  virtual bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
+
+  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
 
   virtual bool CanPut(Context* ctx, Symbol name) const;
 
