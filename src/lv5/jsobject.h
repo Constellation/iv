@@ -41,7 +41,8 @@ class JSObject : public HeapObject {
   // if you handle it, override GetOwnPropertySlot
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
 
-  virtual PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  // if you handle it, override GetPropertySlot
+  PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
 
   // hook these functions
 
