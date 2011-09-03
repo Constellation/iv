@@ -18,7 +18,43 @@ namespace lv5 {
 class Map : public gc {
  public:
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
-  typedef GCHashMap<Symbol, Map*>::type Transitions;
+
+  class Transitions {
+   public:
+    typedef GCHashMap<Symbol, Map*>::type Table;
+    explicit Transitions(bool enabled) : table_(NULL), enabled_(enabled) { }
+
+    bool IsEnabled() const {
+      return enabled_;
+    }
+
+    Map* Find(Symbol name) {
+      assert(IsEnabled());
+      if (table_) {
+        Table::const_iterator it = table_->find(name);
+        if (it != table_->end()) {
+          return it->second;
+        }
+      }
+      return NULL;
+    }
+
+    void Insert(Symbol name, Map* target) {
+      assert(IsEnabled());
+      if (!table_) {
+        table_ = new (GC) Table();
+      }
+      table_->insert(std::make_pair(name, target));
+    }
+
+    void Disable() {
+      table_ = NULL;
+      enabled_ = false;
+    }
+   private:
+    Table* table_;
+    bool enabled_;
+  };
 
   static const std::size_t kMaxTransition = 64;
 
@@ -70,13 +106,11 @@ class Map : public gc {
       *offset = slot;
       return this;
     } else {
-      assert(transitions_);
       // existing transition check
-      const Transitions::const_iterator it = transitions_->find(name);
-      if (it != transitions_->end()) {
+      if (Map* target = transitions_.Find(name)) {
         // found already created map. so, move to this
-        *offset = it->second->added_.second;
-        return it->second;
+        *offset = target->added_.second;
+        return target;
       }
 
       if (transit_count_ > kMaxTransition) {
@@ -96,7 +130,7 @@ class Map : public gc {
         map->calculated_size_ = GetSlotsSize() + 1;
       }
       map->transit_count_ = transit_count_ + 1;
-      transitions_->insert(std::make_pair(name, map));
+      transitions_.Insert(name, map);
       *offset = map->added_.second;
       assert(map->GetSlotsSize() > map->added_.second);
       return map;
@@ -111,10 +145,6 @@ class Map : public gc {
                                   Context* ctx,
                                   std::vector<Symbol>* vec,
                                   JSObject::EnumerationMode mode);
-
-  void MakeTransitionable(Context* ctx) {
-    transitions_ = new (GC) Transitions();
-  }
 
  private:
   class DeleteEntry {
@@ -169,7 +199,7 @@ class Map : public gc {
   struct UniqueTag { };
 
   bool IsUnique() const {
-    return transitions_ == NULL;
+    return !transitions_.IsEnabled();
   }
 
   bool HasTable() const {
@@ -189,7 +219,7 @@ class Map : public gc {
   explicit Map(Map* previous)
     : previous_(previous),
       table_(NULL),
-      transitions_(new (GC) Transitions()),
+      transitions_(true),
       deleted_(previous->deleted_),
       added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
@@ -199,7 +229,7 @@ class Map : public gc {
   Map()
     : previous_(NULL),
       table_(NULL),
-      transitions_(new (GC) Transitions()),
+      transitions_(true),
       deleted_(),
       added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(0),
@@ -212,7 +242,7 @@ class Map : public gc {
   Map(UniqueTag dummy)
     : previous_(NULL),
       table_(NULL),
-      transitions_(NULL),
+      transitions_(false),
       deleted_(),
       added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(0),
@@ -222,7 +252,7 @@ class Map : public gc {
   Map(Map* previous, UniqueTag dummy)
     : previous_(previous),
       table_((previous->IsUnique()) ? previous->table_ : NULL),
-      transitions_(NULL),
+      transitions_(false),
       deleted_(previous->deleted_),
       added_(std::make_pair(Symbol(), core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
@@ -294,7 +324,7 @@ class Map : public gc {
 
   Map* previous_;
   TargetTable* table_;
-  Transitions* transitions_;
+  Transitions transitions_;
   DeleteEntryHolder deleted_;
   std::pair<Symbol, std::size_t> added_;
   std::size_t calculated_size_;
