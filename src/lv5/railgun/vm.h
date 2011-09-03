@@ -32,37 +32,6 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class JSValRef : public JSVal {
- public:
-  friend class VM;
-
-  JSValRef(const JSVal& val)  // NOLINT
-    : JSVal(val) { }
-
-  JSValRef(JSVal* val) {  // NOLINT
-    value_.struct_.payload_.jsvalref_ = val;
-    value_.struct_.tag_ = lv5::detail::kJSValRefTag;
-  }
-
-  JSValRef& operator=(const JSVal& rhs) {
-    this_type(rhs).swap(*this);
-    return *this;
-  }
-
-  inline bool IsJSValRef() const {
-    return value_.struct_.tag_ == lv5::detail::kJSValRefTag;
-  }
-
-  inline bool IsPtr() const {
-    return IsJSValRef() || JSVal::IsPtr();
-  }
-
-  inline JSVal* Deref() const {
-    assert(IsJSValRef());
-    return value_.struct_.payload_.jsvalref_;
-  }
-};
-
 // Global start
 JSVal VM::Run(Code* code, Error* e) {
   Frame* frame = stack_.NewGlobalFrame(ctx_, code);
@@ -1456,12 +1425,10 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(FORIN_SETUP) {
         const JSVal v = TOP();
         if (v.IsNull() || v.IsUndefined()) {
-          // TODO(Constellation) more precise method
           JUMPTO(instr[1].value);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }
         POP_UNUSED();
-        // TODO(Constellation) implement JSIterator
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
         PUSH(JSVal::Ptr(it));

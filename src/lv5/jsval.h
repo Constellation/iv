@@ -146,7 +146,6 @@ static const uint32_t kEmptyTag       = 0xfffffffa;
 static const uint32_t kUndefinedTag   = 0xfffffff9;
 static const uint32_t kNullTag        = 0xfffffff8;
 static const uint32_t kBoolTag        = 0xfffffff7;
-static const uint32_t kJSValRefTag    = 0xfffffff6;  // use VM only
 static const uint32_t kNumberTag      = 0xfffffff5;
 static const uint32_t kInt32Tag       = 0xfffffff4;
 
@@ -590,7 +589,6 @@ class JSVal {
     set_value_ptr(val);
   }
 
-  // protected is for railgun::JSValRef
   value_type value_;
 };
 
