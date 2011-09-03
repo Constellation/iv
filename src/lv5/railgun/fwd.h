@@ -7,6 +7,7 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+class Operation;
 class VM;
 class CodeContext;
 class Code;

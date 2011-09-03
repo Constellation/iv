@@ -21,6 +21,7 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/vm_fwd.h"
 #include "lv5/railgun/op.h"
+#include "lv5/railgun/operation.h"
 #include "lv5/railgun/code.h"
 #include "lv5/railgun/frame.h"
 #include "lv5/railgun/instruction_fwd.h"
@@ -314,14 +315,14 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(LOAD_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadName(frame->lexical_env(), s, strict, ERR);
+        const JSVal w = operation_.LoadName(frame->lexical_env(), s, strict, ERR);
         PUSH(w);
         DISPATCH(LOAD_NAME);
       }
 
       DEFINE_OPCODE(LOAD_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        const JSVal w = operation_.LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(w);
         DISPATCH(LOAD_HEAP);
       }
@@ -353,7 +354,7 @@ MAIN_LOOP_START:
             PUSH(val);
           } else {
             instr[2].map = NULL;
-            const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
+            const JSVal w = operation_.LoadName(ctx_->global_env(), s, strict, ERR);
             PUSH(w);
           }
         }
@@ -363,7 +364,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(LOAD_ELEMENT) {
         const JSVal element = POP();
         const JSVal& base = TOP();
-        const JSVal res = LoadElement(sp, base, element, strict, ERR);
+        const JSVal res = operation_.LoadElement(sp, base, element, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_ELEMENT);
       }
@@ -372,9 +373,9 @@ MAIN_LOOP_START:
         // opcode | name | map | offset | nop | nop
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = LoadProp(sp, instr,
-                                   OP::LOAD_PROP_GENERIC,
-                                   base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(sp, instr,
+                                              OP::LOAD_PROP_GENERIC,
+                                              base, s, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_PROP);
       }
@@ -383,7 +384,7 @@ MAIN_LOOP_START:
         // no cache
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = LoadProp(sp, base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(sp, base, s, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_PROP_GENERIC);
       }
@@ -391,14 +392,14 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(STORE_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        StoreName(frame->lexical_env(), s, v, strict, ERR);
+        operation_.StoreName(frame->lexical_env(), s, v, strict, ERR);
         DISPATCH(STORE_NAME);
       }
 
       DEFINE_OPCODE(STORE_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        StoreHeap(frame->variable_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
+        operation_.StoreHeap(frame->variable_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -428,7 +429,7 @@ MAIN_LOOP_START:
             global->PutToSlotOffset(ctx_, instr[3].value, v, strict, ERR);
           } else {
             instr[2].map = NULL;
-            StoreName(ctx_->global_env(), s, v, strict, ERR);
+            operation_.StoreName(ctx_->global_env(), s, v, strict, ERR);
           }
         }
         DISPATCH(STORE_GLOBAL);
@@ -438,7 +439,7 @@ MAIN_LOOP_START:
         const JSVal w = POP();
         const JSVal element = POP();
         const JSVal base = TOP();
-        StoreElement(base, element, w, strict, ERR);
+        operation_.StoreElement(base, element, w, strict, ERR);
         SET_TOP(w);
         DISPATCH(STORE_ELEMENT);
       }
@@ -447,7 +448,7 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal w = POP();
         const JSVal base = TOP();
-        StoreProp(base, instr, OP::STORE_PROP_GENERIC, s, w, strict, ERR);
+        operation_.StoreProp(base, instr, OP::STORE_PROP_GENERIC, s, w, strict, ERR);
         SET_TOP(w);
         DISPATCH(STORE_PROP);
       }
@@ -456,7 +457,7 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal w = POP();
         const JSVal base = TOP();
-        StoreProp(base, s, w, strict, ERR);
+        operation_.StoreProp(base, s, w, strict, ERR);
         SET_TOP(w);
         DISPATCH(STORE_PROP_GENERIC);
       }
@@ -477,7 +478,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(DELETE_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
+        if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), s)) {
           const bool res = current->DeleteBinding(ctx_, s);
           PUSH(JSVal::Bool(res));
         } else {
@@ -758,7 +759,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(TYPEOF_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        if (JSEnv* current = GetEnv(frame->lexical_env(), s)) {
+        if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), s)) {
           const JSVal expr = current->GetBindingValue(ctx_, s, strict, ERR);
           PUSH(expr.TypeOf(ctx_));
         } else {
@@ -769,7 +770,7 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(TYPEOF_HEAP) {
-        JSDeclEnv* decl = GetHeapEnv(frame->variable_env(), instr[2].value);
+        JSDeclEnv* decl = operation_.GetHeapEnv(frame->variable_env(), instr[2].value);
         assert(decl);
         const JSVal expr = decl->GetByOffset(instr[3].value, strict, ERR);
         PUSH(expr.TypeOf(ctx_));
@@ -798,7 +799,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH(DECREMENT_NAME);
       }
@@ -806,7 +807,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_DECREMENT_NAME);
       }
@@ -814,7 +815,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH(INCREMENT_NAME);
       }
@@ -822,7 +823,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_NAME);
       }
@@ -830,7 +831,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementHeap<-1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<-1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(DECREMENT_HEAP);
       }
@@ -838,7 +839,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementHeap<-1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<-1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_DECREMENT_HEAP);
       }
@@ -846,7 +847,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementHeap<1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(INCREMENT_HEAP);
       }
@@ -854,7 +855,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            IncrementHeap<1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
@@ -933,7 +934,7 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
+          const JSVal val = operation_.IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
@@ -941,13 +942,12 @@ MAIN_LOOP_START:
           if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
             instr[2].map = global->map();
             instr[3].value = slot.offset();
-            const JSVal val = IncrementGlobal<-1, 1>(global,
-                                                     instr[3].value, strict, ERR);
+            const JSVal val = operation_.IncrementGlobal<-1, 1>(global, instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
             const JSVal val =
-                IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
+                operation_.IncrementName<-1, 1>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
           }
         }
@@ -958,7 +958,7 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = IncrementGlobal<-1, 0>(global, instr[3].value, strict, ERR);
+          const JSVal val = operation_.IncrementGlobal<-1, 0>(global, instr[3].value, strict, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
@@ -967,13 +967,13 @@ MAIN_LOOP_START:
             instr[2].map = global->map();
             instr[3].value = slot.offset();
             const JSVal val =
-                IncrementGlobal<-1, 0>(global,
-                                       instr[3].value, strict, ERR);
+                operation_.IncrementGlobal<-1, 0>(global,
+                                                  instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
             const JSVal val =
-                IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
+                operation_.IncrementName<-1, 0>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
           }
         }
@@ -984,7 +984,7 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
+          const JSVal val = operation_.IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
@@ -993,13 +993,12 @@ MAIN_LOOP_START:
             instr[2].map = global->map();
             instr[3].value = slot.offset();
             const JSVal val =
-                IncrementGlobal<1, 1>(global,
-                                      instr[3].value, strict, ERR);
+                operation_.IncrementGlobal<1, 1>(global, instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
             const JSVal val =
-                IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
+                operation_.IncrementName<1, 1>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
           }
         }
@@ -1010,7 +1009,7 @@ MAIN_LOOP_START:
         JSGlobal* global = ctx_->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          const JSVal val = IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
+          const JSVal val = operation_.IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
           PUSH(val);
         } else {
           const Symbol& s = GETITEM(names, instr[1].value);
@@ -1019,13 +1018,11 @@ MAIN_LOOP_START:
             instr[2].map = global->map();
             instr[3].value = slot.offset();
             const JSVal val =
-                IncrementGlobal<1, 0>(global,
-                                      instr[3].value, strict, ERR);
+                operation_.IncrementGlobal<1, 0>(global, instr[3].value, strict, ERR);
             PUSH(val);
           } else {
             instr[2].map = NULL;
-            const JSVal val =
-                IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
+            const JSVal val = operation_.IncrementName<1, 0>(ctx_->global_env(), s, strict, ERR);
             PUSH(val);
           }
         }
@@ -1035,8 +1032,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result =
-            IncrementElement<-1, 1>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<-1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_ELEMENT);
       }
@@ -1044,8 +1040,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result =
-            IncrementElement<-1, 0>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<-1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
@@ -1053,8 +1048,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result =
-            IncrementElement<1, 1>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<1, 1>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_ELEMENT);
       }
@@ -1062,8 +1056,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result =
-            IncrementElement<1, 0>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<1, 0>(sp, base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_ELEMENT);
       }
@@ -1071,7 +1064,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = IncrementProp<-1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<-1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_PROP);
       }
@@ -1079,7 +1072,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = IncrementProp<-1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<-1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
@@ -1087,7 +1080,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = IncrementProp<1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<1, 1>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_PROP);
       }
@@ -1095,7 +1088,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = IncrementProp<1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<1, 0>(sp, base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }
@@ -1122,7 +1115,7 @@ MAIN_LOOP_START:
                           static_cast<double>(rhs.int32())));
           }
         } else {
-          const JSVal res = BinaryAdd(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryAdd(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_ADD);
@@ -1140,7 +1133,7 @@ MAIN_LOOP_START:
                           static_cast<double>(rhs.int32())));
           }
         } else {
-          const JSVal res = BinarySub(lhs, rhs, ERR);
+          const JSVal res = operation_.BinarySub(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_SUBTRACT);
@@ -1155,7 +1148,7 @@ MAIN_LOOP_START:
             !((lhs.int32() | rhs.int32()) >> 15)) {
           SET_TOP(JSVal::Int32(lhs.int32() * rhs.int32()));
         } else {
-          const JSVal res = BinaryMultiply(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryMultiply(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_MULTIPLY);
@@ -1164,7 +1157,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_DIVIDE) {
         const JSVal rhs = POP();
         const JSVal lhs = TOP();
-        const JSVal res = BinaryDivide(lhs, rhs, ERR);
+        const JSVal res = operation_.BinaryDivide(lhs, rhs, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_DIVIDE);
       }
@@ -1180,7 +1173,7 @@ MAIN_LOOP_START:
             lhs.int32() >= 0 && rhs.int32() > 0) {
           SET_TOP(JSVal::Int32(lhs.int32() % rhs.int32()));
         } else {
-          const JSVal res = BinaryModulo(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryModulo(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_MODULO);
@@ -1192,7 +1185,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f)));
         } else {
-          const JSVal res = BinaryLShift(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryLShift(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_LSHIFT);
@@ -1204,7 +1197,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f)));
         } else {
-          const JSVal res = BinaryRShift(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryRShift(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_RSHIFT);
@@ -1217,7 +1210,7 @@ MAIN_LOOP_START:
         if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
           SET_TOP(JSVal::UInt32(left_result >> (rhs.int32() & 0x1f)));
         } else {
-          const JSVal res = BinaryRShiftLogical(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryRShiftLogical(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_RSHIFT_LOGICAL);
@@ -1226,7 +1219,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_LT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryCompareLT(v, w, ERR);
+        const JSVal res = operation_.BinaryCompareLT(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_LT);
       }
@@ -1234,7 +1227,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_LTE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryCompareLTE(v, w, ERR);
+        const JSVal res = operation_.BinaryCompareLTE(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_LTE);
       }
@@ -1242,7 +1235,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_GT) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryCompareGT(v, w, ERR);
+        const JSVal res = operation_.BinaryCompareGT(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_GT);
       }
@@ -1250,7 +1243,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_GTE) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryCompareGTE(v, w, ERR);
+        const JSVal res = operation_.BinaryCompareGTE(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_GTE);
       }
@@ -1258,7 +1251,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_INSTANCEOF) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryInstanceof(v, w, ERR);
+        const JSVal res = operation_.BinaryInstanceof(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_INSTANCEOF);
       }
@@ -1266,7 +1259,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(BINARY_IN) {
         const JSVal w = POP();
         const JSVal& v = TOP();
-        const JSVal res = BinaryIn(v, w, ERR);
+        const JSVal res = operation_.BinaryIn(v, w, ERR);
         SET_TOP(res);
         DISPATCH(BINARY_IN);
       }
@@ -1277,7 +1270,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Bool(lhs.int32() == rhs.int32()));
         } else {
-          const JSVal res = BinaryEqual(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryEqual(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_EQ);
@@ -1289,7 +1282,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Bool(lhs.int32() == rhs.int32()));
         } else {
-          const JSVal res = BinaryStrictEqual(lhs, rhs);
+          const JSVal res = operation_.BinaryStrictEqual(lhs, rhs);
           SET_TOP(res);
         }
         DISPATCH(BINARY_STRICT_EQ);
@@ -1301,7 +1294,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Bool(lhs.int32() != rhs.int32()));
         } else {
-          const JSVal res = BinaryNotEqual(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryNotEqual(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_NE);
@@ -1313,7 +1306,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Bool(lhs.int32() != rhs.int32()));
         } else {
-          const JSVal res = BinaryStrictNotEqual(lhs, rhs);
+          const JSVal res = operation_.BinaryStrictNotEqual(lhs, rhs);
           SET_TOP(res);
         }
         DISPATCH(BINARY_STRICT_NE);
@@ -1325,7 +1318,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Int32(lhs.int32() & rhs.int32()));
         } else {
-          const JSVal res = BinaryBitAnd(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryBitAnd(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_BIT_AND);
@@ -1337,7 +1330,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Int32(lhs.int32() ^ rhs.int32()));
         } else {
-          const JSVal res = BinaryBitXor(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryBitXor(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_BIT_XOR);
@@ -1349,7 +1342,7 @@ MAIN_LOOP_START:
         if (lhs.IsInt32() && rhs.IsInt32()) {
           SET_TOP(JSVal::Int32(lhs.int32() | rhs.int32()));
         } else {
-          const JSVal res = BinaryBitOr(lhs, rhs, ERR);
+          const JSVal res = operation_.BinaryBitOr(lhs, rhs, ERR);
           SET_TOP(res);
         }
         DISPATCH(BINARY_BIT_OR);
@@ -1457,7 +1450,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(RAISE_IMMUTABLE) {
         const Symbol& s = GETITEM(&frame->code()->locals(), instr[1].value);
-        RaiseImmutable(s, e);
+        operation_.RaiseImmutable(s, e);
         DISPATCH_ERROR();
       }
 
@@ -1609,7 +1602,7 @@ MAIN_LOOP_START:
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
-        const JSVal x = Invoke(func, sp, instr[1].value, ERR);
+        const JSVal x = operation_.Invoke(func, sp, instr[1].value, ERR);
         sp -= (argc + 2);
         PUSH(x);
         DISPATCH(CALL);
@@ -1654,7 +1647,7 @@ MAIN_LOOP_START:
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
-        const JSVal x = Construct(func, sp, instr[1].value, ERR);
+        const JSVal x = operation_.Construct(func, sp, instr[1].value, ERR);
         sp -= (argc + 2);
         PUSH(x);
         DISPATCH(CONSTRUCT);
@@ -1693,7 +1686,7 @@ MAIN_LOOP_START:
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
-        const JSVal x = InvokeMaybeEval(func, sp, instr[1].value, frame, ERR);
+        const JSVal x = operation_.InvokeMaybeEval(func, sp, instr[1].value, frame, ERR);
         sp -= (argc + 2);
         PUSH(x);
         DISPATCH(EVAL);
@@ -1701,12 +1694,12 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(CALL_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        if (JSEnv* target_env = GetEnv(frame->lexical_env(), s)) {
+        if (JSEnv* target_env = operation_.GetEnv(frame->lexical_env(), s)) {
           const JSVal w = target_env->GetBindingValue(ctx_, s, false, ERR);
           PUSH(w);
           PUSH(target_env->ImplicitThisValue());
         } else {
-          RaiseReferenceError(s, e);
+          operation_.RaiseReferenceError(s, e);
           DISPATCH_ERROR();
         }
         DISPATCH(CALL_NAME);
@@ -1714,7 +1707,7 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(CALL_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        const JSVal w = operation_.LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(w);
         PUSH(JSUndefined);
         DISPATCH(CALL_HEAP);
@@ -1747,7 +1740,7 @@ MAIN_LOOP_START:
             const JSVal val = slot.Get(ctx_, global, ERR);
             PUSH(val);
           } else {
-            const JSVal w = LoadName(ctx_->global_env(), s, strict, ERR);
+            const JSVal w = operation_.LoadName(ctx_->global_env(), s, strict, ERR);
             PUSH(w);
           }
         }
@@ -1758,7 +1751,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal res = LoadElement(sp, base, element, strict, ERR);
+        const JSVal res = operation_.LoadElement(sp, base, element, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_ELEMENT);
@@ -1767,9 +1760,9 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = LoadProp(sp, instr,
-                                   OP::CALL_PROP_GENERIC,
-                                   base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(sp, instr,
+                                              OP::CALL_PROP_GENERIC,
+                                              base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP);
@@ -1778,7 +1771,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_PROP_GENERIC) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = LoadProp(sp, base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(sp, base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP_GENERIC);
