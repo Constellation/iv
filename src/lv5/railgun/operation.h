@@ -186,7 +186,7 @@ class Operation {
         }
       }
     }
-    const JSObject* const o = base.ToObject(ctx_, CHECK);
+    JSObject* const o = base.ToObject(ctx_, CHECK);
     const PropertyDescriptor desc = o->GetProperty(ctx_, s);
     if (desc.IsEmpty()) {
       return JSUndefined;
@@ -197,8 +197,7 @@ class Operation {
       assert(desc.IsAccessorDescriptor());
       const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
       if (ac->get()) {
-        // FIXME(Constellation) conversion occcurred
-        VMArguments args(ctx_, sp - 1, 0);
+        ScopedArguments args(ctx_, 0, CHECK);
         const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
         return res;
       } else {
