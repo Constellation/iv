@@ -276,10 +276,6 @@ MAIN_LOOP_START:
         DISPATCH(NOP);
       }
 
-      DEFINE_OPCODE(NOP_ARGUMENT) {
-        DISPATCH(NOP_ARGUMENT);
-      }
-
       DEFINE_OPCODE(STOP_CODE) {
         // no return at last
         // return undefined

@@ -91,7 +91,6 @@ V(POSTFIX_DECREMENT_CALL_RESULT, 1)\
 V(TYPEOF, 1)\
 \
 /* opcodes over this requres argument */\
-V(NOP_ARGUMENT, 2)\
 V(POP_N, 2)\
 \
 V(STORE_OBJECT_DATA, 2)\
