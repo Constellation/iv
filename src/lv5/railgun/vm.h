@@ -331,29 +331,9 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(LOAD_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
-        if (instr[2].map == global->map()) {
-          // map is cached, so use previous index code
-          const JSVal val = global->GetBySlotOffset(ctx_, instr[3].value, ERR);
-          PUSH(val);
-        } else {
-          const Symbol& s = GETITEM(names, instr[1].value);
-          Slot slot;
-          if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            if (slot.IsCachable()) {
-              instr[2].map = global->map();
-              instr[3].value = slot.offset();
-            } else {
-              // not implemented yet
-              UNREACHABLE();
-            }
-            const JSVal val = slot.Get(ctx_, global, ERR);
-            PUSH(val);
-          } else {
-            instr[2].map = NULL;
-            const JSVal w = operation_.LoadName(ctx_->global_env(), s, strict, ERR);
-            PUSH(w);
-          }
-        }
+        const JSVal val =
+            operation_.LoadGlobal(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+        PUSH(val);
         DISPATCH(LOAD_GLOBAL);
       }
 

@@ -197,6 +197,7 @@ class Operation {
       assert(desc.IsAccessorDescriptor());
       const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
       if (ac->get()) {
+        // FIXME(Constellation) conversion occcurred
         VMArguments args(ctx_, sp - 1, 0);
         const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
         return res;
@@ -626,6 +627,28 @@ class Operation {
       } else {
         instr[2].map = NULL;
         return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
+      }
+    }
+  }
+
+  JSVal LoadGlobal(JSGlobal* global, Instruction* instr, const Symbol& s, bool strict, Error* e) {
+    if (instr[2].map == global->map()) {
+      // map is cached, so use previous index code
+      return global->GetBySlotOffset(ctx_, instr[3].value, e);
+    } else {
+      Slot slot;
+      if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
+        if (slot.IsCachable()) {
+          instr[2].map = global->map();
+          instr[3].value = slot.offset();
+        } else {
+          // not implemented yet
+          UNREACHABLE();
+        }
+        return slot.Get(ctx_, global, e);
+      } else {
+        instr[2].map = NULL;
+        return LoadName(ctx_->global_env(), s, strict, e);
       }
     }
   }
