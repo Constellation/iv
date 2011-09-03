@@ -103,7 +103,7 @@ bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   const JSObject* obj = this;
   do {
     if (obj->GetOwnPropertySlot(ctx, name, slot)) {
-      assert(!slot.desc().IsEmpty());
+      assert(!slot->desc().IsEmpty());
       return true;
     }
     obj = obj->prototype();

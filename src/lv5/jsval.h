@@ -137,21 +137,22 @@ struct JSUndefinedType { };
 struct JSEmptyType { };
 struct JSNaNType { };
 
-static const uint32_t kTrueTag        = 0xffffffff;
-static const uint32_t kFalseTag       = 0xfffffffe;
-static const uint32_t kEmptyTag       = 0xfffffffd;
-static const uint32_t kEnvironmentTag = 0xfffffffc;
-static const uint32_t kReferenceTag   = 0xfffffffb;
-static const uint32_t kUndefinedTag   = 0xfffffffa;
-static const uint32_t kNullTag        = 0xfffffff9;
-static const uint32_t kBoolTag        = 0xfffffff8;
-static const uint32_t kStringTag      = 0xfffffff7;
-static const uint32_t kObjectTag      = 0xfffffff6;
-static const uint32_t kErrorTag       = 0xfffffff5;
-static const uint32_t kOtherPtrTag    = 0xfffffff4;
-static const uint32_t kJSValRefTag    = 0xfffffff3;  // use VM only
-static const uint32_t kNumberTag      = 0xfffffff2;
-static const uint32_t kInt32Tag       = 0xfffffff1;
+static const uint32_t kOtherPtrTag    = 0xffffffff;  // ptr range end
+static const uint32_t kEnvironmentTag = 0xfffffffe;
+static const uint32_t kReferenceTag   = 0xfffffffd;
+static const uint32_t kStringTag      = 0xfffffffc;
+static const uint32_t kObjectTag      = 0xfffffffb;  // ptr range start
+static const uint32_t kEmptyTag       = 0xfffffffa;
+static const uint32_t kUndefinedTag   = 0xfffffff9;
+static const uint32_t kNullTag        = 0xfffffff8;
+static const uint32_t kBoolTag        = 0xfffffff7;
+static const uint32_t kJSValRefTag    = 0xfffffff6;  // use VM only
+static const uint32_t kNumberTag      = 0xfffffff5;
+static const uint32_t kInt32Tag       = 0xfffffff4;
+
+inline bool InPtrRange(uint32_t tag) {
+  return kObjectTag <= tag;
+}
 
 struct Int32Tag { };
 struct UInt32Tag { };
@@ -188,10 +189,6 @@ class JSVal {
   JSVal()
     : value_() {
     set_undefined();
-  }
-
-  JSVal(const JSVal& rhs)
-    : value_(rhs.value_) {
   }
 
   JSVal(const double& val)  // NOLINT
@@ -447,7 +444,7 @@ class JSVal {
 
   // TODO(Constellation) mv ptr tags to sequencial
   inline bool IsPtr() const {
-    return IsObject() || IsString() || IsReference() || IsEnvironment() || IsOtherPtr();
+    return detail::InPtrRange(value_.struct_.tag_);
   }
 
   JSString* TypeOf(Context* ctx) const;
@@ -599,27 +596,27 @@ class JSVal {
 
 inline bool JSTrue(JSVal x,
                    detail::JSTrueType dummy = detail::JSTrueType()) {
-  return true;
+  return x.IsBoolean() && x.boolean();
 }
 
 inline bool JSFalse(JSVal x,
                     detail::JSFalseType dummy = detail::JSFalseType()) {
-  return false;
+  return x.IsBoolean() && !x.boolean();
 }
 
 inline bool JSNull(JSVal x,
                    detail::JSNullType dummy = detail::JSNullType()) {
-  return false;
+  return x.IsNull();
 }
 
 inline bool JSUndefined(
     JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
-  return false;
+  return x.IsUndefined();
 }
 
 inline bool JSEmpty(JSVal x,
                     detail::JSEmptyType dummy = detail::JSEmptyType()) {
-  return false;
+  return x.IsEmpty();
 }
 
 inline bool JSNaN(JSVal x,
