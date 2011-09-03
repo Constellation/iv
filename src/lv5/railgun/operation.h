@@ -26,7 +26,6 @@ inline bool IsIncrementOverflowSafe<1>(int32_t val) {
 
 class Operation {
  public:
-  // normal pass
   explicit Operation(Context* ctx)
     : ctx_(ctx) {
   }
