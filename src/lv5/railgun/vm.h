@@ -607,7 +607,7 @@ MAIN_LOOP_START:
             OPLength<OP::JUMP_SUBROUTINE>::value;
         PUSH(JSEmpty);
         PUSH(addr);
-        PUSH(JSVal::Int32(0));
+        PUSH(JSVal::Int32(kJumpFromSubroutine));
         JUMPTO(instr[1].value);
         DISPATCH_WITH_NO_INCREMENT();
       }
@@ -618,7 +618,7 @@ MAIN_LOOP_START:
             std::distance(first_instr, instr) +
             OPLength<OP::JUMP_RETURN_HOOKED_SUBROUTINE>::value;
         PUSH(addr);
-        PUSH(JSVal::Int32(1));
+        PUSH(JSVal::Int32(kJumpFromReturn));
         JUMPTO(instr[1].value);
         DISPATCH_WITH_NO_INCREMENT();
       }
@@ -744,7 +744,7 @@ MAIN_LOOP_START:
           SET_TOP(JSVal::Int32(~v.int32()));
         } else {
           const double value = v.ToNumber(ctx_, ERR);
-          SET_TOP(~core::DoubleToInt32(value));
+          SET_TOP(JSVal::Int32(~core::DoubleToInt32(value)));
         }
         DISPATCH(UNARY_BIT_NOT);
       }
@@ -1382,7 +1382,7 @@ MAIN_LOOP_START:
         const JSVal v = POP();
         assert(flag.IsInt32());
         const int32_t f = flag.int32();
-        if (f == 0) {
+        if (f == kJumpFromSubroutine) {
           // JUMP_SUBROUTINE
           // return to caller
           POP_UNUSED();
@@ -1390,7 +1390,7 @@ MAIN_LOOP_START:
           const uint32_t addr = v.GetUInt32();
           JUMPTO(addr);
           DISPATCH_WITH_NO_INCREMENT();
-        } else if (f == 1) {
+        } else if (f == kJumpFromReturn) {
           // RETURN HOOK
           assert(v.IsNumber());
           const uint32_t addr = v.GetUInt32();
@@ -1399,6 +1399,7 @@ MAIN_LOOP_START:
         } else {
           // ERROR FINALLY JUMP
           // rethrow error
+          assert(f == kJumpFromFinally);
           POP_UNUSED();
           e->Report(v);
           DISPATCH_ERROR();
@@ -1823,7 +1824,7 @@ MAIN_LOOP_START:
           PUSH(error);
           if (handler == Handler::FINALLY) {
             // finally jump if return or error raised
-            PUSH(JSVal::Int32(2));
+            PUSH(JSVal::Int32(kJumpFromFinally));
           }
           JUMPTO(end);
           GO_MAIN_LOOP();

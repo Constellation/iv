@@ -36,6 +36,10 @@ class VM {
   inline JSVal Execute(Frame* frame, Error* e);
   inline JSVal Execute(const Arguments& args, JSVMFunction* func, Error* e);
 
+  static const int32_t kJumpFromSubroutine = 0;
+  static const int32_t kJumpFromReturn = 1;
+  static const int32_t kJumpFromFinally = 2;
+
   // normal pass
   VM()
     : ctx_(NULL),
