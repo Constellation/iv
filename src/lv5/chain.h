@@ -108,7 +108,7 @@ class Chain : private core::Noncopyable<Chain> {
     JSObject* current = from;
     while (true) {
       assert(current);
-      *it++ = current->map();
+      *it++ = current->FlattenMap();
       if (current->prototype() == to) {
         // last one
         break;

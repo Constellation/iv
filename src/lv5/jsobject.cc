@@ -348,6 +348,12 @@ JSObject* JSObject::New(Context* ctx, Map* map) {
   return obj;
 }
 
+Map* JSObject::FlattenMap() {
+  // make map transitable
+  map_->MakeTransitable();
+  return map_;
+}
+
 JSObject* JSObject::NewPlain(Context* ctx) {
   return new JSObject(context::GetEmptyObjectMap(ctx));
 }

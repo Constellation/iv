@@ -51,10 +51,70 @@ class Map : public gc {
       table_ = NULL;
       enabled_ = false;
     }
+
+    void Enable() {
+      if (table_) {
+        table_->clear();
+      }
+      enabled_ = true;
+    }
    private:
     Table* table_;
     bool enabled_;
   };
+
+
+  class DeleteEntry {
+   public:
+    DeleteEntry(DeleteEntry* prev, std::size_t offset)
+      : prev_(prev),
+        offset_(offset) {
+    }
+
+    std::size_t offset() const {
+      return offset_;
+    }
+
+    DeleteEntry* previous() const {
+      return prev_;
+    }
+
+   private:
+    DeleteEntry* prev_;
+    std::size_t offset_;
+  };
+
+  class DeleteEntryHolder {
+   public:
+    DeleteEntryHolder() : entry_(NULL), size_(0) { }
+    std::size_t size() const {
+      return size_;
+    }
+
+    void Push(std::size_t offset) {
+      entry_ = new (GC) DeleteEntry(entry_, offset);
+      ++size_;
+    }
+
+    std::size_t Pop() {
+      assert(entry_);
+      const std::size_t res = entry_->offset();
+      entry_ = entry_->previous();
+      --size_;
+      return res;
+    }
+
+    bool empty() const {
+      return size_ == 0;
+    }
+
+   private:
+    DeleteEntry* entry_;
+    std::size_t size_;
+  };
+
+  struct UniqueTag { };
+
 
   static const std::size_t kMaxTransition = 64;
 
@@ -146,58 +206,12 @@ class Map : public gc {
                                   std::vector<Symbol>* vec,
                                   JSObject::EnumerationMode mode);
 
+  void MakeTransitable() {
+    if (IsUnique()) {
+      transitions_.Enable();
+    }
+  }
  private:
-  class DeleteEntry {
-   public:
-    DeleteEntry(DeleteEntry* prev, std::size_t offset)
-      : prev_(prev),
-        offset_(offset) {
-    }
-
-    std::size_t offset() const {
-      return offset_;
-    }
-
-    DeleteEntry* previous() const {
-      return prev_;
-    }
-
-   private:
-    DeleteEntry* prev_;
-    std::size_t offset_;
-  };
-
-  class DeleteEntryHolder {
-   public:
-    DeleteEntryHolder() : entry_(NULL), size_(0) { }
-    std::size_t size() const {
-      return size_;
-    }
-
-    void Push(std::size_t offset) {
-      entry_ = new (GC) DeleteEntry(entry_, offset);
-      ++size_;
-    }
-
-    std::size_t Pop() {
-      assert(entry_);
-      const std::size_t res = entry_->offset();
-      entry_ = entry_->previous();
-      --size_;
-      return res;
-    }
-
-    bool empty() const {
-      return size_ == 0;
-    }
-
-   private:
-    DeleteEntry* entry_;
-    std::size_t size_;
-  };
-
-  struct UniqueTag { };
-
   bool IsUnique() const {
     return !transitions_.IsEnabled();
   }
@@ -221,7 +235,7 @@ class Map : public gc {
       table_(NULL),
       transitions_(true),
       deleted_(previous->deleted_),
-      added_(std::make_pair(Symbol(), core::kNotFound)),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
       transit_count_(0) {
   }
@@ -231,7 +245,7 @@ class Map : public gc {
       table_(NULL),
       transitions_(true),
       deleted_(),
-      added_(std::make_pair(Symbol(), core::kNotFound)),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
       calculated_size_(0),
       transit_count_(0) {
   }
@@ -244,7 +258,7 @@ class Map : public gc {
       table_(NULL),
       transitions_(false),
       deleted_(),
-      added_(std::make_pair(Symbol(), core::kNotFound)),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
       calculated_size_(0),
       transit_count_(0) {
   }
@@ -254,7 +268,7 @@ class Map : public gc {
       table_((previous->IsUnique()) ? previous->table_ : NULL),
       transitions_(false),
       deleted_(previous->deleted_),
-      added_(std::make_pair(Symbol(), core::kNotFound)),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
       transit_count_(0) {
   }
