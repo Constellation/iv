@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "ast_visitor.h"
 #include "noncopyable.h"
+#include "conversions.h"
 #include "static_assert.h"
 #include "enable_if.h"
 #include "unicode.h"
@@ -116,7 +117,7 @@ class DepthPoint : private core::Noncopyable<> {
 };
 
 // save continuation status and find dead code
-class ContinuationStatus : private iv::core::Noncopyable<ContinuationStatus> {
+class ContinuationStatus : private core::Noncopyable<ContinuationStatus> {
  public:
   typedef std::unordered_set<const Statement*> ContinuationSet;
 
@@ -189,6 +190,37 @@ class Compiler
   typedef std::pair<LevelType, std::vector<std::size_t>*> LevelEntry;
   typedef std::vector<LevelEntry> LevelStack;
 
+  struct JSDoubleEquals {
+    bool operator()(double lhs, double rhs) const {
+      return
+          lhs == rhs &&
+          (static_cast<bool>(core::Signbit(lhs)) ==
+           static_cast<bool>(core::Signbit(rhs)));
+    }
+  };
+
+  struct UStringPieceHash {
+    std::size_t operator()(core::UStringPiece target) const {
+      return core::StringToHash(target);
+    }
+  };
+
+  struct UStringPieceEquals {
+    bool operator()(core::UStringPiece lhs, core::UStringPiece rhs) const {
+      return lhs == rhs;
+    }
+  };
+
+  typedef std::unordered_map<
+      double,
+      uint32_t,
+      std::hash<double>, JSDoubleEquals> JSDoubleToIndexMap;
+
+  typedef std::unordered_map<
+      core::UStringPiece,
+      uint32_t,
+      UStringPieceHash, UStringPieceEquals> JSStringToIndexMap;
+
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
@@ -200,6 +232,8 @@ class Compiler
       level_stack_(),
       stack_depth_(),
       symbol_to_index_map_(),
+      jsstring_to_index_map_(),
+      double_to_index_map_(),
       dynamic_env_level_(0),
       continuation_status_(),
       current_variable_scope_(),
@@ -382,6 +416,8 @@ class Compiler
     set_dynamic_env_level(0);
     ClearContinuation();
     ClearSymbolToIndexMap();
+    ClearJSStringToIndexMap();
+    ClearDoubleToIndexMap();
     code->set_start(data_->size());
   }
 
@@ -1539,31 +1575,26 @@ class Compiler
 
   void Visit(const StringLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    uint32_t i = 0;
-    for (JSVals::const_iterator it = code_->constants_.begin(),
-         last = code_->constants_.end(); it != last; ++it, ++i) {
-      if (it->IsString()) {
-        const JSString& str = *it->string();
-        core::UStringPiece temp(*str.GetFiber());
-        if (temp.compare(lit->value()) == 0) {
-          // duplicate constant pool
-          Emit<OP::LOAD_CONST>(i);
-          stack_depth_.Up();
-          point.LevelCheck(1);
-          return;
-        }
-      }
+    const JSStringToIndexMap::const_iterator it =
+        jsstring_to_index_map_.find(lit->value());
+    if (it != jsstring_to_index_map_.end()) {
+      // duplicate constant
+      Emit<OP::LOAD_CONST>(it->second);
+      stack_depth_.Up();
+      point.LevelCheck(1);
+      return;
     }
     // new constant value
-    Emit<OP::LOAD_CONST>(code_->constants_.size());
-    stack_depth_.Up();
+    const uint32_t index = code_->constants_.size();
     code_->constants_.push_back(JSString::New(ctx_, lit->value()));
+    jsstring_to_index_map_.insert(std::make_pair(lit->value(), index));
+    Emit<OP::LOAD_CONST>(index);
+    stack_depth_.Up();
     point.LevelCheck(1);
   }
 
   void Visit(const NumberLiteral* lit) {
     DepthPoint point(&stack_depth_);
-    uint32_t i = 0;
     const double val = lit->value();
 
     const int32_t i32 = static_cast<int32_t>(val);
@@ -1586,24 +1617,22 @@ class Compiler
       return;
     }
 
-    // double fall back
-    for (JSVals::const_iterator it = code_->constants_.begin(),
-         last = code_->constants_.end(); it != last; ++it, ++i) {
-      if (it->IsNumber() && it->number() == val &&
-          (static_cast<bool>(core::Signbit(it->number())) ==
-           static_cast<bool>(core::Signbit(val)))) {
-        // duplicate constant pool
-        Emit<OP::LOAD_CONST>(i);
-        stack_depth_.Up();
-        point.LevelCheck(1);
-        return;
-      }
+    const JSDoubleToIndexMap::const_iterator it =
+        double_to_index_map_.find(val);
+    if (it != double_to_index_map_.end()) {
+      // duplicate constant pool
+      Emit<OP::LOAD_CONST>(it->second);
+      stack_depth_.Up();
+      point.LevelCheck(1);
+      return;
     }
 
     // new constant value
-    Emit<OP::LOAD_CONST>(code_->constants_.size());
-    stack_depth_.Up();
+    const uint32_t index = code_->constants_.size();
     code_->constants_.push_back(val);
+    double_to_index_map_.insert(std::make_pair(val, index));
+    Emit<OP::LOAD_CONST>(index);
+    stack_depth_.Up();
     point.LevelCheck(1);
   }
 
@@ -2293,6 +2322,14 @@ class Compiler
     symbol_to_index_map_.clear();
   }
 
+  void ClearJSStringToIndexMap() {
+    jsstring_to_index_map_.clear();
+  }
+
+  void ClearDoubleToIndexMap() {
+    double_to_index_map_.clear();
+  }
+
   void ClearContinuation() {
     continuation_status_.Clear();
   }
@@ -2307,6 +2344,8 @@ class Compiler
   LevelStack level_stack_;
   StackDepth stack_depth_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
+  JSStringToIndexMap jsstring_to_index_map_;
+  JSDoubleToIndexMap double_to_index_map_;
   uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
