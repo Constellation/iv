@@ -187,6 +187,7 @@ class Compiler
     FINALLY,
     SUB
   };
+
   typedef std::pair<LevelType, std::vector<std::size_t>*> LevelEntry;
   typedef std::vector<LevelEntry> LevelStack;
 
