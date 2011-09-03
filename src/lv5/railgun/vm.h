@@ -1531,11 +1531,18 @@ MAIN_LOOP_START:
         DISPATCH(BUILD_ARRAY);
       }
 
-      DEFINE_OPCODE(INIT_ARRAY_ELEMENT) {
+      DEFINE_OPCODE(INIT_VECTOR_ARRAY_ELEMENT) {
         const JSVal w = POP();
         JSArray* ary = static_cast<JSArray*>(TOP().object());
-        ary->Set(instr[1].value, w);
-        DISPATCH(INIT_ARRAY_ELEMENT);
+        ary->SetToVector(instr[1].value, w);
+        DISPATCH(INIT_VECTOR_ARRAY_ELEMENT);
+      }
+
+      DEFINE_OPCODE(INIT_SPARSE_ARRAY_ELEMENT) {
+        const JSVal w = POP();
+        JSArray* ary = static_cast<JSArray*>(TOP().object());
+        ary->SetToMap(instr[1].value, w);
+        DISPATCH(INIT_SPARSE_ARRAY_ELEMENT);
       }
 
       DEFINE_OPCODE(BUILD_OBJECT) {
@@ -1544,11 +1551,11 @@ MAIN_LOOP_START:
         DISPATCH(BUILD_OBJECT);
       }
 
-      DEFINE_OPCODE(MAKE_CLOSURE) {
+      DEFINE_OPCODE(BUILD_FUNCTION) {
         Code* target = frame->code()->codes()[instr[1].value];
         JSFunction* x = JSVMFunction::New(ctx_, target, frame->lexical_env());
         PUSH(x);
-        DISPATCH(MAKE_CLOSURE);
+        DISPATCH(BUILD_FUNCTION);
       }
 
       DEFINE_OPCODE(BUILD_REGEXP) {

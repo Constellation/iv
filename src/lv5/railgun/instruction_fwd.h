@@ -4,6 +4,10 @@
 #include "lv5/railgun/op.h"
 namespace iv {
 namespace lv5 {
+
+class Map;
+class Chain;
+
 namespace railgun {
 
 struct Instruction {
@@ -13,6 +17,7 @@ struct Instruction {
     uint32_t value;
     int32_t i32;
     Map* map;
+    Chain* chain;
     StringSymbol symbol;
   };
 

@@ -482,7 +482,9 @@ class JSArray : public JSObject {
   }
 
   // use VM only
-  //   ReservedNew Reserve Set
+  //   ReservedNew
+  //   Reserve
+  //   Set
   static JSArray* ReservedNew(Context* ctx, uint32_t len) {
     JSArray* ary = New(ctx, len);
     ary->Reserve(len);
@@ -496,12 +498,15 @@ class JSArray : public JSObject {
     }
   }
 
-  void Set(uint32_t index, const JSVal& val) {
-    if (kMaxVectorSize > index) {
-      vector_[index] = val;
-    } else {
-      (*map_)[index] = val;
-    }
+  void SetToVector(uint32_t index, const JSVal& val) {
+    assert(kMaxVectorSize > index);
+    vector_[index] = val;
+  }
+
+  void SetToMap(uint32_t index, const JSVal& val) {
+    assert(kMaxVectorSize <= index);
+    assert(map_);
+    (*map_)[index] = val;
   }
 
   JSVals vector_;

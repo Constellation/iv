@@ -1674,7 +1674,11 @@ class Compiler
       const core::Maybe<const Expression>& expr = *it;
       if (expr) {
         expr.Address()->Accept(this);
-        Emit<OP::INIT_ARRAY_ELEMENT>(current);
+        if (JSArray::kMaxVectorSize > current) {
+          Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(current);
+        } else {
+          Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(current);
+        }
         stack_depth_.Down();
       }
     }
@@ -1720,7 +1724,7 @@ class Compiler
     code_->codes_.push_back(code);
     code_info_stack_.push_back(
         std::make_tuple(code, lit, current_variable_scope_));
-    Emit<OP::MAKE_CLOSURE>(index);
+    Emit<OP::BUILD_FUNCTION>(index);
     stack_depth_.Up();
     point.LevelCheck(1);
   }

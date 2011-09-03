@@ -13,8 +13,6 @@ class Code;
 struct Frame;
 class Stack;
 
-class Analyzer;
-
 class VariableScope;
 class FunctionScope;
 class WithScope;
