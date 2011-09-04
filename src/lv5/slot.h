@@ -17,13 +17,13 @@ namespace lv5 {
 class Slot {
  public:
   Slot()
-    : cacheable_(false),
+    : cacheable_(true),
       base_(NULL),
       desc_(JSUndefined),
       offset_(core::kNotFound) {
   }
 
-  bool IsCachable() const {
+  bool IsCacheable() const {
     return cacheable_;
   }
 
@@ -36,7 +36,7 @@ class Slot {
 
   void set_descriptor(const PropertyDescriptor& desc,
                       const JSObject* obj, std::size_t offset) {
-    cacheable_ = true;
+    cacheable_ = cacheable_ && true;
     base_ = obj;
     desc_ = desc;
     offset_ = offset;
@@ -56,6 +56,10 @@ class Slot {
 
   std::size_t offset() const {
     return offset_;
+  }
+
+  void MakeUnCacheable() {
+    cacheable_ = false;
   }
 
  private:

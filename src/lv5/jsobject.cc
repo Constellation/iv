@@ -160,7 +160,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
     assert(!current.IsEmpty());
     bool returned = false;
     if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-      if (slot.IsCachable()) {
+      if (slot.IsCacheable()) {
         GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
       } else {
         // add property transition

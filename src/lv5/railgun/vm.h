@@ -1752,7 +1752,7 @@ MAIN_LOOP_START:
           const Symbol& s = GETITEM(names, instr[1].value);
           Slot slot;
           if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            if (slot.IsCachable()) {
+            if (slot.IsCacheable()) {
               instr[2].map = global->map();
               instr[3].value = slot.offset();
             } else {

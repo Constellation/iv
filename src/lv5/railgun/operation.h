@@ -156,7 +156,7 @@ class Operation {
       JSObject* obj = base.object();
       if (obj->GetPropertySlot(ctx_, s, &slot)) {
         // property found
-        if (!slot.IsCachable()) {
+        if (!slot.IsCacheable()) {
           instr[0] = Instruction::GetOPInstruction(generic);
           return slot.Get(ctx_, obj, e);
         }
@@ -226,23 +226,14 @@ class Operation {
         }
       }
     }
-    JSObject* const o = base.ToObject(ctx_, CHECK);
-    const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-    if (desc.IsEmpty()) {
-      return JSUndefined;
-    }
-    if (desc.IsDataDescriptor()) {
-      return desc.AsDataDescriptor()->value();
+    // if base is primitive, property not found in "this" object
+    // so, lookup from proto
+    Slot slot;
+    JSObject* const proto = base.GetPrimitiveProto(ctx_);
+    if (proto->GetPropertySlot(ctx_, s, &slot)) {
+      return slot.Get(ctx_, base, e);
     } else {
-      assert(desc.IsAccessorDescriptor());
-      const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-      if (ac->get()) {
-        ScopedArguments args(ctx_, 0, CHECK);
-        const JSVal res = ac->get()->AsCallable()->Call(&args, base, CHECK);
-        return res;
-      } else {
-        return JSUndefined;
-      }
+      return JSUndefined;
     }
   }
 
@@ -305,7 +296,7 @@ class Operation {
       } else {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
-          if (slot.IsCachable()) {
+          if (slot.IsCacheable()) {
             instr[2].map = obj->map();
             instr[3].value = slot.offset();
             obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
@@ -677,7 +668,7 @@ class Operation {
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        if (slot.IsCachable()) {
+        if (slot.IsCacheable()) {
           instr[2].map = global->map();
           instr[3].value = slot.offset();
         } else {

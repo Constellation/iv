@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <iostream>
 #include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/gc_template.h"
@@ -95,6 +96,7 @@ class JSArray : public JSObject {
 
   bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
+      slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (kMaxVectorSize > index) {
         // this target included in vector (if dense array)
