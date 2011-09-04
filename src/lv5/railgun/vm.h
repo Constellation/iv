@@ -1525,46 +1525,73 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(STORE_OBJECT_DATA) {
-        const Symbol& name = GETITEM(names, instr[1].value);
+        // opcode | offset | merged
         const JSVal value = POP();
         const JSVal obj = TOP();
-        obj.object()->DefineOwnProperty(
-            ctx_, name,
-            DataDescriptor(value,
-                           PropertyDescriptor::WRITABLE |
-                           PropertyDescriptor::ENUMERABLE |
-                           PropertyDescriptor::CONFIGURABLE),
-            false, e);
+        assert(obj.object());
+        if (instr[2].value) {
+          obj.object()->GetSlot(instr[1].value) =
+              PropertyDescriptor::Merge(
+                  DataDescriptor(value,
+                                 PropertyDescriptor::WRITABLE |
+                                 PropertyDescriptor::ENUMERABLE |
+                                 PropertyDescriptor::CONFIGURABLE),
+              obj.object()->GetSlot(instr[1].value));
+        } else {
+          obj.object()->GetSlot(instr[1].value) =
+              DataDescriptor(value,
+                             PropertyDescriptor::WRITABLE |
+                             PropertyDescriptor::ENUMERABLE |
+                             PropertyDescriptor::CONFIGURABLE);
+        }
         assert(!*e);
         DISPATCH(STORE_OBJECT_DATA);
       }
 
       DEFINE_OPCODE(STORE_OBJECT_GET) {
-        const Symbol& name = GETITEM(names, instr[1].value);
+        // opcode | offset | merged
         const JSVal value = POP();
         const JSVal obj = TOP();
-        obj.object()->DefineOwnProperty(
-            ctx_, name,
-            AccessorDescriptor(value.object(), NULL,
-                               PropertyDescriptor::ENUMERABLE |
-                               PropertyDescriptor::CONFIGURABLE |
-                               PropertyDescriptor::UNDEF_SETTER),
-            false, e);
+        assert(obj.object());
+        if (instr[2].value) {
+          obj.object()->GetSlot(instr[1].value) =
+              PropertyDescriptor::Merge(
+                  AccessorDescriptor(value.object(), NULL,
+                                     PropertyDescriptor::ENUMERABLE |
+                                     PropertyDescriptor::CONFIGURABLE |
+                                     PropertyDescriptor::UNDEF_SETTER),
+              obj.object()->GetSlot(instr[1].value));
+        } else {
+          obj.object()->GetSlot(instr[1].value) =
+              AccessorDescriptor(value.object(), NULL,
+                                 PropertyDescriptor::ENUMERABLE |
+                                 PropertyDescriptor::CONFIGURABLE |
+                                 PropertyDescriptor::UNDEF_SETTER);
+        }
         assert(!*e);
         DISPATCH(STORE_OBJECT_GET);
       }
 
       DEFINE_OPCODE(STORE_OBJECT_SET) {
-        const Symbol& name = GETITEM(names, instr[1].value);
+        // opcode | offset | merged
         const JSVal value = POP();
         const JSVal obj = TOP();
-        obj.object()->DefineOwnProperty(
-            ctx_, name,
-            AccessorDescriptor(NULL, value.object(),
-                               PropertyDescriptor::ENUMERABLE |
-                               PropertyDescriptor::CONFIGURABLE |
-                               PropertyDescriptor::UNDEF_GETTER),
-            false, e);
+        assert(obj.object());
+        if (instr[2].value) {
+          obj.object()->GetSlot(instr[1].value) =
+              PropertyDescriptor::Merge(
+                  AccessorDescriptor(NULL, value.object(),
+                                     PropertyDescriptor::ENUMERABLE |
+                                     PropertyDescriptor::CONFIGURABLE |
+                                     PropertyDescriptor::UNDEF_GETTER),
+              obj.object()->GetSlot(instr[1].value));
+        } else {
+          obj.object()->GetSlot(instr[1].value) =
+              AccessorDescriptor(NULL, value.object(),
+                                 PropertyDescriptor::ENUMERABLE |
+                                 PropertyDescriptor::CONFIGURABLE |
+                                 PropertyDescriptor::UNDEF_GETTER);
+        }
         assert(!*e);
         DISPATCH(STORE_OBJECT_SET);
       }

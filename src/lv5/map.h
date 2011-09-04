@@ -126,6 +126,11 @@ class Map : public gc {
     return new Map();
   }
 
+  template<typename Iter>
+  static Map* NewObjectLiteralMap(Context* ctx, Iter it, Iter last) {
+    return new Map(it, last);
+  }
+
   std::size_t Get(Context* ctx, Symbol name) {
     if (!AllocateTableIfNeeded()) {
       return core::kNotFound;
@@ -276,6 +281,18 @@ class Map : public gc {
       deleted_(previous->deleted_),
       added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
       calculated_size_(previous->GetSlotsSize()),
+      transit_count_(0) {
+  }
+
+  // ObjectLiteral Map
+  template<typename Iter>
+  Map(Iter it, Iter last)
+    : previous_(NULL),
+      table_(new (GC) TargetTable(it, last)),
+      transitions_(true),
+      deleted_(),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
+      calculated_size_(GetSlotsSize()),
       transit_count_(0) {
   }
 

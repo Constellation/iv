@@ -93,9 +93,9 @@ V(TYPEOF, 1)\
 /* opcodes over this requres argument */\
 V(POP_N, 2)\
 \
-V(STORE_OBJECT_DATA, 2)\
-V(STORE_OBJECT_GET, 2)\
-V(STORE_OBJECT_SET, 2)\
+V(STORE_OBJECT_DATA, 3)\
+V(STORE_OBJECT_GET, 3)\
+V(STORE_OBJECT_SET, 3)\
 \
 /* property lookup opcodes */\
 V(LOAD_PROP, 6)\

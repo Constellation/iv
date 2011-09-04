@@ -22,7 +22,7 @@ JSObject::JSObject(Map* map)
     prototype_(NULL),
     extensible_(true),
     map_(map),
-    slots_() {
+    slots_(map->GetSlotsSize()) {
 }
 
 JSObject::JSObject(Map* map,
@@ -33,7 +33,7 @@ JSObject::JSObject(Map* map,
     prototype_(proto),
     extensible_(extensible),
     map_(map),
-    slots_() {
+    slots_(map->GetSlotsSize()) {
 }
 
 #define TRY(context, sym, arg, error)\

@@ -1719,31 +1719,45 @@ class Compiler
     using std::get;
     typedef ObjectLiteral::Properties Properties;
     DepthPoint point(&stack_depth_);
-    Map* map = Map::New(ctx_);
-    temporary_.push_back(map);
-    Instruction inst(0u);
-    inst.map = map;
-    Emit<OP::BUILD_OBJECT>(inst);
+    const std::size_t arg_index = CurrentSize() + 1;
+    Emit<OP::BUILD_OBJECT>(0u);
     stack_depth_.Up();
+    std::unordered_map<Symbol, std::size_t> slots;
     const Properties& properties = lit->properties();
     for (Properties::const_iterator it = properties.begin(),
          last = properties.end(); it != last; ++it) {
       const ObjectLiteral::Property& prop = *it;
       const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
       const Symbol name = get<1>(prop)->symbol();
-      const uint32_t index = SymbolToNameIndex(name);
+
+      uint32_t merged = 0;
+      uint32_t position = 0;
+      std::unordered_map<Symbol, std::size_t>::const_iterator it = slots.find(name);
+      if (it == slots.end()) {
+        position = slots.size();
+        slots.insert(std::make_pair(name, position));
+      } else {
+        merged = 1;  // already defined property
+        position = it->second;
+      }
+
       get<2>(prop)->Accept(this);
       if (type == ObjectLiteral::DATA) {
-        Emit<OP::STORE_OBJECT_DATA>(index);
+        Emit<OP::STORE_OBJECT_DATA>(position, merged);
         stack_depth_.Down();
       } else if (type == ObjectLiteral::GET) {
-        Emit<OP::STORE_OBJECT_GET>(index);
+        Emit<OP::STORE_OBJECT_GET>(position, merged);
         stack_depth_.Down();
       } else {
-        Emit<OP::STORE_OBJECT_SET>(index);
+        Emit<OP::STORE_OBJECT_SET>(position, merged);
         stack_depth_.Down();
       }
     }
+    Map* map = Map::NewObjectLiteralMap(ctx_, slots.begin(), slots.end());
+    temporary_.push_back(map);
+    Instruction inst(0u);
+    inst.map = map;
+    EmitArgAt(inst, arg_index);
     point.LevelCheck(1);
   }
 
