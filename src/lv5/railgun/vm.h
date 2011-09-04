@@ -340,27 +340,116 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(LOAD_ELEMENT) {
         const JSVal element = POP();
         const JSVal& base = TOP();
-        const JSVal res = operation_.LoadElement(sp, base, element, strict, ERR);
+        const JSVal res = operation_.LoadElement(base, element, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_ELEMENT);
       }
 
       DEFINE_OPCODE(LOAD_PROP) {
-        // opcode | name | map | offset | nop | nop
+        // opcode | name | nop | nop | nop | nop
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = operation_.LoadProp(sp, instr,
-                                              OP::LOAD_PROP_GENERIC,
-                                              base, s, strict, ERR);
+        const JSVal res =
+            operation_.LoadProp<
+              OP::LOAD_PROP_OWN,
+              OP::LOAD_PROP_PROTO,
+              OP::LOAD_PROP_CHAIN,
+              OP::LOAD_PROP_GENERIC>(instr, base, s, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_PROP);
+      }
+
+      DEFINE_OPCODE(LOAD_PROP_OWN) {
+        // opcode | name | map | offset | nop | nop
+        const JSVal& base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          if (instr[2].map == obj->map()) {
+            // cache hit
+            const JSVal res = obj->GetBySlotOffset(ctx_, instr[3].value, ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        DISPATCH(LOAD_PROP_OWN);
+      }
+
+      DEFINE_OPCODE(LOAD_PROP_PROTO) {
+        // opcode | name | map | map | offset | nop
+        const JSVal& base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          JSObject* proto = obj->prototype();
+          if (instr[2].map == obj->map() &&
+              proto && instr[3].map == proto->map()) {
+            // cache hit
+            const JSVal res = obj->GetFromDescriptor(
+                ctx_,
+                proto->GetSlot(instr[4].value), ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        DISPATCH(LOAD_PROP_PROTO);
+      }
+
+      DEFINE_OPCODE(LOAD_PROP_CHAIN) {
+        // opcode | name | chain | map | offset | nop
+        const JSVal& base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
+            // cache hit
+            const JSVal res = obj->GetFromDescriptor(
+                ctx_, cached->GetSlot(instr[4].value), ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        DISPATCH(LOAD_PROP_CHAIN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_GENERIC) {
         // no cache
         const JSVal& base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = operation_.LoadProp(sp, base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(base, s, strict, ERR);
         SET_TOP(res);
         DISPATCH(LOAD_PROP_GENERIC);
       }
@@ -941,7 +1030,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<-1, 1>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<-1, 1>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_ELEMENT);
       }
@@ -949,7 +1038,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<-1, 0>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<-1, 0>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
@@ -957,7 +1046,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<1, 1>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<1, 1>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_ELEMENT);
       }
@@ -965,7 +1054,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<1, 0>(sp, base, element, strict, ERR);
+        const JSVal result = operation_.IncrementElement<1, 0>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_ELEMENT);
       }
@@ -973,7 +1062,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<-1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<-1, 1>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_PROP);
       }
@@ -981,7 +1070,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<-1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<-1, 0>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
@@ -989,7 +1078,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<1, 1>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<1, 1>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_PROP);
       }
@@ -997,7 +1086,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<1, 0>(sp, base, s, strict, ERR);
+        const JSVal result = operation_.IncrementProp<1, 0>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }
@@ -1660,7 +1749,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal res = operation_.LoadElement(sp, base, element, strict, ERR);
+        const JSVal res = operation_.LoadElement(base, element, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_ELEMENT);
@@ -1669,18 +1758,110 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(CALL_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = operation_.LoadProp(sp, instr,
-                                              OP::CALL_PROP_GENERIC,
-                                              base, s, strict, ERR);
+        const JSVal res =
+            operation_.LoadProp<
+              OP::CALL_PROP_OWN,
+              OP::CALL_PROP_PROTO,
+              OP::CALL_PROP_CHAIN,
+              OP::CALL_PROP_GENERIC>(instr, base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP);
       }
 
+      DEFINE_OPCODE(CALL_PROP_OWN) {
+        // opcode | name | map | offset | nop | nop
+        const JSVal base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          if (instr[2].map == obj->map()) {
+            // cache hit
+            const JSVal res = obj->GetBySlotOffset(ctx_, instr[3].value, ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        PUSH(base);
+        DISPATCH(CALL_PROP_OWN);
+      }
+
+      DEFINE_OPCODE(CALL_PROP_PROTO) {
+        // opcode | name | map | map | offset | nop
+        const JSVal base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          JSObject* proto = obj->prototype();
+          if (instr[2].map == obj->map() &&
+              proto && instr[3].map == proto->map()) {
+            // cache hit
+            const JSVal res = obj->GetFromDescriptor(
+                ctx_,
+                proto->GetSlot(instr[4].value), ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        PUSH(base);
+        DISPATCH(CALL_PROP_PROTO);
+      }
+
+      DEFINE_OPCODE(CALL_PROP_CHAIN) {
+        // opcode | name | chain | map | offset | nop
+        const JSVal base = TOP();
+        base.CheckObjectCoercible(ERR);
+        if (base.IsPrimitive()) {
+          // uncache
+          const Symbol& s = GETITEM(names, instr[1].value);
+          instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+          const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+          SET_TOP(res);
+        } else {
+          JSObject* obj = base.object();
+          if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
+            // cache hit
+            const JSVal res = obj->GetFromDescriptor(
+                ctx_, cached->GetSlot(instr[4].value), ERR);
+            SET_TOP(res);
+          } else {
+            // uncache
+            const Symbol& s = GETITEM(names, instr[1].value);
+            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
+            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
+            SET_TOP(res);
+          }
+        }
+        PUSH(base);
+        DISPATCH(CALL_PROP_CHAIN);
+      }
+
       DEFINE_OPCODE(CALL_PROP_GENERIC) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal res = operation_.LoadProp(sp, base, s, strict, ERR);
+        const JSVal res = operation_.LoadProp(base, s, strict, ERR);
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP_GENERIC);

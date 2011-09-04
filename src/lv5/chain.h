@@ -32,9 +32,21 @@ class Chain : private core::Noncopyable<Chain> {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
-  Chain* New(JSObject* begin, JSObject* end, std::size_t count) {
-    void* mem = GC_MALLOC(GetControlSize() + sizeof(Map*) * count);
-    return new (mem) Chain(begin, end, count);
+  // chain not contains end map
+  static Chain* New(const JSObject* begin, const JSObject* end) {
+    assert(begin != end);
+    assert(begin != NULL);
+    std::vector<Map*> maps;
+    maps.reserve(4);
+    const JSObject* current = begin;
+    do {
+      Map* map = current->FlattenMap();
+      maps.push_back(map);
+      current = current->prototype();
+    } while (current != end);
+    assert(maps.size() > 2);
+    void* mem = GC_MALLOC(GetControlSize() + sizeof(Map*) * maps.size());
+    return new (mem) Chain(maps.begin(), maps.size());
   }
 
   static std::size_t GetControlSize() {
@@ -101,22 +113,23 @@ class Chain : private core::Noncopyable<Chain> {
     return size_;
   }
 
- private:
-  Chain(JSObject* from, JSObject* to, size_type count)
-    : size_(count) {
-    iterator it = begin();
-    JSObject* current = from;
-    while (true) {
-      assert(current);
-      *it++ = current->FlattenMap();
-      if (current->prototype() == to) {
-        // last one
-        break;
-      } else {
-        current = current->prototype();
+  // maybe return NULL
+  JSObject* Validate(JSObject* target, Map* cache) const {
+    JSObject* current = target;
+    for (const_iterator it = cbegin(), last = cend();
+         current && it != last; ++it, current = current->prototype()) {
+      if (*it != current->map()) {
+        return NULL;
       }
     }
-    assert(it == end());
+    return (current && cache == current->map()) ? current : NULL;
+  }
+
+ private:
+  template<typename Iter>
+  Chain(Iter it, std::size_t count)
+    : size_(count) {
+    std::copy(it, it + count, begin());
   }
 
   size_type size_;

@@ -3,6 +3,7 @@
 #include "arith.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
+#include "lv5/chain.h"
 #include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
@@ -114,61 +115,78 @@ class Operation {
     return JSEmpty;
   }
 
-  JSVal LoadProp(JSVal* sp, const JSVal& base,
+  JSVal LoadProp(const JSVal& base,
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    return LoadPropImpl(sp, base, s, strict, e);
+    return LoadPropImpl(base, s, strict, e);
   }
 
-  JSVal LoadProp(JSVal* sp, Instruction* instr,
-                 OP::Type generic,
+  template<OP::Type own, OP::Type proto, OP::Type chain, OP::Type generic>
+  JSVal LoadProp(Instruction* instr,
                  const JSVal& base,
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
-      return LoadPropPrimitive(sp, base, s, strict, e);
+      return LoadPropPrimitive(base, s, strict, e);
     } else {
-      // cache patten
+      Slot slot;
       JSObject* obj = base.object();
-      if (instr[2].map == obj->map()) {
-        // map is cached, so use previous index code
-        return obj->GetBySlotOffset(ctx_, instr[3].value, e);
-      } else {
-        Slot slot;
-        if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
-          if (slot.IsCachable()) {
-            instr[2].map = obj->map();
-            instr[3].value = slot.offset();
-          } else {
-            // dispatch generic path
-            instr[0] = Instruction::GetOPInstruction(generic);
-          }
-          return slot.Get(ctx_, obj, CHECK);
-        } else {
-          instr[2].map = NULL;
-          return obj->Get(ctx_, s, e);
+      if (obj->GetPropertySlot(ctx_, s, &slot)) {
+        // property found
+        if (!slot.IsCachable()) {
+          instr[0] = Instruction::GetOPInstruction(generic);
+          return slot.Get(ctx_, obj, e);
         }
+
+        // cache phase
+        // own property / proto property / chain lookup property
+        if (slot.base() == obj) {
+          // own property
+          instr[0] = Instruction::GetOPInstruction(own);
+          instr[2].map = obj->map();
+          instr[3].value = slot.offset();
+          return slot.Get(ctx_, obj, e);
+        }
+
+        if (slot.base() == obj->prototype()) {
+          // proto property
+          obj->FlattenMap();
+          instr[0] = Instruction::GetOPInstruction(proto);
+          instr[2].map = obj->map();
+          instr[3].map = slot.base()->map();
+          instr[4].value = slot.offset();
+          return slot.Get(ctx_, obj, e);
+        }
+
+        // chain property
+        instr[0] = Instruction::GetOPInstruction(chain);
+        instr[2].chain = Chain::New(obj, slot.base());
+        instr[3].map = slot.base()->map();
+        instr[4].value = slot.offset();
+        return slot.Get(ctx_, obj, e);
+      } else {
+        return JSUndefined;
       }
     }
   }
 
-  JSVal LoadElement(JSVal* sp, const JSVal& base,
+  JSVal LoadElement(const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const Symbol s = GetSymbol(element, CHECK);
-    return LoadPropImpl(sp, base, s, strict, e);
+    return LoadPropImpl(base, s, strict, e);
   }
 
-  JSVal LoadPropImpl(JSVal* sp, const JSVal& base,
+  JSVal LoadPropImpl(const JSVal& base,
                      const Symbol& s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
-      return LoadPropPrimitive(sp, base, s, strict, e);
+      return LoadPropPrimitive(base, s, strict, e);
     } else {
       return base.object()->Get(ctx_, s, e);
     }
   }
 
-  JSVal LoadPropPrimitive(JSVal* sp, const JSVal& base,
+  JSVal LoadPropPrimitive(const JSVal& base,
                           const Symbol& s, bool strict, Error* e) {
     // section 8.7.1 special [[Get]]
     assert(base.IsPrimitive());
@@ -556,11 +574,11 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementElement(JSVal* sp, const JSVal& base,
+  JSVal IncrementElement(const JSVal& base,
                          const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const Symbol s = GetSymbol(element, CHECK);
-    const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
+    const JSVal w = LoadPropImpl(base, s, strict, CHECK);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();
@@ -578,10 +596,10 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementProp(JSVal* sp, const JSVal& base,
+  JSVal IncrementProp(const JSVal& base,
                       const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    const JSVal w = LoadPropImpl(sp, base, s, strict, CHECK);
+    const JSVal w = LoadPropImpl(base, s, strict, CHECK);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();

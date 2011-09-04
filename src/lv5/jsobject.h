@@ -137,7 +137,7 @@ class JSObject : public HeapObject {
     return &cls;
   }
 
-  Map* FlattenMap();
+  Map* FlattenMap() const;
 
   const PropertyDescriptor& GetSlot(std::size_t n) const {
     assert(slots_.size() > n);

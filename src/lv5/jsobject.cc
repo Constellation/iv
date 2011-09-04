@@ -348,7 +348,7 @@ JSObject* JSObject::New(Context* ctx, Map* map) {
   return obj;
 }
 
-Map* JSObject::FlattenMap() {
+Map* JSObject::FlattenMap() const {
   // make map transitable
   map_->Flatten();
   return map_;

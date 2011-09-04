@@ -29,26 +29,39 @@ GC_ms_entry* CoreData::MarkChildren(GC_word* top,
             VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
           // OPCODE | SYM | MAP
-          if ((n + 2) < len) {
-            entry = GC_MARK_AND_PUSH(
-                (*data_)[n + 2].map,
-                entry, mark_sp_limit, reinterpret_cast<void**>(this));
-          }
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 2].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::BUILD_OBJECT>(instr)) {
           // OPCODE | MAP
-          if ((n + 1) < len) {
-            entry = GC_MARK_AND_PUSH(
-                (*data_)[n + 1].map,
-                entry, mark_sp_limit, reinterpret_cast<void**>(this));
-          }
-        } else if (VM::IsOP<OP::LOAD_PROP>(instr) ||
-                   VM::IsOP<OP::CALL_PROP>(instr) ||
-                   VM::IsOP<OP::STORE_PROP>(instr)) {
-          if ((n + 2) < len) {
-            entry = GC_MARK_AND_PUSH(
-                (*data_)[n + 2].map,
-                entry, mark_sp_limit, reinterpret_cast<void**>(this));
-          }
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 1].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::STORE_PROP>(instr)) {
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 2].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr) ||
+                   VM::IsOP<OP::CALL_PROP_OWN>(instr)) {
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 2].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr) ||
+                   VM::IsOP<OP::CALL_PROP_PROTO>(instr)) {
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 2].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 3].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr) ||
+                   VM::IsOP<OP::CALL_PROP_CHAIN>(instr)) {
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 2].chain,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 3].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
         }
         n += instr.GetLength();
       }
