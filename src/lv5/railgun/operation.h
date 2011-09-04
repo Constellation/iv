@@ -127,7 +127,30 @@ class Operation {
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
-      return LoadPropPrimitive(base, s, strict, e);
+      // section 8.7.1 special [[Get]]
+      assert(base.IsPrimitive());
+      if (base.IsString()) {
+        // string short circuit
+        JSString* str = base.string();
+        if (s == symbol::length()) {
+          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
+        }
+        if (symbol::IsArrayIndexSymbol(s)) {
+          const uint32_t index = symbol::GetIndexFromSymbol(s);
+          if (index < str->size()) {
+            return JSString::NewSingle(ctx_, str->GetAt(index));
+          }
+        }
+      }
+      // if base is primitive, property not found in "this" object
+      // so, lookup from proto
+      Slot slot;
+      JSObject* const proto = base.GetPrimitiveProto(ctx_);
+      if (proto->GetPropertySlot(ctx_, s, &slot)) {
+        return slot.Get(ctx_, base, e);
+      } else {
+        return JSUndefined;
+      }
     } else {
       Slot slot;
       JSObject* obj = base.object();

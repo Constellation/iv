@@ -452,6 +452,8 @@ class JSVal {
     return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
   }
 
+  JSObject* GetPrimitiveProto(Context* ctx) const;
+
   JSObject* ToObject(Context* ctx, Error* e) const;
 
   JSString* ToString(Context* ctx, Error* e) const;

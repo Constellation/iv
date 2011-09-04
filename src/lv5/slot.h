@@ -7,8 +7,10 @@
 #define IV_LV5_SLOT_H_
 #include "notfound.h"
 #include "lv5/property.h"
+#include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/jsobject.h"
+#include "lv5/jsfunction.h"
 namespace iv {
 namespace lv5 {
 
@@ -40,8 +42,19 @@ class Slot {
     offset_ = offset;
   }
 
-  JSVal Get(Context* ctx, JSObject* obj, Error* e) const {
-    return obj->GetFromDescriptor(ctx, desc_, e);
+  JSVal Get(Context* ctx, JSVal this_binding, Error* e) const {
+    if (desc_.IsDataDescriptor()) {
+      return desc_.AsDataDescriptor()->value();
+    } else {
+      assert(desc_.IsAccessorDescriptor());
+      JSObject* const getter = desc_.AsAccessorDescriptor()->get();
+      if (getter) {
+        ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
+        return getter->AsCallable()->Call(&a, this_binding, e);
+      } else {
+        return JSUndefined;
+      }
+    }
   }
 
   const JSObject* base() const {

@@ -5,6 +5,7 @@
 #include "lv5/jsval.h"
 #include "lv5/error.h"
 #include "lv5/jsobject.h"
+#include "lv5/context_utils.h"
 #include "lv5/jsbooleanobject.h"
 #include "lv5/jsnumberobject.h"
 #include "lv5/jsstringobject.h"
@@ -29,6 +30,17 @@ JSString* JSVal::TypeOf(Context* ctx) const {
   } else {
     assert(IsUndefined());
     return JSString::NewAsciiString(ctx, "undefined");
+  }
+}
+
+JSObject* JSVal::GetPrimitiveProto(Context* ctx) const {
+  assert(IsPrimitive());
+  if (IsString()) {
+    return context::GetClassSlot(ctx, Class::String).prototype;
+  } else if (IsNumber()) {
+    return context::GetClassSlot(ctx, Class::Number).prototype;
+  } else {  // IsBoolean()
+    return context::GetClassSlot(ctx, Class::Boolean).prototype;
   }
 }
 
