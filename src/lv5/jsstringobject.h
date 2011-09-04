@@ -10,8 +10,10 @@ namespace lv5 {
 
 class JSStringObject : public JSObject {
  public:
+  // FIXME(Constellation)
+  // using Map::New. we can use global map by setting length is same
   JSStringObject(Context* ctx, JSString* value)
-    : JSObject(context::GetStringMap(ctx)),
+    : JSObject(Map::NewUniqueMap(ctx)),
       value_(value),
       length_(static_cast<uint32_t>(value->size())) {
   }
