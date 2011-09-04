@@ -22,7 +22,10 @@ class Map : public gc {
   class Transitions {
    public:
     typedef GCHashMap<Symbol, Map*>::type Table;
-    explicit Transitions(bool enabled) : table_(NULL), enabled_(enabled) { }
+    explicit Transitions(bool enabled)
+      : table_(NULL),
+        enabled_(enabled),
+        unique_transition_(false) { }
 
     bool IsEnabled() const {
       return enabled_;
@@ -47,22 +50,20 @@ class Map : public gc {
       table_->insert(std::make_pair(name, target));
     }
 
-    void Disable() {
-      table_ = NULL;
-      enabled_ = false;
+    void EnableUniqueTransition() {
+      assert(!IsEnabled());
+      unique_transition_ = true;
     }
 
-    void Enable() {
-      if (table_) {
-        table_->clear();
-      }
-      enabled_ = true;
+    bool IsEnabledUniqueTransition() const {
+      return unique_transition_;
     }
+
    private:
     Table* table_;
     bool enabled_;
+    bool unique_transition_;
   };
-
 
   class DeleteEntry {
    public:
@@ -115,7 +116,6 @@ class Map : public gc {
 
   struct UniqueTag { };
 
-
   static const std::size_t kMaxTransition = 64;
 
   static Map* NewUniqueMap(Context* ctx) {
@@ -151,20 +151,27 @@ class Map : public gc {
 
   Map* AddPropertyTransition(Context* ctx, Symbol name, std::size_t* offset) {
     if (IsUnique()) {
-      // extend this map with not transition
+      // extend this map with no transition
       if (!HasTable()) {
         AllocateTable();
       }
       assert(HasTable());
-      std::size_t slot;
-      if (!deleted_.empty()) {
-        slot = deleted_.Pop();
+      Map* map = NULL;
+      if (transitions_.IsEnabledUniqueTransition()) {
+        map = NewUniqueMap(ctx, this);
       } else {
-        slot = GetSlotsSize();
+        map = this;
       }
-      table_->insert(std::make_pair(name, slot));
+      assert(map->HasTable());
+      std::size_t slot;
+      if (!map->deleted_.empty()) {
+        slot = map->deleted_.Pop();
+      } else {
+        slot = map->GetSlotsSize();
+      }
+      map->table_->insert(std::make_pair(name, slot));
       *offset = slot;
-      return this;
+      return map;
     } else {
       // existing transition check
       if (Map* target = transitions_.Find(name)) {
@@ -206,9 +213,9 @@ class Map : public gc {
                                   std::vector<Symbol>* vec,
                                   JSObject::EnumerationMode mode);
 
-  void MakeTransitable() {
+  void Flatten() {
     if (IsUnique()) {
-      transitions_.Enable();
+      transitions_.EnableUniqueTransition();
     }
   }
  private:
@@ -230,16 +237,7 @@ class Map : public gc {
     return new Map(previous);
   }
 
-  explicit Map(Map* previous)
-    : previous_(previous),
-      table_(NULL),
-      transitions_(true),
-      deleted_(previous->deleted_),
-      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
-      calculated_size_(previous->GetSlotsSize()),
-      transit_count_(0) {
-  }
-
+  // empty not unique map
   Map()
     : previous_(NULL),
       table_(NULL),
@@ -250,9 +248,17 @@ class Map : public gc {
       transit_count_(0) {
   }
 
-  // empty start table
-  // this is unique map. so only used in unique object, like
-  // Object.prototype, Array.prototype, GlobalObject...
+  explicit Map(Map* previous)
+    : previous_(previous),
+      table_(NULL),
+      transitions_(true),
+      deleted_(previous->deleted_),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
+      calculated_size_(previous->GetSlotsSize()),
+      transit_count_(0) {
+  }
+
+  // empty unique table
   Map(UniqueTag dummy)
     : previous_(NULL),
       table_(NULL),
@@ -322,6 +328,7 @@ class Map : public gc {
       table_->insert((*it)->added_);
     }
     assert(GetSlotsSize() == calculated_size_);
+    previous_ = NULL;
   }
 
   TargetTable* table() const {

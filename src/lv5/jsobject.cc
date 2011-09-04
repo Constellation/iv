@@ -350,7 +350,7 @@ JSObject* JSObject::New(Context* ctx, Map* map) {
 
 Map* JSObject::FlattenMap() {
   // make map transitable
-  map_->MakeTransitable();
+  map_->Flatten();
   return map_;
 }
 
