@@ -273,23 +273,7 @@ void JSObject::GetOwnPropertyNames(Context* ctx,
 }
 
 JSVal JSObject::GetBySlotOffset(Context* ctx, std::size_t n, Error* e) {
-  return GetFromDescriptor(ctx, GetSlot(n), e);
-}
-
-JSVal JSObject::GetFromDescriptor(Context* ctx,
-                                  const PropertyDescriptor& desc, Error* e) {
-  if (desc.IsDataDescriptor()) {
-    return desc.AsDataDescriptor()->value();
-  } else {
-    assert(desc.IsAccessorDescriptor());
-    JSObject* const getter = desc.AsAccessorDescriptor()->get();
-    if (getter) {
-      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-      return getter->AsCallable()->Call(&a, this, e);
-    } else {
-      return JSUndefined;
-    }
-  }
+  return GetSlot(n).Get(ctx, this, e);
 }
 
 void JSObject::PutToSlotOffset(Context* ctx,

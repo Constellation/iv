@@ -402,9 +402,7 @@ MAIN_LOOP_START:
           if (instr[2].map == obj->map() &&
               proto && instr[3].map == proto->map()) {
             // cache hit
-            const JSVal res = obj->GetFromDescriptor(
-                ctx_,
-                proto->GetSlot(instr[4].value), ERR);
+            const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
             SET_TOP(res);
           } else {
             // uncache
@@ -431,8 +429,7 @@ MAIN_LOOP_START:
           JSObject* obj = base.object();
           if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
             // cache hit
-            const JSVal res = obj->GetFromDescriptor(
-                ctx_, cached->GetSlot(instr[4].value), ERR);
+            const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
             SET_TOP(res);
           } else {
             // uncache
@@ -1840,9 +1837,7 @@ MAIN_LOOP_START:
           if (instr[2].map == obj->map() &&
               proto && instr[3].map == proto->map()) {
             // cache hit
-            const JSVal res = obj->GetFromDescriptor(
-                ctx_,
-                proto->GetSlot(instr[4].value), ERR);
+            const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
             SET_TOP(res);
           } else {
             // uncache
@@ -1870,8 +1865,7 @@ MAIN_LOOP_START:
           JSObject* obj = base.object();
           if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
             // cache hit
-            const JSVal res = obj->GetFromDescriptor(
-                ctx_, cached->GetSlot(instr[4].value), ERR);
+            const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
             SET_TOP(res);
           } else {
             // uncache

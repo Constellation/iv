@@ -4,7 +4,7 @@
 #include <gc/gc_cpp.h>
 #include "ast.h"
 #include "lv5/gc_template.h"
-#include "lv5/property.h"
+#include "lv5/property_fwd.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
 #include "lv5/heap_object.h"
@@ -70,9 +70,6 @@ class JSObject : public HeapObject {
   virtual void GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,
                                    EnumerationMode mode) const;
-
-  JSVal GetFromDescriptor(Context* ctx,
-                          const PropertyDescriptor& desc, Error* e);
 
   JSVal GetBySlotOffset(Context* ctx, std::size_t n, Error* e);
 

@@ -43,18 +43,7 @@ class Slot {
   }
 
   JSVal Get(Context* ctx, JSVal this_binding, Error* e) const {
-    if (desc_.IsDataDescriptor()) {
-      return desc_.AsDataDescriptor()->value();
-    } else {
-      assert(desc_.IsAccessorDescriptor());
-      JSObject* const getter = desc_.AsAccessorDescriptor()->get();
-      if (getter) {
-        ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-        return getter->AsCallable()->Call(&a, this_binding, e);
-      } else {
-        return JSUndefined;
-      }
-    }
+    return desc_.Get(ctx, this_binding, e);
   }
 
   const JSObject* base() const {

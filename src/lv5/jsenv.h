@@ -7,7 +7,7 @@
 #include "lv5/gc_template.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
-#include "lv5/property.h"
+#include "lv5/property_fwd.h"
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
 #include "lv5/heap_object.h"
