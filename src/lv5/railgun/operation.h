@@ -126,6 +126,7 @@ class Operation {
                  const JSVal& base,
                  const Symbol& s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
+    JSObject* obj = NULL;
     if (base.IsPrimitive()) {
       // section 8.7.1 special [[Get]]
       assert(base.IsPrimitive());
@@ -144,52 +145,46 @@ class Operation {
       }
       // if base is primitive, property not found in "this" object
       // so, lookup from proto
-      Slot slot;
-      JSObject* const proto = base.GetPrimitiveProto(ctx_);
-      if (proto->GetPropertySlot(ctx_, s, &slot)) {
-        return slot.Get(ctx_, base, e);
-      } else {
-        return JSUndefined;
-      }
+      obj = base.GetPrimitiveProto(ctx_);
     } else {
-      Slot slot;
-      JSObject* obj = base.object();
-      if (obj->GetPropertySlot(ctx_, s, &slot)) {
-        // property found
-        if (!slot.IsCacheable()) {
-          instr[0] = Instruction::GetOPInstruction(generic);
-          return slot.Get(ctx_, obj, e);
-        }
+      obj = base.object();
+    }
+    Slot slot;
+    if (obj->GetPropertySlot(ctx_, s, &slot)) {
+      // property found
+      if (!slot.IsCacheable()) {
+        instr[0] = Instruction::GetOPInstruction(generic);
+        return slot.Get(ctx_, base, e);
+      }
 
-        // cache phase
-        // own property / proto property / chain lookup property
-        if (slot.base() == obj) {
-          // own property
-          instr[0] = Instruction::GetOPInstruction(own);
-          instr[2].map = obj->map();
-          instr[3].value = slot.offset();
-          return slot.Get(ctx_, obj, e);
-        }
+      // cache phase
+      // own property / proto property / chain lookup property
+      if (slot.base() == obj) {
+        // own property
+        instr[0] = Instruction::GetOPInstruction(own);
+        instr[2].map = obj->map();
+        instr[3].value = slot.offset();
+        return slot.Get(ctx_, base, e);
+      }
 
-        if (slot.base() == obj->prototype()) {
-          // proto property
-          obj->FlattenMap();
-          instr[0] = Instruction::GetOPInstruction(proto);
-          instr[2].map = obj->map();
-          instr[3].map = slot.base()->map();
-          instr[4].value = slot.offset();
-          return slot.Get(ctx_, obj, e);
-        }
-
-        // chain property
-        instr[0] = Instruction::GetOPInstruction(chain);
-        instr[2].chain = Chain::New(obj, slot.base());
+      if (slot.base() == obj->prototype()) {
+        // proto property
+        obj->FlattenMap();
+        instr[0] = Instruction::GetOPInstruction(proto);
+        instr[2].map = obj->map();
         instr[3].map = slot.base()->map();
         instr[4].value = slot.offset();
-        return slot.Get(ctx_, obj, e);
-      } else {
-        return JSUndefined;
+        return slot.Get(ctx_, base, e);
       }
+
+      // chain property
+      instr[0] = Instruction::GetOPInstruction(chain);
+      instr[2].chain = Chain::New(obj, slot.base());
+      instr[3].map = slot.base()->map();
+      instr[4].value = slot.offset();
+      return slot.Get(ctx_, base, e);
+    } else {
+      return JSUndefined;
     }
   }
 

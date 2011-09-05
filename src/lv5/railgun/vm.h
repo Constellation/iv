@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 #include <string>
+#include <iostream>
 #include "notfound.h"
 #include "detail/memory.h"
 #include "detail/cstdint.h"
@@ -363,25 +364,23 @@ MAIN_LOOP_START:
         // opcode | name | map | offset | nop | nop
         const JSVal& base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        if (instr[2].map == obj->map()) {
+          // cache hit
+          const JSVal res = obj->GetSlot(instr[3].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          if (instr[2].map == obj->map()) {
-            // cache hit
-            const JSVal res = obj->GetBySlotOffset(ctx_, instr[3].value, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         DISPATCH(LOAD_PROP_OWN);
       }
@@ -390,27 +389,25 @@ MAIN_LOOP_START:
         // opcode | name | map | map | offset | nop
         const JSVal& base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        JSObject* proto = obj->prototype();
+        if (instr[2].map == obj->map() &&
+            proto && instr[3].map == proto->map()) {
+          // cache hit
+          const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          JSObject* proto = obj->prototype();
-          if (instr[2].map == obj->map() &&
-              proto && instr[3].map == proto->map()) {
-            // cache hit
-            const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         DISPATCH(LOAD_PROP_PROTO);
       }
@@ -419,25 +416,23 @@ MAIN_LOOP_START:
         // opcode | name | chain | map | offset | nop
         const JSVal& base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
+          // cache hit
+          const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
-            // cache hit
-            const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         DISPATCH(LOAD_PROP_CHAIN);
       }
@@ -1797,25 +1792,23 @@ MAIN_LOOP_START:
         // opcode | name | map | offset | nop | nop
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        if (instr[2].map == obj->map()) {
+          // cache hit
+          const JSVal res = obj->GetSlot(instr[3].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          if (instr[2].map == obj->map()) {
-            // cache hit
-            const JSVal res = obj->GetBySlotOffset(ctx_, instr[3].value, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         PUSH(base);
         DISPATCH(CALL_PROP_OWN);
@@ -1825,27 +1818,25 @@ MAIN_LOOP_START:
         // opcode | name | map | map | offset | nop
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        JSObject* proto = obj->prototype();
+        if (instr[2].map == obj->map() &&
+            proto && instr[3].map == proto->map()) {
+          // cache hit
+          const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          JSObject* proto = obj->prototype();
-          if (instr[2].map == obj->map() &&
-              proto && instr[3].map == proto->map()) {
-            // cache hit
-            const JSVal res = proto->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         PUSH(base);
         DISPATCH(CALL_PROP_PROTO);
@@ -1855,25 +1846,23 @@ MAIN_LOOP_START:
         // opcode | name | chain | map | offset | nop
         const JSVal base = TOP();
         base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
         if (base.IsPrimitive()) {
+          // primitive prototype cache
+          obj = base.GetPrimitiveProto(ctx_);
+        } else {
+          obj = base.object();
+        }
+        if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
+          // cache hit
+          const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          SET_TOP(res);
+        } else {
           // uncache
           const Symbol& s = GETITEM(names, instr[1].value);
           instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
           SET_TOP(res);
-        } else {
-          JSObject* obj = base.object();
-          if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
-            // cache hit
-            const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, obj, ERR);
-            SET_TOP(res);
-          } else {
-            // uncache
-            const Symbol& s = GETITEM(names, instr[1].value);
-            instr[0] = Instruction::GetOPInstruction(OP::CALL_PROP);
-            const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-            SET_TOP(res);
-          }
         }
         PUSH(base);
         DISPATCH(CALL_PROP_CHAIN);
