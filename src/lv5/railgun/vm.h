@@ -367,10 +367,20 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(LOAD_PROP_OWN);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }
+        assert(obj);
         if (instr[2].map == obj->map()) {
           // cache hit
           const JSVal res = obj->GetSlot(instr[3].value).Get(ctx_, base, ERR);
@@ -392,7 +402,16 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(LOAD_PROP_PROTO);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }
@@ -419,7 +438,16 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(LOAD_PROP_CHAIN);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }
@@ -1795,7 +1823,16 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(CALL_PROP_OWN);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }
@@ -1821,7 +1858,16 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(CALL_PROP_PROTO);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }
@@ -1849,7 +1895,16 @@ MAIN_LOOP_START:
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
-          obj = base.GetPrimitiveProto(ctx_);
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(
+                  base,
+                  GETITEM(names, instr[1].value),
+                  &res)) {
+            SET_TOP(res);
+            DISPATCH(CALL_PROP_CHAIN);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
         } else {
           obj = base.object();
         }

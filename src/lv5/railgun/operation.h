@@ -128,24 +128,14 @@ class Operation {
     base.CheckObjectCoercible(CHECK);
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
-      // section 8.7.1 special [[Get]]
-      assert(base.IsPrimitive());
-      if (base.IsString()) {
-        // string short circuit
-        JSString* str = base.string();
-        if (s == symbol::length()) {
-          return JSVal::UInt32(static_cast<uint32_t>(str->size()));
-        }
-        if (symbol::IsArrayIndexSymbol(s)) {
-          const uint32_t index = symbol::GetIndexFromSymbol(s);
-          if (index < str->size()) {
-            return JSString::NewSingle(ctx_, str->GetAt(index));
-          }
-        }
+      JSVal res;
+      if (GetPrimitiveOwnProperty(base, s, &res)) {
+        return res;
+      } else {
+        // if base is primitive, property not found in "this" object
+        // so, lookup from proto
+        obj = base.GetPrimitiveProto(ctx_);
       }
-      // if base is primitive, property not found in "this" object
-      // so, lookup from proto
-      obj = base.GetPrimitiveProto(ctx_);
     } else {
       obj = base.object();
     }
@@ -206,20 +196,9 @@ class Operation {
 
   JSVal LoadPropPrimitive(const JSVal& base,
                           const Symbol& s, bool strict, Error* e) {
-    // section 8.7.1 special [[Get]]
-    assert(base.IsPrimitive());
-    if (base.IsString()) {
-      // string short circuit
-      JSString* str = base.string();
-      if (s == symbol::length()) {
-        return JSVal::UInt32(static_cast<uint32_t>(str->size()));
-      }
-      if (symbol::IsArrayIndexSymbol(s)) {
-        const uint32_t index = symbol::GetIndexFromSymbol(s);
-        if (index < str->size()) {
-          return JSString::NewSingle(ctx_, str->GetAt(index));
-        }
-      }
+    JSVal res;
+    if (GetPrimitiveOwnProperty(base, s, &res)) {
+      return res;
     }
     // if base is primitive, property not found in "this" object
     // so, lookup from proto
@@ -676,6 +655,27 @@ class Operation {
         return LoadName(ctx_->global_env(), s, strict, e);
       }
     }
+  }
+
+  bool GetPrimitiveOwnProperty(JSVal base, const Symbol& s, JSVal* res) {
+    // section 8.7.1 special [[Get]]
+    assert(base.IsPrimitive());
+    if (base.IsString()) {
+      // string short circuit
+      JSString* str = base.string();
+      if (s == symbol::length()) {
+        *res = JSVal::UInt32(static_cast<uint32_t>(str->size()));
+        return true;
+      }
+      if (symbol::IsArrayIndexSymbol(s)) {
+        const uint32_t index = symbol::GetIndexFromSymbol(s);
+        if (index < str->size()) {
+          *res = JSString::NewSingle(ctx_, str->GetAt(index));
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
 #undef CHECK
