@@ -1732,13 +1732,13 @@ class Compiler
 
       uint32_t merged = 0;
       uint32_t position = 0;
-      std::unordered_map<Symbol, std::size_t>::const_iterator it = slots.find(name);
-      if (it == slots.end()) {
+      std::unordered_map<Symbol, std::size_t>::const_iterator it2 = slots.find(name);
+      if (it2 == slots.end()) {
         position = slots.size();
         slots.insert(std::make_pair(name, position));
       } else {
         merged = 1;  // already defined property
-        position = it->second;
+        position = it2->second;
       }
 
       get<2>(prop)->Accept(this);
