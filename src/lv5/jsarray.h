@@ -90,6 +90,14 @@ class JSArray : public JSObject {
       length_(len, PropertyDescriptor::WRITABLE) {
   }
 
+  JSArray(Context* ctx, Map* map, uint32_t len)
+    : JSObject(map),
+      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
+      map_(NULL),
+      dense_(true),
+      length_(len, PropertyDescriptor::WRITABLE) {
+  }
+
   uint32_t GetLength() const {
     return length_.value();
   }
@@ -456,6 +464,10 @@ class JSArray : public JSObject {
 
   static JSArray* NewPlain(Context* ctx) {
     return new JSArray(ctx, 0);
+  }
+
+  static JSArray* NewPlain(Context* ctx, Map* map) {
+    return new JSArray(ctx, map, 0);
   }
 
   static const Class* GetClass() {

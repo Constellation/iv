@@ -316,7 +316,7 @@ void Context::InitGlobal(const ClassSlot& func_cls,
 void Context::InitArray(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.4 Array
-  JSObject* const proto = JSArray::NewPlain(this);
+  JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.4.2 The Array Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
@@ -467,7 +467,7 @@ void Context::InitString(const ClassSlot& func_cls,
 void Context::InitBoolean(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   // Boolean
-  JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, false);
+  JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this), false);
   // section 15.6.2 The Boolean Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
@@ -503,7 +503,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
 void Context::InitNumber(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // 15.7 Number
-  JSNumberObject* const proto = JSNumberObject::NewPlain(this, 0);
+  JSNumberObject* const proto = JSNumberObject::NewPlain(this, Map::NewUniqueMap(this), 0);
   // section 15.7.3 The Number Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
@@ -627,7 +627,7 @@ void Context::InitMath(const ClassSlot& func_cls,
 void Context::InitDate(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.9 Date
-  JSObject* const proto = JSDate::NewPlain(this, core::kNaN);
+  JSObject* const proto = JSDate::NewPlain(this, Map::NewUniqueMap(this), core::kNaN);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
@@ -762,7 +762,7 @@ void Context::InitDate(const ClassSlot& func_cls,
 void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
-  JSObject* const proto = JSRegExp::NewPlain(this);
+  JSObject* const proto = JSRegExp::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
@@ -800,7 +800,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
 void Context::InitError(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // Error
-  JSObject* const proto = JSObject::NewPlain(this);
+  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.11.2 The Error Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(this);
@@ -836,7 +836,7 @@ void Context::InitError(const ClassSlot& func_cls,
 
   {
     // section 15.11.6.1 EvalError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "EvalError");
@@ -865,7 +865,7 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.2 RangeError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "RangeError");
@@ -894,7 +894,7 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.3 ReferenceError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "ReferenceError");
@@ -923,7 +923,7 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.4 SyntaxError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "SyntaxError");
@@ -952,7 +952,7 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.5 TypeError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "TypeError");
@@ -981,7 +981,7 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.6 URIError
-    JSObject* const sub_proto = JSObject::NewPlain(this);
+    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "URIError");
@@ -1021,7 +1021,7 @@ void Context::InitJSON(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::JSON>(cls);
-  JSObject* const json = JSJSON::NewPlain(this);
+  JSObject* const json = JSJSON::NewPlain(this, Map::NewUniqueMap(this));
   global_binder->def("JSON", json, bind::W | bind::C);
   bind::Object(this, json)
       .cls(cls.cls)

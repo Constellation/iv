@@ -8,9 +8,13 @@ namespace lv5 {
 
 class JSNumberObject : public JSObject {
  public:
-  explicit JSNumberObject(Context* ctx,
-                          const double& value)
+  JSNumberObject(Context* ctx, double value)
     : JSObject(context::GetNumberMap(ctx)),
+      value_(value) {
+  }
+
+  JSNumberObject(Context* ctx, Map* map, double value)
+    : JSObject(map),
       value_(value) {
   }
 
@@ -26,15 +30,15 @@ class JSNumberObject : public JSObject {
     return &cls;
   }
 
-  static JSNumberObject* New(Context* ctx, const double& value) {
+  static JSNumberObject* New(Context* ctx, double value) {
     JSNumberObject* const obj = new JSNumberObject(ctx, value);
     obj->set_cls(JSNumberObject::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Number).prototype);
     return obj;
   }
 
-  static JSNumberObject* NewPlain(Context* ctx, const double& value) {
-    return new JSNumberObject(ctx, value);
+  static JSNumberObject* NewPlain(Context* ctx, Map* map, double value) {
+    return new JSNumberObject(ctx, map, value);
   }
 
  private:

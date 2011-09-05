@@ -8,8 +8,13 @@ namespace lv5 {
 
 class JSBooleanObject : public JSObject {
  public:
-  explicit JSBooleanObject(Context* ctx, bool value)
+  JSBooleanObject(Context* ctx, bool value)
     : JSObject(context::GetBooleanMap(ctx)),
+      value_(value) {
+  }
+
+  JSBooleanObject(Context* ctx, Map* map, bool value)
+    : JSObject(map),
       value_(value) {
   }
 
@@ -32,8 +37,8 @@ class JSBooleanObject : public JSObject {
     return obj;
   }
 
-  static JSBooleanObject* NewPlain(Context* ctx, bool value) {
-    return new JSBooleanObject(ctx, value);
+  static JSBooleanObject* NewPlain(Context* ctx, Map* map, bool value) {
+    return new JSBooleanObject(ctx, map, value);
   }
 
  private:

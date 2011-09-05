@@ -13,6 +13,10 @@ class JSDate : public JSObject {
       value_(val) {
   }
 
+  JSDate(Context* ctx, Map* map, double val)
+    : JSObject(map),
+      value_(val) {
+  }
 
   JSVal DefaultValue(Context* ctx,
                      Hint::Object hint, Error* res) {
@@ -30,8 +34,8 @@ class JSDate : public JSObject {
   }
 
 
-  static JSDate* NewPlain(Context* ctx, double val) {
-    return new JSDate(ctx, val);
+  static JSDate* NewPlain(Context* ctx, Map* map, double val) {
+    return new JSDate(ctx, map, val);
   }
 
 

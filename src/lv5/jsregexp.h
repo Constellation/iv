@@ -41,6 +41,12 @@ class JSRegExp : public JSObject {
     InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }
 
+  explicit JSRegExp(Context* ctx, Map* map)
+    : JSObject(map),
+      impl_(new JSRegExpImpl()) {
+    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
+  }
+
   inline bool IsValid() const {
     return impl_->IsValid();
   }
@@ -86,8 +92,8 @@ class JSRegExp : public JSObject {
     return reg;
   }
 
-  static JSRegExp* NewPlain(Context* ctx) {
-    return new JSRegExp(ctx);
+  static JSRegExp* NewPlain(Context* ctx, Map* map) {
+    return new JSRegExp(ctx, map);
   }
 
   bool global() const {
