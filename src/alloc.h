@@ -36,7 +36,7 @@ class Malloced {
 
 class Pool {
  public:
-  static const unsigned int kPoolSize = Size::KB * 4;
+  static const std::size_t kPoolSize = Size::KB * 4;
   inline void Initialize(uintptr_t start, Pool* next) {
     start_ = start;
     position_ = start;
@@ -48,7 +48,7 @@ class Pool {
     return next_;
   }
 
-  inline void* New(uintptr_t size) {
+  inline void* New(std::size_t size) {
     if ((position_ + size) < limit_) {
       // in this pool
       const uintptr_t result = position_;
@@ -66,11 +66,10 @@ class Pool {
 
 class Arena {
  public:
-  static const unsigned int kPoolNum = 64;
+  static const std::size_t kPoolNum = 64;
   static const uintptr_t kAlignment = 8;  // double or 64bit ptr size
-  static const unsigned int kArenaSize = (Pool::kPoolSize * kPoolNum) +
-                                ((Pool::kPoolSize <= kAlignment) ?
-                                  0 : (Pool::kPoolSize - kAlignment));
+  static const std::size_t kArenaSize = (Pool::kPoolSize * kPoolNum) +
+      (((Pool::kPoolSize <= kAlignment) ? 0 : (Pool::kPoolSize - kAlignment)));
   Arena()
     : pools_(),
       result_(),
@@ -88,21 +87,16 @@ class Arena {
   }
 
   inline void* New(std::size_t raw_size) {
-    const uintptr_t size = AlignOffset(raw_size, kAlignment);
-    void* result = now_->New(size);
-    if (result == NULL) {
-      now_ = now_->Next();
-      while (now_) {
-        result = now_->New(size);
-        if (result == NULL) {
-          now_ = now_->Next();
-        } else {
-          return result;
-        }
+    const std::size_t size = AlignOffset(raw_size, kAlignment);
+    while (now_) {
+      void* result = now_->New(size);
+      if (result == NULL) {
+        now_ = now_->Next();
+      } else {
+        return result;
       }
-      return NULL;  // full up
     }
-    return result;
+    return NULL;  // full up
   }
 
   inline void SetNext(Arena* next) {
