@@ -5,8 +5,11 @@ namespace iv {
 namespace core {
 
 template<class T>
-class ScopedPtr : iv::core::Noncopyable<ScopedPtr<T> > {
+class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
  public:
+  typedef ScopedPtr<T> this_type;
+  typedef void (this_type::*bool_type)() const;
+
   explicit ScopedPtr(T* ptr = NULL) : ptr_(ptr) { }
 
   ~ScopedPtr() {
@@ -50,7 +53,17 @@ class ScopedPtr : iv::core::Noncopyable<ScopedPtr<T> > {
     std::swap(ptr_, rhs.ptr_);
   }
 
+  operator bool_type() const {
+    return (ptr_ == NULL) ? 0 : &this_type::this_type_does_not_support_comparisons;
+  }
+
+  bool operator!() const {
+    return ptr_ == NULL;
+  }
+
  private:
+  void this_type_does_not_support_comparisons() const { }
+
   T* ptr_;
 
   template<typename U> bool operator==(const ScopedPtr<U>& rhs) const;
@@ -73,8 +86,10 @@ bool operator!=(T* lhs, const ScopedPtr<T>& rhs) {
 }
 
 template<class T>
-class ScopedPtr<T[]> : iv::core::Noncopyable<ScopedPtr<T[]> > {
+class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
  public:
+  typedef ScopedPtr<T> this_type;
+  typedef void (this_type::*bool_type)() const;
   explicit ScopedPtr(T* ptr = NULL) : ptr_(ptr) { }
 
   ~ScopedPtr() {
@@ -122,7 +137,17 @@ class ScopedPtr<T[]> : iv::core::Noncopyable<ScopedPtr<T[]> > {
     std::swap(ptr_, rhs.ptr_);
   }
 
+  operator bool_type() const {
+    return (ptr_ == NULL) ? 0 : &this_type::this_type_does_not_support_comparisons;
+  }
+
+  bool operator!() const {
+    return ptr_ == NULL;
+  }
+
  private:
+  void this_type_does_not_support_comparisons() const { }
+
   T* ptr_;
 
   template<typename U> bool operator==(const ScopedPtr<U>& rhs) const;
