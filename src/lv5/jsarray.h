@@ -78,7 +78,7 @@ class Context;
 class JSArray : public JSObject {
  public:
   friend class railgun::VM;
-  typedef GCMap<uint32_t, JSVal>::type SparseArray;
+  typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
 
   static const uint32_t kMaxVectorSize = 10000;
 
@@ -118,9 +118,6 @@ class JSArray : public JSObject {
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::WRITABLE));
             return true;
-          } else if (dense_) {
-            // if dense array, target is undefined
-            return false;
           }
         }
       } else {
@@ -135,16 +132,13 @@ class JSArray : public JSObject {
                                PropertyDescriptor::CONFIGURABLE |
                                PropertyDescriptor::WRITABLE));
             return true;
-          } else if (dense_) {
-            // if target is not found and dense array,
-            // target is undefined
-            return false;
           }
-        } else if (dense_) {
-          // if map is none and dense array, target is undefined
-          return false;
         }
       }
+      if (dense_) {
+        return false;
+      }
+      assert(!dense_);
       return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
     if (name == symbol::length()) {
@@ -482,12 +476,20 @@ class JSArray : public JSObject {
   void CompactionToLength(uint32_t length) {
     if (length > kMaxVectorSize) {
       if (map_) {
-        map_->erase(
-            map_->upper_bound(length - 1), map_->end());
+        const SparseArray copy(*map_);
+        for (SparseArray::const_iterator it = copy.begin(),
+             last = copy.end(); it != last; ++it) {
+          if (it->first >= length) {
+            map_->erase(it->first);
+          }
+        }
+        if (map_->empty()) {
+          map_ = NULL;
+        }
       }
     } else {
       if (map_) {
-        map_->clear();
+        map_ = NULL;
       }
       if (vector_.size() > length) {
         vector_.resize(length, JSEmpty);
