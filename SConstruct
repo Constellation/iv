@@ -70,7 +70,7 @@ def Build():
   var = GetVariables()
   var.AddVariables(
     BoolVariable('debug', '', 0),
-    BoolVariable('gprof', '', 0),
+    BoolVariable('prof', '', 0),
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
@@ -119,11 +119,8 @@ def Build():
       join(root_dir, 'src', 'config', 'config.h.in'),
       SUBST_DICT=option_dict)
 
-  if env['gprof']:
-    env.Append(
-      CCFLAGS=["-pg"],
-      LINKFLAGS=["-pg"]
-    )
+  if env['prof']:
+    env.Append(CCFLAGS=['-g3'])
 
   if env['gcov']:
     env.Append(
