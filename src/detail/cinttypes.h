@@ -5,8 +5,8 @@
 #if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
 #ifdef IV_COMPILER_MSVC
 #include <stdint.h>
-#define PRIu32 "%u"
-#define PRIu64 "%llu"
+#define PRIu32 "u"
+#define PRIu64 "llu"
 #else
 #include <cinttypes>
 #endif
