@@ -122,7 +122,7 @@ inline bool IsTrail(UC8 ch) {
 }
 
 enum UTF8Error {
-  NO_ERROR = 0,
+  UNICODE_NO_ERROR = 0,
   NOT_ENOUGH_SPACE = 1,
   INVALID_SEQUENCE = 2
 };
@@ -378,7 +378,7 @@ inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last,
       res = UTF8ToCodePoint<4>::Get(it, last, e);
       break;
   };
-  if (*e == NO_ERROR) {
+  if (*e == UNICODE_NO_ERROR) {
     std::advance(it, len);
   }
   *out = res;
@@ -388,27 +388,27 @@ inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last,
 template<typename UC8InputIter, typename UC32OutputIter>
 inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last,
                             UC32OutputIter result) {
-  UTF8Error error = NO_ERROR;
+  UTF8Error error = UNICODE_NO_ERROR;
   uint32_t res;
   while (it != last) {
     it = NextUCS4FromUTF8(it, last, &res, &error);
-    if (error != NO_ERROR) {
+    if (error != UNICODE_NO_ERROR) {
       return error;
     } else {
       *result++ = res;
     }
   }
-  return NO_ERROR;
+  return UNICODE_NO_ERROR;
 }
 
 template<typename UC8InputIter, typename UTF16OutputIter>
 inline UTF8Error UTF8ToUTF16(UC8InputIter it,
                              UC8InputIter last, UTF16OutputIter result) {
-  UTF8Error error = NO_ERROR;
+  UTF8Error error = UNICODE_NO_ERROR;
   uint32_t res;
   while (it != last) {
     it = NextUCS4FromUTF8(it, last, &res, &error);
-    if (error != NO_ERROR) {
+    if (error != UNICODE_NO_ERROR) {
       return error;
     } else {
       if (res > 0xFFFF) {
@@ -421,7 +421,7 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it,
       }
     }
   }
-  return NO_ERROR;
+  return UNICODE_NO_ERROR;
 }
 
 
@@ -446,7 +446,7 @@ inline UTF8Error UCS4ToUTF8(UC32InputIter it,
   while (it != last) {
     result = Append(*it++, result);
   }
-  return NO_ERROR;
+  return UNICODE_NO_ERROR;
 }
 
 template<typename UTF16InputIter, typename UC8OutputIter>
@@ -472,7 +472,7 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it,
     }
     result = Append(res, result);
   }
-  return NO_ERROR;
+  return UNICODE_NO_ERROR;
 }
 
 template<typename UC8OutputIter>
