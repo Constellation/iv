@@ -551,10 +551,11 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
           }
         } else {
           // quick sort
-          const int64_t pivot = (l + r) >> 1;
+          const uint32_t pivot = static_cast<uint32_t>((l + r) >> 1);
           const bool pivot_is_hole =
-              !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(static_cast<uint32_t>(pivot)));
-          const JSVal s = obj->Get(ctx, symbol::MakeSymbolFromIndex(pivot), IV_LV5_ERROR(e));
+              !obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(pivot));
+          const JSVal s = obj->Get(
+              ctx, symbol::MakeSymbolFromIndex(pivot), IV_LV5_ERROR(e));
           int64_t i = l - 1;
           int64_t j = r + 1;
           while (true) {

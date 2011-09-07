@@ -98,7 +98,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         }
         is_decimal = false;
         buffer[pos++] = '0';
-        buffer[pos++] = *it;
+        buffer[pos++] = static_cast<char>(*it);
         ++it;
         ++significant_digits;
         if (it == last || !character::IsHexDigit(*it)) {
@@ -110,7 +110,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         }
         while (it != last && character::IsHexDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
-            buffer[pos++] = *it;
+            buffer[pos++] = static_cast<char>(*it);
             ++it;
             ++significant_digits;
           } else {
@@ -128,7 +128,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       while (it != last &&
              character::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
-          buffer[pos++] = *it;
+          buffer[pos++] = static_cast<char>(*it);
           ++significant_digits;
         } else {
           ++insignificant_digits;
@@ -141,7 +141,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         while (it != last &&
                character::IsDecimalDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
-            buffer[pos++] = *it;
+            buffer[pos++] = static_cast<char>(*it);
             ++significant_digits;
           }
           ++it;
@@ -156,7 +156,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       while (it != last &&
              character::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
-          buffer[pos++] = *it;
+          buffer[pos++] = static_cast<char>(*it);
           ++significant_digits;
         }
         ++it;
@@ -196,7 +196,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     if (!is_decimal) {
       return kNaN;
     }
-    buffer[pos++] = *it;
+    buffer[pos++] = static_cast<char>(*it);
     ++it;
     if (it == last) {
       if (parse_float) {
@@ -208,7 +208,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     }
     bool is_signed_exp = false;
     if (*it == '+' || *it == '-') {
-      buffer[pos++] = *it;
+      buffer[pos++] = static_cast<char>(*it);
       ++it;
       is_signed_exp = true;
     }

@@ -110,7 +110,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
     }
 
     // calc tz info
-    int tz_min = offset / date::kMsPerMinute;
+    int tz_min = static_cast<int>(offset / date::kMsPerMinute);
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
@@ -235,7 +235,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
       }
 
       // calc tz info
-      int tz_min = offset / date::kMsPerMinute;
+      int tz_min = static_cast<int>(offset / date::kMsPerMinute);
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -309,7 +309,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
       }
 
       // calc tz info
-      int tz_min = offset / date::kMsPerMinute;
+      int tz_min = static_cast<int>(offset / date::kMsPerMinute);
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -352,7 +352,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
       }
 
       // calc tz info
-      int tz_min = offset / date::kMsPerMinute;
+      int tz_min = static_cast<int>(offset / date::kMsPerMinute);
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
@@ -426,7 +426,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       }
 
       // calc tz info
-      int tz_min = offset / date::kMsPerMinute;
+      int tz_min = static_cast<int>(offset / date::kMsPerMinute);
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 

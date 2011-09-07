@@ -507,7 +507,8 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
   if (position < 0 || position >= str->size()) {
     return JSString::NewEmptyString(args.ctx());
   } else {
-    return JSString::NewSingle(args.ctx(), str->GetAt(position));
+    return JSString::NewSingle(args.ctx(),
+                               str->GetAt(static_cast<std::size_t>(position)));
   }
 }
 
