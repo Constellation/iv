@@ -445,7 +445,6 @@ class JSVal {
     return IsNumber() || IsString() || IsBoolean();
   }
 
-  // TODO(Constellation) mv ptr tags to sequencial
   inline bool IsPtr() const {
     return detail::InPtrRange(value_.struct_.tag_);
   }
