@@ -1090,13 +1090,14 @@ inline JSVal StringTrim(const Arguments& args, Error* error) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  JSString::Fiber::const_iterator rit = fiber->end() - 1;
-  for (; rit != lit; --rit) {
+  JSString::Fiber::const_reverse_iterator rit = fiber->rbegin();
+  const JSString::Fiber::const_reverse_iterator rend(lit);
+  for (; rit != rend; ++rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
     }
   }
-  return JSString::New(args.ctx(), lit, rit + 1);
+  return JSString::New(args.ctx(), lit, rit.base());
 }
 
 // section B.2.3 String.prototype.substr(start, length)

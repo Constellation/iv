@@ -318,7 +318,7 @@ class JSArray : public JSObject {
               }
             }
             for (std::set<uint32_t>::const_reverse_iterator it = ix.rbegin(),
-                 last = ix.rend(); it != last; --it) {
+                 last = ix.rend(); it != last; ++it) {
               if (*it < new_len) {
                 break;
               }
