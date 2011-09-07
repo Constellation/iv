@@ -6,7 +6,7 @@
 #include "parser.h"
 
 class AstFactory
-  : public iv::core::Space<1>,
+  : public iv::core::Space,
     public iv::core::ast::BasicAstFactory<AstFactory> { };
 
 TEST(ParserCase, StringTest) {

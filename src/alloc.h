@@ -49,6 +49,7 @@ class Arena : private Noncopyable<Arena> {
     position_ =
         reinterpret_cast<uintptr_t>(this) +
         IV_ROUNDUP(sizeof(this_type), kAlignment);
+    assert((position_ % kAlignment) == 0);
     if (prev) {
       prev->next_ = this;
     }
@@ -59,6 +60,7 @@ class Arena : private Noncopyable<Arena> {
     if ((position_ + size) <= (reinterpret_cast<uintptr_t>(this) + kArenaSize)) {
       // in this pool
       const uintptr_t result = position_;
+      assert((result % kAlignment) == 0);
       position_ += size;
       return reinterpret_cast<void*>(result);
     }
