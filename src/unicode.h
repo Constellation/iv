@@ -198,7 +198,7 @@ template<>
 struct UTF8ToCodePoint<2> {
   template<typename UC8InputIter>
   static inline uint32_t Get(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
-    static const uint32_t kMin = 0x00000080;  // 2 bytes => 0000000010000000
+    const uint32_t kMin = 0x00000080;  // 2 bytes => 0000000010000000
     if (it != last) {
       // remove size bits from 1st byte
       // 110xxxxx
@@ -230,7 +230,7 @@ template<>
 struct UTF8ToCodePoint<3> {
   template<typename UC8InputIter>
   static inline uint32_t Get(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
-    static const uint32_t kMin = 0x00000800;  // 3 bytes => 0000100000000000
+    const uint32_t kMin = 0x00000800;  // 3 bytes => 0000100000000000
     if (it != last) {
       // remove size bits from 1st byte
       // 1110xxxx
@@ -276,7 +276,7 @@ template<>
 struct UTF8ToCodePoint<4> {
   template<typename UC8InputIter>
   static inline uint32_t Get(UC8InputIter it, UC8InputIter last, UTF8Error* e) {
-    static const uint32_t kMin = 0x00010000;  // 4 bytes => surrogate pair only
+    const uint32_t kMin = 0x00010000;  // 4 bytes => surrogate pair only
     if (it != last) {
       // remove size bits from 1st byte
       // 11110xxx
