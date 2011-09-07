@@ -4,7 +4,7 @@
 #include "ustring.h"
 #include "static_assert.h"
 #include "stringpiece.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 namespace iv {
 namespace lv5 {
 

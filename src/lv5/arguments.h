@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "noncopyable.h"
 #include "lv5/error.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/context_utils.h"
 
 namespace iv {

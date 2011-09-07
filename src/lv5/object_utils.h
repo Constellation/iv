@@ -1,7 +1,7 @@
 #ifndef IV_LV5_OBJECT_UTILS_H_
 #define IV_LV5_OBJECT_UTILS_H_
 #include "lv5/property.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/error.h"
 namespace iv {
 namespace lv5 {

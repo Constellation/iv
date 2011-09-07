@@ -8,7 +8,7 @@
 #include "notfound.h"
 #include "lv5/property.h"
 #include "lv5/arguments.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsfunction.h"
 namespace iv {

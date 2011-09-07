@@ -1,7 +1,7 @@
 #ifndef IV_LV5_PROPERTY_FWD_H_
 #define IV_LV5_PROPERTY_FWD_H_
 #include "debug.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 namespace iv {
 namespace lv5 {
 
