@@ -194,7 +194,7 @@ class JSVal {
     : value_(rhs.value_) {
   }
 
-  JSVal(const double& val)  // NOLINT
+  JSVal(double val)  // NOLINT
     : value_() {
     set_value(val);
   }
