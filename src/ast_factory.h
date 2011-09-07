@@ -377,7 +377,7 @@ class BasicAstFactory {
 };
 
 template<typename Derived>
-class AstFactory : public core::Space<1>, public BasicAstFactory<Derived> { };
+class AstFactory : public core::Space, public BasicAstFactory<Derived> { };
 
 } } }  // namespace iv::core::ast
 #endif  // IV_AST_FACTORY_H_

@@ -34,73 +34,43 @@ class Malloced {
   }
 };
 
-class Pool {
+class Space;
+
+class Arena : private Noncopyable<Arena> {
  public:
-  static const std::size_t kPoolSize = Size::KB * 4;
-  inline void Initialize(uintptr_t start, Pool* next) {
-    start_ = start;
-    position_ = start;
-    limit_ = start + Pool::kPoolSize + 1;
-    next_ = next;
+  friend class Space;
+  typedef Arena this_type;
+  static const std::size_t kArenaSize = Size::KB * 4;
+  static const uintptr_t kAlignment = 8;  // double or 64bit ptr size
+
+  explicit Arena(Arena* prev)
+    : next_(NULL),
+      position_() {
+    position_ =
+        reinterpret_cast<uintptr_t>(this) +
+        IV_ROUNDUP(sizeof(this_type), kAlignment);
+    if (prev) {
+      prev->next_ = this;
+    }
   }
 
-  Pool* Next() const {
-    return next_;
-  }
-
-  inline void* New(std::size_t size) {
-    if ((position_ + size) < limit_) {
+  inline void* Allocate(std::size_t raw_size) {
+    const std::size_t size = AlignOffset(raw_size, kAlignment);
+    if ((position_ + size) <= (reinterpret_cast<uintptr_t>(this) + kArenaSize)) {
       // in this pool
       const uintptr_t result = position_;
       position_ += size;
       return reinterpret_cast<void*>(result);
     }
-    return NULL;
-  }
- private:
-  uintptr_t start_;
-  uintptr_t position_;
-  uintptr_t limit_;
-  Pool* next_;
-};
-
-class Arena {
- public:
-  static const std::size_t kPoolNum = 64;
-  static const uintptr_t kAlignment = 8;  // double or 64bit ptr size
-  static const std::size_t kArenaSize = (Pool::kPoolSize * kPoolNum) +
-      (((Pool::kPoolSize <= kAlignment) ? 0 : (Pool::kPoolSize - kAlignment)));
-  Arena()
-    : pools_(),
-      result_(),
-      now_(pools_.data()),
-      start_(now_),
-      next_(NULL) {
-    const uintptr_t address = reinterpret_cast<uintptr_t>(result_.data());
-    const uintptr_t pool_address = AlignOffset(address, Pool::kPoolSize);
-    unsigned int c = 0;
-    for (; c < kPoolNum-1; ++c) {
-      pools_[c].Initialize(pool_address+c*Pool::kPoolSize, &pools_[c+1]);
-    }
-    pools_[kPoolNum-1].Initialize(
-        pool_address+(kPoolNum-1)*Pool::kPoolSize, NULL);
-  }
-
-  inline void* New(std::size_t raw_size) {
-    const std::size_t size = AlignOffset(raw_size, kAlignment);
-    while (now_) {
-      void* result = now_->New(size);
-      if (result == NULL) {
-        now_ = now_->Next();
-      } else {
-        return result;
-      }
-    }
     return NULL;  // full up
   }
 
-  inline void SetNext(Arena* next) {
-    next_ = next;
+  static Arena* New() {
+    return new (Malloced::New(kArenaSize)) Arena(NULL);
+  }
+
+  static Arena* New(Arena* prev) {
+    return new (Malloced::New(kArenaSize)) Arena(prev);
   }
 
   inline Arena* Next() const {
@@ -108,53 +78,40 @@ class Arena {
   }
 
  private:
-  std::array<Pool, kPoolNum> pools_;
-  std::array<char, kArenaSize> result_;
-  Pool* now_;
-  const Pool* start_;
   Arena* next_;
+  uintptr_t position_;
 };
 
-template<std::size_t N>
-class Space {
+class Space : private Noncopyable<Space> {
  public:
-  IV_STATIC_ASSERT(N > 0);
   Space()
-    : arena_(&init_arenas_[0]),
-      start_malloced_(NULL),
+    : arena_(Arena::New()),
+      start_(arena_),
       malloced_() {
-    for (std::size_t c = 0; c < N-1; ++c) {
-      init_arenas_[c].SetNext(&init_arenas_[c+1]);
-    }
   }
 
   ~Space() {
-    if (start_malloced_) {
-      Arena *now = start_malloced_, *next = start_malloced_;
-      while (now) {
-        next = now->Next();
-        delete now;
-        now = next;
-      }
-    }
+    Arena *now = start_, *next = NULL;
+    do {
+      next = now->Next();
+      Malloced::Delete(now);
+      now = next;
+    } while (now);
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
   }
 
   inline void* New(std::size_t size) {
     if ((size - 1) < kThreshold) {
       // small memory allocator
-      void* result = arena_->New(size);
+      void* result = arena_->Allocate(size);
       if (result == NULL) {
-        Arena *arena = arena_->Next();
+        Arena* arena = arena_->Next();
         if (arena) {
           arena_ = arena;
         } else {
-          NewArena();
-          if (!start_malloced_) {
-            start_malloced_ = arena_;
-          }
+          arena_ = Space::NewArena(arena_);
         }
-        result = arena_->New(size);
+        result = arena_->Allocate(size);
         if (result == NULL) {
           Malloced::OutOfMemory();
         }
@@ -168,50 +125,23 @@ class Space {
     }
   }
 
-  inline void Clear() {
-    arena_ = init_arenas_.data();
-    std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
-    malloced_.clear();
-  }
-
  private:
   static const std::size_t kThreshold = Size::kPointerSize * 64;
-  static const std::size_t kInitArenas = N;
 
-  inline Arena* NewArena() {
+  static Arena* NewArena(Arena* prev) {
     Arena* arena = NULL;
-    try {
-      arena = new Arena();
-      if (arena == NULL) {
-        Malloced::OutOfMemory();
-        return arena;
-      }
-    } catch(const std::bad_alloc&) {
+    arena = Arena::New(prev);
+    if (arena == NULL) {
       Malloced::OutOfMemory();
       return arena;
     }
-    arena_->SetNext(arena);
-    arena_ = arena;
     return arena;
   }
 
-  inline const std::vector<void*>& malloced() const {
-    return malloced_;
-  }
-
-  std::array<Arena, kInitArenas> init_arenas_;
   Arena* arena_;
-  Arena* start_malloced_;
+  Arena* start_;
   std::vector<void*> malloced_;
 };
-
-// surpress compiler warning
-template<>
-inline Space<1>::Space()
-  : arena_(&init_arenas_[0]),
-    start_malloced_(NULL),
-    malloced_() {
-}
 
 } }  // namespace iv::core
 #endif  // IV_ALLOC_H_
