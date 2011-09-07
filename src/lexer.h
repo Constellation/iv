@@ -910,8 +910,8 @@ class Lexer: private Noncopyable<> {
 
     if (type == DECIMAL) {
       if (is_decimal_integer) {
-        numeric_ = ParseIntegerOverflow(buffer8_.begin(),
-                                        buffer8_.end(),
+        numeric_ = ParseIntegerOverflow(buffer8_.data(),
+                                        buffer8_.data() + buffer8_.size(),
                                         10);
       } else {
         const std::string buf(buffer8_.begin(), buffer8_.end());
@@ -919,14 +919,14 @@ class Lexer: private Noncopyable<> {
       }
     } else if (type == HEX) {
       assert(buffer8_.size() > 2);  // first 0x
-      numeric_ = ParseIntegerOverflow(buffer8_.begin() + 2,
-                                      buffer8_.end(),
+      numeric_ = ParseIntegerOverflow(buffer8_.data() + 2,
+                                      buffer8_.data() + buffer8_.size(),
                                       16);
     } else {
       assert(type == OCTAL);
       assert(buffer8_.size() > 1);  // first 0
-      numeric_ = ParseIntegerOverflow(buffer8_.begin() + 1,
-                                      buffer8_.end(),
+      numeric_ = ParseIntegerOverflow(buffer8_.data() + 1,
+                                      buffer8_.data() + buffer8_.size(),
                                       8);
     }
     type_ = type;

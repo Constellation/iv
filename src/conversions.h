@@ -270,8 +270,9 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
-template<typename Iter>
-inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
+template<typename CharT>
+inline double ParseIntegerOverflow(const CharT* it,
+                                   const CharT* last, int radix) {
   double number = 0.0;
   double multiplier = 1.0;
   for (--it, --last; last != it; --last) {
@@ -289,8 +290,8 @@ inline double ParseIntegerOverflow(Iter it, Iter last, int radix) {
   return number;
 }
 
-template<typename Iter>
-inline double StringToIntegerWithRadix(Iter it, Iter last,
+template<typename CharT>
+inline double StringToIntegerWithRadix(const CharT* it, const CharT* last,
                                        int radix, bool strip_prefix) {
   // remove leading white space
   while (it != last &&
@@ -334,7 +335,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
   }
 
   double result = 0.0;
-  const Iter start = it;
+  const CharT* start = it;
   for (; it != last; ++it) {
     const int val = Radix36Value(*it);
     if (val != -1 && val < radix) {
@@ -350,8 +351,7 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
   }
 
   if (radix == 10) {
-    std::vector<char> buffer;
-    buffer.insert(buffer.end(), start, last);
+    std::vector<char> buffer(start, last);
     buffer.push_back('\0');
     return sign * std::atof(buffer.data());
   } else if ((radix & (radix - 1)) == 0) {
@@ -362,15 +362,17 @@ inline double StringToIntegerWithRadix(Iter it, Iter last,
   return sign * result;
 }
 
-inline double StringToIntegerWithRadix(const StringPiece& range,
+inline double StringToIntegerWithRadix(const StringPiece& piece,
                                        int radix, bool strip_prefix) {
-  return StringToIntegerWithRadix(range.begin(), range.end(),
+  return StringToIntegerWithRadix(piece.data(),
+                                  piece.data() + piece.size(),
                                   radix, strip_prefix);
 }
 
-inline double StringToIntegerWithRadix(const UStringPiece& range,
+inline double StringToIntegerWithRadix(const UStringPiece& piece,
                                        int radix, bool strip_prefix) {
-  return StringToIntegerWithRadix(range.begin(), range.end(),
+  return StringToIntegerWithRadix(piece.data(),
+                                  piece.data() + piece.size(),
                                   radix, strip_prefix);
 }
 
