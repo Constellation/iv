@@ -101,8 +101,8 @@ inline void Instantiate(Context* ctx,
                   JSUndefined,
                   PropertyDescriptor::WRITABLE |
                   PropertyDescriptor::ENUMERABLE |
-                  (configurable_bindings) ?
-                  PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE),
+                  ((configurable_bindings) ?
+                   PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE)),
               true, IV_LV5_ERROR_VOID(e));
         } else {
           if (existing_prop.IsAccessorDescriptor()) {

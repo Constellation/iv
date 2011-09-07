@@ -236,8 +236,8 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
                 JSUndefined,
                 PropertyDescriptor::WRITABLE |
                 PropertyDescriptor::ENUMERABLE |
-                (configurable_bindings) ?
-                PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE),
+                ((configurable_bindings) ?
+                 PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE)),
             true, CHECK_IN_STMT);
       } else {
         if (existing_prop.IsAccessorDescriptor()) {
