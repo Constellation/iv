@@ -30,7 +30,7 @@ class GlobalData {
   typedef core::UniformRandomGenerator<core::Xor128> RandomGenerator;
 
   GlobalData(Context* ctx)
-    : random_generator_(0, 1, std::time(NULL)),
+    : random_generator_(0, 1, static_cast<int>(std::time(NULL))),
       regs_(),
       table_(),
       classes_(),

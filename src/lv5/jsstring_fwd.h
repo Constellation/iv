@@ -50,6 +50,7 @@ class JSString : public gc_cleanup {
     }
   };
 
+ public:
   class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
    public:
     typedef std::size_t size_type;
@@ -81,7 +82,6 @@ class JSString : public gc_cleanup {
     bool is_cons_;
   };
 
- public:
   class Fiber : public FiberSlot {
    public:
     typedef Fiber this_type;

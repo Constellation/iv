@@ -1,6 +1,8 @@
 #ifndef IV_CALLONCE_WIN_H_
 #define IV_CALLONCE_WIN_H_
 #include "cas.h"
+#include "thread.h"
+
 namespace iv {
 namespace core {
 namespace thread {

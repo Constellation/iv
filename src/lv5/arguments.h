@@ -186,7 +186,8 @@ class ScopedArguments : public Arguments {
     } else {
       assert(stack_);
       // init
-      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+//      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+      for (size_t i = 0; i < size_ + 1; i++) stack_[i] = JSUndefined;
     }
   }
 

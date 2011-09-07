@@ -2470,6 +2470,7 @@ retlow1:
 	}
 #endif /* NO_STRTOD_BIGCOMP */
 
+#if 0
  double
 strtod
 #ifdef KR_headers
@@ -3542,6 +3543,8 @@ strtod
 		*se = (char *)s;
 	return sign ? -dval(&rv) : dval(&rv);
 	}
+
+#endif
 
 #ifndef MULTIPLE_THREADS
  static char *dtoa_result;
