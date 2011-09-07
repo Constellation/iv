@@ -68,7 +68,7 @@ class FileSource {
         if (unicode::UTF8ToUTF16(
                 str.begin(),
                 str.end(),
-                std::back_inserter(source_)) != unicode::NO_ERROR) {
+                std::back_inserter(source_)) != unicode::UNICODE_NO_ERROR) {
           source_.clear();
         }
         return;
@@ -83,7 +83,7 @@ class FileSource {
           if (unicode::UTF8ToUTF16(
                   str.begin(),
                   str.end(),
-                  std::back_inserter(source_)) != unicode::NO_ERROR) {
+                  std::back_inserter(source_)) != unicode::UNICODE_NO_ERROR) {
             source_.clear();
           }
           return;
@@ -95,7 +95,7 @@ class FileSource {
     if (unicode::UTF8ToUTF16(
             str.begin(),
             str.end(),
-            std::back_inserter(source_)) != unicode::NO_ERROR) {
+            std::back_inserter(source_)) != unicode::UNICODE_NO_ERROR) {
       source_.clear();
     }
     return;

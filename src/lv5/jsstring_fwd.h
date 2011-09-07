@@ -457,7 +457,7 @@ class JSString : public gc_cleanup {
     str.reserve(size());
     if (core::unicode::UTF16ToUTF8(
           fiber->begin(), fiber->end(),
-          std::back_inserter(str)) != core::unicode::NO_ERROR) {
+          std::back_inserter(str)) != core::unicode::UNICODE_NO_ERROR) {
       str.clear();
     }
     return str;
@@ -559,7 +559,7 @@ class JSString : public gc_cleanup {
     if (core::unicode::UTF8ToUTF16(
             str.begin(),
             str.end(),
-            std::back_inserter(buffer)) != core::unicode::NO_ERROR) {
+            std::back_inserter(buffer)) != core::unicode::UNICODE_NO_ERROR) {
       buffer.clear();
     }
     return New(ctx, buffer.begin(), buffer.size());

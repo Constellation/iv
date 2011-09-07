@@ -208,11 +208,11 @@ JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
           // code point 10xxxxxx check is moved to core::UTF8ToUCS4Strict
           octets[j] = b1;
         }
-        core::unicode::UTF8Error err = core::unicode::NO_ERROR;
+        core::unicode::UTF8Error err = core::unicode::UNICODE_NO_ERROR;
         uint32_t v;
         core::unicode::NextUCS4FromUTF8(octets.begin(), octets.end(), &v, &err);
         // if octets utf8 sequence is not valid,
-        if (err != core::unicode::NO_ERROR) {
+        if (err != core::unicode::UNICODE_NO_ERROR) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
