@@ -55,6 +55,9 @@ struct StringPieceFindOf {
 
   static size_type FindLastOf(const Piece& that,
                               const Piece& s, size_type pos) {
+    if (that.empty()) {
+      return Piece::npos;
+    }
     const size_type index = std::min(pos, that.size() - 1);
     const typename Piece::const_reverse_iterator last = that.rend();
     const typename Piece::const_reverse_iterator start = that.rbegin();
@@ -68,6 +71,9 @@ struct StringPieceFindOf {
 
   static size_type FindLastNotOf(const Piece& that,
                                  const Piece& s, size_type pos) {
+    if (that.empty()) {
+      return Piece::npos;
+    }
     const size_type index = std::min(pos, that.size() - 1);
     const typename Piece::const_reverse_iterator last = that.rend();
     const typename Piece::const_reverse_iterator start = that.rbegin();
@@ -112,6 +118,9 @@ struct StringPieceFindOf<char, Piece> {
                               const Piece& s, size_type pos) {
     bool lookup[UCHAR_MAX + 1] = { false };
     BuildLookupTable(s, lookup);
+    if (that.empty()) {
+      return Piece::npos;
+    }
     for (size_type i = std::min(pos, that.size() - 1); ; --i) {
       if (lookup[static_cast<size_type>(that.data()[i])]) {
         return i;
@@ -127,6 +136,9 @@ struct StringPieceFindOf<char, Piece> {
                                  const Piece& s, size_type pos) {
     bool lookup[UCHAR_MAX + 1] = { false };
     BuildLookupTable(s, lookup);
+    if (that.empty()) {
+      return Piece::npos;
+    }
     for (size_type i = std::min(pos, that.size() - 1); ; --i) {
       if (!lookup[static_cast<size_type>(that.data()[i])]) {
         return i;
