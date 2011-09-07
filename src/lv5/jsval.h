@@ -259,13 +259,6 @@ class JSVal {
     IV_STATIC_ASSERT(!(cond::value));
   }
 
-  this_type& operator=(const this_type& rhs) {
-    if (this != &rhs) {
-      this_type(rhs).swap(*this);
-    }
-    return *this;
-  }
-
   inline void set_value(double val) {
     const int32_t i = static_cast<int32_t>(val);
     if (val != i || (!i && core::Signbit(val))) {
