@@ -499,23 +499,7 @@ class JSVal {
 
   inline void CheckObjectCoercible(Error* e) const;
 
-  inline bool ToBoolean(Error* e) const {
-    if (IsNumber()) {
-      const double num = number();
-      return num != 0 && !core::IsNaN(num);
-    } else if (IsString()) {
-      return !string()->empty();
-    } else if (IsNull()) {
-      return false;
-    } else if (IsUndefined()) {
-      return false;
-    } else if (IsBoolean()) {
-      return boolean();
-    } else {
-      assert(!IsEmpty());
-      return true;
-    }
-  }
+  inline bool ToBoolean(Error* e) const;
 
   inline const value_type& Layout() const {
     return value_;

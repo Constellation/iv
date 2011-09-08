@@ -106,6 +106,24 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   }
 }
 
+bool JSVal::ToBoolean(Error* e) const {
+  if (IsNumber()) {
+    const double num = number();
+    return num != 0 && !core::IsNaN(num);
+  } else if (IsString()) {
+    return !string()->empty();
+  } else if (IsNull()) {
+    return false;
+  } else if (IsUndefined()) {
+    return false;
+  } else if (IsBoolean()) {
+    return boolean();
+  } else {
+    assert(!IsEmpty());
+    return true;
+  }
+}
+
 JSVal JSVal::ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const {
   if (IsObject()) {
     return object()->DefaultValue(ctx, hint, e);
