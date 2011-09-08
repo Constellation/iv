@@ -7,7 +7,7 @@
 namespace iv {
 namespace lv5 {
 
-class JSReference : public HeapObject {
+class JSReference : public radio::HeapObject<radio::REFERENCE> {
  public:
   JSReference(JSVal base, Symbol name, bool is_strict)
     : base_(base),

@@ -21,7 +21,7 @@ class JSDeclEnv;
 class JSObjectEnv;
 class JSStaticEnv;
 
-class JSEnv : public HeapObject {
+class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
  public:
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;

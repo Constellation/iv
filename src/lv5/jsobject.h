@@ -20,7 +20,7 @@ class Callable;
 class Context;
 class Error;
 
-class JSObject : public HeapObject {
+class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
   enum EnumerationMode {
     kExcludeNotEnumerable,

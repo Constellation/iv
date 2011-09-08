@@ -24,7 +24,7 @@ struct Handler {
   };
 };
 
-class Code : public HeapObject {
+class Code : public radio::HeapObject<radio::POINTER> {
  public:
   enum CodeType {
     FUNCTION,

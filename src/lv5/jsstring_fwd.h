@@ -20,6 +20,7 @@
 #include "static_assert.h"
 #include "thread_safe_ref_counted.h"
 #include "lv5/context_utils.h"
+#include "lv5/heap_object.h"
 namespace iv {
 namespace lv5 {
 
@@ -41,7 +42,7 @@ class Error;
 //       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
 
-class JSString : public gc_cleanup {
+class JSString: public radio::HeapObject<radio::STRING> {
  private:
   struct Releaser {
     template<typename T>
