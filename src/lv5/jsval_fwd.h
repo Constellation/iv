@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "lv5/hint.h"
 #include "lv5/jsstring_fwd.h"
+#include "lv5/cell.h"
 
 namespace iv {
 namespace lv5 {
@@ -46,7 +47,7 @@ struct Layout<4, true> {
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
-        void* pointer_;
+        radio::Cell* cell_;
       } payload_;
       uint32_t tag_;
     } struct_;
@@ -72,7 +73,7 @@ struct Layout<8, true> {
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
-        void* pointer_;
+        radio::Cell* cell_;
       } payload_;
     } struct_;
   };
@@ -96,7 +97,7 @@ struct Layout<4, false> {
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
-        void* pointer_;
+        radio::Cell* cell_;
       } payload_;
     } struct_;
   };
@@ -121,7 +122,7 @@ struct Layout<8, false> {
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
-        void* pointer_;
+        radio::Cell* cell_;
       } payload_;
     } struct_;
   };
@@ -136,11 +137,11 @@ struct JSUndefinedType { };
 struct JSEmptyType { };
 struct JSNaNType { };
 
-static const uint32_t kOtherPtrTag    = 0xffffffff;  // ptr range end
+static const uint32_t kOtherCellTag   = 0xffffffff;  // cell range end
 static const uint32_t kEnvironmentTag = 0xfffffffe;
 static const uint32_t kReferenceTag   = 0xfffffffd;
 static const uint32_t kStringTag      = 0xfffffffc;
-static const uint32_t kObjectTag      = 0xfffffffb;  // ptr range start
+static const uint32_t kObjectTag      = 0xfffffffb;  // cell range start
 static const uint32_t kEmptyTag       = 0xfffffffa;
 static const uint32_t kUndefinedTag   = 0xfffffff9;
 static const uint32_t kNullTag        = 0xfffffff8;
@@ -155,7 +156,18 @@ inline bool InPtrRange(uint32_t tag) {
 struct Int32Tag { };
 struct UInt32Tag { };
 struct UInt16Tag { };
-struct OtherPtrTag { };
+struct OtherCellTag { };
+
+template<size_t PointerSize>
+struct LayoutOperation;
+
+template<>
+struct LayoutOperation<4> {
+};
+
+template<>
+struct LayoutOperation<8> {
+};
 
 }  // namespace detail
 
@@ -258,6 +270,179 @@ class JSVal {
     IV_STATIC_ASSERT(!(cond::value));
   }
 
+  inline JSReference* reference() const {
+    assert(IsReference());
+    return value_.struct_.payload_.reference_;
+  }
+
+  inline JSEnv* environment() const {
+    assert(IsEnvironment());
+    return value_.struct_.payload_.environment_;
+  }
+
+  inline JSString* string() const {
+    assert(IsString());
+    return value_.struct_.payload_.string_;
+  }
+
+  inline JSObject* object() const {
+    assert(IsObject());
+    return value_.struct_.payload_.object_;
+  }
+
+  inline radio::Cell* cell() const {
+    assert(IsPtr());
+    return value_.struct_.payload_.cell_;
+  }
+
+  inline bool boolean() const {
+    assert(IsBoolean());
+    return value_.struct_.payload_.boolean_;
+  }
+
+  inline double number() const {
+    assert(IsNumber());
+    if (IsInt32()) {
+      return int32();
+    } else {
+      return value_.number_.as_;
+    }
+  }
+
+  inline int32_t int32() const {
+    assert(IsInt32());
+    return value_.struct_.payload_.int32_;
+  }
+
+  inline bool IsEmpty() const {
+    return value_.struct_.tag_ == detail::kEmptyTag;
+  }
+
+  inline bool IsUndefined() const {
+    return value_.struct_.tag_ == detail::kUndefinedTag;
+  }
+
+  inline bool IsNull() const {
+    return value_.struct_.tag_ == detail::kNullTag;
+  }
+
+  inline bool IsBoolean() const {
+    return value_.struct_.tag_ == detail::kBoolTag;
+  }
+
+  inline bool IsString() const {
+    return value_.struct_.tag_ == detail::kStringTag;
+  }
+
+  inline bool IsObject() const {
+    return value_.struct_.tag_ == detail::kObjectTag;
+  }
+
+  inline bool IsInt32() const {
+    return value_.struct_.tag_ == detail::kInt32Tag;
+  }
+
+  inline bool IsNumber() const {
+    return value_.struct_.tag_ < detail::kNumberTag;
+  }
+
+  inline bool IsReference() const {
+    return value_.struct_.tag_ == detail::kReferenceTag;
+  }
+
+  inline bool IsEnvironment() const {
+    return value_.struct_.tag_ == detail::kEnvironmentTag;
+  }
+
+  inline bool IsOtherCell() const {
+    return value_.struct_.tag_ == detail::kOtherCellTag;
+  }
+
+  inline bool IsPrimitive() const {
+    return IsNumber() || IsString() || IsBoolean();
+  }
+
+  inline bool IsPtr() const {
+    return detail::InPtrRange(value_.struct_.tag_);
+  }
+
+  inline uint32_t type() const {
+    return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
+  }
+
+  inline JSString* TypeOf(Context* ctx) const;
+
+  inline JSObject* GetPrimitiveProto(Context* ctx) const;
+
+  inline JSObject* ToObject(Context* ctx, Error* e) const;
+
+  inline JSString* ToString(Context* ctx, Error* e) const;
+
+  inline double ToNumber(Context* ctx, Error* e) const;
+
+  inline int32_t ToInt32(Context* ctx, Error* e) const;
+
+  inline uint32_t ToUInt32(Context* ctx, Error* e) const;
+
+  inline uint32_t GetUInt32() const;
+
+  inline bool GetUInt32(uint32_t* result) const;
+
+  inline JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
+
+  inline bool IsCallable() const;
+
+  inline void CheckObjectCoercible(Error* e) const;
+
+  inline bool ToBoolean(Error* e) const;
+
+  inline const value_type& Layout() const {
+    return value_;
+  }
+
+  inline void swap(this_type& rhs) {
+    using std::swap;
+    swap(value_, rhs.value_);
+  }
+
+  inline friend void swap(this_type& lhs, this_type& rhs) {
+    return lhs.swap(rhs);
+  }
+
+  static inline JSVal Bool(bool val) {
+    if (val) {
+      return JSTrue;
+    } else {
+      return JSFalse;
+    }
+  }
+
+  template<typename T>
+  static inline JSVal UInt32(
+      T val,
+      typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {
+    return JSVal(val, detail::UInt32Tag());
+  }
+
+  template<typename T>
+  static inline JSVal UInt16(
+      T val,
+      typename enable_if<std::is_same<uint16_t, T> >::type* = 0) {
+    return JSVal(val, detail::UInt16Tag());
+  }
+
+  template<typename T>
+  static inline JSVal Int32(
+      T val,
+      typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
+    return JSVal(val, detail::Int32Tag());
+  }
+
+  static inline JSVal Cell(radio::Cell* cell) {
+    return JSVal(cell, detail::OtherCellTag());
+  }
+
+ private:
   inline void set_value(double val) {
     const int32_t i = static_cast<int32_t>(val);
     if (val != i || (!i && core::Signbit(val))) {
@@ -268,10 +453,9 @@ class JSVal {
     }
   }
 
-  template<typename T>
-  inline void set_value_ptr(T* ptr) {
-    value_.struct_.payload_.pointer_ = reinterpret_cast<void*>(ptr);
-    value_.struct_.tag_ = detail::kOtherPtrTag;
+  inline void set_value_cell(radio::Cell* ptr) {
+    value_.struct_.payload_.cell_ = ptr;
+    value_.struct_.tag_ = detail::kOtherCellTag;
   }
 
   inline void set_value_int32(int32_t val) {
@@ -345,210 +529,6 @@ class JSVal {
     value_.struct_.tag_ = detail::kEmptyTag;
   }
 
-  inline JSReference* reference() const {
-    assert(IsReference());
-    return value_.struct_.payload_.reference_;
-  }
-
-  inline JSEnv* environment() const {
-    assert(IsEnvironment());
-    return value_.struct_.payload_.environment_;
-  }
-
-  inline JSString* string() const {
-    assert(IsString());
-    return value_.struct_.payload_.string_;
-  }
-
-  inline JSObject* object() const {
-    assert(IsObject());
-    return value_.struct_.payload_.object_;
-  }
-
-  inline double number() const {
-    assert(IsNumber());
-    if (IsInt32()) {
-      return int32();
-    } else {
-      return value_.number_.as_;
-    }
-  }
-
-  inline int32_t int32() const {
-    assert(IsInt32());
-    return value_.struct_.payload_.int32_;
-  }
-
-  inline bool boolean() const {
-    assert(IsBoolean());
-    return value_.struct_.payload_.boolean_;
-  }
-
-  inline void* pointer() const {
-    assert(IsPtr());
-    return value_.struct_.payload_.pointer_;
-  }
-
-  inline bool IsEmpty() const {
-    return value_.struct_.tag_ == detail::kEmptyTag;
-  }
-
-  inline bool IsUndefined() const {
-    return value_.struct_.tag_ == detail::kUndefinedTag;
-  }
-
-  inline bool IsNull() const {
-    return value_.struct_.tag_ == detail::kNullTag;
-  }
-
-  inline bool IsBoolean() const {
-    return value_.struct_.tag_ == detail::kBoolTag;
-  }
-
-  inline bool IsString() const {
-    return value_.struct_.tag_ == detail::kStringTag;
-  }
-
-  inline bool IsObject() const {
-    return value_.struct_.tag_ == detail::kObjectTag;
-  }
-
-  inline bool IsInt32() const {
-    return value_.struct_.tag_ == detail::kInt32Tag;
-  }
-
-  inline bool IsNumber() const {
-    return value_.struct_.tag_ < detail::kNumberTag;
-  }
-
-  inline bool IsReference() const {
-    return value_.struct_.tag_ == detail::kReferenceTag;
-  }
-
-  inline bool IsEnvironment() const {
-    return value_.struct_.tag_ == detail::kEnvironmentTag;
-  }
-
-  inline bool IsOtherPtr() const {
-    return value_.struct_.tag_ == detail::kOtherPtrTag;
-  }
-
-  inline bool IsPrimitive() const {
-    return IsNumber() || IsString() || IsBoolean();
-  }
-
-  inline bool IsPtr() const {
-    return detail::InPtrRange(value_.struct_.tag_);
-  }
-
-  inline JSString* TypeOf(Context* ctx) const;
-
-  inline uint32_t type() const {
-    return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
-  }
-
-  inline JSObject* GetPrimitiveProto(Context* ctx) const;
-
-  inline JSObject* ToObject(Context* ctx, Error* e) const;
-
-  inline JSString* ToString(Context* ctx, Error* e) const;
-
-  inline double ToNumber(Context* ctx, Error* e) const;
-
-  int32_t ToInt32(Context* ctx, Error* e) const {
-    if (IsInt32()) {
-      return int32();
-    } else {
-      return core::DoubleToInt32(ToNumber(ctx, e));
-    }
-  }
-
-  uint32_t ToUInt32(Context* ctx, Error* e) const {
-    if (IsInt32() && int32() >= 0) {
-      return static_cast<uint32_t>(int32());
-    } else {
-      return core::DoubleToUInt32(ToNumber(ctx, e));
-    }
-  }
-
-  uint32_t GetUInt32() const {
-    assert(IsNumber());
-    uint32_t val = 0;  // make gcc happy
-    GetUInt32(&val);
-    return val;
-  }
-
-  bool GetUInt32(uint32_t* result) const {
-    if (IsInt32() && int32() >= 0) {
-      *result = static_cast<uint32_t>(int32());
-      return true;
-    } else if (IsNumber()) {
-      const double val = number();
-      const uint32_t res = static_cast<uint32_t>(val);
-      if (val == res) {
-        *result = res;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  inline JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
-
-  inline bool IsCallable() const;
-
-  inline void CheckObjectCoercible(Error* e) const;
-
-  inline bool ToBoolean(Error* e) const;
-
-  inline const value_type& Layout() const {
-    return value_;
-  }
-
-  inline void swap(this_type& rhs) {
-    using std::swap;
-    swap(value_, rhs.value_);
-  }
-
-  inline friend void swap(this_type& lhs, this_type& rhs) {
-    return lhs.swap(rhs);
-  }
-
-  static inline JSVal Bool(bool val) {
-    if (val) {
-      return JSTrue;
-    } else {
-      return JSFalse;
-    }
-  }
-
-  template<typename T>
-  static inline JSVal UInt32(
-      T val,
-      typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {
-    return JSVal(val, detail::UInt32Tag());
-  }
-
-  template<typename T>
-  static inline JSVal UInt16(
-      T val,
-      typename enable_if<std::is_same<uint16_t, T> >::type* = 0) {
-    return JSVal(val, detail::UInt16Tag());
-  }
-
-  template<typename T>
-  static inline JSVal Int32(
-      T val,
-      typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
-    return JSVal(val, detail::Int32Tag());
-  }
-
-  template<typename T>
-  static inline JSVal Ptr(T* ptr) {
-    return JSVal(ptr, detail::OtherPtrTag());
-  }
-
- protected:
   JSVal(uint32_t val, detail::UInt32Tag dummy)
     : value_() {
     set_value_uint32(val);
@@ -564,10 +544,9 @@ class JSVal {
     set_value_int32(val);
   }
 
-  template<typename T>
-  JSVal(T* val, detail::OtherPtrTag dummy)
+  JSVal(radio::Cell* val, detail::OtherCellTag dummy)
     : value_() {
-    set_value_ptr(val);
+    set_value_cell(val);
   }
 
   value_type value_;

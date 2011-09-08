@@ -69,9 +69,8 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
     return string();
   } else if (IsNumber()) {
     std::array<char, 80> buffer;
-    const char* const str = core::DoubleToCString(number(),
-                                                  buffer.data(),
-                                                  buffer.size());
+    const char* const str =
+        core::DoubleToCString(number(), buffer.data(), buffer.size());
     return JSString::NewAsciiString(ctx, str);
   } else if (IsBoolean()) {
     return JSString::NewAsciiString(ctx, (boolean() ? "true" : "false"));
@@ -131,6 +130,44 @@ JSVal JSVal::ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const {
     assert(!IsEnvironment() && !IsReference() && !IsEmpty());
     return *this;
   }
+}
+
+int32_t JSVal::ToInt32(Context* ctx, Error* e) const {
+  if (IsInt32()) {
+    return int32();
+  } else {
+    return core::DoubleToInt32(ToNumber(ctx, e));
+  }
+}
+
+uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
+  if (IsInt32() && int32() >= 0) {
+    return static_cast<uint32_t>(int32());
+  } else {
+    return core::DoubleToUInt32(ToNumber(ctx, e));
+  }
+}
+
+uint32_t JSVal::GetUInt32() const {
+  assert(IsNumber());
+  uint32_t val = 0;  // make gcc happy
+  GetUInt32(&val);
+  return val;
+}
+
+bool JSVal::GetUInt32(uint32_t* result) const {
+  if (IsInt32() && int32() >= 0) {
+    *result = static_cast<uint32_t>(int32());
+    return true;
+  } else if (IsNumber()) {
+    const double val = number();
+    const uint32_t res = static_cast<uint32_t>(val);
+    if (val == res) {
+      *result = res;
+      return true;
+    }
+  }
+  return false;
 }
 
 bool JSVal::IsCallable() const {

@@ -103,10 +103,10 @@ class JSVMFunction : public JSFunction {
     JSVal this_value = frame->GetThis();
     if (!code_->strict()) {
       if (this_value.IsUndefined() || this_value.IsNull()) {
-        this_value.set_value(ctx->global_obj());
+        this_value = ctx->global_obj();
       } else if (!this_value.IsObject()) {
         JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
-        this_value.set_value(obj);
+        this_value = obj;
       }
     }
     frame->set_this_binding(this_value);

@@ -10,7 +10,7 @@
 #include "lv5/property_fwd.h"
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
-#include "lv5/heap_object.h"
+#include "lv5/cell.h"
 #include "lv5/jsval.h"
 #include "lv5/string_builder.h"
 

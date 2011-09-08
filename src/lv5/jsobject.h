@@ -7,7 +7,7 @@
 #include "lv5/property_fwd.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
-#include "lv5/heap_object.h"
+#include "lv5/cell.h"
 #include "lv5/class.h"
 namespace iv {
 namespace lv5 {

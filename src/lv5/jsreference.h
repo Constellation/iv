@@ -3,7 +3,7 @@
 #include <gc/gc_cpp.h>
 #include "lv5/jsval.h"
 #include "lv5/symbol.h"
-#include "lv5/heap_object.h"
+#include "lv5/cell.h"
 namespace iv {
 namespace lv5 {
 

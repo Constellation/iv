@@ -2,11 +2,11 @@
 #define IV_LV5_NAME_ITERATOR_H_
 #include <gc/gc_cpp.h>
 #include "lv5/jsobject.h"
-#include "lv5/heap_object.h"
+#include "lv5/cell.h"
 namespace iv {
 namespace lv5 {
 
-class NameIterator : public radio::HeapObject<radio::POINTER> {
+class NameIterator : public radio::HeapObject<> {
  public:
   NameIterator(Context* ctx, JSObject* obj)
     : keys_(),

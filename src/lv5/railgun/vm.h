@@ -1443,12 +1443,12 @@ MAIN_LOOP_START:
         POP_UNUSED();
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
-        PUSH(JSVal::Ptr(it));
+        PUSH(JSVal::Cell(it));
         PREDICT(FORIN_SETUP, FORIN_ENUMERATE);
       }
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
-        NameIterator* it = reinterpret_cast<NameIterator*>(TOP().pointer());
+        NameIterator* it = reinterpret_cast<NameIterator*>(TOP().cell());
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();

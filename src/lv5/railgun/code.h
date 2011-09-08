@@ -6,7 +6,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/gc_template.h"
 #include "lv5/specialized_ast.h"
-#include "lv5/heap_object.h"
+#include "lv5/cell.h"
 #include "lv5/map.h"
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
@@ -24,7 +24,7 @@ struct Handler {
   };
 };
 
-class Code : public radio::HeapObject<radio::POINTER> {
+class Code : public radio::HeapObject<> {
  public:
   enum CodeType {
     FUNCTION,

@@ -26,7 +26,7 @@ class Cell {
   int tag_;
 };
 
-template<CellTag TAG>
+template<CellTag TAG = POINTER>
 class HeapObject
   : public gc,
     public Cell {

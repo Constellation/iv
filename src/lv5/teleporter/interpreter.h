@@ -84,10 +84,10 @@ void Interpreter::Invoke(JSCodeFunction* code,
   JSVal this_value = args.this_binding();
   if (!code->IsStrict()) {
     if (this_value.IsUndefined() || this_value.IsNull()) {
-      this_value.set_value(ctx_->global_obj());
+      this_value = ctx_->global_obj();
     } else if (!this_value.IsObject()) {
       JSObject* const obj = this_value.ToObject(ctx_, CHECK_IN_STMT);
-      this_value.set_value(obj);
+      this_value = obj;
     }
   }
   // section 10.5 Declaration Binding Instantiation
@@ -730,78 +730,78 @@ void Interpreter::Visit(const Assignment* assign) {
         if (lprim.IsString() || rprim.IsString()) {
           JSString* const lstr = lprim.ToString(ctx_, CHECK);
           JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          result.set_value(JSString::New(ctx_, lstr, rstr));
+          result = JSString::New(ctx_, lstr, rstr);
           break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
         const double right_num = rprim.ToNumber(ctx_, CHECK);
-        result.set_value(left_num + right_num);
+        result = left_num + right_num;
         break;
       }
       case Token::TK_ASSIGN_SUB: {  // -=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(left_num - right_num);
+        result = left_num - right_num;
         break;
       }
       case Token::TK_ASSIGN_MUL: {  // *=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(left_num * right_num);
+        result = left_num * right_num;
         break;
       }
       case Token::TK_ASSIGN_MOD: {  // %=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(std::fmod(left_num, right_num));
+        result = std::fmod(left_num, right_num);
         break;
       }
       case Token::TK_ASSIGN_DIV: {  // /=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(left_num / right_num);
+        result = left_num / right_num;
         break;
       }
       case Token::TK_ASSIGN_SAR: {  // >>=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToInt32(left_num)
-                         >> (core::DoubleToInt32(right_num) & 0x1f));
+        result = core::DoubleToInt32(left_num)
+            >> (core::DoubleToInt32(right_num) & 0x1f);
         break;
       }
       case Token::TK_ASSIGN_SHR: {  // >>>=
         const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
         const double right = rhs.ToNumber(ctx_, CHECK);
         const uint32_t res = left >> (core::DoubleToInt32(right) & 0x1f);
-        result.set_value(res);
+        result = res;
         break;
       }
       case Token::TK_ASSIGN_SHL: {  // <<=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToInt32(left_num)
-                         << (core::DoubleToInt32(right_num) & 0x1f));
+        result = core::DoubleToInt32(left_num)
+            << (core::DoubleToInt32(right_num) & 0x1f);
         break;
       }
       case Token::TK_ASSIGN_BIT_AND: {  // &=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToInt32(left_num)
-                         & (core::DoubleToInt32(right_num)));
+        result = core::DoubleToInt32(left_num)
+            & (core::DoubleToInt32(right_num));
         break;
       }
       case Token::TK_ASSIGN_BIT_OR: {  // |=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToInt32(left_num)
-                         | (core::DoubleToInt32(right_num)));
+        result = core::DoubleToInt32(left_num)
+            | (core::DoubleToInt32(right_num));
         break;
       }
       case Token::TK_ASSIGN_BIT_XOR: {  // ^=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result.set_value(core::DoubleToInt32(left_num)
-                         ^ (core::DoubleToInt32(right_num)));
+        result = core::DoubleToInt32(left_num)
+            ^ (core::DoubleToInt32(right_num));
         break;
       }
       default: {
@@ -1119,7 +1119,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::TK_VOID: {
       EVAL(unary->expr());
       GetValue(ctx_->ret(), CHECK);
-      ctx_->ret().set_undefined();
+      ctx_->Return(JSUndefined);
       return;
     }
 
@@ -1249,7 +1249,7 @@ void Interpreter::Visit(const ThisLiteral* literal) {
 
 
 void Interpreter::Visit(const NullLiteral* lit) {
-  ctx_->ret().set_null();
+  ctx_->Return(JSNull);
 }
 
 
