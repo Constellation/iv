@@ -15,7 +15,7 @@
 namespace iv {
 namespace lv5 {
 
-#if defined(IV_64)
+#if defined(IV_64) && !defined(IV_OS_SOLARIS)
 // 64bit version
 //
 // Pointer value is not use higher 16bits so format is like this,
@@ -287,7 +287,7 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
 }
 
 #else
-// 32bit version
+// 32bit version (or 128bit JSVal in Solaris)
 //
 // NaN boxing 32bit
 // according to IEEE754, if signbit and exponent bit (1 + 11 = 12bit) are 1s,
@@ -296,57 +296,74 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
 namespace detail {
 namespace jsval32 {
 
+static const uint32_t kOtherCellTag   = 0xffffffff;  // cell range end
+static const uint32_t kEnvironmentTag = 0xfffffffe;
+static const uint32_t kReferenceTag   = 0xfffffffd;
+static const uint32_t kStringTag      = 0xfffffffc;
+static const uint32_t kObjectTag      = 0xfffffffb;  // cell range start
+static const uint32_t kEmptyTag       = 0xfffffffa;
+static const uint32_t kUndefinedTag   = 0xfffffff9;
+static const uint32_t kNullTag        = 0xfffffff8;
+static const uint32_t kBoolTag        = 0xfffffff7;
+static const uint32_t kNumberTag      = 0xfffffff5;
+static const uint32_t kInt32Tag       = 0xfffffff4;
+
+inline bool InPtrRange(uint32_t tag) {
+  return kObjectTag <= tag;
+}
+
 inline uint32_t GetType(const JSVal& val) {
-  return val.IsNumber() ? detail::kNumberTag : val.Layout().struct_.tag_;
+  return val.IsNumber() ? kNumberTag : val.Layout().struct_.tag_;
 }
 
 } }  // namespace detail::jsval32
+
 bool JSVal::IsEmpty() const {
-  return value_.struct_.tag_ == detail::kEmptyTag;
+  return value_.struct_.tag_ == detail::jsval32::kEmptyTag;
 }
 
 bool JSVal::IsUndefined() const {
-  return value_.struct_.tag_ == detail::kUndefinedTag;
+  return value_.struct_.tag_ == detail::jsval32::kUndefinedTag;
 }
 
 bool JSVal::IsNull() const {
-  return value_.struct_.tag_ == detail::kNullTag;
+  return value_.struct_.tag_ == detail::jsval32::kNullTag;
 }
 
 bool JSVal::IsBoolean() const {
-  return value_.struct_.tag_ == detail::kBoolTag;
+  return value_.struct_.tag_ == detail::jsval32::kBoolTag;
 }
 
 bool JSVal::IsString() const {
-  return value_.struct_.tag_ == detail::kStringTag;
+  return value_.struct_.tag_ == detail::jsval32::kStringTag;
 }
 
 bool JSVal::IsObject() const {
-  return value_.struct_.tag_ == detail::kObjectTag;
+  return value_.struct_.tag_ == detail::jsval32::kObjectTag;
 }
 
 bool JSVal::IsInt32() const {
-  return value_.struct_.tag_ == detail::kInt32Tag;
+  return value_.struct_.tag_ == detail::jsval32::kInt32Tag;
 }
 
 bool JSVal::IsNumber() const {
-  return value_.struct_.tag_ < detail::kNumberTag;
+  return value_.struct_.tag_ < detail::jsval32::kNumberTag;
 }
 
 bool JSVal::IsReference() const {
-  return value_.struct_.tag_ == detail::kReferenceTag;
+  return value_.struct_.tag_ == detail::jsval32::kReferenceTag;
 }
 
 bool JSVal::IsEnvironment() const {
-  return value_.struct_.tag_ == detail::kEnvironmentTag;
+  return value_.struct_.tag_ == detail::jsval32::kEnvironmentTag;
 }
 
 bool JSVal::IsOtherCell() const {
-  return value_.struct_.tag_ == detail::kOtherCellTag;
+  return value_.struct_.tag_ == detail::jsval32::kOtherCellTag;
 }
 
 bool JSVal::IsCell() const {
-  return detail::InPtrRange(value_.struct_.tag_);
+  return detail::jsval32::InPtrRange(value_.struct_.tag_);
 }
 
 bool JSVal::IsPrimitive() const {
@@ -399,12 +416,12 @@ double JSVal::number() const {
 
 void JSVal::set_value_cell(radio::Cell* ptr) {
   value_.struct_.payload_.cell_ = ptr;
-  value_.struct_.tag_ = detail::kOtherCellTag;
+  value_.struct_.tag_ = detail::jsval32::kOtherCellTag;
 }
 
 void JSVal::set_value_int32(int32_t val) {
   value_.struct_.payload_.int32_ = val;
-  value_.struct_.tag_ = detail::kInt32Tag;
+  value_.struct_.tag_ = detail::jsval32::kInt32Tag;
 }
 
 void JSVal::set_value_uint32(uint32_t val) {
@@ -427,32 +444,32 @@ void JSVal::set_value(double val) {
 
 void JSVal::set_value(JSObject* val) {
   value_.struct_.payload_.object_ = val;
-  value_.struct_.tag_ = detail::kObjectTag;
+  value_.struct_.tag_ = detail::jsval32::kObjectTag;
 }
 
 void JSVal::set_value(JSString* val) {
   value_.struct_.payload_.string_ = val;
-  value_.struct_.tag_ = detail::kStringTag;
+  value_.struct_.tag_ = detail::jsval32::kStringTag;
 }
 
 void JSVal::set_value(JSReference* ref) {
   value_.struct_.payload_.reference_ = ref;
-  value_.struct_.tag_ = detail::kReferenceTag;
+  value_.struct_.tag_ = detail::jsval32::kReferenceTag;
 }
 
 void JSVal::set_value(JSEnv* ref) {
   value_.struct_.payload_.environment_ = ref;
-  value_.struct_.tag_ = detail::kEnvironmentTag;
+  value_.struct_.tag_ = detail::jsval32::kEnvironmentTag;
 }
 
 void JSVal::set_value(JSTrueKeywordType val) {
   value_.struct_.payload_.boolean_ = true;
-  value_.struct_.tag_ = detail::kBoolTag;
+  value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
 void JSVal::set_value(JSFalseKeywordType val) {
   value_.struct_.payload_.boolean_ = false;
-  value_.struct_.tag_ = detail::kBoolTag;
+  value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
 void JSVal::set_value(JSNaNKeywordType val) {
@@ -460,15 +477,15 @@ void JSVal::set_value(JSNaNKeywordType val) {
 }
 
 void JSVal::set_null() {
-  value_.struct_.tag_ = detail::kNullTag;
+  value_.struct_.tag_ = detail::jsval32::kNullTag;
 }
 
 void JSVal::set_undefined() {
-  value_.struct_.tag_ = detail::kUndefinedTag;
+  value_.struct_.tag_ = detail::jsval32::kUndefinedTag;
 }
 
 void JSVal::set_empty() {
-  value_.struct_.tag_ = detail::kEmptyTag;
+  value_.struct_.tag_ = detail::jsval32::kEmptyTag;
 }
 
 bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {

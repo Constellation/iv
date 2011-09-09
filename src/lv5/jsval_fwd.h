@@ -28,9 +28,6 @@ class JSReference;
 class JSEnv;
 class JSObject;
 
-int GetTag(JSObject* obj);
-int GetTag(JSString* obj);
-
 namespace detail {
 template<std::size_t PointerSize, bool IsLittle>
 struct Layout;
@@ -79,6 +76,56 @@ struct Layout<4, false> {
   };
 };
 
+#if defined(IV_OS_SOLARIS)
+
+template<>
+struct Layout<8, true> {
+  union {
+    struct {
+      double as_;
+    } number_;
+    struct {
+      uint32_t padding_;
+      uint32_t tag_;
+      union {
+        bool boolean_;
+        JSObject* object_;
+        JSString* string_;
+        JSReference* reference_;
+        JSEnv* environment_;
+        JSVal* jsvalref_;
+        int32_t int32_;
+        radio::Cell* cell_;
+      } payload_;
+    } struct_;
+  };
+};
+
+template<>
+struct Layout<8, false> {
+  union {
+    struct {
+      double as_;
+    } number_;
+    struct {
+      uint32_t tag_;
+      uint32_t padding_;
+      union {
+        bool boolean_;
+        JSObject* object_;
+        JSString* string_;
+        JSReference* reference_;
+        JSEnv* environment_;
+        JSVal* jsvalref_;
+        int32_t int32_;
+        radio::Cell* cell_;
+      } payload_;
+    } struct_;
+  };
+};
+
+#else
+
 template<bool IsLittle>
 struct Layout<8, IsLittle> {
   union {
@@ -87,28 +134,14 @@ struct Layout<8, IsLittle> {
   };
 };
 
+#endif
+
 struct JSTrueType { };
 struct JSFalseType { };
 struct JSNullType { };
 struct JSUndefinedType { };
 struct JSEmptyType { };
 struct JSNaNType { };
-
-static const uint32_t kOtherCellTag   = 0xffffffff;  // cell range end
-static const uint32_t kEnvironmentTag = 0xfffffffe;
-static const uint32_t kReferenceTag   = 0xfffffffd;
-static const uint32_t kStringTag      = 0xfffffffc;
-static const uint32_t kObjectTag      = 0xfffffffb;  // cell range start
-static const uint32_t kEmptyTag       = 0xfffffffa;
-static const uint32_t kUndefinedTag   = 0xfffffff9;
-static const uint32_t kNullTag        = 0xfffffff8;
-static const uint32_t kBoolTag        = 0xfffffff7;
-static const uint32_t kNumberTag      = 0xfffffff5;
-static const uint32_t kInt32Tag       = 0xfffffff4;
-
-inline bool InPtrRange(uint32_t tag) {
-  return kObjectTag <= tag;
-}
 
 struct Int32Tag { };
 struct UInt32Tag { };
@@ -133,9 +166,10 @@ inline void JSNaN(detail::JSNaNType dummy) { }
 class JSVal {
  public:
   typedef JSVal this_type;
-  typedef detail::Layout<core::Size::kPointerSize, core::kLittleEndian> value_type;
+  typedef detail::Layout<
+      core::Size::kPointerSize,
+      core::kLittleEndian> value_type;
 
-  IV_STATIC_ASSERT(sizeof(value_type) == 8);
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
   IV_STATIC_ASSERT(std::is_pod<value_type>::value);
 #endif
@@ -146,62 +180,74 @@ class JSVal {
 
   JSVal(const JSVal& rhs) : value_(rhs.value_) { }
 
-  JSVal(double val) {  // NOLINT
+  JSVal(double val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsNumber());
   }
 
-  JSVal(JSObject* val) {  // NOLINT
+  JSVal(JSObject* val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsObject());
   }
 
-  JSVal(JSString* val) {  // NOLINT
+  JSVal(JSString* val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsString());
   }
 
-  JSVal(JSReference* val)  { // NOLINT
+  JSVal(JSReference* val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsReference());
   }
 
-  JSVal(JSEnv* val)  { // NOLINT
+  JSVal(JSEnv* val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsEnvironment());
   }
 
-  JSVal(JSTrueKeywordType val)  { // NOLINT
+  JSVal(JSTrueKeywordType val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsBoolean());
   }
 
-  JSVal(JSFalseKeywordType val)  { // NOLINT
+  JSVal(JSFalseKeywordType val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsBoolean());
   }
 
-  JSVal(JSNullKeywordType val)  { // NOLINT
+  JSVal(JSNullKeywordType val)  // NOLINT
+    : value_() {
     set_null();
     assert(IsNull());
   }
 
-  JSVal(JSUndefinedKeywordType val)  { // NOLINT
+  JSVal(JSUndefinedKeywordType val)  // NOLINT
+    : value_() {
     set_undefined();
     assert(IsUndefined());
   }
 
-  JSVal(JSEmptyKeywordType val)  { // NOLINT
+  JSVal(JSEmptyKeywordType val)  // NOLINT
+    : value_() {
     set_empty();
     assert(IsEmpty());
   }
 
-  JSVal(JSNaNKeywordType val)  { // NOLINT
+  JSVal(JSNaNKeywordType val)  // NOLINT
+    : value_() {
     set_value(val);
     assert(IsNumber());
   }
 
-  JSVal(const value_type& val) : value_(val) {  }  // NOLINT
+  JSVal(const value_type& val)
+      : value_(val) {  }  // NOLINT
 
   // prohibit like this,
   //
@@ -383,22 +429,26 @@ class JSVal {
   }
 
  private:
-  JSVal(uint32_t val, detail::UInt32Tag dummy) {
+  JSVal(uint32_t val, detail::UInt32Tag dummy)
+    : value_() {
     set_value_uint32(val);
     assert(IsNumber());
   }
 
-  JSVal(uint16_t val, detail::UInt16Tag dummy) {
+  JSVal(uint16_t val, detail::UInt16Tag dummy)
+    : value_() {
     set_value_int32(val);
     assert(IsInt32());
   }
 
-  JSVal(int32_t val, detail::Int32Tag dummy) {
+  JSVal(int32_t val, detail::Int32Tag dummy)
+    : value_() {
     set_value_int32(val);
     assert(IsInt32());
   }
 
-  JSVal(radio::Cell* val, detail::OtherCellTag dummy) {
+  JSVal(radio::Cell* val, detail::OtherCellTag dummy)
+    : value_() {
     set_value_cell(val);
     assert(IsCell());
   }

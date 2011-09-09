@@ -14,6 +14,10 @@
 #ifndef IV_OS_MACOSX
 #define IV_OS_MACOSX 1
 #endif  // IV_OS_MACOSX
+#elif defined(sun) || defined(__sun)
+#ifndef IV_OS_SOLARIS
+#define IV_OS_SOLARIS 1
+#endif  // IV_OS_SOLARIS
 #elif defined(__linux__)
 #ifndef IV_OS_LINUX
 #define IV_OS_LINUX 1
