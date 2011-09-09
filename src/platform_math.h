@@ -23,6 +23,23 @@ inline int IsInf(double x) {
   return (_fpclass(x) & (_FPCLASS_PINF | _FPCLASS_NINF)) != 0;
 }
 
+inline double Modulo(double x, double y) {
+  // std::fmod in Windows is not compatible with ECMA262 modulo
+  // in ECMA262
+  //
+  //   x[finite] / y[infinity] => x
+  //   x[+-0] / y[finite, but not 0] => x
+  //
+  // sputniktests failed example with using std::fmod in Windows:
+  //   1 % -Infinity should be 1 (but NaN)
+  //   -0.0 % 1 should be -0.0 (but +0.0)
+  //
+  if (!(IsFinite(x) && IsInf(y)) && !(x == 0 && (y != 0 && IsFinite(y)))) {
+    return std::fmod(x, y);
+  }
+  return x;
+}
+
 } }  // namespace iv::core
 #else
 #include <cmath>
@@ -43,6 +60,10 @@ inline int Signbit(double x) {
 
 inline int IsInf(double x) {
   return std::isinf(x);
+}
+
+inline double Modulo(double x, double y) {
+  return std::fmod(x, y);
 }
 
 } }  // namespace iv::core

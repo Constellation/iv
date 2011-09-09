@@ -407,7 +407,7 @@ inline int32_t DoubleToInt32(double d) {
     return 0;
   }
   if (d < 0 || d >= detail::kDoubleToInt32_Two32) {
-    d = std::fmod(d, detail::kDoubleToInt32_Two32);
+    d = Modulo(d, detail::kDoubleToInt32_Two32);
   }
   d = (d >= 0) ?
       std::floor(d) : std::ceil(d) + detail::kDoubleToInt32_Two32;
@@ -431,7 +431,7 @@ inline int64_t DoubleToInt64(double d) {
     return static_cast<int64_t>(DoubleToInt32(d));
   }
   const int32_t lo = DoubleToInt32(
-      std::fmod(d, detail::kDoubleToInt32_Two32));
+      Modulo(d, detail::kDoubleToInt32_Two32));
   const int32_t hi = DoubleToInt32(d / detail::kDoubleToInt32_Two32);
   return hi * INT64_C(4294967296) + lo;
 }
@@ -509,7 +509,7 @@ inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
   int integer_pos = kMaxBufSize - 1;
   do {
     buffer[integer_pos--] =
-        Conversions::kHex[static_cast<std::size_t>(std::fmod(integer, radix))];
+        Conversions::kHex[static_cast<std::size_t>(Modulo(integer, radix))];
     integer /= radix;
   } while (integer >= 1.0);
   if (is_negative) {

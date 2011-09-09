@@ -32,7 +32,7 @@ inline double Day(double t) {
 }
 
 inline double TimeWithinDay(double t) {
-  const double res = std::fmod(t, kMsPerDay);
+  const double res = core::Modulo(t, kMsPerDay);
   if (res < 0) {
     return res + kMsPerDay;
   }
@@ -143,7 +143,7 @@ static const std::array<const char*, 7> kWeekDays = { {
 } };
 
 inline int WeekDay(double t) {
-  const int res = core::DoubleToInt32(std::fmod((Day(t) + 4), 7));
+  const int res = core::DoubleToInt32(core::Modulo((Day(t) + 4), 7));
   if (res < 0) {
     return res + 7;
   }
@@ -243,7 +243,7 @@ inline double UTC(double t) {
 
 inline int HourFromTime(double t) {
   const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerHour), kHoursPerDay));
+      core::Modulo(std::floor(t / kMsPerHour), kHoursPerDay));
   if (res < 0) {
     return res + kHoursPerDay;
   }
@@ -252,7 +252,7 @@ inline int HourFromTime(double t) {
 
 inline int MinFromTime(double t) {
   const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerMinute), kMinutesPerHour));
+      core::Modulo(std::floor(t / kMsPerMinute), kMinutesPerHour));
   if (res < 0) {
     return res + kMinutesPerHour;
   }
@@ -261,7 +261,7 @@ inline int MinFromTime(double t) {
 
 inline int SecFromTime(double t) {
   const int res = core::DoubleToInt32(
-      std::fmod(std::floor(t / kMsPerSecond), kSecondsPerMinute));
+      core::Modulo(std::floor(t / kMsPerSecond), kSecondsPerMinute));
   if (res < 0) {
     return res + kSecondsPerMinute;
   }
@@ -269,8 +269,7 @@ inline int SecFromTime(double t) {
 }
 
 inline int MsFromTime(double t) {
-  const int res = core::DoubleToInt32(
-      std::fmod(t, kMsPerSecond));
+  const int res = core::DoubleToInt32(core::Modulo(t, kMsPerSecond));
   if (res < 0) {
     return res + kMsPerSecond;
   }

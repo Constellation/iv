@@ -7,6 +7,7 @@
 #include "detail/array.h"
 #include "token.h"
 #include "maybe.h"
+#include "platform_math.h"
 #include "lv5/hint.h"
 #include "lv5/jsreference.h"
 #include "lv5/jsobject.h"
@@ -753,7 +754,7 @@ void Interpreter::Visit(const Assignment* assign) {
       case Token::TK_ASSIGN_MOD: {  // %=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result = std::fmod(left_num, right_num);
+        result = core::Modulo(left_num, right_num);
         break;
       }
       case Token::TK_ASSIGN_DIV: {  // /=

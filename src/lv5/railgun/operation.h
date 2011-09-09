@@ -1,6 +1,7 @@
 #ifndef IV_LV5_RAILGUN_OPERATION_H_
 #define IV_LV5_RAILGUN_OPERATION_H_
 #include "arith.h"
+#include "platform_math.h"
 #include "lv5/arguments.h"
 #include "lv5/jsval.h"
 #include "lv5/chain.h"
@@ -382,7 +383,7 @@ class Operation {
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
-    return std::fmod(left, rhs.ToNumber(ctx_, e));
+    return core::Modulo(left, rhs.ToNumber(ctx_, e));
   }
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
