@@ -188,67 +188,56 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
 }
 
-#define ABSTRACT_CHECK\
-  IV_LV5_ERROR_WITH(error, false)
-inline bool AbstractEqual(Context* ctx,
-                          const JSVal& lhs, const JSVal& rhs,
-                          Error* error) {
-  if (lhs.IsNumber() && rhs.IsNumber()) {
-    return lhs.number() == rhs.number();
-  }
-  if (lhs.IsUndefined() && rhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull() && rhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsString() && rhs.IsString()) {
-    return *(lhs.string()) == *(rhs.string());
-  }
-  if (lhs.IsBoolean() && rhs.IsBoolean()) {
-    return lhs.boolean() == rhs.boolean();
-  }
-  if (lhs.IsObject() && rhs.IsObject()) {
-    return lhs.object() == rhs.object();
-  }
+#define CHECK IV_LV5_ERROR_WITH(e, false)
+inline bool AbstractEqual(Context* ctx, JSVal lhs, JSVal rhs, Error* e) {
+  do {
+    if (lhs.IsNumber() && rhs.IsNumber()) {
+      return lhs.number() == rhs.number();
+    }
+    if (lhs.IsUndefined() || lhs.IsNull()) {
+      if (rhs.IsUndefined() || rhs.IsNull()) {
+        return true;
+      }
+    }
+    if (lhs.IsString() && rhs.IsString()) {
+      return *(lhs.string()) == *(rhs.string());
+    }
+    if (lhs.IsBoolean() && rhs.IsBoolean()) {
+      return lhs.boolean() == rhs.boolean();
+    }
+    if (lhs.IsObject() && rhs.IsObject()) {
+      return lhs.object() == rhs.object();
+    }
 
-  if (lhs.IsNull() && rhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsUndefined() && rhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber() && rhs.IsString()) {
-    const double num = rhs.ToNumber(ctx, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, lhs, num, error);
-  }
-  if (lhs.IsString() && rhs.IsNumber()) {
-    const double num = lhs.ToNumber(ctx, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, num, rhs, error);
-  }
-  if (lhs.IsBoolean()) {
-    const double num = lhs.ToNumber(ctx, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, num, rhs, error);
-  }
-  if (rhs.IsBoolean()) {
-    const double num = rhs.ToNumber(ctx, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, lhs, num, error);
-  }
-  if ((lhs.IsString() || lhs.IsNumber()) &&
-      rhs.IsObject()) {
-    const JSVal prim = rhs.ToPrimitive(ctx,
-                                       Hint::NONE, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, lhs, prim, error);
-  }
-  if (lhs.IsObject() &&
-      (rhs.IsString() || rhs.IsNumber())) {
-    const JSVal prim = lhs.ToPrimitive(ctx,
-                                       Hint::NONE, ABSTRACT_CHECK);
-    return AbstractEqual(ctx, prim, rhs, error);
-  }
-  return false;
+    if (lhs.IsNumber() && rhs.IsString()) {
+      rhs = rhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (lhs.IsString() && rhs.IsNumber()) {
+      lhs = lhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (lhs.IsBoolean()) {
+      lhs = lhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (rhs.IsBoolean()) {
+      rhs = rhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if ((lhs.IsString() || lhs.IsNumber()) && rhs.IsObject()) {
+      rhs = rhs.ToPrimitive(ctx, Hint::NONE, CHECK);
+      continue;
+    }
+    if (lhs.IsObject() && (rhs.IsString() || rhs.IsNumber())) {
+      lhs = lhs.ToPrimitive(ctx, Hint::NONE, CHECK);
+      continue;
+    }
+    return false;
+  } while (true);
+  return false;  // makes compiler happy
 }
-#undef ABSTRACT_CHECK
+#undef CHECK
 
 enum CompareKind {
   CMP_TRUE,
