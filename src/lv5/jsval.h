@@ -2,6 +2,7 @@
 #define IV_LV5_JSVAL_H_
 #include "detail/array.h"
 #include "dtoa.h"
+#include "bit_cast.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval_fwd.h"
 #include "lv5/error.h"
@@ -51,7 +52,7 @@ static const uint64_t kTrue = kOtherValueTag | kBooleanTag | 0x1;
 static const uint64_t kUndefined = kOtherValueTag | kUndefinedTag;
 static const uint64_t kNull = kOtherValueTag;
 static const uint64_t kEmpty = 0x0;
-static const uint64_t kNaN = core::BitCast<uint64_t>(core::kNaN);
+static const uint64_t kNaN = core::BitCast<uint64_t>(core::kNaN) + kDoubleOffset;
 
 } }  // namespace detail::jsval64
 
