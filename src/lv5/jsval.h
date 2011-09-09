@@ -293,6 +293,14 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
 // according to IEEE754, if signbit and exponent bit (1 + 11 = 12bit) are 1s,
 // value is NaN. so we use top 16bit as tag and canonicalize NaN only to one
 // kind bit pattern, use other NaN bit pattern as ptr, int32_t, etc...
+namespace detail {
+namespace jsval32 {
+
+inline uint32_t GetType(const JSVal& val) {
+  return val.IsNumber() ? detail::kNumberTag : val.Layout().struct_.tag_;
+}
+
+} }  // namespace detail::jsval32
 bool JSVal::IsEmpty() const {
   return value_.struct_.tag_ == detail::kEmptyTag;
 }
@@ -463,12 +471,8 @@ void JSVal::set_empty() {
   value_.struct_.tag_ = detail::kEmptyTag;
 }
 
-uint32_t JSVal::type() const {
-  return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
-}
-
 bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
-  if (lhs.type() != rhs.type()) {
+  if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
   if (lhs.IsUndefined()) {
@@ -515,7 +519,7 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
 }
 
 bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
-  if (lhs.type() != rhs.type()) {
+  if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
   if (lhs.IsUndefined()) {
