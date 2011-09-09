@@ -403,7 +403,7 @@ inline bool PropertyDescriptor::Equals(const PropertyDescriptor& lhs,
         lhs.AsDataDescriptor()->IsWritable() != rhs.AsDataDescriptor()->IsWritable()) {
       return false;
     }
-    return SameValue(lhs.value_.data_, rhs.value_.data_);
+    return JSVal::SameValue(lhs.value_.data_, rhs.value_.data_);
   } else if (lhs.IsAccessorDescriptor()) {
     return lhs.value_.accessor_.getter_ == rhs.value_.accessor_.getter_ &&
         lhs.value_.accessor_.setter_ == rhs.value_.accessor_.setter_;

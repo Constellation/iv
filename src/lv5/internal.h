@@ -188,67 +188,30 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
 }
 
-inline bool StrictEqual(const JSVal& lhs, const JSVal& rhs) {
-  if (lhs.type() != rhs.type()) {
-    return false;
-  }
-  if (lhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber()) {
-    const double& lhsv = lhs.number();
-    const double& rhsv = rhs.number();
-    if (core::IsNaN(lhsv) || core::IsNaN(rhsv)) {
-      return false;
-    }
-    return lhsv == rhsv;
-  }
-  if (lhs.IsString()) {
-    return *(lhs.string()) == *(rhs.string());
-  }
-  if (lhs.IsBoolean()) {
-    return lhs.boolean() == rhs.boolean();
-  }
-  if (lhs.IsObject()) {
-    return lhs.object() == rhs.object();
-  }
-  return false;
-}
-
 #define ABSTRACT_CHECK\
   IV_LV5_ERROR_WITH(error, false)
 inline bool AbstractEqual(Context* ctx,
                           const JSVal& lhs, const JSVal& rhs,
                           Error* error) {
-  if (lhs.type() == rhs.type()) {
-    if (lhs.IsUndefined()) {
-      return true;
-    }
-    if (lhs.IsNull()) {
-      return true;
-    }
-    if (lhs.IsNumber()) {
-      const double& lhsv = lhs.number();
-      const double& rhsv = rhs.number();
-      if (core::IsNaN(lhsv) || core::IsNaN(rhsv)) {
-        return false;
-      }
-      return lhsv == rhsv;
-    }
-    if (lhs.IsString()) {
-      return *(lhs.string()) == *(rhs.string());
-    }
-    if (lhs.IsBoolean()) {
-      return lhs.boolean() == rhs.boolean();
-    }
-    if (lhs.IsObject()) {
-      return lhs.object() == rhs.object();
-    }
-    return false;
+  if (lhs.IsNumber() && rhs.IsNumber()) {
+    return lhs.number() == rhs.number();
   }
+  if (lhs.IsUndefined() && rhs.IsUndefined()) {
+    return true;
+  }
+  if (lhs.IsNull() && rhs.IsNull()) {
+    return true;
+  }
+  if (lhs.IsString() && rhs.IsString()) {
+    return *(lhs.string()) == *(rhs.string());
+  }
+  if (lhs.IsBoolean() && rhs.IsBoolean()) {
+    return lhs.boolean() == rhs.boolean();
+  }
+  if (lhs.IsObject() && rhs.IsObject()) {
+    return lhs.object() == rhs.object();
+  }
+
   if (lhs.IsNull() && rhs.IsUndefined()) {
     return true;
   }

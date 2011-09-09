@@ -36,7 +36,7 @@ class GlobalData {
       classes_(),
       string_cache_(),
       empty_(new JSString()),
-      global_obj_(ctx),
+      global_obj_(new JSGlobal(ctx)),
       empty_object_map_(Map::New(ctx)),
       function_map_(Map::New(ctx)),
       array_map_(Map::New(ctx)),
@@ -77,12 +77,8 @@ class GlobalData {
     return random_generator_.get();
   }
 
-  const JSGlobal* global_obj() const {
-    return &global_obj_;
-  }
-
-  JSGlobal* global_obj() {
-    return &global_obj_;
+  JSGlobal* global_obj() const {
+    return global_obj_;
   }
 
   void RegisterLiteralRegExp(JSRegExpImpl* reg) {
@@ -158,7 +154,7 @@ class GlobalData {
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0xFF + 1> string_cache_;
   JSString* empty_;
-  JSGlobal global_obj_;
+  JSGlobal* global_obj_;
 
   // builtin maps
   Map* empty_object_map_;

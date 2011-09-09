@@ -43,7 +43,7 @@ class StackResource : private core::Noncopyable<> {
 
     for (Stack::iterator it = vmstack->stack_pointer_begin(),
          last = vmstack->stack_pointer(); it != last; ++it) {
-      if (it->IsPtr()) {
+      if (it->IsCell()) {
         radio::Cell* ptr = it->cell();
         if (GC_least_plausible_heap_addr < ptr &&
             ptr < GC_greatest_plausible_heap_addr) {

@@ -22,7 +22,7 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
   assert(args.size() == 2);  // always 2
   const JSVal& lhs = args[0];
   const JSVal& rhs = args[1];
-  if (internal::StrictEqual(lhs, rhs)) {
+  if (JSVal::StrictEqual(lhs, rhs)) {
     return JSVal::Int32(0);
   }
   const JSString* const lhs_str = lhs.ToString(args.ctx(), IV_LV5_ERROR(e));
@@ -878,7 +878,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   for (; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       const JSVal element_k = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      if (internal::StrictEqual(search_element, element_k)) {
+      if (JSVal::StrictEqual(search_element, element_k)) {
         return k;
       }
     }
@@ -929,7 +929,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   while (true) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       const JSVal element_k = obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      if (internal::StrictEqual(search_element, element_k)) {
+      if (JSVal::StrictEqual(search_element, element_k)) {
         return k;
       }
     }

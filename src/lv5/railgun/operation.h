@@ -456,7 +456,7 @@ class Operation {
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
                           const JSVal& rhs) const {
-    return JSVal::Bool(internal::StrictEqual(lhs, rhs));
+    return JSVal::Bool(JSVal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryNotEqual(const JSVal& lhs,
@@ -466,7 +466,7 @@ class Operation {
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
                              const JSVal& rhs) const {
-    return JSVal::Bool(!internal::StrictEqual(lhs, rhs));
+    return JSVal::Bool(!JSVal::StrictEqual(lhs, rhs));
   }
 
   JSVal BinaryBitAnd(const JSVal& lhs,

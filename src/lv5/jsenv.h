@@ -1,9 +1,8 @@
 #ifndef IV_LV5_JSENV_H_
 #define IV_LV5_JSENV_H_
-#include <cassert>
-#include <iostream>
 #include <gc/gc_cpp.h>
 #include "notfound.h"
+#include "debug.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
@@ -11,7 +10,7 @@
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
 #include "lv5/cell.h"
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/string_builder.h"
 
 namespace iv {

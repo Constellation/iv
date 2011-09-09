@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <vector>
 #include <string>
-#include <iostream>
 #include "notfound.h"
 #include "detail/memory.h"
 #include "detail/cstdint.h"
@@ -1420,7 +1419,7 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(SWITCH_CASE) {
         const JSVal v = POP();
         const JSVal w = TOP();
-        if (internal::StrictEqual(v, w)) {
+        if (JSVal::StrictEqual(v, w)) {
           POP_UNUSED();
           JUMPTO(instr[1].value);
           DISPATCH_WITH_NO_INCREMENT();

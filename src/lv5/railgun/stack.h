@@ -258,7 +258,7 @@ class Stack : core::Noncopyable<Stack> {
     entry = GC_MARK_AND_PUSH(frame->variable_env_,
                              entry, mark_sp_limit,
                              reinterpret_cast<void**>(&frame));
-    if (frame->ret_.IsPtr()) {
+    if (frame->ret_.IsCell()) {
       radio::Cell* ptr = frame->ret_.cell();
       entry = GC_MARK_AND_PUSH(ptr,
                                entry, mark_sp_limit,
@@ -267,7 +267,7 @@ class Stack : core::Noncopyable<Stack> {
 
     // start current frame marking
     for (JSVal *it = frame->GetLocal(); it != last; ++it) {
-      if (it->IsPtr()) {
+      if (it->IsCell()) {
         radio::Cell* ptr = it->cell();
         entry = GC_MARK_AND_PUSH(ptr,
                                  entry, mark_sp_limit,

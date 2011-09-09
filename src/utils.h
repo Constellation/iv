@@ -3,6 +3,7 @@
 #include <cstddef>
 #include "debug.h"
 #include "detail/cstdint.h"
+#include "static_assert.h"
 namespace iv {
 namespace core {
 
@@ -73,6 +74,17 @@ class Size {
 #define VOID_POINTER void*
 #define POINTERSIZE (sizeof(POINTER))
 #define UNREACHABLE() assert(!"UNREACHABLE")
+
+template<typename To, typename From>
+inline To BitCast(From from) {
+  IV_STATIC_ASSERT(sizeof(To) == sizeof(From));
+  union {
+    From from_;
+    To to_;
+  } value;
+  value.from_ = from;
+  return value.to_;
+}
 
 } }  // namespace iv::core
 #endif  // IV_UTILS_H_

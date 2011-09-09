@@ -587,7 +587,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
         if (!found) {
           EVAL_IN_STMT(expr.Address());
           const JSVal res = GetValue(ctx_->ret(), CHECK_IN_STMT);
-          if (internal::StrictEqual(cond, res)) {
+          if (JSVal::StrictEqual(cond, res)) {
             found = true;
           }
         }
@@ -1013,7 +1013,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_EQ_STRICT: {  // ===
-        if (internal::StrictEqual(lhs, rhs)) {
+        if (JSVal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
           ctx_->Return(JSFalse);
@@ -1022,7 +1022,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_NE_STRICT: {  // !==
-        if (!internal::StrictEqual(lhs, rhs)) {
+        if (!JSVal::StrictEqual(lhs, rhs)) {
           ctx_->Return(JSTrue);
         } else {
           ctx_->Return(JSFalse);

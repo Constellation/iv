@@ -4,6 +4,7 @@
 #include <gc/gc_cpp.h>
 #include "ast.h"
 #include "lv5/gc_template.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/property_fwd.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
@@ -14,7 +15,6 @@ namespace lv5 {
 
 class Map;
 class Slot;
-class JSVal;
 class JSFunction;
 class Callable;
 class Context;

@@ -1,7 +1,7 @@
 #ifndef IV_LV5_REFERENCE_H_
 #define IV_LV5_REFERENCE_H_
 #include <gc/gc_cpp.h>
-#include "lv5/jsval.h"
+#include "lv5/jsval_fwd.h"
 #include "lv5/symbol.h"
 #include "lv5/cell.h"
 namespace iv {

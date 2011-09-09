@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "detail/cstdint.h"
 #include "detail/type_traits.h"
+#include "detail/cinttypes.h"
 #include "byteorder.h"
 #include "gc_template.h"
 #include "enable_if.h"
@@ -25,8 +26,10 @@ class JSEnv;
 class Context;
 class JSReference;
 class JSEnv;
-class JSVal;
 class JSObject;
+
+int GetTag(JSObject* obj);
+int GetTag(JSString* obj);
 
 namespace detail {
 template<std::size_t PointerSize, bool IsLittle>
@@ -35,6 +38,7 @@ struct Layout;
 template<>
 struct Layout<4, true> {
   union {
+    uint64_t bytes_;
     struct {
       double as_;
     } number_;
@@ -45,45 +49,18 @@ struct Layout<4, true> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
-        JSVal* jsvalref_;
         int32_t int32_;
         radio::Cell* cell_;
       } payload_;
       uint32_t tag_;
     } struct_;
   };
-
-  static const std::size_t kExpectedSize = 8;
-};
-
-template<>
-struct Layout<8, true> {
-  union {
-    struct {
-      double as_;
-    } number_;
-    struct {
-      uint32_t padding_;
-      uint32_t tag_;
-      union {
-        bool boolean_;
-        JSObject* object_;
-        JSString* string_;
-        JSReference* reference_;
-        JSEnv* environment_;
-        JSVal* jsvalref_;
-        int32_t int32_;
-        radio::Cell* cell_;
-      } payload_;
-    } struct_;
-  };
-
-  static const std::size_t kExpectedSize = 16;
 };
 
 template<>
 struct Layout<4, false> {
   union {
+    uint64_t bytes_;
     struct {
       double as_;
     } number_;
@@ -95,39 +72,19 @@ struct Layout<4, false> {
         JSString* string_;
         JSReference* reference_;
         JSEnv* environment_;
-        JSVal* jsvalref_;
         int32_t int32_;
         radio::Cell* cell_;
       } payload_;
     } struct_;
   };
-
-  static const std::size_t kExpectedSize = 8;
 };
 
-template<>
-struct Layout<8, false> {
+template<bool IsLittle>
+struct Layout<8, IsLittle> {
   union {
-    struct {
-      double as_;
-    } number_;
-    struct {
-      uint32_t tag_;
-      uint32_t padding_;
-      union {
-        bool boolean_;
-        JSObject* object_;
-        JSString* string_;
-        JSReference* reference_;
-        JSEnv* environment_;
-        JSVal* jsvalref_;
-        int32_t int32_;
-        radio::Cell* cell_;
-      } payload_;
-    } struct_;
+    uint64_t bytes_;
+    radio::Cell* cell_;
   };
-
-  static const std::size_t kExpectedSize = 16;
 };
 
 struct JSTrueType { };
@@ -158,216 +115,123 @@ struct UInt32Tag { };
 struct UInt16Tag { };
 struct OtherCellTag { };
 
-template<size_t PointerSize>
-struct LayoutOperation;
-
-template<>
-struct LayoutOperation<4> {
-};
-
-template<>
-struct LayoutOperation<8> {
-};
-
 }  // namespace detail
 
-typedef bool (*JSTrueKeywordType)(JSVal, detail::JSTrueType);
-typedef bool (*JSFalseKeywordType)(JSVal, detail::JSFalseType);
-typedef bool (*JSNullKeywordType)(JSVal, detail::JSNullType);
-typedef bool (*JSUndefinedKeywordType)(JSVal, detail::JSUndefinedType);
-typedef bool (*JSEmptyKeywordType)(JSVal, detail::JSEmptyType);
-typedef bool (*JSNaNKeywordType)(JSVal, detail::JSNaNType);
-inline bool JSTrue(JSVal x, detail::JSTrueType dummy);
-inline bool JSFalse(JSVal x, detail::JSFalseType dummy);
-inline bool JSNull(JSVal x, detail::JSNullType dummy);
-inline bool JSUndefined(JSVal x, detail::JSUndefinedType dummy);
-inline bool JSEmpty(JSVal x, detail::JSEmptyType dummy);
-inline bool JSNaN(JSVal x, detail::JSNaNType dummy);
+typedef void (*JSTrueKeywordType)(detail::JSTrueType);
+typedef void (*JSFalseKeywordType)(detail::JSFalseType);
+typedef void (*JSNullKeywordType)(detail::JSNullType);
+typedef void (*JSUndefinedKeywordType)(detail::JSUndefinedType);
+typedef void (*JSEmptyKeywordType)(detail::JSEmptyType);
+typedef void (*JSNaNKeywordType)(detail::JSNaNType);
+inline void JSTrue(detail::JSTrueType dummy) { }
+inline void JSFalse(detail::JSFalseType dummy) { }
+inline void JSNull(detail::JSNullType dummy) { }
+inline void JSUndefined(detail::JSUndefinedType dummy) { }
+inline void JSEmpty(detail::JSEmptyType dummy) { }
+inline void JSNaN(detail::JSNaNType dummy) { }
 
 class JSVal {
  public:
   typedef JSVal this_type;
-  typedef detail::Layout<
-            core::Size::kPointerSize,
-            core::kLittleEndian> value_type;
+  typedef detail::Layout<core::Size::kPointerSize, core::kLittleEndian> value_type;
 
-  IV_STATIC_ASSERT(sizeof(value_type) == value_type::kExpectedSize);
+  IV_STATIC_ASSERT(sizeof(value_type) == 8);
 #if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
   IV_STATIC_ASSERT(std::is_pod<value_type>::value);
 #endif
 
-  JSVal()
-    : value_() {
+  JSVal() {
     set_undefined();
   }
 
-  JSVal(const JSVal& rhs)
-    : value_(rhs.value_) {
-  }
+  JSVal(const JSVal& rhs) : value_(rhs.value_) { }
 
-  JSVal(double val)  // NOLINT
-    : value_() {
+  JSVal(double val) {  // NOLINT
     set_value(val);
+    assert(IsNumber());
   }
 
-  JSVal(JSObject* val)  // NOLINT
-    : value_() {
+  JSVal(JSObject* val) {  // NOLINT
     set_value(val);
+    assert(IsObject());
   }
 
-  JSVal(JSString* val)  // NOLINT
-    : value_() {
+  JSVal(JSString* val) {  // NOLINT
     set_value(val);
+    assert(IsString());
   }
 
-  JSVal(JSReference* val)  // NOLINT
-    : value_() {
+  JSVal(JSReference* val)  { // NOLINT
     set_value(val);
+    assert(IsReference());
   }
 
-  JSVal(JSEnv* val)  // NOLINT
-    : value_() {
+  JSVal(JSEnv* val)  { // NOLINT
     set_value(val);
+    assert(IsEnvironment());
   }
 
-  JSVal(JSTrueKeywordType val)  // NOLINT
-    : value_() {
+  JSVal(JSTrueKeywordType val)  { // NOLINT
     set_value(val);
+    assert(IsBoolean());
   }
 
-  JSVal(JSFalseKeywordType val)  // NOLINT
-    : value_() {
+  JSVal(JSFalseKeywordType val)  { // NOLINT
     set_value(val);
+    assert(IsBoolean());
   }
 
-  JSVal(JSNullKeywordType val)  // NOLINT
-    : value_() {
+  JSVal(JSNullKeywordType val)  { // NOLINT
+    set_null();
+    assert(IsNull());
+  }
+
+  JSVal(JSUndefinedKeywordType val)  { // NOLINT
+    set_undefined();
+    assert(IsUndefined());
+  }
+
+  JSVal(JSEmptyKeywordType val)  { // NOLINT
+    set_empty();
+    assert(IsEmpty());
+  }
+
+  JSVal(JSNaNKeywordType val)  { // NOLINT
     set_value(val);
+    assert(IsNumber());
   }
 
-  JSVal(JSUndefinedKeywordType val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
+  JSVal(const value_type& val) : value_(val) {  }  // NOLINT
 
-  JSVal(JSEmptyKeywordType val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(JSNaNKeywordType val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(const value_type& val)  // NOLINT
-    : value_(val) {
-  }
-
+  // prohibit like this,
+  //
+  //   JSVal val = true;
+  //
+  // if you want Boolean value, use JSTrue / JSFalse,
+  //
+  //   JSVal val = JSTrue;
+  //
+  // if bool constructor provided, following code doesn't raise compile error
+  // (and any warning in GCC)
+  //
+  //   class A {
+  //    public:
+  //     A() { }
+  //     explicit A(bool v) { }
+  //     explicit A(A* v) { }
+  //   };
+  //
+  //   int main() {
+  //     const A a;
+  //     const A b(&a);  // not compile error...
+  //     return 0;
+  //   }
+  //
+  //  so not provide implicit constructor with bool.
   template<typename T>
   JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
     typedef std::is_same<bool, T> cond;
     IV_STATIC_ASSERT(!(cond::value));
-  }
-
-  inline JSReference* reference() const {
-    assert(IsReference());
-    return value_.struct_.payload_.reference_;
-  }
-
-  inline JSEnv* environment() const {
-    assert(IsEnvironment());
-    return value_.struct_.payload_.environment_;
-  }
-
-  inline JSString* string() const {
-    assert(IsString());
-    return value_.struct_.payload_.string_;
-  }
-
-  inline JSObject* object() const {
-    assert(IsObject());
-    return value_.struct_.payload_.object_;
-  }
-
-  inline radio::Cell* cell() const {
-    assert(IsPtr());
-    return value_.struct_.payload_.cell_;
-  }
-
-  inline bool boolean() const {
-    assert(IsBoolean());
-    return value_.struct_.payload_.boolean_;
-  }
-
-  inline double number() const {
-    assert(IsNumber());
-    if (IsInt32()) {
-      return int32();
-    } else {
-      return value_.number_.as_;
-    }
-  }
-
-  inline int32_t int32() const {
-    assert(IsInt32());
-    return value_.struct_.payload_.int32_;
-  }
-
-  inline bool IsEmpty() const {
-    return value_.struct_.tag_ == detail::kEmptyTag;
-  }
-
-  inline bool IsUndefined() const {
-    return value_.struct_.tag_ == detail::kUndefinedTag;
-  }
-
-  inline bool IsNull() const {
-    return value_.struct_.tag_ == detail::kNullTag;
-  }
-
-  inline bool IsBoolean() const {
-    return value_.struct_.tag_ == detail::kBoolTag;
-  }
-
-  inline bool IsString() const {
-    return value_.struct_.tag_ == detail::kStringTag;
-  }
-
-  inline bool IsObject() const {
-    return value_.struct_.tag_ == detail::kObjectTag;
-  }
-
-  inline bool IsInt32() const {
-    return value_.struct_.tag_ == detail::kInt32Tag;
-  }
-
-  inline bool IsNumber() const {
-    return value_.struct_.tag_ < detail::kNumberTag;
-  }
-
-  inline bool IsReference() const {
-    return value_.struct_.tag_ == detail::kReferenceTag;
-  }
-
-  inline bool IsEnvironment() const {
-    return value_.struct_.tag_ == detail::kEnvironmentTag;
-  }
-
-  inline bool IsOtherCell() const {
-    return value_.struct_.tag_ == detail::kOtherCellTag;
-  }
-
-  inline bool IsPrimitive() const {
-    return IsNumber() || IsString() || IsBoolean();
-  }
-
-  inline bool IsPtr() const {
-    return detail::InPtrRange(value_.struct_.tag_);
-  }
-
-  inline uint32_t type() const {
-    return IsNumber() ? detail::kNumberTag : value_.struct_.tag_;
   }
 
   inline JSString* TypeOf(Context* ctx) const;
@@ -396,19 +260,82 @@ class JSVal {
 
   inline bool ToBoolean(Error* e) const;
 
-  inline const value_type& Layout() const {
-    return value_;
-  }
+  // 32 / 64bit system separately
+  inline bool IsEmpty() const;
 
-  inline void swap(this_type& rhs) {
-    using std::swap;
-    swap(value_, rhs.value_);
-  }
+  inline bool IsUndefined() const;
 
-  inline friend void swap(this_type& lhs, this_type& rhs) {
-    return lhs.swap(rhs);
-  }
+  inline bool IsNull() const;
 
+  inline bool IsBoolean() const;
+
+  inline bool IsInt32() const;
+
+  inline bool IsNumber() const;
+
+  inline bool IsCell() const;
+
+  inline radio::Cell* cell() const;
+
+  inline bool IsString() const;
+
+  inline bool IsObject() const;
+
+  inline bool IsReference() const;
+
+  inline bool IsEnvironment() const;
+
+  inline bool IsOtherCell() const;
+
+  inline bool IsPrimitive() const;
+
+  inline JSReference* reference() const;
+
+  inline JSEnv* environment() const;
+
+  inline JSString* string() const;
+
+  inline JSObject* object() const;
+
+  inline bool boolean() const;
+
+  inline int32_t int32() const;
+
+  inline double number() const;
+
+  inline void set_value_int32(int32_t val);
+
+  inline void set_value_uint32(uint32_t val);
+
+  inline void set_value(double val);
+
+  inline void set_value_cell(radio::Cell* val);
+
+  inline void set_value(JSObject* val);
+
+  inline void set_value(JSString* val);
+
+  inline void set_value(JSReference* val);
+
+  inline void set_value(JSEnv* val);
+
+  inline void set_value(JSTrueKeywordType val);
+
+  inline void set_value(JSFalseKeywordType val);
+
+  inline void set_value(JSNaNKeywordType val);
+
+  inline void set_null();
+
+  inline void set_undefined();
+
+  inline void set_empty();
+
+  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
+
+  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
+
+  // type specified factory functions
   static inline JSVal Bool(bool val) {
     if (val) {
       return JSTrue;
@@ -442,192 +369,42 @@ class JSVal {
     return JSVal(cell, detail::OtherCellTag());
   }
 
+  inline const value_type& Layout() const {
+    return value_;
+  }
+
+  inline void swap(this_type& rhs) {
+    using std::swap;
+    swap(value_, rhs.value_);
+  }
+
+  inline friend void swap(this_type& lhs, this_type& rhs) {
+    return lhs.swap(rhs);
+  }
+
  private:
-  inline void set_value(double val) {
-    const int32_t i = static_cast<int32_t>(val);
-    if (val != i || (!i && core::Signbit(val))) {
-      // this value is not represented by int32_t
-      value_.number_.as_ = (val == val) ? val : core::kNaN;
-    } else {
-      set_value_int32(i);
-    }
-  }
-
-  inline void set_value_cell(radio::Cell* ptr) {
-    value_.struct_.payload_.cell_ = ptr;
-    value_.struct_.tag_ = detail::kOtherCellTag;
-  }
-
-  inline void set_value_int32(int32_t val) {
-    value_.struct_.payload_.int32_ = val;
-    value_.struct_.tag_ = detail::kInt32Tag;
-  }
-
-  inline void set_value_uint32(uint32_t val) {
-    if (static_cast<int32_t>(val) < 0) {  // LSB is 1
-      value_.number_.as_ = val;
-    } else {
-      set_value_int32(static_cast<int32_t>(val));
-    }
-  }
-
-  inline void set_value(JSObject* val) {
-    value_.struct_.payload_.object_ = val;
-    value_.struct_.tag_ = detail::kObjectTag;
-  }
-
-  inline void set_value(JSString* val) {
-    value_.struct_.payload_.string_ = val;
-    value_.struct_.tag_ = detail::kStringTag;
-  }
-
-  inline void set_value(JSReference* ref) {
-    value_.struct_.payload_.reference_ = ref;
-    value_.struct_.tag_ = detail::kReferenceTag;
-  }
-
-  inline void set_value(JSEnv* ref) {
-    value_.struct_.payload_.environment_ = ref;
-    value_.struct_.tag_ = detail::kEnvironmentTag;
-  }
-
-  inline void set_value(JSTrueKeywordType val) {
-    value_.struct_.payload_.boolean_ = true;
-    value_.struct_.tag_ = detail::kBoolTag;
-  }
-
-  inline void set_value(JSFalseKeywordType val) {
-    value_.struct_.payload_.boolean_ = false;
-    value_.struct_.tag_ = detail::kBoolTag;
-  }
-
-  inline void set_value(JSNullKeywordType val) {
-    value_.struct_.tag_ = detail::kNullTag;
-  }
-
-  inline void set_value(JSUndefinedKeywordType val) {
-    value_.struct_.tag_ = detail::kUndefinedTag;
-  }
-
-  inline void set_value(JSEmptyKeywordType val) {
-    value_.struct_.tag_ = detail::kEmptyTag;
-  }
-
-  inline void set_value(JSNaNKeywordType val) {
-    value_.number_.as_ = core::kNaN;
-  }
-
-  inline void set_null() {
-    value_.struct_.tag_ = detail::kNullTag;
-  }
-
-  inline void set_undefined() {
-    value_.struct_.tag_ = detail::kUndefinedTag;
-  }
-
-  inline void set_empty() {
-    value_.struct_.tag_ = detail::kEmptyTag;
-  }
-
-  JSVal(uint32_t val, detail::UInt32Tag dummy)
-    : value_() {
+  JSVal(uint32_t val, detail::UInt32Tag dummy) {
     set_value_uint32(val);
+    assert(IsNumber());
   }
 
-  JSVal(uint16_t val, detail::UInt16Tag dummy)
-    : value_() {
+  JSVal(uint16_t val, detail::UInt16Tag dummy) {
     set_value_int32(val);
+    assert(IsInt32());
   }
 
-  JSVal(int32_t val, detail::Int32Tag dummy)
-    : value_() {
+  JSVal(int32_t val, detail::Int32Tag dummy) {
     set_value_int32(val);
+    assert(IsInt32());
   }
 
-  JSVal(radio::Cell* val, detail::OtherCellTag dummy)
-    : value_() {
+  JSVal(radio::Cell* val, detail::OtherCellTag dummy) {
     set_value_cell(val);
+    assert(IsCell());
   }
 
   value_type value_;
 };
-
-inline bool JSTrue(JSVal x,
-                   detail::JSTrueType dummy = detail::JSTrueType()) {
-  return x.IsBoolean() && x.boolean();
-}
-
-inline bool JSFalse(JSVal x,
-                    detail::JSFalseType dummy = detail::JSFalseType()) {
-  return x.IsBoolean() && !x.boolean();
-}
-
-inline bool JSNull(JSVal x,
-                   detail::JSNullType dummy = detail::JSNullType()) {
-  return x.IsNull();
-}
-
-inline bool JSUndefined(
-    JSVal x, detail::JSUndefinedType dummy = detail::JSUndefinedType()) {
-  return x.IsUndefined();
-}
-
-inline bool JSEmpty(JSVal x,
-                    detail::JSEmptyType dummy = detail::JSEmptyType()) {
-  return x.IsEmpty();
-}
-
-inline bool JSNaN(JSVal x,
-                  detail::JSNaNType dummy = detail::JSNaNType()) {
-  return false;
-}
-
-inline bool SameValue(const JSVal& lhs, const JSVal& rhs) {
-  if (lhs.type() != rhs.type()) {
-    return false;
-  }
-  if (lhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull()) {
-    return true;
-  }
-  if (lhs.IsNumber()) {
-    const double& lhsv = lhs.number();
-    const double& rhsv = rhs.number();
-    if (core::IsNaN(lhsv) && core::IsNaN(rhsv)) {
-      return true;
-    }
-    if (lhsv == rhsv) {
-      if (core::Signbit(lhsv)) {
-        if (core::Signbit(rhsv)) {
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        if (core::Signbit(rhsv)) {
-          return false;
-        } else {
-          return true;
-        }
-      }
-    } else {
-      return false;
-    }
-  }
-  if (lhs.IsString()) {
-    return *(lhs.string()) == *(rhs.string());
-  }
-  if (lhs.IsBoolean()) {
-    return lhs.boolean() == rhs.boolean();
-  }
-  if (lhs.IsObject()) {
-    return lhs.object() == rhs.object();
-  }
-  assert(!lhs.IsEmpty());
-  return false;
-}
 
 typedef GCVector<JSVal>::type JSVals;
 

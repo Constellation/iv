@@ -47,4 +47,11 @@
 #define snprintf _snprintf
 #endif
 
+// 64bit system or not
+#if defined(__LP64__)
+#define IV_64
+#elif defined(_WIN64)
+#define IV_64
+#endif
+
 #endif  // IV_PLATFORM_H_

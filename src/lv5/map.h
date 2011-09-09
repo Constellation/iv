@@ -15,7 +15,7 @@
 namespace iv {
 namespace lv5 {
 
-class Map : public gc {
+class Map : public radio::HeapObject<radio::POINTER> {
  public:
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
 

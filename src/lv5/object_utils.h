@@ -67,8 +67,8 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
             REJECT(
                 "changing [[Writable]] of unconfigurable property not allowed");
           }
-          if (!SameValue(current.AsDataDescriptor()->value(),
-                         data->value())) {
+          if (!JSVal::SameValue(current.AsDataDescriptor()->value(),
+                                data->value())) {
             REJECT("changing [[Value]] of readonly property not allowed");
           }
         }

@@ -46,10 +46,10 @@ JSFunction* throw_type_error(Context* ctx);
 
 bool IsStrict(const Context* ctx);
 
+void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+
 JSVal* StackGain(Context* ctx, std::size_t size);
 void StackRelease(Context* ctx, std::size_t size);
-
-void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
 } } }  // namespace iv::lv5::context
 #endif  // IV_LV5_CONTEXT_UTILS_H_
