@@ -837,7 +837,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   }
 
   bool regexp = false;
-  JSVal target;
+  JSVal target = JSEmpty;
   JSVal separator;
   if (args_count > 0) {
     separator = args[0];
