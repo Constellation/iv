@@ -13,7 +13,6 @@
   <ItemGroup>
     <ClCompile Include="src\lv5\context.cc" />
     <ClCompile Include="src\lv5\jsobject.cc" />
-    <ClCompile Include="src\lv5\jsval.cc" />
     <ClCompile Include="src\lv5\main.cc" />
     <ClCompile Include="src\lv5\third_party\jscre\pcre_compile.cpp" />
     <ClCompile Include="src\lv5\third_party\jscre\pcre_exec.cpp" />
