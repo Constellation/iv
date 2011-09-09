@@ -45,6 +45,26 @@ typedef detail::Conversions<None> Conversions;
 static const double kDoubleIntegralPrecisionLimit =
   static_cast<uint64_t>(1) << 53;
 
+template<typename CharT>
+inline double ParseIntegerOverflow(const CharT* it,
+                                   const CharT* last, int radix) {
+  double number = 0.0;
+  double multiplier = 1.0;
+  for (--it, --last; last != it; --last) {
+    if (multiplier == detail::kInf) {
+      if (*last != '0') {
+        number = detail::kInf;
+        break;
+      }
+    } else {
+      const int digit = Radix36Value(*last);
+      number += digit * multiplier;
+    }
+    multiplier *= radix;
+  }
+  return number;
+}
+
 template<typename Iter>
 inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   bool is_decimal = true;
@@ -96,6 +116,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         if (is_sign_found) {
           return kNaN;
         }
+        assert(pos == 0);
         is_decimal = false;
         buffer[pos++] = '0';
         buffer[pos++] = static_cast<char>(*it);
@@ -125,8 +146,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       }
     }
     if (is_decimal) {
-      while (it != last &&
-             character::IsDecimalDigit(*it)) {
+      while (it != last && character::IsDecimalDigit(*it)) {
         if (significant_digits < Conversions::kMaxSignificantDigits) {
           buffer[pos++] = static_cast<char>(*it);
           ++significant_digits;
@@ -138,8 +158,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       if (it != last && *it == '.') {
         buffer[pos++] = '.';
         ++it;
-        while (it != last &&
-               character::IsDecimalDigit(*it)) {
+        while (it != last && character::IsDecimalDigit(*it)) {
           if (significant_digits < Conversions::kMaxSignificantDigits) {
             buffer[pos++] = static_cast<char>(*it);
             ++significant_digits;
@@ -168,8 +187,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       for (std::string::const_iterator inf_it = Conversions::kInfinity.begin(),
            inf_last = Conversions::kInfinity.end();
            inf_it != inf_last; ++inf_it, ++it) {
-        if (it == last ||
-            (*inf_it) != (*it)) {
+        if (it == last || (*inf_it) != (*it)) {
           return kNaN;
         }
       }
@@ -253,9 +271,13 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     if (pos == 0) {
       // empty
       return (parse_float && !is_found_zero) ? kNaN : 0;
-    } else {
+    } else if (is_decimal) {
       buffer[pos++] = '\0';
       return std::atof(buffer.data());
+    } else {
+      // hex values
+      return ParseIntegerOverflow(buffer.data() + 2,
+                                  buffer.data() + pos, 16);
     }
   } else {
     return kNaN;
@@ -268,26 +290,6 @@ inline double StringToDouble(const StringPiece& str, bool parse_float) {
 
 inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
-}
-
-template<typename CharT>
-inline double ParseIntegerOverflow(const CharT* it,
-                                   const CharT* last, int radix) {
-  double number = 0.0;
-  double multiplier = 1.0;
-  for (--it, --last; last != it; --last) {
-    if (multiplier == detail::kInf) {
-      if (*last != '0') {
-        number = detail::kInf;
-        break;
-      }
-    } else {
-      const int digit = Radix36Value(*last);
-      number += digit * multiplier;
-    }
-    multiplier *= radix;
-  }
-  return number;
 }
 
 template<typename CharT>
