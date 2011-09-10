@@ -199,7 +199,7 @@ class JSONLexer : private core::Noncopyable<> {
   typename core::Token::Type ScanNumber() {
     buffer8_.clear();
     if (find_sign) {
-      Record8('-');
+      Advance();
       if (c_ < 0 ||
           !core::character::IsDecimalDigit(c_)) {
         return core::Token::TK_ILLEGAL;
@@ -234,6 +234,9 @@ class JSONLexer : private core::Noncopyable<> {
     }
     buffer8_.push_back('\0');
     numeric_ = std::atof(buffer8_.data());
+    if (find_sign) {
+      numeric_ = -numeric_;
+    }
     return core::Token::TK_NUMBER;
   }
 

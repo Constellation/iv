@@ -92,7 +92,6 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   }
 
   if (*it == '-') {
-    buffer[pos++] = '-';
     ++it;
     is_signed = true;
     is_sign_found = true;
@@ -100,6 +99,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     ++it;
     is_sign_found = true;
   }
+  const int sign = (is_signed) ? -1 : 1;
 
   if (it == last) {
     return kNaN;
@@ -110,7 +110,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       is_found_zero = true;
       ++it;
       if (it == last) {
-        return (is_signed) ? -0.0 : 0.0;
+        return sign * 0.0;
       }
       if (!parse_float && (*it == 'x' || *it == 'X')) {
         if (is_sign_found) {
@@ -198,11 +198,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         ++it;
       }
       if (it == last || parse_float) {
-        if (is_signed) {
-          return -std::numeric_limits<double>::infinity();
-        } else {
-          return std::numeric_limits<double>::infinity();
-        }
+        return sign * std::numeric_limits<double>::infinity();
       } else {
         return kNaN;
       }
@@ -270,14 +266,14 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   if (it == last || parse_float) {
     if (pos == 0) {
       // empty
-      return (parse_float && !is_found_zero) ? kNaN : 0;
+      return (parse_float && !is_found_zero) ? kNaN : (sign * 0);
     } else if (is_decimal) {
       buffer[pos++] = '\0';
-      return std::atof(buffer.data());
+      return sign * std::atof(buffer.data());
     } else {
       // hex values
-      return ParseIntegerOverflow(buffer.data() + 2,
-                                  buffer.data() + pos, 16);
+      return sign* ParseIntegerOverflow(buffer.data() + 2,
+                                        buffer.data() + pos, 16);
     }
   } else {
     return kNaN;
