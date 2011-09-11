@@ -25,9 +25,19 @@ namespace detail {
 
 class JSONStackScope : private core::Noncopyable<> {
  public:
-  JSONStackScope(trace::Vector<JSObject*>::type* stack, JSObject* obj)
+  static const std::size_t kJSONMaxRecursion = 4096;
+  JSONStackScope(trace::Vector<JSObject*>::type* stack, JSObject* obj, Error* e)
     : stack_(stack) {
+    // cyclic check
+    if (std::find(stack_->begin(), stack_->end(), obj) != stack_->end()) {
+      e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
+      return;
+    }
     stack_->push_back(obj);
+    // stack depth check
+    if (stack_->size() > kJSONMaxRecursion) {
+      e->Report(Error::Range, "max stack exceeded in JSON.stringify");
+    }
   }
   ~JSONStackScope() {
     stack_->pop_back();
@@ -36,9 +46,7 @@ class JSONStackScope : private core::Noncopyable<> {
   trace::Vector<JSObject*>::type* stack_;
 };
 
-static const char* kJSONNullStringPtr = "null";
-static const core::UString kJSONNullString(kJSONNullStringPtr,
-                                           kJSONNullStringPtr+4);
+static const core::UString kJSONNullString = core::ToUString("null");
 
 }  // namespace detail
 
@@ -127,15 +135,8 @@ class JSONStringifier : private core::Noncopyable<> {
     return builder.Build(ctx_);
   }
 
-  void CyclicCheck(JSObject* value, Error* e) {
-    if (std::find(stack_.begin(), stack_.end(), value) != stack_.end()) {
-      e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
-    }
-  }
-
   JSVal JO(JSObject* value, Error* e) {
-    CyclicCheck(value, IV_LV5_ERROR(e));
-    detail::JSONStackScope scope(&stack_, value);
+    detail::JSONStackScope scope(&stack_, value, IV_LV5_ERROR(e));
     const core::UString stepback = indent_;
     indent_.append(gap_);
 
@@ -219,8 +220,7 @@ class JSONStringifier : private core::Noncopyable<> {
   }
 
   JSVal JA(JSArray* value, Error* e) {
-    CyclicCheck(value, IV_LV5_ERROR(e));
-    detail::JSONStackScope scope(&stack_, value);
+    detail::JSONStackScope scope(&stack_, value, IV_LV5_ERROR(e));
     const core::UString stepback = indent_;
     indent_.append(gap_);
 
