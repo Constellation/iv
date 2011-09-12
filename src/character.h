@@ -803,6 +803,7 @@ inline uint16_t ToLowerCase(uint16_t c) {
   }
   if (c < 1000) {
     const int index = static_cast<int>(c) - 192;
+    assert(index < kLowerCaseCache.size());
     return kLowerCaseCache[index];
   }
   std::array<uint16_t, 101>::const_iterator it =
@@ -839,6 +840,7 @@ inline uint16_t ToUpperCase(uint16_t c) {
   }
   if (c < 1000) {
     const int index = static_cast<int>(c) - 181;
+    assert(index < kUpperCaseCache.size());
     return kUpperCaseCache[index];
   }
   std::array<uint16_t, 113>::const_iterator it =
