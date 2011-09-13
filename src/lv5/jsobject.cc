@@ -96,7 +96,7 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   if (GetPropertySlot(ctx, name, &slot)) {
     return slot.desc();
   }
-  return JSUndefined;
+  return JSEmpty;
 }
 
 bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
@@ -117,7 +117,7 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
     assert(!slot.desc().IsEmpty());
     return slot.desc();
   } else {
-    return JSUndefined;
+    return JSEmpty;
   }
 }
 
@@ -167,7 +167,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
         // searching already created maps and if this is available, move to this
         std::size_t offset;
         map_ = map_->AddPropertyTransition(ctx, name, &offset);
-        slots_.resize(map_->GetSlotsSize(), JSUndefined);
+        slots_.resize(map_->GetSlotsSize(), JSEmpty);
         // set newly created property
         GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
       }
@@ -185,7 +185,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       // searching already created maps and if this is available, move to this
       std::size_t offset;
       map_ = map_->AddPropertyTransition(ctx, name, &offset);
-      slots_.resize(map_->GetSlotsSize(), JSUndefined);
+      slots_.resize(map_->GetSlotsSize(), JSEmpty);
       // set newly created property
       GetSlot(offset) = PropertyDescriptor::SetDefault(desc);
       return true;
@@ -251,7 +251,7 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
   map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(offset) = JSUndefined;
+  GetSlot(offset) = JSEmpty;
   return true;
 }
 

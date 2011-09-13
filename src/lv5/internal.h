@@ -80,7 +80,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   if (!target.IsObject()) {
     error->Report(Error::Type,
                   "ToPropertyDescriptor requires Object argument");
-    return JSUndefined;
+    return JSEmpty;
   }
   int attr = PropertyDescriptor::kDefaultAttr;
   JSObject* const obj = target.object();
@@ -145,7 +145,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,
                       "property \"get\" is not callable");
-        return JSUndefined;
+        return JSEmpty;
       }
       attr |= PropertyDescriptor::ACCESSOR;
       if (!r.IsUndefined()) {
@@ -162,7 +162,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       if (!r.IsCallable() && !r.IsUndefined()) {
         error->Report(Error::Type,
                       "property \"set\" is not callable");
-        return JSUndefined;
+        return JSEmpty;
       }
       attr |= PropertyDescriptor::ACCESSOR;
       if (!r.IsUndefined()) {
@@ -176,7 +176,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (attr & PropertyDescriptor::DATA) {
       error->Report(Error::Type,
                     "invalid object for property descriptor");
-      return JSUndefined;
+      return JSEmpty;
     }
   }
   if (attr & PropertyDescriptor::ACCESSOR) {

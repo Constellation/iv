@@ -59,12 +59,7 @@ class PropertyDescriptor {
   static const int kTypeMask = DATA | ACCESSOR;
   static const int kDataAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
 
-  PropertyDescriptor(JSUndefinedKeywordType val)  // NOLINT
-    : attrs_(kDefaultAttr | EMPTY),
-      value_() {
-  }
-
-  PropertyDescriptor(JSEmptyKeywordType val)  // NOLINT
+  PropertyDescriptor(detail::JSEmptyType val)  // NOLINT
     : attrs_(kDefaultAttr | EMPTY),
       value_() {
   }

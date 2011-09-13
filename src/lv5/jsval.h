@@ -200,15 +200,15 @@ void JSVal::set_value(JSEnv* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(JSTrueKeywordType val) {
+void JSVal::set_value(detail::JSTrueType val) {
   value_.bytes_ = detail::jsval64::kTrue;
 }
 
-void JSVal::set_value(JSFalseKeywordType val) {
+void JSVal::set_value(detail::JSFalseType val) {
   value_.bytes_ = detail::jsval64::kFalse;
 }
 
-void JSVal::set_value(JSNaNKeywordType val) {
+void JSVal::set_value(detail::JSNaNType val) {
   value_.bytes_ = detail::jsval64::kNaN;
 }
 
@@ -463,17 +463,17 @@ void JSVal::set_value(JSEnv* ref) {
   value_.struct_.tag_ = detail::jsval32::kEnvironmentTag;
 }
 
-void JSVal::set_value(JSTrueKeywordType val) {
+void JSVal::set_value(detail::JSTrueType val) {
   value_.struct_.payload_.boolean_ = true;
   value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
-void JSVal::set_value(JSFalseKeywordType val) {
+void JSVal::set_value(detail::JSFalseType val) {
   value_.struct_.payload_.boolean_ = false;
   value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
-void JSVal::set_value(JSNaNKeywordType val) {
+void JSVal::set_value(detail::JSNaNType val) {
   value_.number_.as_ = core::kNaN;
 }
 

@@ -19,7 +19,7 @@ class Slot {
   Slot()
     : cacheable_(true),
       base_(NULL),
-      desc_(JSUndefined),
+      desc_(JSEmpty),
       offset_(core::kNotFound) {
   }
 

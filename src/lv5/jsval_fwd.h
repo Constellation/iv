@@ -150,18 +150,12 @@ struct OtherCellTag { };
 
 }  // namespace detail
 
-typedef void (*JSTrueKeywordType)(detail::JSTrueType);
-typedef void (*JSFalseKeywordType)(detail::JSFalseType);
-typedef void (*JSNullKeywordType)(detail::JSNullType);
-typedef void (*JSUndefinedKeywordType)(detail::JSUndefinedType);
-typedef void (*JSEmptyKeywordType)(detail::JSEmptyType);
-typedef void (*JSNaNKeywordType)(detail::JSNaNType);
-inline void JSTrue(detail::JSTrueType dummy) { }
-inline void JSFalse(detail::JSFalseType dummy) { }
-inline void JSNull(detail::JSNullType dummy) { }
-inline void JSUndefined(detail::JSUndefinedType dummy) { }
-inline void JSEmpty(detail::JSEmptyType dummy) { }
-inline void JSNaN(detail::JSNaNType dummy) { }
+static const detail::JSTrueType JSTrue = {};
+static const detail::JSFalseType JSFalse = {};
+static const detail::JSNullType JSNull = {};
+static const detail::JSUndefinedType JSUndefined = {};
+static const detail::JSEmptyType JSEmpty = {};
+static const detail::JSNaNType JSNaN = {};
 
 class JSVal {
  public:
@@ -210,37 +204,37 @@ class JSVal {
     assert(IsEnvironment());
   }
 
-  JSVal(JSTrueKeywordType val)  // NOLINT
+  JSVal(detail::JSTrueType val)  // NOLINT
     : value_() {
     set_value(val);
     assert(IsBoolean());
   }
 
-  JSVal(JSFalseKeywordType val)  // NOLINT
+  JSVal(detail::JSFalseType val)  // NOLINT
     : value_() {
     set_value(val);
     assert(IsBoolean());
   }
 
-  JSVal(JSNullKeywordType val)  // NOLINT
+  JSVal(detail::JSNullType val)  // NOLINT
     : value_() {
     set_null();
     assert(IsNull());
   }
 
-  JSVal(JSUndefinedKeywordType val)  // NOLINT
+  JSVal(detail::JSUndefinedType val)  // NOLINT
     : value_() {
     set_undefined();
     assert(IsUndefined());
   }
 
-  JSVal(JSEmptyKeywordType val)  // NOLINT
+  JSVal(detail::JSEmptyType val)  // NOLINT
     : value_() {
     set_empty();
     assert(IsEmpty());
   }
 
-  JSVal(JSNaNKeywordType val)  // NOLINT
+  JSVal(detail::JSNaNType val)  // NOLINT
     : value_() {
     set_value(val);
     assert(IsNumber());
@@ -365,11 +359,11 @@ class JSVal {
 
   inline void set_value(JSEnv* val);
 
-  inline void set_value(JSTrueKeywordType val);
+  inline void set_value(detail::JSTrueType val);
 
-  inline void set_value(JSFalseKeywordType val);
+  inline void set_value(detail::JSFalseType val);
 
-  inline void set_value(JSNaNKeywordType val);
+  inline void set_value(detail::JSNaNType val);
 
   inline void set_null();
 
