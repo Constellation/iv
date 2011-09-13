@@ -86,7 +86,9 @@ total length. */
 offsets within the compiled regex. The default is 2, which allows for compiled
 patterns up to 64K long. */
 
+#ifndef LINK_SIZE
 #define LINK_SIZE   3
+#endif
 
 /* Define DEBUG to get debugging output on stdout. */
 
