@@ -1,6 +1,7 @@
 #ifndef IV_LV5_RAILGUN_COMMAND_H_
 #define IV_LV5_RAILGUN_COMMAND_H_
 #include "file_source.h"
+#include "utils.h"
 #include "lv5/specialized_ast.h"
 #include "lv5/error_check.h"
 #include "lv5/date_utils.h"
@@ -10,27 +11,6 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 namespace detail {
-
-static bool ReadFile(const std::string& filename, std::vector<char>* out) {
-  if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
-    std::array<char, 1024> buf;
-    while (const std::size_t len = std::fread(
-            buf.data(),
-            1,
-            buf.size(), fp)) {
-      out->insert(out->end(), buf.begin(), buf.begin() + len);
-    }
-    std::fclose(fp);
-    return true;
-  } else {
-    std::string err("lv5 can't open \"");
-    err.append(filename);
-    err.append("\"");
-    std::perror(err.c_str());
-    return false;
-  }
-}
-
 
 template<typename Source>
 Code* Compile(Context* ctx, const Source& src) {
@@ -85,7 +65,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
       const JSString* const f = val.string();
       std::vector<char> buffer;
       const std::string filename(f->GetUTF8());
-      if (detail::ReadFile(filename, &buffer)) {
+      if (core::ReadFile(filename, &buffer)) {
         TickTimer timer;
         detail::Execute(
             core::StringPiece(buffer.data(), buffer.size()),

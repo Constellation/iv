@@ -1,6 +1,9 @@
 #ifndef IV_UTILS_H_
 #define IV_UTILS_H_
 #include <cstddef>
+#include <cstdio>
+#include <vector>
+#include <string>
 #include "debug.h"
 #include "detail/cstdint.h"
 namespace iv {
@@ -70,9 +73,29 @@ class Size {
   static const int kIntptrAlign  = AlignOf(intptr_t);  // NOLINT
 };
 
-#define VOID_POINTER void*
-#define POINTERSIZE (sizeof(POINTER))
 #define UNREACHABLE() assert(!"UNREACHABLE")
+
+// utility functions
+
+inline bool ReadFile(const std::string& filename,
+                     std::vector<char>* out, bool output_error = true) {
+  if (std::FILE* fp = std::fopen(filename.c_str(), "rb")) {
+    std::fseek(fp, 0L, SEEK_END);
+    const std::size_t filesize = std::ftell(fp);
+    std::rewind(fp);
+    const std::size_t offset = out->size();
+    out->resize(offset + filesize);
+    std::fread(out->data() + offset, filesize, 1, fp);
+    std::fclose(fp);
+    return true;
+  } else {
+    if (output_error) {
+      const std::string err = "lv5 can't open \"" + filename + "\"";;
+      std::perror(err.c_str());
+    }
+    return false;
+  }
+}
 
 } }  // namespace iv::core
 #endif  // IV_UTILS_H_

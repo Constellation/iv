@@ -10,6 +10,7 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "about.h"
+#include "utils.h"
 #include "cmdline.h"
 #include "ast.h"
 #include "ast_serializer.h"
@@ -30,26 +31,6 @@
 #include "lv5/teleporter/interactive.h"
 
 namespace {
-
-bool ReadFile(const std::string& filename, std::vector<char>* out) {
-  if (std::FILE* fp = std::fopen(filename.c_str(), "r")) {
-    std::array<char, 1024> buf;
-    while (const std::size_t len = std::fread(
-            buf.data(),
-            1,
-            buf.size(), fp)) {
-      out->insert(out->end(), buf.begin(), buf.begin() + len);
-    }
-    std::fclose(fp);
-    return true;
-  } else {
-    std::string err("lv5 can't open \"");
-    err.append(filename);
-    err.append("\"");
-    std::perror(err.c_str());
-    return false;
-  }
-}
 
 template<typename Source>
 iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
@@ -229,7 +210,7 @@ int main(int argc, char **argv) {
       for (std::vector<std::string>::const_iterator it = vec.begin(),
            last = vec.end(); it != last; ++it, filename.push_back(' ')) {
         filename.append(*it);
-        if (!ReadFile(*it, &res)) {
+        if (!iv::core::ReadFile(*it, &res)) {
           return EXIT_FAILURE;
         }
       }
@@ -239,7 +220,7 @@ int main(int argc, char **argv) {
       res.insert(res.end(), com.begin(), com.end());
     } else {
       filename = rest.front();
-      if (!ReadFile(filename, &res)) {
+      if (!iv::core::ReadFile(filename, &res)) {
         return EXIT_FAILURE;
       }
     }
