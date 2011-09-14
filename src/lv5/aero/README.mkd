@@ -1,0 +1,4 @@
+# iv / lv5 / aero
+
+aero is RegularExpression Library using RegExp VM
+inspired from V8 irregexp, WebKit JSC Yarr and Oniguruma
