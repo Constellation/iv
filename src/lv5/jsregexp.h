@@ -316,8 +316,7 @@ class JSRegExp : public JSObject {
                             regexp::PairVector* result) const {
     const uint32_t num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
-    const int rc = impl_->ExecuteOnce(str,
-                                      index, &offset_vector);
+    const int rc = impl_->ExecuteOnce(str, index, &offset_vector);
     if (rc == jscre::JSRegExpErrorNoMatch ||
         rc == jscre::JSRegExpErrorHitLimit) {
       return std::make_tuple(0, 0, false);
