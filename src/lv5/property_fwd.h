@@ -340,6 +340,7 @@ inline void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
   attrs_ &= ~UNDEF_GETTER;
   attrs_ &= ~UNDEF_SETTER;
   value_.accessor_.getter_ = get;
+  value_.accessor_.setter_ = NULL;
 }
 
 inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
@@ -348,6 +349,7 @@ inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
   attrs_ |= UNDEF_VALUE;
   attrs_ &= ~UNDEF_GETTER;
   attrs_ &= ~UNDEF_SETTER;
+  value_.accessor_.getter_ = NULL;
   value_.accessor_.setter_ = set;
 }
 

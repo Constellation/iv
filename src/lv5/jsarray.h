@@ -105,6 +105,13 @@ class JSArray : public JSObject {
     if (symbol::IsArrayIndexSymbol(name)) {
       slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
+      if (!dense_) {
+        Slot slot2;
+        if (JSObject::GetOwnPropertySlot(ctx, name, &slot2)) {
+          *slot = slot2;
+          return true;
+        }
+      }
       if (kMaxVectorSize > index) {
         // this target included in vector (if dense array)
         if (vector_.size() > index) {
@@ -134,11 +141,7 @@ class JSArray : public JSObject {
           }
         }
       }
-      if (dense_) {
-        return false;
-      }
-      assert(!dense_);
-      return JSObject::GetOwnPropertySlot(ctx, name, slot);
+      return false;
     }
     if (name == symbol::length()) {
       slot->set_descriptor(length_);
