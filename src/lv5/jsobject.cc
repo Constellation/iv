@@ -36,17 +36,11 @@ JSObject::JSObject(Map* map,
     slots_(map->GetSlotsSize()) {
 }
 
-#define TRY(context, sym, arg, error)\
+#define TRY(context, sym, arg, e)\
   do {\
-    const JSVal method = Get(context, sym, error);\
-    if (*error) {\
-      return JSUndefined;\
-    }\
+    const JSVal method = Get(context, sym, IV_LV5_ERROR(e));\
     if (method.IsCallable()) {\
-      const JSVal val = method.object()->AsCallable()->Call(&arg, this, error);\
-      if (*error) {\
-        return JSUndefined;\
-      }\
+      const JSVal val = method.object()->AsCallable()->Call(&arg, this, IV_LV5_ERROR(e));\
       if (val.IsPrimitive() || val.IsNull() || val.IsUndefined()) {\
         return val;\
       }\

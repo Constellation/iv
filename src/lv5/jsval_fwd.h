@@ -183,25 +183,21 @@ class JSVal {
   JSVal(JSObject* val)  // NOLINT
     : value_() {
     set_value(val);
-    assert(IsObject());
   }
 
   JSVal(JSString* val)  // NOLINT
     : value_() {
     set_value(val);
-    assert(IsString());
   }
 
   JSVal(JSReference* val)  // NOLINT
     : value_() {
     set_value(val);
-    assert(IsReference());
   }
 
   JSVal(JSEnv* val)  // NOLINT
     : value_() {
     set_value(val);
-    assert(IsEnvironment());
   }
 
   JSVal(detail::JSTrueType val)  // NOLINT
@@ -444,7 +440,6 @@ class JSVal {
   JSVal(radio::Cell* val, detail::OtherCellTag dummy)
     : value_() {
     set_value_cell(val);
-    assert(IsCell());
   }
 
   value_type value_;

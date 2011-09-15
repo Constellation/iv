@@ -83,7 +83,7 @@ bool JSVal::IsNumber() const {
 }
 
 bool JSVal::IsCell() const {
-  return !(value_.bytes_ & detail::jsval64::kValueMask);
+  return !(value_.bytes_ & detail::jsval64::kValueMask) && !IsEmpty();
 }
 
 radio::Cell* JSVal::cell() const {
