@@ -150,7 +150,6 @@ class Map : public radio::HeapObject<radio::POINTER> {
       map->AllocateTable();
     }
     map->Delete(ctx, name);
-    assert(GetSlotsSize() == map->GetSlotsSize());
     return map;
   }
 

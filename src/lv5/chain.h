@@ -44,7 +44,6 @@ class Chain : private core::Noncopyable<Chain> {
       maps.push_back(map);
       current = current->prototype();
     } while (current != end);
-    assert(maps.size() > 2);
     void* mem = GC_MALLOC(GetControlSize() + sizeof(Map*) * maps.size());
     return new (mem) Chain(maps.begin(), maps.size());
   }
