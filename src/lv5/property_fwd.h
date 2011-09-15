@@ -334,22 +334,26 @@ inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject*
 }
 
 inline void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
+  if (IsDataDescriptor()) {
+    value_.accessor_.setter_ = NULL;
+  }
   attrs_ &= ~DATA;
   attrs_ |= ACCESSOR;
   attrs_ |= UNDEF_VALUE;
   attrs_ &= ~UNDEF_GETTER;
   attrs_ &= ~UNDEF_SETTER;
   value_.accessor_.getter_ = get;
-  value_.accessor_.setter_ = NULL;
 }
 
 inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
+  if (IsDataDescriptor()) {
+    value_.accessor_.getter_ = NULL;
+  }
   attrs_ &= ~DATA;
   attrs_ |= ACCESSOR;
   attrs_ |= UNDEF_VALUE;
   attrs_ &= ~UNDEF_GETTER;
   attrs_ &= ~UNDEF_SETTER;
-  value_.accessor_.getter_ = NULL;
   value_.accessor_.setter_ = set;
 }
 
