@@ -31,16 +31,19 @@ class JSONStackScope : private core::Noncopyable<> {
     // cyclic check
     if (std::find(stack_->begin(), stack_->end(), obj) != stack_->end()) {
       e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
-      return;
-    }
-    stack_->push_back(obj);
-    // stack depth check
-    if (stack_->size() > kJSONMaxRecursion) {
-      e->Report(Error::Range, "max stack exceeded in JSON.stringify");
+      stack_ = NULL;
+    } else {
+      stack_->push_back(obj);
+      // stack depth check
+      if (stack_->size() > kJSONMaxRecursion) {
+        e->Report(Error::Range, "max stack exceeded in JSON.stringify");
+      }
     }
   }
   ~JSONStackScope() {
-    stack_->pop_back();
+    if (stack_) {
+      stack_->pop_back();
+    }
   }
  private:
   trace::Vector<JSObject*>::type* stack_;
