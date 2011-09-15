@@ -37,7 +37,7 @@ class JSNormalArguments : public JSObject {
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
     : JSObject(Map::NewUniqueMap(ctx)),
       env_(env),
-      map_() { }
+      mapping_() { }
 
   template<typename Idents, typename ArgsReverseIter>
   static JSNormalArguments* New(Context* ctx,
@@ -61,8 +61,8 @@ class JSNormalArguments : public JSObject {
   }
 
   JSVal Get(Context* ctx, Symbol name, Error* e) {
-    const Index2Param::const_iterator it = map_.find(name);
-    if (it != map_.end()) {
+    const Index2Param::const_iterator it = mapping_.find(name);
+    if (it != mapping_.end()) {
       return env_->GetBindingValue(ctx, it->second, true, e);
     } else {
       const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
@@ -82,8 +82,8 @@ class JSNormalArguments : public JSObject {
     if (!JSObject::GetOwnPropertySlot(ctx, name, slot)) {
       return false;
     }
-    const Index2Param::const_iterator it = map_.find(name);
-    if (it != map_.end()) {
+    const Index2Param::const_iterator it = mapping_.find(name);
+    if (it != mapping_.end()) {
       const JSVal val = env_->GetBindingValue(it->second);
       slot->set_descriptor(
           DataDescriptor(val,
@@ -93,11 +93,54 @@ class JSNormalArguments : public JSObject {
     return true;
   }
 
+  bool DefineOwnPropertyPatching(Context* ctx, Symbol name,
+                                 const PropertyDescriptor& desc, bool th, Error* e) {
+    Slot slot;
+    if (JSObject::GetOwnPropertySlot(ctx, name, &slot)) {
+      // found
+      const PropertyDescriptor current = slot.desc();
+      assert(!current.IsEmpty());
+      bool returned = false;
+      if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
+        if (slot.IsCacheable()) {
+          GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
+        } else {
+          // add property transition
+          // searching already created maps and if this is available, move to this
+          std::size_t offset;
+          map_ = map_->AddPropertyTransition(ctx, name, &offset);
+          slots_.resize(map_->GetSlotsSize(), JSEmpty);
+          // set newly created property
+          GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+        }
+      }
+      return returned;
+    } else {
+      // not found
+      if (!IsExtensible()) {
+        if (th) {
+          e->Report(Error::Type, "object not extensible");\
+        }
+        return false;
+      } else {
+        // add property transition
+        // searching already created maps and if this is available, move to this
+        std::size_t offset;
+        map_ = map_->AddPropertyTransition(ctx, name, &offset);
+        slots_.resize(map_->GetSlotsSize(), JSEmpty);
+        // set newly created property
+        GetSlot(offset) = PropertyDescriptor::SetDefault(desc);
+        return true;
+      }
+    }
+  }
+
   bool DefineOwnProperty(Context* ctx, Symbol name,
                          const PropertyDescriptor& desc,
                          bool th, Error* e) {
-    const bool allowed = JSObject::DefineOwnProperty(ctx, name,
-                                                     desc, false, e);
+    // monkey patching...
+    // not reserve map object, so not use default DefineOwnProperty
+    const bool allowed = DefineOwnPropertyPatching(ctx, name, desc, false, e);
     if (!allowed) {
       if (th) {
         e->Report(Error::Type,
@@ -105,10 +148,10 @@ class JSNormalArguments : public JSObject {
       }
       return false;
     }
-    const Index2Param::const_iterator it = map_.find(name);
-    if (it != map_.end()) {
+    const Index2Param::const_iterator it = mapping_.find(name);
+    if (it != mapping_.end()) {
       if (desc.IsAccessorDescriptor()) {
-        map_.erase(it);
+        mapping_.erase(it);
       } else {
         if (desc.IsDataDescriptor()) {
           const DataDescriptor* const data = desc.AsDataDescriptor();
@@ -121,7 +164,7 @@ class JSNormalArguments : public JSObject {
             }
           }
           if (!data->IsWritableAbsent() && !data->IsWritable()) {
-            map_.erase(it);
+            mapping_.erase(it);
           }
         }
       }
@@ -135,9 +178,9 @@ class JSNormalArguments : public JSObject {
       return result;
     }
     if (result) {
-      const Index2Param::const_iterator it = map_.find(name);
-      if (it != map_.end()) {
-        map_.erase(it);
+      const Index2Param::const_iterator it = mapping_.find(name);
+      if (it != mapping_.end()) {
+        mapping_.erase(it);
         return true;
       }
     }
@@ -158,7 +201,7 @@ class JSNormalArguments : public JSObject {
       const Symbol sym = symbol::MakeSymbolFromIndex(index);
       binder->def(sym, *it, bind::W | bind::E | bind::C);
       if (index < names_len) {
-        obj->map_.insert(
+        obj->mapping_.insert(
             std::make_pair(sym, GetIdent(names, index)));
       }
       index -= 1;
@@ -175,7 +218,7 @@ class JSNormalArguments : public JSObject {
   }
 
   JSDeclEnv* env_;
-  Index2Param map_;
+  Index2Param mapping_;
 };
 
 // not search environment

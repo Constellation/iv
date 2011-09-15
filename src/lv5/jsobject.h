@@ -150,8 +150,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     return map_;
   }
 
- private:
-
+ protected:
   const Class* cls_;
   JSObject* prototype_;
   bool extensible_;
