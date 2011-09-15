@@ -211,6 +211,8 @@ class JSBoundFunction : public JSFunction {
     std::copy(args->begin(), args->end(),
               std::copy(arguments_.begin(),
                         arguments_.end(), args_list.begin()));
+    assert(args->IsConstructorCalled());
+    args_list.set_constructor_call(true);
     return target_->Construct(&args_list, e);
   }
 
