@@ -126,7 +126,7 @@ inline JSVal FunctionBind(const Arguments& args, Error* error) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const target = obj.object()->AsCallable();
-    const JSVal this_binding((args.empty()) ? args.front() : JSUndefined);
+    const JSVal this_binding((!args.empty()) ? args.front() : JSUndefined);
     return JSBoundFunction::New(args.ctx(), target, this_binding, args);
   }
   error->Report(Error::Type,
