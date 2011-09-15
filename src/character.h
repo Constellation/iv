@@ -16,6 +16,9 @@ namespace code {
 
 static const uint16_t CR = 0x000D;
 static const uint16_t LF = 0x000A;
+static const uint16_t ZWNJ = 0x200C;
+static const uint16_t ZWJ = 0x200D;
+static const uint16_t BOM = 0xFEFF;
 
 }  // namespace code
 
