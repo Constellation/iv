@@ -25,7 +25,7 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
   } while (0)
 
   // step 5
-  if (PropertyDescriptor::IsAbsent(desc)) {
+  if (desc.IsAbsent()) {
     *returned = true;
     return false;
   }

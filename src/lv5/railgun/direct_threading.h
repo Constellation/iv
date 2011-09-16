@@ -9,7 +9,7 @@ namespace railgun {
 #define IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE
 #endif
 
-class DispatchTableTag { };
+enum DispatchTableTag { DIRECT_THREADED_DISPATCH_TABLE };
 
 } } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_DIRECT_THREADING_H_

@@ -54,7 +54,7 @@ class VM {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
  private:
   // dispatch table get pass
-  explicit VM(int, DispatchTableTag tag)
+  explicit VM(DispatchTableTag tag)
     : ctx_(NULL),
       operation_(NULL),
       stack_(tag),
@@ -76,7 +76,7 @@ class VM {
  public:
   // opcode to label table
   static const DirectThreadingDispatchTable& DispatchTable() {
-    static const VM vm(0, DispatchTableTag());
+    static const VM vm(DIRECT_THREADED_DISPATCH_TABLE);
     return *vm.direct_threading_dispatch_table_;
   }
 

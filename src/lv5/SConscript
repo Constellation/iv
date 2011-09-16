@@ -30,7 +30,7 @@ conf.CheckLib('pthread')
 conf.CheckLib('gc')
 env = conf.Finish()
 env.Append(
-    CCFLAGS=["-fno-strict-aliasing"],
+    CCFLAGS=[],
     CPPDEFINES=["__STDC_FORMAT_MACROS"]
     )
 objs = [ x for x in Glob('*.cc') if basename(x.rstr()) != 'main.cc']
