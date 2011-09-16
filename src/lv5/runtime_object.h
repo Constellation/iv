@@ -153,9 +153,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
         ary->DefineOwnProperty(
             args.ctx(), symbol::MakeSymbolFromIndex(n),
             DataDescriptor(JSString::New(ctx, *it),
-                           PropertyDescriptor::WRITABLE |
-                           PropertyDescriptor::ENUMERABLE |
-                           PropertyDescriptor::CONFIGURABLE),
+                           ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
       return ary;
@@ -407,9 +405,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
             ctx, symbol::MakeSymbolFromIndex(index),
             DataDescriptor(
                 JSString::New(args.ctx(), *it),
-                PropertyDescriptor::WRITABLE |
-                PropertyDescriptor::ENUMERABLE |
-                PropertyDescriptor::CONFIGURABLE),
+                ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
       return ary;

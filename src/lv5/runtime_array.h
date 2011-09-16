@@ -61,9 +61,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(0u),
-          DataDescriptor(first, PropertyDescriptor::WRITABLE |
-                                PropertyDescriptor::ENUMERABLE |
-                                PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(first, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
       return ary;
     }
@@ -75,9 +73,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(index),
-          DataDescriptor(*it, PropertyDescriptor::WRITABLE |
-                              PropertyDescriptor::ENUMERABLE |
-                              PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(*it, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
     }
     return ary;
@@ -187,10 +183,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
         ary->DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(n),
-            DataDescriptor(subelm,
-                           PropertyDescriptor::WRITABLE |
-                           PropertyDescriptor::ENUMERABLE |
-                           PropertyDescriptor::CONFIGURABLE),
+            DataDescriptor(subelm, ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
       ++n;
@@ -200,10 +193,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
     ary->DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(n),
-        DataDescriptor(obj,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(obj, ATTR::W | ATTR::E | ATTR::C),
         false, IV_LV5_ERROR(e));
     ++n;
   }
@@ -220,10 +210,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
           ary->DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(n),
-              DataDescriptor(subelm,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+              DataDescriptor(subelm, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }
         ++n;
@@ -233,10 +220,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(n),
-          DataDescriptor(*it,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(*it, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
       ++n;
     }
@@ -448,10 +432,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(n),
-          DataDescriptor(kval,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(kval, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
     }
   }
@@ -748,10 +729,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(k),
-          DataDescriptor(from_val,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(from_val, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
     }
   }
@@ -1072,10 +1050,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(k),
-          DataDescriptor(mapped_value,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(mapped_value, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
     }
   }
@@ -1116,10 +1091,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
         ary->DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(to),
-            DataDescriptor(k_value,
-                           PropertyDescriptor::WRITABLE |
-                           PropertyDescriptor::ENUMERABLE |
-                           PropertyDescriptor::CONFIGURABLE),
+            DataDescriptor(k_value, ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
         ++to;
       }

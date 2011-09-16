@@ -54,9 +54,9 @@ class JSNormalArguments : public JSObject {
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),
-             JSVal::UInt32(len), bind::W | bind::C);
+             JSVal::UInt32(len), ATTR::W | ATTR::C);
     SetArguments(ctx, obj, &binder, names, it, last, len);
-    binder.def(symbol::callee(), func, bind::W | bind::C);
+    binder.def(symbol::callee(), func, ATTR::W | ATTR::C);
     return obj;
   }
 
@@ -93,8 +93,9 @@ class JSNormalArguments : public JSObject {
         if (mapped != symbol::kDummySymbol) {
           const JSVal val = env_->GetBindingValue(mapped);
           slot->set_descriptor(
-              DataDescriptor(val,
-                             slot->desc().attrs() & PropertyDescriptor::kDataAttrField));
+              DataDescriptor(
+                  val,
+                  slot->desc().attrs() & ATTR::DATA_ATTR_MASK));
           return true;
         }
       }
@@ -212,7 +213,8 @@ class JSNormalArguments : public JSObject {
     const uint32_t names_len = names.size();
     obj->mapping_.resize((std::min)(len, names_len), symbol::kDummySymbol);
     for (; it != last; ++it) {
-      binder->def(symbol::MakeSymbolFromIndex(index), *it, bind::W | bind::E | bind::C);
+      binder->def(symbol::MakeSymbolFromIndex(index),
+                  *it, ATTR::W | ATTR::E | ATTR::C);
       if (index < names_len) {
         obj->mapping_[index] = GetIdent(names, index);
       }
@@ -253,11 +255,11 @@ class JSStrictArguments : public JSObject {
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),
-             JSVal::UInt32(len), bind::W | bind::C);
+             JSVal::UInt32(len), ATTR::W | ATTR::C);
     uint32_t index = len - 1;
     for (; it != last; ++it, --index) {
       binder.def(symbol::MakeSymbolFromIndex(index),
-                 *it, bind::W | bind::E | bind::C);
+                 *it, ATTR::W | ATTR::E | ATTR::C);
     }
 
     JSFunction* const throw_type_error = context::throw_type_error(ctx);
@@ -265,11 +267,11 @@ class JSStrictArguments : public JSObject {
         .def_accessor(symbol::caller(),
                       throw_type_error,
                       throw_type_error,
-                      bind::NONE)
+                      ATTR::NONE)
         .def_accessor(symbol::callee(),
                       throw_type_error,
                       throw_type_error,
-                      bind::NONE);
+                      ATTR::NONE);
     return obj;
   }
 

@@ -99,10 +99,8 @@ inline void Instantiate(Context* ctx,
               fn,
               DataDescriptor(
                   JSUndefined,
-                  PropertyDescriptor::WRITABLE |
-                  PropertyDescriptor::ENUMERABLE |
-                  ((configurable_bindings) ?
-                   PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE)),
+                  ATTR::W | ATTR::E |
+                  ((configurable_bindings) ? ATTR::C : ATTR::NONE)),
               true, IV_LV5_ERROR_VOID(e));
         } else {
           if (existing_prop.IsAccessorDescriptor()) {

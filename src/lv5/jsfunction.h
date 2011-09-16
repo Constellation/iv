@@ -16,7 +16,8 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
-  JSFunction(Context* ctx) : JSObject(context::GetFunctionMap(ctx)) { }
+  explicit JSFunction(Context* ctx)
+    : JSObject(context::GetFunctionMap(ctx)) { }
 
   bool IsCallable() const {
     return true;
@@ -110,7 +111,7 @@ class JSFunction : public JSObject {
 
 class JSNativeFunction : public JSFunction {
  public:
-  JSNativeFunction(Context* ctx)
+  explicit JSNativeFunction(Context* ctx)
     : JSFunction(ctx), func_() { }
 
   JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
@@ -118,9 +119,7 @@ class JSNativeFunction : public JSFunction {
       func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n),
-                       PropertyDescriptor::NONE),
-                       false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
   }
 
   JSVal Call(Arguments* args,
@@ -254,26 +253,22 @@ class JSBoundFunction : public JSFunction {
           target_param_size - bound_args_size : 0;
       DefineOwnProperty(
           ctx, symbol::length(),
-          DataDescriptor(JSVal::UInt32(len),
-                         PropertyDescriptor::NONE),
-                         false, &e);
+          DataDescriptor(JSVal::UInt32(len), ATTR::NONE), false, &e);
     } else {
       DefineOwnProperty(
           ctx, symbol::length(),
-          DataDescriptor(JSVal::UInt32(0u),
-                         PropertyDescriptor::NONE),
-                         false, &e);
+          DataDescriptor(JSVal::UInt32(0u), ATTR::NONE), false, &e);
     }
     JSFunction* const throw_type_error = context::throw_type_error(ctx);
     DefineOwnProperty(ctx, symbol::caller(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
-                                         PropertyDescriptor::NONE),
+                                         ATTR::NONE),
                       false, &e);
     DefineOwnProperty(ctx, symbol::arguments(),
                       AccessorDescriptor(throw_type_error,
                                          throw_type_error,
-                                         PropertyDescriptor::NONE),
+                                         ATTR::NONE),
                       false, &e);
   }
 
@@ -291,24 +286,17 @@ class JSInlinedFunction : public JSFunction {
     : JSFunction(ctx) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n),
-                       PropertyDescriptor::NONE),
-                       false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
   }
 
   JSInlinedFunction(Context* ctx, const Symbol& name)
     : JSFunction(ctx) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n),
-                       PropertyDescriptor::NONE),
-                       false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
     DefineOwnProperty(
         ctx, context::Intern(ctx, "name"),
-        DataDescriptor(
-            JSString::New(ctx, name),
-            PropertyDescriptor::NONE),
-            false, NULL);
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
   }
 
   JSVal Call(Arguments* args,

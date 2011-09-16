@@ -1551,17 +1551,11 @@ MAIN_LOOP_START:
         if (instr[2].value) {
           obj.object()->GetSlot(instr[1].value) =
               PropertyDescriptor::Merge(
-                  DataDescriptor(value,
-                                 PropertyDescriptor::WRITABLE |
-                                 PropertyDescriptor::ENUMERABLE |
-                                 PropertyDescriptor::CONFIGURABLE),
+                  DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
               obj.object()->GetSlot(instr[1].value));
         } else {
           obj.object()->GetSlot(instr[1].value) =
-              DataDescriptor(value,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE);
+              DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C);
         }
         assert(!*e);
         DISPATCH(STORE_OBJECT_DATA);
@@ -1576,16 +1570,12 @@ MAIN_LOOP_START:
           obj.object()->GetSlot(instr[1].value) =
               PropertyDescriptor::Merge(
                   AccessorDescriptor(value.object(), NULL,
-                                     PropertyDescriptor::ENUMERABLE |
-                                     PropertyDescriptor::CONFIGURABLE |
-                                     PropertyDescriptor::UNDEF_SETTER),
+                                     ATTR::E | ATTR::C | ATTR::UNDEF_SETTER),
               obj.object()->GetSlot(instr[1].value));
         } else {
           obj.object()->GetSlot(instr[1].value) =
               AccessorDescriptor(value.object(), NULL,
-                                 PropertyDescriptor::ENUMERABLE |
-                                 PropertyDescriptor::CONFIGURABLE |
-                                 PropertyDescriptor::UNDEF_SETTER);
+                                 ATTR::E | ATTR::C | ATTR::UNDEF_SETTER);
         }
         assert(!*e);
         DISPATCH(STORE_OBJECT_GET);
@@ -1600,16 +1590,12 @@ MAIN_LOOP_START:
           obj.object()->GetSlot(instr[1].value) =
               PropertyDescriptor::Merge(
                   AccessorDescriptor(NULL, value.object(),
-                                     PropertyDescriptor::ENUMERABLE |
-                                     PropertyDescriptor::CONFIGURABLE |
-                                     PropertyDescriptor::UNDEF_GETTER),
+                                     ATTR::E | ATTR::C | ATTR::UNDEF_GETTER),
               obj.object()->GetSlot(instr[1].value));
         } else {
           obj.object()->GetSlot(instr[1].value) =
               AccessorDescriptor(NULL, value.object(),
-                                 PropertyDescriptor::ENUMERABLE |
-                                 PropertyDescriptor::CONFIGURABLE |
-                                 PropertyDescriptor::UNDEF_GETTER);
+                                 ATTR::E | ATTR::C | ATTR::UNDEF_GETTER);
         }
         assert(!*e);
         DISPATCH(STORE_OBJECT_SET);

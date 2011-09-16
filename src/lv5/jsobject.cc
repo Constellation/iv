@@ -202,9 +202,9 @@ void JSObject::Put(Context* ctx,
                       name,
                       DataDescriptor(
                           val,
-                          PropertyDescriptor::UNDEF_ENUMERABLE |
-                          PropertyDescriptor::UNDEF_CONFIGURABLE |
-                          PropertyDescriptor::UNDEF_WRITABLE), th, e);
+                          ATTR::UNDEF_ENUMERABLE |
+                          ATTR::UNDEF_CONFIGURABLE |
+                          ATTR::UNDEF_WRITABLE), th, e);
     return;
   }
   const PropertyDescriptor desc = GetProperty(ctx, name);
@@ -216,10 +216,7 @@ void JSObject::Put(Context* ctx,
     accs->set()->AsCallable()->Call(&args, this, e);
   } else {
     DefineOwnProperty(ctx, name,
-                      DataDescriptor(val,
-                                     PropertyDescriptor::WRITABLE |
-                                     PropertyDescriptor::ENUMERABLE |
-                                     PropertyDescriptor::CONFIGURABLE),
+                      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C),
                       th, e);
   }
 }
@@ -287,9 +284,9 @@ void JSObject::PutToSlotOffset(Context* ctx,
   if (current.IsDataDescriptor()) {
     const DataDescriptor desc(
         val,
-        PropertyDescriptor::UNDEF_ENUMERABLE |
-        PropertyDescriptor::UNDEF_CONFIGURABLE |
-        PropertyDescriptor::UNDEF_WRITABLE);
+        ATTR::UNDEF_ENUMERABLE |
+        ATTR::UNDEF_CONFIGURABLE |
+        ATTR::UNDEF_WRITABLE);
     bool returned = false;
     if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
       GetSlot(offset) = PropertyDescriptor::Merge(desc, current);

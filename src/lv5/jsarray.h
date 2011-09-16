@@ -86,7 +86,7 @@ class JSArray : public JSObject {
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
-      length_(len, PropertyDescriptor::WRITABLE) {
+      length_(len, ATTR::WRITABLE) {
   }
 
   JSArray(Context* ctx, Map* map, uint32_t len)
@@ -94,7 +94,7 @@ class JSArray : public JSObject {
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
-      length_(len, PropertyDescriptor::WRITABLE) {
+      length_(len, ATTR::WRITABLE) {
   }
 
   uint32_t GetLength() const {
@@ -149,10 +149,7 @@ class JSArray : public JSObject {
           if (!val.IsEmpty()) {
             // current is target
             slot->set_descriptor(
-                DataDescriptor(val,
-                               PropertyDescriptor::ENUMERABLE |
-                               PropertyDescriptor::CONFIGURABLE |
-                               PropertyDescriptor::WRITABLE));
+                DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C));
             return true;
           }
         }
@@ -163,10 +160,7 @@ class JSArray : public JSObject {
           if (it != map_->end()) {
             // target is found
             slot->set_descriptor(
-                DataDescriptor(it->second,
-                               PropertyDescriptor::ENUMERABLE |
-                               PropertyDescriptor::CONFIGURABLE |
-                               PropertyDescriptor::WRITABLE));
+                DataDescriptor(it->second, ATTR::W | ATTR::E | ATTR::C));
             return true;
           }
         }
@@ -509,9 +503,9 @@ class JSArray : public JSObject {
       }
       if (!new_writable) {
         const DataDescriptor target = DataDescriptor(
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::UNDEF_ENUMERABLE |
-            PropertyDescriptor::UNDEF_CONFIGURABLE);
+            ATTR::WRITABLE |
+            ATTR::UNDEF_ENUMERABLE |
+            ATTR::UNDEF_CONFIGURABLE);
         bool wasted = false;
         if (IsDefineOwnPropertyAccepted(length_, target, false, &wasted, e)) {
           length_ =

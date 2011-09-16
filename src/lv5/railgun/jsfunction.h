@@ -28,7 +28,7 @@ class JSVMFunction : public JSFunction {
         ctx, symbol::length(),
         DataDescriptor(
             JSVal::UInt32(static_cast<uint32_t>(code->params().size())),
-            PropertyDescriptor::NONE),
+            ATTR::NONE),
         false, &e);
     // section 13.2 Creating Function Objects
     set_cls(JSFunction::GetClass());
@@ -37,21 +37,16 @@ class JSVMFunction : public JSFunction {
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(
         ctx, symbol::constructor(),
-        DataDescriptor(this,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(this, ATTR::W | ATTR::C),
         false, &e);
     DefineOwnProperty(
         ctx, symbol::prototype(),
-        DataDescriptor(proto,
-                       PropertyDescriptor::WRITABLE),
+        DataDescriptor(proto, ATTR::W),
         false, &e);
     if (code->HasName()) {
       DefineOwnProperty(
           ctx, context::Intern(ctx, "name"),
-          DataDescriptor(
-              JSString::New(ctx, code->name()),
-              PropertyDescriptor::NONE),
+          DataDescriptor(JSString::New(ctx, code->name()), ATTR::NONE),
           false, &e);
     }
     if (code->strict()) {
@@ -59,12 +54,12 @@ class JSVMFunction : public JSFunction {
       DefineOwnProperty(ctx, symbol::caller(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
-                                           PropertyDescriptor::NONE),
+                                           ATTR::NONE),
                         false, &e);
       DefineOwnProperty(ctx, symbol::arguments(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
-                                           PropertyDescriptor::NONE),
+                                           ATTR::NONE),
                         false, &e);
     }
   }

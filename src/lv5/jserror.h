@@ -28,10 +28,7 @@ class JSError : public JSObject {
     if (str) {
       DefineOwnProperty(ctx,
                         context::Intern(ctx, "message"),
-                        DataDescriptor(str,
-                                       PropertyDescriptor::CONFIGURABLE |
-                                       PropertyDescriptor::WRITABLE),
-                                       false, NULL);
+                        DataDescriptor(str, ATTR::C | ATTR::W), false, NULL);
     }
   }
 

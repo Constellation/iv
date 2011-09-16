@@ -22,7 +22,7 @@ class JSStringObject : public JSObject {
                           Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
       slot->set_descriptor(
-          DataDescriptor(JSVal::UInt32(length_), PropertyDescriptor::NONE));
+          DataDescriptor(JSVal::UInt32(length_), ATTR::NONE));
       return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
@@ -37,7 +37,7 @@ class JSStringObject : public JSObject {
       slot->set_descriptor(
           DataDescriptor(
               JSString::NewSingle(ctx, value_->GetAt(index)),
-              PropertyDescriptor::ENUMERABLE));
+              ATTR::ENUMERABLE));
       return true;
     } else {
       return JSObject::GetOwnPropertySlot(ctx, name, slot);

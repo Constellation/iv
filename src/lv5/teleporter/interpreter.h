@@ -220,10 +220,9 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
             fn,
             DataDescriptor(
                 JSUndefined,
-                PropertyDescriptor::WRITABLE |
-                PropertyDescriptor::ENUMERABLE |
-                ((configurable_bindings) ?
-                 PropertyDescriptor::CONFIGURABLE : PropertyDescriptor::NONE)),
+                ATTR::WRITABLE |
+                ATTR::ENUMERABLE |
+                ((configurable_bindings) ? ATTR::CONFIGURABLE : ATTR::NONE)),
             true, CHECK_IN_STMT);
       } else {
         if (existing_prop.IsAccessorDescriptor()) {
@@ -1266,9 +1265,9 @@ void Interpreter::Visit(const ArrayLiteral* literal) {
       const JSVal value = GetValue(ctx_->ret(), CHECK);
       ary->DefineOwnProperty(
           ctx_, symbol::MakeSymbolFromIndex(current),
-          DataDescriptor(value, PropertyDescriptor::WRITABLE |
-                                PropertyDescriptor::ENUMERABLE |
-                                PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(value, ATTR::WRITABLE |
+                                ATTR::ENUMERABLE |
+                                ATTR::CONFIGURABLE),
           false, CHECK);
     }
     ++current;
@@ -1295,21 +1294,21 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
       EVAL(get<2>(prop));
       const JSVal value = GetValue(ctx_->ret(), CHECK);
       desc = DataDescriptor(value,
-                            PropertyDescriptor::WRITABLE |
-                            PropertyDescriptor::ENUMERABLE |
-                            PropertyDescriptor::CONFIGURABLE);
+                            ATTR::WRITABLE |
+                            ATTR::ENUMERABLE |
+                            ATTR::CONFIGURABLE);
     } else {
       EVAL(get<2>(prop));
       if (type == ObjectLiteral::GET) {
         desc = AccessorDescriptor(ctx_->ret().object(), NULL,
-                                  PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE |
-                                  PropertyDescriptor::UNDEF_SETTER);
+                                  ATTR::ENUMERABLE |
+                                  ATTR::CONFIGURABLE |
+                                  ATTR::UNDEF_SETTER);
       } else {
         desc = AccessorDescriptor(NULL, ctx_->ret().object(),
-                                  PropertyDescriptor::ENUMERABLE |
-                                  PropertyDescriptor::CONFIGURABLE|
-                                  PropertyDescriptor::UNDEF_GETTER);
+                                  ATTR::ENUMERABLE |
+                                  ATTR::CONFIGURABLE|
+                                  ATTR::UNDEF_GETTER);
       }
     }
     // section 11.1.5 step 4

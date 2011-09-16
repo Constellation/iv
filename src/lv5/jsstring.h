@@ -18,9 +18,7 @@ inline uint32_t SplitFiber(Context* ctx,
         ctx, symbol::MakeSymbolFromIndex(index),
         DataDescriptor(
             JSString::NewSingle(ctx, *it),
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
+            ATTR::W | ATTR::E | ATTR::C),
         false, e);
   }
   return index;
@@ -42,9 +40,7 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
           ctx, symbol::MakeSymbolFromIndex(index),
           DataDescriptor(
               builder->Build(ctx),
-              PropertyDescriptor::WRITABLE |
-              PropertyDescriptor::ENUMERABLE |
-              PropertyDescriptor::CONFIGURABLE),
+              ATTR::W | ATTR::E | ATTR::C),
           false, e);
       ++index;
       if (index == limit) {
@@ -140,9 +136,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
       ctx, symbol::MakeSymbolFromIndex(index),
       DataDescriptor(
           builder.Build(ctx),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::ENUMERABLE |
-          PropertyDescriptor::CONFIGURABLE),
+          ATTR::W | ATTR::E | ATTR::C),
       false, e);
   return ary;
 }

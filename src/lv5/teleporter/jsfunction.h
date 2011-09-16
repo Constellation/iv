@@ -37,7 +37,7 @@ class JSCodeFunction : public JSFunction {
         ctx, symbol::length(),
         DataDescriptor(
             JSVal::UInt32(static_cast<uint32_t>(func->params().size())),
-            PropertyDescriptor::NONE),
+            ATTR::NONE),
         false, &e);
     // section 13.2 Creating Function Objects
     set_cls(JSFunction::GetClass());
@@ -47,13 +47,13 @@ class JSCodeFunction : public JSFunction {
     proto->DefineOwnProperty(
         ctx, symbol::constructor(),
         DataDescriptor(this,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+                       ATTR::WRITABLE |
+                       ATTR::CONFIGURABLE),
         false, &e);
     DefineOwnProperty(
         ctx, symbol::prototype(),
         DataDescriptor(proto,
-                       PropertyDescriptor::WRITABLE),
+                       ATTR::WRITABLE),
         false, &e);
     if (const core::Maybe<const Identifier> ident = function_->name()) {
       const core::UStringPiece name = ident.Address()->value();
@@ -61,14 +61,14 @@ class JSCodeFunction : public JSFunction {
         DefineOwnProperty(
             ctx, context::Intern(ctx, "name"),
             DataDescriptor(JSString::New(ctx, name),
-                           PropertyDescriptor::NONE),
+                           ATTR::NONE),
             false, &e);
       } else {
         DefineOwnProperty(
             ctx, context::Intern(ctx, "name"),
             DataDescriptor(
                 JSString::NewEmptyString(ctx),
-                PropertyDescriptor::NONE),
+                ATTR::NONE),
             false, &e);
       }
     }
@@ -77,12 +77,12 @@ class JSCodeFunction : public JSFunction {
       DefineOwnProperty(ctx, symbol::caller(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
-                                           PropertyDescriptor::NONE),
+                                           ATTR::NONE),
                         false, &e);
       DefineOwnProperty(ctx, symbol::arguments(),
                         AccessorDescriptor(throw_type_error,
                                            throw_type_error,
-                                           PropertyDescriptor::NONE),
+                                           ATTR::NONE),
                         false, &e);
     }
   }

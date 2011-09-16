@@ -43,20 +43,20 @@ AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 }
 
 void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
-  attrs_ |= DATA;
-  attrs_ &= ~ACCESSOR;
-  attrs_ &= ~UNDEF_VALUE;
-  attrs_ |= UNDEF_GETTER;
-  attrs_ |= UNDEF_SETTER;
+  attrs_ |= ATTR::DATA;
+  attrs_ &= ~ATTR::ACCESSOR;
+  attrs_ &= ~ATTR::UNDEF_VALUE;
+  attrs_ |= ATTR::UNDEF_GETTER;
+  attrs_ |= ATTR::UNDEF_SETTER;
   value_.data_ = value.Layout();
 }
 
 void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {
-  attrs_ &= ~DATA;
-  attrs_ |= ACCESSOR;
-  attrs_ |= UNDEF_VALUE;
-  attrs_ &= ~UNDEF_GETTER;
-  attrs_ &= ~UNDEF_SETTER;
+  attrs_ &= ~ATTR::DATA;
+  attrs_ |= ATTR::ACCESSOR;
+  attrs_ |= ATTR::UNDEF_VALUE;
+  attrs_ &= ~ATTR::UNDEF_GETTER;
+  attrs_ &= ~ATTR::UNDEF_SETTER;
   value_.accessor_.getter_ = get;
   value_.accessor_.setter_ = set;
 }
@@ -65,11 +65,11 @@ void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
   if (IsDataDescriptor()) {
     value_.accessor_.setter_ = NULL;
   }
-  attrs_ &= ~DATA;
-  attrs_ |= ACCESSOR;
-  attrs_ |= UNDEF_VALUE;
-  attrs_ &= ~UNDEF_GETTER;
-  attrs_ &= ~UNDEF_SETTER;
+  attrs_ &= ~ATTR::DATA;
+  attrs_ |= ATTR::ACCESSOR;
+  attrs_ |= ATTR::UNDEF_VALUE;
+  attrs_ &= ~ATTR::UNDEF_GETTER;
+  attrs_ &= ~ATTR::UNDEF_SETTER;
   value_.accessor_.getter_ = get;
 }
 
@@ -77,11 +77,11 @@ void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
   if (IsDataDescriptor()) {
     value_.accessor_.getter_ = NULL;
   }
-  attrs_ &= ~DATA;
-  attrs_ |= ACCESSOR;
-  attrs_ |= UNDEF_VALUE;
-  attrs_ &= ~UNDEF_GETTER;
-  attrs_ &= ~UNDEF_SETTER;
+  attrs_ &= ~ATTR::DATA;
+  attrs_ |= ATTR::ACCESSOR;
+  attrs_ |= ATTR::UNDEF_VALUE;
+  attrs_ &= ~ATTR::UNDEF_GETTER;
+  attrs_ &= ~ATTR::UNDEF_SETTER;
   value_.accessor_.setter_ = set;
 }
 

@@ -114,10 +114,7 @@ class JSONParser : private core::Noncopyable<> {
       const JSVal target = ParseJSONValue(CHECK);
       obj->DefineOwnProperty(
           ctx_, key,
-          DataDescriptor(target,
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(target, ATTR::W | ATTR::E | ATTR::C),
           false, CHECK);
       if (token_ != Token::TK_RBRACE) {
         EXPECT(Token::TK_COMMA);
@@ -144,9 +141,7 @@ class JSONParser : private core::Noncopyable<> {
       const JSVal target = ParseJSONValue(CHECK);
       ary->DefineOwnProperty(
           ctx_, symbol::MakeSymbolFromIndex(current),
-          DataDescriptor(target, PropertyDescriptor::WRITABLE |
-                                 PropertyDescriptor::ENUMERABLE |
-                                 PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor(target, ATTR::W | ATTR::E | ATTR::C),
           false, CHECK);
       if (token_ != Token::TK_RBRACK) {
         EXPECT(Token::TK_COMMA);

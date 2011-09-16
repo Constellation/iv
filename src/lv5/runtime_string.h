@@ -97,9 +97,7 @@ inline JSVal StringSplit(Context* ctx,
             ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
                 JSString::New(ctx, fiber->begin() + p, fiber->begin() + q),
-                PropertyDescriptor::WRITABLE |
-                PropertyDescriptor::ENUMERABLE |
-                PropertyDescriptor::CONFIGURABLE),
+                ATTR::W | ATTR::E | ATTR::C),
             false, e);
         ++length;
         if (length == lim) {
@@ -115,9 +113,7 @@ inline JSVal StringSplit(Context* ctx,
           JSString::New(ctx,
                         fiber->begin() + p,
                         fiber->begin() + size),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::ENUMERABLE |
-          PropertyDescriptor::CONFIGURABLE),
+          ATTR::W | ATTR::E | ATTR::C),
       false, e);
   return ary;
 }
@@ -856,10 +852,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     a->DefineOwnProperty(
       ctx,
       symbol::MakeSymbolFromIndex(0u),
-      DataDescriptor(str,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::ENUMERABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+      DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
       false, IV_LV5_ERROR(e));
     return a;
   }
@@ -881,10 +874,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     ary->DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(0),
-        DataDescriptor(str,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         false, IV_LV5_ERROR(e));
     return ary;
   }
@@ -910,9 +900,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
           DataDescriptor(JSString::New(ctx,
                                        fiber->begin() + p,
                                        fiber->begin() + start_match),
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+                         ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
       ++length;
       if (length == lim) {
@@ -931,18 +919,14 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                   JSString::New(ctx,
                                 fiber->begin() + it->first,
                                 fiber->begin() + it->second),
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+                             ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         } else {
           ary->DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(JSUndefined,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+                             ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }
         ++length;
@@ -960,9 +944,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
           JSString::New(ctx,
                         fiber->begin() + p,
                         fiber->begin() + size),
-          PropertyDescriptor::WRITABLE |
-          PropertyDescriptor::ENUMERABLE |
-          PropertyDescriptor::CONFIGURABLE),
+          ATTR::W | ATTR::E | ATTR::C),
       false, IV_LV5_ERROR(e));
   return ary;
 }

@@ -142,18 +142,12 @@ class JSRegExp : public JSObject {
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(i),
-          DataDescriptor((*offset_vector)[i],
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor((*offset_vector)[i], ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(i + 1),
-          DataDescriptor((*offset_vector)[i+1],
-                         PropertyDescriptor::WRITABLE |
-                         PropertyDescriptor::ENUMERABLE |
-                         PropertyDescriptor::CONFIGURABLE),
+          DataDescriptor((*offset_vector)[i+1], ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
     }
     return ary;
@@ -196,9 +190,7 @@ class JSRegExp : public JSObject {
               JSString::New(ctx,
                             fiber->begin() + offset_vector[0],
                             fiber->begin() + offset_vector[1]),
-              PropertyDescriptor::WRITABLE |
-              PropertyDescriptor::ENUMERABLE |
-              PropertyDescriptor::CONFIGURABLE),
+              ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
       ++n;
     } while (true);
@@ -208,20 +200,12 @@ class JSRegExp : public JSObject {
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "index"),
-        DataDescriptor(
-            start,
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(start, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "input"),
-        DataDescriptor(
-            str,
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     return ary;
   }
@@ -266,20 +250,12 @@ class JSRegExp : public JSObject {
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "index"),
-        DataDescriptor(
-            offset_vector[0],
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(offset_vector[0], ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "input"),
-        DataDescriptor(
-            str,
-            PropertyDescriptor::WRITABLE |
-            PropertyDescriptor::ENUMERABLE |
-            PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
       const int begin = offset_vector[i*2];
@@ -292,18 +268,13 @@ class JSRegExp : public JSObject {
                 JSString::New(ctx,
                               fiber->begin() + offset_vector[i*2],
                               fiber->begin() + offset_vector[i*2+1]),
-                PropertyDescriptor::WRITABLE |
-                PropertyDescriptor::ENUMERABLE |
-                PropertyDescriptor::CONFIGURABLE),
+                ATTR::W | ATTR::E | ATTR::C),
             true, IV_LV5_ERROR(e));
       } else {
         ary->DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(i),
-            DataDescriptor(JSUndefined,
-                PropertyDescriptor::WRITABLE |
-                PropertyDescriptor::ENUMERABLE |
-                PropertyDescriptor::CONFIGURABLE),
+            DataDescriptor(JSUndefined, ATTR::W | ATTR::E | ATTR::C),
             true, IV_LV5_ERROR(e));
       }
     }
@@ -343,21 +314,15 @@ class JSRegExp : public JSObject {
   void InitializeProperty(Context* ctx, JSString* src) {
     bind::Object(ctx, this)
         .def(context::Intern(ctx, "source"),
-             src->empty() ?
-               JSString::NewAsciiString(ctx, "(?:)") : src,
-             bind::NONE)
+             src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src,
+             ATTR::NONE)
         .def(context::Intern(ctx, "global"),
-             JSVal::Bool(impl_->global()),
-             bind::NONE)
+             JSVal::Bool(impl_->global()), ATTR::NONE)
         .def(context::Intern(ctx, "ignoreCase"),
-             JSVal::Bool(impl_->ignore()),
-             bind::NONE)
+             JSVal::Bool(impl_->ignore()), ATTR::NONE)
         .def(context::Intern(ctx, "multiline"),
-             JSVal::Bool(impl_->multiline()),
-             bind::NONE)
-        .def(context::Intern(ctx, "lastIndex"),
-             0.0,
-             bind::W);
+             JSVal::Bool(impl_->multiline()), ATTR::NONE)
+        .def(context::Intern(ctx, "lastIndex"), 0.0, ATTR::W);
   }
 
   const JSRegExpImpl* impl() const {

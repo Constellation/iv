@@ -6,22 +6,12 @@
 #include "lv5/jsobject.h"
 #include "lv5/jsfunction.h"
 #include "lv5/arguments.h"
+#include "lv5/attributes.h"
 #include "lv5/context_utils.h"
 namespace iv {
 namespace lv5 {
 
 namespace bind {
-
-enum Attribute {
-  NONE = PropertyDescriptor::NONE,
-  WRITABLE = PropertyDescriptor::WRITABLE,
-  ENUMERABLE = PropertyDescriptor::ENUMERABLE,
-  CONFIGURABLE = PropertyDescriptor::CONFIGURABLE,
-  N = NONE,
-  W = WRITABLE,
-  E = ENUMERABLE,
-  C = CONFIGURABLE
-};
 
 class Scope {
  public:
@@ -74,7 +64,7 @@ class Object : public Scope {
       ctx_, name,
       DataDescriptor(
           JSInlinedFunction<func, n>::New(ctx_, name),
-          WRITABLE | CONFIGURABLE),
+          ATTR::W | ATTR::C),
       false, &e_);
     return *this;
   }
@@ -102,7 +92,7 @@ class Object : public Scope {
   Object& def(const Symbol& name, const JSVal& val) {
     obj_->DefineOwnProperty(
       ctx_, name,
-      DataDescriptor(val, NONE),
+      DataDescriptor(val, ATTR::NONE),
       false, &e_);
     return *this;
   }
@@ -129,9 +119,7 @@ class Object : public Scope {
                        JSObject* getter, JSObject* setter, int attr) {
     obj_->DefineOwnProperty(
       ctx_, name,
-      AccessorDescriptor(getter,
-                         setter,
-                         attr),
+      AccessorDescriptor(getter, setter, attr),
       false, &e_);
     return *this;
   }

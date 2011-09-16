@@ -279,10 +279,9 @@ class JSObjectEnv : public JSEnv {
 
   void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
     assert(!record_->HasProperty(ctx, name));
-    int attr = PropertyDescriptor::WRITABLE |
-               PropertyDescriptor::ENUMERABLE;
+    int attr = ATTR::WRITABLE | ATTR::ENUMERABLE;
     if (del) {
-      attr |= PropertyDescriptor::CONFIGURABLE;
+      attr |= ATTR::CONFIGURABLE;
     }
     record_->DefineOwnProperty(
         ctx,

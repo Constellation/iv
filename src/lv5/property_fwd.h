@@ -2,6 +2,7 @@
 #define IV_LV5_PROPERTY_FWD_H_
 #include "debug.h"
 #include "lv5/jsval_fwd.h"
+#include "lv5/attributes.h"
 namespace iv {
 namespace lv5 {
 
@@ -14,27 +15,13 @@ class AccessorDescriptor;
 class PropertyDescriptor {
  public:
   typedef PropertyDescriptor this_type;
+
   union PropertyLayout {
     struct Accessors {
       JSObject* getter_;
       JSObject* setter_;
     } accessor_;
     JSVal::value_type data_;
-  };
-  enum Attribute {
-    NONE = 0,
-    WRITABLE = 1,
-    ENUMERABLE = 2,
-    CONFIGURABLE = 4,
-    UNDEF_WRITABLE = 8,
-    UNDEF_ENUMERABLE = 16,
-    UNDEF_CONFIGURABLE = 32,
-    DATA = 64,
-    ACCESSOR = 128,
-    EMPTY = 256,
-    UNDEF_VALUE = 512,
-    UNDEF_GETTER = 1024,
-    UNDEF_SETTER = 2048
   };
 
   enum DataDescriptorTag { DATA_DESCRIPTOR };
@@ -43,19 +30,13 @@ class PropertyDescriptor {
   enum AccessorDescriptorGetterTag { ACCESSOR_DESCRIPTOR_GETTER };
   enum AccessorDescriptorSetterTag { ACCESSOR_DESCRIPTOR_SETTER };
 
-  static const int kDefaultAttr =
-      UNDEF_WRITABLE | UNDEF_ENUMERABLE | UNDEF_CONFIGURABLE |
-      UNDEF_VALUE | UNDEF_GETTER | UNDEF_SETTER;
-  static const int kTypeMask = DATA | ACCESSOR;
-  static const int kDataAttrField = WRITABLE | ENUMERABLE | CONFIGURABLE;
-
   PropertyDescriptor(detail::JSEmptyType val)  // NOLINT
-    : attrs_(kDefaultAttr | EMPTY),
+    : attrs_(ATTR::DEFAULT | ATTR::EMPTY),
       value_() {
   }
 
   PropertyDescriptor()
-    : attrs_(kDefaultAttr | EMPTY),
+    : attrs_(ATTR::DEFAULT | ATTR::EMPTY),
       value_() {
   }
 
@@ -73,23 +54,26 @@ class PropertyDescriptor {
   }
 
   int type() const {
-    return attrs_ & kTypeMask;
+    return attrs_ & ATTR::TYPE_MASK;
   }
 
   inline bool IsDataDescriptor() const {
-    return attrs_ & DATA;
+    return attrs_ & ATTR::DATA;
   }
 
   inline bool IsAccessorDescriptor() const {
-    return attrs_ & ACCESSOR;
+    return attrs_ & ATTR::ACCESSOR;
   }
 
   inline bool IsGenericDescriptor() const {
-    return (!(attrs_ & DATA)) && (!(attrs_ & ACCESSOR)) && (!(attrs_ & EMPTY));
+    return
+        (!(attrs_ & ATTR::DATA)) &&
+        (!(attrs_ & ATTR::ACCESSOR)) &&
+        (!(attrs_ & ATTR::EMPTY));
   }
 
   inline bool IsEmpty() const {
-    return attrs_ & EMPTY;
+    return attrs_ & ATTR::EMPTY;
   }
 
   inline const DataDescriptor* AsDataDescriptor() const;
@@ -101,36 +85,36 @@ class PropertyDescriptor {
   inline AccessorDescriptor* AsAccessorDescriptor();
 
   inline bool IsEnumerable() const {
-    return attrs_ & ENUMERABLE;
+    return attrs_ & ATTR::ENUMERABLE;
   }
 
   inline bool IsEnumerableAbsent() const {
-    return attrs_ & UNDEF_ENUMERABLE;
+    return attrs_ & ATTR::UNDEF_ENUMERABLE;
   }
 
   inline void set_enumerable(bool val) {
     if (val) {
-      attrs_ = (attrs_ & ~UNDEF_ENUMERABLE) | ENUMERABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_ENUMERABLE) | ATTR::ENUMERABLE;
     } else {
-      attrs_ = (attrs_ & ~UNDEF_ENUMERABLE) & ~ENUMERABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_ENUMERABLE) & ~ATTR::ENUMERABLE;
     }
   }
 
   inline bool IsConfigurable() const {
-    return attrs_ & CONFIGURABLE;
+    return attrs_ & ATTR::CONFIGURABLE;
   }
 
   inline bool IsConfigurableAbsent() const {
-    return attrs_ & UNDEF_CONFIGURABLE;
+    return attrs_ & ATTR::UNDEF_CONFIGURABLE;
   }
 
   inline bool IsAbsent() const;
 
   inline void set_configurable(bool val) {
     if (val) {
-      attrs_ = (attrs_ & ~UNDEF_CONFIGURABLE) | CONFIGURABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_CONFIGURABLE) | ATTR::CONFIGURABLE;
     } else {
-      attrs_ = (attrs_ & ~UNDEF_CONFIGURABLE) & ~CONFIGURABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_CONFIGURABLE) & ~ATTR::CONFIGURABLE;
     }
   }
 
@@ -162,7 +146,7 @@ class PropertyDescriptor {
  protected:
   PropertyDescriptor(DataDescriptorTag tag,
                      const JSVal& val, int attrs)
-    : attrs_(attrs | DATA | UNDEF_GETTER | UNDEF_SETTER),
+    : attrs_(attrs | ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER),
       value_() {
     value_.data_ = val.Layout();
   }
@@ -170,7 +154,7 @@ class PropertyDescriptor {
   PropertyDescriptor(AccessorDescriptorTag tag,
                      JSObject* getter, JSObject* setter,
                      int attrs)
-    : attrs_(attrs | ACCESSOR | UNDEF_VALUE),
+    : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
@@ -178,7 +162,7 @@ class PropertyDescriptor {
 
   PropertyDescriptor(AccessorDescriptorGetterTag tag,
                      JSObject* getter, int attrs)
-    : attrs_(attrs | ACCESSOR | UNDEF_VALUE | UNDEF_SETTER),
+    : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE | ATTR::UNDEF_SETTER),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = NULL;
@@ -186,14 +170,17 @@ class PropertyDescriptor {
 
   PropertyDescriptor(AccessorDescriptorSetterTag tag,
                      JSObject* setter, int attrs)
-    : attrs_(attrs | ACCESSOR | UNDEF_VALUE | UNDEF_GETTER),
+    : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE | ATTR::UNDEF_GETTER),
       value_() {
     value_.accessor_.getter_ = NULL;
     value_.accessor_.setter_ = setter;
   }
 
   PropertyDescriptor(GenericDescriptorTag tag, int attrs)
-    : attrs_(attrs | UNDEF_VALUE | UNDEF_GETTER | UNDEF_SETTER),
+    : attrs_(attrs |
+             ATTR::UNDEF_VALUE |
+             ATTR::UNDEF_GETTER |
+             ATTR::UNDEF_SETTER),
       value_() {
   }
 
@@ -213,10 +200,10 @@ class AccessorDescriptor : public PropertyDescriptor {
     return value_.accessor_.setter_;
   }
   inline bool IsGetterAbsent() const {
-    return attrs_ & UNDEF_GETTER;
+    return attrs_ & ATTR::UNDEF_GETTER;
   }
   inline bool IsSetterAbsent() const {
-    return attrs_ & UNDEF_SETTER;
+    return attrs_ & ATTR::UNDEF_SETTER;
   }
   void set_get(JSObject* getter) {
     value_.accessor_.getter_ = getter;
@@ -232,7 +219,8 @@ class DataDescriptor: public PropertyDescriptor {
      : PropertyDescriptor(DATA_DESCRIPTOR, value, attrs) {
   }
   explicit DataDescriptor(int attrs)
-     : PropertyDescriptor(DATA_DESCRIPTOR, JSUndefined, attrs | UNDEF_VALUE) {
+     : PropertyDescriptor(DATA_DESCRIPTOR, JSUndefined,
+                          attrs | ATTR::UNDEF_VALUE) {
   }
   JSVal value() const {
     return value_.data_;
@@ -242,22 +230,22 @@ class DataDescriptor: public PropertyDescriptor {
   }
 
   inline bool IsValueAbsent() const {
-    return attrs_ & UNDEF_VALUE;
+    return attrs_ & ATTR::UNDEF_VALUE;
   }
 
   inline bool IsWritable() const {
-    return attrs_ & WRITABLE;
+    return attrs_ & ATTR::WRITABLE;
   }
 
   inline bool IsWritableAbsent() const {
-    return attrs_ & UNDEF_WRITABLE;
+    return attrs_ & ATTR::UNDEF_WRITABLE;
   }
 
   inline void set_writable(bool val) {
     if (val) {
-      attrs_ = (attrs_ & ~UNDEF_WRITABLE) | WRITABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_WRITABLE) | ATTR::WRITABLE;
     } else {
-      attrs_ = (attrs_ & ~UNDEF_WRITABLE) & ~WRITABLE;
+      attrs_ = (attrs_ & ~ATTR::UNDEF_WRITABLE) & ~ATTR::WRITABLE;
     }
   }
 };
@@ -314,15 +302,15 @@ class DescriptorSlot {
     }
 
     bool IsWritable() const {
-      return attrs_ & PropertyDescriptor::WRITABLE;
+      return attrs_ & ATTR::WRITABLE;
     }
 
     bool IsConfigurable() const {
-      return attrs_ & PropertyDescriptor::CONFIGURABLE;
+      return attrs_ & ATTR::CONFIGURABLE;
     }
 
     bool IsEnumerable() const {
-      return attrs_ & PropertyDescriptor::ENUMERABLE;
+      return attrs_ & ATTR::ENUMERABLE;
     }
 
    private:

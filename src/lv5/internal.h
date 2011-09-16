@@ -25,17 +25,12 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     const DataDescriptor* const data = desc.AsDataDescriptor();
     obj->DefineOwnProperty(
         ctx, context::Intern(ctx, "value"),
-        DataDescriptor(data->value(),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(data->value(), ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
     obj->DefineOwnProperty(
         ctx, context::Intern(ctx, "writable"),
         DataDescriptor(JSVal::Bool(data->IsWritable()),
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+                       ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
   } else {
     assert(desc.IsAccessorDescriptor());
@@ -43,33 +38,23 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     const JSVal getter = (accs->get()) ? accs->get() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
         ctx, context::Intern(ctx, "get"),
-        DataDescriptor(getter,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(getter, ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
     const JSVal setter = (accs->set()) ? accs->set() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
         ctx, context::Intern(ctx, "set"),
-        DataDescriptor(setter,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(setter, ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
   }
   obj->DefineOwnProperty(
       ctx, context::Intern(ctx, "enumerable"),
       DataDescriptor(JSVal::Bool(desc.IsEnumerable()),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::ENUMERABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+                     ATTR::W | ATTR::E | ATTR::C),
       false, NULL);
   obj->DefineOwnProperty(
       ctx, context::Intern(ctx, "configurable"),
       DataDescriptor(JSVal::Bool(desc.IsConfigurable()),
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::ENUMERABLE |
-                     PropertyDescriptor::CONFIGURABLE),
+                     ATTR::W | ATTR::E | ATTR::C),
       false, NULL);
   return obj;
 }
@@ -82,7 +67,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
               "ToPropertyDescriptor requires Object argument");
     return JSEmpty;
   }
-  int attr = PropertyDescriptor::kDefaultAttr;
+  int attr = ATTR::DEFAULT;
   JSObject* const obj = target.object();
   JSVal value = JSUndefined;
   JSObject* getter = NULL;
@@ -94,10 +79,9 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool enumerable = r.ToBoolean(IV_LV5_ERROR(e));
       if (enumerable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
-            PropertyDescriptor::ENUMERABLE;
+        attr = (attr & ~ATTR::UNDEF_ENUMERABLE) | ATTR::ENUMERABLE;
       } else {
-        attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE);
+        attr = (attr & ~ATTR::UNDEF_ENUMERABLE);
       }
     }
   }
@@ -108,10 +92,9 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool configurable = r.ToBoolean(IV_LV5_ERROR(e));
       if (configurable) {
-        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) |
-            PropertyDescriptor::CONFIGURABLE;
+        attr = (attr & ~ATTR::UNDEF_CONFIGURABLE) | ATTR::CONFIGURABLE;
       } else {
-        attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE);
+        attr = (attr & ~ATTR::UNDEF_CONFIGURABLE);
       }
     }
   }
@@ -120,8 +103,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     const Symbol sym = context::Intern(ctx, "value");
     if (obj->HasProperty(ctx, sym)) {
       value = obj->Get(ctx, sym, IV_LV5_ERROR(e));
-      attr |= PropertyDescriptor::DATA;
-      attr &= ~PropertyDescriptor::UNDEF_VALUE;
+      attr |= ATTR::DATA;
+      attr &= ~ATTR::UNDEF_VALUE;
     }
   }
   {
@@ -130,10 +113,10 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool writable = r.ToBoolean(IV_LV5_ERROR(e));
-      attr |= PropertyDescriptor::DATA;
-      attr &= ~PropertyDescriptor::UNDEF_WRITABLE;
+      attr |= ATTR::DATA;
+      attr &= ~ATTR::UNDEF_WRITABLE;
       if (writable) {
-        attr |= PropertyDescriptor::WRITABLE;
+        attr |= ATTR::WRITABLE;
       }
     }
   }
@@ -147,11 +130,11 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
                   "property \"get\" is not callable");
         return JSEmpty;
       }
-      attr |= PropertyDescriptor::ACCESSOR;
+      attr |= ATTR::ACCESSOR;
       if (!r.IsUndefined()) {
         getter = r.object();
       }
-      attr &= ~PropertyDescriptor::UNDEF_GETTER;
+      attr &= ~ATTR::UNDEF_GETTER;
     }
   }
   {
@@ -164,24 +147,24 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
                   "property \"set\" is not callable");
         return JSEmpty;
       }
-      attr |= PropertyDescriptor::ACCESSOR;
+      attr |= ATTR::ACCESSOR;
       if (!r.IsUndefined()) {
         setter = r.object();
       }
-      attr &= ~PropertyDescriptor::UNDEF_SETTER;
+      attr &= ~ATTR::UNDEF_SETTER;
     }
   }
   // step 9
-  if (attr & PropertyDescriptor::ACCESSOR) {
-    if (attr & PropertyDescriptor::DATA) {
+  if (attr & ATTR::ACCESSOR) {
+    if (attr & ATTR::DATA) {
       e->Report(Error::Type,
                 "invalid object for property descriptor");
       return JSEmpty;
     }
   }
-  if (attr & PropertyDescriptor::ACCESSOR) {
+  if (attr & ATTR::ACCESSOR) {
     return AccessorDescriptor(getter, setter, attr);
-  } else if (attr & PropertyDescriptor::DATA) {
+  } else if (attr & ATTR::DATA) {
     return DataDescriptor(value, attr);
   } else {
     return GenericDescriptor(attr);

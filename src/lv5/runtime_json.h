@@ -38,10 +38,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
         } else {
           ary->DefineOwnProperty(
               ctx, symbol::MakeSymbolFromIndex(i),
-              DataDescriptor(new_element,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+              DataDescriptor(new_element, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }
       }
@@ -56,10 +53,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
         } else {
           obj->DefineOwnProperty(
               ctx, *it,
-              DataDescriptor(new_element,
-                             PropertyDescriptor::WRITABLE |
-                             PropertyDescriptor::ENUMERABLE |
-                             PropertyDescriptor::CONFIGURABLE),
+              DataDescriptor(new_element, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }
       }
@@ -101,10 +95,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
     const Symbol empty = context::Intern(ctx, "");
     root->DefineOwnProperty(
         ctx, empty,
-        DataDescriptor(result,
-                       PropertyDescriptor::WRITABLE |
-                       PropertyDescriptor::ENUMERABLE |
-                       PropertyDescriptor::CONFIGURABLE),
+        DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),
         false, IV_LV5_ERROR(e));
     return detail::JSONWalk(ctx, root, empty,
                             args[1].object()->AsCallable(), e);
@@ -199,10 +190,8 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   const Symbol empty = context::Intern(ctx, "");
   wrapper->DefineOwnProperty(
       ctx, empty,
-      DataDescriptor(value,
-                     PropertyDescriptor::WRITABLE |
-                     PropertyDescriptor::ENUMERABLE |
-                     PropertyDescriptor::CONFIGURABLE), false, IV_LV5_ERROR(e));
+      DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
+      false, IV_LV5_ERROR(e));
   JSONStringifier stringifier(ctx, replacer_function, gap, maybe);
   return stringifier.Stringify(empty, wrapper, e);
 }
