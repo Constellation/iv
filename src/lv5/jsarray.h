@@ -24,7 +24,7 @@ namespace detail {
 
 static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
   // only accept
-  // { enumrable: true, configurable: true, writable:true, value: VAL }
+  // { enumrable: true, configurable: true, writable:true }
   if (!desc.IsEnumerable()) {
     return false;
   }
@@ -38,7 +38,7 @@ static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     return data->IsWritable();
   }
-  return true;
+  return false;
 }
 
 static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
@@ -174,65 +174,92 @@ class JSArray : public JSObject {
 
       // define step
       Slot slot;
-      if ((detail::IsDefaultDescriptor(desc) ||
-           (index < old_len && detail::IsAbsentDescriptor(desc))) &&
+      const bool is_default_descriptor = detail::IsDefaultDescriptor(desc);
+      const bool is_absent_descriptor = detail::IsAbsentDescriptor(desc);
+      if ((is_default_descriptor ||
+           (index < old_len && is_absent_descriptor)) &&
            (dense_ || !JSObject::GetOwnPropertySlot(ctx, name, &slot))) {
-        JSVal target;
-        if (desc.IsDataDescriptor()) {
-          target = desc.AsDataDescriptor()->value();
-        } else {
-          target = JSUndefined;
-        }
         if (kMaxVectorSize > index) {
           if (vector_.size() > index) {
             if (vector_[index].IsEmpty()) {
-              vector_[index] = JSUndefined;
-            } else {
-              if (desc.IsDataDescriptor()) {
-                vector_[index] = target;
+              if (is_default_descriptor) {
+                if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                  vector_[index] = JSUndefined;
+                } else {
+                  vector_[index] = desc.AsDataDescriptor()->value();
+                }
+                return FixUpLength(old_len, index);
               }
+              // through 
+            } else {
+              if (desc.IsDataDescriptor() && !desc.AsDataDescriptor()->IsValueAbsent()) {
+                vector_[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
             }
           } else {
-            vector_.resize(index + 1, JSEmpty);
-            vector_[index] = target;
+            if (is_default_descriptor) {
+              vector_.resize(index + 1, JSEmpty);
+              if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                vector_[index] = JSUndefined;
+              } else {
+                vector_[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
+            }
           }
         } else {
           if (!map_) {
             map_ = new (GC) SparseArray();
-            (*map_)[index] = target;
+            if (is_default_descriptor) {
+              if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                (*map_)[index] = JSUndefined;
+              } else {
+                (*map_)[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
+            }
           } else {
-            if (desc.IsDataDescriptor()) {
-              (*map_)[index] = target;
+            SparseArray::iterator it = map_->find(index);
+            if (it != map_->end()) {
+              if (desc.IsDataDescriptor() && !desc.AsDataDescriptor()->IsValueAbsent()) {
+                (*map_)[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
+            } else {
+              if (is_default_descriptor) {
+                if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                  (*map_)[index] = JSUndefined;
+                } else {
+                  (*map_)[index] = desc.AsDataDescriptor()->value();
+                }
+                return FixUpLength(old_len, index);
+              }
+            }
+          }
+        }
+      }
+      const bool succeeded =
+          JSObject::DefineOwnProperty(ctx, name, desc,
+                                      false, IV_LV5_ERROR_WITH(e, false));
+      if (succeeded) {
+        dense_ = false;
+        if (kMaxVectorSize > index) {
+          if (vector_.size() > index) {
+            vector_[index] = JSEmpty;
+          }
+        } else {
+          if (map_) {
+            const SparseArray::iterator it = map_->find(index);
+            if (it != map_->end()) {
+              map_->erase(it);
             }
           }
         }
       } else {
-        const bool succeeded =
-            JSObject::DefineOwnProperty(
-                ctx, name,
-                desc, false, IV_LV5_ERROR_WITH(e, false));
-        if (succeeded) {
-          dense_ = false;
-          if (kMaxVectorSize > index) {
-            if (vector_.size() > index) {
-              vector_[index] = JSEmpty;
-            }
-          } else {
-            if (map_) {
-              const SparseArray::iterator it = map_->find(index);
-              if (it != map_->end()) {
-                map_->erase(it);
-              }
-            }
-          }
-        } else {
-          REJECT("define own property failed");
-        }
+        REJECT("define own property failed");
       }
-      if (index >= old_len) {
-        length_.set_value(index + 1);
-      }
-      return true;
+      return FixUpLength(old_len, index);
     }
     if (name == symbol::length()) {
       if (desc.IsDataDescriptor()) {
@@ -536,6 +563,13 @@ class JSArray : public JSObject {
     assert(kMaxVectorSize <= index);
     assert(map_);
     (*map_)[index] = val;
+  }
+
+  bool FixUpLength(uint32_t old_len, uint32_t index) {
+    if (index >= old_len) {
+      length_.set_value(index + 1);
+    }
+    return true;
   }
 
   JSVals vector_;
