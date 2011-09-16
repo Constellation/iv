@@ -275,7 +275,8 @@ class JSArray : public JSObject {
     const uint32_t index = symbol::GetIndexFromSymbol(name);
     const uint32_t old_len = length_.value();
     if (index >= old_len && !length_.IsWritable()) {
-      return false;
+      REJECT("adding an element to the array"
+             "which length is not writable is rejected");
     }
 
     // define step
