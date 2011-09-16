@@ -153,13 +153,6 @@ class PropertyDescriptor {
   inline void set_accessor_descriptor_getter(JSObject* set);
   inline void set_accessor_descriptor_setter(JSObject* set);
 
-  inline this_type& operator=(const this_type& rhs) {
-    if (this != &rhs) {
-      this_type(rhs).swap(*this);
-    }
-    return *this;
-  }
-
   static bool Equals(const this_type& lhs, const this_type& rhs);
 
   static bool IsAbsent(const PropertyDescriptor& desc);

@@ -83,13 +83,6 @@ class Error {
     return lhs.swap(rhs);
   }
 
-  this_type& operator=(const this_type& rhs) {
-    if (this != &rhs) {
-      this_type(rhs).swap(*this);
-    }
-    return *this;
-  }
-
  private:
   void this_type_does_not_support_comparisons() const { }
 
