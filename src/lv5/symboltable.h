@@ -5,18 +5,17 @@
 #include "detail/unordered_map.h"
 #include "ustring.h"
 #include "conversions.h"
-#include "thread.h"
 #include "lv5/symbol.h"
 namespace iv {
 namespace lv5 {
+
 class Context;
 class SymbolTable {
  public:
   typedef std::unordered_set<SymbolStringHolder> Set;
 
   SymbolTable()
-    : sync_(),
-      set_() {
+    : set_() {
     // insert default symbols
 #define V(sym) InsertDefaults(symbol::sym());
     IV_LV5_DEFAULT_SYMBOLS(V)
@@ -47,16 +46,13 @@ class SymbolTable {
     }
     const core::UString target(str.begin(), str.end());
     SymbolStringHolder holder = { &target };
-    {
-      core::thread::ScopedLock<core::thread::Mutex> lock(&sync_);
-      typename Set::const_iterator it = set_.find(holder);
-      if (it != set_.end()) {
-        return detail::MakeSymbol(it->symbolized_);
-      } else {
-        holder.symbolized_ = new core::UString(target);
-        set_.insert(holder);
-        return detail::MakeSymbol(holder.symbolized_);
-      }
+    typename Set::const_iterator it = set_.find(holder);
+    if (it != set_.end()) {
+      return detail::MakeSymbol(it->symbolized_);
+    } else {
+      holder.symbolized_ = new core::UString(target);
+      set_.insert(holder);
+      return detail::MakeSymbol(holder.symbolized_);
     }
   }
 
@@ -70,7 +66,6 @@ class SymbolTable {
     }
   }
 
-  core::thread::Mutex sync_;
   Set set_;
 };
 } }  // namespace iv::lv5
