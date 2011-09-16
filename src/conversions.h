@@ -477,7 +477,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
     }
   }
   return (prev < (uint32_t_max / 10) ||
-          ((prev == (uint32_t_max / 10)) && (ch < (uint32_t_max % 10))));
+          ((prev == (uint32_t_max / 10)) && (ch <= (uint32_t_max % 10))));
 }
 
 inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {

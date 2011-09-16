@@ -121,15 +121,45 @@ TEST(ConversionsCase, ConvertToUInt32) {
   ASSERT_FALSE(ConvertToUInt32("0x0100", &target));
   ASSERT_FALSE(ConvertToUInt32("d0100", &target));
   ASSERT_FALSE(ConvertToUInt32("20e", &target));
+
   ASSERT_TRUE(ConvertToUInt32("0", &target));
   ASSERT_EQ(0, target);
+
   ASSERT_TRUE(ConvertToUInt32("1", &target));
   ASSERT_EQ(1, target);
+
   ASSERT_TRUE(ConvertToUInt32("10", &target));
   ASSERT_EQ(10, target);
+
   ASSERT_TRUE(ConvertToUInt32("1000", &target));
   ASSERT_EQ(1000, target);
+
   ASSERT_FALSE(ConvertToUInt32("0100", &target));
+
+  // big pattern
+  ASSERT_TRUE(ConvertToUInt32("4294967290", &target));
+  ASSERT_EQ(4294967290UL, target);
+
+  ASSERT_TRUE(ConvertToUInt32("4294967291", &target));
+  ASSERT_EQ(4294967291UL, target);
+
+  ASSERT_TRUE(ConvertToUInt32("4294967292", &target));
+  ASSERT_EQ(4294967292UL, target);
+
+  ASSERT_TRUE(ConvertToUInt32("4294967293", &target));
+  ASSERT_EQ(4294967293UL, target);
+
+  ASSERT_TRUE(ConvertToUInt32("4294967294", &target));
+  ASSERT_EQ(4294967294UL, target);
+
+  ASSERT_TRUE(ConvertToUInt32("4294967295", &target));
+  ASSERT_EQ(4294967295UL, target);
+
+  ASSERT_FALSE(ConvertToUInt32("4294967296", &target));
+  ASSERT_FALSE(ConvertToUInt32("4294967297", &target));
+  ASSERT_FALSE(ConvertToUInt32("4294967298", &target));
+  ASSERT_FALSE(ConvertToUInt32("4294967299", &target));
+  ASSERT_FALSE(ConvertToUInt32("4294967300", &target));
 }
 
 TEST(ConversionsCase, BigRadix) {
