@@ -51,8 +51,8 @@ class BasicAstFactory {
                             const Range& range,
                             std::size_t begin,
                             std::size_t end) {
-    return new (static_cast<Factory*>(this))
-        Identifier(range, static_cast<Factory*>(this));
+    const SpaceUString* str = NewUString(range);
+    return new (static_cast<Factory*>(this)) Identifier(str);
   }
 
   NumberLiteral* NewReducedNumberLiteral(const double& val) {
@@ -67,8 +67,7 @@ class BasicAstFactory {
 
   StringLiteral* NewStringLiteral(const std::vector<uint16_t>& buffer,
                                   std::size_t begin, std::size_t end) {
-    return new (static_cast<Factory*>(this))
-        StringLiteral(buffer, static_cast<Factory*>(this));
+    return new (static_cast<Factory*>(this)) StringLiteral(NewString(buffer));
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uint16_t>& content,
@@ -76,7 +75,7 @@ class BasicAstFactory {
                                   std::size_t begin,
                                   std::size_t end) {
     return new (static_cast<Factory*>(this))
-        RegExpLiteral(content, flags, static_cast<Factory*>(this));
+        RegExpLiteral(NewString(content), NewString(flags));
   }
 
   FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
@@ -122,6 +121,15 @@ class BasicAstFactory {
     typedef typename SpaceVector<Factory, T>::type Vector;
     return new (static_cast<Factory*>(this)->New(sizeof(Vector)))
         Vector(typename Vector::allocator_type(static_cast<Factory*>(this)));
+  }
+
+  template<typename Range>
+  const SpaceUString* NewString(const Range& range) {
+    return new (static_cast<Factory*>(this)->New(sizeof(SpaceUString)))
+        SpaceUString(
+            range.begin(),
+            range.end(),
+            typename SpaceUString::allocator_type(static_cast<Factory*>(this)));
   }
 
   Scope* NewScope(typename FunctionLiteral::DeclType type) {

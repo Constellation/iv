@@ -33,7 +33,7 @@ class AstFactory
   Identifier* NewIdentifier(core::Token::Type token,
                             const Range& range,
                             std::size_t begin, std::size_t end) {
-    Identifier* ident = new(this)Identifier(range, this);
+    Identifier* ident = new(this)Identifier(NewString(range));
     ident->set_symbol(context::Intern(ctx_, ident->value()));
     return ident;
   }
@@ -43,7 +43,8 @@ class AstFactory
       const std::vector<uint16_t>& flags,
       std::size_t begin,
       std::size_t end) {
-    RegExpLiteral* expr = new(this)RegExpLiteral(content, flags, this);
+    RegExpLiteral* expr =
+        new(this)RegExpLiteral(NewString(content), NewString(flags));
     expr->Initialize(ctx_);
     if (expr->IsValid()) {
       regexps_.push_back(expr);

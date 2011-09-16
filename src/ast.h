@@ -951,21 +951,16 @@ template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  StringLiteral(const std::vector<uint16_t>& buffer,
-                Factory* factory)
-    : value_(buffer.data(),
-             buffer.size(),
-             typename value_type::allocator_type(factory)) {
+  StringLiteral(const value_type* val)
+    : value_(val) {
   }
-
   inline const value_type& value() const {
-    return value_;
+    return *value_;
   }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
   ACCEPT_EXPRESSION_VISITOR
-
  private:
-  value_type value_;
+  const value_type* value_;
 };
 
 // NumberLiteral
@@ -999,20 +994,15 @@ template<typename Factory>
 class Identifier : public IdentifierBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  template<typename Range>
-  Identifier(const Range& range, Factory* factory)
-    : value_(range.begin(),
-             range.end(),
-             typename value_type::allocator_type(factory)) {
-  }
+  Identifier(const value_type* val) : value_(val) { }
   inline const value_type& value() const {
-    return value_;
+    return *value_;
   }
   inline bool IsValidLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
   ACCEPT_EXPRESSION_VISITOR
  protected:
-  value_type value_;
+  const value_type* value_;
 };
 
 template<typename Factory>
@@ -1117,22 +1107,16 @@ template<typename Factory>
 class RegExpLiteral : public RegExpLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-
-  RegExpLiteral(const std::vector<uint16_t>& buffer,
-                const std::vector<uint16_t>& flags,
-                Factory* factory)
-    : value_(buffer.data(),
-             buffer.size(), typename value_type::allocator_type(factory)),
-      flags_(flags.data(),
-             flags.size(), typename value_type::allocator_type(factory)) {
-  }
-  inline const value_type& value() const { return value_; }
-  inline const value_type& flags() const { return flags_; }
+  RegExpLiteral(const value_type* buffer, const value_type* flags)
+    : value_(buffer),
+      flags_(flags) { }
+  inline const value_type& value() const { return *value_; }
+  inline const value_type& flags() const { return *flags_; }
   DECLARE_DERIVED_NODE_TYPE(RegExpLiteral)
   ACCEPT_EXPRESSION_VISITOR
  protected:
-  value_type value_;
-  value_type flags_;
+  const value_type* value_;
+  const value_type* flags_;
 };
 
 // ArrayLiteral
