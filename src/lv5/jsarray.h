@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <iostream>
 #include "conversions.h"
 #include "lv5/error_check.h"
 #include "lv5/gc_template.h"
@@ -184,7 +185,13 @@ class JSArray : public JSObject {
         }
         if (kMaxVectorSize > index) {
           if (vector_.size() > index) {
-            vector_[index] = target;
+            if (vector_[index].IsEmpty()) {
+              vector_[index] = JSUndefined;
+            } else {
+              if (desc.IsDataDescriptor()) {
+                vector_[index] = target;
+              }
+            }
           } else {
             vector_.resize(index + 1, JSEmpty);
             vector_[index] = target;
@@ -192,8 +199,12 @@ class JSArray : public JSObject {
         } else {
           if (!map_) {
             map_ = new (GC) SparseArray();
+            (*map_)[index] = target;
+          } else {
+            if (desc.IsDataDescriptor()) {
+              (*map_)[index] = target;
+            }
           }
-          (*map_)[index] = target;
         }
       } else {
         const bool succeeded =
