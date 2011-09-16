@@ -13,7 +13,7 @@
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
-#include "lv5/railgun.h"
+#include "lv5/railgun/railgun.h"
 #include "lv5/railgun/command.h"
 namespace iv {
 namespace lv5 {

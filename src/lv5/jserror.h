@@ -43,7 +43,7 @@ class JSError : public JSObject {
     return &cls;
   }
 
-  static inline JSVal Detail(Context* ctx, const Error* error);
+  static inline JSVal Detail(Context* ctx, const Error* e);
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const error = new JSError(ctx, code, str);
@@ -165,29 +165,29 @@ class JSURIError : public JSError {
   }
 };
 
-JSVal JSError::Detail(Context* ctx, const Error* error) {
-  assert(error && (error->code() != Error::Normal));
-  switch (error->code()) {
+JSVal JSError::Detail(Context* ctx, const Error* e) {
+  assert(e&& (e->code() != Error::Normal));
+  switch (e->code()) {
     case Error::Eval:
       return JSEvalError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::Range:
       return JSRangeError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::Reference:
       return JSReferenceError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::Syntax:
       return JSSyntaxError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::Type:
       return JSTypeError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::URI:
       return JSURIError::New(
-          ctx, JSString::New(ctx, error->detail()));
+          ctx, JSString::New(ctx, e->detail()));
     case Error::User:
-      return error->value();
+      return e->value();
     default:
       UNREACHABLE();
       return JSUndefined;  // make compiler happy

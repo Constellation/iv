@@ -13,7 +13,7 @@
 #include "lv5/jsval.h"
 #include "lv5/jsstring.h"
 #include "lv5/command.h"
-#include "lv5/teleporter.h"
+#include "lv5/teleporter/teleporter.h"
 namespace iv {
 namespace lv5 {
 namespace teleporter {

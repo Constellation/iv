@@ -13,39 +13,30 @@ namespace runtime {
 
 // section 15.6.1.1 Boolean(value)
 // section 15.6.2.1 new Boolean(value)
-inline JSVal BooleanConstructor(const Arguments& args, Error* error) {
+inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     bool res = false;
-    if (args.size() > 0) {
-      res = args[0].ToBoolean(IV_LV5_ERROR(error));
+    if (!args.empty()) {
+      res = args[0].ToBoolean(IV_LV5_ERROR(e));
     }
     return JSBooleanObject::New(args.ctx(), res);
   } else {
-    if (args.size() > 0) {
-      const bool res = args[0].ToBoolean(IV_LV5_ERROR(error));
-      if (res) {
-        return JSTrue;
-      } else {
-        return JSFalse;
-      }
-    } else {
-      return JSFalse;
-    }
+    return JSVal::Bool(!args.empty() && args.front().ToBoolean(e));
   }
 }
 
 // section 15.6.4.2 Boolean.prototype.toString()
-inline JSVal BooleanToString(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, error);
+inline JSVal BooleanToString(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, e);
   const JSVal& obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Boolean>()) {
       b = static_cast<JSBooleanObject*>(obj.object())->value();
     } else {
-      error->Report(Error::Type,
-                    "Boolean.prototype.toString is not generic function");
-      return JSUndefined;
+      e->Report(Error::Type,
+                "Boolean.prototype.toString is not generic function");
+      return JSEmpty;
     }
   } else {
     b = obj.boolean();
@@ -54,22 +45,20 @@ inline JSVal BooleanToString(const Arguments& args, Error* error) {
 }
 
 // section 15.6.4.3 Boolean.prototype.valueOf()
-inline JSVal BooleanValueOf(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, error);
+inline JSVal BooleanValueOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, e);
   const JSVal& obj = args.this_binding();
-  bool b;
   if (!obj.IsBoolean()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Boolean>()) {
-      b = static_cast<JSBooleanObject*>(obj.object())->value();
+      return JSVal::Bool(static_cast<JSBooleanObject*>(obj.object())->value());
     } else {
-      error->Report(Error::Type,
-                    "Boolean.prototype.valueOf is not generic function");
-      return JSUndefined;
+      e->Report(Error::Type,
+                "Boolean.prototype.valueOf is not generic function");
+      return JSEmpty;
     }
   } else {
-    b = obj.boolean();
+    return JSVal::Bool(obj.boolean());
   }
-  return JSVal::Bool(b);
 }
 
 } } }  // namespace iv::lv5::runtime

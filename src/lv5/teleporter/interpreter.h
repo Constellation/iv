@@ -21,6 +21,7 @@
 #include "lv5/jsarray.h"
 #include "lv5/context.h"
 #include "lv5/internal.h"
+#include "lv5/error_check.h"
 #include "lv5/teleporter/interpreter_fwd.h"
 #include "lv5/teleporter/context.h"
 #include "lv5/teleporter/utility.h"
@@ -28,13 +29,7 @@ namespace iv {
 namespace lv5 {
 namespace teleporter {
 
-#define CHECK  ctx_->error());\
-  if (ctx_->IsError()) {\
-    return;\
-  }\
-  ((void)0
-#define DUMMY )  // to make indentation work
-#undef DUMMY
+#define CHECK IV_LV5_ERROR_VOID(ctx_->error())
 
 #define CHECK_IN_STMT  ctx_->error());\
   if (ctx_->IsError()) {\
@@ -43,15 +38,6 @@ namespace teleporter {
   ((void)0
 #define DUMMY )  // to make indentation work
 #undef DUMMY
-
-#define CHECK_TO_WITH(error, val) error);\
-  if (*error) {\
-    return val;\
-  }\
-  ((void)0
-#define DUMMY )  // to make indentation work
-#undef DUMMY
-
 
 #define RETURN_STMT(type, val, target)\
   do {\
@@ -64,7 +50,6 @@ namespace teleporter {
   do {\
     return;\
   } while (0)
-
 
 #define EVAL(node)\
   node->Accept(this);\
@@ -80,7 +65,7 @@ namespace teleporter {
 
 // section 13.2.1 [[Call]]
 void Interpreter::Invoke(JSCodeFunction* code,
-                         const Arguments& args, Error* error) {
+                         const Arguments& args, Error* e) {
   // step 1
   JSVal this_value = args.this_binding();
   if (!code->IsStrict()) {
@@ -675,7 +660,6 @@ void Interpreter::Visit(const TryStatement* stmt) {
     }
   }
 
-  // TODO(Constellation) fix error + THROW mode
   if (const core::Maybe<const Block> block = stmt->finally_block()) {
     const Context::Mode mode = ctx_->mode();
     JSVal value = ctx_->ret();
@@ -1452,7 +1436,7 @@ void Interpreter::Visit(const CaseClause* dummy) {
 
 
 // section 8.7.1 GetValue
-JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
+JSVal Interpreter::GetValue(const JSVal& val, Error* e) {
   if (!val.IsReference()) {
     return val;
   }
@@ -1463,16 +1447,13 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
     builder.Append('"');
     builder.Append(symbol::GetSymbolString(ref->GetReferencedName()));
     builder.Append("\" not defined");
-    error->Report(Error::Reference, builder.BuildUStringPiece());
-    return JSUndefined;
+    e->Report(Error::Reference, builder.BuildUStringPiece());
+    return JSEmpty;
   }
   if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       // section 8.7.1 special [[Get]]
-      const JSObject* const o = base.ToObject(ctx_, error);
-      if (*error) {
-        return JSUndefined;
-      }
+      const JSObject* const o = base.ToObject(ctx_, IV_LV5_ERROR(e));
       const PropertyDescriptor desc = o->GetProperty(ctx_,
                                                      ref->GetReferencedName());
       if (desc.IsEmpty()) {
@@ -1484,116 +1465,89 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* error) {
         assert(desc.IsAccessorDescriptor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
-          ScopedArguments a(ctx_, 0, error);
-          if (*error) {
-            return JSUndefined;
-          }
-          const JSVal res = ac->get()->AsCallable()->Call(&a,
-                                                          base, error);
-          if (*error) {
-            return JSUndefined;
-          }
+          ScopedArguments a(ctx_, 0, IV_LV5_ERROR(e));
+          const JSVal res =
+              ac->get()->AsCallable()->Call(&a, base, IV_LV5_ERROR(e));
           return res;
         } else {
           return JSUndefined;
         }
       }
     } else {
-      const JSVal res = base.object()->Get(ctx_,
-                                           ref->GetReferencedName(), error);
-      if (*error) {
-        return JSUndefined;
-      }
+      const JSVal res =
+          base.object()->Get(ctx_, ref->GetReferencedName(), IV_LV5_ERROR(e));
       return res;
     }
     return JSUndefined;
   } else {
     const JSVal res = base.environment()->GetBindingValue(
-        ctx_, ref->GetReferencedName(), ref->IsStrictReference(), error);
-    if (*error) {
-      return JSUndefined;
-    }
+        ctx_, ref->GetReferencedName(),
+        ref->IsStrictReference(), IV_LV5_ERROR(e));
     return res;
   }
 }
 
-
-#define ERRCHECK  error);\
-  if (*error) {\
-    return;\
-  }\
-  ((void)0
-
-
 // section 8.7.2 PutValue
-void Interpreter::PutValue(const JSVal& val, const JSVal& w,
-                           Error* error) {
+void Interpreter::PutValue(const JSVal& val, const JSVal& w, Error* e) {
   if (!val.IsReference()) {
-    error->Report(Error::Reference,
-                  "target is not reference");
+    e->Report(Error::Reference,
+              "target is not reference");
     return;
   }
   const JSReference* const ref = val.reference();
   const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
     if (ref->IsStrictReference()) {
-      error->Report(Error::Reference,
-                    "putting to unresolvable reference "
-                    "not allowed in strict reference");
+      e->Report(Error::Reference,
+                "putting to unresolvable reference "
+                "not allowed in strict reference");
       return;
     }
     ctx_->global_obj()->Put(ctx_, ref->GetReferencedName(),
-                            w, false, ERRCHECK);
+                            w, false, IV_LV5_ERROR_VOID(e));
   } else if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
       const Symbol sym = ref->GetReferencedName();
       const bool th = ref->IsStrictReference();
-      JSObject* const o = base.ToObject(ctx_, ERRCHECK);
+      JSObject* const o = base.ToObject(ctx_, IV_LV5_ERROR_VOID(e));
       if (!o->CanPut(ctx_, sym)) {
         if (th) {
-          error->Report(Error::Type, "cannot put value to object");
+          e->Report(Error::Type, "cannot put value to object");
         }
         return;
       }
       const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, sym);
       if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
         if (th) {
-          // TODO(Constellation) add symbol name
-          error->Report(Error::Type,
-                        "value to symbol defined and not data descriptor");
+          e->Report(Error::Type,
+                    "value to symbol defined and not data descriptor");
         }
         return;
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
       if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-        ScopedArguments a(ctx_, 1, error);
+        ScopedArguments a(ctx_, 1, IV_LV5_ERROR_VOID(e));
         a[0] = w;
-        if (*error) {
-          return;
-        }
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, ERRCHECK);
+        ac->set()->AsCallable()->Call(&a, base, IV_LV5_ERROR_VOID(e));
       } else {
         if (th) {
-          error->Report(Error::Type, "value to symbol in transient object");
+          e->Report(Error::Type, "value to symbol in transient object");
         }
       }
       return;
     } else {
       base.object()->Put(ctx_, ref->GetReferencedName(), w,
-                         ref->IsStrictReference(), ERRCHECK);
+                         ref->IsStrictReference(), IV_LV5_ERROR_VOID(e));
     }
   } else {
     assert(base.environment());
     base.environment()->SetMutableBinding(ctx_,
                                           ref->GetReferencedName(), w,
-                                          ref->IsStrictReference(), ERRCHECK);
+                                          ref->IsStrictReference(), IV_LV5_ERROR_VOID(e));
   }
 }
-
-
-#undef ERRCHECK
 
 JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
                                                  Symbol name, bool strict) {
@@ -1609,10 +1563,11 @@ JSReference* Interpreter::GetIdentifierReference(JSEnv* lex,
 }
 
 #undef CHECK
-#undef ERR_CHECK
+#undef CHECK_IN_STMT
 #undef RETURN_STMT
 #undef ABRUPT
-
+#undef EVAL
+#undef EVAL_IN_STMT
 
 } } }  // namespace iv::lv5::teleporter
 #endif  // IV_LV5_TELEPORTER_INTERPRETER_H_

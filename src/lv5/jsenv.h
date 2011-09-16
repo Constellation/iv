@@ -100,7 +100,6 @@ class JSDeclEnv : public JSEnv {
       return true;
     }
     if (record_[it->second].attribute & DELETABLE) {
-      // TODO(Constellation) record deleted counts?
       record_[it->second] = Entry();
       offsets_.erase(it);
       return true;

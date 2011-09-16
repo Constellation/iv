@@ -115,29 +115,32 @@ PropertyDescriptor PropertyDescriptor::SetDefault(
   return result;
 }
 
-
-bool PropertyDescriptor::Equals(const PropertyDescriptor& lhs,
-                                const PropertyDescriptor& rhs) {
-  if (lhs.IsConfigurableAbsent() || lhs.IsConfigurable() != rhs.IsConfigurable()) {
+// if desc merged to current and has no effect, return true
+bool PropertyDescriptor::MergeWithNoEffect(const PropertyDescriptor& desc) const {
+  if (!desc.IsConfigurableAbsent() && desc.IsConfigurable() != IsConfigurable()) {
     return false;
   }
-  if (!lhs.IsEnumerableAbsent() || lhs.IsEnumerable() != rhs.IsEnumerable()) {
+  if (!desc.IsEnumerableAbsent() && desc.IsEnumerable() != IsEnumerable()) {
     return false;
   }
-  if (lhs.type() != rhs.type()) {
+  if (desc.type() != type()) {
     return false;
   }
-  if (lhs.IsDataDescriptor()) {
-    if (!lhs.AsDataDescriptor()->IsWritableAbsent() ||
-        lhs.AsDataDescriptor()->IsWritable() != rhs.AsDataDescriptor()->IsWritable()) {
+  if (desc.IsDataDescriptor()) {
+    if (!desc.AsDataDescriptor()->IsWritableAbsent() &&
+        desc.AsDataDescriptor()->IsWritable() != AsDataDescriptor()->IsWritable()) {
       return false;
     }
-    return JSVal::SameValue(lhs.value_.data_, rhs.value_.data_);
-  } else if (lhs.IsAccessorDescriptor()) {
-    return lhs.value_.accessor_.getter_ == rhs.value_.accessor_.getter_ &&
-        lhs.value_.accessor_.setter_ == rhs.value_.accessor_.setter_;
+    if (desc.AsDataDescriptor()->IsValueAbsent()) {
+      return true;
+    } else {
+      return JSVal::SameValue(desc.value_.data_, value_.data_);
+    }
+  } else if (desc.IsAccessorDescriptor()) {
+    return desc.value_.accessor_.getter_ == value_.accessor_.getter_ &&
+        desc.value_.accessor_.setter_ == value_.accessor_.setter_;
   } else {
-    assert(lhs.IsGenericDescriptor());
+    assert(desc.IsGenericDescriptor());
     return true;
   }
 }

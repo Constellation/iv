@@ -98,27 +98,33 @@ class Arguments : private core::Noncopyable<> {
   }
 
   reference operator[](size_type n) {
+    assert(size() > n);
     return stack_[n + 1];
   }
 
   const_reference operator[](size_type n) const {
+    assert(size() > n);
     return stack_[n + 1];
   }
 
   reference front() {
+    assert(!empty());
     return (*this)[0];
   }
 
   const_reference front() const {
+    assert(!empty());
     return (*this)[0];
   }
 
   reference back() {
-    return (*this)[size_ - 1];  // no check
+    assert(!empty());
+    return (*this)[size_ - 1];
   }
 
   const_reference back() const {
-    return (*this)[size_ - 1];  // no check
+    assert(!empty());
+    return (*this)[size_ - 1];
   }
 
   JSVal At(size_type n) const {

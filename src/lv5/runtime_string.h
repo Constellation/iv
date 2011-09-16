@@ -27,15 +27,15 @@ namespace runtime {
 namespace detail {
 
 static inline JSVal StringToStringValueOfImpl(const Arguments& args,
-                                              Error* error,
-                                              const char* msg) {
+                                              const char* msg,
+                                              Error* e) {
   const JSVal& obj = args.this_binding();
   if (!obj.IsString()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::String>()) {
       return static_cast<JSStringObject*>(obj.object())->value();
     } else {
-      error->Report(Error::Type, msg);
-      return JSUndefined;
+      e->Report(Error::Type, msg);
+      return JSEmpty;
     }
   } else {
     return obj.string();
@@ -55,10 +55,9 @@ inline int64_t SplitMatch(const JSString::Fiber* str,
   if (q + rs > s) {
     return -1;
   }
-  if (JSString::Fiber::traits_type::compare(
-          rhs->data(),
-          str->data() + q,
-          rs) != 0) {
+  if (JSString::Fiber::traits_type::compare(rhs->data(),
+                                            str->data() + q,
+                                            rs) != 0) {
     return -1;
   }
   return q + rs;
@@ -143,7 +142,6 @@ struct Replace {
 template<typename T>
 class Replacer : private core::Noncopyable<> {
  public:
-
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
@@ -443,18 +441,18 @@ inline void ReplaceOnce(Builder* builder,
 }  // namespace detail
 
 // section 15.5.1
-inline JSVal StringConstructor(const Arguments& args, Error* error) {
+inline JSVal StringConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     JSString* str;
-    if (args.size() > 0) {
-      str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+    if (!args.empty()) {
+      str = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
     } else {
       str = JSString::NewEmptyString(args.ctx());
     }
     return JSStringObject::New(args.ctx(), str);
   } else {
-    if (args.size() > 0) {
-      return args[0].ToString(args.ctx(), error);
+    if (!args.empty()) {
+      return args.front().ToString(args.ctx(), e);
     } else {
       return JSString::NewEmptyString(args.ctx());
     }
@@ -475,30 +473,28 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
 }
 
 // section 15.5.4.2 String.prototype.toString()
-inline JSVal StringToString(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toString", args, error);
+inline JSVal StringToString(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toString", args, e);
   return detail::StringToStringValueOfImpl(
-      args, error,
-      "String.prototype.toString is not generic function");
+      args, "String.prototype.toString is not generic function", e);
 }
 
 // section 15.5.4.3 String.prototype.valueOf()
-inline JSVal StringValueOf(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.valueOf", args, error);
+inline JSVal StringValueOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.valueOf", args, e);
   return detail::StringToStringValueOfImpl(
-      args, error,
-      "String.prototype.valueOf is not generic function");
+      args, "String.prototype.valueOf is not generic function", e);
 }
 
 // section 15.5.4.4 String.prototype.charAt(pos)
-inline JSVal StringCharAt(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charAt", args, error);
+inline JSVal StringCharAt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charAt", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   double position;
-  if (args.size() > 0) {
-    position = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    position = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
     position = core::DoubleToInteger(position);
   } else {
     // undefined -> NaN -> 0
@@ -513,14 +509,14 @@ inline JSVal StringCharAt(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
-inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, error);
+inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   double position;
-  if (args.size() > 0) {
-    position = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    position = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
     position = core::DoubleToInteger(position);
   } else {
     // undefined -> NaN -> 0
@@ -534,34 +530,34 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
-inline JSVal StringConcat(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.concat", args, error);
+inline JSVal StringConcat(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.concat", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   StringBuilder builder;
   builder.Append(*str);
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
-    const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(error));
+    const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(e));
     builder.Append(*r);
   }
   return builder.Build(args.ctx());
 }
 
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
-inline JSVal StringIndexOf(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, error);
+inline JSVal StringIndexOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString* search_str;
   // undefined -> NaN -> 0
   double position = 0;
-  if (args.size() > 0) {
-    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    search_str = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
     if (args.size() > 1) {
-      position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+      position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
       position = core::DoubleToInteger(position);
     }
   } else {
@@ -577,18 +573,18 @@ inline JSVal StringIndexOf(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
-inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, error);
+inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString* search_str;
   std::size_t target = str->size();
-  if (args.size() > 0) {
-    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
     // undefined -> NaN
     if (args.size() > 1) {
-      const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(error));
+      const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
       if (!core::IsNaN(position)) {
         const double integer = core::DoubleToInteger(position);
         if (integer < 0) {
@@ -609,14 +605,14 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.9 String.prototype.localeCompare(that)
-inline JSVal StringLocaleCompare(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, error);
+inline JSVal StringLocaleCompare(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString* that;
-  if (args.size() > 0) {
-    that = args[0].ToString(args.ctx(), IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    that = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
     that = JSString::NewAsciiString(args.ctx(), "undefined");
   }
@@ -778,17 +774,17 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
 }
 
 // section 15.5.4.13 String.prototype.slice(start, end)
-inline JSVal StringSlice(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.slice", args, error);
+inline JSVal StringSlice(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.slice", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
+  const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   const uint32_t len = fiber->size();
   uint32_t start;
-  if (args.size() > 0) {
-    double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    double relative_start = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
     relative_start = core::DoubleToInteger(relative_start);
     if (relative_start < 0) {
       start = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
@@ -803,7 +799,7 @@ inline JSVal StringSlice(const Arguments& args, Error* error) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double relative_end = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
+      double relative_end = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
       relative_end = core::DoubleToInteger(relative_end);
       if (relative_end < 0) {
         end = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
@@ -972,17 +968,17 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 }
 
 // section 15.5.4.15 String.prototype.substring(start, end)
-inline JSVal StringSubstring(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substring", args, error);
+inline JSVal StringSubstring(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substring", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
-  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(error));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   const uint32_t len = fiber->size();
   uint32_t start;
-  if (args.size() > 0) {
-    double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(error));
+  if (!args.empty()) {
+    double integer = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
     integer = core::DoubleToInteger(integer);
     start = core::DoubleToUInt32(
         std::min<double>(std::max<double>(integer, 0.0), len));
@@ -995,7 +991,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(error));
+      double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
       integer = core::DoubleToInteger(integer);
       end = core::DoubleToUInt32(
           std::min<double>(std::max<double>(integer, 0.0), len));
@@ -1005,17 +1001,15 @@ inline JSVal StringSubstring(const Arguments& args, Error* error) {
   }
   const uint32_t from = std::min<uint32_t>(start, end);
   const uint32_t to = std::max<uint32_t>(start, end);
-  return JSString::New(ctx,
-                       fiber->begin() + from,
-                       fiber->begin() + to);
+  return JSString::New(ctx, fiber->begin() + from, fiber->begin() + to);
 }
 
 // section 15.5.4.16 String.prototype.toLowerCase()
-inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, error);
+inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   StringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -1026,11 +1020,11 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.17 String.prototype.toLocaleLowerCase()
-inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, error);
+inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   StringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -1041,11 +1035,11 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.18 String.prototype.toUpperCase()
-inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, error);
+inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   StringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -1056,11 +1050,11 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.19 String.prototype.toLocaleUpperCase()
-inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, error);
+inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   StringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -1071,11 +1065,11 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* error) {
 }
 
 // section 15.5.4.20 String.prototype.trim()
-inline JSVal StringTrim(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, error);
+inline JSVal StringTrim(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, e);
   const JSVal& val = args.this_binding();
-  val.CheckObjectCoercible(IV_LV5_ERROR(error));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(error));
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
   JSString::Fiber::const_iterator lit = fiber->begin();
   const JSString::Fiber::const_iterator last = fiber->end();
@@ -1112,8 +1106,8 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const double len = fiber->size();
 
   double start;
-  if (args.size() > 0) {
-    double integer = args[0].ToNumber(ctx, IV_LV5_ERROR(e));
+  if (!args.empty()) {
+    const double integer = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
     start = core::DoubleToInteger(integer);
   } else {
     start = 0.0;

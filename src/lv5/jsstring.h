@@ -8,10 +8,10 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-static inline uint32_t SplitFiber(Context* ctx,
-                                  JSArray* ary,
-                                  const JSString::Fiber* fiber,
-                                  uint32_t index, uint32_t limit, Error* e) {
+inline uint32_t SplitFiber(Context* ctx,
+                           JSArray* ary,
+                           const JSString::Fiber* fiber,
+                           uint32_t index, uint32_t limit, Error* e) {
   for (JSString::Fiber::const_iterator it = fiber->begin(), last = fiber->end();
        it != last && index != limit; ++it, ++index) {
     ary->DefineOwnProperty(
@@ -26,13 +26,13 @@ static inline uint32_t SplitFiber(Context* ctx,
   return index;
 }
 
-static inline uint32_t SplitFiberWithOneChar(Context* ctx,
-                                             JSArray* ary,
-                                             uint16_t ch,
-                                             StringBuilder* builder,
-                                             const JSString::Fiber* fiber,
-                                             uint32_t index,
-                                             uint32_t limit, Error* e) {
+inline uint32_t SplitFiberWithOneChar(Context* ctx,
+                                      JSArray* ary,
+                                      uint16_t ch,
+                                      StringBuilder* builder,
+                                      const JSString::Fiber* fiber,
+                                      uint32_t index,
+                                      uint32_t limit, Error* e) {
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     if (*it != ch) {

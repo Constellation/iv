@@ -24,10 +24,10 @@
 #include "lv5/command.h"
 #include "lv5/fpu.h"
 #include "lv5/program.h"
-#include "lv5/railgun.h"
+#include "lv5/railgun/railgun.h"
 #include "lv5/railgun/command.h"
 #include "lv5/railgun/interactive.h"
-#include "lv5/teleporter.h"
+#include "lv5/teleporter/teleporter.h"
 #include "lv5/teleporter/interactive.h"
 
 namespace {

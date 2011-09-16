@@ -33,7 +33,7 @@ class JSArguments {
 class JSNormalArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
-  typedef GCHashMap<Symbol, Symbol>::type Index2Param;
+  typedef GCVector<Symbol>::type Indice;
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
     : JSObject(Map::NewUniqueMap(ctx)),
       env_(env),
@@ -61,20 +61,24 @@ class JSNormalArguments : public JSObject {
   }
 
   JSVal Get(Context* ctx, Symbol name, Error* e) {
-    const Index2Param::const_iterator it = mapping_.find(name);
-    if (it != mapping_.end()) {
-      return env_->GetBindingValue(ctx, it->second, true, e);
-    } else {
-      const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
-      if (name == symbol::caller() &&
-          v.IsCallable() &&
-          v.object()->AsCallable()->IsStrict()) {
-        e->Report(Error::Type,
-                  "access to strict function \"caller\" not allowed");
-        return JSUndefined;
+    if (symbol::IsArrayIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      if (mapping_.size() > index) {
+        const Symbol mapped = mapping_[index];
+        if (mapped != symbol::kDummySymbol) {
+          return env_->GetBindingValue(ctx, mapped, true, e);
+        }
       }
-      return v;
     }
+    const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
+    if (name == symbol::caller() &&
+        v.IsCallable() &&
+        v.object()->AsCallable()->IsStrict()) {
+      e->Report(Error::Type,
+                "access to strict function \"caller\" not allowed");
+      return JSUndefined;
+    }
+    return v;
   }
 
   bool GetOwnPropertySlot(Context* ctx,
@@ -82,13 +86,18 @@ class JSNormalArguments : public JSObject {
     if (!JSObject::GetOwnPropertySlot(ctx, name, slot)) {
       return false;
     }
-    const Index2Param::const_iterator it = mapping_.find(name);
-    if (it != mapping_.end()) {
-      const JSVal val = env_->GetBindingValue(it->second);
-      slot->set_descriptor(
-          DataDescriptor(val,
-                         slot->desc().attrs() & PropertyDescriptor::kDataAttrField));
-      return true;
+    if (symbol::IsArrayIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      if (mapping_.size() > index) {
+        const Symbol mapped = mapping_[index];
+        if (mapped != symbol::kDummySymbol) {
+          const JSVal val = env_->GetBindingValue(mapped);
+          slot->set_descriptor(
+              DataDescriptor(val,
+                             slot->desc().attrs() & PropertyDescriptor::kDataAttrField));
+          return true;
+        }
+      }
     }
     return true;
   }
@@ -148,23 +157,24 @@ class JSNormalArguments : public JSObject {
       }
       return false;
     }
-    const Index2Param::const_iterator it = mapping_.find(name);
-    if (it != mapping_.end()) {
-      if (desc.IsAccessorDescriptor()) {
-        mapping_.erase(it);
-      } else {
-        if (desc.IsDataDescriptor()) {
-          const DataDescriptor* const data = desc.AsDataDescriptor();
-          if (!data->IsValueAbsent()) {
-            env_->SetMutableBinding(ctx,
-                                    it->second, data->value(),
-                                    th, e);
-            if (*e) {
-              return false;
+    if (symbol::IsArrayIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      if (mapping_.size() > index) {
+        const Symbol mapped = mapping_[index];
+        if (mapped != symbol::kDummySymbol) {
+          if (desc.IsAccessorDescriptor()) {
+            mapping_[index] = symbol::kDummySymbol;
+          } else {
+            if (desc.IsDataDescriptor()) {
+              const DataDescriptor* const data = desc.AsDataDescriptor();
+              if (!data->IsValueAbsent()) {
+                env_->SetMutableBinding(ctx, mapped, data->value(),
+                                        th, IV_LV5_ERROR_WITH(e, false));
+              }
+              if (!data->IsWritableAbsent() && !data->IsWritable()) {
+                mapping_[index] = symbol::kDummySymbol;
+              }
             }
-          }
-          if (!data->IsWritableAbsent() && !data->IsWritable()) {
-            mapping_.erase(it);
           }
         }
       }
@@ -173,15 +183,18 @@ class JSNormalArguments : public JSObject {
   }
 
   bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
-    const bool result = JSObject::Delete(ctx, name, th, e);
-    if (*e) {
-      return result;
-    }
+    const bool result = JSObject::Delete(ctx, name, th,
+                                         IV_LV5_ERROR_WITH(e, result));
     if (result) {
-      const Index2Param::const_iterator it = mapping_.find(name);
-      if (it != mapping_.end()) {
-        mapping_.erase(it);
-        return true;
+      if (symbol::IsArrayIndexSymbol(name)) {
+        const uint32_t index = symbol::GetIndexFromSymbol(name);
+        if (mapping_.size() > index) {
+          const Symbol mapped = mapping_[index];
+          if (mapped != symbol::kDummySymbol) {
+            mapping_[index] = symbol::kDummySymbol;
+            return true;
+          }
+        }
       }
     }
     return result;
@@ -196,13 +209,12 @@ class JSNormalArguments : public JSObject {
                            ArgsReverseIter it, ArgsReverseIter last,
                            uint32_t len) {
     uint32_t index = len - 1;
-    const std::size_t names_len = names.size();
+    const uint32_t names_len = names.size();
+    obj->mapping_.resize((std::min)(len, names_len), symbol::kDummySymbol);
     for (; it != last; ++it) {
-      const Symbol sym = symbol::MakeSymbolFromIndex(index);
-      binder->def(sym, *it, bind::W | bind::E | bind::C);
+      binder->def(symbol::MakeSymbolFromIndex(index), *it, bind::W | bind::E | bind::C);
       if (index < names_len) {
-        obj->mapping_.insert(
-            std::make_pair(sym, GetIdent(names, index)));
+        obj->mapping_[index] = GetIdent(names, index);
       }
       index -= 1;
     }
@@ -218,7 +230,7 @@ class JSNormalArguments : public JSObject {
   }
 
   JSDeclEnv* env_;
-  Index2Param mapping_;
+  Indice mapping_;
 };
 
 // not search environment

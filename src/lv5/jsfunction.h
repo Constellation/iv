@@ -28,10 +28,10 @@ class JSFunction : public JSObject {
 
   virtual JSVal Call(Arguments* args,
                      const JSVal& this_binding,
-                     Error* error) = 0;
+                     Error* e) = 0;
 
   virtual JSVal Construct(Arguments* args,
-                          Error* error) = 0;
+                          Error* e) = 0;
 
   virtual bool HasInstance(Context* ctx,
                            const JSVal& val, Error* e) {
@@ -125,14 +125,14 @@ class JSNativeFunction : public JSFunction {
 
   JSVal Call(Arguments* args,
              const JSVal& this_binding,
-             Error* error) {
+             Error* e) {
     args->set_this_binding(this_binding);
-    return func_(*args, error);
+    return func_(*args, e);
   }
 
-  JSVal Construct(Arguments* args, Error* error) {
+  JSVal Construct(Arguments* args, Error* e) {
     args->set_this_binding(JSUndefined);
-    return func_(*args, error);
+    return func_(*args, e);
   }
 
   bool IsNativeFunction() const {
@@ -313,14 +313,14 @@ class JSInlinedFunction : public JSFunction {
 
   JSVal Call(Arguments* args,
              const JSVal& this_binding,
-             Error* error) {
+             Error* e) {
     args->set_this_binding(this_binding);
-    return func(*args, error);
+    return func(*args, e);
   }
 
-  JSVal Construct(Arguments* args, Error* error) {
+  JSVal Construct(Arguments* args, Error* e) {
     args->set_this_binding(JSUndefined);
-    return func(*args, error);
+    return func(*args, e);
   }
 
   bool IsNativeFunction() const {

@@ -76,10 +76,10 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
 
 inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
                                                const JSVal& target,
-                                               Error* error) {
+                                               Error* e) {
   if (!target.IsObject()) {
-    error->Report(Error::Type,
-                  "ToPropertyDescriptor requires Object argument");
+    e->Report(Error::Type,
+              "ToPropertyDescriptor requires Object argument");
     return JSEmpty;
   }
   int attr = PropertyDescriptor::kDefaultAttr;
@@ -91,8 +91,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 3
     const Symbol sym = context::Intern(ctx, "enumerable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
-      const bool enumerable = r.ToBoolean(IV_LV5_ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
+      const bool enumerable = r.ToBoolean(IV_LV5_ERROR(e));
       if (enumerable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_ENUMERABLE) |
             PropertyDescriptor::ENUMERABLE;
@@ -105,8 +105,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 4
     const Symbol sym = context::Intern(ctx, "configurable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
-      const bool configurable = r.ToBoolean(IV_LV5_ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
+      const bool configurable = r.ToBoolean(IV_LV5_ERROR(e));
       if (configurable) {
         attr = (attr & ~PropertyDescriptor::UNDEF_CONFIGURABLE) |
             PropertyDescriptor::CONFIGURABLE;
@@ -119,7 +119,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 5
     const Symbol sym = context::Intern(ctx, "value");
     if (obj->HasProperty(ctx, sym)) {
-      value = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      value = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       attr |= PropertyDescriptor::DATA;
       attr &= ~PropertyDescriptor::UNDEF_VALUE;
     }
@@ -128,8 +128,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 6
     const Symbol sym = context::Intern(ctx, "writable");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
-      const bool writable = r.ToBoolean(IV_LV5_ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
+      const bool writable = r.ToBoolean(IV_LV5_ERROR(e));
       attr |= PropertyDescriptor::DATA;
       attr &= ~PropertyDescriptor::UNDEF_WRITABLE;
       if (writable) {
@@ -141,10 +141,10 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 7
     const Symbol sym = context::Intern(ctx, "get");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
-        error->Report(Error::Type,
-                      "property \"get\" is not callable");
+        e->Report(Error::Type,
+                  "property \"get\" is not callable");
         return JSEmpty;
       }
       attr |= PropertyDescriptor::ACCESSOR;
@@ -158,10 +158,10 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     // step 8
     const Symbol sym = context::Intern(ctx, "set");
     if (obj->HasProperty(ctx, sym)) {
-      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(error));
+      const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
-        error->Report(Error::Type,
-                      "property \"set\" is not callable");
+        e->Report(Error::Type,
+                  "property \"set\" is not callable");
         return JSEmpty;
       }
       attr |= PropertyDescriptor::ACCESSOR;
@@ -174,8 +174,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   // step 9
   if (attr & PropertyDescriptor::ACCESSOR) {
     if (attr & PropertyDescriptor::DATA) {
-      error->Report(Error::Type,
-                    "invalid object for property descriptor");
+      e->Report(Error::Type,
+                "invalid object for property descriptor");
       return JSEmpty;
     }
   }

@@ -28,7 +28,6 @@ inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-
 // section 15.3.4.2 Function.prototype.toString()
 inline JSVal FunctionToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
@@ -52,7 +51,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   }
   e->Report(Error::Type,
             "Function.prototype.toString is not generic function");
-  return JSUndefined;
+  return JSEmpty;
 }
 
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
@@ -76,7 +75,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       e->Report(
           Error::Type,
           "Function.prototype.apply requires Arraylike as 2nd arguments");
-      return JSUndefined;
+      return JSEmpty;
     }
     JSObject* const arg_array = second.object();
     // 15.3.4.3 Errata
@@ -94,7 +93,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
   }
   e->Report(Error::Type,
             "Function.prototype.apply is not generic function");
-  return JSUndefined;
+  return JSEmpty;
 }
 
 // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
@@ -106,8 +105,9 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
 
-    ScopedArguments args_list(ctx, (args_size > 1) ? args_size - 1 : 0, IV_LV5_ERROR(e));
-
+    ScopedArguments args_list(ctx,
+                              (args_size > 1) ? args_size - 1 : 0,
+                              IV_LV5_ERROR(e));
     if (args_size > 1) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());
     }
@@ -117,21 +117,21 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
   }
   e->Report(Error::Type,
             "Function.prototype.call is not generic function");
-  return JSUndefined;
+  return JSEmpty;
 }
 
 // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
-inline JSVal FunctionBind(const Arguments& args, Error* error) {
-  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, error);
+inline JSVal FunctionBind(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, e);
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const target = obj.object()->AsCallable();
     const JSVal this_binding((!args.empty()) ? args.front() : JSUndefined);
     return JSBoundFunction::New(args.ctx(), target, this_binding, args);
   }
-  error->Report(Error::Type,
-                "Function.prototype.bind is not generic function");
-  return JSUndefined;
+  e->Report(Error::Type,
+            "Function.prototype.bind is not generic function");
+  return JSEmpty;
 }
 
 } } }  // namespace iv::lv5::runtime

@@ -144,7 +144,7 @@ class PropertyDescriptor {
   inline void set_accessor_descriptor_getter(JSObject* set);
   inline void set_accessor_descriptor_setter(JSObject* set);
 
-  static inline bool Equals(const this_type& lhs, const this_type& rhs);
+  inline bool MergeWithNoEffect(const PropertyDescriptor& desc) const;
 
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);

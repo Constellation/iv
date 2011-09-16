@@ -6,7 +6,7 @@
 #include "lv5/error_check.h"
 #include "lv5/date_utils.h"
 #include "lv5/context.h"
-#include "lv5/railgun.h"
+#include "lv5/railgun/railgun.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {

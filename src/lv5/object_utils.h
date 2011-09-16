@@ -10,6 +10,8 @@ namespace lv5 {
 // this returns [[DefineOwnProperty]] descriptor is accepted or not,
 // if you see return value of [[DefineOwnProperty]],
 // see bool argument returned
+//
+// current is currently set PropertyDescriptor, and desc is which we try to set.
 inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
                                         const PropertyDescriptor& desc,
                                         bool throw_error,
@@ -29,8 +31,9 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
     *returned = true;
     return false;
   }
+
   // step 6
-  if (PropertyDescriptor::Equals(desc, current)) {
+  if (current.MergeWithNoEffect(desc)) {
     *returned = true;
     return false;
   }
@@ -54,7 +57,7 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
     if (!current.IsConfigurable()) {
       REJECT("changing descriptor type of unconfigurable property not allowed");
     }
-    assert((current.IsDataDescriptor()) ?
+    assert(current.IsDataDescriptor() ?
            desc.IsAccessorDescriptor() : desc.IsDataDescriptor());
   } else {
     // step 10
@@ -67,6 +70,9 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
             REJECT(
                 "changing [[Writable]] of unconfigurable property not allowed");
           }
+          // Value:Absent and Configurable/Enumerable/Writable test passed
+          // Descriptor is unreachable because MergeWithNoEffect returns true
+          assert(!data->IsValueAbsent());
           if (!JSVal::SameValue(current.AsDataDescriptor()->value(),
                                 data->value())) {
             REJECT("changing [[Value]] of readonly property not allowed");
@@ -75,8 +81,9 @@ inline bool IsDefineOwnPropertyAccepted(const PropertyDescriptor& current,
       }
     } else {
       // step 11
+      assert(current.IsAccessorDescriptor());
       assert(desc.IsAccessorDescriptor());
-      if (!current.IsConfigurableAbsent() && !current.IsConfigurable()) {
+      if (!current.IsConfigurable()) {
         const AccessorDescriptor* const lhs = current.AsAccessorDescriptor();
         const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
         if ((!rhs->IsSetterAbsent() && (lhs->set() != rhs->set())) ||

@@ -20,7 +20,7 @@ namespace teleporter {
 
 class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
  public:
-  Interpreter(Context* ctx) : ctx_(ctx) { }
+  explicit Interpreter(Context* ctx) : ctx_(ctx) { }
 
   inline void Run(const FunctionLiteral* global, bool is_eval);
 
@@ -77,11 +77,12 @@ class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
 
   inline bool InCurrentLabelSet(const BreakableStatement* stmt);
 
-  inline JSVal GetValue(const JSVal& val, Error* error);
+  inline JSVal GetValue(const JSVal& val, Error* e);
 
-  inline void PutValue(const JSVal& val, const JSVal& w, Error* error);
+  inline void PutValue(const JSVal& val, const JSVal& w, Error* e);
 
-  inline JSReference* GetIdentifierReference(JSEnv* lex, Symbol name, bool strict);
+  inline JSReference* GetIdentifierReference(JSEnv* lex,
+                                             Symbol name, bool strict);
 
   Context* ctx_;
 };

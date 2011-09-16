@@ -19,7 +19,7 @@ namespace iv {
 namespace lv5 {
 namespace runtime {
 
-JSVal ThrowTypeError(const Arguments& args, Error* error);
+JSVal ThrowTypeError(const Arguments& args, Error* e);
 
 }  // namespace runtime
 namespace bind {
