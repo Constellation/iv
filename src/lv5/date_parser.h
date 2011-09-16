@@ -100,7 +100,7 @@ class KeywordChecker : private core::Noncopyable<> {
   static const Keyword& Lookup(Iter* it, Iter last) {
     // fill buffer 4 chars
     typedef typename std::iterator_traits<Iter>::value_type char_type;
-    std::array<char_type, 4> buf = { { 0 } };
+    std::array<char_type, 4> buf = { { } };
     std::size_t i = 0;
     for (;
          (*it != last) &&
@@ -161,8 +161,11 @@ class DateParser : private core::Noncopyable<> {
         const int year = CalcYear(slots_[0]);
         const int month = slots_[1];
         const int day = slots_[2];
-        if (year != kNone && day != kNone && year != kNone) {
+        if (year != kNone && day != kNone && month != kNone) {
           return date::MakeDay(year, month - 1, day);
+        } else if (year != kNone && day == kNone && month == kNone) {
+          // only YYYY
+          return date::MakeDay(year, 0, 1);
         } else {
           return core::kNaN;
         }
@@ -334,7 +337,7 @@ class DateParser : private core::Noncopyable<> {
   }
 
   template<typename String>
-  double Parse(const String& str);
+  inline double Parse(const String& str);
 
  private:
   DateComponent date_;
