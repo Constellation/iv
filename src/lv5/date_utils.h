@@ -25,6 +25,7 @@ static const int kMsPerDay = kMsPerHour * kHoursPerDay;
 
 static const int64_t kEpochTime = 116444736000000000LL;
 
+static const double kMaxLocal = 8640002592000000.0;
 static const double kMaxTime = 8.64E15;
 
 inline double Day(double t) {
@@ -320,7 +321,7 @@ inline double MakeDay(double year, double month, double date) {
 
 inline double MakeDate(double day, double time) {
   double res = day * kMsPerDay + time;
-  if (std::abs(res) > kMaxTime) {
+  if (std::abs(res) > kMaxLocal) {
     return core::kNaN;
   }
   return res;

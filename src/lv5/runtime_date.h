@@ -224,7 +224,9 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -271,7 +273,9 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
       std::array<char, 20> buf;
@@ -298,7 +302,9 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -341,7 +347,9 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -388,7 +396,9 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
       std::array<char, 20> buf;
@@ -415,7 +425,9 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -1311,7 +1323,9 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::array<char, 32> buf;
       const int num = snprintf(
@@ -1340,7 +1354,9 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::IsNaN(time)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
+      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       std::array<char, 32> buf;
       const int num = snprintf(
