@@ -80,6 +80,12 @@ class Arena : private Noncopyable<Arena> {
     return next_;
   }
 
+  void ToStart() {
+    position_ =
+        reinterpret_cast<uintptr_t>(this) +
+        IV_ROUNDUP(sizeof(this_type), kAlignment);
+  }
+
  private:
   Arena* next_;
   uintptr_t position_;
@@ -91,6 +97,11 @@ class Space : private Noncopyable<Space> {
     : arena_(Arena::New()),
       start_(arena_),
       malloced_() {
+  }
+
+  void Clear() {
+    arena_ = start_;
+    std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
   }
 
   ~Space() {
@@ -108,6 +119,7 @@ class Space : private Noncopyable<Space> {
       // small memory allocator
       void* result = arena_->Allocate(size);
       if (result == NULL) {
+        arena_->ToStart();
         Arena* arena = arena_->Next();
         if (arena) {
           arena_ = arena;
