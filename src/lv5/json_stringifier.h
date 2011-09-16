@@ -84,7 +84,7 @@ class JSONStringifier : private core::Noncopyable<> {
   };
 
   JSString* Quote(const JSString& str, Error* e) {
-    static const char kHexDigits[17] = "0123456789ABCDEF";
+    static const char kHexDigits[17] = "0123456789abcdef";
     StringBuilder builder;
     builder.Append('"');
     const JSString::Fiber* fiber = str.GetFiber();
