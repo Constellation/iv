@@ -206,9 +206,6 @@ class AccessorDescriptor : public PropertyDescriptor {
   AccessorDescriptor(JSObject* get, JSObject* set, int attrs)
     : PropertyDescriptor(ACCESSOR_DESCRIPTOR, get, set, attrs) {
   }
-  int type() const {
-    return ACCESSOR;
-  }
   JSObject* get() const {
     return value_.accessor_.getter_;
   }
@@ -236,9 +233,6 @@ class DataDescriptor: public PropertyDescriptor {
   }
   explicit DataDescriptor(int attrs)
      : PropertyDescriptor(DATA_DESCRIPTOR, JSUndefined, attrs | UNDEF_VALUE) {
-  }
-  int type() const {
-    return DATA;
   }
   JSVal value() const {
     return value_.data_;
