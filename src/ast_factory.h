@@ -51,8 +51,7 @@ class BasicAstFactory {
                             const Range& range,
                             std::size_t begin,
                             std::size_t end) {
-    const SpaceUString* str = NewUString(range);
-    return new (static_cast<Factory*>(this)) Identifier(str);
+    return new (static_cast<Factory*>(this)) Identifier(NewString(range));
   }
 
   NumberLiteral* NewReducedNumberLiteral(const double& val) {
