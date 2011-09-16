@@ -34,7 +34,8 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                                            context::Intern(ctx, i),
                                            reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          ary->Delete(ctx, symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
+          ary->Delete(ctx,
+                      symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
         } else {
           ary->DefineOwnProperty(
               ctx, symbol::MakeSymbolFromIndex(i),
@@ -47,7 +48,8 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       obj->GetOwnPropertyNames(ctx, &keys, JSObject::kExcludeNotEnumerable);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
-        const JSVal new_element = JSONWalk(ctx, obj, *it, reviver, IV_LV5_ERROR(e));
+        const JSVal new_element =
+            JSONWalk(ctx, obj, *it, reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
           obj->Delete(ctx, *it, false, IV_LV5_ERROR(e));
         } else {
@@ -130,7 +132,8 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       maybe = &property_list;
       const uint32_t len = internal::GetLength(ctx, rep, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
-        const JSVal v = rep->Get(ctx, symbol::MakeSymbolFromIndex(i), IV_LV5_ERROR(e));
+        const JSVal v =
+            rep->Get(ctx, symbol::MakeSymbolFromIndex(i), IV_LV5_ERROR(e));
         JSString* item = NULL;
         if (v.IsString()) {
           item = v.string();

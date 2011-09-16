@@ -1732,7 +1732,8 @@ class Compiler
 
       uint32_t merged = 0;
       uint32_t position = 0;
-      std::unordered_map<Symbol, std::size_t>::const_iterator it2 = slots.find(name);
+      std::unordered_map<Symbol, std::size_t>::const_iterator it2 =
+          slots.find(name);
       if (it2 == slots.end()) {
         position = slots.size();
         slots.insert(std::make_pair(name, position));

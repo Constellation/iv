@@ -46,7 +46,8 @@ class Interactive {
       if (!str) {
         break;
       }
-      buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
+      buffer.insert(buffer.end(),
+                    line.data(), line.data() + std::strlen(line.data()));
       JSEvalScript<core::FileSource>* script =
           Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (script) {

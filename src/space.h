@@ -166,13 +166,15 @@ struct hash<std::basic_string<uint16_t,
                               std::char_traits<uint16_t>,
                               iv::core::SpaceAllocator<Factory, uint16_t> > >
   : public std::unary_function<
-    std::basic_string<uint16_t,
-                      std::char_traits<uint16_t>,
-                      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> {
+    std::basic_string<
+      uint16_t,
+      std::char_traits<uint16_t>,
+      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> {
   typedef std::unary_function<
-    std::basic_string<uint16_t,
-                      std::char_traits<uint16_t>,
-                      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> super_type;
+    std::basic_string<
+      uint16_t,
+      std::char_traits<uint16_t>,
+      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> super_type;
   typedef typename super_type::argument_type argument_type;
   typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
@@ -180,5 +182,5 @@ struct hash<std::basic_string<uint16_t,
   }
 };
 
-} IV_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END  // namespace std
 #endif  // IV_SPACE_H_

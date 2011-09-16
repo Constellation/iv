@@ -26,9 +26,9 @@
 
 #endif
 
-#if (__BYTE_ORDER == __LITTLE_ENDIAN)
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define IV_IS_LITTLE_ENDIAN
-#elif (__BYTE_ORDER == __BIG_ENDIAN)
+#elif __BYTE_ORDER == __BIG_ENDIAN
 #define IV_IS_BIG_ENDIAN
 #endif
 #endif

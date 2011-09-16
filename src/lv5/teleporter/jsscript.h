@@ -20,7 +20,7 @@ class JSScript : public lv5::JSScript {
     kFunction
   };
 
-  JSScript(const FunctionLiteral* function)
+  explicit JSScript(const FunctionLiteral* function)
     : function_(function) {
   }
 

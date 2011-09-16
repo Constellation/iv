@@ -35,7 +35,7 @@
 // compiler
 #if defined(__GNUC__)
 #if defined(__GNU_PATCHLEVEL__)
-#define IV_COMPILER_GCC (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNU_PATCHLEVEL__)
+#define IV_COMPILER_GCC (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNU_PATCHLEVEL__)  // NOLINT
 #else
 #define IV_COMPILER_GCC (__GNUC__ * 10000 + __GNUC_MINOR__ * 100)
 #endif

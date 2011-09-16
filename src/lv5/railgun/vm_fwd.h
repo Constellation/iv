@@ -27,7 +27,7 @@ class VM {
   inline JSVal Execute(const Arguments& args, JSVMFunction* func, Error* e);
 
   // normal pass
-  VM(Context* ctx)
+  explicit VM(Context* ctx)
     : ctx_(ctx),
       operation_(ctx),
       stack_(ctx->global_obj()),

@@ -1,6 +1,6 @@
 // @file
 // @brief normal random generator
-// 
+//
 // Copyright (C) 2010 Cybozu Inc., all rights reserved.
 // @author MITSUNARI Shigeo
 #ifndef IV_RANDOM_H_
@@ -28,7 +28,7 @@ class NormalRandomGenerator {
   double get() {
     double sum = -6;
     for (int i = 0; i < 12; i++) {
-      sum += engine_() / double(1ULL << 32);
+      sum += engine_() / static_cast<double>(1ULL << 32);
     }
     return sum * s_ + u_;
   }
@@ -70,7 +70,9 @@ class UniformRandomGenerator {
     // (a * 67108864.0 + b) * (1.0 / 9007199254740992.0) is [0.0, 1.0)
     const uint32_t a = engine_() >> 5;
     const uint32_t b = engine_() >> 6;
-    return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0) * (max_ - min_) + min_;
+    return
+        (a * 67108864.0 + b) *
+        (1.0 / 9007199254740992.0) * (max_ - min_) + min_;
   }
 
  private:

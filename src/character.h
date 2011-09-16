@@ -719,8 +719,9 @@ inline Category GetCategory(uint16_t c) {
     return static_cast<Category>(kCategoryCache[c]);
   }
   const int result =
-      static_cast<int>(std::upper_bound(kCategoryKeys.begin(),
-                                        kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1);
+      static_cast<int>(std::upper_bound(
+              kCategoryKeys.begin(),
+              kCategoryKeys.end(), c) - kCategoryKeys.begin() - 1);
   assert(result < static_cast<int>(kCategoryKeys.size()));
   const int high = kCategoryValues[result * 2];
   if (c <= high) {
@@ -781,7 +782,10 @@ inline bool IsWhiteSpace(uint16_t c) {
 }
 
 inline bool IsLineTerminator(uint16_t c) {
-  return c == code::CR || c == code::LF || (c & ~1) == 0x2028;  // 0x2028 or 0x2029
+  return
+      c == code::CR ||
+      c == code::LF ||
+      (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
 inline bool IsIdentifierStart(uint16_t c) {

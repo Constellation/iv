@@ -22,22 +22,6 @@ class Scope {
   Context* ctx_;
 };
 
-//class Definition {
-//};
-//
-//template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-//class Method : public Definition {
-//};
-//
-//class Object : public Scope {
-// public:
-//  Object(Context* ctx) : Scope(ctx) { }
-//
-//  Object& operator[](Definition def) {
-//    return *this;
-//  }
-//};
-
 class Object : public Scope {
  public:
   Object(Context* ctx, JSObject* obj)

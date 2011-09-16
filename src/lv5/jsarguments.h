@@ -103,8 +103,11 @@ class JSNormalArguments : public JSObject {
     return true;
   }
 
-  bool DefineOwnPropertyPatching(Context* ctx, Symbol name,
-                                 const PropertyDescriptor& desc, bool th, Error* e) {
+  // TODO(Constellation): clean up
+  bool DefineOwnPropertyPatching(
+      Context* ctx,
+      Symbol name,
+      const PropertyDescriptor& desc, bool th, Error* e) {
     Slot slot;
     if (JSObject::GetOwnPropertySlot(ctx, name, &slot)) {
       // found
@@ -116,7 +119,8 @@ class JSNormalArguments : public JSObject {
           GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
         } else {
           // add property transition
-          // searching already created maps and if this is available, move to this
+          // searching already created maps
+          // and if this is available, move to this
           std::size_t offset;
           map_ = map_->AddPropertyTransition(ctx, name, &offset);
           slots_.resize(map_->GetSlotsSize(), JSEmpty);

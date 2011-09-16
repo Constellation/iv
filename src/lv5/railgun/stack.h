@@ -80,7 +80,7 @@ class Stack : core::Noncopyable<Stack> {
     Stack* stack_;
   };
 
-  Stack(JSVal global)
+  explicit Stack(JSVal global)
     : stack_(NULL),
       stack_pointer_(NULL),
       resource_(NULL),

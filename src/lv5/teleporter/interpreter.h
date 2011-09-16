@@ -111,8 +111,10 @@ void Interpreter::Invoke(JSCodeFunction* code,
   }
 
   // step 5
-  for (Scope::FunctionLiterals::const_iterator it = scope.function_declarations().begin(),
-       last = scope.function_declarations().end(); it != last; ++it) {
+  for (Scope::FunctionLiterals::const_iterator it =
+       scope.function_declarations().begin(),
+       last = scope.function_declarations().end();
+       it != last; ++it) {
     const FunctionLiteral* f = *it;
     const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
@@ -202,8 +204,10 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   JSEnv* const env = ctx_->variable_env();
   const StrictSwitcher switcher(ctx_, global->strict());
   const bool is_global_env = (env->AsJSObjectEnv() == ctx_->global_env());
-  for (Scope::FunctionLiterals::const_iterator it = scope.function_declarations().begin(),
-       last = scope.function_declarations().end(); it != last; ++it) {
+  for (Scope::FunctionLiterals::const_iterator it =
+       scope.function_declarations().begin(),
+       last = scope.function_declarations().end();
+       it != last; ++it) {
     const FunctionLiteral* f = *it;
     const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
@@ -1283,8 +1287,10 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
   JSObject* const obj = JSObject::New(ctx_);
 
   // section 11.1.5
-  for (ObjectLiteral::Properties::const_iterator it = literal->properties().begin(),
-       last = literal->properties().end(); it != last; ++it) {
+  for (ObjectLiteral::Properties::const_iterator it =
+       literal->properties().begin(),
+       last = literal->properties().end();
+       it != last; ++it) {
     const ObjectLiteral::Property& prop = *it;
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
     const Identifier* const ident = get<1>(prop);
@@ -1542,9 +1548,10 @@ void Interpreter::PutValue(const JSVal& val, const JSVal& w, Error* e) {
     }
   } else {
     assert(base.environment());
-    base.environment()->SetMutableBinding(ctx_,
-                                          ref->GetReferencedName(), w,
-                                          ref->IsStrictReference(), IV_LV5_ERROR_VOID(e));
+    base.environment()->SetMutableBinding(
+        ctx_,
+        ref->GetReferencedName(), w,
+        ref->IsStrictReference(), IV_LV5_ERROR_VOID(e));
   }
 }
 

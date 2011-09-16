@@ -30,10 +30,10 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(fiber->data() + 1,
-                                                               fiber->size() - 2),
-                                            &json_parse_error);
+      const JSVal result = ParseJSON<false>(
+          ctx,
+          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
+          &json_parse_error);
       if (!json_parse_error) {
         return result;
       }
@@ -81,10 +81,10 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(fiber->data() + 1,
-                                                               fiber->size() - 2),
-                                            &json_parse_error);
+      const JSVal result = ParseJSON<false>(
+          ctx,
+          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
+          &json_parse_error);
       if (!json_parse_error) {
         return result;
       }

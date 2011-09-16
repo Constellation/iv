@@ -57,7 +57,8 @@ class Arena : private Noncopyable<Arena> {
 
   inline void* Allocate(std::size_t raw_size) {
     const std::size_t size = AlignOffset(raw_size, kAlignment);
-    if ((position_ + size) <= (reinterpret_cast<uintptr_t>(this) + kArenaSize)) {
+    if ((position_ + size) <=
+        (reinterpret_cast<uintptr_t>(this) + kArenaSize)) {
       // in this pool
       const uintptr_t result = position_;
       assert((result % kAlignment) == 0);

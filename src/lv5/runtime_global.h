@@ -128,7 +128,8 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
         v = (ch - core::unicode::kHighSurrogateMin) * 0x400 +
             (k_char - core::unicode::kLowSurrogateMin) + 0x10000;
       }
-      for (std::size_t len = core::unicode::UCS4OneCharToUTF8(v, uc8buf.begin()), i = 0;
+      for (std::size_t len =
+           core::unicode::UCS4OneCharToUTF8(v, uc8buf.begin()), i = 0;
            i < len; ++i) {
         hexbuf[1] = kHexDigits[uc8buf[i] >> 4];
         hexbuf[2] = kHexDigits[uc8buf[i] & 0xf];
@@ -302,8 +303,8 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* e) {
 // section 15.1.2.5 isFinite(number)
 inline JSVal GlobalIsFinite(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, e);
-  if (args.size() > 0) {
-    if (args[0].IsInt32()) { // int32_t short circuit
+  if (!args.empty()) {
+    if (args.front().IsInt32()) {  // int32_t short circuit
       return JSTrue;
     }
     const double number = args[0].ToNumber(args.ctx(), e);

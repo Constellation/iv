@@ -267,7 +267,7 @@ do {\
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
     DISPATCH_WITH_NO_INCREMENT();
 #else
-MAIN_LOOP_START:
+ MAIN_LOOP_START:
 #endif
     // if ok, use DISPATCH.
     // if error, use DISPATCH_ERROR.
@@ -311,14 +311,17 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(LOAD_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = operation_.LoadName(frame->lexical_env(), s, strict, ERR);
+        const JSVal w =
+            operation_.LoadName(frame->lexical_env(), s, strict, ERR);
         PUSH(w);
         DISPATCH(LOAD_NAME);
       }
 
       DEFINE_OPCODE(LOAD_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = operation_.LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        const JSVal w =
+            operation_.LoadHeap(frame->variable_env(),
+                                s, strict, instr[2].value, instr[3].value, ERR);
         PUSH(w);
         DISPATCH(LOAD_HEAP);
       }
@@ -332,7 +335,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(LOAD_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
         const JSVal val =
-            operation_.LoadGlobal(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+            operation_.LoadGlobal(global, instr,
+                                  GETITEM(names, instr[1].value), strict, ERR);
         PUSH(val);
         DISPATCH(LOAD_GLOBAL);
       }
@@ -452,7 +456,8 @@ MAIN_LOOP_START:
         }
         if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
           // cache hit
-          const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          const JSVal res =
+              cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
           SET_TOP(res);
         } else {
           // uncache
@@ -483,7 +488,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(STORE_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal v = TOP();
-        operation_.StoreHeap(frame->variable_env(), s, v, strict, instr[2].value, instr[3].value, ERR);
+        operation_.StoreHeap(frame->variable_env(),
+                             s, v, strict, instr[2].value, instr[3].value, ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -532,7 +538,8 @@ MAIN_LOOP_START:
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal w = POP();
         const JSVal base = TOP();
-        operation_.StoreProp(base, instr, OP::STORE_PROP_GENERIC, s, w, strict, ERR);
+        operation_.StoreProp(base,
+                             instr, OP::STORE_PROP_GENERIC, s, w, strict, ERR);
         SET_TOP(w);
         DISPATCH(STORE_PROP);
       }
@@ -854,7 +861,8 @@ MAIN_LOOP_START:
       }
 
       DEFINE_OPCODE(TYPEOF_HEAP) {
-        JSDeclEnv* decl = operation_.GetHeapEnv(frame->variable_env(), instr[2].value);
+        JSDeclEnv* decl =
+            operation_.GetHeapEnv(frame->variable_env(), instr[2].value);
         assert(decl);
         const JSVal expr = decl->GetByOffset(instr[3].value, strict, ERR);
         PUSH(expr.TypeOf(ctx_));
@@ -883,7 +891,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementName<-1, 1>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<-1, 1>(frame->lexical_env(),
+                                            s, strict, ERR);
         PUSH(result);
         DISPATCH(DECREMENT_NAME);
       }
@@ -891,7 +900,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementName<-1, 0>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<-1, 0>(frame->lexical_env(),
+                                            s, strict, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_DECREMENT_NAME);
       }
@@ -899,7 +909,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementName<1, 1>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<1, 1>(frame->lexical_env(),
+                                           s, strict, ERR);
         PUSH(result);
         DISPATCH(INCREMENT_NAME);
       }
@@ -907,7 +918,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementName<1, 0>(frame->lexical_env(), s, strict, ERR);
+            operation_.IncrementName<1, 0>(frame->lexical_env(),
+                                           s, strict, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_NAME);
       }
@@ -915,7 +927,9 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementHeap<-1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<-1, 1>(
+                frame->variable_env(), s, strict,
+                instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(DECREMENT_HEAP);
       }
@@ -923,7 +937,9 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementHeap<-1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<-1, 0>(
+                frame->variable_env(), s, strict,
+                instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_DECREMENT_HEAP);
       }
@@ -931,7 +947,9 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementHeap<1, 1>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<1, 1>(
+                frame->variable_env(), s, strict,
+                instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(INCREMENT_HEAP);
       }
@@ -939,7 +957,9 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal result =
-            operation_.IncrementHeap<1, 0>(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+            operation_.IncrementHeap<1, 0>(
+                frame->variable_env(), s, strict,
+                instr[2].value, instr[3].value, ERR);
         PUSH(result);
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
@@ -1017,7 +1037,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
         const JSVal val =
-            operation_.IncrementGlobal<-1, 1>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+            operation_.IncrementGlobal<-1, 1>(
+                global, instr, GETITEM(names, instr[1].value), strict, ERR);
         PUSH(val);
         DISPATCH(DECREMENT_GLOBAL);
       }
@@ -1025,7 +1046,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
         const JSVal val =
-            operation_.IncrementGlobal<-1, 0>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+            operation_.IncrementGlobal<-1, 0>(
+                global, instr, GETITEM(names, instr[1].value), strict, ERR);
         PUSH(val);
         DISPATCH(POSTFIX_DECREMENT_GLOBAL);
       }
@@ -1033,7 +1055,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
         const JSVal val =
-            operation_.IncrementGlobal<1, 1>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+            operation_.IncrementGlobal<1, 1>(
+                global, instr, GETITEM(names, instr[1].value), strict, ERR);
         PUSH(val);
         DISPATCH(INCREMENT_GLOBAL);
       }
@@ -1041,7 +1064,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
         JSGlobal* global = ctx_->global_obj();
         const JSVal val =
-            operation_.IncrementGlobal<1, 0>(global, instr, GETITEM(names, instr[1].value), strict, ERR);
+            operation_.IncrementGlobal<1, 0>(
+                global, instr, GETITEM(names, instr[1].value), strict, ERR);
         PUSH(val);
         DISPATCH(POSTFIX_INCREMENT_GLOBAL);
       }
@@ -1049,7 +1073,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<-1, 1>(base, element, strict, ERR);
+        const JSVal result =
+            operation_.IncrementElement<-1, 1>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_ELEMENT);
       }
@@ -1057,7 +1082,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<-1, 0>(base, element, strict, ERR);
+        const JSVal result =
+            operation_.IncrementElement<-1, 0>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
@@ -1065,7 +1091,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<1, 1>(base, element, strict, ERR);
+        const JSVal result =
+            operation_.IncrementElement<1, 1>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_ELEMENT);
       }
@@ -1073,7 +1100,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         const JSVal element = POP();
         const JSVal base = TOP();
-        const JSVal result = operation_.IncrementElement<1, 0>(base, element, strict, ERR);
+        const JSVal result =
+            operation_.IncrementElement<1, 0>(base, element, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_ELEMENT);
       }
@@ -1081,7 +1109,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<-1, 1>(base, s, strict, ERR);
+        const JSVal result =
+            operation_.IncrementProp<-1, 1>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(DECREMENT_PROP);
       }
@@ -1089,7 +1118,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<-1, 0>(base, s, strict, ERR);
+        const JSVal result =
+            operation_.IncrementProp<-1, 0>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
@@ -1097,7 +1127,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<1, 1>(base, s, strict, ERR);
+        const JSVal result =
+            operation_.IncrementProp<1, 1>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(INCREMENT_PROP);
       }
@@ -1105,7 +1136,8 @@ MAIN_LOOP_START:
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         const JSVal base = TOP();
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal result = operation_.IncrementProp<1, 0>(base, s, strict, ERR);
+        const JSVal result =
+            operation_.IncrementProp<1, 0>(base, s, strict, ERR);
         SET_TOP(result);
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }
@@ -1628,7 +1660,8 @@ MAIN_LOOP_START:
           constants = &frame->constants();
           names = &frame->code()->names();
           strict = frame->code()->strict();
-          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_, frame, ERR);
+          static_cast<JSVMFunction*>(func)->InstantiateBindings(ctx_,
+                                                                frame, ERR);
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -1716,7 +1749,8 @@ MAIN_LOOP_START:
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
-        const JSVal x = operation_.InvokeMaybeEval(func, sp, instr[1].value, frame, ERR);
+        const JSVal x =
+            operation_.InvokeMaybeEval(func, sp, instr[1].value, frame, ERR);
         sp -= (argc + 2);
         PUSH(x);
         DISPATCH(EVAL);
@@ -1737,7 +1771,9 @@ MAIN_LOOP_START:
 
       DEFINE_OPCODE(CALL_HEAP) {
         const Symbol& s = GETITEM(names, instr[1].value);
-        const JSVal w = operation_.LoadHeap(frame->variable_env(), s, strict, instr[2].value, instr[3].value, ERR);
+        const JSVal w =
+            operation_.LoadHeap(frame->variable_env(), s, strict,
+                                instr[2].value, instr[3].value, ERR);
         PUSH(w);
         PUSH(JSUndefined);
         DISPATCH(CALL_HEAP);
@@ -1770,7 +1806,8 @@ MAIN_LOOP_START:
             const JSVal val = slot.Get(ctx_, global, ERR);
             PUSH(val);
           } else {
-            const JSVal w = operation_.LoadName(ctx_->global_env(), s, strict, ERR);
+            const JSVal w =
+                operation_.LoadName(ctx_->global_env(), s, strict, ERR);
             PUSH(w);
           }
         }
@@ -1895,7 +1932,8 @@ MAIN_LOOP_START:
         }
         if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
           // cache hit
-          const JSVal res = cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
+          const JSVal res =
+              cached->GetSlot(instr[4].value).Get(ctx_, base, ERR);
           SET_TOP(res);
         } else {
           // uncache
@@ -2011,7 +2049,7 @@ MAIN_LOOP_START:
 #undef GETLOCAL
 #undef SETLOCAL
 #undef GETITEM
-}
+}  // NOLINT
 
 } } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_VM_H_

@@ -17,7 +17,6 @@ namespace railgun {
 // FUNC | THIS | ARG1 | ARG2 | FRAME | LOCALS | STACK |
 //
 struct Frame {
-
   typedef JSVal* iterator;
   typedef const JSVal* const_iterator;
 
@@ -39,7 +38,8 @@ struct Frame {
   }
 
   JSVal* GetLocal() {
-    return reinterpret_cast<JSVal*>(this) + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
+    return reinterpret_cast<JSVal*>(this) +
+        (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
   JSVal* GetStackBase() {

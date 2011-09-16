@@ -10,5 +10,5 @@ inline int CompareAndSwap(volatile LONG* target,
   return ::InterlockedCompareExchange(target, new_value, old_value);
 }
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #endif  // IV_CAS_WIN_H_

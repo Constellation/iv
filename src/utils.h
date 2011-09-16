@@ -87,7 +87,7 @@ inline bool ReadFile(const std::string& filename,
       const std::size_t offset = out->size();
       out->resize(offset + filesize);
       if (std::fread(out->data() + offset, filesize, 1, fp) < 1) {
-        const std::string err = "lv5 can't read \"" + filename + "\"";;
+        const std::string err = "lv5 can't read \"" + filename + "\"";
         std::perror(err.c_str());
         std::fclose(fp);
         return false;
@@ -97,7 +97,7 @@ inline bool ReadFile(const std::string& filename,
     return true;
   } else {
     if (output_error) {
-      const std::string err = "lv5 can't open \"" + filename + "\"";;
+      const std::string err = "lv5 can't open \"" + filename + "\"";
       std::perror(err.c_str());
     }
     return false;

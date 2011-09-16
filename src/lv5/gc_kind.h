@@ -23,7 +23,8 @@ class GCKind {
     }
 
     void* Malloc(std::size_t size) {
-      void* mem = GC_generic_malloc(size, GCKindProvider::Instance()->GetKind());
+      void* mem = GC_generic_malloc(
+          size, GCKindProvider::Instance()->GetKind());
       allocated_.insert(mem);
       GC_REGISTER_FINALIZER_NO_ORDER(mem,
                                      RemoveSet,

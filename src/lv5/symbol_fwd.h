@@ -166,7 +166,9 @@ inline bool IsIndexSymbol(Symbol sym) {
 }
 
 inline bool IsArrayIndexSymbol(Symbol sym) {
-  return (sym.index_.low_ == lv5::detail::kSymbolIsIndex) && (sym.index_.high_ < UINT32_MAX);
+  return
+      (sym.index_.low_ == lv5::detail::kSymbolIsIndex) &&
+      (sym.index_.high_ < UINT32_MAX);
 }
 
 inline bool IsStringSymbol(Symbol sym) {
@@ -229,5 +231,5 @@ struct hash<iv::lv5::SymbolStringHolder>
   }
 };
 
-} IV_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END  // namespace std
 #endif  // IV_LV5_SYMBOL_FWD_H_

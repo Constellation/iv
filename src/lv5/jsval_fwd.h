@@ -16,7 +16,7 @@
 #include "utils.h"
 #include "lv5/hint.h"
 #include "lv5/jsstring_fwd.h"
-#include "lv5/cell.h"
+#include "lv5/radio/cell.h"
 
 namespace iv {
 namespace lv5 {
@@ -236,8 +236,7 @@ class JSVal {
     assert(IsNumber());
   }
 
-  JSVal(const value_type& val)
-      : value_(val) {  }  // NOLINT
+  JSVal(const value_type& val) : value_(val) {  }  // NOLINT
 
   // prohibit like this,
   //

@@ -17,13 +17,14 @@ namespace railgun {
 template<typename Derived>
 class DisAssembler : private core::Noncopyable<> {
  public:
-  DisAssembler(Context* ctx) { }
+  explicit DisAssembler(Context* ctx) { }
 
   void DisAssemble(const Code& code) {
     {
       // code description
       std::ostringstream ss;
-      ss << "[code] stack: " << code.stack_depth() << " locals: " << code.locals().size();
+      ss << "[code] stack: "
+         << code.stack_depth() << " locals: " << code.locals().size();
       OutputLine(ss.str());
     }
     const Code::Codes& codes = code.codes();

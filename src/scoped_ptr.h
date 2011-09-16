@@ -54,7 +54,8 @@ class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
   }
 
   operator bool_type() const {
-    return (ptr_ == NULL) ? 0 : &this_type::this_type_does_not_support_comparisons;
+    return (ptr_ == NULL) ?
+        0 : &this_type::this_type_does_not_support_comparisons;
   }
 
   bool operator!() const {
@@ -138,7 +139,8 @@ class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
   }
 
   operator bool_type() const {
-    return (ptr_ == NULL) ? 0 : &this_type::this_type_does_not_support_comparisons;
+    return (ptr_ == NULL) ?
+        0 : &this_type::this_type_does_not_support_comparisons;
   }
 
   bool operator!() const {

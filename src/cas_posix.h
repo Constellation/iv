@@ -32,5 +32,5 @@ inline int CompareAndSwap(volatile int* target,
 
 #endif
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #endif  // IV_CAS_POSIX_H_

@@ -46,5 +46,5 @@ inline void ResetOnce(Once* once) {
   CompareAndSwap(&(once->counter_), 0, 1);
 }
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #endif  // IV_CALLONCE_WIN_H_

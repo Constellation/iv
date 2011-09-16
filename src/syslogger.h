@@ -1,6 +1,6 @@
 // this syslog header file only used in debug
-#ifndef IV_SYSLOG_H_
-#define IV_SYSLOG_H_
+#ifndef IV_SYSLOGGER_H_
+#define IV_SYSLOGGER_H_
 #include <cstdio>
 #include <string>
 #include <syslog.h>
@@ -25,4 +25,4 @@ class Syslog : private Noncopyable<> {
 };
 
 } }  // namespace iv::core
-#endif  // IV_SYSLOG_H_
+#endif  // IV_SYSLOGGER_H_

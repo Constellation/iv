@@ -42,7 +42,8 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
     : default_symbols_() {
 #define V(sym)\
   const core::StringPiece sym##_target(#sym);\
-  sym##_ = detail::MakeSymbol(new core::UString(sym##_target.begin(), sym##_target.end()));\
+  sym##_ = detail::MakeSymbol(\
+      new core::UString(sym##_target.begin(), sym##_target.end()));\
   default_symbols_.insert(sym##_);
     IV_LV5_DEFAULT_SYMBOLS(V)
 #undef V
@@ -50,8 +51,9 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
 
   // private destructor
   ~DefaultSymbolProvider() {
-    for (std::unordered_set<Symbol>::const_iterator it = default_symbols_.begin(),
-         last = default_symbols_.end(); it != last; ++it) {
+    for (std::unordered_set<Symbol>::const_iterator it =
+         default_symbols_.begin(), last = default_symbols_.end();
+         it != last; ++it) {
       assert(IsStringSymbol(*it));
       delete GetStringFromSymbol(*it);
     }

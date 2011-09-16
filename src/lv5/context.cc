@@ -172,7 +172,8 @@ void Context::InitContext(JSFunction* func_constructor,
       // section 15.2.3.2 Object.getPrototypeOf(O)
       .def<&runtime::ObjectGetPrototypeOf, 1>("getPrototypeOf")
       // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
-      .def<&runtime::ObjectGetOwnPropertyDescriptor, 2>("getOwnPropertyDescriptor")
+      .def<
+        &runtime::ObjectGetOwnPropertyDescriptor, 2>("getOwnPropertyDescriptor")
       // section 15.2.3.4 Object.getOwnPropertyNames(O)
       .def<&runtime::ObjectGetOwnPropertyNames, 1>("getOwnPropertyNames")
       // section 15.2.3.5 Object.create(O[, Properties])
@@ -371,7 +372,8 @@ void Context::InitArray(const ClassSlot& func_cls,
       .def<&runtime::ArrayUnshift, 1>("unshift")
       // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
       .def<&runtime::ArrayIndexOf, 1>("indexOf")
-      // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
+      // section 15.4.4.15
+      // Array.prototype.lastIndexOf(searchElement[, fromIndex])
       .def<&runtime::ArrayLastIndexOf, 1>("lastIndexOf")
       // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
       .def<&runtime::ArrayEvery, 1>("every")
@@ -385,7 +387,8 @@ void Context::InitArray(const ClassSlot& func_cls,
       .def<&runtime::ArrayFilter, 1>("filter")
       // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
       .def<&runtime::ArrayReduce, 1>("reduce")
-      // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
+      // section 15.4.4.22
+      // Array.prototype.reduceRight(callbackfn[, initialValue])
       .def<&runtime::ArrayReduceRight, 1>("reduceRight");
 }
 
@@ -466,7 +469,8 @@ void Context::InitString(const ClassSlot& func_cls,
 void Context::InitBoolean(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   // Boolean
-  JSBooleanObject* const proto = JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this), false);
+  JSBooleanObject* const proto =
+      JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this), false);
   // section 15.6.2 The Boolean Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
@@ -501,7 +505,8 @@ void Context::InitBoolean(const ClassSlot& func_cls,
 void Context::InitNumber(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // 15.7 Number
-  JSNumberObject* const proto = JSNumberObject::NewPlain(this, Map::NewUniqueMap(this), 0);
+  JSNumberObject* const proto =
+      JSNumberObject::NewPlain(this, Map::NewUniqueMap(this), 0);
   // section 15.7.3 The Number Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
@@ -625,7 +630,8 @@ void Context::InitMath(const ClassSlot& func_cls,
 void Context::InitDate(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.9 Date
-  JSObject* const proto = JSDate::NewPlain(this, Map::NewUniqueMap(this), core::kNaN);
+  JSObject* const proto =
+      JSDate::NewPlain(this, Map::NewUniqueMap(this), core::kNaN);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
@@ -833,7 +839,8 @@ void Context::InitError(const ClassSlot& func_cls,
 
   {
     // section 15.11.6.1 EvalError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "EvalError");
@@ -862,7 +869,8 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.2 RangeError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "RangeError");
@@ -891,9 +899,11 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.3 ReferenceError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
+        JSInlinedFunction<
+          &runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "ReferenceError");
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
@@ -920,7 +930,8 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.4 SyntaxError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "SyntaxError");
@@ -949,7 +960,8 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.5 TypeError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "TypeError");
@@ -978,7 +990,8 @@ void Context::InitError(const ClassSlot& func_cls,
   }
   {
     // section 15.11.6.6 URIError
-    JSObject* const sub_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    JSObject* const sub_proto =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "URIError");

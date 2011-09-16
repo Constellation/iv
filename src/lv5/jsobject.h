@@ -8,8 +8,8 @@
 #include "lv5/property_fwd.h"
 #include "lv5/hint.h"
 #include "lv5/symbol.h"
-#include "lv5/cell.h"
 #include "lv5/class.h"
+#include "lv5/radio/cell.h"
 namespace iv {
 namespace lv5 {
 
@@ -28,7 +28,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   };
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
-  JSObject(Map* map);
+  explicit JSObject(Map* map);
   JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
 
   virtual ~JSObject() { }
@@ -65,7 +65,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                  bool th, Error* e);
 
   virtual void GetPropertyNames(Context* ctx,
-                                std::vector<Symbol>* vec, EnumerationMode mode) const;
+                                std::vector<Symbol>* vec,
+                                EnumerationMode mode) const;
 
   virtual void GetOwnPropertyNames(Context* ctx,
                                    std::vector<Symbol>* vec,

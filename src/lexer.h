@@ -17,7 +17,9 @@
 namespace iv {
 namespace core {
 
-template<typename Source, bool RecognizeCommentAsToken = false, bool LexingIfIllegalFound = false>
+template<typename Source,
+         bool RecognizeCommentAsToken = false,
+         bool LexingIfIllegalFound = false>
 class Lexer: private Noncopyable<> {
  public:
 
@@ -563,7 +565,8 @@ class Lexer: private Noncopyable<> {
     while (c_ >= 0 && !character::IsLineTerminator(c_)) {
       Advance();
     }
-    return (recognize_comment_as_token) ? Token::TK_SINGLE_LINE_COMMENT : Token::TK_NOT_FOUND;
+    return (recognize_comment_as_token) ?
+        Token::TK_SINGLE_LINE_COMMENT : Token::TK_NOT_FOUND;
   }
 
   Token::Type SkipMultiLineComment() {
@@ -575,7 +578,8 @@ class Lexer: private Noncopyable<> {
       Advance();
       if (ch == '*' && c_ == '/') {
         c_ = ' ';
-        return (RecognizeCommentAsToken) ? Token::TK_MULTI_LINE_COMMENT : Token::TK_NOT_FOUND;
+        return (RecognizeCommentAsToken) ?
+            Token::TK_MULTI_LINE_COMMENT : Token::TK_NOT_FOUND;
       } else if (c_ >= 0 && character::IsLineTerminator(c_)) {
         // see ECMA-262 section 7.4
         SkipLineTerminator();

@@ -303,7 +303,8 @@ class DateParser : private core::Noncopyable<> {
     }
 
     double MakeTz(double value) const {
-      return value - (sign_ * (hour_ * date::kMsPerHour + min_ * date::kMsPerMinute));
+      return value -
+          (sign_ * (hour_ * date::kMsPerHour + min_ * date::kMsPerMinute));
     }
    private:
     int hour_;

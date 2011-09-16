@@ -35,7 +35,7 @@ class CoreData : public GCKind<CoreData> {
   }
 
  private:
-  CoreData(Data* data)
+  explicit CoreData(Data* data)
     : data_(data),
       compiled_(false) {
   }

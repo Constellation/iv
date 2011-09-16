@@ -43,10 +43,10 @@ class JSError : public JSObject {
   static inline JSVal Detail(Context* ctx, const Error* e);
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
-    JSError* const error = new JSError(ctx, code, str);
-    error->set_cls(JSError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, code, str);
+    err->set_cls(JSError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
+    return err;
   }
 
  protected:
@@ -65,10 +65,10 @@ class JSEvalError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Eval, str);
-    error->set_cls(JSEvalError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::EvalError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::Eval, str);
+    err->set_cls(JSEvalError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::EvalError).prototype);
+    return err;
   }
 };
 
@@ -83,10 +83,10 @@ class JSRangeError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Range, str);
-    error->set_cls(JSRangeError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::RangeError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::Range, str);
+    err->set_cls(JSRangeError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::RangeError).prototype);
+    return err;
   }
 };
 
@@ -101,10 +101,11 @@ class JSReferenceError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Reference, str);
-    error->set_cls(JSReferenceError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::ReferenceError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::Reference, str);
+    err->set_cls(JSReferenceError::GetClass());
+    err->set_prototype(
+        context::GetClassSlot(ctx, Class::ReferenceError).prototype);
+    return err;
   }
 };
 
@@ -119,10 +120,11 @@ class JSSyntaxError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Syntax, str);
-    error->set_cls(JSSyntaxError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::SyntaxError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::Syntax, str);
+    err->set_cls(JSSyntaxError::GetClass());
+    err->set_prototype(
+        context::GetClassSlot(ctx, Class::SyntaxError).prototype);
+    return err;
   }
 };
 
@@ -137,10 +139,10 @@ class JSTypeError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::Type, str);
-    error->set_cls(JSTypeError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::TypeError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::Type, str);
+    err->set_cls(JSTypeError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::TypeError).prototype);
+    return err;
   }
 };
 
@@ -155,10 +157,10 @@ class JSURIError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const error = new JSError(ctx, Error::URI, str);
-    error->set_cls(JSURIError::GetClass());
-    error->set_prototype(context::GetClassSlot(ctx, Class::URIError).prototype);
-    return error;
+    JSError* const err = new JSError(ctx, Error::URI, str);
+    err->set_cls(JSURIError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::URIError).prototype);
+    return err;
   }
 };
 

@@ -38,10 +38,10 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(fiber->data() + 1,
-                                                               fiber->size() - 2),
-                                            &json_parse_error);
+      const JSVal result = ParseJSON<false>(
+          ctx,
+          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
+          &json_parse_error);
       if (!json_parse_error) {
         return result;
       }
@@ -100,10 +100,10 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     if ((*fiber)[0] == '(' &&
         (*fiber)[str->size() - 1] == ')') {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(ctx,
-                                            core::UStringPiece(fiber->data() + 1,
-                                                               fiber->size() - 2),
-                                            &json_parse_error);
+      const JSVal result = ParseJSON<false>(
+          ctx,
+          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
+          &json_parse_error);
       if (!json_parse_error) {
         return result;
       }
@@ -138,7 +138,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     // TODO(Constellation)
     // if not mutating environment, not mark env
     VM* const vm = ctx->vm();
-    if (JSDeclEnv* decl = vm->stack()->current()->variable_env()->AsJSDeclEnv()) {
+    if (JSDeclEnv* decl =
+        vm->stack()->current()->variable_env()->AsJSDeclEnv()) {
       decl->MarkMutated();
     }
     const JSVal res = vm->RunEval(

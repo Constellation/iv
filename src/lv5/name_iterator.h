@@ -2,7 +2,7 @@
 #define IV_LV5_NAME_ITERATOR_H_
 #include <gc/gc_cpp.h>
 #include "lv5/jsobject.h"
-#include "lv5/cell.h"
+#include "lv5/radio/cell.h"
 namespace iv {
 namespace lv5 {
 

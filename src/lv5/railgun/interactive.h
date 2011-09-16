@@ -51,8 +51,10 @@ class Interactive {
       if (!str) {
         break;
       }
-      buffer.insert(buffer.end(), line.data(), line.data() + std::strlen(line.data()));
-      Code* code = Parse(core::StringPiece(buffer.data(), buffer.size()), &recover);
+      buffer.insert(buffer.end(),
+                    line.data(), line.data() + std::strlen(line.data()));
+      Code* code = Parse(
+          core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
         JSVal ret = ctx_.vm()->Run(code, &e);

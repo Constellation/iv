@@ -29,6 +29,6 @@ struct hash<iv::core::UString>
   }
 };
 
-} IV_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END  // namespace std
 
 #endif  // IV_USTRING_H_

@@ -9,7 +9,7 @@ namespace lv5 {
 template<typename T>
 class GCHook {
  public:
-  GCHook(T* delegate)
+  explicit GCHook(T* delegate)
     : target_(Initialize(this)),
       delegate_(delegate) {
   }
@@ -26,7 +26,8 @@ class GCHook {
   }
 
   static GCHook*** Initialize(GCHook* target) {
-    GCHook** data = reinterpret_cast<GCHook**>(GC_MALLOC_ATOMIC(sizeof(GCHook*)));
+    GCHook** data =
+        reinterpret_cast<GCHook**>(GC_MALLOC_ATOMIC(sizeof(target)));
     data[0] = target;
     GC_REGISTER_FINALIZER_NO_ORDER(
         reinterpret_cast<void*>(data), &Main, NULL, NULL, NULL);

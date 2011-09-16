@@ -18,5 +18,5 @@ inline int CompareAndSwap(volatile int* target,
   return prev;
 }
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #endif  // IV_CAS_MAC_H_

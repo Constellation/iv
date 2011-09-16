@@ -40,7 +40,8 @@ JSObject::JSObject(Map* map,
   do {\
     const JSVal method = Get(context, sym, IV_LV5_ERROR(e));\
     if (method.IsCallable()) {\
-      const JSVal val = method.object()->AsCallable()->Call(&arg, this, IV_LV5_ERROR(e));\
+      const JSVal val =\
+        method.object()->AsCallable()->Call(&arg, this, IV_LV5_ERROR(e));\
       if (val.IsPrimitive() || val.IsNull() || val.IsUndefined()) {\
         return val;\
       }\
@@ -273,8 +274,10 @@ void JSObject::PutToSlotOffset(Context* ctx,
   // not empty is already checked
   const PropertyDescriptor current = GetSlot(offset);
   // can put check
-  if ((current.IsAccessorDescriptor() && !current.AsAccessorDescriptor()->set()) ||
-      (current.IsDataDescriptor() && !current.AsDataDescriptor()->IsWritable())) {
+  if ((current.IsAccessorDescriptor() &&
+       !current.AsAccessorDescriptor()->set()) ||
+      (current.IsDataDescriptor() &&
+       !current.AsDataDescriptor()->IsWritable())) {
     if (th) {
       e->Report(Error::Type, "put failed");
     }

@@ -95,7 +95,8 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   iv::core::FileSource src(data, filename);
   iv::lv5::teleporter::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::core::FileSource> parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory,
+                   iv::core::FileSource> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
@@ -125,7 +126,8 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   iv::core::FileSource src(data, filename);
   iv::lv5::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory, iv::core::FileSource> parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory,
+                   iv::core::FileSource> parser(&factory, src);
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {

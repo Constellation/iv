@@ -155,8 +155,9 @@ class AstNode : public AstNodeBase<Factory> {
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
   typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
-  typedef typename SpaceVector<Factory,
-                               Maybe<Expression<Factory> > >::type MaybeExpressions;
+  typedef typename SpaceVector<
+      Factory,
+      Maybe<Expression<Factory> > >::type MaybeExpressions;
   typedef typename SpaceVector<Factory,
                                Declaration<Factory>*>::type Declarations;
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
@@ -1419,8 +1420,10 @@ namespace IV_HASH_NAMESPACE_START {
 // allowed in section 17.4.3.1
 template<typename Factory>
 struct hash<iv::core::ast::IdentifierKey<Factory> >
-  : public std::unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> {
-  typedef std::unary_function<iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
+  : public std::unary_function<
+      iv::core::ast::IdentifierKey<Factory>, std::size_t> {
+  typedef std::unary_function<
+      iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
   typedef typename super_type::argument_type argument_type;
   typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
@@ -1429,7 +1432,7 @@ struct hash<iv::core::ast::IdentifierKey<Factory> >
   }
 };
 
-} IV_HASH_NAMESPACE_END
+} IV_HASH_NAMESPACE_END  // namespace std
 
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE

@@ -9,9 +9,9 @@
 #include "lv5/property_fwd.h"
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
-#include "lv5/cell.h"
 #include "lv5/jsval_fwd.h"
 #include "lv5/string_builder.h"
+#include "lv5/radio/cell.h"
 
 namespace iv {
 namespace lv5 {
@@ -62,7 +62,7 @@ class JSDeclEnv : public JSEnv {
 
   struct Entry {
     Entry() : attribute(0), value(JSEmpty) { }
-    Entry(int attr) : attribute(attr), value(JSUndefined) { }
+    explicit Entry(int attr) : attribute(attr), value(JSUndefined) { }
     Entry(int attr, const JSVal& val) : attribute(attr), value(val) { }
 
     int attribute;
@@ -150,7 +150,8 @@ class JSDeclEnv : public JSEnv {
 
   JSVal GetBindingValue(Symbol name) const {
     const Offsets::const_iterator it = offsets_.find(name);
-    assert(it != offsets_.end() && !(record_[it->second].attribute & IM_UNINITIALIZED));
+    assert(it != offsets_.end());
+    assert(!(record_[it->second].attribute & IM_UNINITIALIZED));
     return record_[it->second].value;
   }
 
@@ -221,7 +222,8 @@ class JSDeclEnv : public JSEnv {
     record_[offset] = Entry(MUTABLE, val);
   }
 
-  void CreateAndSetImmutable(Symbol name, std::size_t offset, const JSVal& val) {
+  void CreateAndSetImmutable(Symbol name,
+                             std::size_t offset, const JSVal& val) {
     offsets_[name] = offset;
     record_[offset] = Entry(IM_INITIALIZED, val);
   }

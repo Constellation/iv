@@ -44,7 +44,8 @@ class Chain : private core::Noncopyable<Chain> {
       maps.push_back(map);
       current = current->prototype();
     } while (current != end);
-    void* mem = GC_MALLOC(GetControlSize() + sizeof(Map*) * maps.size());
+    void* mem = GC_MALLOC(
+        GetControlSize() + sizeof(Map*) * maps.size());  // NOLINT
     return new (mem) Chain(maps.begin(), maps.size());
   }
 
@@ -61,11 +62,15 @@ class Chain : private core::Noncopyable<Chain> {
   }
 
   pointer data() {
-    return reinterpret_cast<pointer>(this) + GetControlSize() / sizeof(value_type);
+    return
+        reinterpret_cast<pointer>(this) +
+        GetControlSize() / sizeof(value_type);
   }
 
   const_pointer data() const {
-    return reinterpret_cast<const_pointer>(this) + GetControlSize() / sizeof(value_type);
+    return
+        reinterpret_cast<const_pointer>(this) +
+        GetControlSize() / sizeof(value_type);
   }
 
   iterator begin() {

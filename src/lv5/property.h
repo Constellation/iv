@@ -7,7 +7,8 @@
 namespace iv {
 namespace lv5 {
 
-JSVal PropertyDescriptor::Get(Context* ctx, JSVal this_binding, Error* e) const {
+JSVal PropertyDescriptor::Get(Context* ctx,
+                              JSVal this_binding, Error* e) const {
   if (IsDataDescriptor()) {
     return AsDataDescriptor()->value();
   } else {
@@ -116,8 +117,10 @@ PropertyDescriptor PropertyDescriptor::SetDefault(
 }
 
 // if desc merged to current and has no effect, return true
-bool PropertyDescriptor::MergeWithNoEffect(const PropertyDescriptor& desc) const {
-  if (!desc.IsConfigurableAbsent() && desc.IsConfigurable() != IsConfigurable()) {
+bool PropertyDescriptor::MergeWithNoEffect(
+    const PropertyDescriptor& desc) const {
+  if (!desc.IsConfigurableAbsent() &&
+      desc.IsConfigurable() != IsConfigurable()) {
     return false;
   }
   if (!desc.IsEnumerableAbsent() && desc.IsEnumerable() != IsEnumerable()) {
@@ -127,14 +130,15 @@ bool PropertyDescriptor::MergeWithNoEffect(const PropertyDescriptor& desc) const
     return false;
   }
   if (desc.IsDataDescriptor()) {
-    if (!desc.AsDataDescriptor()->IsWritableAbsent() &&
-        desc.AsDataDescriptor()->IsWritable() != AsDataDescriptor()->IsWritable()) {
+    const DataDescriptor* data = desc.AsDataDescriptor();
+    if (!data->IsWritableAbsent() &&
+        data->IsWritable() != AsDataDescriptor()->IsWritable()) {
       return false;
     }
-    if (desc.AsDataDescriptor()->IsValueAbsent()) {
+    if (data->IsValueAbsent()) {
       return true;
     } else {
-      return JSVal::SameValue(desc.value_.data_, value_.data_);
+      return JSVal::SameValue(data->value(), value_.data_);
     }
   } else if (desc.IsAccessorDescriptor()) {
     return desc.value_.accessor_.getter_ == value_.accessor_.getter_ &&

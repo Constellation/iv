@@ -17,7 +17,7 @@ class Maybe {
   typedef Maybe<T> this_type;
   typedef void (this_type::*bool_type)() const;
 
-  Maybe(T* ptr) : ptr_(ptr) { }
+  Maybe(T* ptr) : ptr_(ptr) { }  // NOLINT
   Maybe() : ptr_(NULL) { }
 
   template<class U>

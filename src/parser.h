@@ -684,7 +684,8 @@ class Parser
         const Token::Type op = token_;
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
-        ParseVariableDeclarations(decls, token_ == Token::TK_CONST, false, CHECK);
+        ParseVariableDeclarations(decls,
+                                  token_ == Token::TK_CONST, false, CHECK);
         if (token_ == Token::TK_IN) {
           assert(decls);
           VariableStatement* const var =
@@ -722,8 +723,8 @@ class Parser
         if (token_ == Token::TK_IN) {
           // for in loop
           assert(init_expr);
-          init = factory_->NewExpressionStatement(init_expr,
-                                                  lexer_.previous_end_position());
+          init = factory_->NewExpressionStatement(
+              init_expr, lexer_.previous_end_position());
           if (!init_expr->IsValidLeftHandSide()) {
             RAISE("invalid for-in left-hand-side");
           }
@@ -1628,7 +1629,8 @@ class Parser
         ParseArguments(args, CHECK);
       }
       assert(target && args);
-      expr = factory_->NewConstructorCall(target, args, lexer_.previous_end_position());
+      expr = factory_->NewConstructorCall(
+          target, args, lexer_.previous_end_position());
     }
     while (true) {
       switch (token_) {
@@ -1831,7 +1833,8 @@ class Parser
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
     const std::size_t begin = lexer_.begin_position();
-    MaybeExpressions* const items = factory_->template NewVector<Maybe<Expression> >();
+    MaybeExpressions* const items =
+        factory_->template NewVector<Maybe<Expression> >();
     Next();
     while (token_ != Token::TK_RBRACK) {
       if (token_ == Token::TK_COMMA) {

@@ -13,5 +13,5 @@ inline void CallOnce(Once* once, OnceCallback func) {
   pthread_once(once, func);
 }
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #endif  // IV_CALLONCE_POSIX_H_

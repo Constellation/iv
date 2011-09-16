@@ -39,8 +39,9 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
       // section 15.9.3.2 new Date(value)
       const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, IV_LV5_ERROR(e));
       if (v.IsString()) {
-        return JSDate::New(ctx,
-                           date::TimeClip(date::Parse(*v.string()->GetFiber())));
+        return JSDate::New(
+            ctx,
+            date::TimeClip(date::Parse(*v.string()->GetFiber())));
       } else {
         const double V = v.ToNumber(ctx, IV_LV5_ERROR(e));
         return JSDate::New(ctx, date::TimeClip(V));

@@ -45,7 +45,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     void Insert(Symbol name, Map* target) {
       assert(IsEnabled());
       if (!table_) {
-        table_ = new (GC) Table();
+        table_ = new(GC)Table();
       }
       table_->insert(std::make_pair(name, target));
     }
@@ -93,7 +93,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     }
 
     void Push(std::size_t offset) {
-      entry_ = new (GC) DeleteEntry(entry_, offset);
+      entry_ = new(GC)DeleteEntry(entry_, offset);
       ++size_;
     }
 
@@ -263,7 +263,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   // empty unique table
-  Map(UniqueTag dummy)
+  explicit Map(UniqueTag dummy)
     : previous_(NULL),
       table_(NULL),
       transitions_(false),
@@ -287,7 +287,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
   template<typename Iter>
   Map(Iter it, Iter last)
     : previous_(NULL),
-      table_(new (GC) TargetTable(it, last)),
+      table_(new(GC)TargetTable(it, last)),
       transitions_(true),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
@@ -321,11 +321,11 @@ class Map : public radio::HeapObject<radio::POINTER> {
     Map* current = previous_;
     while (true) {
       if (!current) {
-        table_ = new (GC) TargetTable();
+        table_ = new(GC)TargetTable();
         break;
       } else {
         if (current->HasTable()) {
-          table_ = new (GC) TargetTable(*current->table());
+          table_ = new(GC)TargetTable(*current->table());
           break;
         } else {
           if (current->IsAddingMap()) {

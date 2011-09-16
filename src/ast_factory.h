@@ -231,7 +231,8 @@ class BasicAstFactory {
                                                           cond, next);
   }
 
-  ExpressionStatement* NewExpressionStatement(Expression* expr, std::size_t end) {
+  ExpressionStatement* NewExpressionStatement(Expression* expr,
+                                              std::size_t end) {
     return new (static_cast<Factory*>(this)) ExpressionStatement(expr);
   }
 

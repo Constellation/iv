@@ -20,10 +20,10 @@ inline int AtomicDecrement(volatile int* target) {
 }
 #elif defined(IV_OS_WIN)
 inline int AtomicIncrement(volatile int* target) {
-  return InterlockedIncrement(reinterpret_cast<volatile long*>(target));
+  return InterlockedIncrement(reinterpret_cast<volatile long*>(target));  // NOLINT
 }
 inline int AtomicDecrement(volatile int* target) {
-  return InterlockedDecrement(reinterpret_cast<volatile long*>(target));
+  return InterlockedDecrement(reinterpret_cast<volatile long*>(target));  // NOLINT
 }
 #elif defined(IV_OS_MACOSX)
 inline int AtomicIncrement(volatile int* target) {

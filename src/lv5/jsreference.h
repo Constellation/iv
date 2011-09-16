@@ -3,7 +3,7 @@
 #include <gc/gc_cpp.h>
 #include "lv5/jsval_fwd.h"
 #include "lv5/symbol.h"
-#include "lv5/cell.h"
+#include "lv5/radio/cell.h"
 namespace iv {
 namespace lv5 {
 

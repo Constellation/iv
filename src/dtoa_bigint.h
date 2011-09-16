@@ -306,7 +306,7 @@ class BigInt : protected std::vector<uint32_t> {
     return c;
   }
 
-  BigInt& operator<<=(int k) {
+  BigInt& operator<<=(int k) {  // NOLINT
     const int n = k >> 5;
     const int original = size();
     const int n1 = n + original + 1;
@@ -668,7 +668,7 @@ inline void DoubleToASCII(Buffer* buf,
   }
 
   if (word0(&u) & Sign_bit) {
-		// set sign for everything, including 0's and NaNs
+    // set sign for everything, including 0's and NaNs
     *sign_out = true;
     word0(&u) &= ~Sign_bit;  // clear sign bit
   } else {
@@ -686,26 +686,26 @@ inline void DoubleToASCII(Buffer* buf,
     word0(&d2) &= Frac_mask1;
     word0(&d2) |= Exp_11;
 
-    //	log(x)	~=~ log(1.5) + (x-1.5)/1.5
-    //	log10(x)	 =  log(x) / log(10)
-    //	 	~=~ log(1.5)/log(10) + (x-1.5)/(1.5*log(10))
-    //	log10(d) = (i-Bias)*log(2)/log(10) + log10(d2)
-    //	
-    //	This suggests computing an approximation k to log10(d) by
-    //	
-    //	k = (i - Bias)*0.301029995663981
-    //	 + ( (d2-1.5)*0.289529654602168 + 0.176091259055681 );
-    //	
-    //	We want k to be too large rather than too small.
-    //	The error in the first-order Taylor series approximation
-    //	is in our favor, so we just round up the constant enough
-    //	to compensate for any error in the multiplication of
-    //	(i - Bias) by 0.301029995663981; since |i - Bias| <= 1077,
-    //	and 1077 * 0.30103 * 2^-52 ~=~ 7.2e-14,
-    //	adding 1e-13 to the constant term more than suffices.
-    //	Hence we adjust the constant term to 0.1760912590558.
-    //	(We could get a more accurate k by invoking log10,
-    //	 but this is probably not worthwhile.)
+    //  log(x)  ~=~ log(1.5) + (x-1.5)/1.5
+    //  log10(x)   =  log(x) / log(10)
+    //     ~=~ log(1.5)/log(10) + (x-1.5)/(1.5*log(10))
+    //  log10(d) = (i-Bias)*log(2)/log(10) + log10(d2)
+    //
+    //  This suggests computing an approximation k to log10(d) by
+    //
+    //  k = (i - Bias)*0.301029995663981
+    //   + ( (d2-1.5)*0.289529654602168 + 0.176091259055681 );
+    //
+    //  We want k to be too large rather than too small.
+    //  The error in the first-order Taylor series approximation
+    //  is in our favor, so we just round up the constant enough
+    //  to compensate for any error in the multiplication of
+    //  (i - Bias) by 0.301029995663981; since |i - Bias| <= 1077,
+    //  and 1077 * 0.30103 * 2^-52 ~=~ 7.2e-14,
+    //  adding 1e-13 to the constant term more than suffices.
+    //  Hence we adjust the constant term to 0.1760912590558.
+    //  (We could get a more accurate k by invoking log10,
+    //   but this is probably not worthwhile.)
 
     i -= Bias;
     denorm = 0;
@@ -780,7 +780,7 @@ inline void DoubleToASCII(Buffer* buf,
 
   BigInt S, mhi, mlo, delta;
   if (ilim >= 0 && ilim <= Quick_max) {
-		// Try to get by with floating-point arithmetic.
+    // Try to get by with floating-point arithmetic.
     i = 0;
     dval(&d2) = dval(&u);
     const int k0 = k;
@@ -790,7 +790,7 @@ inline void DoubleToASCII(Buffer* buf,
       ds = kTens[k & 0xf];
       j = k >> 4;
       if (j & Bletch) {
-				// prevent overflows
+        // prevent overflows
         j &= Bletch - 1;
         dval(&u) /= kBigTens[kBigTens.size() - 1];
         ++ieps;
@@ -837,8 +837,8 @@ inline void DoubleToASCII(Buffer* buf,
     }
 
     if (LeftRight) {
-			// Use Steele & White method of only
-			// generating digits needed.
+      // Use Steele & White method of only
+      // generating digits needed.
       dval(&eps) = (0.5 / kTens[ilim - 1]) - dval(&eps);
       for (i = 0;;) {
         L = static_cast<int32_t>(dval(&u));
@@ -857,7 +857,7 @@ inline void DoubleToASCII(Buffer* buf,
         dval(&u) *= 10.0;
       }
     } else {
-			// Generate ilim digits, then fix them up.
+      // Generate ilim digits, then fix them up.
       dval(&eps) *= kTens[ilim - 1];
       for (i = 1;; ++i, dval(&u) *= 10.0) {
         L = static_cast<int32_t>(dval(&u));
@@ -886,10 +886,10 @@ inline void DoubleToASCII(Buffer* buf,
     ilim = ilim0;
   }
 
-	//  Do we have a "small" integer?
+  //  Do we have a "small" integer?
 
   if (be >= 0 && k <= Int_max) {
-		// Yes.
+    // Yes.
     ds = kTens[k];
     if (ndigits < 0 && ilim <= 0) {
       S.clear();
@@ -960,7 +960,7 @@ inline void DoubleToASCII(Buffer* buf,
     S.Pow5Multi(s5);
   }
 
-	// Check for special case that d is a normalized power of 2.
+  // Check for special case that d is a normalized power of 2.
   special_case = 0;
   if ((RoundingNone || LeftRight) && (!word1(&u) && !(word0(&u) & Bndry_mask) &&
                                       word0(&u) & (Exp_mask & ~Exp_msk1))) {
@@ -970,12 +970,12 @@ inline void DoubleToASCII(Buffer* buf,
     special_case = 1;
   }
 
-	// Arrange for convenient computation of quotients:
-	// shift left if necessary so divisor has 4 leading 0 bits.
-	// 
-	// Perhaps we should just compute leading 28 bits of S once
-	// and for all and pass them and a shift to quorem, so it
-	// can do shifts and ors to compute the numerator for q.
+  // Arrange for convenient computation of quotients:
+  // shift left if necessary so divisor has 4 leading 0 bits.
+  //
+  // Perhaps we should just compute leading 28 bits of S once
+  // and for all and pass them and a shift to quorem, so it
+  // can do shifts and ors to compute the numerator for q.
   if ((i = ((s5 ? 32 - Hi0Bits(S[S.size() - 1]) : 1) + s2) & 0x1f)) {
     i = 32 - i;
   }
@@ -1026,8 +1026,8 @@ inline void DoubleToASCII(Buffer* buf,
       mhi <<= m2;
     }
 
-		// Compute mlo -- check for special case
-		// that d is a normalized power of 2.
+    // Compute mlo -- check for special case
+    // that d is a normalized power of 2.
 
     mlo = mhi;
     if (special_case) {
@@ -1037,8 +1037,8 @@ inline void DoubleToASCII(Buffer* buf,
     for (i = 1;; ++i) {
       dig = Quorem(&b, &S) + '0';
 
-			// Do we yet have the shortest decimal string
-			// that will round to d?
+      // Do we yet have the shortest decimal string
+      // that will round to d?
 
       j = b.Compare(mlo);
       delta = S.Diff(mhi);
@@ -1099,7 +1099,7 @@ inline void DoubleToASCII(Buffer* buf,
     }
   }
 
-	// Round off last digit
+  // Round off last digit
 
   b <<= 1;
   j = b.Compare(S);
@@ -1284,7 +1284,7 @@ class DToA {
       begin[0] = '.';
       exponent_part = begin + precision_;
     }
-    int len = snprintf(exponent_part, 6, "e%+d", exponent_);
+    const int len = snprintf(exponent_part, 6, "e%+d", exponent_);  // NOLINT
     *(exponent_part + len) = '\0';
     return static_cast<Derived*>(this)->Create(start);
   }

@@ -33,7 +33,7 @@ class ScopedLock : private Noncopyable<> {
   bool locked_;
 };
 
-} } }  // iv::core::thread
+} } }  // namespace iv::core::thread
 #if defined(IV_OS_WIN)
 #include "thread_win.h"
 #else

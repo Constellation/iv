@@ -19,7 +19,8 @@ namespace detail {
 
 static const core::UString kEmptyPattern = core::ToUString("(?:)");
 
-} // namespace detail
+}  // namespace detail
+
 class JSRegExpImpl : public gc_cleanup {
  public:
   enum Flags {

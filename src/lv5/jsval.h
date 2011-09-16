@@ -52,7 +52,8 @@ static const uint64_t kTrue = kOtherValueTag | kBooleanTag | 0x1;
 static const uint64_t kUndefined = kOtherValueTag | kUndefinedTag;
 static const uint64_t kNull = kOtherValueTag;
 static const uint64_t kEmpty = 0x0;
-static const uint64_t kNaN = core::BitCast<uint64_t>(core::kNaN) + kDoubleOffset;
+static const uint64_t kNaN =
+    core::BitCast<uint64_t>(core::kNaN) + kDoubleOffset;
 
 } }  // namespace detail::jsval64
 
@@ -150,7 +151,8 @@ double JSVal::number() const {
   if (IsInt32()) {
     return int32();
   } else {
-    return core::BitCast<double>(value_.bytes_ - detail::jsval64::kDoubleOffset);
+    return core::BitCast<double>(
+        value_.bytes_ - detail::jsval64::kDoubleOffset);
   }
 }
 
@@ -162,7 +164,8 @@ void JSVal::set_value_int32(int32_t val) {
 void JSVal::set_value_uint32(uint32_t val) {
   if (static_cast<int32_t>(val) < 0) {  // LSB is 1
     value_.bytes_ =
-        core::BitCast<uint64_t>(static_cast<double>(val)) + detail::jsval64::kDoubleOffset;
+        core::BitCast<uint64_t>(
+            static_cast<double>(val)) + detail::jsval64::kDoubleOffset;
   } else {
     set_value_int32(static_cast<int32_t>(val));
   }

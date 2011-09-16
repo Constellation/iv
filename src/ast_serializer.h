@@ -369,7 +369,8 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void Visit(const ArrayLiteral* literal) {
     Append("{\"type\":\"array\",\"value\":[");
     typename MaybeExpressions::const_iterator it = literal->items().begin();
-    const typename MaybeExpressions::const_iterator end = literal->items().end();
+    const typename MaybeExpressions::const_iterator end =
+        literal->items().end();
     bool previous_is_elision = false;
     while (it != end) {
       if ((*it)) {

@@ -58,7 +58,7 @@ class DigitIterator : public std::iterator<std::forward_iterator_tag, int> {
     return *this;
   }
 
-  this_type operator++(int) {
+  this_type operator++(int) {  // NOLINT
     const this_type temp(*this);
     Next();
     return temp;

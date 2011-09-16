@@ -622,21 +622,25 @@ class Operation {
                         const Symbol& s, bool strict, Error* e) {
     if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
-      return IncrementGlobal<Target, Returned>(global, instr[3].value, strict, e);
+      return IncrementGlobal<Target, Returned>(global,
+                                               instr[3].value, strict, e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         instr[2].map = global->map();
         instr[3].value = slot.offset();
-        return IncrementGlobal<Target, Returned>(global, instr[3].value, strict, e);
+        return IncrementGlobal<Target, Returned>(global,
+                                                 instr[3].value, strict, e);
       } else {
         instr[2].map = NULL;
-        return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
+        return IncrementName<Target, Returned>(ctx_->global_env(),
+                                               s, strict, e);
       }
     }
   }
 
-  JSVal LoadGlobal(JSGlobal* global, Instruction* instr, const Symbol& s, bool strict, Error* e) {
+  JSVal LoadGlobal(JSGlobal* global,
+                   Instruction* instr, const Symbol& s, bool strict, Error* e) {
     if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
       return global->GetBySlotOffset(ctx_, instr[3].value, e);

@@ -214,15 +214,15 @@ struct OP {
   IV_STATIC_ASSERT(NUM_OF_OP <= 256);
 
 #define IS_NAME_LOOKUP_OP(op)\
-  ((op) == OP::LOAD_NAME ||\
-   (op) == OP::STORE_NAME ||\
-   (op) == OP::DELETE_NAME ||\
-   (op) == OP::CALL_NAME ||\
-   (op) == OP::INCREMENT_NAME ||\
-   (op) == OP::DECREMENT_NAME ||\
-   (op) == OP::POSTFIX_INCREMENT_NAME ||\
-   (op) == OP::POSTFIX_DECREMENT_NAME ||\
-   (op) == OP::TYPEOF_NAME)
+  ( (op) == OP::LOAD_NAME ||\
+    (op) == OP::STORE_NAME ||\
+    (op) == OP::DELETE_NAME ||\
+    (op) == OP::CALL_NAME ||\
+    (op) == OP::INCREMENT_NAME ||\
+    (op) == OP::DECREMENT_NAME ||\
+    (op) == OP::POSTFIX_INCREMENT_NAME ||\
+    (op) == OP::POSTFIX_DECREMENT_NAME ||\
+    (op) == OP::TYPEOF_NAME )
 
   template<OP::Type op>
   struct IsNameLookupOP {

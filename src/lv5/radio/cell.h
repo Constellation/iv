@@ -1,5 +1,5 @@
-#ifndef IV_LV5_HEAP_OBJECT_H_
-#define IV_LV5_HEAP_OBJECT_H_
+#ifndef IV_LV5_RADIO_CELL_H_
+#define IV_LV5_RADIO_CELL_H_
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
 namespace iv {
@@ -16,7 +16,7 @@ enum CellTag {
 
 class Cell {
  public:
-  Cell(int tag) : tag_(tag) { }
+  explicit Cell(int tag) : tag_(tag) { }
 
   int tag() const {
     return tag_;
@@ -43,4 +43,4 @@ class HeapObject<STRING>
 };
 
 } } }  // namespace iv::lv5::radio
-#endif  // IV_LV5_HEAP_OBJECT_H_
+#endif  // IV_LV5_RADIO_CELL_H_

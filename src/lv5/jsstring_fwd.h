@@ -20,7 +20,7 @@
 #include "static_assert.h"
 #include "thread_safe_ref_counted.h"
 #include "lv5/context_utils.h"
-#include "lv5/cell.h"
+#include "lv5/radio/cell.h"
 namespace iv {
 namespace lv5 {
 

@@ -71,11 +71,13 @@ inline void Instantiate(Context* ctx,
                                   configurable_bindings, IV_LV5_ERROR_VOID(e));
       }
       if (n > arg_count) {
-        env->SetMutableBinding(ctx, arg_name,
-                               JSUndefined, code->strict(), IV_LV5_ERROR_VOID(e));
+        env->SetMutableBinding(
+            ctx, arg_name,
+            JSUndefined, code->strict(), IV_LV5_ERROR_VOID(e));
       } else {
-        env->SetMutableBinding(ctx, arg_name,
-                               args[n-1], code->strict(), IV_LV5_ERROR_VOID(e));
+        env->SetMutableBinding(
+            ctx, arg_name,
+            args[n-1], code->strict(), IV_LV5_ERROR_VOID(e));
       }
     }
   }
@@ -143,10 +145,12 @@ inline void Instantiate(Context* ctx,
         decl_env->CreateImmutableBinding(symbol::arguments());
         decl_env->InitializeImmutableBinding(symbol::arguments(), args_obj);
       } else {
-        decl_env->CreateMutableBinding(ctx, symbol::arguments(),
-                                       configurable_bindings, IV_LV5_ERROR_VOID(e));
-        decl_env->SetMutableBinding(ctx, symbol::arguments(),
-                                    args_obj, false, IV_LV5_ERROR_VOID(e));
+        decl_env->CreateMutableBinding(
+            ctx, symbol::arguments(),
+            configurable_bindings, IV_LV5_ERROR_VOID(e));
+        decl_env->SetMutableBinding(
+            ctx, symbol::arguments(),
+            args_obj, false, IV_LV5_ERROR_VOID(e));
       }
     }
   }
@@ -164,5 +168,5 @@ inline void Instantiate(Context* ctx,
   }
 }
 
-} } }  // iv::lv5::railgun
+} } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_UTILITY_H_
