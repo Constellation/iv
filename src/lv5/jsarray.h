@@ -180,10 +180,13 @@ class JSArray : public JSObject {
                          bool th,
                          Error* e) {
     if (symbol::IsArrayIndexSymbol(name)) {
+      // section 15.4.5.1 step 4
       return DefineArrayIndexProperty(ctx, name, desc, th, e);
     } else if (name == symbol::length()) {
+      // section 15.4.5.1 step 3
       return DefineLengthProperty(ctx, desc, th, e);
     } else {
+      // section 15.4.5.1 step 5
       return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
     }
   }
@@ -267,19 +270,21 @@ class JSArray : public JSObject {
     return false;\
   } while (0)
 
+  // section 15.4.5.1 step 4
   bool DefineArrayIndexProperty(Context* ctx,
                                 Symbol name,
                                 const PropertyDescriptor& desc,
                                 bool th, Error* e) {
-    // array index
+    // 15.4.5.1 step 4-a
     const uint32_t index = symbol::GetIndexFromSymbol(name);
     const uint32_t old_len = length_.value();
+    // 15.4.5.1 step 4-b
     if (index >= old_len && !length_.IsWritable()) {
       REJECT("adding an element to the array"
              "which length is not writable is rejected");
     }
 
-    // define step
+    // dense array optimization code
     Slot slot;
     const bool is_default_descriptor = detail::IsDefaultDescriptor(desc);
     const bool is_absent_descriptor = detail::IsAbsentDescriptor(desc);
@@ -352,29 +357,34 @@ class JSArray : public JSObject {
         }
       }
     }
+    // 15.4.5.1 step 4-c
     const bool succeeded =
         JSObject::DefineOwnProperty(ctx, name, desc,
                                     false, IV_LV5_ERROR_WITH(e, false));
-    if (succeeded) {
-      dense_ = false;
-      if (kMaxVectorSize > index) {
-        if (vector_.size() > index) {
-          vector_[index] = JSEmpty;
-        }
-      } else {
-        if (map_) {
-          const SparseArray::iterator it = map_->find(index);
-          if (it != map_->end()) {
-            map_->erase(it);
-          }
-        }
-      }
-    } else {
+    // 15.4.5.1 step 4-d
+    if (!succeeded) {
       REJECT("define own property failed");
     }
+
+    // move state from dense array to not dense array
+    dense_ = false;
+    if (kMaxVectorSize > index) {
+      if (vector_.size() > index) {
+        vector_[index] = JSEmpty;
+      }
+    } else {
+      if (map_) {
+        const SparseArray::iterator it = map_->find(index);
+        if (it != map_->end()) {
+          map_->erase(it);
+        }
+      }
+    }
+    // 15.4.5.1 step 4-e, 4-f
     return FixUpLength(old_len, index);
   }
 
+  // section 15.4.5.1 step 3
   bool DefineLengthProperty(Context* ctx,
                             const PropertyDescriptor& desc,
                             bool th, Error* e) {
@@ -421,8 +431,10 @@ class JSArray : public JSObject {
       }
       const bool new_writable =
           new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
-      new_len_desc.set_writable(true);
-
+      // 15.4.5.1 step 3-i
+      if (!new_writable) {
+        new_len_desc.set_writable(true);
+      }
       bool succeeded = false;
       if (IsDefineOwnPropertyAccepted(length_,
                                       new_len_desc, th, &succeeded, e)) {
@@ -504,7 +516,6 @@ class JSArray : public JSObject {
       }
       if (!new_writable) {
         const DataDescriptor target = DataDescriptor(
-            ATTR::WRITABLE |
             ATTR::UNDEF_ENUMERABLE |
             ATTR::UNDEF_CONFIGURABLE);
         bool wasted = false;
