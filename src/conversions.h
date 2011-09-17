@@ -489,20 +489,20 @@ template<typename OutputIter>
 inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
   std::array<char, 15> buf;
   // -INT32_MIN is overflow
-  int integer_pos = buf.size() - 1;
+  int integer_pos = buf.size();
   if (integer >= 0) {
     do {
-      buf[integer_pos--] = (integer % 10) + '0';
+      buf[--integer_pos] = (integer % 10) + '0';
       integer /= 10;
     } while (integer > 0);
   } else {
     do {
-      buf[integer_pos--] = (-(integer % 10)) + '0';
+      buf[--integer_pos] = (-(integer % 10)) + '0';
       integer /= 10;
     } while (integer < 0);
-    buf[integer_pos--] = '-';
+    buf[--integer_pos] = '-';
   }
-  return std::copy(buf.begin() + integer_pos + 1, buf.end(), res);
+  return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
 template<typename T>
