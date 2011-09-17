@@ -84,7 +84,6 @@ class JSONStringifier : private core::Noncopyable<> {
   };
 
   JSString* Quote(const JSString& str, Error* e) {
-    static const char kHexDigits[17] = "0123456789abcdef";
     StringBuilder builder;
     builder.Append('"');
     const JSString::Fiber* fiber = str.GetFiber();
@@ -126,7 +125,7 @@ class JSONStringifier : private core::Noncopyable<> {
         std::array<char, 4> buf = { { '0', '0', '0', '0' } };
         builder.Append("\\u");
         for (int i = 0; (i < 4) || val; i++) {
-          buf[3 - i] = kHexDigits[val % 16];
+          buf[3 - i] = core::kHexDigits[val % 16];
           val /= 16;
         }
         builder.Append(buf.data(), buf.size());

@@ -106,6 +106,17 @@ TEST(ConversionsCase, DoubleToStringWithRadix) {
   DoubleToStringWithRadix(std::numeric_limits<double>::max(), 2);
 }
 
+TEST(ConversionsCase, Int32ToString) {
+  using iv::core::Int32ToString;
+  std::string str;
+  str.clear();
+  Int32ToString(std::numeric_limits<int32_t>::max(), std::back_inserter(str));
+  ASSERT_EQ("2147483647", str);
+  str.clear();
+  Int32ToString(std::numeric_limits<int32_t>::min(), std::back_inserter(str));
+  ASSERT_EQ("-2147483648", str);
+}
+
 TEST(ConversionsCase, StringToIntegerWithRadix) {
   using iv::core::StringToIntegerWithRadix;
   ASSERT_EQ(20, StringToIntegerWithRadix("20", 10, true));

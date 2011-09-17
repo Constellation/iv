@@ -620,6 +620,11 @@ JSObject* JSVal::ToObject(Context* ctx, Error* e) const {
 JSString* JSVal::ToString(Context* ctx, Error* e) const {
   if (IsString()) {
     return string();
+  } else if (IsInt32()) {
+    // int32 short cut
+    std::array<char, 15> buffer;
+    char* end = core::Int32ToString(int32(), buffer.data());
+    return JSString::New(ctx, buffer.data(), end);
   } else if (IsNumber()) {
     std::array<char, 80> buffer;
     const char* const str =
