@@ -12,6 +12,12 @@ namespace lv5 {
 namespace railgun {
 class VM {
  public:
+  enum State {
+    STATE_NORMAL,
+    STATE_RETURN,
+    STATE_CONSTRUCT,
+    STATE_THROW
+  };
   static const int32_t kJumpFromSubroutine = 0;
   static const int32_t kJumpFromReturn = 1;
   static const int32_t kJumpFromFinally = 2;
@@ -24,7 +30,8 @@ class VM {
                        JSEnv* variable_env, JSEnv* lexical_env,
                        JSVal this_binding, Error* e);
 
-  inline JSVal Execute(const Arguments& args, JSVMFunction* func, Error* e);
+  inline std::pair<JSVal, State> Execute(const Arguments& args,
+                                         JSVMFunction* func, Error* e);
 
   // normal pass
   explicit VM(Context* ctx)
@@ -95,7 +102,7 @@ class VM {
  private:
   // internal Execute
   // VM main routine
-  inline JSVal Execute(Frame* frame, Error* e);
+  inline std::pair<JSVal, State> Execute(Frame* frame, Error* e);
 
   Context* ctx_;
   Operation operation_;

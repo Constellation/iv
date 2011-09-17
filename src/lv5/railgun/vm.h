@@ -45,9 +45,9 @@ JSVal VM::Run(Code* code, Error* e) {
     stack_.Unwind(frame);
     return JSEmpty;
   }
-  const JSVal res = Execute(frame, e);
+  const std::pair<JSVal, State> res = Execute(frame, e);
   stack_.Unwind(frame);
-  return res;
+  return res.first;
 }
 
 // Global
@@ -69,9 +69,9 @@ JSVal VM::RunGlobal(Code* code, Error* e) {
     stack_.Unwind(frame);
     return JSEmpty;
   }
-  const JSVal res = Execute(frame, e);
+  const std::pair<JSVal, State> res = Execute(frame, e);
   stack_.Unwind(frame);
-  return res;
+  return res.first;
 }
 
 // Eval
@@ -97,13 +97,13 @@ JSVal VM::RunEval(Code* code,
     stack_.Unwind(frame);
     return JSEmpty;
   }
-  const JSVal res = Execute(frame, e);
+  const std::pair<JSVal, State> res = Execute(frame, e);
   stack_.Unwind(frame);
-  return res;
+  return res.first;
 }
 
-JSVal VM::Execute(const Arguments& args,
-                  JSVMFunction* func, Error* e) {
+std::pair<JSVal, VM::State> VM::Execute(const Arguments& args,
+                                        JSVMFunction* func, Error* e) {
   Frame* frame = stack_.NewCodeFrame(
       ctx_,
       args.GetEnd(),
@@ -111,19 +111,19 @@ JSVal VM::Execute(const Arguments& args,
       func->scope(), NULL, args.size(), args.IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return JSEmpty;
+    return std::make_pair(JSEmpty, STATE_THROW);
   }
   func->InstantiateBindings(ctx_, frame, e);
   if (*e) {
     stack_.Unwind(frame);
-    return JSEmpty;
+    return std::make_pair(JSEmpty, STATE_THROW);
   }
-  const JSVal res = Execute(frame, e);
+  const std::pair<JSVal, State> res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-JSVal VM::Execute(Frame* start, Error* e) {
+std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
   if (!start) {
     // if start frame is NULL, this pass is getting labels table for
@@ -135,7 +135,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
     } };
     // get direct threading dispatch table
     direct_threading_dispatch_table_ = &kDispatchTable;
-    return JSEmpty;
+    return std::make_pair(JSEmpty, STATE_NORMAL);
 #undef V
   }
 #endif
@@ -285,7 +285,9 @@ do {\
           const JSVal ret =
               (frame->constructor_call_ && !frame->ret_.IsObject()) ?
               frame->GetThis() : frame->ret_;
-          return ret;
+          return std::make_pair(
+              ret,
+              (frame->constructor_call_) ? STATE_CONSTRUCT : STATE_NORMAL);
         }
         frame->ret_ = JSUndefined;
         const JSVal ret =
@@ -1405,7 +1407,7 @@ do {\
         // if previous code is not native code, unwind frame and jump
         if (frame->prev_pc_ == NULL) {
           // this code is invoked by native function
-          return ret;
+          return std::make_pair(ret, STATE_RETURN);
         }
         // this code is invoked by JS code
         instr = frame->prev_pc_ + 2;  // EVAL / CALL / CONSTRUCT => 2
@@ -2021,7 +2023,7 @@ do {\
     break;
   }  // for main loop
   assert(*e);
-  return JSEmpty;
+  return std::make_pair(JSEmpty, STATE_THROW);
 #undef INCREMENT_NEXT
 #undef DISPATCH_ERROR
 #undef DISPATCH
