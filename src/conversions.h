@@ -505,6 +505,17 @@ inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
+template<typename OutputIter>
+inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
+  std::array<char, 15> buf;
+  int integer_pos = buf.size();
+  do {
+    buf[--integer_pos] = (integer % 10) + '0';
+    integer /= 10;
+  } while (integer > 0);
+  return std::copy(buf.begin() + integer_pos, buf.end(), res);
+}
+
 template<typename T>
 inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
   const int kMaxBufSize = 1100;

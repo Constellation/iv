@@ -622,10 +622,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       if (index < 10) {
         return NewSingle(ctx, index + '0');
       }
-      std::array<char, 15> buf;
-      const int len = snprintf(
-          buf.data(), buf.size(), "%"PRIu32, index);
-      return New(ctx, buf.begin(), len);
+      std::array<char, 15> buffer;
+      char* end = core::UInt32ToString(index, buffer.data());
+      return New(ctx, buffer.data(), end);
     } else {
       return New(ctx, *symbol::GetStringFromSymbol(sym));
     }

@@ -192,11 +192,9 @@ inline uint32_t GetIndexFromSymbol(Symbol sym) {
 inline core::UString GetIndexStringFromSymbol(Symbol sym) {
   assert(IsIndexSymbol(sym));
   const uint32_t index = GetIndexFromSymbol(sym);
-  std::array<char, 15> buf;
-  return core::UString(
-      buf.data(),
-      buf.data() + snprintf(
-          buf.data(), buf.size(), "%"PRIu32, index));
+  std::array<char, 15> buffer;
+  char* end = core::UInt32ToString(index, buffer.data());
+  return core::UString(buffer.data(), end);
 }
 
 inline core::UString GetSymbolString(Symbol sym) {

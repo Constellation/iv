@@ -115,6 +115,147 @@ TEST(ConversionsCase, Int32ToString) {
   str.clear();
   Int32ToString(std::numeric_limits<int32_t>::min(), std::back_inserter(str));
   ASSERT_EQ("-2147483648", str);
+  str.clear();
+  Int32ToString(0, std::back_inserter(str));
+  ASSERT_EQ("0", str);
+  str.clear();
+  Int32ToString(-1, std::back_inserter(str));
+  ASSERT_EQ("-1", str);
+  str.clear();
+  Int32ToString(-9, std::back_inserter(str));
+  ASSERT_EQ("-9", str);
+  str.clear();
+  Int32ToString(-10, std::back_inserter(str));
+  ASSERT_EQ("-10", str);
+  str.clear();
+  Int32ToString(-11, std::back_inserter(str));
+  ASSERT_EQ("-11", str);
+  str.clear();
+  Int32ToString(1, std::back_inserter(str));
+  ASSERT_EQ("1", str);
+  str.clear();
+  Int32ToString(9, std::back_inserter(str));
+  ASSERT_EQ("9", str);
+  str.clear();
+  Int32ToString(10, std::back_inserter(str));
+  ASSERT_EQ("10", str);
+  str.clear();
+  Int32ToString(11, std::back_inserter(str));
+  ASSERT_EQ("11", str);
+}
+
+TEST(ConversionsCase, UInt32ToString) {
+  using iv::core::UInt32ToString;
+  std::string str;
+  str.clear();
+  UInt32ToString(std::numeric_limits<uint32_t>::max(), std::back_inserter(str));
+  ASSERT_EQ("4294967295", str);
+  str.clear();
+  UInt32ToString(std::numeric_limits<uint32_t>::min(), std::back_inserter(str));
+  ASSERT_EQ("0", str);
+  str.clear();
+  UInt32ToString(9, std::back_inserter(str));
+  ASSERT_EQ("9", str);
+  str.clear();
+  UInt32ToString(10, std::back_inserter(str));
+  ASSERT_EQ("10", str);
+  str.clear();
+  UInt32ToString(11, std::back_inserter(str));
+  ASSERT_EQ("11", str);
+}
+
+TEST(ConversionsCase, Int32ToStringArrayBuffered) {
+  using iv::core::Int32ToString;
+  std::array<char, 15> buffer;
+  {
+    char* end =
+        Int32ToString(std::numeric_limits<int32_t>::max(), buffer.data());
+    ASSERT_EQ(10, std::distance(buffer.data(), end));
+    ASSERT_EQ("2147483647", std::string(buffer.data(), end));
+  }
+  {
+    char* end =
+        Int32ToString(std::numeric_limits<int32_t>::min(), buffer.data());
+    ASSERT_EQ(11, std::distance(buffer.data(), end));
+    ASSERT_EQ("-2147483648", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(0, buffer.data());
+    ASSERT_EQ(1, std::distance(buffer.data(), end));
+    ASSERT_EQ("0", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(-1, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("-1", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(-9, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("-9", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(-10, buffer.data());
+    ASSERT_EQ(3, std::distance(buffer.data(), end));
+    ASSERT_EQ("-10", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(-11, buffer.data());
+    ASSERT_EQ(3, std::distance(buffer.data(), end));
+    ASSERT_EQ("-11", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(1, buffer.data());
+    ASSERT_EQ(1, std::distance(buffer.data(), end));
+    ASSERT_EQ("1", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(9, buffer.data());
+    ASSERT_EQ(1, std::distance(buffer.data(), end));
+    ASSERT_EQ("9", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(10, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("10", std::string(buffer.data(), end));
+  }
+  {
+    char* end = Int32ToString(11, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("11", std::string(buffer.data(), end));
+  }
+}
+
+TEST(ConversionsCase, UInt32ToStringArrayBuffered) {
+  using iv::core::UInt32ToString;
+  std::array<char, 15> buffer;
+  {
+    char* end =
+        UInt32ToString(std::numeric_limits<uint32_t>::max(), buffer.data());
+    ASSERT_EQ(10, std::distance(buffer.data(), end));
+    ASSERT_EQ("4294967295", std::string(buffer.data(), end));
+  }
+  {
+    char* end =
+        UInt32ToString(std::numeric_limits<uint32_t>::min(), buffer.data());
+    ASSERT_EQ(1, std::distance(buffer.data(), end));
+    ASSERT_EQ("0", std::string(buffer.data(), end));
+  }
+  {
+    char* end = UInt32ToString(9, buffer.data());
+    ASSERT_EQ(1, std::distance(buffer.data(), end));
+    ASSERT_EQ("9", std::string(buffer.data(), end));
+  }
+  {
+    char* end = UInt32ToString(10, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("10", std::string(buffer.data(), end));
+  }
+  {
+    char* end = UInt32ToString(11, buffer.data());
+    ASSERT_EQ(2, std::distance(buffer.data(), end));
+    ASSERT_EQ("11", std::string(buffer.data(), end));
+  }
 }
 
 TEST(ConversionsCase, StringToIntegerWithRadix) {
