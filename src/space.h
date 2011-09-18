@@ -14,6 +14,7 @@
 #include "detail/functional.h"
 #include "detail/cstdint.h"
 #include "utils.h"
+#include "alloc.h"
 #include "conversions.h"
 
 namespace iv {
