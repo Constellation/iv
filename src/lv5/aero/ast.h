@@ -36,18 +36,19 @@ class Expression : public core::SpaceObject {
 inline void Expression::Accept(Visitor* visitor) { }
 
 typedef core::SpaceVector<core::Space, Expression*>::type Expressions;
+typedef core::SpaceVector<core::Space, Alternative*>::type Alternatives;
 typedef core::SpaceVector<core::Space, Range>::type Ranges;
 
 class Disjunction : public Expression {
  public:
-  explicit Disjunction(Expressions* alternatives)
+  explicit Disjunction(Alternatives* alternatives)
     : alternatives_(alternatives) { }
-  const Expressions& alternatives() const {
+  const Alternatives& alternatives() const {
     return *alternatives_;
   }
   DECLARE_DERIVED_NODE_TYPE(Disjunction)
  private:
-  Expressions* alternatives_;
+  Alternatives* alternatives_;
 };
 
 class Alternative : public Expression {

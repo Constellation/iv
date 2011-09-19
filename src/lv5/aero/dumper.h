@@ -19,9 +19,9 @@ class Dumper : public Visitor {
  private:
   void Visit(Disjunction* dis) {
     builder_.Append("DIS(");
-    for (Expressions::const_iterator it = dis->alternatives().begin(),
+    for (Alternatives::const_iterator it = dis->alternatives().begin(),
          last = dis->alternatives().end(); it != last;) {
-      (*it)->Accept(this);
+      Visit(*it);
       ++it;
       if (it != last) {
         builder_.Append('|');

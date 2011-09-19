@@ -77,6 +77,11 @@ class Parser {
         Expressions(Expressions::allocator_type(factory_));
   }
 
+  Alternatives* NewAlternatives() {
+    return new (factory_->New(sizeof(Alternatives)))
+        Alternatives(Alternatives::allocator_type(factory_));
+  }
+
   template<typename T>
   Ranges* NewRange(const T& range) {
     return new (factory_->New(sizeof(Ranges)))
@@ -85,18 +90,18 @@ class Parser {
   }
 
   Disjunction* ParseDisjunction(int end, int* e) {
-    Expressions* vec = NewExpressions();
-    Expression* first = ParseAlternative(end, CHECK);
+    Alternatives* vec = NewAlternatives();
+    Alternative* first = ParseAlternative(end, CHECK);
     vec->push_back(first);
     while (c_ == '|') {
       Advance();
-      Expression* alternative = ParseAlternative(end, CHECK);
+      Alternative* alternative = ParseAlternative(end, CHECK);
       vec->push_back(alternative);
     }
     return new(factory_)Disjunction(vec);
   }
 
-  Expression* ParseAlternative(int end, int* e) {
+  Alternative* ParseAlternative(int end, int* e) {
     // Terms
     Expressions* vec = NewExpressions();
     Expression* target = NULL;
