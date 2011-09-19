@@ -489,7 +489,7 @@ inline int FPutsUTF16(FILE* file, UTF16InputIter it, UTF16InputIter last) {
 }
 
 inline int FPutsUTF16(FILE* file, const UStringPiece& piece) {
-  return FPutsUTF16(file, piece);
+  return FPutsUTF16(file, piece.begin(), piece.end());
 }
 
 template<typename UTF16InputIter>
