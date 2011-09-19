@@ -9,6 +9,7 @@
 #include "detail/array.h"
 #include "static_assert.h"
 #include "utils.h"
+#include "noncopyable.h"
 
 namespace iv {
 namespace core {
