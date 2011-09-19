@@ -104,6 +104,7 @@ class DollarAssertion : public Assertion {
 class EscapedAssertion : public Assertion {
  public:
   explicit EscapedAssertion(bool uppercase) : uppercase_(uppercase) { }
+  bool uppercase() const { return uppercase_; }
   DECLARE_DERIVED_NODE_TYPE(EscapedAssertion)
  private:
   bool uppercase_;
@@ -129,11 +130,6 @@ class CharacterAtom : public Atom {
   DECLARE_DERIVED_NODE_TYPE(CharacterAtom)
  private:
   uint16_t character_;
-};
-
-class DotAtom : public Atom {
- public:
-  DECLARE_DERIVED_NODE_TYPE(DotAtom)
 };
 
 class RangeAtom : public Atom {

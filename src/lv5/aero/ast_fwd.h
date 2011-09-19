@@ -8,7 +8,6 @@
   V(EscapedAssertion)\
   V(DisjunctionAssertion)\
   V(CharacterAtom)\
-  V(DotAtom)\
   V(RangeAtom)\
   V(DisjunctionAtom)\
   V(Quantifiered)

@@ -9,7 +9,7 @@ class Visitor {
  public:
   virtual ~Visitor() { }
 #define V(NODE) virtual void Visit(NODE* node) = 0;
-AERO_EXPRESSION_AST_NODES(V)
+AERO_EXPRESSION_AST_DERIVED_NODES(V)
 #undef V
 };
 
