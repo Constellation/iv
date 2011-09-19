@@ -487,8 +487,11 @@ inline bool ConvertToUInt32(const StringPiece& str, uint32_t* value) {
 
 template<typename OutputIter>
 inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
-  std::array<char, 15> buf;
-  // -INT32_MIN is overflow
+  std::array<char, 10> buf;
+  // INT32_MAX => 2147483647
+  // INT32_MIN => -2147483648
+  //
+  // -INT32_MIN is overflowed, treat negative / positive separately
   int integer_pos = buf.size();
   if (integer >= 0) {
     do {
@@ -500,19 +503,22 @@ inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
       buf[--integer_pos] = (-(integer % 10)) + '0';
       integer /= 10;
     } while (integer < 0);
-    buf[--integer_pos] = '-';
+    *res++ = '-';
   }
+  assert(integer_pos >= 0);
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
 template<typename OutputIter>
 inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
-  std::array<char, 15> buf;
+  // UINT32_MAX => 4294967295 length: 10
+  std::array<char, 10> buf;
   int integer_pos = buf.size();
   do {
     buf[--integer_pos] = (integer % 10) + '0';
     integer /= 10;
   } while (integer > 0);
+  assert(integer_pos >= 0);
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
