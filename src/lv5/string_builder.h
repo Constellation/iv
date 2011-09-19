@@ -12,6 +12,18 @@ class BasicStringBuilder : protected std::vector<CharT> {
   typedef BasicStringBuilder this_type;
   typedef std::vector<CharT> container_type;
 
+  typedef typename container_type::value_type value_type;
+  typedef typename container_type::pointer pointer;
+  typedef typename container_type::const_pointer const_pointer;
+  typedef typename container_type::iterator iterator;
+  typedef typename container_type::const_iterator const_iterator;
+  typedef typename container_type::reference reference;
+  typedef typename container_type::const_reference const_reference;
+  typedef typename container_type::reverse_iterator reverse_iterator;
+  typedef typename container_type::const_reverse_iterator const_reverse_iterator;
+  typedef typename container_type::size_type size_type;
+  typedef typename container_type::difference_type difference_type;
+
   void Append(const core::UStringPiece& piece) {
     insert(container_type::end(), piece.begin(), piece.end());
   }
