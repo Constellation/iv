@@ -19,23 +19,13 @@ namespace iv {
 namespace core {
 namespace detail {
 
-template<typename T>
-class Conversions {
- public:
-  static const int kMaxSignificantDigits = 772;
-  static const std::string kInfinity;
-};
-
-template<typename T>
-const std::string Conversions<T>::kInfinity = "Infinity";
-
+static const std::string kInfinityString = "Infinity";
 static const double kInf = std::numeric_limits<double>::infinity();
 static const double kDoubleToInt32_Two32 = 4294967296.0;
 static const double kDoubleToInt32_Two31 = 2147483648.0;
+static const int kMaxSignificantDigits = 772;
 
 }  // namespace iv::core::detail
-
-typedef detail::Conversions<None> Conversions;
 
 static const char* kHexDigits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -71,7 +61,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   std::size_t pos = 0;
   int significant_digits = 0;
   int insignificant_digits = 0;
-  std::array<char, Conversions::kMaxSignificantDigits+10> buffer;
+  std::array<char, detail::kMaxSignificantDigits+10> buffer;
 
   // empty string ""
   if (it == last) {
@@ -127,7 +117,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
           ++it;
         }
         while (it != last && character::IsHexDigit(*it)) {
-          if (significant_digits < Conversions::kMaxSignificantDigits) {
+          if (significant_digits < detail::kMaxSignificantDigits) {
             buffer[pos++] = static_cast<char>(*it);
             ++it;
             ++significant_digits;
@@ -144,7 +134,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
     }
     if (is_decimal) {
       while (it != last && character::IsDecimalDigit(*it)) {
-        if (significant_digits < Conversions::kMaxSignificantDigits) {
+        if (significant_digits < detail::kMaxSignificantDigits) {
           buffer[pos++] = static_cast<char>(*it);
           ++significant_digits;
         } else {
@@ -156,7 +146,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         buffer[pos++] = '.';
         ++it;
         while (it != last && character::IsDecimalDigit(*it)) {
-          if (significant_digits < Conversions::kMaxSignificantDigits) {
+          if (significant_digits < detail::kMaxSignificantDigits) {
             buffer[pos++] = static_cast<char>(*it);
             ++significant_digits;
           }
@@ -171,7 +161,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       const Iter start = it;
       while (it != last &&
              character::IsDecimalDigit(*it)) {
-        if (significant_digits < Conversions::kMaxSignificantDigits) {
+        if (significant_digits < detail::kMaxSignificantDigits) {
           buffer[pos++] = static_cast<char>(*it);
           ++significant_digits;
         }
@@ -181,8 +171,8 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
         return kNaN;
       }
     } else {
-      for (std::string::const_iterator inf_it = Conversions::kInfinity.begin(),
-           inf_last = Conversions::kInfinity.end();
+      for (std::string::const_iterator inf_it = detail::kInfinityString.begin(),
+           inf_last = detail::kInfinityString.end();
            inf_it != inf_last; ++inf_it, ++it) {
         if (it == last || (*inf_it) != (*it)) {
           return kNaN;
