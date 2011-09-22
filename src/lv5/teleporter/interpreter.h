@@ -266,7 +266,6 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
-      // TODO(Constellation) value to exception
       RETURN_STMT(Context::THROW, value, NULL);
     }
     if (!ctx_->ret().IsEmpty()) {

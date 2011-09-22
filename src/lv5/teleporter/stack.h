@@ -36,7 +36,6 @@ class Stack : private core::Noncopyable<> {
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * 1024;
 
-// TODO(Constellation) this is patching...
 #if defined(IV_OS_MACOSX)
   static const size_type kMaxCallCount = 1024;
 #else
