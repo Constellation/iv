@@ -81,13 +81,10 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     // 15.3.4.3 Errata
     const uint32_t len = internal::GetLength(ctx, arg_array, IV_LV5_ERROR(e));
     ScopedArguments args_list(ctx, len, IV_LV5_ERROR(e));
-    uint32_t index = 0;
-    while (index < len) {
-        args_list[index] = arg_array->Get(
-            ctx,
-            symbol::MakeSymbolFromIndex(index),
-            IV_LV5_ERROR(e));
-        ++index;
+    for (uint32_t index = 0; index < len; ++index) {
+      args_list[index] =
+          arg_array->Get(ctx,
+                         symbol::MakeSymbolFromIndex(index), IV_LV5_ERROR(e));
     }
     return func->Call(&args_list, args[0], e);
   }

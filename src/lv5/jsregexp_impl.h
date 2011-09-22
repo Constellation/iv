@@ -13,6 +13,8 @@
 #include "lv5/third_party/jscre/pcre.h"
 #endif
 
+#include "lv5/aero/aero.h"
+
 namespace iv {
 namespace lv5 {
 namespace detail {

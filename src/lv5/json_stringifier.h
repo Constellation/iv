@@ -148,7 +148,7 @@ class JSONStringifier : private core::Noncopyable<> {
       k = property_list_;
     } else {
       std::vector<Symbol> keys;
-      value->GetOwnPropertyNames(ctx_, &keys, JSObject::kExcludeNotEnumerable);
+      value->GetOwnPropertyNames(ctx_, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
       prop.resize(keys.size());
       std::transform(keys.begin(), keys.end(),
                      prop.begin(), SymbolToString(ctx_));

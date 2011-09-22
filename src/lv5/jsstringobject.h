@@ -47,7 +47,7 @@ class JSStringObject : public JSObject {
   void GetOwnPropertyNames(Context* ctx,
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const {
-    if (mode == kIncludeNotEnumerable) {
+    if (mode == INCLUDE_NOT_ENUMERABLE) {
       if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
         vec->push_back(symbol::length());
       }

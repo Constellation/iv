@@ -16,6 +16,7 @@
 #include "lv5/class.h"
 #include "lv5/context_utils.h"
 #include "lv5/object_utils.h"
+#include "lv5/adapter/select1st.h"
 #include "lv5/railgun/fwd.h"
 namespace iv {
 namespace lv5 {
@@ -65,9 +66,7 @@ DescriptorToArrayLengthSlot(const PropertyDescriptor& desc) {
   const JSVal val = desc.AsDataDescriptor()->value();
   assert(val.IsNumber());
   const uint32_t res = val.GetUInt32();
-  return DescriptorSlot::Data<uint32_t>(
-      res,
-      desc.attrs());
+  return DescriptorSlot::Data<uint32_t>(res, desc.attrs());
 }
 
 }  // namespace iv::lv5::detail
@@ -232,7 +231,7 @@ class JSArray : public JSObject {
                            std::vector<Symbol>* vec,
                            EnumerationMode mode) const {
     uint32_t index = 0;
-    if (length_.IsEnumerable() || (mode == kIncludeNotEnumerable)) {
+    if (length_.IsEnumerable() || (mode == INCLUDE_NOT_ENUMERABLE)) {
       if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
         vec->push_back(symbol::length());
       }
@@ -418,8 +417,7 @@ class JSArray : public JSObject {
       if (new_len >= old_len) {
         bool returned = false;
         if (IsDefineOwnPropertyAccepted(length_,
-                                        new_len_desc,
-                                        th, &returned, e)) {
+                                        new_len_desc, th, &returned, e)) {
           length_ =
               detail::DescriptorToArrayLengthSlot(
                   PropertyDescriptor::Merge(new_len_desc, length_));
@@ -477,7 +475,7 @@ class JSArray : public JSObject {
         } else {
           std::vector<Symbol> keys;
           JSObject::GetOwnPropertyNames(ctx, &keys,
-                                        JSObject::kIncludeNotEnumerable);
+                                        JSObject::INCLUDE_NOT_ENUMERABLE);
           std::set<uint32_t> ix;
           for (std::vector<Symbol>::const_iterator it = keys.begin(),
                last = keys.end(); it != last; ++it) {
@@ -540,11 +538,14 @@ class JSArray : public JSObject {
   void CompactionToLength(uint32_t length) {
     if (length > kMaxVectorSize) {
       if (map_) {
-        const SparseArray copy(*map_);
-        for (SparseArray::const_iterator it = copy.begin(),
+        std::vector<uint32_t> copy(map_->size());
+        std::transform(map_->begin(), map_->end(),
+                       copy.begin(),
+                       adapter::select1st<SparseArray::value_type>());
+        for (std::vector<uint32_t>::const_iterator it = copy.begin(),
              last = copy.end(); it != last; ++it) {
-          if (it->first >= length) {
-            map_->erase(it->first);
+          if (*it >= length) {
+            map_->erase(*it);
           }
         }
         if (map_->empty()) {

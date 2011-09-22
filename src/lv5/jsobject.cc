@@ -47,8 +47,7 @@ JSObject::JSObject(Map* map,
       }\
     }\
   } while (0)
-JSVal JSObject::DefaultValue(Context* ctx,
-                             Hint::Object hint, Error* e) {
+JSVal JSObject::DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
   ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
   if (hint == Hint::STRING) {
     // hint is STRING
@@ -65,8 +64,7 @@ JSVal JSObject::DefaultValue(Context* ctx,
 }
 #undef TRY
 
-JSVal JSObject::Get(Context* ctx,
-                    Symbol name, Error* e) {
+JSVal JSObject::Get(Context* ctx, Symbol name, Error* e) {
   const PropertyDescriptor desc = GetProperty(ctx, name);
   if (desc.IsEmpty()) {
     return JSUndefined;
@@ -189,8 +187,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
 }
 
 void JSObject::Put(Context* ctx,
-                   Symbol name,
-                   const JSVal& val, bool th, Error* e) {
+                   Symbol name, const JSVal& val, bool th, Error* e) {
   if (!CanPut(ctx, name)) {
     if (th) {
       e->Report(Error::Type, "put failed");
@@ -199,13 +196,14 @@ void JSObject::Put(Context* ctx,
   }
   const PropertyDescriptor own_desc = GetOwnProperty(ctx, name);
   if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-    DefineOwnProperty(ctx,
-                      name,
-                      DataDescriptor(
-                          val,
-                          ATTR::UNDEF_ENUMERABLE |
-                          ATTR::UNDEF_CONFIGURABLE |
-                          ATTR::UNDEF_WRITABLE), th, e);
+    DefineOwnProperty(
+        ctx,
+        name,
+        DataDescriptor(val,
+                       ATTR::UNDEF_ENUMERABLE |
+                       ATTR::UNDEF_CONFIGURABLE |
+                       ATTR::UNDEF_WRITABLE),
+        th, e);
     return;
   }
   const PropertyDescriptor desc = GetProperty(ctx, name);

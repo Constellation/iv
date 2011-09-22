@@ -34,7 +34,7 @@ void Map::GetOwnPropertyNames(const JSObject* obj,
   if (AllocateTableIfNeeded()) {
     for (TargetTable::const_iterator it = table_->begin(),
          last = table_->end(); it != last; ++it) {
-      if ((mode == JSObject::kIncludeNotEnumerable ||
+      if ((mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
            obj->GetSlot(it->second).IsEnumerable()) &&
           (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
         vec->push_back(it->first);

@@ -1,8 +1,6 @@
 #ifndef IV_LV5_JSOBJECT_H_
 #define IV_LV5_JSOBJECT_H_
 #include <vector>
-#include <gc/gc_cpp.h>
-#include "ast.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsval_fwd.h"
 #include "lv5/property_fwd.h"
@@ -16,25 +14,24 @@ namespace lv5 {
 class Map;
 class Slot;
 class JSFunction;
-class Callable;
 class Context;
 class Error;
 
 class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
   enum EnumerationMode {
-    kExcludeNotEnumerable,
-    kIncludeNotEnumerable
+    EXCLUDE_NOT_ENUMERABLE,
+    INCLUDE_NOT_ENUMERABLE
   };
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   explicit JSObject(Map* map);
+
   JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
 
   virtual ~JSObject() { }
 
-  virtual JSVal DefaultValue(Context* ctx,
-                             Hint::Object hint, Error* e);
+  virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
 
   virtual JSVal Get(Context* ctx, Symbol name, Error* e);
 
@@ -123,8 +120,11 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   }
 
   static JSObject* New(Context* ctx);
+
   static JSObject* New(Context* ctx, Map* map);
+
   static JSObject* NewPlain(Context* ctx);
+
   static JSObject* NewPlain(Context* ctx, Map* map);
 
   static const Class* GetClass() {

@@ -11,7 +11,7 @@ class NameIterator : public radio::HeapObject<> {
   NameIterator(Context* ctx, JSObject* obj)
     : keys_(),
       iter_() {
-    obj->GetPropertyNames(ctx, &keys_, JSObject::kExcludeNotEnumerable);
+    obj->GetPropertyNames(ctx, &keys_, JSObject::EXCLUDE_NOT_ENUMERABLE);
     iter_ = keys_.begin();
   }
 

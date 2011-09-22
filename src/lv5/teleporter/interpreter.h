@@ -483,7 +483,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value = JSEmpty;
   std::vector<Symbol> keys;
-  obj->GetPropertyNames(ctx_, &keys, JSObject::kExcludeNotEnumerable);
+  obj->GetPropertyNames(ctx_, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
 
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {

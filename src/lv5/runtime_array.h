@@ -1020,9 +1020,8 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal test_result = callbackfn->Call(&arg_list,
-                                                 this_binding,
-                                                 IV_LV5_ERROR(e));
+      const JSVal test_result =
+          callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
       const bool result = test_result.ToBoolean(IV_LV5_ERROR(e));
       if (!result) {
         return JSFalse;
@@ -1056,9 +1055,8 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal test_result = callbackfn->Call(&arg_list,
-                                                 this_binding,
-                                                 IV_LV5_ERROR(e));
+      const JSVal test_result =
+          callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
       const bool result = test_result.ToBoolean(IV_LV5_ERROR(e));
       if (result) {
         return JSTrue;
@@ -1124,9 +1122,8 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal mapped_value = callbackfn->Call(&arg_list,
-                                                  this_binding,
-                                                  IV_LV5_ERROR(e));
+      const JSVal mapped_value =
+          callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
       ary->DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(k),
@@ -1164,9 +1161,8 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
       arg_list[0] = k_value;
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal selected = callbackfn->Call(&arg_list,
-                                              this_binding,
-                                              IV_LV5_ERROR(e));
+      const JSVal selected =
+          callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
       const bool result = selected.ToBoolean(IV_LV5_ERROR(e));
       if (result) {
         ary->DefineOwnProperty(
@@ -1236,9 +1232,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[2] = k;
       arg_list[3] = obj;
-      accumulator = callbackfn->Call(&arg_list,
-                                     JSUndefined,
-                                     IV_LV5_ERROR(e));
+      accumulator = callbackfn->Call(&arg_list, JSUndefined, IV_LV5_ERROR(e));
     }
   }
   return accumulator;
@@ -1299,9 +1293,7 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[2] = k;
       arg_list[3] = obj;
-      accumulator = callbackfn->Call(&arg_list,
-                                     JSUndefined,
-                                     IV_LV5_ERROR(e));
+      accumulator = callbackfn->Call(&arg_list, JSUndefined, IV_LV5_ERROR(e));
     }
   }
   return accumulator;

@@ -45,7 +45,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       }
     } else {
       std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::kExcludeNotEnumerable);
+      obj->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it) {
         const JSVal new_element =
