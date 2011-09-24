@@ -134,8 +134,10 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
     case TIME_ZONE_ID_STANDARD:
     case TIME_ZONE_ID_UNKNOWN: {
       // no DST or not DST
+      //
+      // no dwFlags set when converting
       ::WideCharToMultiByte(CP_UTF8,
-                            WC_NO_BEST_FIT_CHARS,
+                            0,
                             tzi.StandardName,
                             -1,
                             buffer.data(),
@@ -147,7 +149,7 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
     }
     case TIME_ZONE_ID_DAYLIGHT: {
       ::WideCharToMultiByte(CP_UTF8,
-                            WC_NO_BEST_FIT_CHARS,
+                            0,
                             tzi.DaylightName,
                             -1,
                             buffer.data(),
