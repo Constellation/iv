@@ -40,7 +40,7 @@ struct Keyword {
   }
 };
 
-static const std::array<const Keyword, 27> kKeywords = { {
+static const std::array<const Keyword, 28> kKeywords = { {
   { "jan", Keyword::MONTH, 1  },
   { "feb", Keyword::MONTH, 2  },
   { "mar", Keyword::MONTH, 3  },
@@ -55,6 +55,7 @@ static const std::array<const Keyword, 27> kKeywords = { {
   { "dec", Keyword::MONTH, 12 },
   { "am" , Keyword::AM_PM, 0  },
   { "pm" , Keyword::AM_PM, 12 },
+  { "jst", Keyword::TZ,    9  },
   { "ut" , Keyword::TZ,    0  },
   { "utc", Keyword::TZ,    0  },
   { "z",   Keyword::TZ,    0  },
@@ -67,7 +68,7 @@ static const std::array<const Keyword, 27> kKeywords = { {
   { "mst", Keyword::TZ,    -7 },
   { "pdt", Keyword::TZ,    -7 },
   { "pst", Keyword::TZ,    -8 },
-  { "",    Keyword::NONE,  0  },
+  { "",    Keyword::NONE,  0  }
 } };
 
 static const int kNone = std::numeric_limits<int>::max();

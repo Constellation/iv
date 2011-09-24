@@ -115,10 +115,10 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
-    std::array<char, 200> buf;
+    std::array<char, 100> buf;
     const int num = snprintf(
         buf.data(), buf.size(),
-        "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
+        "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
         date::WeekDayToString(time),
         date::MonthToString(time),
         date::DateFromTime(time),
@@ -128,8 +128,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
         date::SecFromTime(time),
         sign,
         tz_hour,
-        tz_min,
-        date::LocalTimeZone(time));
+        tz_min);
     return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
   }
 }
@@ -242,10 +241,10 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 200> buf;
+      std::array<char, 100> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
-          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
+          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
           date::WeekDayToString(time),
           date::MonthToString(time),
           date::DateFromTime(time),
@@ -255,8 +254,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
           date::SecFromTime(time),
           sign,
           tz_hour,
-          tz_min,
-          date::LocalTimeZone(time));
+          tz_min);
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -320,17 +318,16 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 200> buf;
+      std::array<char, 100> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
-          "%02d:%02d:%02d GMT%c%02d%02d (%s)",
+          "%02d:%02d:%02d GMT%c%02d%02d",
           date::HourFromTime(time),
           date::MinFromTime(time),
           date::SecFromTime(time),
           sign,
           tz_hour,
-          tz_min,
-          date::LocalTimeZone(time));
+          tz_min);
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -365,10 +362,10 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 200> buf;
+      std::array<char, 100> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
-          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
+          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
           date::WeekDayToString(time),
           date::MonthToString(time),
           date::DateFromTime(time),
@@ -378,8 +375,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
           date::SecFromTime(time),
           sign,
           tz_hour,
-          tz_min,
-          date::LocalTimeZone(time));
+          tz_min);
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
@@ -443,17 +439,16 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 200> buf;
+      std::array<char, 100> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
-          "%02d:%02d:%02d GMT%c%02d%02d (%s)",
+          "%02d:%02d:%02d GMT%c%02d%02d",
           date::HourFromTime(time),
           date::MinFromTime(time),
           date::SecFromTime(time),
           sign,
           tz_hour,
-          tz_min,
-          date::LocalTimeZone(time));
+          tz_min);
       return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
     }
   }
