@@ -22,7 +22,7 @@ namespace date {
 
 // UTF-8 code max length is 4
 // WCHAR 32 size to multibyte requires 32 * 4 space
-static const kMaxTZNameSize = 32 * 4;
+static const int kMaxTZNameSize = 32 * 4;
 
 inline std::time_t FileTimeToUnixTime(const FILETIME& ft) {
   LARGE_INTEGER i;
@@ -54,9 +54,8 @@ inline double DaylightSavingTA(double utc) {
   const DWORD r = ::GetTimeZoneInformation(&tzi);
   if (r == TIME_ZONE_ID_STANDARD || r == TIME_ZONE_ID_DAYLIGHT) {
     const double local = utc + LocalTZA();
-    if (tzi.StandardDate.wMonth == 0 ||
-        tzi.DaylightDate.wMonth == 0) {
-      break;
+    if (tzi.StandardDate.wMonth == 0 || tzi.DaylightDate.wMonth == 0) {
+      return 0.0;
     }
 
     const std::time_t ts = SystemTimeToUnixTime(tzi.StandardDate);
@@ -134,7 +133,7 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
     case TIME_ZONE_ID_STANDARD: {
       ::WideCharToMultiByte(CP_UTF8,
                             WC_NO_BEST_FIT_CHARS,
-                            tzi.StandardDate,
+                            tzi.StandardName,
                             -1,
                             buffer.data(),
                             buffer.size(),
@@ -146,7 +145,7 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
     case TIME_ZONE_ID_DAYLIGHT: {
       ::WideCharToMultiByte(CP_UTF8,
                             WC_NO_BEST_FIT_CHARS,
-                            tzi.DaylightDate,
+                            tzi.DaylightName,
                             -1,
                             buffer.data(),
                             buffer.size(),
@@ -163,7 +162,6 @@ inline const char* LocalTimeZone(double t) {
   if (core::IsNaN(t)) {
     return "";
   }
-  const struct char* kTZ = LocalTimeZoneImpl(t);
   static const std::array<char, kMaxTZNameSize> kTZ = LocalTimeZoneImpl(t);
   return kTZ.data();
 }
