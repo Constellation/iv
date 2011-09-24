@@ -115,7 +115,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
-    std::array<char, 50> buf;
+    std::array<char, 200> buf;
     const int num = snprintf(
         buf.data(), buf.size(),
         "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -242,7 +242,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 50> buf;
+      std::array<char, 200> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -320,7 +320,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 40> buf;
+      std::array<char, 200> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -365,7 +365,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 50> buf;
+      std::array<char, 200> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
@@ -443,7 +443,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 40> buf;
+      std::array<char, 200> buf;
       const int num = snprintf(
           buf.data(), buf.size(),
           "%02d:%02d:%02d GMT%c%02d%02d (%s)",
