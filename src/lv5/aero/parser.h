@@ -4,6 +4,7 @@
 #include "character.h"
 #include "conversions.h"
 #include "lv5/aero/range.h"
+#include "lv5/aero/flags.h"
 #include "lv5/aero/ast.h"
 #include "lv5/aero/range_builder.h"
 namespace iv {
@@ -33,7 +34,7 @@ namespace aero {
     return NULL;\
   } while (0)
 
-#define RAISE(str)\
+#define RAISE()\
   do {\
     *e = 1;\
     return NULL;\
@@ -51,9 +52,10 @@ class Parser {
  public:
   static const std::size_t kMaxPatternSize = core::Size::MB;
   static const int EOS = -1;
-  Parser(core::Space* factory, const core::UStringPiece& source)
-    : factory_(factory),
-      ranges_(),
+  Parser(core::Space* factory, const core::UStringPiece& source, int flags)
+    : flags_(flags),
+      factory_(factory),
+      ranges_(IsIgnoreCase()),
       source_(source),
       buffer8_(),
       pos_(0),
@@ -62,16 +64,18 @@ class Parser {
     Advance();
   }
 
-  Expression* ParsePattern() {
+  Disjunction* ParsePattern() {
     int error = 0;
     if (source_.size() > kMaxPatternSize) {
       return NULL;
     }
-    Expression* expr = ParseDisjunction(EOS, &error);
-    return (error) ? NULL : expr;
+    return ParseDisjunction(EOS, &error);
   }
 
  private:
+  bool IsIgnoreCase() const { return flags_ & IGNORE_CASE; }
+  bool IsMultiline() const { return flags_ & MULTILINE; }
+
   Expressions* NewExpressions() {
     return new (factory_->New(sizeof(Expressions)))
         Expressions(Expressions::allocator_type(factory_));
@@ -130,14 +134,14 @@ class Parser {
               Advance();
               Disjunction* dis = ParseDisjunction(')', CHECK);
               EXPECT(')');
-              target = new(factory_)DisjunctionAssertion(dis, true);
+              target = new(factory_)DisjunctionAssertion(dis, false);
               atom = true;
             } else if (c_ == '!') {
               // ( ? ! Disjunction )
               Advance();
               Disjunction* dis = ParseDisjunction(')', CHECK);
               EXPECT(')');
-              target = new(factory_)DisjunctionAssertion(dis, false);
+              target = new(factory_)DisjunctionAssertion(dis, true);
               atom = true;
             } else if (c_ == ':') {  // (?:
               // ( ? : Disjunction )
@@ -570,6 +574,7 @@ class Parser {
     }
   }
 
+  int flags_;
   core::Space* factory_;
   RangeBuilder ranges_;
   const core::UStringPiece source_;

@@ -4,6 +4,7 @@
 #include <utility>
 #include <algorithm>
 #include "noncopyable.h"
+#include "character.h"
 #include "lv5/aero/range.h"
 #include "lv5/aero/escape.h"
 namespace iv {
@@ -12,6 +13,9 @@ namespace aero {
 
 class RangeBuilder : core::Noncopyable<RangeBuilder> {
  public:
+  explicit RangeBuilder(bool ignore_case)
+    : ignore_case_(ignore_case), ranges_() { }
+
   // range value is [start, last]
   typedef std::vector<Range> Ranges;
 
@@ -20,7 +24,12 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
   }
 
   void AddRange(uint16_t start, uint16_t last) {
-    ranges_.push_back(std::make_pair(start, last));
+    if (start == last) {
+      Add(start);
+    } else {
+      // TODO(Constellation): implement ignore case
+      ranges_.push_back(std::make_pair(start, last));
+    }
   }
 
   void AddOrEscaped(uint16_t escaped, uint16_t ch) {
@@ -32,6 +41,15 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
   }
 
   void Add(uint16_t ch) {
+    if (ignore_case_) {
+      const uint16_t lu = core::character::ToLowerCase(ch);
+      const uint16_t uu = core::character::ToUpperCase(ch);
+      if (lu != uu) {
+        ranges_.push_back(std::make_pair(lu, lu));
+        ranges_.push_back(std::make_pair(uu, uu));
+        return;
+      }
+    }
     ranges_.push_back(std::make_pair(ch, ch));
   }
 
@@ -68,16 +86,23 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
   void AddInvertedEscapeRange(Iter it, Iter last) {
     uint16_t start = 0x0000;
     for (; it != last; ++it) {
-      ranges_.push_back(std::make_pair(start, it->first - 1));
+      AddRange(start, it->first - 1);
       start = it->second + 1;
     }
-    ranges_.push_back(std::make_pair(start, 0xFFFF));
+    AddRange(start, 0xFFFF);
+  }
+
+  template<typename Iter>
+  void AddRanges(Iter it, Iter last) {
+    for (; it != last; ++it) {
+      AddRange(it->first, it->second);
+    }
   }
 
   void AddEscape(uint16_t escaped) {
     switch (escaped) {
       case 'd': {
-        ranges_.insert(ranges_.end(), kDigitRanges.begin(), kDigitRanges.end());
+        AddRanges(kDigitRanges.begin(), kDigitRanges.end());
         break;
       }
       case 'D': {
@@ -85,7 +110,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 's': {
-        ranges_.insert(ranges_.end(), kSpaceRanges.begin(), kSpaceRanges.end());
+        AddRanges(kSpaceRanges.begin(), kSpaceRanges.end());
         break;
       }
       case 'S': {
@@ -93,7 +118,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 'w': {
-        ranges_.insert(ranges_.end(), kWordRanges.begin(), kWordRanges.end());
+        AddRanges(kWordRanges.begin(), kWordRanges.end());
         break;
       }
       case 'W': {
@@ -101,9 +126,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 'n': {
-        ranges_.insert(ranges_.end(),
-                       kLineTerminatorRanges.begin(),
-                       kLineTerminatorRanges.end());
+        AddRanges(kLineTerminatorRanges.begin(), kLineTerminatorRanges.end());
         break;
       }
       case '.': {
@@ -118,6 +141,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
     return start <= last;
   }
  private:
+  bool ignore_case_;
   Ranges ranges_;
 };
 

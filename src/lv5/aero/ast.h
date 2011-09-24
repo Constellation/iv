@@ -113,15 +113,15 @@ class EscapedAssertion : public Assertion {
 
 class DisjunctionAssertion : public Assertion {
  public:
-  DisjunctionAssertion(Disjunction* disjunction, bool equal)
+  DisjunctionAssertion(Disjunction* disjunction, bool inverted)
     : disjunction_(disjunction),
-      equal_(equal) {}
+      inverted_(inverted) {}
   Disjunction* disjunction() const { return disjunction_; }
-  bool equal() const { return equal_; }
+  bool inverted() const { return inverted_; }
   DECLARE_DERIVED_NODE_TYPE(DisjunctionAssertion)
  private:
   Disjunction* disjunction_;
-  bool equal_;
+  bool inverted_;
 };
 
 class CharacterAtom : public Atom {
@@ -137,7 +137,8 @@ class RangeAtom : public Atom {
  public:
   explicit RangeAtom(bool inverted, Ranges* ranges)
     : inverted_(inverted), ranges_(ranges) { }
-  Ranges* ranges() const { return ranges_; }
+  const Ranges& ranges() const { return *ranges_; }
+  bool inverted() const { return inverted_; }
   DECLARE_DERIVED_NODE_TYPE(RangeAtom)
  private:
   bool inverted_;

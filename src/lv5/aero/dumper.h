@@ -54,10 +54,10 @@ class Dumper : public Visitor {
   }
   void Visit(DisjunctionAssertion* assertion) {
     builder_.Append("AS(");
-    if (assertion->equal()) {
-      builder_.Append('=');
-    } else {
+    if (assertion->inverted()) {
       builder_.Append('!');
+    } else {
+      builder_.Append('=');
     }
     assertion->disjunction()->Accept(this);
     builder_.Append(')');
