@@ -89,7 +89,7 @@ bool JSVal::IsCell() const {
 
 radio::Cell* JSVal::cell() const {
   assert(IsCell());
-  return static_cast<radio::Cell*>(value_.cell_);
+  return value_.cell_;
 }
 
 bool JSVal::IsString() const {

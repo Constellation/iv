@@ -39,5 +39,23 @@ inline double HighResTime() {
   return CurrentTime();
 }
 
+inline const char* LocalTimeZone(double t) {
+  if (core::IsNaN(t)) {
+    return "";
+  }
+  const std::time_t tv = static_cast<time_t>(std::floor(t / kMsPerSecond));
+  const struct std::tm* const tmp = std::localtime(&tv);  // NOLINT
+  if (NULL == tmp) {
+    return "";
+  }
+#if defined(IV_OS_CYGWIN)
+  // cygwin not have tm_zone
+  // but, TimeZone name is provided as tzname[0] in cygwin
+  return tzname[0];
+#else
+  return tmp->tm_zone;
+#endif
+}
+
 } } }  // namespace iv::lv5::date
 #endif  // IV_LV5_DATE_UTILS_POSIX_H_

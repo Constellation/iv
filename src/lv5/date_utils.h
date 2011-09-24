@@ -45,9 +45,9 @@ inline int DaysInYear(int y) {
 }
 
 inline double DaysFromYear(int y) {
-  static const int kLeapDaysBefore1971By4Rule = 1970 / 4;
-  static const int kExcludeLeapDaysBefore1971By100Rule = 1970 / 100;
-  static const int kLeapDaysBefore1971By400Rule = 1970 / 400;
+  const int kLeapDaysBefore1971By4Rule = 1970 / 4;
+  const int kExcludeLeapDaysBefore1971By100Rule = 1970 / 100;
+  const int kLeapDaysBefore1971By400Rule = 1970 / 400;
 
   const double year_minus_one = y - 1;
   const double years_to_add_by_4 =
@@ -88,15 +88,15 @@ inline int DayWithinYear(double t) {
   return core::DoubleToInt32(Day(t) - DaysFromYear(YearFromTime(t)));
 }
 
-static const int kDaysMap[2][12] = {
-  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-};
+static const std::array<std::array<int, 12>, 2> kDaysMap = { {
+  { {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31} },
+  { {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31} }
+} };
 
-static const int kMonthMap[2][12] = {
-  {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
-  {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
-};
+static const std::array<std::array<int, 12>, 2> kMonthMap = { {
+  { {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334} },
+  { {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335} }
+} };
 
 static const std::array<const char*, 12> kMonths = { {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -117,8 +117,8 @@ inline int MonthFromTime(double t) {
 }
 
 inline const char* MonthToString(double t) {
-  assert(0 <= MonthFromTime(t) &&
-         MonthFromTime(t) < static_cast<int>(kMonths.size()));
+  assert(0 <= MonthFromTime(t));
+  assert(MonthFromTime(t) < static_cast<int>(kMonths.size()));
   return kMonths[MonthFromTime(t)];
 }
 
@@ -152,7 +152,8 @@ inline int WeekDay(double t) {
 }
 
 inline const char* WeekDayToString(double t) {
-  assert(0 <= WeekDay(t) && WeekDay(t) < static_cast<int>(kWeekDays.size()));
+  assert(0 <= WeekDay(t));
+  assert(WeekDay(t) < static_cast<int>(kWeekDays.size()));
   return kWeekDays[WeekDay(t)];
 }
 
@@ -214,24 +215,7 @@ inline double DaylightSavingTAFallback(double utc) {
   return 0.0;
 }
 
-
-static const char* kNaNTimeZone = "";
-inline const char* LocalTimeZone(double t) {
-  if (core::IsNaN(t)) {
-    return kNaNTimeZone;
-  }
-#if defined(IV_OS_WIN) || defined(IV_OS_CYGWIN)
-  static const char* value = "";
-  return value;
-#else
-  const std::time_t tv = static_cast<time_t>(std::floor(t/kMsPerSecond));
-  const struct std::tm* const tmp = std::localtime(&tv);  // NOLINT
-  if (NULL == tmp) {
-    return kNaNTimeZone;
-  }
-  return tmp->tm_zone;
-#endif
-}
+const char* LocalTimeZone(double t);
 
 inline double LocalTime(double t) {
   return t + LocalTZA() + DaylightSavingTA(t);
@@ -320,7 +304,7 @@ inline double MakeDay(double year, double month, double date) {
 }
 
 inline double MakeDate(double day, double time) {
-  double res = day * kMsPerDay + time;
+  const double res = day * kMsPerDay + time;
   if (std::abs(res) > kMaxLocal) {
     return core::kNaN;
   }

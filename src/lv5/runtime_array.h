@@ -478,7 +478,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     int sp = 1;
     int64_t l = 0, r = 0;
     const JSVal zero(0.0);
-    static const int32_t kStackSize = 32;
+    const int32_t kStackSize = 32;
     std::array<int64_t, kStackSize> lstack, rstack;
     lstack[0] = 0;
     rstack[0] = len - 1;
