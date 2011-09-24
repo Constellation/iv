@@ -53,6 +53,7 @@ inline double DaylightSavingTA(double utc) {
   TIME_ZONE_INFORMATION tzi;
   const DWORD r = ::GetTimeZoneInformation(&tzi);
   if (r == TIME_ZONE_ID_STANDARD || r == TIME_ZONE_ID_DAYLIGHT) {
+    // has DST
     const double local = utc + LocalTZA();
     if (tzi.StandardDate.wMonth == 0 || tzi.DaylightDate.wMonth == 0) {
       return 0.0;
@@ -130,7 +131,9 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
   TIME_ZONE_INFORMATION tzi;
   const DWORD r = ::GetTimeZoneInformation(&tzi);
   switch (r) {
-    case TIME_ZONE_ID_STANDARD: {
+    case TIME_ZONE_ID_STANDARD:
+    case TIME_ZONE_ID_UNKNOWN: {
+      // no DST or not DST
       ::WideCharToMultiByte(CP_UTF8,
                             WC_NO_BEST_FIT_CHARS,
                             tzi.StandardName,
