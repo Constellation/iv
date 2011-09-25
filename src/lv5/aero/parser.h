@@ -3,6 +3,7 @@
 #include "ustringpiece.h"
 #include "character.h"
 #include "conversions.h"
+#include "space.h"
 #include "lv5/aero/range.h"
 #include "lv5/aero/flags.h"
 #include "lv5/aero/ast.h"
@@ -14,7 +15,7 @@ namespace aero {
 #define IS(ch)\
   do {\
     if (c_ != ch) {\
-      *e = 1;\
+      *e = UNEXPECTED_CHARACTER;\
       return NULL;\
     }\
   } while (0)
@@ -22,7 +23,7 @@ namespace aero {
 #define EXPECT(ch)\
   do {\
     if (c_ != ch) {\
-      *e = 1;\
+      *e = UNEXPECTED_CHARACTER;\
       return NULL;\
     }\
     Advance();\
@@ -30,13 +31,13 @@ namespace aero {
 
 #define UNEXPECT(ch)\
   do {\
-    *e = 1;\
+    *e = UNEXPECTED_CHARACTER;\
     return NULL;\
   } while (0)
 
-#define RAISE()\
+#define RAISE(code)\
   do {\
-    *e = 1;\
+    *e = code;\
     return NULL;\
   } while (0)
 
@@ -52,6 +53,13 @@ class Parser {
  public:
   static const std::size_t kMaxPatternSize = core::Size::MB;
   static const int EOS = -1;
+  enum ErrorCode {
+    UNEXPECTED_CHARACTER = 1,
+    NUMBER_TOO_BIG = 2,
+    INVALID_RANGE = 3,
+    INVALID_QUANTIFIER = 4
+  };
+
   Parser(core::Space* factory, const core::UStringPiece& source, int flags)
     : flags_(flags),
       factory_(factory),
@@ -64,12 +72,13 @@ class Parser {
     Advance();
   }
 
-  Disjunction* ParsePattern() {
-    int error = 0;
+  Disjunction* ParsePattern(int* e) {
     if (source_.size() > kMaxPatternSize) {
       return NULL;
     }
-    return ParseDisjunction(EOS, &error);
+    Disjunction* dis = ParseDisjunction(EOS, e);
+    IS(EOS);
+    return dis;
   }
 
  private:
@@ -302,7 +311,7 @@ class Parser {
           const double numeric = ParseDecimalInteger(CHECK);
           const uint16_t uc = static_cast<uint16_t>(numeric);
           if (uc != numeric) {
-            RAISE();
+            RAISE(NUMBER_TOO_BIG);
           }
           return new(factory_)CharacterAtom(uc);
         } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {
@@ -384,7 +393,7 @@ class Parser {
             ranges_.AddOrEscaped(ranged2, last);
           } else {
             if (!RangeBuilder::IsValidRange(start, last)) {
-              RAISE();
+              RAISE(INVALID_RANGE);
             }
             ranges_.AddRange(start, last);
           }
@@ -467,7 +476,7 @@ class Parser {
             const double numeric = ParseDecimalInteger(CHECK);
             const uint16_t uc = static_cast<uint16_t>(numeric);
             if (uc != numeric) {
-              RAISE();
+              RAISE(NUMBER_TOO_BIG);
             }
             return uc;
           } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {
@@ -517,7 +526,7 @@ class Parser {
         } else {
           min = static_cast<int>(numeric1);
           if (min != numeric1) {
-            RAISE();
+            RAISE(NUMBER_TOO_BIG);
           }
         }
         if (c_ == ',') {
@@ -531,7 +540,7 @@ class Parser {
             } else {
               max = static_cast<int>(numeric2);
               if (max != numeric2) {
-                RAISE();
+                RAISE(NUMBER_TOO_BIG);
               }
             }
           }
@@ -546,7 +555,7 @@ class Parser {
       }
     }
     if (max < min) {
-      RAISE();
+      RAISE(INVALID_QUANTIFIER);
     }
     // postfix
     bool greedy = true;

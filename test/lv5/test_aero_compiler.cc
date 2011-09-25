@@ -13,7 +13,9 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::OutputDisAssembler disasm(stdout);
     iv::core::UString str = iv::core::ToUString("^ma[^a-d]$");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern();
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     disasm.DisAssemble(compiler.Compile(dis));
   }

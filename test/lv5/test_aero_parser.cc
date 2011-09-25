@@ -13,38 +13,48 @@ TEST(AeroParserCase, MainTest) {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("main");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_TRUE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
     iv::lv5::aero::Dumper dumper;
-    EXPECT_TRUE(iv::core::ToUString("DIS(ALT(main))") == dumper.Dump(expr));
+    EXPECT_TRUE(iv::core::ToUString("DIS(ALT(main))") == dumper.Dump(dis));
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_TRUE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("(ma[in])");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_TRUE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[\\d-a]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_TRUE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString(kURLRegExp);
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_TRUE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
   }
 }
 
@@ -54,35 +64,45 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_FALSE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in]]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_FALSE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma([in]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_FALSE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[b-a]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_FALSE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[b-aab]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
-    ASSERT_FALSE(expr);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
   }
 }
