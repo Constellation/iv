@@ -74,10 +74,9 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
           }
         }
         JSStringBuilder builder;
-        core::DoubleToStringWithRadix(
-            num,
-            static_cast<int>(radix),
-            &builder);
+        core::DoubleToStringWithRadix(num,
+                                      static_cast<int>(radix),
+                                      std::back_inserter(builder));
         return builder.Build(args.ctx());
       }
     } else {

@@ -512,8 +512,8 @@ inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
-template<typename T>
-inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
+template<typename OutputIter>
+inline OutputIter DoubleToStringWithRadix(double v, int radix, OutputIter res) {
   const int kMaxBufSize = 1100;
   const int kMaxDoubleToStringWithRadixBufferSize = 2200;
   std::array<char, kMaxDoubleToStringWithRadixBufferSize> buffer;
@@ -527,7 +527,8 @@ inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
   // integer part
   int integer_pos = kMaxBufSize - 1;
   do {
-    buffer[integer_pos--] = kHexDigits[static_cast<std::size_t>(Modulo(integer, radix))];
+    buffer[integer_pos--] =
+        kHexDigits[static_cast<std::size_t>(Modulo(integer, radix))];
     integer /= radix;
   } while (integer >= 1.0);
   if (is_negative) {
@@ -546,14 +547,13 @@ inline std::size_t DoubleToStringWithRadix(double v, int radix, T* buf) {
       decimal -= res;
     }
   }
-  buf->assign(buffer.data() + integer_pos + 1,
-              buffer.data() + decimal_pos);
-  return decimal_pos - integer_pos - 1;  // size
+  return std::copy(buffer.data() + integer_pos + 1,
+                   buffer.data() + decimal_pos, res);
 }
 
 inline std::string DoubleToStringWithRadix(double v, int radix) {
   std::string str;
-  DoubleToStringWithRadix(v, radix, &str);
+  DoubleToStringWithRadix(v, radix, std::back_inserter(str));
   return str;
 }
 
