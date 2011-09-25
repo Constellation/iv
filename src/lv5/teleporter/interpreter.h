@@ -1447,11 +1447,11 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* e) {
   const JSReference* const ref = val.reference();
   const JSVal& base = ref->base();
   if (ref->IsUnresolvableReference()) {
-    StringBuilder builder;
+    core::UStringBuilder builder;
     builder.Append('"');
     builder.Append(symbol::GetSymbolString(ref->GetReferencedName()));
     builder.Append("\" not defined");
-    e->Report(Error::Reference, builder.BuildUStringPiece());
+    e->Report(Error::Reference, builder.BuildPiece());
     return JSEmpty;
   }
   if (ref->IsPropertyReference()) {

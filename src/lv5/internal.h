@@ -313,19 +313,19 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
   if (arg_count == 0) {
-    builder->append("(function() { \n})");
+    builder->Append("(function() { \n})");
   } else if (arg_count == 1) {
-    builder->append("(function() { ");
+    builder->Append("(function() { ");
     JSString* const str = args[0].ToString(ctx, IV_LV5_ERROR_VOID(e));
-    builder->append(*str);
-    builder->append("\n})");
+    builder->AppendJSString(*str);
+    builder->Append("\n})");
   } else {
-    builder->append("(function(");
+    builder->Append("(function(");
     Arguments::const_iterator it = args.begin();
     const Arguments::const_iterator last = args.end() - 1;
     do {
       JSString* const str = it->ToString(ctx, IV_LV5_ERROR_VOID(e));
-      builder->append(*str);
+      builder->AppendJSString(*str);
       ++it;
       if (it != last) {
         builder->push_back(',');
@@ -333,10 +333,10 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
         break;
       }
     } while (true);
-    builder->append(") { ");
+    builder->Append(") { ");
     JSString* const prog = last->ToString(ctx, IV_LV5_ERROR_VOID(e));
-    builder->append(*prog);
-    builder->append("\n})");
+    builder->AppendJSString(*prog);
+    builder->Append("\n})");
   }
 }
 

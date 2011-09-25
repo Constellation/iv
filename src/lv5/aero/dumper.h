@@ -1,7 +1,7 @@
 // dumper for debug
 #ifndef IV_LV5_AERO_DUMPER_H_
 #define IV_LV5_AERO_DUMPER_H_
-#include "lv5/string_builder.h"
+#include "string_builder.h"
 #include "lv5/aero/visitor.h"
 #include "lv5/aero/ast.h"
 namespace iv {
@@ -14,7 +14,7 @@ class Dumper : public Visitor {
   core::UString Dump(Expression* node) {
     builder_.clear();
     node->Accept(this);
-    return builder_.BuildUString();
+    return builder_.Build();
   }
  private:
   void Visit(Disjunction* dis) {
@@ -91,7 +91,7 @@ class Dumper : public Visitor {
     builder_.Append(')');
   }
 
-  StringBuilder builder_;
+  core::UStringBuilder builder_;
 };
 
 } } }  // namespace iv::lv5::aero

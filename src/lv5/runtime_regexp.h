@@ -102,9 +102,9 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
-    StringBuilder builder;
+    JSStringBuilder builder;
     builder.Append('/');
-    builder.Append(*(reg->source(ctx)));
+    builder.AppendJSString(*(reg->source(ctx)));
     builder.Append('/');
     if (reg->global()) {
       builder.Append('g');

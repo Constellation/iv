@@ -33,5 +33,4 @@ TEST(FixedStringBuilderCase, MainTest) {
     builder.AddSubstring("TESTING", 4);
     EXPECT_STREQ("TEST", builder.Finalize());
   }
-
 }

@@ -14,7 +14,7 @@ namespace railgun {
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
-  StringBuilder builder;
+  JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
   Code* const code = CompileFunction(ctx, builder.Build(ctx), IV_LV5_ERROR(e));
   return JSVMFunction::New(ctx, code, ctx->global_env());

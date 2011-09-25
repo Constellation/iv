@@ -92,7 +92,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint8_t, 4> uc8buf;
   std::array<uint16_t, 3> hexbuf;
-  StringBuilder builder;
+  JSStringBuilder builder;
   hexbuf[0] = '%';
   const JSString::Fiber* fiber = str.GetFiber();
   for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -142,7 +142,7 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
 
 template<typename URITraits>
 JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
-  StringBuilder builder;
+  JSStringBuilder builder;
   const JSString::Fiber* str = arg.GetFiber();
   const uint32_t length = str->size();
   std::array<uint16_t, 3> buf;
@@ -383,7 +383,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   ubuf[0] = '%';
   ubuf[1] = 'u';
   hexbuf[0] = '%';
-  StringBuilder builder;
+  JSStringBuilder builder;
   if (len == 0) {
     return str;  // empty string
   }
@@ -421,7 +421,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
   if (len == 0) {
     return s;  // empty string
   }
-  StringBuilder builder;
+  JSStringBuilder builder;
   const JSString::Fiber* str = s->GetFiber();
   std::size_t k = 0;
   while (k != len) {

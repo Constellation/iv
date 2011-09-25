@@ -76,10 +76,10 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
     if (msg->empty()) {
       return name;
     }
-    StringBuilder builder;
-    builder.Append(*name);
+    JSStringBuilder builder;
+    builder.AppendJSString(*name);
     builder.Append(": ");
-    builder.Append(*msg);
+    builder.AppendJSString(*msg);
     return builder.Build(ctx);
   }
   e->Report(Error::Type, "base must be object");

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "test_aero.h"
 #include "alloc.h"
 #include "ustring.h"
 #include "unicode.h"
@@ -34,6 +35,13 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[\\d-a]");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
+    ASSERT_TRUE(expr);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString(kURLRegExp);
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     iv::lv5::aero::Disjunction* expr = parser.ParsePattern();
     ASSERT_TRUE(expr);

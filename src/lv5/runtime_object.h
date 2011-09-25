@@ -427,7 +427,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* e) {
     return JSString::NewAsciiString(args.ctx(), "[object Null]");
   }
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));
-  StringBuilder builder;
+  JSStringBuilder builder;
   builder.Append("[object ");
   builder.Append(obj->cls()->name);
   builder.Append("]");

@@ -73,7 +73,7 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
             return JSString::NewAsciiString(args.ctx(), "-Infinity");
           }
         }
-        StringBuilder builder;
+        JSStringBuilder builder;
         core::DoubleToStringWithRadix(
             num,
             static_cast<int>(radix),

@@ -375,7 +375,7 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
     const JSVal result = function_->Call(&a, JSUndefined, IV_LV5_ERROR_VOID(e));
     const JSString* const replaced_str =
         result.ToString(ctx_, IV_LV5_ERROR_VOID(e));
-    builder->Append(*replaced_str);
+    builder->AppendJSString(*replaced_str);
   }
 
  private:
@@ -409,7 +409,7 @@ inline void ReplaceOnce(Builder* builder,
 
         case '&':  // $& pattern
           state = Replace::kNormal;
-          builder->Append(search_str);
+          builder->AppendJSString(search_str);
           break;
 
         case '`':  // $` pattern
@@ -459,7 +459,7 @@ inline JSVal StringConstructor(const Arguments& args, Error* e) {
 inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.fromCharCode", args, e);
   Context* const ctx = args.ctx();
-  StringBuilder builder;
+  JSStringBuilder builder;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const uint32_t ch = it->ToUInt32(ctx, IV_LV5_ERROR(e));
@@ -531,12 +531,12 @@ inline JSVal StringConcat(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  StringBuilder builder;
-  builder.Append(*str);
+  JSStringBuilder builder;
+  builder.AppendJSString(*str);
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(e));
-    builder.Append(*r);
+    builder.AppendJSString(*r);
   }
   return builder.Build(args.ctx());
 }
@@ -666,7 +666,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     // searchValue is RegExp
     using std::get;
     const JSRegExp* reg = static_cast<JSRegExp*>(args[0].object());
-    StringBuilder builder;
+    JSStringBuilder builder;
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
       detail::FunctionReplacer replacer(str, *reg, callable, ctx);
@@ -705,7 +705,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       return str;
     }
     // found pattern
-    StringBuilder builder;
+    JSStringBuilder builder;
     builder.Append(fiber->begin(), fiber->begin() + loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
@@ -715,7 +715,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       a[2] = str;
       const JSVal result = callable->Call(&a, JSUndefined, IV_LV5_ERROR(e));
       const JSString* const res = result.ToString(ctx, IV_LV5_ERROR(e));
-      builder.Append(*res);
+      builder.AppendJSString(*res);
     } else {
       const JSString* replace_value;
       if (args_count > 1) {
@@ -993,7 +993,7 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
-  StringBuilder builder;
+  JSStringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
@@ -1008,7 +1008,7 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
-  StringBuilder builder;
+  JSStringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
@@ -1023,7 +1023,7 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
-  StringBuilder builder;
+  JSStringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
@@ -1038,7 +1038,7 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSString::Fiber* fiber = str->GetFiber();
-  StringBuilder builder;
+  JSStringBuilder builder;
   for (JSString::Fiber::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));

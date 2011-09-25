@@ -15,6 +15,7 @@
 #include "lv5/jsstring.h"
 #include "lv5/jsobject.h"
 #include "lv5/jsnumberobject.h"
+#include "lv5/jsstring_builder.h"
 #include "lv5/jsbooleanobject.h"
 #include "lv5/jsfunction.h"
 #include "lv5/gc_template.h"
@@ -84,7 +85,7 @@ class JSONStringifier : private core::Noncopyable<> {
   };
 
   JSString* Quote(const JSString& str, Error* e) {
-    StringBuilder builder;
+    JSStringBuilder builder;
     builder.Append('"');
     const JSString::Fiber* fiber = str.GetFiber();
     for (JSString::Fiber::const_iterator it = fiber->begin(),
@@ -180,7 +181,7 @@ class JSONStringifier : private core::Noncopyable<> {
     if (partial.empty()) {
       final = JSString::NewAsciiString(ctx_, "{}");
     } else {
-      StringBuilder builder;
+      JSStringBuilder builder;
       if (gap_.empty()) {
         builder.Append('{');
         std::vector<core::UString>::const_iterator
@@ -243,7 +244,7 @@ class JSONStringifier : private core::Noncopyable<> {
     if (partial.empty()) {
       final = JSString::NewAsciiString(ctx_, "[]");
     } else {
-      StringBuilder builder;
+      JSStringBuilder builder;
       if (gap_.empty()) {
         builder.Append('[');
         std::vector<core::UString>::const_iterator

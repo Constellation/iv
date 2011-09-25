@@ -3,6 +3,7 @@
 #include <gc/gc_cpp.h>
 #include "notfound.h"
 #include "debug.h"
+#include "string_builder.h"
 #include "lv5/gc_template.h"
 #include "lv5/jsobject.h"
 #include "lv5/symbol.h"
@@ -10,7 +11,6 @@
 #include "lv5/context_utils.h"
 #include "lv5/error.h"
 #include "lv5/jsval_fwd.h"
-#include "lv5/string_builder.h"
 #include "lv5/radio/cell.h"
 
 namespace iv {
@@ -305,12 +305,11 @@ class JSObjectEnv : public JSEnv {
     const bool value = record_->HasProperty(ctx, name);
     if (!value) {
       if (strict) {
-        StringBuilder builder;
+        core::UStringBuilder builder;
         builder.Append('"');
         builder.Append(symbol::GetSymbolString(name));
         builder.Append("\" not defined");
-        res->Report(Error::Reference,
-                    builder.BuildUStringPiece());
+        res->Report(Error::Reference, builder.BuildPiece());
       }
       return JSUndefined;
     }

@@ -124,7 +124,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   const char separator = ',';
   const Symbol toLocaleString = context::Intern(ctx, "toLocaleString");
   ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
-  StringBuilder builder;
+  JSStringBuilder builder;
   {
     const JSVal first =
         array->Get(ctx, symbol::MakeSymbolFromIndex(0u), IV_LV5_ERROR(e));
@@ -139,7 +139,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
                                                           elm_obj,
                                                           IV_LV5_ERROR(e));
       const JSString* const str = R.ToString(ctx, IV_LV5_ERROR(e));
-      builder.Append(*str);
+      builder.AppendJSString(*str);
     }
   }
 
@@ -161,7 +161,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
                                                           elm_obj,
                                                           IV_LV5_ERROR(e));
       const JSString* const str = R.ToString(ctx, IV_LV5_ERROR(e));
-      builder.Append(*str);
+      builder.AppendJSString(*str);
     }
     ++k;
   }
@@ -249,25 +249,25 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
-  StringBuilder builder;
+  JSStringBuilder builder;
   {
     const JSVal element0 =
         obj->Get(ctx, symbol::MakeSymbolFromIndex(0u), IV_LV5_ERROR(e));
     if (!element0.IsUndefined() && !element0.IsNull()) {
       const JSString* const str = element0.ToString(ctx, IV_LV5_ERROR(e));
-      builder.Append(*str);
+      builder.AppendJSString(*str);
     }
   }
   uint32_t k = 1;
   while (k < len) {
-    builder.Append(*separator);
+    builder.AppendJSString(*separator);
     const JSVal element = obj->Get(
         ctx,
         symbol::MakeSymbolFromIndex(k),
         IV_LV5_ERROR(e));
     if (!element.IsUndefined() && !element.IsNull()) {
       const JSString* const str = element.ToString(ctx, IV_LV5_ERROR(e));
-      builder.Append(*str);
+      builder.AppendJSString(*str);
     }
     ++k;
   }

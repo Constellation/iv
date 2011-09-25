@@ -1,10 +1,12 @@
-#ifndef IV_LV5_STRING_BUILDER_H_
-#define IV_LV5_STRING_BUILDER_H_
+#ifndef IV_STRING_BUILDER_H_
+#define IV_STRING_BUILDER_H_
 #include <vector>
 #include <iterator>
-#include "lv5/jsstring_fwd.h"
+#include <string>
+#include "stringpiece.h"
+#include "ustringpiece.h"
 namespace iv {
-namespace lv5 {
+namespace core {
 
 template<typename CharT = uint16_t>
 class BasicStringBuilder : protected std::vector<CharT> {
@@ -32,10 +34,6 @@ class BasicStringBuilder : protected std::vector<CharT> {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
-  void Append(const JSString& str) {
-    str.Copy(std::back_inserter<container_type>(*this));
-  }
-
   void Append(CharT ch) {
     push_back(ch);
   }
@@ -60,10 +58,6 @@ class BasicStringBuilder : protected std::vector<CharT> {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
-  void append(const JSString& str) {
-    str.Copy(std::back_inserter<container_type>(*this));
-  }
-
   using container_type::push_back;
 
   using container_type::insert;
@@ -72,20 +66,19 @@ class BasicStringBuilder : protected std::vector<CharT> {
 
   using container_type::clear;
 
-  JSString* Build(Context* ctx) const {
-    return JSString::New(ctx, container_type::begin(), container_type::end());
+  core::BasicStringPiece<CharT> BuildPiece() const {
+    return core::BasicStringPiece<CharT>(container_type::data(),
+                                         container_type::size());
   }
 
-  core::UStringPiece BuildUStringPiece() const {
-    return core::UStringPiece(container_type::data(), container_type::size());
-  }
-
-  core::UString BuildUString() const {
-    return core::UString(container_type::data(), container_type::size());
+  std::basic_string<CharT> Build() const {
+    return std::basic_string<CharT>(container_type::data(),
+                                    container_type::size());
   }
 };
 
-typedef BasicStringBuilder<uint16_t> StringBuilder;
+typedef BasicStringBuilder<char> StringBuilder;
+typedef BasicStringBuilder<uint16_t> UStringBuilder;
 
-} }  // namespace iv::lv5
-#endif  // IV_LV5_STRING_BUILDER_H_
+} }  // namespace iv::core
+#endif  // IV_STRING_BUILDER_H_

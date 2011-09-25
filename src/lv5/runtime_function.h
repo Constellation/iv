@@ -35,7 +35,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
-    StringBuilder builder;
+    JSStringBuilder builder;
     builder.Append(detail::kFunctionPrefix);
     const JSVal name = func->Get(ctx,
                                  context::Intern(ctx, "name"),
@@ -44,7 +44,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
     if (name_str->empty()) {
       builder.Append("anonymous");
     } else {
-      builder.Append(*name_str);
+      builder.AppendJSString(*name_str);
     }
     builder.Append(func->GetSource());
     return builder.Build(args.ctx());

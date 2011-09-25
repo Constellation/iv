@@ -3,7 +3,7 @@
 #include "lv5/jsobject.h"
 #include "lv5/jsarray.h"
 #include "lv5/jsstring_fwd.h"
-#include "lv5/string_builder.h"
+#include "lv5/jsstring_builder.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -27,7 +27,7 @@ inline uint32_t SplitFiber(Context* ctx,
 inline uint32_t SplitFiberWithOneChar(Context* ctx,
                                       JSArray* ary,
                                       uint16_t ch,
-                                      StringBuilder* builder,
+                                      JSStringBuilder* builder,
                                       const JSString::Fiber* fiber,
                                       uint32_t index,
                                       uint32_t limit, Error* e) {
@@ -90,7 +90,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
 
 JSArray* JSString::Split(Context* ctx, JSArray* ary,
                          uint16_t ch, uint32_t limit, Error* e) const {
-  StringBuilder builder;
+  JSStringBuilder builder;
   uint32_t index = 0;
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     index = detail::SplitFiberWithOneChar(
@@ -106,7 +106,6 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),
                                         fibers_.begin() + fiber_count());
-    StringBuilder builder;
     while (true) {
       const FiberSlot* current = slots.back();
       assert(!slots.empty());

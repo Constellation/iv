@@ -111,7 +111,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
-  StringBuilder builder;
+  JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
   JSString* const source = builder.Build(ctx);
   JSScript* const script = CompileScript(ctx, source, false, IV_LV5_ERROR(e));
