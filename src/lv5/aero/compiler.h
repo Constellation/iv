@@ -54,7 +54,7 @@ class Compiler : private Visitor {
          last = jmp_.end(); it != last; ++it) {
       Emit4At(*it, Current());
     }
-    jmp_.resize(jmp);
+    jmp_.resize(jmp);  // shrink jmp_ target buffer
   }
 
   void Visit(Alternative* alt) {

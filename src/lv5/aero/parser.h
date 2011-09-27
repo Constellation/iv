@@ -76,7 +76,7 @@ class Parser {
     if (source_.size() > kMaxPatternSize) {
       return NULL;
     }
-    Disjunction* dis = ParseDisjunction(EOS, e);
+    Disjunction* dis = ParseDisjunction<EOS>(e);
     IS(EOS);
     return dis;
   }
@@ -102,23 +102,25 @@ class Parser {
                Ranges::allocator_type(factory_));
   }
 
-  Disjunction* ParseDisjunction(int end, int* e) {
+  template<int END>
+  Disjunction* ParseDisjunction(int* e) {
     Alternatives* vec = NewAlternatives();
-    Alternative* first = ParseAlternative(end, CHECK);
+    Alternative* first = ParseAlternative<END>(CHECK);
     vec->push_back(first);
     while (c_ == '|') {
       Advance();
-      Alternative* alternative = ParseAlternative(end, CHECK);
+      Alternative* alternative = ParseAlternative<END>(CHECK);
       vec->push_back(alternative);
     }
     return new(factory_)Disjunction(vec);
   }
 
-  Alternative* ParseAlternative(int end, int* e) {
+  template<int END>
+  Alternative* ParseAlternative(int* e) {
     // Terms
     Expressions* vec = NewExpressions();
     Expression* target = NULL;
-    while (c_ >= 0 && c_ != '|' && c_ != end) {
+    while (c_ >= 0 && c_ != '|' && c_ != END) {
       bool atom = false;
       switch (c_) {
         case '^': {
@@ -141,21 +143,21 @@ class Parser {
             if (c_ == '=') {
               // ( ? = Disjunction )
               Advance();
-              Disjunction* dis = ParseDisjunction(')', CHECK);
+              Disjunction* dis = ParseDisjunction<')'>(CHECK);
               EXPECT(')');
               target = new(factory_)DisjunctionAssertion(dis, false);
               atom = true;
             } else if (c_ == '!') {
               // ( ? ! Disjunction )
               Advance();
-              Disjunction* dis = ParseDisjunction(')', CHECK);
+              Disjunction* dis = ParseDisjunction<')'>(CHECK);
               EXPECT(')');
               target = new(factory_)DisjunctionAssertion(dis, true);
               atom = true;
             } else if (c_ == ':') {  // (?:
               // ( ? : Disjunction )
               Advance();
-              Disjunction* dis = ParseDisjunction(')', CHECK);
+              Disjunction* dis = ParseDisjunction<')'>(CHECK);
               EXPECT(')');
               target = new(factory_)DisjunctionAtom(dis, false);
               atom = true;
@@ -164,7 +166,7 @@ class Parser {
             }
           } else {
             // ( Disjunction )
-            Disjunction* dis = ParseDisjunction(')', CHECK);
+            Disjunction* dis = ParseDisjunction<')'>(CHECK);
             EXPECT(')');
             target = new(factory_)DisjunctionAtom(dis, true);
             atom = true;
@@ -561,7 +563,9 @@ class Parser {
     bool greedy = true;
     if (c_ == '?') {
       Advance();
-      greedy = false;
+      if (max != min) {
+        greedy = false;
+      }
     }
     return new(factory_)Quantifiered(target, min, max, greedy);
   }
