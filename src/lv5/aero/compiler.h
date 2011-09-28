@@ -192,7 +192,30 @@ class Compiler : private Visitor {
         Emit4At(pos2, Current());
       }
     } else if (atom->min() == 0 && atom->max() == kRegExpInfinity) {
-      // * pattern
+      // * pattern. counter not used
+      if (atom->greedy()) {
+        const std::size_t pos1 = Current();
+        Emit<OP::PUSH_BACKTRACK>();
+        const std::size_t pos2 = Current();
+        Emit4(0u);  // dummy
+        atom->expression()->Accept(this);
+        Emit<OP::JUMP>();
+        Emit4(pos1);
+        Emit4At(pos2, Current());
+      } else {
+        const std::size_t pos1 = Current();
+        Emit<OP::PUSH_BACKTRACK>();
+        const std::size_t pos2 = Current();
+        Emit4(0u);  // dummy 1
+        Emit<OP::JUMP>();
+        const std::size_t pos3 = Current();
+        Emit4(0u);  // dummy 2
+        Emit4At(pos2, Current());
+        atom->expression()->Accept(this);
+        Emit<OP::JUMP>();
+        Emit4(pos1);
+        Emit4At(pos3, Current());
+      }
     } else {
     }
   }
