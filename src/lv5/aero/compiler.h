@@ -128,6 +128,7 @@ class Compiler : private Visitor {
   }
 
   void Visit(Quantifiered* atom) {
+    atom->expression()->Accept(this);
   }
 
   template<OP::Type op>

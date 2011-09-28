@@ -498,7 +498,7 @@ class Parser {
     }
   }
 
-  Quantifiered* ParseQuantifier(Expression* target, int* e) {
+  Expression* ParseQuantifier(Expression* target, int* e) {
     // prefix
     int min = 0, max = 0;
     switch (c_) {
@@ -566,6 +566,10 @@ class Parser {
       if (max != min) {
         greedy = false;
       }
+    }
+    if (min == max && min == 1) {
+      assert(max == 1);
+      return target;
     }
     return new(factory_)Quantifiered(target, min, max, greedy);
   }
