@@ -500,7 +500,8 @@ class Parser {
 
   Expression* ParseQuantifier(Expression* target, int* e) {
     // prefix
-    int min = 0, max = 0;
+    uint32_t min = 0;
+    uint32_t max = 0;
     switch (c_) {
       case '*': {
         Advance();
@@ -526,7 +527,7 @@ class Parser {
         if (numeric1 > kRegExpInfinity) {
           min = kRegExpInfinity;
         } else {
-          min = static_cast<int>(numeric1);
+          min = static_cast<uint32_t>(numeric1);
           if (min != numeric1) {
             RAISE(NUMBER_TOO_BIG);
           }
@@ -540,7 +541,7 @@ class Parser {
             if (numeric2 > kRegExpInfinity) {
               max = kRegExpInfinity;
             } else {
-              max = static_cast<int>(numeric2);
+              max = static_cast<uint32_t>(numeric2);
               if (max != numeric2) {
                 RAISE(NUMBER_TOO_BIG);
               }

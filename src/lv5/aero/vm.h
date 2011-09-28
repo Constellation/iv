@@ -58,11 +58,6 @@ inline bool VM::Execute(Code* code, int* captures) {
         BACKTRACK();
       }
 
-      DEFINE_OPCODE(PUSH_CAPTURE) {
-        PUSH(captures[Load4Bytes(instr + 1)]);
-        BACKTRACK();
-      }
-
       DEFINE_OPCODE(ASSERTION_BOL) {
         if (IsBOL()) {
           NEXT(ASSERTION_BOL);

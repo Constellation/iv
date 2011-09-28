@@ -7,7 +7,7 @@ namespace iv {
 namespace lv5 {
 namespace aero {
 
-static const int kRegExpInfinity = std::numeric_limits<int>::max();
+static const uint32_t kRegExpInfinity = std::numeric_limits<uint32_t>::max();
 
 #define ACCEPT_VISITOR\
   inline void Accept(Visitor* visitor) {\
@@ -72,17 +72,17 @@ class Atom : public Term {
 
 class Quantifiered : public Atom {
  public:
-  Quantifiered(Expression* expr, int min, int max, bool greedy)
+  Quantifiered(Expression* expr, uint32_t min, uint32_t max, bool greedy)
     : expression_(expr), min_(min), max_(max), greedy_(greedy) { }
   Expression* expression() const { return expression_; }
-  int min() const { return min_; }
-  int max() const { return max_; }
+  uint32_t min() const { return min_; }
+  uint32_t max() const { return max_; }
   bool greedy() const { return greedy_; }
   DECLARE_DERIVED_NODE_TYPE(Quantifiered)
  private:
   Expression* expression_;
-  int min_;
-  int max_;
+  uint32_t min_;
+  uint32_t max_;
   bool greedy_;
 };
 
