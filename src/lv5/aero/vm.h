@@ -11,7 +11,7 @@ namespace aero {
 
 class VM : private core::Noncopyable<VM> {
  public:
-  VM() : backtrack_stack_(10000) { }
+  VM() : backtrack_stack_(100000) { }
   void Execute(Code* code, int* captures);
 
  private:

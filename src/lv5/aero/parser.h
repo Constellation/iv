@@ -257,8 +257,9 @@ class Parser {
         if (!core::character::IsASCIIAlpha(c_)) {
           UNEXPECT(c_);
         }
+        const uint16_t ch = c_;
         Advance();
-        return new(factory_)CharacterAtom('\\');
+        return new(factory_)CharacterAtom(ch % 32);
       }
       case 'x': {
         Advance();
@@ -384,20 +385,20 @@ class Parser {
           UNEXPECT(c_);
         } else if (c_ == ']') {
           ranges_.AddOrEscaped(ranged1, start);
-          ranges_.Add('-');
+          ranges_.Add('-', false);
           break;
         } else {
           uint16_t ranged2 = 0;
           const uint16_t last = ParseClassAtom(&ranged2, CHECK);
           if (ranged1 || ranged2) {
             ranges_.AddOrEscaped(ranged1, start);
-            ranges_.Add('-');
+            ranges_.Add('-', false);
             ranges_.AddOrEscaped(ranged2, last);
           } else {
             if (!RangeBuilder::IsValidRange(start, last)) {
               RAISE(INVALID_RANGE);
             }
-            ranges_.AddRange(start, last);
+            ranges_.AddRange(start, last, true);
           }
         }
       } else {

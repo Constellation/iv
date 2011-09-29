@@ -23,34 +23,37 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
     ranges_.clear();
   }
 
-  void AddRange(uint16_t start, uint16_t last) {
+  bool IsIgnoreCase() const { return ignore_case_; }
+
+  void AddRange(uint16_t start, uint16_t last, bool ignore_case) {
     if (start == last) {
-      Add(start);
+      Add(start, ignore_case);
     } else {
-      // TODO(Constellation): implement ignore case
-      ranges_.push_back(std::make_pair(start, last));
+      if (IsIgnoreCase() && ignore_case) {
+        // TODO(Constellation): create char map is more fast?
+        for (uint32_t ch = start; ch <= last; ++ch) {
+          AddCharacterIgnoreCase(ch);
+        }
+      } else {
+        ranges_.push_back(std::make_pair(start, last));
+      }
     }
   }
 
   void AddOrEscaped(uint16_t escaped, uint16_t ch) {
     if (escaped == 0) {
-      Add(ch);
+      Add(ch, true);
     } else {
       AddEscape(escaped);
     }
   }
 
-  void Add(uint16_t ch) {
-    if (ignore_case_) {
-      const uint16_t lu = core::character::ToLowerCase(ch);
-      const uint16_t uu = core::character::ToUpperCase(ch);
-      if (lu != uu) {
-        ranges_.push_back(std::make_pair(lu, lu));
-        ranges_.push_back(std::make_pair(uu, uu));
-        return;
-      }
+  void Add(uint16_t ch, bool ignore_case) {
+    if (IsIgnoreCase() && ignore_case) {
+      AddCharacterIgnoreCase(ch);
+    } else {
+      ranges_.push_back(std::make_pair(ch, ch));
     }
-    ranges_.push_back(std::make_pair(ch, ch));
   }
 
   const Ranges& GetEscapedRange(uint16_t ch) {
@@ -82,23 +85,10 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
     return ranges_;
   }
 
-  template<typename Iter>
-  void AddInvertedEscapeRange(Iter it, Iter last) {
-    uint16_t start = 0x0000;
-    for (; it != last; ++it) {
-      AddRange(start, it->first - 1);
-      start = it->second + 1;
-    }
-    AddRange(start, 0xFFFF);
+  static bool IsValidRange(uint16_t start, uint16_t last) {
+    return start <= last;
   }
-
-  template<typename Iter>
-  void AddRanges(Iter it, Iter last) {
-    for (; it != last; ++it) {
-      AddRange(it->first, it->second);
-    }
-  }
-
+ private:
   void AddEscape(uint16_t escaped) {
     switch (escaped) {
       case 'd': {
@@ -106,7 +96,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 'D': {
-        AddInvertedEscapeRange(kDigitRanges.begin(), kDigitRanges.end());
+        AddInvertedRanges(kDigitRanges.begin(), kDigitRanges.end());
         break;
       }
       case 's': {
@@ -114,7 +104,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 'S': {
-        AddInvertedEscapeRange(kSpaceRanges.begin(), kSpaceRanges.end());
+        AddInvertedRanges(kSpaceRanges.begin(), kSpaceRanges.end());
         break;
       }
       case 'w': {
@@ -122,7 +112,7 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case 'W': {
-        AddInvertedEscapeRange(kWordRanges.begin(), kWordRanges.end());
+        AddInvertedRanges(kWordRanges.begin(), kWordRanges.end());
         break;
       }
       case 'n': {
@@ -130,17 +120,42 @@ class RangeBuilder : core::Noncopyable<RangeBuilder> {
         break;
       }
       case '.': {
-        AddInvertedEscapeRange(kLineTerminatorRanges.begin(),
-                               kLineTerminatorRanges.end());
+        AddInvertedRanges(kLineTerminatorRanges.begin(),
+                          kLineTerminatorRanges.end());
         break;
       }
     }
   }
 
-  static bool IsValidRange(uint16_t start, uint16_t last) {
-    return start <= last;
+  void AddCharacterIgnoreCase(uint16_t ch) {
+    const uint16_t lu = core::character::ToLowerCase(ch);
+    const uint16_t uu = core::character::ToUpperCase(ch);
+    if (lu == uu && lu == ch) {
+      ranges_.push_back(std::make_pair(ch, ch));
+    } else {
+      ranges_.push_back(std::make_pair(lu, lu));
+      ranges_.push_back(std::make_pair(uu, uu));
+      ranges_.push_back(std::make_pair(ch, ch));
+    }
   }
- private:
+
+  template<typename Iter>
+  void AddInvertedRanges(Iter it, Iter last) {
+    uint16_t start = 0x0000;
+    for (; it != last; ++it) {
+      AddRange(start, it->first - 1, false);
+      start = it->second + 1;
+    }
+    AddRange(start, 0xFFFF, false);
+  }
+
+  template<typename Iter>
+  void AddRanges(Iter it, Iter last) {
+    for (; it != last; ++it) {
+      AddRange(it->first, it->second, false);
+    }
+  }
+
   bool ignore_case_;
   Ranges ranges_;
 };

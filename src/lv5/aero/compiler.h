@@ -112,10 +112,17 @@ class Compiler : private Visitor {
     if (IsIgnoreCase()) {
       const uint16_t uu = core::character::ToUpperCase(ch);
       const uint16_t lu = core::character::ToLowerCase(ch);
-      if (uu != lu) {
-        Emit<OP::CHECK_2CHAR_OR>();
-        Emit2(uu);
-        Emit2(lu);
+      if (!(uu == lu && uu == ch)) {
+        if (uu == ch || lu == ch) {
+          Emit<OP::CHECK_2CHAR_OR>();
+          Emit2(uu);
+          Emit2(lu);
+        } else {
+          Emit<OP::CHECK_3CHAR_OR>();
+          Emit2(ch);
+          Emit2(uu);
+          Emit2(lu);
+        }
         return;
       }
     }
