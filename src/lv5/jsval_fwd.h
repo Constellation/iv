@@ -9,6 +9,7 @@
 #include "gc_template.h"
 #include "enable_if.h"
 #include "static_assert.h"
+#include "platform.h"
 #include "platform_math.h"
 #include "canonicalized_nan.h"
 #include "conversions.h"
@@ -164,7 +165,7 @@ class JSVal {
       core::Size::kPointerSize,
       core::kLittleEndian> value_type;
 
-#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
+#if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
   IV_STATIC_ASSERT(std::is_pod<value_type>::value);
 #endif
 

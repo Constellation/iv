@@ -1,7 +1,8 @@
 #ifndef IV_LV5_FPU_H_
 #define IV_LV5_FPU_H_
 #include "noncopyable.h"
-#if (!defined(IV_USE_SSE) && defined(__GNUC__) && defined(__i386__) && !defined(__CYGWIN__))  // NOLINT
+#include "platform.h"
+#if (!defined(IV_USE_SSE) && defined(IV_COMPILER_GCC) && defined(__i386__) && !defined(IV_OS_CYGWIN))  // NOLINT
 #include <fpu_control.h>
 namespace iv {
 namespace lv5 {

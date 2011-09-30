@@ -3,6 +3,7 @@
 #include <cstddef>
 #include "detail/type_traits.h"
 #include "static_assert.h"
+#include "platform.h"
 namespace iv {
 namespace core {
 
@@ -23,7 +24,7 @@ struct Location {
   }
 };
 
-#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
+#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC >= 40300)
 IV_STATIC_ASSERT(std::is_pod<Location>::value);
 #endif
 

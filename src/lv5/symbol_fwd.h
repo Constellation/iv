@@ -127,7 +127,7 @@ inline bool operator>=(Symbol x, Symbol y) {
 
 typedef detail::Symbol Symbol;
 
-#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 3)
+#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC >= 40300)
 IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
 #endif
 
