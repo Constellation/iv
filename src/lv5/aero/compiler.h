@@ -19,7 +19,7 @@ class Compiler : private Visitor {
   // if all counters are used, create new and use it
   class CounterHolder {
    public:
-    CounterHolder(Compiler* compiler)
+    explicit CounterHolder(Compiler* compiler)
       : compiler_(compiler),
         counter_(compiler->AcquireCounter()) {
     }
@@ -35,7 +35,7 @@ class Compiler : private Visitor {
     uint32_t counter_;
   };
 
-  Compiler(int flags)
+  explicit Compiler(int flags)
     : flags_(flags),
       code_(),
       captures_(),
@@ -89,11 +89,19 @@ class Compiler : private Visitor {
   }
 
   void Visit(HatAssertion* assertion) {
-    Emit<OP::ASSERTION_BOL>();
+    if (IsMultiline()) {
+      Emit<OP::ASSERTION_BOB>();
+    } else {
+      Emit<OP::ASSERTION_BOL>();
+    }
   }
 
   void Visit(DollarAssertion* assertion) {
-    Emit<OP::ASSERTION_EOL>();
+    if (IsMultiline()) {
+      Emit<OP::ASSERTION_EOB>();
+    } else {
+      Emit<OP::ASSERTION_EOL>();
+    }
   }
 
   void Visit(EscapedAssertion* assertion) {
