@@ -412,6 +412,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
         Fiber* fiber = Fiber::NewWithSize(size_);
         Fiber* head = static_cast<Fiber*>(fibers_[1]);
         Fiber* tail = static_cast<Fiber*>(fibers_[0]);
+        assert(!head->IsCons());
+        assert(!tail->IsCons());
         std::copy(
             tail->begin(),
             tail->end(),
@@ -419,6 +421,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
                 head->begin(),
                 head->end(),
                 fiber->begin()));
+        // these are Fibers, not Cons. so simply call Release
         head->Release();
         tail->Release();
         fiber_count_ = 1;
