@@ -304,8 +304,7 @@ inline double StringToIntegerWithRadix(const CharT* it, const CharT* last,
   if (strip_prefix) {
     if (*it == '0') {
       ++it;
-      if (it != last &&
-          (*it == 'x' || *it == 'X')) {
+      if (it != last && (*it == 'x' || *it == 'X')) {
         // strip_prefix
         ++it;
         radix = 16;
