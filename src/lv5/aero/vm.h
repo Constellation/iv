@@ -25,7 +25,7 @@ class VM : private core::Noncopyable<VM> {
     instr += OPLength<op>::value;\
     continue;\
   } while (0)
-#define BACKTRACK(op) break
+#define BACKTRACK(op) goto backtrack;
 #define PUSH(target)\
   do {\
     if (sp == stack_limit) {\
@@ -73,6 +73,8 @@ inline bool VM::Execute(Code* code, int* captures) {
       }
     }
     // returns to backtracked path
+backtrack:
+    // backtrack loop 
   }
 }
 #undef DEFINE_OPCODE
