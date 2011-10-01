@@ -43,14 +43,6 @@ class Error;
 //       this class is only seen in JSString
 
 class JSString: public radio::HeapObject<radio::STRING> {
- private:
-  struct Releaser {
-    template<typename T>
-    void operator()(T* ptr) {
-      ptr->Release();
-    }
-  };
-
  public:
   class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
    public:
@@ -62,8 +54,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
         std::free(p);
       }
     }
-
-    inline ~FiberSlot();
 
     bool IsCons() const {
       return is_cons_;
@@ -250,8 +240,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return x.compare(y) >= 0;
     }
   };
-
  private:
+
   class Cons : public FiberSlot {
    public:
     friend class JSString;
@@ -352,10 +342,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
         *target = *it;
       }
       assert(target == end());
-    }
-
-    static inline void Destroy(Cons* cons) {
-      std::for_each(cons->begin(), cons->end(), Releaser());
     }
 
     static this_type* New(const JSString* lhs, const JSString* rhs) {
@@ -631,14 +617,33 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   ~JSString() {
-    std::for_each(fibers_.begin(), fibers_.begin() + fiber_count(), Releaser());
+    Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
+  }
+
+  template<typename Iter>
+  static void Destroy(Iter it, Iter last) {
+    std::vector<FiberSlot*> slots(it, last);
+    while (true) {
+      FiberSlot* current = slots.back();
+      assert(!slots.empty());
+      slots.pop_back();
+      if (current->IsCons() && current->RetainCount() == 1) {
+        slots.insert(slots.end(),
+                     static_cast<Cons*>(current)->begin(),
+                     static_cast<Cons*>(current)->end());
+      }
+      current->Release();
+      if (slots.empty()) {
+        break;
+      }
+    }
   }
 
  private:
   void SlowFlatten() const {
     Fiber* fiber = Fiber::NewWithSize(size_);
     Copy(fiber->begin());
-    std::for_each(fibers_.begin(), fibers_.begin() + fiber_count(), Releaser());
+    Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
     fiber_count_ = 1;
     fibers_[0] = fiber;
   }
@@ -714,12 +719,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
   mutable std::size_t fiber_count_;
   mutable FiberSlots fibers_;
 };
-
-JSString::FiberSlot::~FiberSlot() {
-  if (IsCons()) {
-    Cons::Destroy(static_cast<Cons*>(this));
-  }
-}
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   return os << str.GetUTF8();
