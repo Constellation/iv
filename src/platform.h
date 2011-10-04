@@ -44,7 +44,13 @@
 #define IV_COMPILER_MSVC_10 (_MSC_VER >= 1600)
 #elif defined(__clang__)
 #define IV_COMPILER_CLANG __clang__
-#endif  // defined(__GNUC__)
+#elif defined(__ICL) || defined(__ICC)
+#if defined(__ICL)
+#define IV_COMPILER_ICC __ICL
+#else
+#define IV_COMPILER_ICC __ICC
+#endif
+#endif
 
 // snprintf
 #if defined(IV_COMPILER_MSVC)
