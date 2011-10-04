@@ -280,6 +280,8 @@ class JSVal {
 
   inline double ToNumber(Context* ctx, Error* e) const;
 
+  inline JSVal ToNumberValue(Context* ctx, Error* e) const;
+
   inline int32_t ToInt32(Context* ctx, Error* e) const;
 
   inline uint32_t ToUInt32(Context* ctx, Error* e) const;

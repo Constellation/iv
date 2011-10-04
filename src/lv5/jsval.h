@@ -663,6 +663,26 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   }
 }
 
+
+JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
+  if (IsNumber()) {
+    return *this;
+  } else if (IsString()) {
+    return core::StringToDouble(*string()->GetFiber(), false);
+  } else if (IsBoolean()) {
+    return JSVal::Int32(boolean() ? 1 : 0);
+  } else if (IsNull()) {
+    return JSVal::Int32(0);
+  } else if (IsUndefined()) {
+    return core::kNaN;
+  } else {
+    assert(IsObject());
+    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,
+                                        IV_LV5_ERROR_WITH(e, JSVal::Int32(0)));
+    return prim.ToNumber(ctx, e);
+  }
+}
+
 bool JSVal::ToBoolean(Error* e) const {
   if (IsNumber()) {
     const double num = number();
