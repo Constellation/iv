@@ -37,14 +37,19 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
     Context* const ctx = args.ctx();
     JSStringBuilder builder;
     builder.Append(detail::kFunctionPrefix);
-    const JSVal name = func->Get(ctx,
+    Slot slot;
+    if (func->GetOwnPropertySlot(ctx,
                                  context::Intern(ctx, "name"),
-                                 IV_LV5_ERROR(e));
-    JSString* name_str = name.ToString(ctx, IV_LV5_ERROR(e));
-    if (name_str->empty()) {
-      builder.Append("anonymous");
+                                 &slot)) {
+      const JSVal name = slot.Get(ctx, func, IV_LV5_ERROR(e));
+      JSString* name_str = name.ToString(ctx, IV_LV5_ERROR(e));
+      if (name_str->empty()) {
+        builder.Append("anonymous");
+      } else {
+        builder.AppendJSString(*name_str);
+      }
     } else {
-      builder.AppendJSString(*name_str);
+      builder.Append("anonymous");
     }
     builder.Append(func->GetSource());
     return builder.Build(args.ctx());
