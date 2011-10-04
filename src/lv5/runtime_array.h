@@ -467,7 +467,10 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   if (!args.empty() && args[0].IsCallable()) {
     comparefn = args[0].object()->AsCallable();
   } else {
-    comparefn = JSInlinedFunction<&detail::CompareFn, 2>::New(ctx);
+    comparefn =
+        JSInlinedFunction<&detail::CompareFn, 2>::New(
+            ctx,
+            context::Intern(ctx, "compare"));
   }
   if (len == 0) {
     return obj;

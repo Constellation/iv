@@ -282,13 +282,6 @@ class JSInlinedFunction : public JSFunction {
  public:
   typedef JSInlinedFunction<func, n> this_type;
 
-  explicit JSInlinedFunction(Context* ctx)
-    : JSFunction(ctx) {
-    DefineOwnProperty(
-        ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
-  }
-
   JSInlinedFunction(Context* ctx, const Symbol& name)
     : JSFunction(ctx) {
     DefineOwnProperty(
@@ -325,12 +318,6 @@ class JSInlinedFunction : public JSFunction {
 
   virtual JSAPI NativeFunction() const {
     return func;
-  }
-
-  static this_type* New(Context* ctx) {
-    this_type* const obj = new this_type(ctx);
-    obj->Initialize(ctx);
-    return obj;
   }
 
   static this_type* New(Context* ctx, const Symbol& name) {
