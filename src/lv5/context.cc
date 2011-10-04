@@ -134,11 +134,15 @@ void Context::InitContext(JSFunction* func_constructor,
   // Object and Function
   JSObject* const obj_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const obj_constructor =
-      JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::ObjectConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "Object"));
 
   // Function
   JSFunction* const func_proto =
-      JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(this);
+      JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(
+          this,
+          context::Intern(this, "Function"));
 
   struct ClassSlot func_cls = {
     JSFunction::GetClass(),
@@ -320,7 +324,9 @@ void Context::InitArray(const ClassSlot& func_cls,
   JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.4.2 The Array Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::ArrayConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "Array"));
 
   struct ClassSlot cls = {
     JSArray::GetClass(),
@@ -398,7 +404,9 @@ void Context::InitString(const ClassSlot& func_cls,
   JSStringObject* const proto = JSStringObject::NewPlain(this);
   // section 15.5.2 The String Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::StringConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "String"));
 
   struct ClassSlot cls = {
     JSStringObject::GetClass(),
@@ -473,7 +481,9 @@ void Context::InitBoolean(const ClassSlot& func_cls,
       JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this), false);
   // section 15.6.2 The Boolean Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::BooleanConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "Boolean"));
 
   struct ClassSlot cls = {
     JSBooleanObject::GetClass(),
@@ -509,7 +519,9 @@ void Context::InitNumber(const ClassSlot& func_cls,
       JSNumberObject::NewPlain(this, Map::NewUniqueMap(this), 0);
   // section 15.7.3 The Number Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::NumberConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "Number"));
 
   struct ClassSlot cls = {
     JSNumberObject::GetClass(),
@@ -634,7 +646,9 @@ void Context::InitDate(const ClassSlot& func_cls,
       JSDate::NewPlain(this, Map::NewUniqueMap(this), core::kNaN);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(this);
+      JSInlinedFunction<&runtime::DateConstructor, 7>::NewPlain(
+          this,
+          context::Intern(this, "Date"));
 
   struct ClassSlot cls = {
     JSDate::GetClass(),
@@ -769,7 +783,9 @@ void Context::InitRegExp(const ClassSlot& func_cls,
   JSObject* const proto = JSRegExp::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(this);
+      JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(
+          this,
+          context::Intern(this, "RegExp"));
 
   struct ClassSlot cls = {
     JSRegExp::GetClass(),
@@ -806,7 +822,9 @@ void Context::InitError(const ClassSlot& func_cls,
   JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.11.2 The Error Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(this);
+      JSInlinedFunction<&runtime::ErrorConstructor, 1>::NewPlain(
+          this,
+          context::Intern(this, "Error"));
 
   struct ClassSlot cls = {
     JSError::GetClass(),
@@ -841,9 +859,11 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.1 EvalError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "EvalError");
+    JSFunction* const sub_constructor =
+        JSInlinedFunction<&runtime::EvalErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
@@ -871,9 +891,11 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.2 RangeError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "RangeError");
+    JSFunction* const sub_constructor =
+        JSInlinedFunction<&runtime::RangeErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
@@ -901,10 +923,12 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.3 ReferenceError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    const Symbol sym = context::Intern(this, "ReferenceError");
     JSFunction* const sub_constructor =
         JSInlinedFunction<
-          &runtime::ReferenceErrorConstructor, 1>::NewPlain(this);
-    const Symbol sym = context::Intern(this, "ReferenceError");
+          &runtime::ReferenceErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
@@ -932,9 +956,11 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.4 SyntaxError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "SyntaxError");
+    JSFunction* const sub_constructor =
+        JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
@@ -962,9 +988,11 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.5 TypeError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "TypeError");
+    JSFunction* const sub_constructor =
+        JSInlinedFunction<&runtime::TypeErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
@@ -992,9 +1020,11 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.6 URIError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const sub_constructor =
-        JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(this);
     const Symbol sym = context::Intern(this, "URIError");
+    JSFunction* const sub_constructor =
+        JSInlinedFunction<&runtime::URIErrorConstructor, 1>::NewPlain(
+            this,
+            sym);
     bind::Object(this, sub_constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)

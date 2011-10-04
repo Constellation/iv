@@ -339,8 +339,8 @@ class JSInlinedFunction : public JSFunction {
     return obj;
   }
 
-  static this_type* NewPlain(Context* ctx) {
-    return new this_type(ctx);
+  static this_type* NewPlain(Context* ctx, const Symbol& name) {
+    return new this_type(ctx, name);
   }
 };
 

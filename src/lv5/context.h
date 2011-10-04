@@ -80,8 +80,10 @@ class Context
   template<JSAPI FunctionConstructor, JSAPI GlobalEval>
   void Initialize() {
     InitContext(
-        JSInlinedFunction<FunctionConstructor, 1>::NewPlain(this),
-        JSInlinedFunction<GlobalEval, 1>::NewPlain(this));
+        JSInlinedFunction<FunctionConstructor, 1>::NewPlain(
+            this, context::Intern(this, "Function")),
+        JSInlinedFunction<GlobalEval, 1>::NewPlain(
+            this, context::Intern(this, "eval")));
   }
 
   JSFunction* throw_type_error() {
