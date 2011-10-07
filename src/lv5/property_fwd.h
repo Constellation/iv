@@ -66,10 +66,7 @@ class PropertyDescriptor {
   }
 
   inline bool IsGenericDescriptor() const {
-    return
-        (!(attrs_ & ATTR::DATA)) &&
-        (!(attrs_ & ATTR::ACCESSOR)) &&
-        (!(attrs_ & ATTR::EMPTY));
+    return !(attrs_ & (ATTR::DATA | ATTR::ACCESSOR | ATTR::EMPTY));
   }
 
   inline bool IsEmpty() const {
