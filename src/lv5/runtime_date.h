@@ -137,7 +137,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
 // section 15.9.4.2 Date.parse(string)
 inline JSVal DateParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.parse", args, e);
-  const JSVal first = (args.size() == 0) ? JSUndefined : args[0];
+  const JSVal first = (args.empty()) ? JSUndefined : args[0];
   const JSString* target = first.ToString(args.ctx(), IV_LV5_ERROR(e));
   return date::Parse(*target->GetFiber());
 }

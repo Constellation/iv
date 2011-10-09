@@ -82,7 +82,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
 
 // section 15.4.3.2 Array.isArray(arg)
 inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return JSFalse;
   }
   const JSVal& val = args[0];

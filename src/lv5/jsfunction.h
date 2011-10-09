@@ -234,7 +234,7 @@ class JSBoundFunction : public JSFunction {
     : JSFunction(ctx),
       target_(target),
       this_binding_(this_binding),
-      arguments_(args.size() == 0 ? 0 : args.size() - 1) {
+      arguments_(args.empty() ? 0 : args.size() - 1) {
     Error e;
     if (args.size() > 0) {
       std::copy(args.begin() + 1, args.end(), arguments_.begin());
