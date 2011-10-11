@@ -476,10 +476,14 @@ class Parser {
         }
         default: {
           if (core::character::IsDecimalDigit(c_)) {
-            const double numeric = ParseDecimalInteger(CHECK);
+            const double numeric = ParseDecimalInteger(e);
+            if (*e) {
+              return 0;
+            }
             const uint16_t uc = static_cast<uint16_t>(numeric);
             if (uc != numeric) {
-              RAISE(NUMBER_TOO_BIG);
+              *e = NUMBER_TOO_BIG;
+              return 0;
             }
             return uc;
           } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {

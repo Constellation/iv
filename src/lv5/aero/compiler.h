@@ -15,21 +15,11 @@ namespace aero {
 
 class Compiler : private Visitor {
  public:
-  // occupy counter. RAII
-  // if all counters are used, create new and use it
   class CounterHolder {
    public:
     explicit CounterHolder(Compiler* compiler)
-      : compiler_(compiler),
-        counter_(compiler->AcquireCounter()) {
-    }
-
-    ~CounterHolder() {
-      compiler_->ReleaseCounter(counter_);
-    }
-
-    uint32_t counter() const { return counter_; }
-
+      : compiler_(compiler), counter_(compiler->AcquireCounter()) { }
+    ~CounterHolder() { }
    private:
     Compiler* compiler_;
     uint32_t counter_;
@@ -40,11 +30,11 @@ class Compiler : private Visitor {
       code_(),
       captures_(),
       jmp_(),
-      counters_size_(0),
-      counters_() {
+      counters_size_(0) {
   }
 
   const std::vector<uint8_t>& Compile(Disjunction* expr) {
+    EmitQuickCheck(expr);
     captures_.push_back(expr);
     expr->Accept(this);
     Emit<OP::MATCH>();
@@ -58,6 +48,12 @@ class Compiler : private Visitor {
   bool IsMultiline() const { return flags_ & MULTILINE; }
 
  private:
+  void EmitQuickCheck(Disjunction* dis) {
+    // emit quick check phase for this pattern.
+    // when RegExp /test/ is provided, we emit code that searching 't'
+    // and if it is accepted, goto main body with this character position.
+  }
+
   void Visit(Disjunction* dis) {
     assert(!dis->alternatives().empty());
     const std::size_t jmp = jmp_.size();
@@ -174,65 +170,77 @@ class Compiler : private Visitor {
 
     // optimized paths
     if (atom->min() == atom->max()) {
-      // same quantity pattern. greedy is no effect.
-      const CounterHolder holder(this);
-
-      // COUNTER_ZERO | COUNTER_TARGET
-      Emit<OP::COUNTER_ZERO>();
-      Emit4(holder.counter());
-      const std::size_t target = Current();
-      atom->expression()->Accept(this);
-      // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
-      Emit<OP::COUNTER_NEXT>();
-      Emit4(holder.counter());
-      Emit4(atom->max());
-      Emit4(target);
-    } else if (atom->min() == 0 && atom->max() == 1) {
-      // ? pattern. counter not used
-      if (atom->greedy()) {
-        Emit<OP::PUSH_BACKTRACK>();
-        const std::size_t pos = Current();
-        Emit4(0u);  // dummy
-        atom->expression()->Accept(this);
-        Emit4At(pos, Current());
+      // same quantity pattern. greedy parameter is no effect.
+      EmitFixed(atom, AcquireCounter(), atom->min());
+    } else if (atom->min() == 0) {
+      if (atom->max() == 1) {
+        // ? pattern. counter not used
+        if (atom->greedy()) {
+          Emit<OP::PUSH_BACKTRACK>();
+          const std::size_t pos = Current();
+          Emit4(0u);  // dummy
+          atom->expression()->Accept(this);
+          Emit4At(pos, Current());
+        } else {
+          Emit<OP::PUSH_BACKTRACK>();
+          const std::size_t pos1 = Current();
+          Emit4(0u);  // dummy 1
+          Emit<OP::JUMP>();
+          const std::size_t pos2 = Current();
+          Emit4(0u);  // dummy 2
+          Emit4At(pos1, Current());
+          atom->expression()->Accept(this);
+          Emit4At(pos2, Current());
+        }
+      } else if (atom->max() == kRegExpInfinity) {
+        // * pattern. counter not used
+        if (atom->greedy()) {
+          const std::size_t pos1 = Current();
+          Emit<OP::PUSH_BACKTRACK>();
+          const std::size_t pos2 = Current();
+          Emit4(0u);  // dummy
+          atom->expression()->Accept(this);
+          Emit<OP::JUMP>();
+          Emit4(pos1);
+          Emit4At(pos2, Current());
+        } else {
+          const std::size_t pos1 = Current();
+          Emit<OP::PUSH_BACKTRACK>();
+          const std::size_t pos2 = Current();
+          Emit4(0u);  // dummy 1
+          Emit<OP::JUMP>();
+          const std::size_t pos3 = Current();
+          Emit4(0u);  // dummy 2
+          Emit4At(pos2, Current());
+          atom->expression()->Accept(this);
+          Emit<OP::JUMP>();
+          Emit4(pos1);
+          Emit4At(pos3, Current());
+        }
       } else {
-        Emit<OP::PUSH_BACKTRACK>();
-        const std::size_t pos1 = Current();
-        Emit4(0u);  // dummy 1
-        Emit<OP::JUMP>();
-        const std::size_t pos2 = Current();
-        Emit4(0u);  // dummy 2
-        Emit4At(pos1, Current());
-        atom->expression()->Accept(this);
-        Emit4At(pos2, Current());
-      }
-    } else if (atom->min() == 0 && atom->max() == kRegExpInfinity) {
-      // * pattern. counter not used
-      if (atom->greedy()) {
-        const std::size_t pos1 = Current();
-        Emit<OP::PUSH_BACKTRACK>();
-        const std::size_t pos2 = Current();
-        Emit4(0u);  // dummy
-        atom->expression()->Accept(this);
-        Emit<OP::JUMP>();
-        Emit4(pos1);
-        Emit4At(pos2, Current());
-      } else {
-        const std::size_t pos1 = Current();
-        Emit<OP::PUSH_BACKTRACK>();
-        const std::size_t pos2 = Current();
-        Emit4(0u);  // dummy 1
-        Emit<OP::JUMP>();
-        const std::size_t pos3 = Current();
-        Emit4(0u);  // dummy 2
-        Emit4At(pos2, Current());
-        atom->expression()->Accept(this);
-        Emit<OP::JUMP>();
-        Emit4(pos1);
-        Emit4At(pos3, Current());
+        // min == 0 and max is ...?
       }
     } else {
+      assert(atom->min() != 0);
+      const uint32_t counter = AcquireCounter();
+      EmitFixed(atom, counter, atom->min());
+      const uint32_t delta = atom->max() - atom->min();
+      assert(delta > 0);
+      Emit<OP::PUSH_BACKTRACK>();
     }
+  }
+
+  void EmitFixed(Quantifiered* atom, uint32_t counter, uint32_t fixed) {
+    // COUNTER_ZERO | COUNTER_TARGET
+    Emit<OP::COUNTER_ZERO>();
+    Emit4(counter);
+    const std::size_t target = Current();
+    atom->expression()->Accept(this);
+    // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
+    Emit<OP::COUNTER_NEXT>();
+    Emit4(counter);
+    Emit4(fixed);
+    Emit4(target);
   }
 
   template<OP::Type op>
@@ -268,19 +276,7 @@ class Compiler : private Visitor {
   }
 
   uint32_t AcquireCounter() {
-    if (counters_.empty()) {
-      return counters_size_++;
-    } else {
-      const std::unordered_set<uint32_t>::iterator it = counters_.begin();
-      const uint32_t res = *it;
-      counters_.erase(it);
-      return res;
-    }
-  }
-
-  void ReleaseCounter(uint32_t counter) {
-    assert(counters_.find(counter) == counters_.end());
-    counters_.insert(counter);
+    return counters_size_++;
   }
 
   int flags_;
@@ -288,7 +284,6 @@ class Compiler : private Visitor {
   std::vector<Disjunction*> captures_;
   std::vector<std::size_t> jmp_;
   uint32_t counters_size_;
-  std::unordered_set<uint32_t> counters_;
 };
 
 } } }  // namespace iv::lv5::aero
