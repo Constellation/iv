@@ -30,21 +30,5 @@ class JSGlobal : public JSObject {
   }
 };
 
-void Map::GetOwnPropertyNames(const JSObject* obj,
-                              Context* ctx,
-                              std::vector<Symbol>* vec,
-                              JSObject::EnumerationMode mode) {
-  if (AllocateTableIfNeeded()) {
-    for (TargetTable::const_iterator it = table_->begin(),
-         last = table_->end(); it != last; ++it) {
-      if ((mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
-           obj->GetSlot(it->second).IsEnumerable()) &&
-          (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
-        vec->push_back(it->first);
-      }
-    }
-  }
-}
-
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSGLOBAL_H_
