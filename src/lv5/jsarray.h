@@ -80,22 +80,6 @@ class JSArray : public JSObject {
 
   static const uint32_t kMaxVectorSize = 10000;
 
-  JSArray(Context* ctx, uint32_t len)
-    : JSObject(context::GetArrayMap(ctx)),
-      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
-      map_(NULL),
-      dense_(true),
-      length_(len, ATTR::WRITABLE) {
-  }
-
-  JSArray(Context* ctx, Map* map, uint32_t len)
-    : JSObject(map),
-      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
-      map_(NULL),
-      dense_(true),
-      length_(len, ATTR::WRITABLE) {
-  }
-
   uint32_t GetLength() const {
     return length_.value();
   }
@@ -260,6 +244,21 @@ class JSArray : public JSObject {
   }
 
  private:
+  JSArray(Context* ctx, uint32_t len)
+    : JSObject(context::GetArrayMap(ctx)),
+      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
+      map_(NULL),
+      dense_(true),
+      length_(len, ATTR::WRITABLE) {
+  }
+
+  JSArray(Context* ctx, Map* map, uint32_t len)
+    : JSObject(map),
+      vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
+      map_(NULL),
+      dense_(true),
+      length_(len, ATTR::WRITABLE) {
+  }
 
 #define REJECT(str)\
   do {\

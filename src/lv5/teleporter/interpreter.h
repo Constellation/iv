@@ -541,7 +541,7 @@ void Interpreter::Visit(const WithStatement* stmt) {
   JSObject* const obj = val.ToObject(ctx_, CHECK_IN_STMT);
   JSEnv* const old_env = ctx_->lexical_env();
   JSObjectEnv* const new_env =
-      internal::NewObjectEnvironment(ctx_, obj, old_env);
+      JSObjectEnv::New(ctx_, old_env, obj);
   new_env->set_provide_this(true);
   {
     const LexicalEnvSwitcher switcher(ctx_, new_env);

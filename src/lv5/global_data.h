@@ -36,7 +36,7 @@ class GlobalData {
       classes_(),
       string_cache_(),
       empty_(new JSString()),
-      global_obj_(new JSGlobal(ctx)),
+      global_obj_(JSGlobal::New(ctx)),
       empty_object_map_(Map::New(ctx)),
       function_map_(Map::New(ctx)),
       array_map_(Map::New(ctx)),

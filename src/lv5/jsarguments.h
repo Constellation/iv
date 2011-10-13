@@ -34,10 +34,6 @@ class JSNormalArguments : public JSObject {
  public:
   typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
   typedef GCVector<Symbol>::type Indice;
-  JSNormalArguments(Context* ctx, JSDeclEnv* env)
-    : JSObject(Map::NewUniqueMap(ctx)),
-      env_(env),
-      mapping_() { }
 
   template<typename Idents, typename ArgsReverseIter>
   static JSNormalArguments* New(Context* ctx,
@@ -206,6 +202,11 @@ class JSNormalArguments : public JSObject {
   }
 
  private:
+  JSNormalArguments(Context* ctx, JSDeclEnv* env)
+    : JSObject(Map::NewUniqueMap(ctx)),
+      env_(env),
+      mapping_() { }
+
   template<typename Idents, typename ArgsReverseIter>
   static void SetArguments(Context* ctx,
                            JSNormalArguments* obj,
@@ -242,10 +243,6 @@ class JSNormalArguments : public JSObject {
 // not search environment
 class JSStrictArguments : public JSObject {
  public:
-  explicit JSStrictArguments(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)) {
-  }
-
   template<typename ArgsReverseIter>
   static JSStrictArguments* New(Context* ctx,
                                 JSFunction* func,
@@ -289,6 +286,11 @@ class JSStrictArguments : public JSObject {
       return JSUndefined;
     }
     return v;
+  }
+
+ private:
+  explicit JSStrictArguments(Context* ctx)
+    : JSObject(Map::NewUniqueMap(ctx)) {
   }
 };
 

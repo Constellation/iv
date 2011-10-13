@@ -72,24 +72,6 @@ class JSDeclEnv : public JSEnv {
   typedef GCVector<Entry>::type Record;
   typedef GCHashMap<Symbol, std::size_t>::type Offsets;
 
-  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
-    : JSEnv(outer),
-      record_(),
-      offsets_(),
-      scope_nest_count_(scope_nest_count),
-      mutated_(false) {
-  }
-
-  // for VM optimization only
-  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count, std::size_t reserved)
-    : JSEnv(outer),
-      record_(reserved),
-      offsets_(),
-      scope_nest_count_(scope_nest_count),
-      mutated_(false) {
-    assert(record_.size() == reserved);
-  }
-
   bool HasBinding(Context* ctx, Symbol name) const {
     return offsets_.find(name) != offsets_.end();
   }
@@ -257,6 +239,24 @@ class JSDeclEnv : public JSEnv {
   }
 
  private:
+  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
+    : JSEnv(outer),
+      record_(),
+      offsets_(),
+      scope_nest_count_(scope_nest_count),
+      mutated_(false) {
+  }
+
+  // for VM optimization only
+  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count, std::size_t reserved)
+    : JSEnv(outer),
+      record_(reserved),
+      offsets_(),
+      scope_nest_count_(scope_nest_count),
+      mutated_(false) {
+    assert(record_.size() == reserved);
+  }
+
   Record record_;
   Offsets offsets_;
   uint32_t scope_nest_count_;
@@ -265,12 +265,6 @@ class JSDeclEnv : public JSEnv {
 
 class JSObjectEnv : public JSEnv {
  public:
-  explicit JSObjectEnv(JSEnv* outer, JSObject* rec)
-    : JSEnv(outer),
-      record_(rec),
-      provide_this_(false) {
-  }
-
   bool HasBinding(Context* ctx, Symbol name) const {
     return record_->HasProperty(ctx, name);
   }
@@ -357,6 +351,12 @@ class JSObjectEnv : public JSEnv {
   }
 
  private:
+  explicit JSObjectEnv(JSEnv* outer, JSObject* rec)
+    : JSEnv(outer),
+      record_(rec),
+      provide_this_(false) {
+  }
+
   JSObject* record_;
   bool provide_this_;
 };
@@ -364,12 +364,6 @@ class JSObjectEnv : public JSEnv {
 // for catch block environment
 class JSStaticEnv : public JSEnv {
  public:
-  explicit JSStaticEnv(JSEnv* outer, Symbol sym, const JSVal& value)
-    : JSEnv(outer),
-      symbol_(sym),
-      value_(value) {
-  }
-
   bool HasBinding(Context* ctx, Symbol name) const {
     return name == symbol_;
   }
@@ -422,6 +416,12 @@ class JSStaticEnv : public JSEnv {
   }
 
  private:
+  explicit JSStaticEnv(JSEnv* outer, Symbol sym, const JSVal& value)
+    : JSEnv(outer),
+      symbol_(sym),
+      value_(value) {
+  }
+
   Symbol symbol_;
   JSVal value_;
 };

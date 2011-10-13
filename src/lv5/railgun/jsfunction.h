@@ -18,52 +18,6 @@ namespace railgun {
 
 class JSVMFunction : public JSFunction {
  public:
-  JSVMFunction(Context* ctx,
-               railgun::Code* code, JSEnv* env)
-    : JSFunction(ctx),
-      code_(code),
-      env_(env) {
-    Error e;
-    DefineOwnProperty(
-        ctx, symbol::length(),
-        DataDescriptor(
-            JSVal::UInt32(static_cast<uint32_t>(code->params().size())),
-            ATTR::NONE),
-        false, &e);
-    // section 13.2 Creating Function Objects
-    set_cls(JSFunction::GetClass());
-    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
-
-    JSObject* const proto = JSObject::New(ctx);
-    proto->DefineOwnProperty(
-        ctx, symbol::constructor(),
-        DataDescriptor(this, ATTR::W | ATTR::C),
-        false, &e);
-    DefineOwnProperty(
-        ctx, symbol::prototype(),
-        DataDescriptor(proto, ATTR::W),
-        false, &e);
-    if (code->HasName()) {
-      DefineOwnProperty(
-          ctx, context::Intern(ctx, "name"),
-          DataDescriptor(JSString::New(ctx, code->name()), ATTR::NONE),
-          false, &e);
-    }
-    if (code->strict()) {
-      JSFunction* const throw_type_error = ctx->throw_type_error();
-      DefineOwnProperty(ctx, symbol::caller(),
-                        AccessorDescriptor(throw_type_error,
-                                           throw_type_error,
-                                           ATTR::NONE),
-                        false, &e);
-      DefineOwnProperty(ctx, symbol::arguments(),
-                        AccessorDescriptor(throw_type_error,
-                                           throw_type_error,
-                                           ATTR::NONE),
-                        false, &e);
-    }
-  }
-
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
     const std::pair<JSVal, VM::State> ret =
@@ -195,6 +149,52 @@ class JSVMFunction : public JSFunction {
   }
 
  private:
+  JSVMFunction(Context* ctx,
+               railgun::Code* code, JSEnv* env)
+    : JSFunction(ctx),
+      code_(code),
+      env_(env) {
+    Error e;
+    DefineOwnProperty(
+        ctx, symbol::length(),
+        DataDescriptor(
+            JSVal::UInt32(static_cast<uint32_t>(code->params().size())),
+            ATTR::NONE),
+        false, &e);
+    // section 13.2 Creating Function Objects
+    set_cls(JSFunction::GetClass());
+    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
+
+    JSObject* const proto = JSObject::New(ctx);
+    proto->DefineOwnProperty(
+        ctx, symbol::constructor(),
+        DataDescriptor(this, ATTR::W | ATTR::C),
+        false, &e);
+    DefineOwnProperty(
+        ctx, symbol::prototype(),
+        DataDescriptor(proto, ATTR::W),
+        false, &e);
+    if (code->HasName()) {
+      DefineOwnProperty(
+          ctx, context::Intern(ctx, "name"),
+          DataDescriptor(JSString::New(ctx, code->name()), ATTR::NONE),
+          false, &e);
+    }
+    if (code->strict()) {
+      JSFunction* const throw_type_error = ctx->throw_type_error();
+      DefineOwnProperty(ctx, symbol::caller(),
+                        AccessorDescriptor(throw_type_error,
+                                           throw_type_error,
+                                           ATTR::NONE),
+                        false, &e);
+      DefineOwnProperty(ctx, symbol::arguments(),
+                        AccessorDescriptor(throw_type_error,
+                                           throw_type_error,
+                                           ATTR::NONE),
+                        false, &e);
+    }
+  }
+
   Code* code_;
   JSEnv* env_;
 };

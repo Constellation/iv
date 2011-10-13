@@ -87,7 +87,7 @@ class Context
   }
 
   JSFunction* throw_type_error() {
-    return &throw_type_error_;
+    return throw_type_error_;
   }
 
   double Random();
@@ -135,7 +135,7 @@ class Context
                 JSObject* obj_proto, bind::Object* global_binder);
 
   GlobalData global_data_;
-  JSInlinedFunction<&runtime::ThrowTypeError, 0> throw_type_error_;
+  JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;
 };
 

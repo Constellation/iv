@@ -9,11 +9,6 @@ namespace lv5 {
 
 class JSReference : public radio::HeapObject<radio::REFERENCE> {
  public:
-  JSReference(JSVal base, Symbol name, bool is_strict)
-    : base_(base),
-      name_(name),
-      is_strict_(is_strict) {
-  }
   bool IsStrictReference() const {
     return is_strict_;
   }
@@ -41,6 +36,12 @@ class JSReference : public radio::HeapObject<radio::REFERENCE> {
   }
 
  private:
+  JSReference(JSVal base, Symbol name, bool is_strict)
+    : base_(base),
+      name_(name),
+      is_strict_(is_strict) {
+  }
+
   JSVal base_;
   Symbol name_;
   bool is_strict_;

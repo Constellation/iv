@@ -22,6 +22,24 @@ class JSURIError;
 
 class JSError : public JSObject {
  public:
+  static const Class* GetClass() {
+    static const Class cls = {
+      "Error",
+      Class::Error
+    };
+    return &cls;
+  }
+
+  static JSVal Detail(Context* ctx, const Error* e);
+
+  static JSError* New(Context* ctx, Error::Code code, JSString* str) {
+    JSError* const err = new JSError(ctx, code, str);
+    err->set_cls(JSError::GetClass());
+    err->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
+    return err;
+  }
+
+ protected:
   JSError(Context* ctx, Error::Code code, JSString* str)
     : JSObject(context::GetErrorMap(ctx)),
       code_(code) {
@@ -32,24 +50,6 @@ class JSError : public JSObject {
     }
   }
 
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::Error
-    };
-    return &cls;
-  }
-
-  static inline JSVal Detail(Context* ctx, const Error* e);
-
-  static JSError* New(Context* ctx, Error::Code code, JSString* str) {
-    JSError* const err = new JSError(ctx, code, str);
-    err->set_cls(JSError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
-    return err;
-  }
-
- protected:
   Error::Code code_;
   JSString* detail_;
 };
@@ -164,7 +164,7 @@ class JSURIError : public JSError {
   }
 };
 
-JSVal JSError::Detail(Context* ctx, const Error* e) {
+inline JSVal JSError::Detail(Context* ctx, const Error* e) {
   assert(e&& (e->code() != Error::Normal));
   switch (e->code()) {
     case Error::Eval:

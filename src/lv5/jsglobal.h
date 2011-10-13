@@ -21,6 +21,9 @@ class JSGlobal : public JSObject {
     return &cls;
   }
 
+  static JSGlobal* New(Context* ctx) { return new JSGlobal(ctx); }
+
+ private:
   explicit JSGlobal(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)) {
     assert(map()->GetSlotsSize() == 0);

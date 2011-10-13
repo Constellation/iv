@@ -19,34 +19,6 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
-  JSRegExp(Context* ctx,
-           const core::UStringPiece& value,
-           const core::UStringPiece& flags)
-    : JSObject(context::GetRegExpMap(ctx)),
-      impl_(new JSRegExpImpl(value, flags)) {
-    InitializeProperty(ctx, JSString::New(ctx, value));
-  }
-
-  JSRegExp(Context* ctx,
-           const core::UStringPiece& value,
-           const JSRegExpImpl* reg)
-    : JSObject(context::GetRegExpMap(ctx)),
-      impl_(reg) {
-    InitializeProperty(ctx, JSString::New(ctx, value));
-  }
-
-  explicit JSRegExp(Context* ctx)
-    : JSObject(context::GetRegExpMap(ctx)),
-      impl_(new JSRegExpImpl()) {
-    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
-  }
-
-  explicit JSRegExp(Context* ctx, Map* map)
-    : JSObject(map),
-      impl_(new JSRegExpImpl()) {
-    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
-  }
-
   inline bool IsValid() const {
     return impl_->IsValid();
   }
@@ -311,6 +283,34 @@ class JSRegExp : public JSObject {
   }
 
  private:
+  JSRegExp(Context* ctx,
+           const core::UStringPiece& value,
+           const core::UStringPiece& flags)
+    : JSObject(context::GetRegExpMap(ctx)),
+      impl_(new JSRegExpImpl(value, flags)) {
+    InitializeProperty(ctx, JSString::New(ctx, value));
+  }
+
+  JSRegExp(Context* ctx,
+           const core::UStringPiece& value,
+           const JSRegExpImpl* reg)
+    : JSObject(context::GetRegExpMap(ctx)),
+      impl_(reg) {
+    InitializeProperty(ctx, JSString::New(ctx, value));
+  }
+
+  explicit JSRegExp(Context* ctx)
+    : JSObject(context::GetRegExpMap(ctx)),
+      impl_(new JSRegExpImpl()) {
+    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
+  }
+
+  explicit JSRegExp(Context* ctx, Map* map)
+    : JSObject(map),
+      impl_(new JSRegExpImpl()) {
+    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
+  }
+
   void InitializeProperty(Context* ctx, JSString* src) {
     bind::Object(ctx, this)
         .def(context::Intern(ctx, "source"),

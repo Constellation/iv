@@ -292,22 +292,6 @@ CompareKind Compare(Context* ctx,
   }
 }
 
-inline JSStaticEnv* NewStaticEnvironment(Context* ctx, JSEnv* env,
-                                         Symbol sym, const JSVal& value) {
-  return JSStaticEnv::New(ctx, env, sym, value);
-}
-
-inline JSObjectEnv* NewObjectEnvironment(Context* ctx,
-                                         JSObject* val, JSEnv* env) {
-  assert(val);
-  return JSObjectEnv::New(ctx, env, val);
-}
-
-inline JSObjectEnv* NewGlobalEnvironment(Context* ctx, JSObject* val) {
-  assert(val);
-  return JSObjectEnv::New(ctx, NULL, val);
-}
-
 template<typename Builder>
 void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
   const std::size_t arg_count = args.size();

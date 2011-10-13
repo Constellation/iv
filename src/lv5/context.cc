@@ -119,8 +119,10 @@ void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
 
 Context::Context()
   : global_data_(this),
-    throw_type_error_(this, context::Intern(this, "ThrowError")),
-    global_env_(internal::NewGlobalEnvironment(this, global_obj())) {
+    throw_type_error_(
+        JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
+            this, context::Intern(this, "ThrowError"))),
+    global_env_(JSObjectEnv::New(this, NULL, global_obj())) {
 }
 
 double Context::Random() {
@@ -235,7 +237,7 @@ void Context::InitContext(JSFunction* func_constructor,
 
   global_binder.def(func_cls.name, func_constructor, ATTR::W | ATTR::C);
   global_binder.def(obj_cls.name, obj_constructor, ATTR::W | ATTR::C);
-  throw_type_error_.Initialize(this);  // lazy update
+  throw_type_error_->Initialize(this);  // lazy update
 
   // section 15.1 Global
   InitGlobal(func_cls, obj_proto, eval_function, &global_binder);

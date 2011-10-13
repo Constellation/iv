@@ -25,10 +25,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   };
   typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
-  explicit JSObject(Map* map);
-
-  JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
-
   virtual ~JSObject() { }
 
   virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
@@ -152,6 +148,10 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   }
 
  protected:
+  explicit JSObject(Map* map);
+
+  JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
+
   const Class* cls_;
   JSObject* prototype_;
   bool extensible_;

@@ -16,9 +16,6 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
-  explicit JSFunction(Context* ctx)
-    : JSObject(context::GetFunctionMap(ctx)) { }
-
   bool IsCallable() const {
     return true;
   }
@@ -39,10 +36,8 @@ class JSFunction : public JSObject {
     if (!val.IsObject()) {
       return false;
     }
-    const JSVal got = Get(ctx, symbol::prototype(), e);
-    if (*e) {
-      return false;
-    }
+    const JSVal got =
+        Get(ctx, symbol::prototype(), IV_LV5_ERROR_WITH(e, false));
     if (!got.IsObject()) {
       e->Report(Error::Type, "\"prototype\" is not object");
       return false;
@@ -59,12 +54,8 @@ class JSFunction : public JSObject {
     return false;
   }
 
-  JSVal Get(Context* ctx,
-            Symbol name, Error* e) {
-    const JSVal val = JSObject::Get(ctx, name, e);
-    if (*e) {
-      return val;
-    }
+  JSVal Get(Context* ctx, Symbol name, Error* e) {
+    const JSVal val = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         val.IsCallable() &&
         val.object()->AsCallable()->IsStrict()) {
@@ -107,21 +98,14 @@ class JSFunction : public JSObject {
     };
     return &cls;
   }
+
+ protected:
+  explicit JSFunction(Context* ctx)
+    : JSObject(context::GetFunctionMap(ctx)) { }
 };
 
 class JSNativeFunction : public JSFunction {
  public:
-  explicit JSNativeFunction(Context* ctx)
-    : JSFunction(ctx), func_() { }
-
-  JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
-    : JSFunction(ctx),
-      func_(func) {
-    DefineOwnProperty(
-        ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
-  }
-
   JSVal Call(Arguments* args,
              const JSVal& this_binding,
              Error* e) {
@@ -164,6 +148,17 @@ class JSNativeFunction : public JSFunction {
   }
 
  private:
+  explicit JSNativeFunction(Context* ctx)
+    : JSFunction(ctx), func_() { }
+
+  JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
+    : JSFunction(ctx),
+      func_(func) {
+    DefineOwnProperty(
+        ctx, symbol::length(),
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+  }
+
   JSAPI func_;
 };
 
@@ -282,16 +277,6 @@ class JSInlinedFunction : public JSFunction {
  public:
   typedef JSInlinedFunction<func, n> this_type;
 
-  JSInlinedFunction(Context* ctx, const Symbol& name)
-    : JSFunction(ctx) {
-    DefineOwnProperty(
-        ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
-    DefineOwnProperty(
-        ctx, context::Intern(ctx, "name"),
-        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
-  }
-
   JSVal Call(Arguments* args,
              const JSVal& this_binding,
              Error* e) {
@@ -328,6 +313,17 @@ class JSInlinedFunction : public JSFunction {
 
   static this_type* NewPlain(Context* ctx, const Symbol& name) {
     return new this_type(ctx, name);
+  }
+
+ private:
+  JSInlinedFunction(Context* ctx, const Symbol& name)
+    : JSFunction(ctx) {
+    DefineOwnProperty(
+        ctx, symbol::length(),
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+    DefineOwnProperty(
+        ctx, context::Intern(ctx, "name"),
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
   }
 };
 

@@ -1513,7 +1513,7 @@ do {\
         const JSVal val = POP();
         JSObject* const obj = val.ToObject(ctx_, ERR);
         JSObjectEnv* const with_env =
-            internal::NewObjectEnvironment(ctx_, obj, frame->lexical_env());
+            JSObjectEnv::New(ctx_, frame->lexical_env(), obj);
         with_env->set_provide_this(true);
         frame->set_lexical_env(with_env);
         frame->dynamic_env_level_ += 1;
@@ -1530,8 +1530,7 @@ do {\
         const Symbol& s = GETITEM(names, instr[1].value);
         const JSVal error = POP();
         JSEnv* const catch_env =
-            internal::NewStaticEnvironment(ctx_,
-                                           frame->lexical_env(), s, error);
+            JSStaticEnv::New(ctx_, frame->lexical_env(), s, error);
         frame->set_lexical_env(catch_env);
         frame->dynamic_env_level_ += 1;
         DISPATCH(TRY_CATCH_SETUP);

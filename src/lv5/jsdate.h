@@ -8,16 +8,6 @@ namespace lv5 {
 
 class JSDate : public JSObject {
  public:
-  JSDate(Context* ctx, double val)
-    : JSObject(context::GetDateMap(ctx)),
-      value_(val) {
-  }
-
-  JSDate(Context* ctx, Map* map, double val)
-    : JSObject(map),
-      value_(val) {
-  }
-
   JSVal DefaultValue(Context* ctx,
                      Hint::Object hint, Error* res) {
     return JSObject::DefaultValue(
@@ -57,6 +47,16 @@ class JSDate : public JSObject {
   }
 
  private:
+  JSDate(Context* ctx, double val)
+    : JSObject(context::GetDateMap(ctx)),
+      value_(val) {
+  }
+
+  JSDate(Context* ctx, Map* map, double val)
+    : JSObject(map),
+      value_(val) {
+  }
+
   double value_;
 };
 

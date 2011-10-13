@@ -24,69 +24,6 @@ namespace teleporter {
 
 class JSCodeFunction : public JSFunction {
  public:
-  JSCodeFunction(Context* ctx,
-                 const FunctionLiteral* func,
-                 JSScript* script,
-                 JSEnv* env)
-    : JSFunction(ctx),
-      function_(func),
-      script_(script),
-      env_(env) {
-    Error e;
-    DefineOwnProperty(
-        ctx, symbol::length(),
-        DataDescriptor(
-            JSVal::UInt32(static_cast<uint32_t>(func->params().size())),
-            ATTR::NONE),
-        false, &e);
-    // section 13.2 Creating Function Objects
-    set_cls(JSFunction::GetClass());
-    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
-
-    JSObject* const proto = JSObject::New(ctx);
-    proto->DefineOwnProperty(
-        ctx, symbol::constructor(),
-        DataDescriptor(this,
-                       ATTR::WRITABLE |
-                       ATTR::CONFIGURABLE),
-        false, &e);
-    DefineOwnProperty(
-        ctx, symbol::prototype(),
-        DataDescriptor(proto,
-                       ATTR::WRITABLE),
-        false, &e);
-    if (const core::Maybe<const Identifier> ident = function_->name()) {
-      const core::UStringPiece name = ident.Address()->value();
-      if (!name.empty()) {
-        DefineOwnProperty(
-            ctx, context::Intern(ctx, "name"),
-            DataDescriptor(JSString::New(ctx, name),
-                           ATTR::NONE),
-            false, &e);
-      } else {
-        DefineOwnProperty(
-            ctx, context::Intern(ctx, "name"),
-            DataDescriptor(
-                JSString::NewEmptyString(ctx),
-                ATTR::NONE),
-            false, &e);
-      }
-    }
-    if (function_->strict()) {
-      JSFunction* const throw_type_error = ctx->throw_type_error();
-      DefineOwnProperty(ctx, symbol::caller(),
-                        AccessorDescriptor(throw_type_error,
-                                           throw_type_error,
-                                           ATTR::NONE),
-                        false, &e);
-      DefineOwnProperty(ctx, symbol::arguments(),
-                        AccessorDescriptor(throw_type_error,
-                                           throw_type_error,
-                                           ATTR::NONE),
-                        false, &e);
-    }
-  }
-
   JSVal Call(Arguments* args,
              const JSVal& this_binding, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
@@ -160,6 +97,70 @@ class JSCodeFunction : public JSFunction {
   }
 
  private:
+  JSCodeFunction(Context* ctx,
+                 const FunctionLiteral* func,
+                 JSScript* script,
+                 JSEnv* env)
+    : JSFunction(ctx),
+      function_(func),
+      script_(script),
+      env_(env) {
+    Error e;
+    DefineOwnProperty(
+        ctx, symbol::length(),
+        DataDescriptor(
+            JSVal::UInt32(static_cast<uint32_t>(func->params().size())),
+            ATTR::NONE),
+        false, &e);
+    // section 13.2 Creating Function Objects
+    set_cls(JSFunction::GetClass());
+    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
+
+    JSObject* const proto = JSObject::New(ctx);
+    proto->DefineOwnProperty(
+        ctx, symbol::constructor(),
+        DataDescriptor(this,
+                       ATTR::WRITABLE |
+                       ATTR::CONFIGURABLE),
+        false, &e);
+    DefineOwnProperty(
+        ctx, symbol::prototype(),
+        DataDescriptor(proto,
+                       ATTR::WRITABLE),
+        false, &e);
+    if (const core::Maybe<const Identifier> ident = function_->name()) {
+      const core::UStringPiece name = ident.Address()->value();
+      if (!name.empty()) {
+        DefineOwnProperty(
+            ctx, context::Intern(ctx, "name"),
+            DataDescriptor(JSString::New(ctx, name),
+                           ATTR::NONE),
+            false, &e);
+      } else {
+        DefineOwnProperty(
+            ctx, context::Intern(ctx, "name"),
+            DataDescriptor(
+                JSString::NewEmptyString(ctx),
+                ATTR::NONE),
+            false, &e);
+      }
+    }
+    if (function_->strict()) {
+      JSFunction* const throw_type_error = ctx->throw_type_error();
+      DefineOwnProperty(ctx, symbol::caller(),
+                        AccessorDescriptor(throw_type_error,
+                                           throw_type_error,
+                                           ATTR::NONE),
+                        false, &e);
+      DefineOwnProperty(ctx, symbol::arguments(),
+                        AccessorDescriptor(throw_type_error,
+                                           throw_type_error,
+                                           ATTR::NONE),
+                        false, &e);
+    }
+  }
+
+
   const FunctionLiteral* function_;
   JSScript* script_;
   JSEnv* env_;
