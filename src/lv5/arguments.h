@@ -192,7 +192,8 @@ class ScopedArguments : public Arguments {
     } else {
       assert(stack_);
       // init
-      std::fill(stack_, stack_ + size_ + 1, JSUndefined);
+      // FIXME(Constellation): for clang++ with C++0x patching
+      std::fill<JSVal*, JSVal>(stack_, stack_ + size_ + 1, JSUndefined);
     }
   }
 

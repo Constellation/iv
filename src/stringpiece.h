@@ -3,7 +3,7 @@
 #include <climits>
 #include <algorithm>
 #include <functional>
-#include <iosfwd>
+#include <iostream>
 #include <string>
 #include <iterator>
 #include <limits>
