@@ -37,7 +37,7 @@ class Compiler : private Visitor {
     EmitQuickCheck(expr);
     captures_.push_back(expr);
     expr->Accept(this);
-    Emit<OP::MATCH>();
+    Emit<OP::SUCCESS>();
     return code_;
   }
 
@@ -109,6 +109,26 @@ class Compiler : private Visitor {
   }
 
   void Visit(DisjunctionAssertion* assertion) {
+    if (assertion->inverted()) {
+      Emit<OP::PUSH_BACKTRACK>();
+      const std::size_t pos = Current();
+      Emit4(0);  // dummy
+      Visit(assertion->disjunction());
+      Emit<OP::DISCARD_BACKTRACK>();
+      Emit<OP::FAILURE>();
+      Emit4At(pos, Current());  // backtrack
+    } else {
+      Emit<OP::PUSH_BACKTRACK>();
+      const std::size_t pos1 = Current();
+      Emit4(0);  // dummy
+      Visit(assertion->disjunction());
+      Emit<OP::ASSERTION>();
+      const std::size_t pos2 = Current();
+      Emit4(0);  // dummy
+      Emit4At(pos1, Current());  // backtrack
+      Emit<OP::FAILURE>();
+      Emit4At(pos2, Current());
+    }
   }
 
   void Visit(CharacterAtom* atom) {

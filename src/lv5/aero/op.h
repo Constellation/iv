@@ -10,6 +10,7 @@ namespace lv5 {
 namespace aero {
 
 #define IV_LV5_AERO_OPCODES(V)\
+V(ASSERTION, 5)\
 V(ASSERTION_BOL, 1)\
 V(ASSERTION_BOB, 1)\
 V(ASSERTION_EOL, 1)\
@@ -20,6 +21,7 @@ V(POP_CAPTURES, 1)\
 V(COUNTER_ZERO, 5)\
 V(COUNTER_NEXT, 13)\
 V(PUSH_BACKTRACK, 5)\
+V(DISCARD_BACKTRACK, 1)\
 V(CHECK_1BYTE_CHAR, 2)\
 V(CHECK_2BYTE_CHAR, 3)\
 V(CHECK_2CHAR_OR, 5)\
@@ -27,7 +29,8 @@ V(CHECK_3CHAR_OR, 7)\
 V(CHECK_RANGE, 5)/* variadic */\
 V(CHECK_RANGE_INVERTED, 5)/* variadic */\
 V(JUMP, 5)\
-V(MATCH, 1)\
+V(FAILURE, 5)\
+V(SUCCESS, 1)\
 
 class OP {
  public:
