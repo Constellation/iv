@@ -173,9 +173,8 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         }
         BACKTRACK();
       }
-
     }
-    // backtrack loop 
+    // backtrack
   }
   return true;
 }
