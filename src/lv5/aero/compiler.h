@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "lv5/aero/flags.h"
 #include "lv5/aero/op.h"
+#include "lv5/aero/code.h"
 namespace iv {
 namespace lv5 {
 namespace aero {
@@ -35,12 +36,12 @@ class Compiler : private Visitor {
       counters_size_(0) {
   }
 
-  const std::vector<uint8_t>& Compile(Disjunction* expr) {
+  Code Compile(Disjunction* expr) {
     EmitQuickCheck(expr);
     captures_.push_back(expr);
     expr->Accept(this);
     Emit<OP::SUCCESS>();
-    return code_;
+    return Code(code_, captures_.size(), counters_size_);
   }
 
   uint32_t counters_size() const { return counters_size_; }

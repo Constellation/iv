@@ -17,7 +17,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    disasm.DisAssemble(compiler.Compile(dis));
+    disasm.DisAssemble(compiler.Compile(dis).bytes());
   }
   {
     space.Clear();
@@ -28,6 +28,6 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    disasm.DisAssemble(compiler.Compile(dis));
+    disasm.DisAssemble(compiler.Compile(dis).bytes());
   }
 }

@@ -31,12 +31,16 @@ inline bool IsWordSeparator(const core::UStringPiece& subject,
 class VM : private core::Noncopyable<VM> {
  public:
   static const std::size_t kStackSize = 10000;
+
   VM()
     : backtrack_stack_(kStackSize),
       backtrack_base_(backtrack_stack_.data()) { }
+
   bool Execute(const core::UStringPiece& subject,
                Code* code, int* captures,
                std::size_t current_position);
+
+ private:
   int* NewState(int* current, std::size_t size) {
     if ((current + size) <= backtrack_base_ + kStackSize) {
       return current + size;
@@ -44,20 +48,20 @@ class VM : private core::Noncopyable<VM> {
     // overflow
     return NULL;
   }
- private:
+
   std::vector<int> backtrack_stack_;
   int* backtrack_base_;
 };
 
 #define DEFINE_OPCODE(op)\
   case OP::op:
+#define DISPATCH() continue
 #define ADVANCE(len)\
   do {\
     instr += len;\
-    DISPATCH();\
-  } while (0)
+  } while (0);\
+  DISPATCH()
 #define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
-#define DISPATCH() continue
 #define BACKTRACK() break;
 #define PUSH(target)\
   do {\
@@ -70,7 +74,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
   // captures and counters and jump target
-  const std::size_t size = code->captures() + code->counters() + 1;
+  const std::size_t size = code->captures() * 2 + code->counters() + 1;
   // state layout is following
   // [ captures ][ captures ][ target ]
   core::ScopedPtr<int[]> state(new int[size]);
@@ -89,7 +93,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         if ((sp = NewState(sp, size))) {
           // copy state and push to backtrack stack
           std::copy(state.get(), state.get() + size - 1, target);
-          target[size - 1] = Load4Bytes(instr + 1);
+          target[size - 1] = static_cast<int>(Load4Bytes(instr + 1));
           target[1] = current_position;
         } else {
           // stack overflowed
@@ -273,17 +277,24 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         DISPATCH();
       }
     }
-    // backtrack
+    // backtrack stack unwind
+    if (sp > backtrack_base_) {
+      const int* previous = sp = sp - size;
+      std::copy(previous, previous + size, state.get());
+      current_position = state[1];
+      instr = first_instr + state[size - 1];
+      DISPATCH();
+    }
+    return false;
   }
-  return true;
+  return true;  // makes compiler happy
 }
 #undef DEFINE_OPCODE
-#undef DISPATCH_NEXT
 #undef DISPATCH
 #undef ADVANCE
+#undef DISPATCH_NEXT
 #undef BACKTRACK
 #undef PUSH
-#undef NEW_STATE
 
 } } }  // namespace iv::lv5::aero
 #endif  // IV_LV5_AERO_VM_H_
