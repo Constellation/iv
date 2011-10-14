@@ -41,11 +41,12 @@ class VM : private core::Noncopyable<VM> {
 
 #define DEFINE_OPCODE(op)\
   case OP::op:
-#define NEXT(op)\
+#define ADVANCE(len)\
   do {\
-    instr += OPLength<OP::op>::value;\
+    instr += len;\
     continue;\
   } while (0)
+#define NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
 #define PUSH(target)\
   do {\
@@ -126,6 +127,53 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         BACKTRACK();
       }
 
+      DEFINE_OPCODE(CHECK_RANGE) {
+        if (current_position < subject.size()) {
+          const uint16_t ch = subject[current_position];
+          const uint32_t length = Load4Bytes(instr + 1);
+          bool in_range = false;
+          for (std::size_t i = 0; i < length; ++i) {
+            const uint16_t start = Load2Bytes(instr + 1 + 4 + i * 2);
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i * 2 + 1);
+            if (finish < ch) {
+              break;
+            }
+            if (start <= ch && ch <= finish) {
+              in_range = true;
+              break;
+            }
+          }
+          if (in_range) {
+            ADVANCE(length + OPLength<OP::CHECK_RANGE>::value);
+          }
+        }
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(CHECK_RANGE_INVERTED) {
+        BACKTRACK();
+        if (current_position < subject.size()) {
+          const uint16_t ch = subject[current_position];
+          const uint32_t length = Load4Bytes(instr + 1);
+          bool in_range = false;
+          for (std::size_t i = 0; i < length; ++i) {
+            const uint16_t start = Load2Bytes(instr + 1 + 4 + i * 2);
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i * 2 + 1);
+            if (finish < ch) {
+              break;
+            }
+            if (start <= ch && ch <= finish) {
+              in_range = true;
+              break;
+            }
+          }
+          if (!in_range) {
+            ADVANCE(length + OPLength<OP::CHECK_RANGE_INVERTED>::value);
+          }
+        }
+        BACKTRACK();
+      }
+
     }
     // backtrack loop 
   }
@@ -133,6 +181,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 }
 #undef DEFINE_OPCODE
 #undef NEXT
+#undef ADVANCE
 #undef BACKTRACK
 #undef PUSH
 
