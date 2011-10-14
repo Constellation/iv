@@ -234,6 +234,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
             }
           }
           if (in_range) {
+            ++current_position;
             ADVANCE(length + OPLength<OP::CHECK_RANGE>::value);
           }
         }
@@ -258,6 +259,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
             }
           }
           if (!in_range) {
+            ++current_position;
             ADVANCE(length + OPLength<OP::CHECK_RANGE_INVERTED>::value);
           }
         }
