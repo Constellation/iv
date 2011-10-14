@@ -81,6 +81,30 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         BACKTRACK();
       }
 
+      DEFINE_OPCODE(CHECK_2CHAR_OR) {
+        if (current_position < subject.size()) {
+          const uint16_t ch = subject[current_position];
+          if (ch == Load2Bytes(instr + 1) || ch == Load2Bytes(instr + 3)) {
+            ++current_position;
+            NEXT(CHECK_2CHAR_OR);
+          }
+        }
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(CHECK_3CHAR_OR) {
+        if (current_position < subject.size()) {
+          const uint16_t ch = subject[current_position];
+          if (ch == Load2Bytes(instr + 1) ||
+              ch == Load2Bytes(instr + 3) ||
+              ch == Load2Bytes(instr + 5)) {
+            ++current_position;
+            NEXT(CHECK_3CHAR_OR);
+          }
+        }
+        BACKTRACK();
+      }
+
       DEFINE_OPCODE(ASSERTION_BOB) {
         if (current_position == 0) {
           NEXT(ASSERTION_BOB);
