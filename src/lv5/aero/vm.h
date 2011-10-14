@@ -44,9 +44,10 @@ class VM : private core::Noncopyable<VM> {
 #define ADVANCE(len)\
   do {\
     instr += len;\
-    continue;\
+    DISPATCH();\
   } while (0)
-#define NEXT(op) ADVANCE(OPLength<OP::op>::value)
+#define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
+#define DISPATCH() continue
 #define BACKTRACK() break;
 #define PUSH(target)\
   do {\
@@ -60,6 +61,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
                         std::size_t current_position) {
   int* backtrack_base = backtrack_stack_.data();
   const uint8_t* instr = code->data();
+  const uint8_t* const first_instr = instr;
   for (;;) {
     // fetch opcode
     switch (instr[0]) {
@@ -67,7 +69,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         if (current_position < subject.size() &&
             subject[current_position] == Load1Bytes(instr + 1)) {
           ++current_position;
-          NEXT(CHECK_1BYTE_CHAR);
+          DISPATCH_NEXT(CHECK_1BYTE_CHAR);
         }
         BACKTRACK();
       }
@@ -76,7 +78,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         if (current_position < subject.size() &&
             subject[current_position] == Load2Bytes(instr + 1)) {
           ++current_position;
-          NEXT(CHECK_2BYTE_CHAR);
+          DISPATCH_NEXT(CHECK_2BYTE_CHAR);
         }
         BACKTRACK();
       }
@@ -86,7 +88,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           const uint16_t ch = subject[current_position];
           if (ch == Load2Bytes(instr + 1) || ch == Load2Bytes(instr + 3)) {
             ++current_position;
-            NEXT(CHECK_2CHAR_OR);
+            DISPATCH_NEXT(CHECK_2CHAR_OR);
           }
         }
         BACKTRACK();
@@ -99,7 +101,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
               ch == Load2Bytes(instr + 3) ||
               ch == Load2Bytes(instr + 5)) {
             ++current_position;
-            NEXT(CHECK_3CHAR_OR);
+            DISPATCH_NEXT(CHECK_3CHAR_OR);
           }
         }
         BACKTRACK();
@@ -107,14 +109,14 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(ASSERTION_BOB) {
         if (current_position == 0) {
-          NEXT(ASSERTION_BOB);
+          DISPATCH_NEXT(ASSERTION_BOB);
         }
         BACKTRACK();
       }
 
       DEFINE_OPCODE(ASSERTION_EOB) {
         if (current_position == subject.size()) {
-          NEXT(ASSERTION_EOB);
+          DISPATCH_NEXT(ASSERTION_EOB);
         }
         BACKTRACK();
       }
@@ -122,7 +124,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(ASSERTION_BOL) {
         if (current_position == 0 ||
             core::character::IsLineTerminator(subject[current_position])) {
-          NEXT(ASSERTION_BOL);
+          DISPATCH_NEXT(ASSERTION_BOL);
         }
         BACKTRACK();
       }
@@ -130,7 +132,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(ASSERTION_EOL) {
         if (current_position == subject.size() ||
             core::character::IsLineTerminator(subject[current_position])) {
-          NEXT(ASSERTION_EOL);
+          DISPATCH_NEXT(ASSERTION_EOL);
         }
         BACKTRACK();
       }
@@ -138,7 +140,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(ASSERTION_WORD_BOUNDARY) {
         if (IsWordSeparatorPrev(subject, current_position) !=
             IsWordSeparator(subject, current_position)) {
-          NEXT(ASSERTION_WORD_BOUNDARY);
+          DISPATCH_NEXT(ASSERTION_WORD_BOUNDARY);
         }
         BACKTRACK();
       }
@@ -146,7 +148,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(ASSERTION_WORD_BOUNDARY_INVERTED) {
         if (IsWordSeparatorPrev(subject, current_position) ==
             IsWordSeparator(subject, current_position)) {
-          NEXT(ASSERTION_WORD_BOUNDARY_INVERTED);
+          DISPATCH_NEXT(ASSERTION_WORD_BOUNDARY_INVERTED);
         }
         BACKTRACK();
       }
@@ -205,13 +207,19 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(SUCCESS) {
         return true;
       }
+
+      DEFINE_OPCODE(JUMP) {
+        instr = first_instr + Load4Bytes(instr + 1);
+        DISPATCH();
+      }
     }
     // backtrack
   }
   return true;
 }
 #undef DEFINE_OPCODE
-#undef NEXT
+#undef DISPATCH_NEXT
+#undef DISPATCH
 #undef ADVANCE
 #undef BACKTRACK
 #undef PUSH
