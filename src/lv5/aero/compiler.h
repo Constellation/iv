@@ -133,6 +133,11 @@ class Compiler : private Visitor {
     }
   }
 
+  void Visit(BackReferenceAtom* atom) {
+    Emit<OP::BACK_REFERENCE>();
+    Emit2(atom->reference());
+  }
+
   void Visit(CharacterAtom* atom) {
     const uint16_t ch = atom->character();
     if (IsIgnoreCase()) {

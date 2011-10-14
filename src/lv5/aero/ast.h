@@ -124,6 +124,15 @@ class DisjunctionAssertion : public Assertion {
   bool inverted_;
 };
 
+class BackReferenceAtom : public Atom {
+ public:
+  explicit BackReferenceAtom(uint16_t ref) : reference_(ref) { }
+  uint16_t reference() const { return reference_; }
+  DECLARE_DERIVED_NODE_TYPE(BackReferenceAtom)
+ private:
+  uint16_t reference_;
+};
+
 class CharacterAtom : public Atom {
  public:
   explicit CharacterAtom(uint16_t ch) : character_(ch) { }

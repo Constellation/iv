@@ -309,14 +309,18 @@ class Parser {
         return new(factory_)RangeAtom(false,
                                       NewRange(ranges_.GetEscapedRange('W')));
       }
+      case '0': {
+        Advance();
+        return new(factory_)CharacterAtom('\0');
+      }
       default: {
-        if (core::character::IsDecimalDigit(c_)) {
+        if ('1' <= c_ && c_ <= '9') {
           const double numeric = ParseDecimalInteger(CHECK);
-          const uint16_t uc = static_cast<uint16_t>(numeric);
-          if (uc != numeric) {
+          const uint16_t ref = static_cast<uint16_t>(numeric);
+          if (ref != numeric) {
             RAISE(NUMBER_TOO_BIG);
           }
-          return new(factory_)CharacterAtom(uc);
+          return new(factory_)BackReferenceAtom(ref);
         } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {
           UNEXPECT(c_);
         } else {

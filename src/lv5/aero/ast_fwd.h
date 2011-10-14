@@ -7,6 +7,7 @@
   V(DollarAssertion)\
   V(EscapedAssertion)\
   V(DisjunctionAssertion)\
+  V(BackReferenceAtom)\
   V(CharacterAtom)\
   V(RangeAtom)\
   V(DisjunctionAtom)\

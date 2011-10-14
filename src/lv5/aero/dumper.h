@@ -62,6 +62,11 @@ class Dumper : public Visitor {
     assertion->disjunction()->Accept(this);
     builder_.Append(')');
   }
+  void Visit(BackReferenceAtom* atom) {
+    builder_.Append("REF(");
+    builder_.Append(atom->reference());
+    builder_.Append(")");
+  }
   void Visit(CharacterAtom* atom) {
     builder_.Append(atom->character());
   }
