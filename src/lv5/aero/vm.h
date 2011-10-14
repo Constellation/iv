@@ -197,6 +197,14 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         }
         BACKTRACK();
       }
+
+      DEFINE_OPCODE(FAILURE) {
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(SUCCESS) {
+        return true;
+      }
     }
     // backtrack
   }
