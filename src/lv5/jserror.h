@@ -39,7 +39,6 @@ class JSError : public JSObject {
     return err;
   }
 
- protected:
   JSError(Context* ctx, Error::Code code, JSString* str)
     : JSObject(context::GetErrorMap(ctx)),
       code_(code) {
@@ -50,6 +49,7 @@ class JSError : public JSObject {
     }
   }
 
+ private:
   Error::Code code_;
   JSString* detail_;
 };
