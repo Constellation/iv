@@ -87,6 +87,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(PUSH_BACKTRACK) {
         int* target = sp;
         if ((sp = NewState(sp, size))) {
+          // copy state and push to backtrack stack
           std::copy(state.get(), state.get() + size - 1, target);
           target[size - 1] = Load4Bytes(instr + 1);
           target[1] = current_position;
@@ -96,6 +97,27 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         }
         DISPATCH_NEXT(PUSH_BACKTRACK);
       }
+
+      DEFINE_OPCODE(DISCARD_BACKTRACK) {
+        sp -= size;
+        DISPATCH_NEXT(DISCARD_BACKTRACK);
+      }
+
+      DEFINE_OPCODE(COUNTER_ZERO) {
+        state[Load4Bytes(instr + 1)] = 0;
+        DISPATCH_NEXT(COUNTER_ZERO);
+      }
+
+      DEFINE_OPCODE(COUNTER_NEXT) {
+        // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
+        const int32_t max = static_cast<int32_t>(Load4Bytes(instr + 5));
+        if (++state[Load4Bytes(instr + 1)] < max) {
+          instr = first_instr + Load4Bytes(instr + 9);
+          DISPATCH();
+        }
+        DISPATCH_NEXT(COUNTER_NEXT);
+      }
+
       DEFINE_OPCODE(CHECK_1BYTE_CHAR) {
         if (current_position < subject.size() &&
             subject[current_position] == Load1Bytes(instr + 1)) {
@@ -139,7 +161,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(ASSERTION) {
-        BACKTRACK();
+        int* previous = sp = sp - size;
+        std::copy(previous, previous + size, state.get());
+        instr = first_instr + Load4Bytes(instr + 1);
+        DISPATCH();
       }
 
       DEFINE_OPCODE(ASSERTION_BOB) {

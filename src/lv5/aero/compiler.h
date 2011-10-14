@@ -261,7 +261,7 @@ class Compiler : private Visitor {
     }
   }
 
-  void EmitFixed(Quantifiered* atom, uint32_t counter, uint32_t fixed) {
+  void EmitFixed(Quantifiered* atom, uint32_t counter, int32_t fixed) {
     // COUNTER_ZERO | COUNTER_TARGET
     Emit<OP::COUNTER_ZERO>();
     Emit4(counter);
@@ -274,7 +274,7 @@ class Compiler : private Visitor {
     Emit4(target);
   }
 
-  void EmitFollowingRepeat(Quantifiered* atom, uint32_t counter, uint32_t max) {
+  void EmitFollowingRepeat(Quantifiered* atom, uint32_t counter, int32_t max) {
     Emit<OP::COUNTER_ZERO>();
     Emit4(counter);
     if (atom->greedy()) {
@@ -283,7 +283,7 @@ class Compiler : private Visitor {
       const std::size_t pos2 = Current();
       Emit4(0u);
       atom->expression()->Accept(this);
-      Emit<OP::COUNTER_GUARD>();
+      Emit<OP::COUNTER_NEXT>();
       Emit4(counter);
       Emit4(max);
       Emit4(pos1);
@@ -298,7 +298,7 @@ class Compiler : private Visitor {
       Emit4(0u);
       Emit4At(pos2, Current());
       atom->expression()->Accept(this);
-      Emit<OP::COUNTER_GUARD>();
+      Emit<OP::COUNTER_NEXT>();
       Emit4(counter);
       Emit4(max);
       Emit4(pos1);
