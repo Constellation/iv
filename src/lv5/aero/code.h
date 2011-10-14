@@ -9,7 +9,17 @@ class Code {
   const uint8_t* data() const {
     return bytes_.data();
   }
+  int counters() const {
+    return counters_;
+  }
+  int captures() const {
+    return captures_;
+  }
+
+ private:
   std::vector<uint8_t> bytes_;
+  int captures_;
+  int counters_;
 };
 
 } } }  // namespace iv::lv5::aero

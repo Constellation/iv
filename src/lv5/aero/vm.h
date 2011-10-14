@@ -4,6 +4,7 @@
 #include <new>
 #include "noncopyable.h"
 #include "ustringpiece.h"
+#include "scoped_ptr.h"
 #include "lv5/aero/code.h"
 #include "lv5/aero/character.h"
 #include "lv5/aero/utility.h"
@@ -30,13 +31,22 @@ inline bool IsWordSeparator(const core::UStringPiece& subject,
 class VM : private core::Noncopyable<VM> {
  public:
   static const std::size_t kStackSize = 10000;
-  VM() : backtrack_stack_(kStackSize) { }
+  VM()
+    : backtrack_stack_(kStackSize),
+      backtrack_base_(backtrack_stack_.data()) { }
   bool Execute(const core::UStringPiece& subject,
                Code* code, int* captures,
                std::size_t current_position);
-
+  int* NewState(int* current, std::size_t size) {
+    if ((current + size) <= backtrack_base_ + kStackSize) {
+      return current + size;
+    }
+    // overflow
+    return NULL;
+  }
  private:
   std::vector<int> backtrack_stack_;
+  int* backtrack_base_;
 };
 
 #define DEFINE_OPCODE(op)\
@@ -59,12 +69,33 @@ class VM : private core::Noncopyable<VM> {
 inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
-  int* backtrack_base = backtrack_stack_.data();
+  // captures and counters and jump target
+  const std::size_t size = code->captures() + code->counters() + 1;
+  // state layout is following
+  // [ captures ][ captures ][ target ]
+  core::ScopedPtr<int[]> state(new int[size]);
+  int* sp = backtrack_base_;
+//  int* sp = NewState(backtrack_base, size);
+//  if (!sp) {
+//    return false;
+//  }
   const uint8_t* instr = code->data();
   const uint8_t* const first_instr = instr;
   for (;;) {
     // fetch opcode
     switch (instr[0]) {
+      DEFINE_OPCODE(PUSH_BACKTRACK) {
+        int* target = sp;
+        if ((sp = NewState(sp, size))) {
+          std::copy(state.get(), state.get() + size - 1, target);
+          target[size - 1] = Load4Bytes(instr + 1);
+          target[1] = current_position;
+        } else {
+          // stack overflowed
+          return false;
+        }
+        DISPATCH_NEXT(PUSH_BACKTRACK);
+      }
       DEFINE_OPCODE(CHECK_1BYTE_CHAR) {
         if (current_position < subject.size() &&
             subject[current_position] == Load1Bytes(instr + 1)) {
@@ -104,6 +135,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
             DISPATCH_NEXT(CHECK_3CHAR_OR);
           }
         }
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(ASSERTION) {
         BACKTRACK();
       }
 
@@ -223,6 +258,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 #undef ADVANCE
 #undef BACKTRACK
 #undef PUSH
+#undef NEW_STATE
 
 } } }  // namespace iv::lv5::aero
 #endif  // IV_LV5_AERO_VM_H_
