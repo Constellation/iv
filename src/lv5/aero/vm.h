@@ -1,7 +1,7 @@
 #ifndef IV_LV5_AERO_VM_H_
 #define IV_LV5_AERO_VM_H_
 #include <vector>
-#include <new>
+#include <algorithm>
 #include "noncopyable.h"
 #include "ustringpiece.h"
 #include "scoped_ptr.h"
@@ -33,8 +33,7 @@ class VM : private core::Noncopyable<VM> {
   static const std::size_t kStackSize = 10000;
 
   VM()
-    : backtrack_stack_(kStackSize),
-      backtrack_base_(backtrack_stack_.data()) { }
+    : stack_(kStackSize) { }
 
   bool Execute(const core::UStringPiece& subject,
                Code* code, int* captures,
@@ -42,15 +41,14 @@ class VM : private core::Noncopyable<VM> {
 
  private:
   int* NewState(int* current, std::size_t size) {
-    if ((current + size) <= backtrack_base_ + kStackSize) {
+    if ((current + size) <= stack_.data() + kStackSize) {
       return current + size;
     }
     // overflow
     return NULL;
   }
 
-  std::vector<int> backtrack_stack_;
-  int* backtrack_base_;
+  std::vector<int> stack_;
 };
 
 #define DEFINE_OPCODE(op)\
@@ -78,11 +76,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
   // state layout is following
   // [ captures ][ captures ][ target ]
   core::ScopedPtr<int[]> state(new int[size]);
-  int* sp = backtrack_base_;
-//  int* sp = NewState(backtrack_base, size);
-//  if (!sp) {
-//    return false;
-//  }
+  int* sp = stack_.data();
   const uint8_t* instr = code->data();
   const uint8_t* const first_instr = instr;
   for (;;) {
@@ -281,7 +275,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
     }
     // backtrack stack unwind
-    if (sp > backtrack_base_) {
+    if (sp > stack_.data()) {
       const int* previous = sp = sp - size;
       std::copy(previous, previous + size, state.get());
       current_position = state[1];
