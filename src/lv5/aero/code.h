@@ -5,6 +5,7 @@ namespace lv5 {
 namespace aero {
 
 class Code {
+ public:
   const uint8_t* data() const {
     return bytes_.data();
   }
