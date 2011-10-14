@@ -33,29 +33,21 @@ class Arguments : private core::Noncopyable<> {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
-  inline iterator begin() {
-    return stack_ + 1;  // index 0 is this binding
-  }
+  inline pointer data() { return stack_ + 1; }
 
-  inline const_iterator begin() const {
-    return stack_ + 1;
-  }
+  inline const_pointer data() const { return stack_ + 1; }
 
-  inline const_iterator cbegin() const {
-    return stack_ + 1;
-  }
+  inline iterator begin() { return data(); }
 
-  inline iterator end() {
-    return begin() + size_;
-  }
+  inline const_iterator begin() const { return data(); }
 
-  inline const_iterator end() const {
-    return begin() + size_;
-  }
+  inline const_iterator cbegin() const { return data(); }
 
-  inline const_iterator cend() const {
-    return begin() + size_;
-  }
+  inline iterator end() { return begin() + size_; }
+
+  inline const_iterator end() const { return begin() + size_; }
+
+  inline const_iterator cend() const { return begin() + size_; }
 
   inline reverse_iterator rbegin() {
     return reverse_iterator(end());

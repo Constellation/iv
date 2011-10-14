@@ -305,8 +305,8 @@ void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
     builder->Append("\n})");
   } else {
     builder->Append("(function(");
-    Arguments::const_iterator it = args.begin();
-    const Arguments::const_iterator last = args.end() - 1;
+    Arguments::const_pointer it = args.data();
+    const Arguments::const_pointer last = args.data() - 1;
     do {
       JSString* const str = it->ToString(ctx, IV_LV5_ERROR_VOID(e));
       builder->AppendJSString(*str);
