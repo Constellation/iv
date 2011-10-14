@@ -19,7 +19,8 @@ class Compiler : private Visitor {
    public:
     explicit CounterHolder(Compiler* compiler)
       : compiler_(compiler), counter_(compiler->AcquireCounter()) { }
-    ~CounterHolder() { }
+    ~CounterHolder() { compiler_->ReleaseCounter(counter_); }
+    uint32_t counter() const { return counter_; }
    private:
     Compiler* compiler_;
     uint32_t counter_;
@@ -30,6 +31,7 @@ class Compiler : private Visitor {
       code_(),
       captures_(),
       jmp_(),
+      counters_(),
       counters_size_(0) {
   }
 
@@ -189,9 +191,11 @@ class Compiler : private Visitor {
     }
 
     // optimized paths
+    // some frequency patterns like *, ? can be implemented without counters
     if (atom->min() == atom->max()) {
       // same quantity pattern. greedy parameter is no effect.
-      EmitFixed(atom, AcquireCounter(), atom->min());
+      const CounterHolder holder(this);
+      EmitFixed(atom, holder.counter(), atom->min());
     } else if (atom->min() == 0) {
       if (atom->max() == 1) {
         // ? pattern. counter not used
@@ -238,15 +242,17 @@ class Compiler : private Visitor {
           Emit4At(pos3, Current());
         }
       } else {
-        // min == 0 and max is ...?
+        // min == 0 and max
+        const CounterHolder holder(this);
+        EmitFollowingRepeat(atom, holder.counter(), atom->max());
       }
     } else {
+      const CounterHolder holder(this);
       assert(atom->min() != 0);
-      const uint32_t counter = AcquireCounter();
-      EmitFixed(atom, counter, atom->min());
+      EmitFixed(atom, holder.counter(), atom->min());
       const uint32_t delta = atom->max() - atom->min();
       assert(delta > 0);
-      Emit<OP::PUSH_BACKTRACK>();
+      EmitFollowingRepeat(atom, holder.counter(), delta);
     }
   }
 
@@ -261,6 +267,38 @@ class Compiler : private Visitor {
     Emit4(counter);
     Emit4(fixed);
     Emit4(target);
+  }
+
+  void EmitFollowingRepeat(Quantifiered* atom, uint32_t counter, uint32_t max) {
+    Emit<OP::COUNTER_ZERO>();
+    Emit4(counter);
+    if (atom->greedy()) {
+      const std::size_t pos1 = Current();
+      Emit<OP::PUSH_BACKTRACK>();
+      const std::size_t pos2 = Current();
+      Emit4(0u);
+      atom->expression()->Accept(this);
+      Emit<OP::COUNTER_GUARD>();
+      Emit4(counter);
+      Emit4(max);
+      Emit4(pos1);
+      Emit4At(pos2, Current());
+    } else {
+      const std::size_t pos1 = Current();
+      Emit<OP::PUSH_BACKTRACK>();
+      const std::size_t pos2 = Current();
+      Emit4(0u);
+      Emit<OP::JUMP>();
+      const std::size_t pos3 = Current();
+      Emit4(0u);
+      Emit4At(pos2, Current());
+      atom->expression()->Accept(this);
+      Emit<OP::COUNTER_GUARD>();
+      Emit4(counter);
+      Emit4(max);
+      Emit4(pos1);
+      Emit4At(pos3, Current());
+    }
   }
 
   template<OP::Type op>
@@ -295,14 +333,26 @@ class Compiler : private Visitor {
     return code_.size();
   }
 
+  void ReleaseCounter(uint32_t val) {
+    counters_.insert(val);
+  }
+
   uint32_t AcquireCounter() {
-    return counters_size_++;
+    std::unordered_set<uint32_t>::const_iterator it = counters_.begin();
+    if (it == counters_.end()) {
+      return counters_size_++;
+    } else {
+      const uint32_t res = *it;
+      counters_.erase(it);
+      return res;
+    }
   }
 
   int flags_;
   std::vector<uint8_t> code_;
   std::vector<Disjunction*> captures_;
   std::vector<std::size_t> jmp_;
+  std::unordered_set<uint32_t> counters_;
   uint32_t counters_size_;
 };
 
