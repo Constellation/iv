@@ -71,6 +71,9 @@ class VM : private core::Noncopyable<VM> {
 inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
+  assert(code->captures() >= 1);
+  std::fill_n(captures + 1, code->captures() * 2 - 1, -1);
+  captures[0] = current_position;
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
   // state layout is following
@@ -79,6 +82,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
   int* sp = stack_.data();
   const uint8_t* instr = code->data();
   const uint8_t* const first_instr = instr;
+
   for (;;) {
     // fetch opcode
     switch (instr[0]) {
