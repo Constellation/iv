@@ -31,7 +31,7 @@ V(CHECK_3CHAR_OR, 7)\
 V(CHECK_RANGE, 5)/* variadic */\
 V(CHECK_RANGE_INVERTED, 5)/* variadic */\
 V(JUMP, 5)\
-V(FAILURE, 5)\
+V(FAILURE, 1)\
 V(SUCCESS, 1)\
 
 class OP {
