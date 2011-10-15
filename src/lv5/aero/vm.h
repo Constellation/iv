@@ -221,7 +221,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(ASSERTION) {
         int* previous = sp = sp - size;
-        std::copy(previous, previous + size, state.get());
+        current_position = previous[1];
         instr = first_instr + Load4Bytes(instr + 1);
         DISPATCH();
       }
