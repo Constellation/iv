@@ -51,10 +51,10 @@ class VM : private core::Noncopyable<VM> {
   std::vector<int> stack_;
 };
 
-// #define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
+#define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
 
-#define DEFINE_OPCODE(op)\
-  case OP::op:
+//#define DEFINE_OPCODE(op)\
+//  case OP::op:
 #define DISPATCH() continue
 #define ADVANCE(len)\
   do {\
@@ -188,6 +188,21 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           }
         }
         DISPATCH_NEXT(BACK_REFERENCE_IGNORE_CASE);
+      }
+
+      DEFINE_OPCODE(STORE_POSITION) {
+        state[code->captures() * 2 + Load4Bytes(instr + 1)] =
+            static_cast<int>(current_position);
+        DISPATCH_NEXT(STORE_POSITION);
+      }
+
+      DEFINE_OPCODE(POSITION_TEST) {
+        if (current_position !=
+            static_cast<std::size_t>(
+                state[code->captures() * 2 + Load4Bytes(instr + 1)])) {
+          DISPATCH_NEXT(POSITION_TEST);
+        }
+        BACKTRACK();
       }
 
       DEFINE_OPCODE(COUNTER_ZERO) {
