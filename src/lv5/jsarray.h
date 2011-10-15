@@ -278,7 +278,7 @@ class JSArray : public JSObject {
     const uint32_t old_len = length_.value();
     // 15.4.5.1 step 4-b
     if (index >= old_len && !length_.IsWritable()) {
-      REJECT("adding an element to the array"
+      REJECT("adding an element to the array "
              "which length is not writable is rejected");
     }
 
