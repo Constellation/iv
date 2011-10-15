@@ -76,8 +76,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
   // state layout is following
   // [ captures ][ captures ][ target ]
-  core::ScopedPtr<int[]> state(new int[size]);
-  std::fill_n(state.get() + 1, code->captures() * 2 - 1, kUndefined);
+  std::vector<int> state(size, kUndefined);
   state[0] = current_position;
   int* sp = stack_.data();
   const uint8_t* instr = code->data();
@@ -90,7 +89,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         int* target = sp;
         if ((sp = NewState(sp, size))) {
           // copy state and push to backtrack stack
-          std::copy(state.get(), state.get() + size - 1, target);
+          std::copy(state.begin(), state.begin() + size - 1, target);
           target[size - 1] = static_cast<int>(Load4Bytes(instr + 1));
           target[1] = current_position;
         } else {
@@ -327,7 +326,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(SUCCESS) {
         state[1] = current_position;
-        std::copy(state.get(), state.get() + code->captures() * 2, captures);
+        std::copy(state.begin(), state.begin() + code->captures() * 2, captures);
         return true;
       }
 
@@ -339,7 +338,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
     // backtrack stack unwind
     if (sp > stack_.data()) {
       const int* previous = sp = sp - size;
-      std::copy(previous, previous + size, state.get());
+      std::copy(previous, previous + size, state.begin());
       current_position = state[1];
       instr = first_instr + state[size - 1];
       DISPATCH();
