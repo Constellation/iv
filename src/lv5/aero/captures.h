@@ -8,7 +8,7 @@ namespace aero {
 
 class CaptureCalculator : public Visitor {
  public:
-  CaptureCalculator(uint32_t now) : capture_(now) { }
+  explicit CaptureCalculator(uint32_t now) : capture_(now) { }
   uint32_t Calculate(Expression* expr) {
     expr->Accept(this);
     return capture_;
