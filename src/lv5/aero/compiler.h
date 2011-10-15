@@ -9,6 +9,7 @@
 #include "lv5/aero/flags.h"
 #include "lv5/aero/op.h"
 #include "lv5/aero/code.h"
+#include "lv5/aero/captures.h"
 namespace iv {
 namespace lv5 {
 namespace aero {
@@ -195,8 +196,8 @@ class Compiler : private Visitor {
   void Visit(DisjunctionAtom* atom) {
     Disjunction* dis = atom->disjunction();
     if (atom->captured()) {
-      Emit<OP::START_CAPTURE>();
       current_captures_num_ = std::max(current_captures_num_, atom->num());
+      Emit<OP::START_CAPTURE>();
       Emit4(atom->num());
       Visit(dis);
       Emit<OP::END_CAPTURE>();
@@ -207,24 +208,19 @@ class Compiler : private Visitor {
   }
 
   void Visit(Quantifiered* atom) {
-    // TODO(Constellation) fix clean up captures
-    if (atom->max() == 0) {
-      // no term
-      Emit<OP::JUMP>();
-      const std::size_t pos = Current();
-      Emit4(0u);  // dummy
-      const uint32_t capture = current_captures_num_;
-      atom->expression()->Accept(this);
-      Emit4At(pos, Current());
-      return;
-    }
+    const uint32_t now = current_captures_num_;
+    const uint32_t capture =
+        GainNextCaptures(atom->expression(), current_captures_num_);
 
     // optimized paths
     // some frequency patterns like *, ? can be implemented without counters
-    if (atom->min() == atom->max()) {
+    if (atom->max() == 0) {
+      // no term
+      EmitClearCaptures(capture);
+    } else if (atom->min() == atom->max()) {
       // same quantity pattern. greedy parameter is no effect.
       const CounterHolder holder(this);
-      EmitFixed(atom, holder.counter(), atom->min());
+      EmitFixed(atom, holder.counter(), atom->min(), capture);
     } else if (atom->min() == 0) {
       if (atom->max() == 1) {
         // ? pattern. counter not used
@@ -232,6 +228,7 @@ class Compiler : private Visitor {
           Emit<OP::PUSH_BACKTRACK>();
           const std::size_t pos = Current();
           Emit4(0u);  // dummy
+          EmitClearCaptures(capture);
           atom->expression()->Accept(this);
           Emit4At(pos, Current());
         } else {
@@ -242,6 +239,7 @@ class Compiler : private Visitor {
           const std::size_t pos2 = Current();
           Emit4(0u);  // dummy 2
           Emit4At(pos1, Current());
+          EmitClearCaptures(capture);
           atom->expression()->Accept(this);
           Emit4At(pos2, Current());
         }
@@ -252,6 +250,7 @@ class Compiler : private Visitor {
           Emit<OP::PUSH_BACKTRACK>();
           const std::size_t pos2 = Current();
           Emit4(0u);  // dummy
+          EmitClearCaptures(capture);
           atom->expression()->Accept(this);
           Emit<OP::JUMP>();
           Emit4(pos1);
@@ -265,6 +264,7 @@ class Compiler : private Visitor {
           const std::size_t pos3 = Current();
           Emit4(0u);  // dummy 2
           Emit4At(pos2, Current());
+          EmitClearCaptures(capture);
           atom->expression()->Accept(this);
           Emit<OP::JUMP>();
           Emit4(pos1);
@@ -273,23 +273,27 @@ class Compiler : private Visitor {
       } else {
         // min == 0 and max
         const CounterHolder holder(this);
-        EmitFollowingRepeat(atom, holder.counter(), atom->max());
+        EmitFollowingRepeat(atom, holder.counter(), atom->max(), capture);
       }
     } else {
       const CounterHolder holder(this);
       assert(atom->min() != 0);
-      EmitFixed(atom, holder.counter(), atom->min());
+      EmitFixed(atom, holder.counter(), atom->min(), capture);
+      current_captures_num_ = now;
       const uint32_t delta = atom->max() - atom->min();
       assert(delta > 0);
-      EmitFollowingRepeat(atom, holder.counter(), delta);
+      EmitFollowingRepeat(atom, holder.counter(), delta, capture);
     }
+    current_captures_num_ = capture;
   }
 
-  void EmitFixed(Quantifiered* atom, uint32_t counter, int32_t fixed) {
+  void EmitFixed(Quantifiered* atom,
+                 uint32_t counter, int32_t fixed, uint32_t capture) {
     // COUNTER_ZERO | COUNTER_TARGET
     Emit<OP::COUNTER_ZERO>();
     Emit4(counter);
     const std::size_t target = Current();
+    EmitClearCaptures(capture);
     atom->expression()->Accept(this);
     // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
     Emit<OP::COUNTER_NEXT>();
@@ -298,7 +302,8 @@ class Compiler : private Visitor {
     Emit4(target);
   }
 
-  void EmitFollowingRepeat(Quantifiered* atom, uint32_t counter, int32_t max) {
+  void EmitFollowingRepeat(Quantifiered* atom,
+                           uint32_t counter, int32_t max, uint32_t capture) {
     Emit<OP::COUNTER_ZERO>();
     Emit4(counter);
     if (atom->greedy()) {
@@ -306,6 +311,7 @@ class Compiler : private Visitor {
       Emit<OP::PUSH_BACKTRACK>();
       const std::size_t pos2 = Current();
       Emit4(0u);
+      EmitClearCaptures(capture);
       atom->expression()->Accept(this);
       Emit<OP::COUNTER_NEXT>();
       Emit4(counter);
@@ -321,12 +327,22 @@ class Compiler : private Visitor {
       const std::size_t pos3 = Current();
       Emit4(0u);
       Emit4At(pos2, Current());
+      EmitClearCaptures(capture);
       atom->expression()->Accept(this);
       Emit<OP::COUNTER_NEXT>();
       Emit4(counter);
       Emit4(max);
       Emit4(pos1);
       Emit4At(pos3, Current());
+    }
+  }
+
+  void EmitClearCaptures(uint32_t capture) {
+    if (current_captures_num_ != capture) {
+      assert(current_captures_num_ < capture);
+      Emit<OP::CLEAR_CAPTURES>();
+      Emit4(current_captures_num_ + 1);
+      Emit4(capture + 1);
     }
   }
 
@@ -349,6 +365,10 @@ class Compiler : private Visitor {
     code_.push_back((val >> 16) & 0xFF);
     code_.push_back((val >> 8) & 0xFF);
     code_.push_back(val & 0xFF);
+  }
+
+  void Emit1At(std::size_t at, uint8_t val) {
+    code_[at] = val;
   }
 
   void Emit4At(std::size_t at, uint32_t val) {

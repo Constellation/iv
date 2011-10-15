@@ -119,6 +119,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         DISPATCH_NEXT(END_CAPTURE);
       }
 
+      DEFINE_OPCODE(NOP_NINE) {
+        DISPATCH_NEXT(NOP_NINE);
+      }
+
       DEFINE_OPCODE(CLEAR_CAPTURES) {
         for (uint32_t from = Load4Bytes(instr + 1),
              to = Load4Bytes(instr + 5); from < to; ++from) {
