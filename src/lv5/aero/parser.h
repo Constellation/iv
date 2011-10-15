@@ -532,6 +532,9 @@ class Parser {
       }
       case '{': {
         Advance();
+        if (!core::character::IsDecimalDigit(c_)) {
+          UNEXPECT(c_);
+        }
         const double numeric1 = ParseDecimalInteger(CHECK);
         if (numeric1 > kRegExpInfinity) {
           min = kRegExpInfinity;
@@ -546,6 +549,9 @@ class Parser {
           if (c_ == '}') {
             max = kRegExpInfinity;
           } else {
+            if (!core::character::IsDecimalDigit(c_)) {
+              UNEXPECT(c_);
+            }
             const double numeric2 = ParseDecimalInteger(CHECK);
             if (numeric2 > kRegExpInfinity) {
               max = kRegExpInfinity;
