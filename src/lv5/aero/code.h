@@ -4,6 +4,8 @@ namespace iv {
 namespace lv5 {
 namespace aero {
 
+static const int kUndefined = -1;
+
 class Code {
  public:
   Code(const std::vector<uint8_t>& vec, int captures, int counters)

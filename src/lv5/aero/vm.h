@@ -72,7 +72,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
   assert(code->captures() >= 1);
-  std::fill_n(captures + 1, code->captures() * 2 - 1, -1);
+  std::fill_n(captures + 1, code->captures() * 2 - 1, kUndefined);
   captures[0] = current_position;
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
@@ -103,6 +103,58 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(DISCARD_BACKTRACK) {
         sp -= size;
         DISPATCH_NEXT(DISCARD_BACKTRACK);
+      }
+
+      DEFINE_OPCODE(BACK_REFERENCE) {
+        const uint16_t ref = Load2Bytes(instr + 1);
+        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
+          const int start = state[ref * 2];
+          const int length = state[ref * 2 + 1] - start;
+          if (current_position + length > subject.size()) {
+            // out of range
+            BACKTRACK();
+          }
+          bool matched = false;
+          for (core::UStringPiece::const_iterator it = subject.begin() + start,
+               last = subject.begin() + length; it != last;
+               ++it, ++current_position) {
+            if (*it != subject[current_position]) {
+              break;
+            }
+          }
+          if (!matched) {
+            BACKTRACK();
+          }
+        }
+        DISPATCH_NEXT(BACK_REFERENCE);
+      }
+
+      DEFINE_OPCODE(BACK_REFERENCE_IGNORE_CASE) {
+        const uint16_t ref = Load2Bytes(instr + 1);
+        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
+          const int start = state[ref * 2];
+          const int length = state[ref * 2 + 1] - start;
+          if (current_position + length > subject.size()) {
+            // out of range
+            BACKTRACK();
+          }
+          bool matched = false;
+          for (core::UStringPiece::const_iterator it = subject.begin() + start,
+               last = subject.begin() + length; it != last;
+               ++it, ++current_position) {
+            const uint16_t uc = core::character::ToUpperCase(*it);
+            const uint16_t lc = core::character::ToLowerCase(*it);
+            const uint16_t current = subject[current_position];
+            if (*it == current || uc == current || lc == current) {
+              continue;
+            }
+            break;
+          }
+          if (!matched) {
+            BACKTRACK();
+          }
+        }
+        DISPATCH_NEXT(BACK_REFERENCE_IGNORE_CASE);
       }
 
       DEFINE_OPCODE(COUNTER_ZERO) {

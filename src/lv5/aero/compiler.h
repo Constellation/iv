@@ -135,7 +135,11 @@ class Compiler : private Visitor {
   }
 
   void Visit(BackReferenceAtom* atom) {
-    Emit<OP::BACK_REFERENCE>();
+    if (IsIgnoreCase()) {
+      Emit<OP::BACK_REFERENCE_IGNORE_CASE>();
+    } else {
+      Emit<OP::BACK_REFERENCE>();
+    }
     Emit2(atom->reference());
   }
 
