@@ -326,6 +326,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(SUCCESS) {
+        state[1] = current_position;
         std::copy(state.get(), state.get() + code->captures() * 2, captures);
         return true;
       }
