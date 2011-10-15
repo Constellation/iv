@@ -189,9 +189,16 @@ class Compiler : private Visitor {
   void Visit(DisjunctionAtom* atom) {
     Disjunction* dis = atom->disjunction();
     if (atom->captured()) {
+      const uint32_t num = captures_.size();
       captures_.push_back(dis);
+      Emit<OP::SAVE>();
+      Emit4(num * 2);
+      Visit(dis);
+      Emit<OP::SAVE>();
+      Emit4(num * 2 + 1);
+    } else {
+      Visit(dis);
     }
-    Visit(dis);
   }
 
   void Visit(Quantifiered* atom) {

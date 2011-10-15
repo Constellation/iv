@@ -72,13 +72,13 @@ inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
   assert(code->captures() >= 1);
-  std::fill_n(captures + 1, code->captures() * 2 - 1, kUndefined);
-  captures[0] = current_position;
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
   // state layout is following
   // [ captures ][ captures ][ target ]
   core::ScopedPtr<int[]> state(new int[size]);
+  std::fill_n(state.get() + 1, code->captures() * 2 - 1, kUndefined);
+  state[0] = current_position;
   int* sp = stack_.data();
   const uint8_t* instr = code->data();
   const uint8_t* const first_instr = instr;
@@ -103,6 +103,11 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(DISCARD_BACKTRACK) {
         sp -= size;
         DISPATCH_NEXT(DISCARD_BACKTRACK);
+      }
+
+      DEFINE_OPCODE(SAVE) {
+        state[Load4Bytes(instr + 1)] = current_position;
+        DISPATCH_NEXT(SAVE);
       }
 
       DEFINE_OPCODE(BACK_REFERENCE) {
@@ -158,14 +163,14 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(COUNTER_ZERO) {
-        state[Load4Bytes(instr + 1)] = 0;
+        state[code->captures() * 2 + Load4Bytes(instr + 1)] = 0;
         DISPATCH_NEXT(COUNTER_ZERO);
       }
 
       DEFINE_OPCODE(COUNTER_NEXT) {
         // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
         const int32_t max = static_cast<int32_t>(Load4Bytes(instr + 5));
-        if (++state[Load4Bytes(instr + 1)] < max) {
+        if (++state[code->captures() * 2 + Load4Bytes(instr + 1)] < max) {
           instr = first_instr + Load4Bytes(instr + 9);
           DISPATCH();
         }

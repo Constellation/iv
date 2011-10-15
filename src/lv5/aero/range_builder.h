@@ -11,7 +11,7 @@ namespace iv {
 namespace lv5 {
 namespace aero {
 
-class RangeBuilder : core::Noncopyable<RangeBuilder> {
+class RangeBuilder : private core::Noncopyable<RangeBuilder> {
  public:
   explicit RangeBuilder(bool ignore_case)
     : ignore_case_(ignore_case), ranges_() { }
