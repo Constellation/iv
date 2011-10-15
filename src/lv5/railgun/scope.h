@@ -37,10 +37,6 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     return false;
   }
 
-  virtual bool IsEvalScope() const {
-    return false;
-  }
-
   static Type TypeUpgrade(Type now, Type next) {
     return std::max<Type>(now, next);
   }
@@ -116,8 +112,9 @@ class CatchScope : public VariableScope {
 class FunctionScope : public VariableScope {
  public:
 
+  // Load sites vector (variable load sites)
   // symbol, point, type, from
-  typedef std::vector<std::tuple<Symbol, std::size_t, Type, Code*> > Labels;
+  typedef std::vector<std::tuple<Symbol, std::size_t, Type, Code*> > Sites;
   // type, refcount, immutable
   typedef std::tuple<Type, std::size_t, bool> Variable;
   typedef std::unordered_map<Symbol, Variable> Variables;
@@ -129,12 +126,12 @@ class FunctionScope : public VariableScope {
   FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
     : VariableScope(upper),
       map_(),
-      labels_(),
+      sites_(),
       code_(NULL),
       data_(data),
       upper_of_eval_(false),
       eval_top_scope_(false),
-      eval_target_scope_(false) {
+      dynamic_target_scope_(false) {
   }
 
   FunctionScope(std::shared_ptr<VariableScope> upper,
@@ -144,12 +141,12 @@ class FunctionScope : public VariableScope {
                 const Scope& scope)
     : VariableScope(upper),
       map_(),
-      labels_(),
+      sites_(),
       code_(code),
       data_(data),
       upper_of_eval_(false),
       eval_top_scope_(code->code_type() == Code::EVAL),
-      eval_target_scope_(scope.HasDirectCallToEval()) {
+      dynamic_target_scope_(scope.HasDirectCallToEval() && !code->strict()) {
     if (!IsTop()) {
       // is global or not
       map_[symbol::arguments()] = std::make_tuple(STACK, 0, code_->strict());
@@ -196,11 +193,11 @@ class FunctionScope : public VariableScope {
 
   ~FunctionScope() {
     if (IsTop()) {
+      // if direct call to eval top scope
+      // all variable is {configurable : true}, so not STACK
       if (!eval_top_scope_) {
-        // if direct call to eval top scope
-        // all variable is {configurable : true}, so not STACK
-        for (Labels::const_iterator it = labels_.begin(),
-             last = labels_.end(); it != last; ++it) {
+        for (Sites::const_iterator it = sites_.begin(),
+             last = sites_.end(); it != last; ++it) {
           const Symbol sym = std::get<0>(*it);
           const std::size_t point = std::get<1>(*it);
           const Type type = TypeUpgrade(std::get<0>(map_[sym]),
@@ -250,8 +247,8 @@ class FunctionScope : public VariableScope {
       // opcode optimization
       if (upper_of_eval_) {
         // only HEAP analyzer is allowed
-        for (Labels::const_iterator it = labels_.begin(),
-             last = labels_.end(); it != last; ++it) {
+        for (Sites::const_iterator it = sites_.begin(),
+             last = sites_.end(); it != last; ++it) {
           const Symbol sym = std::get<0>(*it);
           const std::size_t point = std::get<1>(*it);
           const Type type = TypeUpgrade(std::get<0>(map_[sym]),
@@ -265,8 +262,8 @@ class FunctionScope : public VariableScope {
           }
         }
       } else {
-        for (Labels::const_iterator it = labels_.begin(),
-             last = labels_.end(); it != last; ++it) {
+        for (Sites::const_iterator it = sites_.begin(),
+             last = sites_.end(); it != last; ++it) {
           const Symbol sym = std::get<0>(*it);
           const std::size_t point = std::get<1>(*it);
           const Type type = TypeUpgrade(std::get<0>(map_[sym]),
@@ -303,7 +300,7 @@ class FunctionScope : public VariableScope {
         // this is global
         map_[sym] =
             std::make_tuple((eval_top_scope_) ? LOOKUP : GLOBAL, 1, false);
-        labels_.push_back(
+        sites_.push_back(
             std::make_tuple(
                 sym,
                 target,
@@ -312,13 +309,13 @@ class FunctionScope : public VariableScope {
       } else {
         upper_->LookupImpl(sym,
                            target,
-                           TypeUpgrade(type, (IsEvalScope()) ? LOOKUP : HEAP),
+                           TypeUpgrade(type, (IsDynamicTargetScope()) ? LOOKUP : HEAP),
                            from);
       }
     } else {
       if (IsTop()) {
         ++std::get<1>(map_[sym]);
-        labels_.push_back(
+        sites_.push_back(
             std::make_tuple(
                 sym,
                 target,
@@ -326,14 +323,10 @@ class FunctionScope : public VariableScope {
                 from));
       } else {
         const Type stored = (type == LOOKUP || type == GLOBAL) ? HEAP : type;
+        assert(stored == HEAP || stored == STACK);
         std::get<0>(map_[sym]) = TypeUpgrade(std::get<0>(map_[sym]), stored);
         ++std::get<1>(map_[sym]);
-        labels_.push_back(
-            std::make_tuple(
-                sym,
-                target,
-                type,
-                from));
+        sites_.push_back(std::make_tuple(sym, target, type, from));
       }
     }
   }
@@ -342,8 +335,8 @@ class FunctionScope : public VariableScope {
     upper_of_eval_ = true;
   }
 
-  virtual bool IsEvalScope() const {
-    return eval_target_scope_;
+  bool IsDynamicTargetScope() const {
+    return dynamic_target_scope_;
   }
 
   bool IsTop() const {
@@ -483,12 +476,12 @@ class FunctionScope : public VariableScope {
   }
 
   Variables map_;
-  Labels labels_;
+  Sites sites_;
   Code* code_;
   Code::Data* data_;
   bool upper_of_eval_;
   bool eval_top_scope_;
-  bool eval_target_scope_;
+  bool dynamic_target_scope_;
 };
 
 } } }  // namespace iv::lv5::railgun
