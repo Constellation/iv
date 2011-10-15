@@ -200,4 +200,20 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_EQ(vec[4], 0);
     ASSERT_EQ(vec[5], 4);
   }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("^$");
+    iv::core::UString str1 = iv::core::ToUString("");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::OutputDisAssembler disasm(stdout);
+    disasm.DisAssemble(code.bytes());
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+    ASSERT_EQ(vec[0], 0);
+    ASSERT_EQ(vec[1], 0);
+  }
 }
