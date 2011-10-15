@@ -92,39 +92,6 @@ class JSRegExp : public JSObject {
         static_cast<double>(i), true, IV_LV5_ERROR_VOID(e));
   }
 
-  JSVal ExecuteOnce(Context* ctx,
-                    const core::UStringPiece& piece,
-                    int previous_index,
-                    std::vector<int>* offset_vector,
-                    Error* e) {
-    const uint32_t num_of_captures = impl_->number_of_captures();
-    const int rc = impl_->ExecuteOnce(piece, previous_index, offset_vector);
-    if (rc == jscre::JSRegExpErrorNoMatch ||
-        rc == jscre::JSRegExpErrorHitLimit) {
-      return JSNull;
-    }
-
-    if (rc < 0) {
-      e->Report(Error::Type, "RegExp execute failed");
-      return JSUndefined;
-    }
-
-    JSArray* ary = JSArray::New(ctx, 2 * (num_of_captures + 1));
-    for (int i = 0, len = 2 * (num_of_captures + 1); i < len; i += 2) {
-      ary->DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(i),
-          DataDescriptor((*offset_vector)[i], ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
-      ary->DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(i + 1),
-          DataDescriptor((*offset_vector)[i+1], ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
-    }
-    return ary;
-  }
-
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e) {
     const uint32_t num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
