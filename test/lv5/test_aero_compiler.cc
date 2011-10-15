@@ -14,10 +14,10 @@ TEST(AeroCompilerCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("a*?");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    disasm.DisAssemble(compiler.Compile(dis).bytes());
+    disasm.DisAssemble(compiler.Compile(data).bytes());
   }
   {
     space.Clear();
@@ -25,9 +25,9 @@ TEST(AeroCompilerCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("[\\u0000-\\uFFFF]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::IGNORE_CASE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    disasm.DisAssemble(compiler.Compile(dis).bytes());
+    disasm.DisAssemble(compiler.Compile(data).bytes());
   }
 }

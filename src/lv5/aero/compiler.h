@@ -29,23 +29,23 @@ class Compiler : private Visitor {
   explicit Compiler(int flags)
     : flags_(flags),
       code_(),
-      captures_(),
+      max_captures_(),
+      current_captures_num_(),
       jmp_(),
       counters_(),
       counters_size_(0) {
   }
 
-  Code Compile(Disjunction* expr) {
-    EmitQuickCheck(expr);
-    captures_.push_back(expr);
-    expr->Accept(this);
+  Code Compile(const ParsedData& data) {
+    max_captures_ = data.max_captures();
+    current_captures_num_ = 0;
+    EmitQuickCheck(data.pattern());
+    data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
-    return Code(code_, captures_.size(), counters_size_);
+    return Code(code_, max_captures_, counters_size_);
   }
 
   uint32_t counters_size() const { return counters_size_; }
-  uint32_t captures() const { return captures_.size(); }
-
   bool IsIgnoreCase() const { return flags_ & IGNORE_CASE; }
   bool IsMultiline() const { return flags_ & MULTILINE; }
 
@@ -195,21 +195,27 @@ class Compiler : private Visitor {
   void Visit(DisjunctionAtom* atom) {
     Disjunction* dis = atom->disjunction();
     if (atom->captured()) {
-      const uint32_t num = captures_.size();
-      captures_.push_back(dis);
-      Emit<OP::SAVE>();
-      Emit4(num * 2);
+      Emit<OP::START_CAPTURE>();
+      current_captures_num_ = std::max(current_captures_num_, atom->num());
+      Emit4(atom->num());
       Visit(dis);
-      Emit<OP::SAVE>();
-      Emit4(num * 2 + 1);
+      Emit<OP::END_CAPTURE>();
+      Emit4(atom->num());
     } else {
       Visit(dis);
     }
   }
 
   void Visit(Quantifiered* atom) {
+    // TODO(Constellation) fix clean up captures
     if (atom->max() == 0) {
       // no term
+      Emit<OP::JUMP>();
+      const std::size_t pos = Current();
+      Emit4(0u);  // dummy
+      const uint32_t capture = current_captures_num_;
+      atom->expression()->Accept(this);
+      Emit4At(pos, Current());
       return;
     }
 
@@ -373,7 +379,8 @@ class Compiler : private Visitor {
 
   int flags_;
   std::vector<uint8_t> code_;
-  std::vector<Disjunction*> captures_;
+  uint32_t max_captures_;
+  uint32_t current_captures_num_;
   std::vector<std::size_t> jmp_;
   std::unordered_set<uint32_t> counters_;
   uint32_t counters_size_;

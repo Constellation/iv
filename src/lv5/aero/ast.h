@@ -156,15 +156,20 @@ class RangeAtom : public Atom {
 
 class DisjunctionAtom : public Atom {
  public:
-  DisjunctionAtom(Disjunction* disjunction, bool captured)
+  explicit DisjunctionAtom(Disjunction* disjunction)
     : disjunction_(disjunction),
-      captured_(captured) { }
+      captured_(false), num_(0) { }
+  DisjunctionAtom(Disjunction* disjunction, uint32_t num)
+    : disjunction_(disjunction),
+      captured_(true), num_(num) { }
   Disjunction* disjunction() const { return disjunction_; }
   bool captured() const { return captured_; }
+  uint32_t num() const { return num_; }
   DECLARE_DERIVED_NODE_TYPE(DisjunctionAtom)
  private:
   Disjunction* disjunction_;
   bool captured_;
+  uint32_t num_;
 };
 
 #undef ACCEPT_VISITOR

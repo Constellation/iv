@@ -12,14 +12,6 @@ namespace iv {
 namespace lv5 {
 namespace aero {
 
-#define IS(ch)\
-  do {\
-    if (c_ != ch) {\
-      *e = UNEXPECTED_CHARACTER;\
-      return NULL;\
-    }\
-  } while (0)
-
 #define EXPECT(ch)\
   do {\
     if (c_ != ch) {\
@@ -49,6 +41,17 @@ namespace aero {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
+class ParsedData {
+ public:
+  ParsedData(Disjunction* dis, uint32_t max_captures)
+    : pattern_(dis), max_captures_(max_captures) { }
+  Disjunction* pattern() const { return pattern_; }
+  uint32_t max_captures() const { return max_captures_; }
+ private:
+  Disjunction* pattern_;
+  uint32_t max_captures_;
+};
+
 class Parser {
  public:
   static const std::size_t kMaxPatternSize = core::Size::MB;
@@ -57,7 +60,8 @@ class Parser {
     UNEXPECTED_CHARACTER = 1,
     NUMBER_TOO_BIG = 2,
     INVALID_RANGE = 3,
-    INVALID_QUANTIFIER = 4
+    INVALID_QUANTIFIER = 4,
+    TOO_LONG_REGEXP = 5
   };
 
   Parser(core::Space* factory, const core::UStringPiece& source, int flags)
@@ -68,17 +72,22 @@ class Parser {
       buffer8_(),
       pos_(0),
       end_(source.size()),
-      c_(EOS) {
+      c_(EOS),
+      captures_(1) {
     Advance();
   }
 
-  Disjunction* ParsePattern(int* e) {
+  ParsedData ParsePattern(int* e) {
     if (source_.size() > kMaxPatternSize) {
-      return NULL;
+      *e = TOO_LONG_REGEXP;
+      return ParsedData(NULL, captures_);
     }
     Disjunction* dis = ParseDisjunction<EOS>(e);
-    IS(EOS);
-    return dis;
+    if (c_ != EOS) {
+      *e = UNEXPECTED_CHARACTER;
+      return ParsedData(NULL, captures_);
+    }
+    return ParsedData(dis, captures_);
   }
 
  private:
@@ -159,16 +168,17 @@ class Parser {
               Advance();
               Disjunction* dis = ParseDisjunction<')'>(CHECK);
               EXPECT(')');
-              target = new(factory_)DisjunctionAtom(dis, false);
+              target = new(factory_)DisjunctionAtom(dis);
               atom = true;
             } else {
               UNEXPECT(c_);
             }
           } else {
+            const uint32_t num = captures_++;
             // ( Disjunction )
             Disjunction* dis = ParseDisjunction<')'>(CHECK);
             EXPECT(')');
-            target = new(factory_)DisjunctionAtom(dis, true);
+            target = new(factory_)DisjunctionAtom(dis, num);
             atom = true;
           }
           break;
@@ -615,9 +625,9 @@ class Parser {
   std::size_t pos_;
   const std::size_t end_;
   int c_;
+  uint32_t captures_;
 };
 
-#undef IS
 #undef EXPECT
 #undef UNEXPECT
 #undef RAISE

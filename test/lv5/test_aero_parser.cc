@@ -14,65 +14,66 @@ TEST(AeroParserCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("main");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
     iv::lv5::aero::Dumper dumper;
-    EXPECT_TRUE(iv::core::ToUString("DIS(ALT(main))") == dumper.Dump(dis));
+    EXPECT_TRUE(
+        iv::core::ToUString("DIS(ALT(main))") == dumper.Dump(data.pattern()));
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("(ma[in])");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[\\d-a]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString(kURLRegExp);
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{10,}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{10,20}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    ASSERT_TRUE(dis);
+    ASSERT_TRUE(data.pattern());
   }
 }
 
@@ -83,80 +84,80 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
     iv::core::UString str = iv::core::ToUString("ma[in");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in]]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma([in]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[b-a]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[b-aab]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{10, 20}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{10,20");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{ 10,20}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a{a10,20}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
-    ASSERT_FALSE(dis);
+    ASSERT_FALSE(data.pattern());
   }
 }

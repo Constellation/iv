@@ -18,10 +18,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("a");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str, &code, vec.data(), 0));
   }
   {
@@ -30,10 +30,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("a");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str, &code, vec.data(), 0));
   }
   {
@@ -42,10 +42,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str = iv::core::ToUString("a");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str, &code, vec.data(), 0));
   }
   {
@@ -60,10 +60,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str7 = iv::core::ToUString("aaaaaaaaaaaaaaa");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_FALSE(vm.Execute(str1, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str2, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str3, &code, vec.data(), 0));
@@ -84,10 +84,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str7 = iv::core::ToUString("aaatess");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str2, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str3, &code, vec.data(), 0));
@@ -108,10 +108,10 @@ TEST(AeroVMCase, MainTest) {
     iv::core::UString str7 = iv::core::ToUString("aaatess");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str2, &code, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(str3, &code, vec.data(), 0));
@@ -126,6 +126,7 @@ TEST(AeroVMCase, CaptureTest) {
   iv::core::Space space;
   iv::lv5::aero::VM vm;
   std::vector<int> vec(1000);
+  iv::lv5::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^a{2,3}(test|ok)");
@@ -138,10 +139,11 @@ TEST(AeroVMCase, CaptureTest) {
     iv::core::UString str7 = iv::core::ToUString("aaatess");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(6, vec[1]);
@@ -172,10 +174,11 @@ TEST(AeroVMCase, CaptureTest) {
     iv::core::UString str1 = iv::core::ToUString("test");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
@@ -190,10 +193,11 @@ TEST(AeroVMCase, CaptureTest) {
     iv::core::UString str1 = iv::core::ToUString("");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(0, vec[1]);
@@ -201,14 +205,13 @@ TEST(AeroVMCase, CaptureTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(.*?)a(?!(a+)b\\2c)\\2(.*)");
-    iv::core::UString str1 = iv::core::ToUString("baaabaac""");
+    iv::core::UString str1 = iv::core::ToUString("baaabaac");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
     int error = 0;
-    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(dis);
-    iv::lv5::aero::OutputDisAssembler disasm(stdout);
+    iv::lv5::aero::Code code = compiler.Compile(data);
     disasm.DisAssemble(code.bytes());
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
@@ -219,5 +222,30 @@ TEST(AeroVMCase, CaptureTest) {
     EXPECT_EQ(-1, vec[5]);
     EXPECT_EQ(3,  vec[6]);
     EXPECT_EQ(8,  vec[7]);
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("(z)((a+)?(b+)?(c))*");
+    iv::core::UString str1 = iv::core::ToUString("zaacbbbcac");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+    EXPECT_EQ(0,  vec[0]);
+    EXPECT_EQ(10, vec[1]);
+    EXPECT_EQ(0,  vec[2]);
+    EXPECT_EQ(1,  vec[3]);
+    EXPECT_EQ(8,  vec[4]);
+    EXPECT_EQ(10, vec[5]);
+    EXPECT_EQ(8,  vec[6]);
+    EXPECT_EQ(9,  vec[7]);
+    EXPECT_EQ(-1, vec[8]);
+    EXPECT_EQ(-1, vec[9]);
+    EXPECT_EQ(9,  vec[10]);
+    EXPECT_EQ(10, vec[11]);
   }
 }

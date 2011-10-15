@@ -106,9 +106,26 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         DISPATCH_NEXT(DISCARD_BACKTRACK);
       }
 
-      DEFINE_OPCODE(SAVE) {
-        state[Load4Bytes(instr + 1)] = current_position;
-        DISPATCH_NEXT(SAVE);
+      DEFINE_OPCODE(START_CAPTURE) {
+        const uint32_t target = Load4Bytes(instr + 1);
+        state[target * 2] = current_position;
+        state[target * 2 + 1] = kUndefined;
+        DISPATCH_NEXT(START_CAPTURE);
+      }
+
+      DEFINE_OPCODE(END_CAPTURE) {
+        const uint32_t target = Load4Bytes(instr + 1);
+        state[target * 2 + 1] = current_position;
+        DISPATCH_NEXT(END_CAPTURE);
+      }
+
+      DEFINE_OPCODE(CLEAR_CAPTURES) {
+        for (uint32_t from = Load4Bytes(instr + 1),
+             to = Load4Bytes(instr + 5); from < to; ++from) {
+          state[from * 2] = kUndefined;
+          state[from * 2 + 1] = kUndefined;
+        }
+        DISPATCH_NEXT(CLEAR_CAPTURES);
       }
 
       DEFINE_OPCODE(BACK_REFERENCE) {
