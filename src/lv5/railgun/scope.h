@@ -307,10 +307,11 @@ class FunctionScope : public VariableScope {
                 TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type),
                 from));
       } else {
-        upper_->LookupImpl(sym,
-                           target,
-                           TypeUpgrade(type, (IsDynamicTargetScope()) ? LOOKUP : HEAP),
-                           from);
+        upper_->LookupImpl(
+            sym,
+            target,
+            TypeUpgrade(type, (IsDynamicTargetScope()) ? LOOKUP : HEAP),
+            from);
       }
     } else {
       if (IsTop()) {
