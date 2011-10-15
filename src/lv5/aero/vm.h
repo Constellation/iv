@@ -51,10 +51,10 @@ class VM : private core::Noncopyable<VM> {
   std::vector<int> stack_;
 };
 
-#define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
+// #define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
 
-//#define DEFINE_OPCODE(op)\
-//  case OP::op:
+#define DEFINE_OPCODE(op)\
+  case OP::op:
 #define DISPATCH() continue
 #define ADVANCE(len)\
   do {\
