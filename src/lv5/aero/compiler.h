@@ -1,7 +1,6 @@
 #ifndef IV_LV5_AERO_COMPILER_H_
 #define IV_LV5_AERO_COMPILER_H_
 #include <vector>
-#include <iostream>
 #include "detail/cstdint.h"
 #include "detail/unordered_set.h"
 #include "noncopyable.h"
@@ -113,22 +112,29 @@ class Compiler : private Visitor {
 
   void Visit(DisjunctionAssertion* assertion) {
     if (assertion->inverted()) {
-      Emit<OP::PUSH_BACKTRACK>();
-      const std::size_t pos = Current();
-      Emit4(0);  // dummy
-      Visit(assertion->disjunction());
-      Emit<OP::DISCARD_BACKTRACK>();
-      Emit<OP::FAILURE>();
-      Emit4At(pos, Current());  // backtrack
-    } else {
+      const CounterHolder holder(this);
+      Emit<OP::STORE_SP>();
+      Emit4(holder.counter());
       Emit<OP::PUSH_BACKTRACK>();
       const std::size_t pos1 = Current();
       Emit4(0);  // dummy
       Visit(assertion->disjunction());
-      Emit<OP::ASSERTION>();
+      Emit<OP::ASSERTION_FAILURE>();
+      Emit4(holder.counter());
+      Emit4At(pos1, Current());
+    } else {
+      const CounterHolder holder(this);
+      Emit<OP::STORE_SP>();
+      Emit4(holder.counter());
+      Emit<OP::PUSH_BACKTRACK>();
+      const std::size_t pos1 = Current();
+      Emit4(0);  // dummy
+      Visit(assertion->disjunction());
+      Emit<OP::ASSERTION_SUCCESS>();
+      Emit4(holder.counter());
       const std::size_t pos2 = Current();
       Emit4(0);  // dummy
-      Emit4At(pos1, Current());  // backtrack
+      Emit4At(pos1, Current());
       Emit<OP::FAILURE>();
       Emit4At(pos2, Current());
     }

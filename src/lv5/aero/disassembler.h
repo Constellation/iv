@@ -58,7 +58,7 @@ class DisAssembler : private core::Noncopyable<> {
 
 class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
  public:
-  OutputDisAssembler(FILE* file) : file_(file) { }
+  explicit OutputDisAssembler(FILE* file) : file_(file) { }
 
   void OutputLine(const core::StringPiece& str) {
     const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);

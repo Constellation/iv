@@ -51,6 +51,8 @@ class VM : private core::Noncopyable<VM> {
   std::vector<int> stack_;
 };
 
+// #define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
+
 #define DEFINE_OPCODE(op)\
   case OP::op:
 #define DISPATCH() continue
@@ -111,18 +113,21 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(BACK_REFERENCE) {
         const uint16_t ref = Load2Bytes(instr + 1);
-        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
+        if (ref < code->captures() &&
+            state[ref * 2] != kUndefined &&
+            state[ref * 2 + 1] != kUndefined) {
           const int start = state[ref * 2];
           const int length = state[ref * 2 + 1] - start;
           if (current_position + length > subject.size()) {
             // out of range
             BACKTRACK();
           }
-          bool matched = false;
+          bool matched = true;
           for (core::UStringPiece::const_iterator it = subject.begin() + start,
-               last = subject.begin() + length; it != last;
+               last = subject.begin() + start + length; it != last;
                ++it, ++current_position) {
             if (*it != subject[current_position]) {
+              matched = false;
               break;
             }
           }
@@ -135,21 +140,24 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(BACK_REFERENCE_IGNORE_CASE) {
         const uint16_t ref = Load2Bytes(instr + 1);
-        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
+        if (ref < code->captures() &&
+            state[ref * 2] != kUndefined &&
+            state[ref * 2 + 1] != kUndefined) {
           const int start = state[ref * 2];
           const int length = state[ref * 2 + 1] - start;
           if (current_position + length > subject.size()) {
             // out of range
             BACKTRACK();
           }
-          bool matched = false;
+          bool matched = true;
           for (core::UStringPiece::const_iterator it = subject.begin() + start,
-               last = subject.begin() + length; it != last;
+               last = subject.begin() + start + length; it != last;
                ++it, ++current_position) {
             const uint16_t uc = core::character::ToUpperCase(*it);
             const uint16_t lc = core::character::ToLowerCase(*it);
             const uint16_t current = subject[current_position];
             if (*it == current || uc == current || lc == current) {
+              matched = false;
               continue;
             }
             break;
@@ -218,11 +226,24 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         BACKTRACK();
       }
 
-      DEFINE_OPCODE(ASSERTION) {
-        int* previous = sp = sp - size;
+      DEFINE_OPCODE(STORE_SP) {
+        state[code->captures() * 2 + Load4Bytes(instr + 1)]
+            = sp - stack_.data();
+        DISPATCH_NEXT(STORE_SP);
+      }
+
+      DEFINE_OPCODE(ASSERTION_SUCCESS) {
+        int* previous = sp =
+            stack_.data() + state[code->captures() * 2 + Load4Bytes(instr + 1)];
         current_position = previous[1];
-        instr = first_instr + Load4Bytes(instr + 1);
+        instr = first_instr + Load4Bytes(instr + 5);
         DISPATCH();
+      }
+
+      DEFINE_OPCODE(ASSERTION_FAILURE) {
+        sp =
+            stack_.data() + state[code->captures() * 2 + Load4Bytes(instr + 1)];
+        BACKTRACK();
       }
 
       DEFINE_OPCODE(ASSERTION_BOB) {
@@ -276,10 +297,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           const uint16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           bool in_range = false;
-          for (std::size_t i = 0; i < length; ++i) {
-            const uint16_t start = Load2Bytes(instr + 1 + 4 + i * 2);
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i * 2 + 1);
-            if (finish < ch) {
+          for (std::size_t i = 0; i < length; i += 4) {
+            const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            if (ch < start) {
               break;
             }
             if (start <= ch && ch <= finish) {
@@ -301,10 +322,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           const uint16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           bool in_range = false;
-          for (std::size_t i = 0; i < length; ++i) {
-            const uint16_t start = Load2Bytes(instr + 1 + 4 + i * 2);
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i * 2 + 1);
-            if (finish < ch) {
+          for (std::size_t i = 0; i < length; i += 4) {
+            const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            if (ch < start) {
               break;
             }
             if (start <= ch && ch <= finish) {
@@ -326,7 +347,8 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(SUCCESS) {
         state[1] = current_position;
-        std::copy(state.begin(), state.begin() + code->captures() * 2, captures);
+        std::copy(state.begin(),
+                  state.begin() + code->captures() * 2, captures);
         return true;
       }
 
