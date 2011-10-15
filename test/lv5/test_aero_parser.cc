@@ -56,6 +56,24 @@ TEST(AeroParserCase, MainTest) {
     ASSERT_FALSE(error);
     ASSERT_TRUE(dis);
   }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{10,}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{10,20}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(dis);
+  }
 }
 
 TEST(AeroParserCase, SyntaxInvalidTest) {
@@ -99,6 +117,42 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[b-aab]");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{10, 20}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{10,20");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{ 10,20}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(dis);
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{a10,20}");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
     iv::lv5::aero::Disjunction* dis = parser.ParsePattern(&error);
