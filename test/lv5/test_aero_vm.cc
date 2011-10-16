@@ -3,10 +3,7 @@
 #include "alloc.h"
 #include "ustring.h"
 #include "unicode.h"
-#include "lv5/aero/parser.h"
-#include "lv5/aero/compiler.h"
-#include "lv5/aero/disassembler.h"
-#include "lv5/aero/vm.h"
+#include "lv5/aero/aero.h"
 
 TEST(AeroVMCase, MainTest) {
   iv::core::Space space;

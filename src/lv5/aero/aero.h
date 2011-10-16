@@ -9,6 +9,12 @@
 #include "lv5/aero/range_builder.h"
 #include "lv5/aero/ast.h"
 #include "lv5/aero/parser.h"
+#include "lv5/aero/disassembler.h"
+#include "lv5/aero/dumper.h"
+#include "lv5/aero/code.h"
+#include "lv5/aero/compiler.h"
+#include "lv5/aero/quick_check.h"
+#include "lv5/aero/vm.h"
 
 namespace iv {
 namespace lv5 {

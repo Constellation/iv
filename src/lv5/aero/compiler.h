@@ -10,6 +10,7 @@
 #include "lv5/aero/op.h"
 #include "lv5/aero/code.h"
 #include "lv5/aero/captures.h"
+#include "lv5/aero/quick_check_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace aero {
@@ -40,7 +41,7 @@ class Compiler : private Visitor {
   Code Compile(const ParsedData& data) {
     max_captures_ = data.max_captures();
     current_captures_num_ = 0;
-    EmitQuickCheck(data.pattern());
+    EmitQuickCheck(data);
     data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
     return Code(code_, max_captures_, counters_size_);
@@ -51,10 +52,12 @@ class Compiler : private Visitor {
   bool IsMultiline() const { return flags_ & MULTILINE; }
 
  private:
-  void EmitQuickCheck(Disjunction* dis) {
+  void EmitQuickCheck(const ParsedData& data) {
     // emit quick check phase for this pattern.
     // when RegExp /test/ is provided, we emit code that searching 't'
     // and if it is accepted, goto main body with this character position.
+    QuickCheck emitter(this);
+    emitter.Emit(data);
   }
 
   void Visit(Disjunction* dis) {
