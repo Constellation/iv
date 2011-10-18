@@ -68,10 +68,10 @@ class JSRegExpImpl : public gc_cleanup {
     return code_->captures();
   }
 
-  bool ExecuteOnce(Context* ctx,
-                   const core::UStringPiece& subject,
-                   int offset,
-                   int* offset_vector) const {
+  int ExecuteOnce(Context* ctx,
+                  const core::UStringPiece& subject,
+                  int offset,
+                  int* offset_vector) const {
     assert(IsValid());
     return ctx->regexp_vm()->ExecuteOnce(code_, subject, offset, offset_vector);
   }

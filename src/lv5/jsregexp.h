@@ -104,11 +104,11 @@ class JSRegExp : public JSObject {
     const int size = str->size();
     const JSString::Fiber* fiber = str->GetFiber();
     do {
-      const bool res = impl_->ExecuteOnce(ctx,
-                                          *fiber,
-                                          previous_index,
-                                          offset_vector.data());
-      if (!res) {
+      const int res = impl_->ExecuteOnce(ctx,
+                                         *fiber,
+                                         previous_index,
+                                         offset_vector.data());
+      if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
         break;
       }
       const int this_index = offset_vector[1];
@@ -161,11 +161,11 @@ class JSRegExp : public JSObject {
       return JSNull;
     }
     const JSString::Fiber* fiber = str->GetFiber();
-    const bool res = impl_->ExecuteOnce(ctx,
-                                        *fiber,
-                                        previous_index,
-                                        offset_vector.data());
-    if (!res) {
+    const int res = impl_->ExecuteOnce(ctx,
+                                       *fiber,
+                                       previous_index,
+                                       offset_vector.data());
+    if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
@@ -220,8 +220,8 @@ class JSRegExp : public JSObject {
                             regexp::PairVector* result) const {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector(num_of_captures * 2);
-    const int rc = impl_->ExecuteOnce(ctx, str, index, offset_vector.data());
-    if (!rc) {
+    const int res = impl_->ExecuteOnce(ctx, str, index, offset_vector.data());
+    if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       return std::make_tuple(0, 0, false);
     }
     for (int i = 1, len = num_of_captures; i < len; ++i) {

@@ -5,6 +5,7 @@
 #include "noncopyable.h"
 #include "ustringpiece.h"
 #include "scoped_ptr.h"
+#include "os_allocator.h"
 #include "lv5/aero/code.h"
 #include "lv5/aero/character.h"
 #include "lv5/aero/utility.h"
@@ -30,34 +31,40 @@ inline bool IsWordSeparator(const core::UStringPiece& subject,
 
 class VM : private core::Noncopyable<VM> {
  public:
-  static const std::size_t kStackSize = 10000;
+  static const std::size_t kInitialStackSize = 10000;
 
   VM()
-    : stack_(kStackSize) { }
+    : stack_(kInitialStackSize) {
+  }
 
-  bool Execute(const core::UStringPiece& subject,
-               Code* code, int* captures,
-               std::size_t current_position);
+  int Execute(const core::UStringPiece& subject,
+              Code* code, int* captures,
+              std::size_t current_position);
 
-  bool ExecuteOnce(Code* code, const core::UStringPiece& subject,
-                   int offset, int* captures) {
+  int ExecuteOnce(Code* code, const core::UStringPiece& subject,
+                  int offset, int* captures) {
     int size = subject.size();
     do {
-      if (Execute(subject, code, captures, offset)) {
-        return true;
+      const int res = Execute(subject, code, captures, offset);
+      if (res == AERO_SUCCESS || res == AERO_ERROR) {
+        return res;
       } else {
         ++offset;
       }
     } while (offset <= size);
-    return false;
+    return AERO_FAILURE;
   }
 
  private:
   int* NewState(int* current, std::size_t size) {
-    if ((current + size) <= stack_.data() + kStackSize) {
-      return current + size;
-    }
-    // overflow
+    const std::size_t offset = (current - stack_.data()) + size;
+    do {
+      if (offset <= stack_.size()) {
+        return stack_.data() + offset;
+      }
+      // overflow
+      stack_.resize(stack_.size() * 2);
+    } while (true);
     return NULL;
   }
 
@@ -76,9 +83,9 @@ class VM : private core::Noncopyable<VM> {
   DISPATCH()
 #define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
-inline bool VM::Execute(const core::UStringPiece& subject,
-                        Code* code, int* captures,
-                        std::size_t current_position) {
+inline int VM::Execute(const core::UStringPiece& subject,
+                       Code* code, int* captures,
+                       std::size_t current_position) {
   assert(code->captures() >= 1);
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
@@ -94,15 +101,16 @@ inline bool VM::Execute(const core::UStringPiece& subject,
     // fetch opcode
     switch (instr[0]) {
       DEFINE_OPCODE(PUSH_BACKTRACK) {
-        int* target = sp;
         if ((sp = NewState(sp, size))) {
           // copy state and push to backtrack stack
+          int* target = sp - size;
           std::copy(state.begin(), state.begin() + size - 1, target);
           target[size - 1] = static_cast<int>(Load4Bytes(instr + 1));
           target[1] = current_position;
         } else {
           // stack overflowed
-          return false;
+          std::cout << "ERROR!!!" << std::endl;
+          return AERO_ERROR;
         }
         DISPATCH_NEXT(PUSH_BACKTRACK);
       }
@@ -377,7 +385,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         state[1] = current_position;
         std::copy(state.begin(),
                   state.begin() + code->captures() * 2, captures);
-        return true;
+        return AERO_SUCCESS;
       }
 
       DEFINE_OPCODE(JUMP) {
@@ -393,9 +401,9 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       instr = first_instr + state[size - 1];
       DISPATCH();
     }
-    return false;
+    return AERO_FAILURE;
   }
-  return true;  // makes compiler happy
+  return AERO_SUCCESS;  // makes compiler happy
 }
 #undef DEFINE_OPCODE
 #undef DISPATCH

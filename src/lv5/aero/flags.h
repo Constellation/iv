@@ -10,6 +10,12 @@ enum RegExpFlags {
   MULTILINE = 2
 };
 
+enum RegExpResult {
+  AERO_FAILURE = 0,
+  AERO_SUCCESS = 1,
+  AERO_ERROR = 2
+};
+
 
 } } }  // namespace iv::lv5::aero
 #endif  // IV_LV5_AERO_FLAGS_H_
