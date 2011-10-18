@@ -221,7 +221,10 @@ class Parser {
 
         default: {
           // PatternCharacter
-          if (!character::IsPatternCharacter(c_)) {
+          //
+          // and add special cases like /]/
+          // see IE Blog 
+          if (!character::IsPatternCharacter(c_) && (c_ != ']')) {
             UNEXPECT(c_);
           }
           target = new(factory_)CharacterAtom(c_);

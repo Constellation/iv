@@ -92,6 +92,16 @@ TEST(AeroParserCase, MainTest) {
     ASSERT_FALSE(error);
     ASSERT_TRUE(data.pattern());
   }
+  {
+    // see IE Blog
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("ma[in]]");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(data.pattern());
+  }
 }
 
 TEST(AeroParserCase, SyntaxInvalidTest) {
@@ -99,15 +109,6 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("ma[in");
-    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
-    int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
-    ASSERT_TRUE(error);
-    ASSERT_FALSE(data.pattern());
-  }
-  {
-    space.Clear();
-    iv::core::UString str = iv::core::ToUString("ma[in]]");
     iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
     int error = 0;
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
