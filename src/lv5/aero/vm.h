@@ -168,10 +168,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           for (core::UStringPiece::const_iterator it = subject.begin() + start,
                last = subject.begin() + start + length; it != last;
                ++it, ++current_position) {
-            const uint16_t uc = core::character::ToUpperCase(*it);
-            const uint16_t lc = core::character::ToLowerCase(*it);
             const uint16_t current = subject[current_position];
-            if (*it == current || uc == current || lc == current) {
+            if (current == *it ||
+                current == core::character::ToUpperCase(*it) ||
+                current == core::character::ToLowerCase(*it)) {
               continue;
             }
             matched = false;
@@ -329,11 +329,11 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
             if (ch < start) {
               break;
             }
-            if (start <= ch && ch <= finish) {
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            if (ch <= finish) {
               in_range = true;
               break;
             }
@@ -354,11 +354,11 @@ inline bool VM::Execute(const core::UStringPiece& subject,
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
             if (ch < start) {
               break;
             }
-            if (start <= ch && ch <= finish) {
+            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            if (ch <= finish) {
               in_range = true;
               break;
             }
