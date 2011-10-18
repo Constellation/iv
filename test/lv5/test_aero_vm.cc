@@ -411,5 +411,21 @@ TEST(AeroVMCase, CaptureTest) {
     iv::lv5::aero::Code code = compiler.Compile(data);
     disasm.DisAssemble(code.bytes());
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+    EXPECT_EQ(0, vec[0]);
+    EXPECT_EQ(32, vec[1]);
+    EXPECT_EQ(7, vec[2]);
+    EXPECT_EQ(17, vec[3]);
+    EXPECT_EQ(7, vec[4]);
+    EXPECT_EQ(14, vec[5]);
+    EXPECT_EQ(7, vec[6]);
+    EXPECT_EQ(13, vec[7]);
+    EXPECT_EQ(14, vec[8]);
+    EXPECT_EQ(17, vec[9]);
+    EXPECT_EQ(-1, vec[10]);
+    EXPECT_EQ(-1, vec[11]);
+    EXPECT_EQ(17, vec[12]);
+    EXPECT_EQ(32, vec[13]);
+    EXPECT_EQ(18, vec[14]);
+    EXPECT_EQ(31, vec[15]);
   }
 }
