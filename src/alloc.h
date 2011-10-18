@@ -103,6 +103,7 @@ class Space : private Noncopyable<Space> {
   void Clear() {
     arena_ = start_;
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
+    malloced_.clear();
   }
 
   ~Space() {
