@@ -4,13 +4,6 @@ import glob
 from os.path import join, dirname, abspath, basename
 Import('context root_dir')
 
-jscre = context.SConscript(
-  join(root_dir, 'src', 'lv5', 'third_party', 'jscre', 'SConscript'),
-  variant_dir=join(root_dir, 'obj', 'third_party', 'jscre'),
-  src=join(root_dir, 'src', 'lv5', 'third_party', 'jscre'),
-  duplicate=False,
-  exports="context"
-)
 netlib_dtoa = context.SConscript(
   join(root_dir, 'src', 'lv5', 'third_party', 'netlib_dtoa', 'SConscript'),
   variant_dir=join(root_dir, 'obj', 'third_party', 'netlib_dtoa'),
@@ -34,7 +27,7 @@ env.Append(
     CPPDEFINES=["__STDC_FORMAT_MACROS"]
     )
 objs = [ x for x in Glob('*.cc') if basename(x.rstr()) != 'main.cc']
-lib = [env.StaticLibrary('lv5', [objs, jscre]), jscre, v8_dtoa, netlib_dtoa]
+lib = [env.StaticLibrary('lv5', objs), v8_dtoa, netlib_dtoa]
 program = env.Program('lv5', ['main.cc', lib])
 libs = env['LIBS']
 Return('program', 'lib', 'libs')
