@@ -439,7 +439,8 @@ class Parser {
         case 'd':
         case 'D':
         case 's':
-        case 'S': {
+        case 'S':
+        case 'n': {
           *ranged = c_;
           Advance();
           return 0;
@@ -447,11 +448,6 @@ class Parser {
         case 'f': {
           Advance();
           return '\f';
-        }
-        case 'n': {
-          Advance();
-          *ranged = c_;
-          return '\n';
         }
         case 'r': {
           Advance();

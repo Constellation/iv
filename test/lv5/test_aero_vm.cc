@@ -25,6 +25,42 @@ TEST(AeroVMCase, MainTest) {
   }
   {
     space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\n");
+    iv::core::UString str = iv::core::ToUString("\n");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    ASSERT_TRUE(vm.Execute(str, &code, vec.data(), 0));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("[\\d]");
+    iv::core::UString str1 = iv::core::ToUString("1");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("[\\n]");
+    iv::core::UString str1 = iv::core::ToUString("\n");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+  }
+  {
+    space.Clear();
     iv::core::UString reg = iv::core::ToUString("a*");
     iv::core::UString str = iv::core::ToUString("a");
     iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
@@ -458,5 +494,20 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("[\\d][\\n][^\\d]");
+    iv::core::UString str1 = iv::core::ToUString("1\nline");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    // disasm.DisAssemble(code);
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+    EXPECT_EQ(0, vec[0]);
+    EXPECT_EQ(3, vec[1]);
   }
 }
