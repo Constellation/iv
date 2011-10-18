@@ -101,11 +101,6 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         DISPATCH_NEXT(PUSH_BACKTRACK);
       }
 
-      DEFINE_OPCODE(DISCARD_BACKTRACK) {
-        sp -= size;
-        DISPATCH_NEXT(DISCARD_BACKTRACK);
-      }
-
       DEFINE_OPCODE(START_CAPTURE) {
         const uint32_t target = Load4Bytes(instr + 1);
         state[target * 2] = current_position;
