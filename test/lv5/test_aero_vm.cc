@@ -4,6 +4,7 @@
 #include "ustring.h"
 #include "unicode.h"
 #include "lv5/aero/aero.h"
+#include "test_aero.h"
 
 TEST(AeroVMCase, MainTest) {
   iv::core::Space space;
@@ -384,5 +385,31 @@ TEST(AeroVMCase, CaptureTest) {
     EXPECT_EQ(1, vec[1]);
     EXPECT_EQ(0, vec[2]);
     EXPECT_EQ(0, vec[3]);
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("[-_.0-9A-Za-z]{1,64}@([-_0-9A-Za-z]){1,63}(.([-_.0-9A-Za-z]{1,63}))");
+    iv::core::UString str1 = iv::core::ToUString("utatane.tea@gmail.com");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString(kURLRegExp);
+    iv::core::UString str1 = iv::core::ToUString("http://github.com/Constellation/");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code.bytes());
+    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
   }
 }

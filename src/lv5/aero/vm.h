@@ -119,10 +119,6 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         DISPATCH_NEXT(END_CAPTURE);
       }
 
-      DEFINE_OPCODE(NOP_NINE) {
-        DISPATCH_NEXT(NOP_NINE);
-      }
-
       DEFINE_OPCODE(CLEAR_CAPTURES) {
         for (uint32_t from = Load4Bytes(instr + 1),
              to = Load4Bytes(instr + 5); from < to; ++from) {
@@ -178,9 +174,9 @@ inline bool VM::Execute(const core::UStringPiece& subject,
             const uint16_t lc = core::character::ToLowerCase(*it);
             const uint16_t current = subject[current_position];
             if (*it == current || uc == current || lc == current) {
-              matched = false;
               continue;
             }
+            matched = false;
             break;
           }
           if (!matched) {
