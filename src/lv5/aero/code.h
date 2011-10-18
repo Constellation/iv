@@ -13,7 +13,7 @@ class Code {
       captures_(captures),
       counters_(counters) { }
 
-  const std::vector<uint8_t> bytes() const { return bytes_; }
+  const std::vector<uint8_t>& bytes() const { return bytes_; }
 
   const uint8_t* data() const { return bytes_.data(); }
 

@@ -9,6 +9,7 @@
 #include "noncopyable.h"
 #include "stringpiece.h"
 #include "lv5/aero/op.h"
+#include "lv5/aero/code.h"
 #include "lv5/aero/utility.h"
 namespace iv {
 namespace lv5 {
@@ -17,18 +18,21 @@ namespace aero {
 template<typename Derived>
 class DisAssembler : private core::Noncopyable<> {
  public:
-  void DisAssemble(const std::vector<uint8_t>& code) {
+  void DisAssemble(const Code& code) {
     {
       // code description
       std::ostringstream ss;
       ss << "[regexp] captures: ";
+      ss << code.captures();
+      ss << " counters: ";
+      ss << code.counters();
       OutputLine(ss.str());
     }
     std::vector<char> line;
     int index = 0;
     std::array<char, 30> buf;
-    for (std::vector<uint8_t>::const_iterator it = code.begin(),
-         last = code.end(); it != last;) {
+    for (std::vector<uint8_t>::const_iterator it = code.bytes().begin(),
+         last = code.bytes().end(); it != last;) {
       const uint8_t opcode = *it;
       uint32_t length = kOPLength[opcode];
       if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
