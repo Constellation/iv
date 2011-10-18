@@ -147,6 +147,8 @@ class GlobalData {
   void OnGarbageCollect() {
   }
 
+  void RegExpClear() { regs_.clear(); }
+
  private:
   RandomGenerator random_generator_;
   trace::Vector<JSRegExpImpl*>::type regs_;

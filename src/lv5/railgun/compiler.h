@@ -407,6 +407,7 @@ class Compiler
     }
 #endif
     core_->SetCompiled();
+    ctx_->global_data()->RegExpClear();
   }
 
   void CodeContextPrologue(Code* code) {

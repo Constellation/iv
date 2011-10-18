@@ -25,20 +25,20 @@ class JSRegExpImpl : public gc_cleanup {
     IGNORECASE = 2,
     MULTILINE = 4
   };
-  JSRegExpImpl(core::Space* space,
+  JSRegExpImpl(core::Space* allocator,
                const core::UStringPiece& value,
                const core::UStringPiece& flags)
     : flags_(NONE),
       error_(0),
       code_(NULL) {
-    Initialize(space, value, flags);
+    Initialize(allocator, value, flags);
   }
 
-  JSRegExpImpl(core::Space* space)
+  JSRegExpImpl(core::Space* allocator)
     : flags_(NONE),
       error_(0),
       code_(NULL) {
-    Initialize(space, detail::kEmptyPattern, core::UStringPiece());
+    Initialize(allocator, detail::kEmptyPattern, core::UStringPiece());
   }
 
   ~JSRegExpImpl() {
@@ -77,7 +77,7 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
  private:
-  void Initialize(core::Space* space,
+  void Initialize(core::Space* allocator,
                   const core::UStringPiece& value,
                   const core::UStringPiece& flags) {
     bool out = false;
@@ -114,7 +114,7 @@ class JSRegExpImpl : public gc_cleanup {
       }
     }
     if (!out) {
-      code_ = aero::Compile(space, value, f, &error_);
+      code_ = aero::Compile(allocator, value, f, &error_);
     }
   }
 
