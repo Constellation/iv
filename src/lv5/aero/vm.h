@@ -123,6 +123,7 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(BACK_REFERENCE) {
         const uint16_t ref = Load2Bytes(instr + 1);
+        assert(ref != 0);  // limited by parser
         if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
           assert(state[ref * 2] != kUndefined);
           assert(state[ref * 2 + 1] != kUndefined);
@@ -132,16 +133,12 @@ inline bool VM::Execute(const core::UStringPiece& subject,
             // out of range
             BACKTRACK();
           }
-          bool matched = true;
-          for (core::UStringPiece::const_iterator it = subject.begin() + start,
-               last = subject.begin() + start + length; it != last;
-               ++it, ++current_position) {
-            if (*it != subject[current_position]) {
-              matched = false;
-              break;
-            }
-          }
-          if (!matched) {
+          if (std::equal(
+                  subject.begin() + start,
+                  subject.begin() + start + length,
+                  subject.begin() + current_position)) {
+            current_position += length;
+          } else {
             BACKTRACK();
           }
         }
@@ -384,8 +381,8 @@ inline bool VM::Execute(const core::UStringPiece& subject,
     }
     // backtrack stack unwind
     if (sp > stack_.data()) {
-      const int* previous = sp = sp - size;
-      std::copy(previous, previous + size, state.begin());
+      sp -= size;
+      std::copy(sp, sp + size, state.begin());
       current_position = state[1];
       instr = first_instr + state[size - 1];
       DISPATCH();

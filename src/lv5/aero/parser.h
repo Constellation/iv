@@ -325,6 +325,7 @@ class Parser {
       }
       default: {
         if ('1' <= c_ && c_ <= '9') {
+          // not accept \0 as reference
           const double numeric = ParseDecimalInteger(CHECK);
           const uint16_t ref = static_cast<uint16_t>(numeric);
           if (ref != numeric) {
