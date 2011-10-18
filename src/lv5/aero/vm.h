@@ -120,11 +120,9 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(CLEAR_CAPTURES) {
-        for (uint32_t from = Load4Bytes(instr + 1),
-             to = Load4Bytes(instr + 5); from < to; ++from) {
-          state[from * 2] = kUndefined;
-          state[from * 2 + 1] = kUndefined;
-        }
+        const uint32_t from = Load4Bytes(instr + 1);
+        const uint32_t to = Load4Bytes(instr + 5);
+        std::fill_n(state.begin() + from * 2, (to - from) * 2, kUndefined);
         DISPATCH_NEXT(CLEAR_CAPTURES);
       }
 
