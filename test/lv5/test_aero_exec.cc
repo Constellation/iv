@@ -22,6 +22,19 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::MULTILINE);
     iv::lv5::aero::Code code = compiler.Compile(data);
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("^\\d+");
+    iv::core::UString str1 = iv::core::ToUString("abc\n123xyz");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::MULTILINE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::MULTILINE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code);
+    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
   }
 }

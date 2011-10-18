@@ -288,9 +288,10 @@ inline bool VM::Execute(const core::UStringPiece& subject,
         BACKTRACK();
       }
 
+      // FIXME(Constellation): BOL and EOL
       DEFINE_OPCODE(ASSERTION_BOL) {
         if (current_position == 0 ||
-            core::character::IsLineTerminator(subject[current_position])) {
+            core::character::IsLineTerminator(subject[current_position - 1])) {
           DISPATCH_NEXT(ASSERTION_BOL);
         }
         BACKTRACK();
