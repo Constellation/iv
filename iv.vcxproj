@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -14,11 +14,6 @@
     <ClCompile Include="src\lv5\context.cc" />
     <ClCompile Include="src\lv5\jsobject.cc" />
     <ClCompile Include="src\lv5\main.cc" />
-    <ClCompile Include="src\lv5\third_party\jscre\pcre_compile.cpp" />
-    <ClCompile Include="src\lv5\third_party\jscre\pcre_exec.cpp" />
-    <ClCompile Include="src\lv5\third_party\jscre\pcre_tables.cpp" />
-    <ClCompile Include="src\lv5\third_party\jscre\pcre_ucp_searchfuncs.cpp" />
-    <ClCompile Include="src\lv5\third_party\jscre\pcre_xclass.cpp" />
     <ClCompile Include="src\lv5\third_party\netlib_dtoa\netlib_dtoa.c" />
     <ClCompile Include="src\lv5\third_party\v8_dtoa\checks.cc" />
     <ClCompile Include="src\lv5\third_party\v8_dtoa\conversions.cc" />
