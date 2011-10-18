@@ -28,7 +28,8 @@ class Malloced {
     return result;
   }
   static void OutOfMemory() {
-    std::exit(EXIT_FAILURE);
+    std::printf("OUT OF MEMORY!");
+    std::abort();
   }
   static inline void Delete(void* p) {
     std::free(p);
@@ -102,6 +103,7 @@ class Space : private Noncopyable<Space> {
 
   void Clear() {
     arena_ = start_;
+    arena_->ToStart();
     std::for_each(malloced_.begin(), malloced_.end(), &Malloced::Delete);
     malloced_.clear();
   }
@@ -121,13 +123,14 @@ class Space : private Noncopyable<Space> {
       // small memory allocator
       void* result = arena_->Allocate(size);
       if (result == NULL) {
-        arena_->ToStart();
         Arena* arena = arena_->Next();
         if (arena) {
+          assert(arena_->Next() == arena);
           arena_ = arena;
         } else {
           arena_ = Space::NewArena(arena_);
         }
+        arena_->ToStart();
         result = arena_->Allocate(size);
         if (result == NULL) {
           Malloced::OutOfMemory();
@@ -152,6 +155,7 @@ class Space : private Noncopyable<Space> {
       Malloced::OutOfMemory();
       return arena;
     }
+    assert(prev->Next() == arena);
     return arena;
   }
 
