@@ -123,9 +123,9 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(BACK_REFERENCE) {
         const uint16_t ref = Load2Bytes(instr + 1);
-        if (ref < code->captures() &&
-            state[ref * 2] != kUndefined &&
-            state[ref * 2 + 1] != kUndefined) {
+        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
+          assert(state[ref * 2] != kUndefined);
+          assert(state[ref * 2 + 1] != kUndefined);
           const int start = state[ref * 2];
           const int length = state[ref * 2 + 1] - start;
           if (current_position + length > subject.size()) {
