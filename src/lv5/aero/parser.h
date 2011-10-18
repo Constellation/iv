@@ -374,6 +374,9 @@ class Parser {
       result = core::ParseIntegerOverflow(
           buffer8_.data(),
           buffer8_.data() + buffer8_.size(), 10);
+    } else {
+      // 0 pattern
+      Advance();
     }
     if (core::character::IsDecimalDigit(c_)) {
       *e = 1;
