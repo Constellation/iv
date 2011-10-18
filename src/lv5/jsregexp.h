@@ -10,6 +10,7 @@
 #include "lv5/jsarray.h"
 #include "lv5/jsstring.h"
 #include "lv5/map.h"
+#include "lv5/context.h"
 #include "lv5/jsregexp_impl.h"
 #include "lv5/context_utils.h"
 #include "lv5/match_result.h"
@@ -254,7 +255,7 @@ class JSRegExp : public JSObject {
            const core::UStringPiece& value,
            const core::UStringPiece& flags)
     : JSObject(context::GetRegExpMap(ctx)),
-      impl_(new JSRegExpImpl(value, flags)) {
+      impl_(new JSRegExpImpl(ctx->regexp_allocator(), value, flags)) {
     InitializeProperty(ctx, JSString::New(ctx, value));
   }
 
@@ -268,13 +269,13 @@ class JSRegExp : public JSObject {
 
   explicit JSRegExp(Context* ctx)
     : JSObject(context::GetRegExpMap(ctx)),
-      impl_(new JSRegExpImpl()) {
+      impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
     InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }
 
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
-      impl_(new JSRegExpImpl()) {
+      impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
     InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
   }
 

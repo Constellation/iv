@@ -28,6 +28,8 @@ class Compiler : private Visitor {
     uint32_t counter_;
   };
 
+  friend class QuickCheck;
+
   explicit Compiler(int flags)
     : flags_(flags),
       code_(),
@@ -433,6 +435,18 @@ class Compiler : private Visitor {
   std::unordered_set<uint32_t> counters_;
   uint32_t counters_size_;
 };
+
+inline Code* Compile(core::Space* space,
+                     const core::UStringPiece& pattern,
+                     int flags, int* error) {
+  Parser parser(space, pattern, flags);
+  ParsedData data = parser.ParsePattern(error);
+  if (*error) {
+    return NULL;
+  }
+  Compiler compiler(flags);
+  return new Code(compiler.Compile(data));
+}
 
 } } }  // namespace iv::lv5::aero
 #endif  // IV_LV5_AERO_COMPILER_H_

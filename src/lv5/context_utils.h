@@ -3,9 +3,9 @@
 #include "ustring.h"
 #include "stringpiece.h"
 #include "ustringpiece.h"
+#include "space.h"
 #include "lv5/class.h"
 #include "lv5/symbol.h"
-#include "lv5/specialized_ast.h"
 namespace iv {
 namespace lv5 {
 
@@ -41,6 +41,8 @@ Map* GetNumberMap(Context* ctx);
 Map* GetDateMap(Context* ctx);
 Map* GetRegExpMap(Context* ctx);
 Map* GetErrorMap(Context* ctx);
+
+core::Space* GetRegExpAllocator(Context* ctx);
 
 JSFunction* throw_type_error(Context* ctx);
 

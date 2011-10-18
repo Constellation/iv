@@ -4,6 +4,7 @@
 #include "stringpiece.h"
 #include "ustringpiece.h"
 #include "noncopyable.h"
+#include "space.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
@@ -11,9 +12,9 @@
 #include "lv5/jsfunction.h"
 #include "lv5/class.h"
 #include "lv5/error.h"
-#include "lv5/specialized_ast.h"
 #include "lv5/global_data.h"
 #include "lv5/context_utils.h"
+#include "lv5/aero/aero.h"
 
 namespace iv {
 namespace lv5 {
@@ -100,6 +101,8 @@ class Context
     return &global_data_;
   }
 
+  core::Space* regexp_allocator() { return &space_; }
+
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
 
@@ -137,6 +140,7 @@ class Context
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;
+  core::Space space_;  // for RegExp AST
 };
 
 } }  // namespace iv::lv5

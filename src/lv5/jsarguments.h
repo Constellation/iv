@@ -12,6 +12,7 @@
 #include "lv5/arguments.h"
 #include "lv5/error_check.h"
 #include "lv5/bind.h"
+#include "lv5/specialized_ast.h"
 namespace iv {
 namespace lv5 {
 

@@ -40,6 +40,7 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
  public:
   void Initialize(iv::lv5::Context* ctx) {
     regexp_ = new iv::lv5::JSRegExpImpl(
+        iv::lv5::context::GetRegExpAllocator(ctx),
         Derived()->value(),
         Derived()->flags());
     iv::lv5::context::RegisterLiteralRegExp(ctx, regexp_);

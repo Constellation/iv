@@ -5,6 +5,7 @@
 #include <gc/gc_cpp.h>
 #include "ustring.h"
 #include "ustringpiece.h"
+#include "space.h"
 
 #ifdef DEBUG
 #include "lv5/third_party/jscre/pcre.h"
@@ -31,26 +32,32 @@ class JSRegExpImpl : public gc_cleanup {
     IGNORECASE = 2,
     MULTILINE = 4
   };
-  JSRegExpImpl(const core::UStringPiece& value,
+  JSRegExpImpl(core::Space* space,
+               const core::UStringPiece& value,
                const core::UStringPiece& flags)
     : reg_(NULL),
       number_of_captures_(0),
       flags_(NONE),
-      error_(NULL) {
-    Initialize(value, flags);
+      error_(NULL),
+      code_(NULL) {
+    Initialize(space, value, flags);
   }
 
-  JSRegExpImpl()
+  JSRegExpImpl(core::Space* space)
     : reg_(NULL),
       number_of_captures_(0),
       flags_(NONE),
-      error_(NULL) {
-    Initialize(detail::kEmptyPattern, core::UStringPiece());
+      error_(NULL),
+      code_(NULL) {
+    Initialize(space, detail::kEmptyPattern, core::UStringPiece());
   }
 
   ~JSRegExpImpl() {
     if (reg_) {
       jscre::jsRegExpFree(reg_);
+    }
+    if (code_) {
+      delete code_;
     }
   }
 
@@ -90,7 +97,8 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
  private:
-  void Initialize(const core::UStringPiece& value,
+  void Initialize(core::Space* space,
+                  const core::UStringPiece& value,
                   const core::UStringPiece& flags) {
     bool state = false;
     jscre::JSRegExpIgnoreCaseOption ignore = jscre::JSRegExpDoNotIgnoreCase;
@@ -132,6 +140,10 @@ class JSRegExpImpl : public gc_cleanup {
                                     multi,
                                     &number_of_captures_,
                                     &error_);
+      const int flags =
+          (ignore ? aero::IGNORE_CASE : 0) | (multi ? aero::MULTILINE : 0);
+      int error = 0;
+      code_ = aero::Compile(space, value, flags, &error);
     }
   }
 
@@ -139,6 +151,7 @@ class JSRegExpImpl : public gc_cleanup {
   uint32_t number_of_captures_;
   int flags_;
   const char* error_;
+  aero::Code* code_;
 };
 
 } }  // namespace iv::lv5
