@@ -63,13 +63,6 @@ class VM : private core::Noncopyable<VM> {
   DISPATCH()
 #define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
-#define PUSH(target)\
-  do {\
-    if (sp == stack_limit) {\
-      return false;\
-    }\
-    *sp++ = target;\
-  } while (0)
 inline bool VM::Execute(const core::UStringPiece& subject,
                         Code* code, int* captures,
                         std::size_t current_position) {
@@ -396,7 +389,6 @@ inline bool VM::Execute(const core::UStringPiece& subject,
 #undef ADVANCE
 #undef DISPATCH_NEXT
 #undef BACKTRACK
-#undef PUSH
 
 } } }  // namespace iv::lv5::aero
 #endif  // IV_LV5_AERO_VM_H_
