@@ -419,7 +419,7 @@ class Lexer: private Noncopyable<> {
   }
 
   std::size_t pos() const {
-    return pos_;
+    return (pos_ >= end_) ? end_ : pos_;
   }
 
   inline const Source& source() const {
@@ -517,8 +517,11 @@ class Lexer: private Noncopyable<> {
   }
 
   inline void Advance() {
-    if (pos_ == end_) {
+    if (pos_ >= end_) {
       c_ = -1;
+      if (pos_ == end_) {
+        ++pos_;
+      }
     } else {
       c_ = (*source_)[pos_++];
     }
@@ -554,7 +557,7 @@ class Lexer: private Noncopyable<> {
     if (pos_ < 2) {
       c_ = -1;
     } else {
-      c_ = (*source_)[pos_-2];
+      c_ = (*source_)[pos_ - 2];
       --pos_;
     }
   }
