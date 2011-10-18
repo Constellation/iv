@@ -449,6 +449,10 @@ class Parser {
           Advance();
           return '\f';
         }
+        case 'b': {
+          Advance();
+          return '\b';
+        }
         case 'r': {
           Advance();
           return '\r';

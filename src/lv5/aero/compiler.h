@@ -94,17 +94,17 @@ class Compiler : private Visitor {
 
   void Visit(HatAssertion* assertion) {
     if (IsMultiline()) {
-      Emit<OP::ASSERTION_BOB>();
-    } else {
       Emit<OP::ASSERTION_BOL>();
+    } else {
+      Emit<OP::ASSERTION_BOB>();
     }
   }
 
   void Visit(DollarAssertion* assertion) {
     if (IsMultiline()) {
-      Emit<OP::ASSERTION_EOB>();
-    } else {
       Emit<OP::ASSERTION_EOL>();
+    } else {
+      Emit<OP::ASSERTION_EOB>();
     }
   }
 
