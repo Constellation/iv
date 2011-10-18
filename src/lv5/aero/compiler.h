@@ -439,6 +439,7 @@ class Compiler : private Visitor {
 inline Code* Compile(core::Space* space,
                      const core::UStringPiece& pattern,
                      int flags, int* error) {
+  space->Clear();
   Parser parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {

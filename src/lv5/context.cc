@@ -125,7 +125,9 @@ Context::Context()
     throw_type_error_(
         JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
             this, context::Intern(this, "ThrowError"))),
-    global_env_(JSObjectEnv::New(this, NULL, global_obj())) {
+    global_env_(JSObjectEnv::New(this, NULL, global_obj())),
+    regexp_allocator_(),
+    regexp_vm_() {
 }
 
 double Context::Random() {

@@ -118,12 +118,13 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(const JSString::Fiber* str,
+inline regexp::MatchResult RegExpMatch(Context* ctx,
+                                       const JSString::Fiber* str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
   vec->clear();
-  return reg.Match(*str, q, vec);
+  return reg.Match(ctx, *str, q, vec);
 }
 
 struct Replace {
@@ -141,7 +142,7 @@ class Replacer : private core::Noncopyable<> {
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
-    const regexp::MatchResult res = RegExpMatch(str_fiber_, 0, reg_, &vec_);
+    const regexp::MatchResult res = RegExpMatch(ctx_, str_fiber_, 0, reg_, &vec_);
     if (get<2>(res)) {
       builder->Append(str_fiber_->begin(), str_fiber_->begin() + get<0>(res));
       static_cast<T*>(this)->DoReplace(builder, res, e);
@@ -156,7 +157,8 @@ class Replacer : private core::Noncopyable<> {
     int not_matched_index = previous_index;
     const int size = str_fiber_->size();
     do {
-      const regexp::MatchResult res = detail::RegExpMatch(str_fiber_,
+      const regexp::MatchResult res = detail::RegExpMatch(ctx_,
+                                                          str_fiber_,
                                                           previous_index,
                                                           reg_, &vec_);
       if (!get<2>(res)) {
@@ -180,13 +182,15 @@ class Replacer : private core::Noncopyable<> {
   }
 
  protected:
-  Replacer(JSString* str, const JSRegExp& reg)
-    : str_(str),
+  Replacer(Context* ctx, JSString* str, const JSRegExp& reg)
+    : ctx_(ctx),
+      str_(str),
       str_fiber_(str->GetFiber()),
       reg_(reg),
       vec_() {
   }
 
+  Context* ctx_;
   JSString* str_;
   const JSString::Fiber* str_fiber_;
   const JSRegExp& reg_;
@@ -197,10 +201,11 @@ class StringReplacer : public Replacer<StringReplacer> {
  public:
   typedef StringReplacer this_type;
   typedef Replacer<this_type> super_type;
-  StringReplacer(JSString* str,
+  StringReplacer(Context* ctx,
+                 JSString* str,
                  const JSRegExp& reg,
                  const JSString& replace)
-    : super_type(str, reg),
+    : super_type(ctx, str, reg),
       replace_(replace),
       replace_fiber_(replace_.GetFiber()) {
   }
@@ -345,13 +350,12 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
  public:
   typedef FunctionReplacer this_type;
   typedef Replacer<this_type> super_type;
-  FunctionReplacer(JSString* str,
+  FunctionReplacer(Context* ctx,
+                   JSString* str,
                    const JSRegExp& reg,
-                   JSFunction* function,
-                   Context* ctx)
-    : super_type(str, reg),
-      function_(function),
-      ctx_(ctx) {
+                   JSFunction* function)
+    : super_type(ctx, str, reg),
+      function_(function) {
   }
 
   template<typename Builder>
@@ -380,7 +384,6 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
 
  private:
   JSFunction* function_;
-  Context* ctx_;
 };
 
 template<typename Builder>
@@ -669,7 +672,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     JSStringBuilder builder;
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
-      detail::FunctionReplacer replacer(str, *reg, callable, ctx);
+      detail::FunctionReplacer replacer(ctx, str, *reg, callable);
       if (reg->global()) {
         replacer.ReplaceGlobal(&builder, IV_LV5_ERROR(e));
       } else {
@@ -682,7 +685,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       } else {
         replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
       }
-      detail::StringReplacer replacer(str, *reg, *replace_value);
+      detail::StringReplacer replacer(ctx, str, *reg, *replace_value);
       if (reg->global()) {
         replacer.ReplaceGlobal(&builder, IV_LV5_ERROR(e));
       } else {
@@ -868,7 +871,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   regexp::PairVector cap;
   const uint32_t size = str->size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(str->GetFiber(), 0, *reg, &cap))) {
+    if (get<2>(detail::RegExpMatch(ctx, str->GetFiber(), 0, *reg, &cap))) {
       return ary;
     }
     ary->DefineOwnProperty(
@@ -885,7 +888,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const regexp::MatchResult rs = detail::RegExpMatch(fiber, q, *reg, &cap);
+    const regexp::MatchResult rs = detail::RegExpMatch(ctx, fiber, q, *reg, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;

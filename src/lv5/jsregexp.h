@@ -94,8 +94,8 @@ class JSRegExp : public JSObject {
   }
 
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e) {
-    const uint32_t num_of_captures = impl_->number_of_captures();
-    std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
+    const int num_of_captures = impl_->number_of_captures();
+    std::vector<int> offset_vector((num_of_captures) * 2);
     JSArray* ary = JSArray::New(ctx);
     SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
     int previous_index = 0;
@@ -104,15 +104,12 @@ class JSRegExp : public JSObject {
     const int size = str->size();
     const JSString::Fiber* fiber = str->GetFiber();
     do {
-      const int rc = impl_->ExecuteOnce(*fiber,
-                                        previous_index, &offset_vector);
-      if (rc == jscre::JSRegExpErrorNoMatch ||
-          rc == jscre::JSRegExpErrorHitLimit) {
+      const bool res = impl_->ExecuteOnce(ctx,
+                                          *fiber,
+                                          previous_index,
+                                          offset_vector.data());
+      if (!res) {
         break;
-      }
-      if (rc < 0) {
-        e->Report(Error::Type, "RegExp execute failed");
-        return JSUndefined;
       }
       const int this_index = offset_vector[1];
       if (previous_index == this_index) {
@@ -151,8 +148,8 @@ class JSRegExp : public JSObject {
   }
 
   JSVal Exec(Context* ctx, JSString* str, Error* e) {
-    const uint32_t num_of_captures = impl_->number_of_captures();
-    std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
+    const int num_of_captures = impl_->number_of_captures();
+    std::vector<int> offset_vector(num_of_captures * 2);
     const int start = LastIndex(ctx, IV_LV5_ERROR(e));  // for step 4
     int previous_index = start;
     if (!global()) {
@@ -164,17 +161,13 @@ class JSRegExp : public JSObject {
       return JSNull;
     }
     const JSString::Fiber* fiber = str->GetFiber();
-    const int rc = impl_->ExecuteOnce(*fiber,
-                                      previous_index, &offset_vector);
-    if (rc == jscre::JSRegExpErrorNoMatch ||
-        rc == jscre::JSRegExpErrorHitLimit) {
+    const bool res = impl_->ExecuteOnce(ctx,
+                                        *fiber,
+                                        previous_index,
+                                        offset_vector.data());
+    if (!res) {
       SetLastIndex(ctx, 0, e);
       return JSNull;
-    }
-
-    if (rc < 0) {
-      e->Report(Error::Type, "RegExp execute failed");
-      return JSUndefined;
     }
 
     previous_index = offset_vector[1];
@@ -186,7 +179,7 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, previous_index, IV_LV5_ERROR(e));
     }
 
-    JSArray* ary = JSArray::New(ctx, (num_of_captures + 1));
+    JSArray* ary = JSArray::New(ctx, num_of_captures);
     ary->DefineOwnProperty(
         ctx,
         context::Intern(ctx, "index"),
@@ -197,7 +190,7 @@ class JSRegExp : public JSObject {
         context::Intern(ctx, "input"),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
-    for (int i = 0, len = num_of_captures + 1; i < len; ++i) {
+    for (int i = 0; i < num_of_captures; ++i) {
       const int begin = offset_vector[i*2];
       const int end = offset_vector[i*2+1];
       if (begin != -1 && end != -1) {
@@ -221,21 +214,17 @@ class JSRegExp : public JSObject {
     return ary;
   }
 
-  template<typename String>
-  regexp::MatchResult Match(const String& str,
+  regexp::MatchResult Match(Context* ctx,
+                            const core::UStringPiece& str,
                             int index,
                             regexp::PairVector* result) const {
-    const uint32_t num_of_captures = impl_->number_of_captures();
-    std::vector<int> offset_vector((num_of_captures + 1) * 3, -1);
-    const int rc = impl_->ExecuteOnce(str, index, &offset_vector);
-    if (rc == jscre::JSRegExpErrorNoMatch ||
-        rc == jscre::JSRegExpErrorHitLimit) {
+    const int num_of_captures = impl_->number_of_captures();
+    std::vector<int> offset_vector(num_of_captures * 2);
+    const int rc = impl_->ExecuteOnce(ctx, str, index, offset_vector.data());
+    if (!rc) {
       return std::make_tuple(0, 0, false);
     }
-    if (rc < 0) {
-      return std::make_tuple(0, 0, false);
-    }
-    for (int i = 1, len = num_of_captures + 1; i < len; ++i) {
+    for (int i = 1, len = num_of_captures; i < len; ++i) {
       result->push_back(
           std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
     }

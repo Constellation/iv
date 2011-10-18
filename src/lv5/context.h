@@ -101,7 +101,9 @@ class Context
     return &global_data_;
   }
 
-  core::Space* regexp_allocator() { return &space_; }
+  core::Space* regexp_allocator() { return &regexp_allocator_; }
+
+  aero::VM* regexp_vm() { return &regexp_vm_; }
 
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
@@ -140,7 +142,8 @@ class Context
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;
-  core::Space space_;  // for RegExp AST
+  core::Space regexp_allocator_;  // for RegExp AST
+  aero::VM regexp_vm_;
 };
 
 } }  // namespace iv::lv5

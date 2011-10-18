@@ -39,6 +39,19 @@ class VM : private core::Noncopyable<VM> {
                Code* code, int* captures,
                std::size_t current_position);
 
+  bool ExecuteOnce(Code* code, const core::UStringPiece& subject,
+                   int offset, int* captures) {
+    int size = subject.size();
+    do {
+      if (Execute(subject, code, captures, offset)) {
+        return true;
+      } else {
+        ++offset;
+      }
+    } while (offset <= size);
+    return false;
+  }
+
  private:
   int* NewState(int* current, std::size_t size) {
     if ((current + size) <= stack_.data() + kStackSize) {
