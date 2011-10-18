@@ -345,7 +345,6 @@ inline bool VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(CHECK_RANGE_INVERTED) {
-        BACKTRACK();
         if (current_position < subject.size()) {
           const uint16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
