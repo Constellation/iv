@@ -10,6 +10,7 @@ TEST(AeroVMCase, MainTest) {
   iv::core::Space space;
   iv::lv5::aero::VM vm;
   std::vector<int> vec(1000);
+  iv::lv5::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("a");
@@ -45,6 +46,36 @@ TEST(AeroVMCase, MainTest) {
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
     ASSERT_TRUE(vm.Execute(str, &code, vec.data(), 0));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\u10");
+    // iv::core::UString str1 = iv::core::ToUString("d");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code);
+//    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+//    EXPECT_EQ(0, vec[0]);
+//    EXPECT_EQ(1, vec[1]);
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\u");
+    // iv::core::UString str1 = iv::core::ToUString("d");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    disasm.DisAssemble(code);
+//    ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
+//    EXPECT_EQ(0, vec[0]);
+//    EXPECT_EQ(1, vec[1]);
   }
   {
     space.Clear();
@@ -141,7 +172,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(6, vec[1]);
@@ -176,7 +207,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
@@ -195,7 +226,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(0, vec[1]);
@@ -210,7 +241,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
     EXPECT_EQ(8,  vec[1]);
@@ -231,7 +262,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
     EXPECT_EQ(10, vec[1]);
@@ -256,7 +287,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
@@ -273,7 +304,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
@@ -288,7 +319,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(5, vec[1]);
@@ -303,7 +334,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
@@ -318,7 +349,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
@@ -345,7 +376,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(str1.size(), vec[1]);
@@ -362,7 +393,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(0, vec[1]);
@@ -379,7 +410,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
@@ -396,7 +427,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
   }
   {
@@ -409,7 +440,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(32, vec[1]);
@@ -438,7 +469,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
@@ -453,7 +484,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
+    // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(str1, &code, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);

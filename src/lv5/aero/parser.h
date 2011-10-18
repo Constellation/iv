@@ -265,7 +265,7 @@ class Parser {
         // ControlLetter
         Advance();
         if (!core::character::IsASCIIAlpha(c_)) {
-          UNEXPECT(c_);
+          return new(factory_)CharacterAtom('c');
         }
         const uint16_t ch = c_;
         Advance();
@@ -273,13 +273,13 @@ class Parser {
       }
       case 'x': {
         Advance();
-        const uint16_t uc = ParseHexEscape(2, CHECK);
-        return new(factory_)CharacterAtom(uc);
+        const int uc = ParseHexEscape(2);
+        return new(factory_)CharacterAtom((uc == -1) ? 'x' : uc);
       }
       case 'u': {
         Advance();
-        const uint16_t uc = ParseHexEscape(4, CHECK);
-        return new(factory_)CharacterAtom(uc);
+        const int uc = ParseHexEscape(4);
+        return new(factory_)CharacterAtom((uc == -1) ? 'u' : uc);
       }
       case core::character::code::ZWNJ: {
         Advance();
@@ -332,7 +332,7 @@ class Parser {
             RAISE(NUMBER_TOO_BIG);
           }
           return new(factory_)BackReferenceAtom(ref);
-        } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {
+        } else if (c_ < 0) {
           UNEXPECT(c_);
         } else {
           const uint16_t uc = c_;
@@ -343,7 +343,7 @@ class Parser {
     }
   }
 
-  uint16_t ParseHexEscape(int len, int* e) {
+  int ParseHexEscape(int len) {
     uint16_t res = 0;
     for (int i = 0; i < len; ++i) {
       const int d = core::HexValue(c_);
@@ -351,8 +351,7 @@ class Parser {
         for (int j = i - 1; j >= 0; --j) {
           PushBack();
         }
-        *e = 1;  // error raise
-        return 0;
+        return -1;
       }
       res = res * 16 + d;
       Advance();
@@ -467,19 +466,20 @@ class Parser {
           // ControlLetter
           Advance();
           if (!core::character::IsASCIIAlpha(c_)) {
-            *e = 1;
-            return 0;
+            return 'c';
           }
           Advance();
           return '\\';
         }
         case 'x': {
           Advance();
-          return ParseHexEscape(2, e);
+          const int res = ParseHexEscape(2);
+          return (res == -1) ? 'x' : res;
         }
         case 'u': {
           Advance();
-          return ParseHexEscape(4, e);
+          const int res = ParseHexEscape(4);
+          return (res == -1) ? 'u' : res;
         }
         case core::character::code::ZWNJ: {
           Advance();
@@ -501,7 +501,7 @@ class Parser {
               return 0;
             }
             return uc;
-          } else if (core::character::IsIdentifierPart(c_) || c_ < 0) {
+          } else if (c_ < 0) {
             *e = 1;
             return 0;
           } else {
@@ -602,8 +602,11 @@ class Parser {
   }
 
   inline void Advance() {
-    if (pos_ == end_) {
+    if (pos_ >= end_) {
       c_ = EOS;
+      if (pos_ == end_) {
+        ++pos_;
+      }
     } else {
       c_ = source_[pos_++];
     }
@@ -613,7 +616,7 @@ class Parser {
     if (pos_ < 2) {
       c_ = EOS;
     } else {
-      c_ = source_[pos_-2];
+      c_ = source_[pos_ - 2];
       --pos_;
     }
   }

@@ -73,6 +73,25 @@ TEST(AeroParserCase, MainTest) {
     ASSERT_FALSE(error);
     ASSERT_TRUE(data.pattern());
   }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("\\a");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(data.pattern());
+  }
+  {
+    space.Clear();
+    std::array<uint16_t, 2> l = { { 92, 99 } };
+    iv::core::UString str(l.begin(), l.end());
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(data.pattern());
+  }
 }
 
 TEST(AeroParserCase, SyntaxInvalidTest) {
