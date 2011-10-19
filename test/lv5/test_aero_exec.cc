@@ -61,6 +61,6 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
     // disasm.DisAssemble(code);
-    // ASSERT_FALSE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    ASSERT_FALSE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
   }
 }
