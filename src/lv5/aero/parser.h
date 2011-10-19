@@ -21,17 +21,13 @@ namespace aero {
     Advance();\
   } while (0)
 
-#define UNEXPECT(ch)\
-  do {\
-    *e = UNEXPECTED_CHARACTER;\
-    return NULL;\
-  } while (0)
-
 #define RAISE(code)\
   do {\
     *e = code;\
     return NULL;\
   } while (0)
+
+#define UNEXPECT(ch) RAISE(UNEXPECTED_CHARACTER)
 
 #define CHECK  e);\
   if (*e) {\
