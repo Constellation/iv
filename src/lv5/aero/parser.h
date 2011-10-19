@@ -70,8 +70,7 @@ class Parser {
       pos_(0),
       end_(source.size()),
       c_(EOS),
-      captures_(1),
-      references_() {
+      captures_(1) {
     Advance();
   }
 
@@ -177,7 +176,6 @@ class Parser {
             Disjunction* dis = ParseDisjunction<')'>(CHECK);
             EXPECT(')');
             target = new(factory_)DisjunctionAtom(dis, num);
-            references_.insert(num);
             atom = true;
           }
           break;
@@ -333,11 +331,10 @@ class Parser {
           if (ref != numeric) {
             RAISE(NUMBER_TOO_BIG);
           }
-          if (references_.find(ref) == references_.end()) {
-            return new(factory_)CharacterAtom(ref);
-          } else {
-            return new(factory_)BackReferenceAtom(ref);
-          }
+          // back reference validation is not done
+          // so, we should validate there is reference
+          // which back reference is targeting
+          return new(factory_)BackReferenceAtom(ref);
         } else if (c_ < 0) {
           UNEXPECT(c_);
         } else {
@@ -639,7 +636,6 @@ class Parser {
   const std::size_t end_;
   int c_;
   uint32_t captures_;
-  std::unordered_set<uint32_t> references_;
 };
 
 #undef EXPECT

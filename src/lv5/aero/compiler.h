@@ -147,16 +147,25 @@ class Compiler : private Visitor {
   }
 
   void Visit(BackReferenceAtom* atom) {
-    if (IsIgnoreCase()) {
-      Emit<OP::BACK_REFERENCE_IGNORE_CASE>();
+    if (atom->reference() < max_captures_) {
+      if (IsIgnoreCase()) {
+        Emit<OP::BACK_REFERENCE_IGNORE_CASE>();
+      } else {
+        Emit<OP::BACK_REFERENCE>();
+      }
+      Emit2(atom->reference());
     } else {
-      Emit<OP::BACK_REFERENCE>();
+      // reference not found.
+      // we treat /\2/ as escaped unicode, code number is 2.
+      EmitCharacter(atom->reference());
     }
-    Emit2(atom->reference());
   }
 
   void Visit(CharacterAtom* atom) {
-    const uint16_t ch = atom->character();
+    EmitCharacter(atom->character());
+  }
+
+  void EmitCharacter(uint16_t ch) {
     if (IsIgnoreCase()) {
       const uint16_t uu = core::character::ToUpperCase(ch);
       const uint16_t lu = core::character::ToLowerCase(ch);
