@@ -52,229 +52,6 @@ inline double ParseIntegerOverflow(const CharT* it,
   return number;
 }
 
-template<typename Iter>
-inline double StringToDouble(Iter it, Iter last, bool parse_float) {
-  bool is_decimal = true;
-  bool is_signed = false;
-  bool is_sign_found = false;
-  bool is_found_zero = false;
-  std::size_t pos = 0;
-  int significant_digits = 0;
-  int insignificant_digits = 0;
-  std::array<char, detail::kMaxSignificantDigits+10> buffer;
-
-  // empty string ""
-  if (it == last) {
-    return (parse_float) ? kNaN : 0;
-  }
-
-  while (it != last &&
-         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
-    ++it;
-  }
-
-  // white space only "  "
-  if (it == last) {
-    return (parse_float) ? kNaN : 0;
-  }
-
-  if (*it == '-') {
-    ++it;
-    is_signed = true;
-    is_sign_found = true;
-  } else if (*it == '+') {
-    ++it;
-    is_sign_found = true;
-  }
-  const int sign = (is_signed) ? -1 : 1;
-
-  if (it == last) {
-    return kNaN;
-  }
-
-  if (character::IsDecimalDigit(*it)) {
-    if (*it == '0') {
-      is_found_zero = true;
-      ++it;
-      if (it == last) {
-        return sign * 0.0;
-      }
-      if (!parse_float && (*it == 'x' || *it == 'X')) {
-        if (is_sign_found) {
-          return kNaN;
-        }
-        assert(pos == 0);
-        is_decimal = false;
-        buffer[pos++] = '0';
-        buffer[pos++] = static_cast<char>(*it);
-        ++it;
-        ++significant_digits;
-        if (it == last || !character::IsHexDigit(*it)) {
-          return kNaN;
-        }
-        // waste leading zero
-        while (it != last && *it == '0') {
-          ++it;
-        }
-        while (it != last && character::IsHexDigit(*it)) {
-          if (significant_digits < detail::kMaxSignificantDigits) {
-            buffer[pos++] = static_cast<char>(*it);
-            ++it;
-            ++significant_digits;
-          } else {
-            ++it;
-          }
-        }
-      } else {
-        // waste leading zero
-        while (it != last && *it == '0') {
-          ++it;
-        }
-      }
-    }
-    if (is_decimal) {
-      while (it != last && character::IsDecimalDigit(*it)) {
-        if (significant_digits < detail::kMaxSignificantDigits) {
-          buffer[pos++] = static_cast<char>(*it);
-          ++significant_digits;
-        } else {
-          ++insignificant_digits;
-        }
-        ++it;
-      }
-      if (it != last && *it == '.') {
-        buffer[pos++] = '.';
-        ++it;
-        while (it != last && character::IsDecimalDigit(*it)) {
-          if (significant_digits < detail::kMaxSignificantDigits) {
-            buffer[pos++] = static_cast<char>(*it);
-            ++significant_digits;
-          }
-          ++it;
-        }
-      }
-    }
-  } else {
-    if (*it == '.') {
-      buffer[pos++] = '.';
-      ++it;
-      const Iter start = it;
-      while (it != last &&
-             character::IsDecimalDigit(*it)) {
-        if (significant_digits < detail::kMaxSignificantDigits) {
-          buffer[pos++] = static_cast<char>(*it);
-          ++significant_digits;
-        }
-        ++it;
-      }
-      if (start == it) {
-        return kNaN;
-      }
-    } else {
-      for (std::string::const_iterator inf_it = detail::kInfinityString.begin(),
-           inf_last = detail::kInfinityString.end();
-           inf_it != inf_last; ++inf_it, ++it) {
-        if (it == last || (*inf_it) != (*it)) {
-          return kNaN;
-        }
-      }
-      // infinity
-      while (it != last &&
-             (character::IsWhiteSpace(*it) ||
-              character::IsLineTerminator(*it))) {
-        ++it;
-      }
-      if (it == last || parse_float) {
-        return sign * std::numeric_limits<double>::infinity();
-      } else {
-        return kNaN;
-      }
-    }
-  }
-
-  // exponent part
-  if (it != last && (*it == 'e' || *it == 'E')) {
-    if (!is_decimal) {
-      return kNaN;
-    }
-    buffer[pos++] = static_cast<char>(*it);
-    ++it;
-    if (it == last) {
-      if (parse_float) {
-        --it;
-        --pos;
-        goto exponent_pasing_done;
-      }
-      return kNaN;
-    }
-    bool is_signed_exp = false;
-    if (*it == '+' || *it == '-') {
-      buffer[pos++] = static_cast<char>(*it);
-      ++it;
-      is_signed_exp = true;
-    }
-    if (it == last || !character::IsDecimalDigit(*it)) {
-      if (parse_float) {
-        --it;
-        --pos;
-        if (is_signed_exp) {
-          --it;
-          --pos;
-        }
-        goto exponent_pasing_done;
-      }
-      return kNaN;
-    }
-    int exponent = 0;
-    do {
-      if (exponent > 9999) {
-        exponent = 9999;
-      } else {
-        exponent = exponent * 10 + (*it - '0');
-      }
-      ++it;
-    } while (it != last && character::IsDecimalDigit(*it));
-    exponent+=insignificant_digits;
-    if (exponent > 9999) {
-      exponent = 9999;
-    }
-    snprintf(buffer.data()+pos, 5, "%d", exponent);  // NOLINT
-    pos+=4;
-  }
-
-  // exponent_pasing_done label
-  exponent_pasing_done:
-
-  while (it != last &&
-         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
-    ++it;
-  }
-
-  if (it == last || parse_float) {
-    if (pos == 0) {
-      // empty
-      return (parse_float && !is_found_zero) ? kNaN : (sign * 0);
-    } else if (is_decimal) {
-      buffer[pos++] = '\0';
-      return sign * std::atof(buffer.data());
-    } else {
-      // hex values
-      return sign* ParseIntegerOverflow(buffer.data() + 2,
-                                        buffer.data() + pos, 16);
-    }
-  } else {
-    return kNaN;
-  }
-}
-
-inline double StringToDouble(const StringPiece& str, bool parse_float) {
-  return StringToDouble(str.begin(), str.end(), parse_float);
-}
-
-inline double StringToDouble(const UStringPiece& str, bool parse_float) {
-  return StringToDouble(str.begin(), str.end(), parse_float);
-}
-
 template<typename CharT>
 inline double StringToIntegerWithRadix(const CharT* it, const CharT* last,
                                        int radix, bool strip_prefix) {
@@ -554,6 +331,228 @@ inline std::string DoubleToStringWithRadix(double v, int radix) {
   std::string str;
   DoubleToStringWithRadix(v, radix, std::back_inserter(str));
   return str;
+}
+
+template<typename Iter>
+inline double StringToDouble(Iter it, Iter last, bool parse_float) {
+  bool is_decimal = true;
+  bool is_signed = false;
+  bool is_sign_found = false;
+  bool is_found_zero = false;
+  std::size_t pos = 0;
+  int significant_digits = 0;
+  int insignificant_digits = 0;
+  std::array<char, detail::kMaxSignificantDigits+10> buffer;
+
+  // empty string ""
+  if (it == last) {
+    return (parse_float) ? kNaN : 0;
+  }
+
+  while (it != last &&
+         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
+    ++it;
+  }
+
+  // white space only "  "
+  if (it == last) {
+    return (parse_float) ? kNaN : 0;
+  }
+
+  if (*it == '-') {
+    ++it;
+    is_signed = true;
+    is_sign_found = true;
+  } else if (*it == '+') {
+    ++it;
+    is_sign_found = true;
+  }
+  const int sign = (is_signed) ? -1 : 1;
+
+  if (it == last) {
+    return kNaN;
+  }
+
+  if (character::IsDecimalDigit(*it)) {
+    if (*it == '0') {
+      is_found_zero = true;
+      ++it;
+      if (it == last) {
+        return sign * 0.0;
+      }
+      if (!parse_float && (*it == 'x' || *it == 'X')) {
+        if (is_sign_found) {
+          return kNaN;
+        }
+        assert(pos == 0);
+        is_decimal = false;
+        buffer[pos++] = '0';
+        buffer[pos++] = static_cast<char>(*it);
+        ++it;
+        ++significant_digits;
+        if (it == last || !character::IsHexDigit(*it)) {
+          return kNaN;
+        }
+        // waste leading zero
+        while (it != last && *it == '0') {
+          ++it;
+        }
+        while (it != last && character::IsHexDigit(*it)) {
+          if (significant_digits < detail::kMaxSignificantDigits) {
+            buffer[pos++] = static_cast<char>(*it);
+            ++it;
+            ++significant_digits;
+          } else {
+            ++it;
+          }
+        }
+      } else {
+        // waste leading zero
+        while (it != last && *it == '0') {
+          ++it;
+        }
+      }
+    }
+    if (is_decimal) {
+      while (it != last && character::IsDecimalDigit(*it)) {
+        if (significant_digits < detail::kMaxSignificantDigits) {
+          buffer[pos++] = static_cast<char>(*it);
+          ++significant_digits;
+        } else {
+          ++insignificant_digits;
+        }
+        ++it;
+      }
+      if (it != last && *it == '.') {
+        buffer[pos++] = '.';
+        ++it;
+        while (it != last && character::IsDecimalDigit(*it)) {
+          if (significant_digits < detail::kMaxSignificantDigits) {
+            buffer[pos++] = static_cast<char>(*it);
+            ++significant_digits;
+          }
+          ++it;
+        }
+      }
+    }
+  } else {
+    if (*it == '.') {
+      buffer[pos++] = '.';
+      ++it;
+      const Iter start = it;
+      while (it != last &&
+             character::IsDecimalDigit(*it)) {
+        if (significant_digits < detail::kMaxSignificantDigits) {
+          buffer[pos++] = static_cast<char>(*it);
+          ++significant_digits;
+        }
+        ++it;
+      }
+      if (start == it) {
+        return kNaN;
+      }
+    } else {
+      for (std::string::const_iterator inf_it = detail::kInfinityString.begin(),
+           inf_last = detail::kInfinityString.end();
+           inf_it != inf_last; ++inf_it, ++it) {
+        if (it == last || (*inf_it) != (*it)) {
+          return kNaN;
+        }
+      }
+      // infinity
+      while (it != last &&
+             (character::IsWhiteSpace(*it) ||
+              character::IsLineTerminator(*it))) {
+        ++it;
+      }
+      if (it == last || parse_float) {
+        return sign * std::numeric_limits<double>::infinity();
+      } else {
+        return kNaN;
+      }
+    }
+  }
+
+  // exponent part
+  if (it != last && (*it == 'e' || *it == 'E')) {
+    if (!is_decimal) {
+      return kNaN;
+    }
+    buffer[pos++] = static_cast<char>(*it);
+    ++it;
+    if (it == last) {
+      if (parse_float) {
+        --it;
+        --pos;
+        goto exponent_pasing_done;
+      }
+      return kNaN;
+    }
+    bool is_signed_exp = false;
+    if (*it == '+' || *it == '-') {
+      buffer[pos++] = static_cast<char>(*it);
+      ++it;
+      is_signed_exp = true;
+    }
+    if (it == last || !character::IsDecimalDigit(*it)) {
+      if (parse_float) {
+        --it;
+        --pos;
+        if (is_signed_exp) {
+          --it;
+          --pos;
+        }
+        goto exponent_pasing_done;
+      }
+      return kNaN;
+    }
+    int exponent = 0;
+    do {
+      if (exponent > 9999) {
+        exponent = 9999;
+      } else {
+        exponent = exponent * 10 + (*it - '0');
+      }
+      ++it;
+    } while (it != last && character::IsDecimalDigit(*it));
+    exponent+=insignificant_digits;
+    if (exponent > 9999) {
+      exponent = 9999;
+    }
+    pos = Int32ToString(exponent, buffer.data() + pos) - buffer.data();
+  }
+
+  // exponent_pasing_done label
+  exponent_pasing_done:
+
+  while (it != last &&
+         (character::IsWhiteSpace(*it) || character::IsLineTerminator(*it))) {
+    ++it;
+  }
+
+  if (it == last || parse_float) {
+    if (pos == 0) {
+      // empty
+      return (parse_float && !is_found_zero) ? kNaN : (sign * 0);
+    } else if (is_decimal) {
+      buffer[pos++] = '\0';
+      return sign * std::atof(buffer.data());
+    } else {
+      // hex values
+      return sign* ParseIntegerOverflow(buffer.data() + 2,
+                                        buffer.data() + pos, 16);
+    }
+  } else {
+    return kNaN;
+  }
+}
+
+inline double StringToDouble(const StringPiece& str, bool parse_float) {
+  return StringToDouble(str.begin(), str.end(), parse_float);
+}
+
+inline double StringToDouble(const UStringPiece& str, bool parse_float) {
+  return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
 } }  // namespace iv::core
