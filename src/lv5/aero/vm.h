@@ -109,7 +109,6 @@ inline int VM::Execute(const core::UStringPiece& subject,
           target[1] = current_position;
         } else {
           // stack overflowed
-          std::cout << "ERROR!!!" << std::endl;
           return AERO_ERROR;
         }
         DISPATCH_NEXT(PUSH_BACKTRACK);
