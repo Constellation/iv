@@ -60,7 +60,18 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
     iv::lv5::aero::Code code = compiler.Compile(data);
-    disasm.DisAssemble(code);
     ASSERT_FALSE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\1(A)");
+    iv::core::UString str1 = iv::core::ToUString("AA");
+    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::lv5::aero::Code code = compiler.Compile(data);
+    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
   }
 }
