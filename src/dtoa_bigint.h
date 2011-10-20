@@ -37,6 +37,7 @@
 #include "byteorder.h"
 #include "stringpiece.h"
 #include "static_assert.h"
+#include "conversions.h"
 
 namespace iv {
 namespace core {
@@ -1284,8 +1285,25 @@ class DToA {
       begin[0] = '.';
       exponent_part = begin + precision_;
     }
-    const int len = snprintf(exponent_part, 6, "e%+d", exponent_);  // NOLINT
-    *(exponent_part + len) = '\0';
+    // limit 9999
+    int result = 0;
+    if (exponent_ < 0) {
+      *exponent_part++ = '-';
+      if (exponent_ < -9999) {
+        result = 9999;
+      } else {
+        result = -exponent_;
+      }
+    } else {
+      *exponent_part++ = '+';
+      if (exponent_ > 9999) {
+        result = 9999;
+      } else {
+        result = exponent_;
+      }
+    }
+    exponent_part = Int32ToString(result, exponent_part);
+    *exponent_part = '\0';
     return static_cast<Derived*>(this)->Create(start);
   }
 
