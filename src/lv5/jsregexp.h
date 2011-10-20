@@ -82,10 +82,9 @@ class JSRegExp : public JSObject {
   }
 
   int LastIndex(Context* ctx, Error* e) {
-    const JSVal index = Get(ctx, context::Intern(ctx, "lastIndex"),
-                            IV_LV5_ERROR_WITH(e, 0));
-    const double val = index.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
-    return core::DoubleToInt32(val);
+    const JSVal index =
+        Get(ctx, context::Intern(ctx, "lastIndex"), IV_LV5_ERROR_WITH(e, 0));
+    return index.ToInt32(ctx, e);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
