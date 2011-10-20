@@ -115,9 +115,9 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
     const int tz_hour = tz_min / 60;
     tz_min %= 60;
 
-    std::array<char, 40> buf;
+    char buf[40];
     const int num = snprintf(
-        buf.data(), buf.size() - 1,
+        buf, sizeof(buf) - 1,
         "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
         date::WeekDayToString(time),
         date::MonthToString(time),
@@ -129,7 +129,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
         sign,
         tz_hour,
         tz_min);
-    return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+    return JSString::New(args.ctx(), core::StringPiece(buf, num));
   }
 }
 
@@ -241,9 +241,9 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 40> buf;
+      char buf[40];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
           date::WeekDayToString(time),
           date::MonthToString(time),
@@ -255,7 +255,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -276,15 +276,15 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
       // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
-      std::array<char, 20> buf;
+      char buf[20];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%3s %3s %02d %4d",
           date::WeekDayToString(time),
           date::MonthToString(time),
           date::DateFromTime(time),
           date::YearFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -318,9 +318,9 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 20> buf;
+      char buf[20];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%02d:%02d:%02d GMT%c%02d%02d",
           date::HourFromTime(time),
           date::MinFromTime(time),
@@ -328,7 +328,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -362,9 +362,9 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 40> buf;
+      char buf[40];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
           date::WeekDayToString(time),
           date::MonthToString(time),
@@ -376,7 +376,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -397,15 +397,15 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
       // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
-      std::array<char, 20> buf;
+      char buf[20];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%3s %3s %02d %4d",
           date::WeekDayToString(time),
           date::MonthToString(time),
           date::DateFromTime(time),
           date::YearFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -439,9 +439,9 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       const int tz_hour = tz_min / 60;
       tz_min %= 60;
 
-      std::array<char, 20> buf;
+      char buf[20];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%02d:%02d:%02d GMT%c%02d%02d",
           date::HourFromTime(time),
           date::MinFromTime(time),
@@ -449,7 +449,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -1322,9 +1322,9 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
       return JSEmpty;
       // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      std::array<char, 40> buf;
+      char buf[40];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
           date::WeekDayToString(time),
           date::DateFromTime(time),
@@ -1333,7 +1333,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
           date::HourFromTime(time),
           date::MinFromTime(time),
           date::SecFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -1353,9 +1353,9 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
       return JSEmpty;
       // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
-      std::array<char, 30> buf;
+      char buf[30];
       const int num = snprintf(
-          buf.data(), buf.size() - 1,
+          buf, sizeof(buf) - 1,
           "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
           date::YearFromTime(time),
           date::MonthFromTime(time)+1,
@@ -1364,7 +1364,7 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
           date::MinFromTime(time),
           date::SecFromTime(time),
           date::MsFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf.data(), num));
+      return JSString::New(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,

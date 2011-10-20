@@ -30,7 +30,7 @@ class DisAssembler : private core::Noncopyable<> {
     }
     std::vector<char> line;
     int index = 0;
-    std::array<char, 30> buf;
+    char buf[30];
     for (std::vector<uint8_t>::const_iterator it = code.bytes().begin(),
          last = code.bytes().end(); it != last;) {
       const uint8_t opcode = *it;
@@ -38,9 +38,9 @@ class DisAssembler : private core::Noncopyable<> {
       if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
         length += Load4Bytes(it + 1);
       }
-      const int len = snprintf(buf.data(), buf.size() - 1, "%05d: ", index);
+      const int len = snprintf(buf, sizeof(buf) - 1, "%05d: ", index);
       assert(len >= 0);  // %05d, so always pass
-      line.insert(line.end(), buf.data(), buf.data() + len);
+      line.insert(line.end(), buf, buf + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
       for (uint32_t first = 1; first < length; ++first) {

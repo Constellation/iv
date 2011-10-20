@@ -30,14 +30,14 @@ class DisAssembler : private core::Noncopyable<> {
     const Code::Codes& codes = code.codes();
     std::vector<char> line;
     int index = 0;
-    std::array<char, 30> buf;
+    char buf[30];
     for (const Instruction* it = code.begin(),
          *last = code.end(); it != last;) {
       const uint32_t opcode = it->GetOP();
       const uint32_t length = kOPLength[opcode];
-      const int len = snprintf(buf.data(), buf.size() - 1, "%05d: ", index);
+      const int len = snprintf(buf, sizeof(buf) - 1, "%05d: ", index);
       assert(len >= 0);  // %05d, so always pass
-      line.insert(line.end(), buf.data(), buf.data() + len);
+      line.insert(line.end(), buf, buf + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
       for (uint32_t first = 1; first < length; ++first) {
