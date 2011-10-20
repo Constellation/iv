@@ -555,5 +555,57 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
+template<typename U8OrU16InputIter, typename U16OutputIter>
+inline U16OutputIter JSONQuote(U8OrU16InputIter it,
+                               U8OrU16InputIter last, U16OutputIter out) {
+  for (; it != last; ++it) {
+    const uint16_t c = *it;
+    if (c == '"' || c == '\\') {
+      *out++ = '\\';
+      *out++ = c;
+    } else if (c == '\b' ||
+               c == '\f' ||
+               c == '\n' ||
+               c == '\r' ||
+               c == '\t') {
+      *out++ = '\\';
+      switch (c) {
+        case '\b':
+          *out++ = 'b';
+          break;
+
+        case '\f':
+          *out++ = 'f';
+          break;
+
+        case '\n':
+          *out++ = 'n';
+          break;
+
+        case '\r':
+          *out++ = 'r';
+          break;
+
+        case '\t':
+          *out++ = 't';
+          break;
+      }
+    } else if (c < ' ') {
+      uint16_t val = c;
+      std::array<char, 4> buf = { { '0', '0', '0', '0' } };
+      *out++ = '\\';
+      *out++ = 'u';
+      for (int i = 0; (i < 4) || val; i++) {
+        buf[3 - i] = core::kHexDigits[val % 16];
+        val /= 16;
+      }
+      out = std::copy(buf.begin(), buf.end(), out);
+    } else {
+      *out++ = c;
+    }
+  }
+  return out;
+}
+
 } }  // namespace iv::core
 #endif  // IV_CONVERSIONS_H_

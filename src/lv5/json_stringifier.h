@@ -88,52 +88,7 @@ class JSONStringifier : private core::Noncopyable<> {
     JSStringBuilder builder;
     builder.Append('"');
     const JSString::Fiber* fiber = str.GetFiber();
-    for (JSString::Fiber::const_iterator it = fiber->begin(),
-         last = fiber->end(); it != last; ++it) {
-      const uint16_t c = *it;
-      if (c == '"' || c == '\\') {
-        builder.Append('\\');
-        builder.Append(c);
-      } else if (c == '\b' ||
-                 c == '\f' ||
-                 c == '\n' ||
-                 c == '\r' ||
-                 c == '\t') {
-        builder.Append('\\');
-        switch (c) {
-          case '\b':
-            builder.Append('b');
-            break;
-
-          case '\f':
-            builder.Append('f');
-            break;
-
-          case '\n':
-            builder.Append('n');
-            break;
-
-          case '\r':
-            builder.Append('r');
-            break;
-
-          case '\t':
-            builder.Append('t');
-            break;
-        }
-      } else if (c < ' ') {
-        uint16_t val = c;
-        std::array<char, 4> buf = { { '0', '0', '0', '0' } };
-        builder.Append("\\u");
-        for (int i = 0; (i < 4) || val; i++) {
-          buf[3 - i] = core::kHexDigits[val % 16];
-          val /= 16;
-        }
-        builder.Append(buf.data(), buf.size());
-      } else {
-        builder.Append(c);
-      }
-    }
+    core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
     builder.Append('"');
     return builder.Build(ctx_);
   }

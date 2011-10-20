@@ -54,7 +54,7 @@
 
 // snprintf
 #if defined(IV_COMPILER_MSVC)
-#define snprintf _snprintf
+#define snprintf _snprintf_s
 #endif
 
 // 64bit system or not
