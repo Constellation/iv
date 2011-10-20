@@ -595,7 +595,7 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
       std::array<char, 4> buf = { { '0', '0', '0', '0' } };
       *out++ = '\\';
       *out++ = 'u';
-      for (int i = 0; (i < 4) || val; i++) {
+      for (int i = 0; (i < 4) && val; i++) {
         buf[3 - i] = core::kHexDigits[val % 16];
         val /= 16;
       }
