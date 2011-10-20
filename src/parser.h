@@ -2318,8 +2318,10 @@ class Parser
   void SetErrorHeader(std::size_t line) {
     std::array<char, 40> buf;
     error_.append(lexer_.filename());
+    // uint64_t str length max is 20
+    // so, string size not over 40
     const int num = snprintf(
-        buf.data(), buf.size(),
+        buf.data(), buf.size() - 1,
         ":" "%"PRIu64 ": SyntaxError: ", static_cast<uint64_t>(line));
     error_.append(buf.data(), num);
   }
