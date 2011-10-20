@@ -38,7 +38,8 @@ class DisAssembler : private core::Noncopyable<> {
       if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
         length += Load4Bytes(it + 1);
       }
-      const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);
+      const int len = snprintf(buf.data(), buf.size() - 1, "%05d: ", index);
+      assert(len != -1);  // %05d, so always pass
       line.insert(line.end(), buf.data(), buf.data() + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());

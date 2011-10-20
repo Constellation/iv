@@ -35,7 +35,8 @@ class DisAssembler : private core::Noncopyable<> {
          *last = code.end(); it != last;) {
       const uint32_t opcode = it->GetOP();
       const uint32_t length = kOPLength[opcode];
-      const int len = snprintf(buf.data(), buf.size(), "%05d: ", index);
+      const int len = snprintf(buf.data(), buf.size() - 1, "%05d: ", index);
+      assert(len != -1);  // %05d, so always pass
       line.insert(line.end(), buf.data(), buf.data() + len);
       const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
