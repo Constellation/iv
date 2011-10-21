@@ -647,13 +647,10 @@ class Operation {
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        if (slot.IsCacheable()) {
-          instr[2].map = global->map();
-          instr[3].value = slot.offset();
-        } else {
-          // not implemented yet
-          UNREACHABLE();
-        }
+        // now Own Property Pattern only implemented
+        assert(slot.IsCacheable());
+        instr[2].map = global->map();
+        instr[3].value = slot.offset();
         return slot.Get(ctx_, global, e);
       } else {
         instr[2].map = NULL;

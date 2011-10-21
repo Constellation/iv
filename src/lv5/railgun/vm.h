@@ -1797,13 +1797,10 @@ do {\
           const Symbol& s = GETITEM(names, instr[1].value);
           Slot slot;
           if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-            if (slot.IsCacheable()) {
-              instr[2].map = global->map();
-              instr[3].value = slot.offset();
-            } else {
-              // not implemented yet
-              UNREACHABLE();
-            }
+            // now Own Property Pattern only implemented
+            assert(slot.IsCacheable());
+            instr[2].map = global->map();
+            instr[3].value = slot.offset();
             const JSVal val = slot.Get(ctx_, global, ERR);
             PUSH(val);
           } else {
