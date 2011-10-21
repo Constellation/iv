@@ -40,13 +40,13 @@ class Compiler : private Visitor {
       counters_size_(0) {
   }
 
-  Code Compile(const ParsedData& data) {
+  Code* Compile(const ParsedData& data) {
     max_captures_ = data.max_captures();
     current_captures_num_ = 0;
     EmitQuickCheck(data);
     data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
-    return Code(code_, max_captures_, counters_size_);
+    return new Code(code_, max_captures_, counters_size_);
   }
 
   uint32_t counters_size() const { return counters_size_; }
@@ -455,7 +455,7 @@ inline Code* Compile(core::Space* space,
     return NULL;
   }
   Compiler compiler(flags);
-  return new Code(compiler.Compile(data));
+  return compiler.Compile(data);
 }
 
 } } }  // namespace iv::lv5::aero

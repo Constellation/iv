@@ -2,6 +2,7 @@
 #include "alloc.h"
 #include "ustring.h"
 #include "unicode.h"
+#include "scoped_ptr.h"
 #include "lv5/aero/aero.h"
 
 TEST(AeroCompilerCase, MainTest) {
@@ -15,7 +16,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -25,6 +26,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -34,7 +36,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -44,7 +46,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -54,6 +56,6 @@ TEST(AeroCompilerCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
   }
 }

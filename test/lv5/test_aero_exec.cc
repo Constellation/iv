@@ -3,6 +3,7 @@
 #include "alloc.h"
 #include "ustring.h"
 #include "unicode.h"
+#include "scoped_ptr.h"
 #include "lv5/aero/aero.h"
 #include "test_aero.h"
 
@@ -20,9 +21,8 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::MULTILINE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
-    // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
   {
     space.Clear();
@@ -33,8 +33,8 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::MULTILINE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
-    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
   {
     space.Clear();
@@ -45,8 +45,8 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
-    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
     EXPECT_EQ(3, vec[0]);
     EXPECT_EQ(8, vec[1]);
   }
@@ -59,8 +59,8 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
-    ASSERT_FALSE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
   {
     space.Clear();
@@ -71,7 +71,7 @@ TEST(AeroExecCase, MainTest) {
     iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::lv5::aero::Code code = compiler.Compile(data);
-    ASSERT_TRUE(vm.ExecuteOnce(&code, str1, 0, vec.data()));
+    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
 }
