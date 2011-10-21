@@ -11,7 +11,9 @@ class NameIterator : public radio::HeapObject<> {
   NameIterator(Context* ctx, JSObject* obj)
     : keys_(),
       iter_() {
-    obj->GetPropertyNames(ctx, &keys_, JSObject::EXCLUDE_NOT_ENUMERABLE);
+    std::vector<Symbol> keys;
+    obj->GetPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
+    keys_.assign(keys.begin(), keys.end());
     iter_ = keys_.begin();
   }
 
@@ -32,8 +34,8 @@ class NameIterator : public radio::HeapObject<> {
   }
 
  private:
-  std::vector<Symbol> keys_;
-  std::vector<Symbol>::const_iterator iter_;
+  GCVector<Symbol>::type keys_;
+  GCVector<Symbol>::type::const_iterator iter_;
 };
 
 } }  // namespace iv::lv5
