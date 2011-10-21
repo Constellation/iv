@@ -607,5 +607,18 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
   return out;
 }
 
+template<typename U8OrU16InputIter, typename U16OutputIter>
+inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
+                                  U8OrU16InputIter last, U16OutputIter out) {
+  for (; it != last; ++it) {
+    const uint16_t c = *it;
+    if (c == '\\' || c == '/') {
+      *out++ = '\\';
+      *out++ = c;
+    }
+  }
+  return out;
+}
+
 } }  // namespace iv::core
 #endif  // IV_CONVERSIONS_H_

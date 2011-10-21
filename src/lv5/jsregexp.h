@@ -244,7 +244,9 @@ class JSRegExp : public JSObject {
            const core::UStringPiece& flags)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(new JSRegExpImpl(ctx->regexp_allocator(), value, flags)) {
-    InitializeProperty(ctx, JSString::New(ctx, value));
+    JSStringBuilder builder;
+    core::RegExpEscape(value.begin(), value.end(), std::back_inserter(builder));
+    InitializeProperty(ctx, builder.Build(ctx));
   }
 
   JSRegExp(Context* ctx,
@@ -252,7 +254,9 @@ class JSRegExp : public JSObject {
            const JSRegExpImpl* reg)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(reg) {
-    InitializeProperty(ctx, JSString::New(ctx, value));
+    JSStringBuilder builder;
+    core::RegExpEscape(value.begin(), value.end(), std::back_inserter(builder));
+    InitializeProperty(ctx, builder.Build(ctx));
   }
 
   explicit JSRegExp(Context* ctx)
