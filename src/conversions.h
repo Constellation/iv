@@ -614,8 +614,8 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
     const uint16_t c = *it;
     if (c == '/') {
       *out++ = '\\';
-      *out++ = c;
     }
+    *out++ = c;
   }
   return out;
 }
