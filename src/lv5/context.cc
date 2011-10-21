@@ -820,7 +820,9 @@ void Context::InitRegExp(const ClassSlot& func_cls,
       // section 15.10.6.3 RegExp.prototype.test(string)
       .def<&runtime::RegExpTest, 1>("test")
       // section 15.10.6.4 RegExp.prototype.toString()
-      .def<&runtime::RegExpToString, 0>("toString");
+      .def<&runtime::RegExpToString, 0>("toString")
+      // Not Standard RegExp.prototype.compile(pattern, flags)
+      .def<&runtime::RegExpCompile, 2>("compile");
 }
 
 void Context::InitError(const ClassSlot& func_cls,

@@ -34,7 +34,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
       }
     }
     if (!first.IsUndefined()) {
-      JSString* str = args[0].ToString(ctx, IV_LV5_ERROR(e));
+      JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
       pattern = str->GetUString();
     }
   }
@@ -119,6 +119,44 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
   }
   e->Report(Error::Type,
             "RegExp.prototype.toString is not generic function");
+  return JSUndefined;
+}
+
+// Not Standard RegExp.prototype.compile(pattern, flags)
+// this method is deprecated.
+inline JSVal RegExpCompile(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.compile", args, e);
+  const uint32_t args_count = args.size();
+  Context* const ctx = args.ctx();
+  const JSVal& obj = args.this_binding();
+  if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
+    core::UString pattern;
+    core::UString flags;
+    if (args_count != 0) {
+      const JSVal& first = args[0];
+      if (!first.IsUndefined()) {
+        JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
+        pattern = str->GetUString();
+      }
+      if (args_count > 1) {
+        const JSVal& second = args[1];
+        if (!second.IsUndefined()) {
+          JSString* str = second.ToString(ctx, IV_LV5_ERROR(e));
+          flags = str->GetUString();
+        }
+      }
+    }
+
+    // Because source, global, ignoreCase, multiline attributes are not
+    // writable, I thought that compile method rewrite it is break ES5
+    // PropertyDescriptor system.
+    // So now, not implement it
+    JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
+    // reg->Compile(pattern, flags, IV_LV5_ERROR(e));
+    return reg;
+  }
+  e->Report(Error::Type,
+            "RegExp.prototype.compile is not generic function");
   return JSUndefined;
 }
 
