@@ -165,7 +165,7 @@ class Compiler : private Visitor {
       } else {
         // expand it
         typedef std::array<uint16_t, 10> Buffer;
-        Buffer buffer;
+        Buffer buffer = { { } };
         Buffer::const_iterator last = core::UInt32ToString(ref, buffer.data());
         Buffer::const_iterator it = buffer.begin();
         EmitCharacter(*it++ - '0');
