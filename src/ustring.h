@@ -15,6 +15,10 @@ inline UString ToUString(StringPiece str) {
   return UString(str.begin(), str.end());
 }
 
+inline UString ToUString(uint16_t ch) {
+  return UString(&ch, &ch + 1);
+}
+
 } }  // namespace iv::core
 
 namespace IV_HASH_NAMESPACE_START {

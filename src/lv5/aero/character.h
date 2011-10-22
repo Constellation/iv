@@ -19,9 +19,15 @@ inline bool IsPatternCharacter(int ch) {
       ch != ')' &&
       ch != '[' &&
       ch != ']' &&
-      ch != '{' &&
-      ch != '}' &&
       ch != '|';
+}
+
+inline bool IsBrace(int ch) {
+  return ch == '{' || ch == '}';
+}
+
+inline bool IsPatternCharacterNoBrace(int ch) {
+  return IsPatternCharacter(ch) && !IsBrace(ch);
 }
 
 inline bool IsQuantifierPrefixStart(int ch) {

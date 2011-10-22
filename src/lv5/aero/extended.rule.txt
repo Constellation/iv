@@ -27,15 +27,16 @@ PatternCharacterNoBrace ::
 PatternCharacter ::
   SourceCharacter but not one of
   ^ $ \ . * + ? ( ) [ ] |
-  QuantifiableAssertion ::
-  ( ? = Disjunction ) 
+
+QuantifiableAssertion ::
+  ( ? = Disjunction )
   ( ? ! Disjunction )
 
 Assertion ::
   ^
   $
-  \ b 
-  \ B 
+  \ b
+  \ B
   QuantifiableAssertion
 
 AtomEscape ::

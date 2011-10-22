@@ -224,13 +224,16 @@ class Parser {
           if (!character::IsPatternCharacter(c_) && (c_ != ']')) {
             UNEXPECT(c_);
           }
+          // AtomNoBrace or Atom
+          if (!character::IsBrace(c_)) {
+            atom = true;
+          }
           target = new(factory_)CharacterAtom(c_);
           Advance();
-          atom = true;
         }
       }
       if (atom && character::IsQuantifierPrefixStart(c_)) {
-        target = ParseQuantifier(target, CHECK);
+        target = ParseQuantifier(target);
       }
       assert(target);
       vec->push_back(target);
@@ -524,8 +527,14 @@ class Parser {
     }
   }
 
-  Expression* ParseQuantifier(Expression* target, int* e) {
-    // prefix
+  Expression* ParseQuantifier(Expression* target) {
+    // this is extended ES5 RegExp
+    // see http://wiki.ecmascript.org/doku.php?id=harmony:regexp_match_web_reality
+
+    // when Quantifier parse is failed, seek to start position and return
+    // original target Expression.
+    const std::size_t pos = pos_;
+
     int32_t min = 0;
     int32_t max = 0;
     switch (c_) {
@@ -550,15 +559,22 @@ class Parser {
       case '{': {
         Advance();
         if (!core::character::IsDecimalDigit(c_)) {
-          UNEXPECT(c_);
+          Seek(pos);
+          return target;
         }
-        const double numeric1 = ParseDecimalInteger(CHECK);
+        int e = 0;
+        const double numeric1 = ParseDecimalInteger(&e);
+        if (e) {
+          Seek(pos);
+          return target;
+        }
         if (numeric1 > kRegExpInfinity) {
           min = kRegExpInfinity;
         } else {
           min = static_cast<int32_t>(numeric1);
           if (min != numeric1) {
-            RAISE(NUMBER_TOO_BIG);
+            Seek(pos);
+            return target;
           }
         }
         if (c_ == ',') {
@@ -567,30 +583,43 @@ class Parser {
             max = kRegExpInfinity;
           } else {
             if (!core::character::IsDecimalDigit(c_)) {
-              UNEXPECT(c_);
+              Seek(pos);
+              return target;
             }
-            const double numeric2 = ParseDecimalInteger(CHECK);
+            int e = 0;
+            const double numeric2 = ParseDecimalInteger(&e);
+            if (e) {
+              Seek(pos);
+              return target;
+            }
             if (numeric2 > kRegExpInfinity) {
               max = kRegExpInfinity;
             } else {
               max = static_cast<int32_t>(numeric2);
               if (max != numeric2) {
-                RAISE(NUMBER_TOO_BIG);
+                Seek(pos);
+                return target;
               }
             }
           }
         } else if (c_ == '}') {
           max = min;
         }
-        EXPECT('}');
+        if (c_ != '}') {
+          Seek(pos);
+          return target;
+        }
+        Advance();
         break;
       }
       default: {
-        UNEXPECT(c_);
+        Seek(pos);
+        return target;
       }
     }
     if (max < min) {
-      RAISE(INVALID_QUANTIFIER);
+      Seek(pos);
+      return target;
     }
     // postfix
     bool greedy = true;
@@ -616,6 +645,12 @@ class Parser {
     } else {
       c_ = source_[pos_++];
     }
+  }
+
+  void Seek(std::size_t pos) {
+    assert(0 < pos);
+    pos_ = pos - 1;
+    Advance();
   }
 
   void PushBack() {
