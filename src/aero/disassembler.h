@@ -1,5 +1,5 @@
-#ifndef IV_LV5_AERO_DISASSEMBLER_H_
-#define IV_LV5_AERO_DISASSEMBLER_H_
+#ifndef IV_AERO_DISASSEMBLER_H_
+#define IV_AERO_DISASSEMBLER_H_
 #include <vector>
 #include <sstream>
 #include <algorithm>
@@ -8,11 +8,10 @@
 #include "detail/cstdint.h"
 #include "noncopyable.h"
 #include "stringpiece.h"
-#include "lv5/aero/op.h"
-#include "lv5/aero/code.h"
-#include "lv5/aero/utility.h"
+#include "aero/op.h"
+#include "aero/code.h"
+#include "aero/utility.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 template<typename Derived>
@@ -76,5 +75,5 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
   FILE* file_;
 };
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_DISASSEMBLER_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_DISASSEMBLER_H_

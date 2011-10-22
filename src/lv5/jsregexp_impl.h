@@ -6,8 +6,8 @@
 #include "ustring.h"
 #include "ustringpiece.h"
 #include "space.h"
+#include "aero/aero.h"
 #include "lv5/context.h"
-#include "lv5/aero/aero.h"
 
 namespace iv {
 namespace lv5 {

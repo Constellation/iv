@@ -1,18 +1,17 @@
-#ifndef IV_LV5_AERO_COMPILER_H_
-#define IV_LV5_AERO_COMPILER_H_
+#ifndef IV_AERO_COMPILER_H_
+#define IV_AERO_COMPILER_H_
 #include <vector>
 #include "detail/cstdint.h"
 #include "detail/unordered_set.h"
 #include "noncopyable.h"
 #include "character.h"
 #include "debug.h"
-#include "lv5/aero/flags.h"
-#include "lv5/aero/op.h"
-#include "lv5/aero/code.h"
-#include "lv5/aero/captures.h"
-#include "lv5/aero/quick_check_fwd.h"
+#include "aero/flags.h"
+#include "aero/op.h"
+#include "aero/code.h"
+#include "aero/captures.h"
+#include "aero/quick_check_fwd.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 class Compiler : private Visitor {
@@ -458,5 +457,5 @@ inline Code* Compile(core::Space* space,
   return compiler.Compile(data);
 }
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_COMPILER_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_COMPILER_H_

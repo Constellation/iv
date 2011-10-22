@@ -1,10 +1,9 @@
-#ifndef IV_LV5_AERO_ESCAPE_H_
-#define IV_LV5_AERO_ESCAPE_H_
+#ifndef IV_AERO_ESCAPE_H_
+#define IV_AERO_ESCAPE_H_
 #include <utility>
 #include "detail/array.h"
-#include "lv5/aero/range.h"
+#include "aero/range.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 // escape ranges from V8 irregexp
@@ -39,5 +38,5 @@ static const std::array<Range, 3> kLineTerminatorRanges = { {
   std::make_pair(0x2028, 0x2029)
 } };
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_ESCAPE_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_ESCAPE_H_

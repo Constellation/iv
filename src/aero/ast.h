@@ -1,10 +1,9 @@
-#ifndef IV_LV5_AERO_AST_H_
-#define IV_LV5_AERO_AST_H_
+#ifndef IV_AERO_AST_H_
+#define IV_AERO_AST_H_
 #include "space.h"
-#include "lv5/aero/visitor.h"
-#include "lv5/aero/range.h"
+#include "aero/visitor.h"
+#include "aero/range.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 static const int32_t kRegExpInfinity = std::numeric_limits<int32_t>::max();
@@ -176,5 +175,5 @@ class DisjunctionAtom : public Atom {
 #undef DECLARE_NODE_TYPE
 #undef DECLARE_DERIVED_NODE_TYPE
 #undef DECLARE_NODE_TYPE_BASE
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_AST_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_AST_H_

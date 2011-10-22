@@ -1,14 +1,13 @@
-#ifndef IV_LV5_AERO_RANGE_BUILDER_H_
-#define IV_LV5_AERO_RANGE_BUILDER_H_
+#ifndef IV_AERO_RANGE_BUILDER_H_
+#define IV_AERO_RANGE_BUILDER_H_
 #include <vector>
 #include <utility>
 #include <algorithm>
 #include "noncopyable.h"
 #include "character.h"
-#include "lv5/aero/range.h"
-#include "lv5/aero/escape.h"
+#include "aero/range.h"
+#include "aero/escape.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 class RangeBuilder : private core::Noncopyable<RangeBuilder> {
@@ -160,5 +159,5 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
   Ranges ranges_;
 };
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_RANGE_BUILDER_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_RANGE_BUILDER_H_

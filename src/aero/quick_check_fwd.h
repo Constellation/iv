@@ -1,8 +1,7 @@
-#ifndef IV_LV5_AERO_QUICK_CHECK_FWD_H_
-#define IV_LV5_AERO_QUICK_CHECK_FWD_H_
-#include "lv5/aero/visitor.h"
+#ifndef IV_AERO_QUICK_CHECK_FWD_H_
+#define IV_AERO_QUICK_CHECK_FWD_H_
+#include "aero/visitor.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 class Compiler;
@@ -27,5 +26,5 @@ class QuickCheck : private Visitor {
   Compiler* compiler_;
 };
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_QUICK_CHECK_FWD_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_QUICK_CHECK_FWD_H_

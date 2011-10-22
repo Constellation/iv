@@ -4,7 +4,7 @@
 #include "ustring.h"
 #include "unicode.h"
 #include "scoped_ptr.h"
-#include "lv5/aero/aero.h"
+#include "aero/aero.h"
 #include "test_aero.h"
 
 // see
@@ -14,40 +14,40 @@
 
 TEST(AeroIncompleteCase, MainTest) {
   iv::core::Space space;
-  iv::lv5::aero::VM vm;
+  iv::aero::VM vm;
   std::vector<int> vec(1000);
-  iv::lv5::aero::OutputDisAssembler disasm(stdout);
+  iv::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^\\c2$");
     iv::core::UString str1 = iv::core::ToUString("c2");
-    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^\\x2$");
     iv::core::UString str1 = iv::core::ToUString("x2");
-    iv::lv5::aero::Parser parser(&space, reg, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, 0, vec.data()));
   }
 }
 
 TEST(AeroIncompleteCase, UnicodeEscapeSequenceTest) {
   iv::core::Space space;
-  iv::lv5::aero::VM vm;
+  iv::aero::VM vm;
   std::vector<int> vec(1000);
-  iv::lv5::aero::OutputDisAssembler disasm(stdout);
+  iv::aero::OutputDisAssembler disasm(stdout);
 
   typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 7> Matchers;
   const Matchers kMatchers = { {
@@ -63,21 +63,21 @@ TEST(AeroIncompleteCase, UnicodeEscapeSequenceTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::lv5::aero::Parser parser(&space, it->first, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, it->first, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, 0, vec.data()));
   }
 }
 
 TEST(AeroIncompleteCase, BadQuantifierRangeTest) {
   iv::core::Space space;
-  iv::lv5::aero::VM vm;
+  iv::aero::VM vm;
   std::vector<int> vec(1000);
-  iv::lv5::aero::OutputDisAssembler disasm(stdout);
+  iv::aero::OutputDisAssembler disasm(stdout);
 
   typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 4> Matchers;
   const Matchers kMatchers = { {
@@ -90,21 +90,21 @@ TEST(AeroIncompleteCase, BadQuantifierRangeTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::lv5::aero::Parser parser(&space, it->first, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, it->first, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, 0, vec.data()));
   }
 }
 
 TEST(AeroIncompleteCase, ClassEscapeTest) {
   iv::core::Space space;
-  iv::lv5::aero::VM vm;
+  iv::aero::VM vm;
   std::vector<int> vec(1000);
-  iv::lv5::aero::OutputDisAssembler disasm(stdout);
+  iv::aero::OutputDisAssembler disasm(stdout);
 
   typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 17> Matchers;
   const Matchers kMatchers = { {
@@ -134,12 +134,12 @@ TEST(AeroIncompleteCase, ClassEscapeTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::lv5::aero::Parser parser(&space, it->first, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, it->first, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, 0, vec.data()));
   }
 }
@@ -147,9 +147,9 @@ TEST(AeroIncompleteCase, ClassEscapeTest) {
 // see http://wiki.ecmascript.org/doku.php?id=strawman:match_web_reality_spec
 TEST(AeroIncompleteCase, EscapeMissTest) {
   iv::core::Space space;
-  iv::lv5::aero::VM vm;
+  iv::aero::VM vm;
   std::vector<int> vec(1000);
-  iv::lv5::aero::OutputDisAssembler disasm(stdout);
+  iv::aero::OutputDisAssembler disasm(stdout);
 
   typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 2> Matchers;
   const Matchers kMatchers = { {
@@ -162,12 +162,12 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::lv5::aero::Parser parser(&space, it->first, iv::lv5::aero::MULTILINE);
+    iv::aero::Parser parser(&space, it->first, iv::aero::MULTILINE);
     int error = 0;
-    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
-    iv::lv5::aero::Compiler compiler(iv::lv5::aero::NONE);
-    iv::core::ScopedPtr<iv::lv5::aero::Code> code(compiler.Compile(data));
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, 0, vec.data()));
   }
 //exec(/\12/, "\n");

@@ -1,16 +1,15 @@
-#ifndef IV_LV5_AERO_VM_H_
-#define IV_LV5_AERO_VM_H_
+#ifndef IV_AERO_VM_H_
+#define IV_AERO_VM_H_
 #include <vector>
 #include <algorithm>
 #include "noncopyable.h"
 #include "ustringpiece.h"
 #include "scoped_ptr.h"
 #include "os_allocator.h"
-#include "lv5/aero/code.h"
-#include "lv5/aero/character.h"
-#include "lv5/aero/utility.h"
+#include "aero/code.h"
+#include "aero/character.h"
+#include "aero/utility.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 inline bool IsWordSeparatorPrev(const core::UStringPiece& subject,
@@ -409,5 +408,5 @@ inline int VM::Execute(const core::UStringPiece& subject,
 #undef DISPATCH_NEXT
 #undef BACKTRACK
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_VM_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_VM_H_

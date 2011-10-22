@@ -1,9 +1,8 @@
-#ifndef IV_LV5_AERO_CAPTURES_H_
-#define IV_LV5_AERO_CAPTURES_H_
-#include "lv5/aero/visitor.h"
-#include "lv5/aero/ast.h"
+#ifndef IV_AERO_CAPTURES_H_
+#define IV_AERO_CAPTURES_H_
+#include "aero/visitor.h"
+#include "aero/ast.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 
 class CaptureCalculator : public Visitor {
@@ -51,5 +50,5 @@ inline uint32_t GainNextCaptures(Expression* expr, uint32_t now) {
   return CaptureCalculator(now).Calculate(expr);
 }
 
-} } }  // namespace iv::lv5::aero
-#endif  // IV_LV5_AERO_CAPTURES_H_
+} }  // namespace iv::aero
+#endif  // IV_AERO_CAPTURES_H_

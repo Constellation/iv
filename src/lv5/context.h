@@ -5,6 +5,7 @@
 #include "ustringpiece.h"
 #include "noncopyable.h"
 #include "space.h"
+#include "aero/aero.h"
 #include "lv5/error_check.h"
 #include "lv5/jsval.h"
 #include "lv5/jsenv.h"
@@ -14,7 +15,6 @@
 #include "lv5/error.h"
 #include "lv5/global_data.h"
 #include "lv5/context_utils.h"
-#include "lv5/aero/aero.h"
 
 namespace iv {
 namespace lv5 {

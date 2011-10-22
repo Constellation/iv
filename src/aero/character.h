@@ -1,8 +1,7 @@
-#ifndef IV_LV5_AERO_CHARACTER_H_
-#define IV_LV5_AERO_CHARACTER_H_
+#ifndef IV_AERO_CHARACTER_H_
+#define IV_AERO_CHARACTER_H_
 #include "character.h"
 namespace iv {
-namespace lv5 {
 namespace aero {
 namespace character {
 
@@ -42,5 +41,5 @@ inline bool IsWord(uint16_t ch) {
   return core::character::IsASCIIAlphanumeric(ch) || ch == '_';
 }
 
-} } } }  // namespace iv::lv5::aero::character
-#endif  // IV_LV5_AERO_CHARACTER_H_
+} } }  // namespace iv::aero::character
+#endif  // IV_AERO_CHARACTER_H_
