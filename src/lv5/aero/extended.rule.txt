@@ -1,0 +1,90 @@
+Term ::
+  Assertion
+  AtomNoBrace Quantifier
+  Atom
+  QuantifiableAssertion Quantifier
+
+AtomNoBrace ::
+  PatternCharacterNoBrace
+  .
+  \ AtomEscape
+  CharacterClass
+  ( Disjunction )
+  ( ? : Disjunction )
+
+Atom ::
+  PatternCharacter
+  .
+  \ AtomEscape
+  CharacterClass
+  ( Disjunction )
+  ( ? : Disjunction )
+
+PatternCharacterNoBrace ::
+  SourceCharacter but not one of
+  ^ $ \ . * + ? ( ) [ ] { } |
+
+PatternCharacter ::
+  SourceCharacter but not one of
+  ^ $ \ . * + ? ( ) [ ] |
+  QuantifiableAssertion ::
+  ( ? = Disjunction ) 
+  ( ? ! Disjunction )
+
+Assertion ::
+  ^
+  $
+  \ b 
+  \ B 
+  QuantifiableAssertion
+
+AtomEscape ::
+  DecimalEscape but only if the integer value of DecimalEscape is <= NCapturingParens
+  CharacterClassEscape
+  CharacterEscape
+
+CharacterEscape ::
+  ControlEscape
+  c ControlLetter
+  HexEscapeSequence
+  UnicodeEscapeSequence
+  OctalEscapeSequence
+  IdentityEscape
+
+IdentityEscape ::
+  SourceCharacter but not c
+  <ZWJ>
+  <ZWNJ>
+
+NonemptyClassRanges ::
+  ClassAtom
+  ClassAtom NonemptyClassRangesNoDash
+  ClassAtomInRange - ClassAtomInRange ClassRanges
+
+NonemptyClassRangesNoDash ::
+  ClassAtom
+  ClassAtomNoDash NonemptyClassRangesNoDash
+  ClassAtomNoDashInRange - ClassAtomInRange ClassRanges
+
+ClassAtom ::
+  -
+  ClassAtomNoDash
+
+ClassAtomNoDash ::
+  SourceCharacter but not one of \ or ] or -
+  \ ClassEscape
+
+ClassAtomInRange ::
+  -
+  ClassAtomNoDashInRange
+
+ClassAtomNoDashInRange ::
+  SourceCharacter but not one of \ or ] or -
+  \ ClassEscape but only if ClassEscape evaluates to a CharSet with exactly one character
+  \ IdentityEscape
+
+ClassEscape ::
+  DecimalEscape but only if the integer value of DecimalEscape is <= NCapturingParens
+  b
+  CharacterClassEscape
+  CharacterEscape
