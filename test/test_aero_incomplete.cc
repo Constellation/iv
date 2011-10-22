@@ -151,12 +151,24 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
   std::vector<int> vec(1000);
   iv::aero::OutputDisAssembler disasm(stdout);
 
-  typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 2> Matchers;
+  typedef std::array<std::pair<iv::core::UString, iv::core::UString>, 14> Matchers;
   const Matchers kMatchers = { {
 //    std::make_pair(iv::core::ToUString("^\\12$"),    iv::core::ToUString("\n")),
-//    std::make_pair(iv::core::ToUString("^[\\12]$"),    iv::core::ToUString("\n")),
+    std::make_pair(iv::core::ToUString("^[\\12]$"),    iv::core::ToUString("\n")),
     std::make_pair(iv::core::ToUString("^\\xg$"),   iv::core::ToUString("xg")),
-    std::make_pair(iv::core::ToUString("^[\\xg]+$"),   iv::core::ToUString("xg"))
+    std::make_pair(iv::core::ToUString("^[\\xg]+$"),   iv::core::ToUString("xg")),
+    std::make_pair(iv::core::ToUString("^\\ug$"),   iv::core::ToUString("ug")),
+    std::make_pair(iv::core::ToUString("^[\\ug]+$"),   iv::core::ToUString("ug")),
+    std::make_pair(iv::core::ToUString("^[\\ug]+$"),   iv::core::ToUString("ug")),
+    std::make_pair(iv::core::ToUString("^\\a$"),   iv::core::ToUString("a")),
+    std::make_pair(iv::core::ToUString("^[\\a]$"),   iv::core::ToUString("a")),
+////    std::make_pair(iv::core::ToUString("^\\8$"),   iv::core::ToUString("8")),
+//    std::make_pair(iv::core::ToUString("^[\\8]$"),   iv::core::ToUString("8")),
+    std::make_pair(iv::core::ToUString("(?!a)+"),   iv::core::ToUString("")),
+    std::make_pair(iv::core::ToUString("{"),   iv::core::ToUString("{")),
+    std::make_pair(iv::core::ToUString("}"),   iv::core::ToUString("}")),
+    std::make_pair(iv::core::ToUString("\\c1"),   iv::core::ToUString("c1")),
+    std::make_pair(iv::core::ToUString("^[\\c1]+$"),   iv::core::ToUString("c1"))
   } };
 
   for (Matchers::const_iterator it = kMatchers.begin(),
@@ -170,20 +182,4 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, 0, vec.data()));
   }
-//exec(/\12/, "\n");
-//exec(/[\12]/, "\n");
-//exec(/\xg/, "xg");
-//exec(/[\xg]+/, "xg");
-//exec(/\ug/, "ug");
-//exec(/[\ug]+/, "ug");
-//exec(/\a/, "a");
-//exec(/[\a]/, "a");
-//exec(/\8/, "8");  
-//exec(/[\8]/, "8");
-//exec(/(?=a)+/, "");
-//exec(/(?!a)+/, "");
-//exec(/{/, "{");
-//exec(/}/, "}");
-//exec(/\c1/, "c1");
-//exec(/[\c1]+/, "c1");
 }

@@ -241,7 +241,7 @@ class Parser {
           Advance();
         }
       }
-      if (atom && character::IsQuantifierPrefixStart(c_)) {
+      if (atom && c_ >= 0 && character::IsQuantifierPrefixStart(c_)) {
         bool ok = false;
         target = ParseQuantifier(target, &ok, CHECK);
       }
@@ -373,6 +373,48 @@ class Parser {
       Advance();
     }
     return res;
+  }
+
+  double ParseNumericClassEscape() {
+    assert(core::character::IsDecimalDigit(c_));
+    const uint16_t ch = c_;
+    buffer8_.clear();
+
+    bool start_with_zero = false;
+    if (c_ == '0') {
+      start_with_zero = true;
+      Advance();
+      if (0 > c_ || !core::character::IsOctalDigit(c_)) {
+        return 0;
+      }
+    }
+
+    const std::size_t pos = pos_;
+    const bool octal_candidate = core::character::IsOctalDigit(c_);
+    while (true) {
+      if (c_ < '0' || '7' < c_) {
+        break;
+      }
+      buffer8_.push_back(c_);
+      Advance();
+    }
+
+    // octal digit like \07a
+    if (octal_candidate && (c_ < 0 || !core::character::IsDecimalDigit(c_))) {
+      return core::ParseIntegerOverflow(
+          buffer8_.data(),
+          buffer8_.data() + buffer8_.size(), 8);
+    }
+
+    // like \019
+    // divide \0 and 1 and 9
+    if (start_with_zero) {
+      Seek(pos);
+      return 0;
+    } else {
+      Seek(pos);
+      return ch;
+    }
   }
 
   double ParseDecimalInteger(int* e) {
@@ -509,20 +551,17 @@ class Parser {
           return core::character::code::ZWJ;
         }
         default: {
-          if (core::character::IsDecimalDigit(c_)) {
-            const double numeric = ParseDecimalInteger(e);
-            if (*e) {
-              return 0;
-            }
+          if (c_ < 0) {
+            *e = UNEXPECTED_CHARACTER;
+            return 0;
+          } else if (core::character::IsDecimalDigit(c_)) {
+            const double numeric = ParseNumericClassEscape();
             const uint16_t uc = static_cast<uint16_t>(numeric);
             if (uc != numeric) {
               *e = NUMBER_TOO_BIG;
               return 0;
             }
             return uc;
-          } else if (c_ < 0) {
-            *e = 1;
-            return 0;
           } else {
             const uint16_t ch = c_;
             Advance();
