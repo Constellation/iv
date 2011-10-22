@@ -39,13 +39,16 @@ namespace aero {
 
 class ParsedData {
  public:
-  ParsedData(Disjunction* dis, uint32_t max_captures)
-    : pattern_(dis), max_captures_(max_captures) { }
+  ParsedData(Disjunction* dis, uint32_t max_captures,
+             const core::UStringPiece& source)
+    : pattern_(dis), max_captures_(max_captures), source_(source) { }
   Disjunction* pattern() const { return pattern_; }
   uint32_t max_captures() const { return max_captures_; }
+  const core::UStringPiece& source() const { return source_; }
  private:
   Disjunction* pattern_;
   uint32_t max_captures_;
+  core::UStringPiece source_;
 };
 
 class Parser {
@@ -53,6 +56,7 @@ class Parser {
   static const std::size_t kMaxPatternSize = core::Size::MB;
   static const int EOS = -1;
   enum ErrorCode {
+    NONE = 0,
     UNEXPECTED_CHARACTER = 1,
     NUMBER_TOO_BIG = 2,
     INVALID_RANGE = 3,
@@ -76,14 +80,14 @@ class Parser {
   ParsedData ParsePattern(int* e) {
     if (source_.size() > kMaxPatternSize) {
       *e = TOO_LONG_REGEXP;
-      return ParsedData(NULL, captures_);
+      return ParsedData(NULL, captures_, source_);
     }
     Disjunction* dis = ParseDisjunction<EOS>(e);
     if (c_ != EOS) {
       *e = UNEXPECTED_CHARACTER;
-      return ParsedData(NULL, captures_);
+      return ParsedData(NULL, captures_, source_);
     }
-    return ParsedData(dis, captures_);
+    return ParsedData(dis, captures_, source_);
   }
 
  private:
@@ -219,7 +223,7 @@ class Parser {
           // PatternCharacter
           //
           // and add special cases like /]/
-          // see IE Blog 
+          // see IE Blog
           if (!character::IsPatternCharacter(c_) && (c_ != ']')) {
             UNEXPECT(c_);
           }
@@ -333,21 +337,17 @@ class Parser {
                                       NewRange(ranges_.GetEscapedRange('W')));
       }
       case '0': {
-        Advance();
-        return new(factory_)CharacterAtom('\0');
+        // maybe octal
+        const double numeric = ParseNumericClassEscape();
+        const uint16_t ch = static_cast<uint16_t>(numeric);
+        if (ch != numeric) {
+          RAISE(NUMBER_TOO_BIG);
+        }
+        return new(factory_)CharacterAtom(ch);
       }
       default: {
         if ('1' <= c_ && c_ <= '9') {
-          // not accept \0 as reference
-          const double numeric = ParseDecimalInteger(CHECK);
-          const uint16_t ref = static_cast<uint16_t>(numeric);
-          if (ref != numeric) {
-            RAISE(NUMBER_TOO_BIG);
-          }
-          // back reference validation is not done
-          // so, we should validate there is reference
-          // which back reference is targeting
-          return new(factory_)BackReferenceAtom(ref);
+          return ParseBackReference(e);
         } else if (c_ < 0) {
           UNEXPECT(c_);
         } else {
@@ -374,6 +374,40 @@ class Parser {
     }
     return res;
   }
+
+  Atom* ParseBackReference(int* e) {
+    // not accept \0 as reference
+    // ParseBackReference returns octal value and decimal value
+    // if octal value is invalid, zero is assigned.
+    assert(core::character::IsDecimalDigit(c_));
+    assert(c_ != '0');
+    buffer8_.clear();
+    bool octal_value_candidate = true;
+    while (0 <= c_ && core::character::IsDecimalDigit(c_)) {
+      if (!core::character::IsOctalDigit(c_)) {
+        octal_value_candidate = false;
+      }
+      buffer8_.push_back(c_);
+      Advance();
+    }
+    const double decimal =
+        core::ParseIntegerOverflow(
+            buffer8_.data(),
+            buffer8_.data() + buffer8_.size(), 10);
+    const double octal = (octal_value_candidate) ?
+        core::ParseIntegerOverflow(
+            buffer8_.data(),
+            buffer8_.data() + buffer8_.size(), 8) : 0;
+    const uint16_t ref = static_cast<uint16_t>(decimal);
+    if (ref != decimal) {
+      RAISE(NUMBER_TOO_BIG);
+    }
+    // back reference validation is not done
+    // so, we should validate there is reference
+    // which back reference is targeting
+    return new(factory_)BackReferenceAtom(ref, static_cast<uint16_t>(octal));
+  }
+
 
   double ParseNumericClassEscape() {
     assert(core::character::IsDecimalDigit(c_));
@@ -434,7 +468,7 @@ class Parser {
       Advance();
     }
     if (core::character::IsDecimalDigit(c_)) {
-      *e = 1;
+      *e = UNEXPECTED_CHARACTER;
       return 0.0;
     }
     return result;
@@ -615,7 +649,7 @@ class Parser {
         const double numeric1 = ParseDecimalInteger(e);
         if (*e) {
           // recovery pattern
-          *e = 0;
+          *e = NONE;
           Seek(pos);
           return target;
         }
@@ -642,7 +676,7 @@ class Parser {
             const double numeric2 = ParseDecimalInteger(e);
             if (*e) {
               // recovery pattern
-              *e = 0;
+              *e = NONE;
               Seek(pos);
               return target;
             }

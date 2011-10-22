@@ -125,11 +125,14 @@ class DisjunctionAssertion : public Assertion {
 
 class BackReferenceAtom : public Atom {
  public:
-  explicit BackReferenceAtom(uint16_t ref) : reference_(ref) { }
+  explicit BackReferenceAtom(uint16_t ref, uint16_t octal)
+    : reference_(ref), octal_(octal) { }
   uint16_t reference() const { return reference_; }
+  uint16_t octal() const { return octal_; }
   DECLARE_DERIVED_NODE_TYPE(BackReferenceAtom)
  private:
   uint16_t reference_;
+  uint16_t octal_;
 };
 
 class CharacterAtom : public Atom {

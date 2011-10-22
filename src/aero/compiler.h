@@ -146,17 +146,32 @@ class Compiler : private Visitor {
   }
 
   void Visit(BackReferenceAtom* atom) {
-    if (atom->reference() < max_captures_) {
+    const uint16_t ref = atom->reference();
+    if (ref < max_captures_) {
       if (IsIgnoreCase()) {
         Emit<OP::BACK_REFERENCE_IGNORE_CASE>();
       } else {
         Emit<OP::BACK_REFERENCE>();
       }
-      Emit2(atom->reference());
+      Emit2(ref);
     } else {
       // reference not found.
       // we treat /\2/ as escaped unicode, code number is 2.
-      EmitCharacter(atom->reference());
+      // but, if not octal value (like /\18/) comes,
+      // we expand it \1 and 8
+      const uint16_t octal = atom->octal();
+      if (octal) {
+        EmitCharacter(octal);
+      } else {
+        // expand it
+        typedef std::array<uint16_t, 10> Buffer;
+        EmitCharacter('\\');
+        Buffer buffer;
+        Buffer::const_iterator last = core::UInt32ToString(ref, buffer.data());
+        for (Buffer::const_iterator it = buffer.begin(); it != last; ++it) {
+          EmitCharacter(*it);
+        }
+      }
     }
   }
 
