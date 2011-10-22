@@ -178,4 +178,67 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
     ASSERT_TRUE(error);
     ASSERT_FALSE(data.pattern());
   }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("a{20,10}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("{20,10}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("+");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("*");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("{20}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("{20,}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("{0,2}");
+    iv::lv5::aero::Parser parser(&space, str, iv::lv5::aero::NONE);
+    int error = 0;
+    iv::lv5::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_TRUE(error);
+    ASSERT_FALSE(data.pattern());
+  }
 }

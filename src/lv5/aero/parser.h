@@ -225,7 +225,17 @@ class Parser {
             UNEXPECT(c_);
           }
           // AtomNoBrace or Atom
-          if (!character::IsBrace(c_)) {
+          if (character::IsBrace(c_)) {
+            // check this is not Quantifier format
+            // if Quantifier format, reject it.
+            if (c_ == '{') {
+              bool ok = false;
+              ParseQuantifier(NULL, &ok, CHECK);
+              if (ok) {
+                UNEXPECT('{');
+              }
+            }
+          } else {
             atom = true;
           }
           target = new(factory_)CharacterAtom(c_);
@@ -233,7 +243,8 @@ class Parser {
         }
       }
       if (atom && character::IsQuantifierPrefixStart(c_)) {
-        target = ParseQuantifier(target);
+        bool ok = false;
+        target = ParseQuantifier(target, &ok, CHECK);
       }
       assert(target);
       vec->push_back(target);
@@ -527,7 +538,7 @@ class Parser {
     }
   }
 
-  Expression* ParseQuantifier(Expression* target) {
+  Expression* ParseQuantifier(Expression* target, bool* ok, int* e) {
     // this is extended ES5 RegExp
     // see http://wiki.ecmascript.org/doku.php?id=harmony:regexp_match_web_reality
 
@@ -559,12 +570,14 @@ class Parser {
       case '{': {
         Advance();
         if (!core::character::IsDecimalDigit(c_)) {
+          // recovery pattern
           Seek(pos);
           return target;
         }
-        int e = 0;
-        const double numeric1 = ParseDecimalInteger(&e);
-        if (e) {
+        const double numeric1 = ParseDecimalInteger(e);
+        if (*e) {
+          // recovery pattern
+          *e = 0;
           Seek(pos);
           return target;
         }
@@ -573,8 +586,9 @@ class Parser {
         } else {
           min = static_cast<int32_t>(numeric1);
           if (min != numeric1) {
+            // not recovery pattern
             Seek(pos);
-            return target;
+            RAISE(NUMBER_TOO_BIG);
           }
         }
         if (c_ == ',') {
@@ -583,12 +597,14 @@ class Parser {
             max = kRegExpInfinity;
           } else {
             if (!core::character::IsDecimalDigit(c_)) {
+              // recovery pattern
               Seek(pos);
               return target;
             }
-            int e = 0;
-            const double numeric2 = ParseDecimalInteger(&e);
-            if (e) {
+            const double numeric2 = ParseDecimalInteger(e);
+            if (*e) {
+              // recovery pattern
+              *e = 0;
               Seek(pos);
               return target;
             }
@@ -597,8 +613,9 @@ class Parser {
             } else {
               max = static_cast<int32_t>(numeric2);
               if (max != numeric2) {
+                // not recovery pattern
                 Seek(pos);
-                return target;
+                RAISE(NUMBER_TOO_BIG);
               }
             }
           }
@@ -606,6 +623,7 @@ class Parser {
           max = min;
         }
         if (c_ != '}') {
+          // recovery pattern
           Seek(pos);
           return target;
         }
@@ -613,13 +631,15 @@ class Parser {
         break;
       }
       default: {
+        // recovery pattern
         Seek(pos);
         return target;
       }
     }
     if (max < min) {
+      // not recovery pattern
       Seek(pos);
-      return target;
+      RAISE(INVALID_QUANTIFIER);
     }
     // postfix
     bool greedy = true;
@@ -629,6 +649,7 @@ class Parser {
         greedy = false;
       }
     }
+    *ok = true;
     if (min == max && min == 1) {
       assert(max == 1);
       return target;
