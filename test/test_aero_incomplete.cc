@@ -158,7 +158,7 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
     std::make_pair(iv::core::ToUString("^[\\ug]+$"),   iv::core::ToUString("ug")),
     std::make_pair(iv::core::ToUString("^\\a$"),   iv::core::ToUString("a")),
     std::make_pair(iv::core::ToUString("^[\\a]$"),   iv::core::ToUString("a")),
-    std::make_pair(iv::core::ToUString("^\\8$"),   iv::core::ToUString("\\8")),
+    std::make_pair(iv::core::ToUString("^\\8$"),   iv::core::ToUString(8)),
     std::make_pair(iv::core::ToUString("^[\\8]$"),   iv::core::ToUString("8")),
     std::make_pair(iv::core::ToUString("(?!a)+"),   iv::core::ToUString("")),
     std::make_pair(iv::core::ToUString("{"),   iv::core::ToUString("{")),

@@ -447,7 +447,7 @@ class Parser {
       return 0;
     } else {
       Seek(pos);
-      return ch;
+      return ch - '0';
     }
   }
 

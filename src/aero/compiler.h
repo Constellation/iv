@@ -165,10 +165,11 @@ class Compiler : private Visitor {
       } else {
         // expand it
         typedef std::array<uint16_t, 10> Buffer;
-        EmitCharacter('\\');
         Buffer buffer;
         Buffer::const_iterator last = core::UInt32ToString(ref, buffer.data());
-        for (Buffer::const_iterator it = buffer.begin(); it != last; ++it) {
+        Buffer::const_iterator it = buffer.begin();
+        EmitCharacter(*it++ - '0');
+        for (; it != last; ++it) {
           EmitCharacter(*it);
         }
       }
