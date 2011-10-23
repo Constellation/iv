@@ -1,9 +1,11 @@
 #ifndef IV_PLATFORM_MATH_H_
 #define IV_PLATFORM_MATH_H_
+#include <cmath>
 #include "platform.h"
-#if defined(IV_COMPILER_MSVC)
 namespace iv {
 namespace core {
+
+#if defined(IV_COMPILER_MSVC)
 
 // http://msdn.microsoft.com/library/tzthab44.aspx
 inline int IsNaN(double val) {
@@ -40,11 +42,7 @@ inline double Modulo(double x, double y) {
   return x;
 }
 
-} }  // namespace iv::core
 #else
-#include <cmath>
-namespace iv {
-namespace core {
 
 inline int IsNaN(double val) {
   return std::isnan(val);
@@ -66,6 +64,6 @@ inline double Modulo(double x, double y) {
   return std::fmod(x, y);
 }
 
-} }  // namespace iv::core
 #endif
+} }  // namespace iv::core
 #endif  // IV_PLATFORM_MATH_H_
