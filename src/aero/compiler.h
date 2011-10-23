@@ -163,10 +163,10 @@ class Compiler : private Visitor {
       if (octal) {
         EmitCharacter(octal);
       } else {
-        // expand it
+        // expand \18 to \1 and 8
         typedef std::array<uint16_t, 10> Buffer;
         Buffer buffer = { { } };
-        Buffer::const_iterator last = core::UInt32ToString(ref, buffer.data());
+        Buffer::const_iterator last = core::UInt32ToString(ref, buffer.begin());
         Buffer::const_iterator it = buffer.begin();
         EmitCharacter(*it++ - '0');
         for (; it != last; ++it) {
