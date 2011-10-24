@@ -20,6 +20,17 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
+    iv::core::UString str = iv::core::ToUString("t+");
+    iv::aero::Parser parser(&space, str, iv::aero::IGNORE_CASE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    disasm.DisAssemble(*code.get());
+  }
+  {
+    space.Clear();
     iv::core::UString str = iv::core::ToUString("[\\u0000-\\uFFFF]");
     iv::aero::Parser parser(&space, str, iv::aero::IGNORE_CASE);
     int error = 0;

@@ -198,6 +198,10 @@ class Compiler : private Visitor {
         return;
       }
     }
+    EmitCharacterRaw(ch);
+  }
+
+  void EmitCharacterRaw(uint16_t ch) {
     if (ch > 0xFF) {
       Emit<OP::CHECK_2BYTE_CHAR>();
       Emit2(ch);
@@ -209,6 +213,13 @@ class Compiler : private Visitor {
 
   void Visit(RangeAtom* atom) {
     const uint32_t len = atom->ranges().size() * 4;
+    if (len == 1) {
+      Range range = atom->ranges().front();
+      if (range.first == range.second) {
+        EmitCharacterRaw(range.first);
+        return;
+      }
+    }
     if (atom->inverted()) {
       Emit<OP::CHECK_RANGE_INVERTED>();
     } else {
