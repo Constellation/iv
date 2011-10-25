@@ -40,8 +40,6 @@ class Arena : private core::Noncopyable<Arena> {
     typedef iterator_base<typename std::remove_const<T>::type> iterator;
     typedef iterator_base<typename std::add_const<T>::type> const_iterator;
 
-    iterator_base() : ptr_(NULL) { }
-
     iterator_base(pointer ptr) : ptr_(ptr) { }  // NOLINT
 
     iterator_base(const iterator& it) : ptr_(it.ptr()) { }  // NOLINT

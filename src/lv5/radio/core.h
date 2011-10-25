@@ -17,8 +17,12 @@ class Core : private core::Noncopyable<Core> {
   Core()
     : working_(new Arena()),
       handles_(),
-      stack_() {
+      stack_(),
+      controls_() {
     stack_.reserve(kInitialMarkStackSize);
+    for (std::size_t i = 3, i < 16; ++i) {
+      controls_.Initialize(1 << i);
+    }
   }
 
   ~Core() {
@@ -44,13 +48,19 @@ class Core : private core::Noncopyable<Core> {
   // allocate memory for radio::Cell
   template<typename T>
   Cell* Allocate() {
-    return GetTargetBlock(IV_ROUNDUP(sizeof(T), 2))->Allocate(this);
+    typedef std::is_base_of<Cell, T> cond;
+    IV_STATIC_ASSERT(cond::value);
+    IV_STATIC_ASSERT(sizeof(T) >= 8);
+    IV_STATIC_ASSERT(sizeof(T) <= (1 << 18));
+    return GetBlockControl(CLP2(sizeof(T)))->Allocate(this);
   }
 
  private:
-  Block* GetTargetBlock(std::size_t size) {
+  BlockControl* GetBlockControl(std::size_t size) {
     assert(size % 2 == 0);
-    return NULL;
+    // first block bytes is 8
+    const std::size_t n = NLZ64(size) - 3;
+    return &controls_[n];
   }
 
   void Mark() { }
@@ -62,6 +72,7 @@ class Core : private core::Noncopyable<Core> {
   Arena* working_;
   std::vector<Cell*> handles_;  // scoped handles
   std::vector<Cell*> stack_;  // mark stack
+  std::array<BlockControl, 13> controls_;  // blocks. first block is 8 bytes
 };
 
 } } }  // namespace iv::lv5::radio
