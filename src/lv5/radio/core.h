@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "functor.h"
 #include "lv5/radio/core_fwd.h"
+#include "lv5/radio/scope.h"
 #include "lv5/radio/block_control.h"
 namespace iv {
 namespace lv5 {
@@ -36,6 +37,12 @@ inline Core::~Core() {
 inline Cell* Core::AllocateFrom(BlockControl* control) {
   assert(control);
   return control->Allocate(this);
+}
+
+inline void Core::EnterScope(Scope* scope) {
+}
+
+inline void Core::ExitScope(Scope* scope) {
 }
 
 } } }  // namespace iv::lv5::radio

@@ -18,6 +18,7 @@ namespace radio {
 static const std::size_t kInitialMarkStackSize = 64;
 
 class BlockControl;
+class Scope;
 
 class Core : private core::Noncopyable<Core> {
  public:
@@ -67,6 +68,9 @@ class Core : private core::Noncopyable<Core> {
     AddArena();
     return AllocateBlock(size);
   }
+
+  void EnterScope(Scope* scope);
+  void ExitScope(Scope* scope);
 
  private:
   Cell* AllocateFrom(BlockControl* control);

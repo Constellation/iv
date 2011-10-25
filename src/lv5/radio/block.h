@@ -12,7 +12,7 @@ namespace iv {
 namespace lv5 {
 namespace radio {
 
-static const std::size_t kBlockSize = core::Size::KB * 4;
+static const std::size_t kBlockSize = core::Size::KB * 512;
 
 class Block : private core::Noncopyable<Block> {
  public:
