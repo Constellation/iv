@@ -14,7 +14,6 @@ namespace iv {
 namespace lv5 {
 namespace radio {
 
-static const std::size_t kBlockSize = core::Size::KB * 4;
 static const std::size_t kBlocks = 64;
 static const std::size_t kArenaSize =
     IV_ALIGNED_SIZE(kBlockSize * kBlocks, kBlockSize);

@@ -1,7 +1,9 @@
 #ifndef IV_LV5_RADIO_BLOCK_H_
 #define IV_LV5_RADIO_BLOCK_H_
 #include <new>
+#include "detail/cstdint.h"
 #include "utils.h"
+#include "debug.h"
 #include "noncopyable.h"
 #include "lv5/radio/cell.h"
 // this is radio::Block
@@ -9,6 +11,8 @@
 namespace iv {
 namespace lv5 {
 namespace radio {
+
+static const std::size_t kBlockSize = core::Size::KB * 4;
 
 class Block : private core::Noncopyable<Block> {
  public:
@@ -18,7 +22,9 @@ class Block : private core::Noncopyable<Block> {
   typedef const char* const_memory_type;
 
   Block(size_type object_size)
-    : object_size_(object_size) { }
+    : object_size_(object_size) {
+    assert((reinterpret_cast<uintptr_t>(this) % kBlockSize) == 0);
+  }
 
   size_type GetControlSize() const {
     return IV_ROUNDUP(sizeof(this_type), object_size_);
