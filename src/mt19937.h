@@ -11,29 +11,52 @@
 #ifndef IV_MT19937_H_
 #define IV_MT19937_H_
 #include <vector>
+#include <ctime>
 #include "detail/cstdint.h"
 namespace iv {
 namespace core {
 
 class MT19937 {
  public:
+  typedef ::uint32_t result_type;
+  MT19937()
+    : mti_(N+1) {
+    seed();
+  }
+
   explicit MT19937(uint32_t s)
-     : mti_(N+1) {
-    InitGenRand(s);
+    : mti_(N+1) {
+    seed(s);
   }
 
-  MT19937(const uint32_t* vec, int len)
-     : mti_(N+1) {
-    InitByArray(vec, len);
+  static result_type min() {
+    return limits::min();
   }
 
-  explicit MT19937(const std::vector<uint32_t>& vec)
-     : mti_(N+1) {
-    InitByArray(vec.begin(), vec.size());
+  static result_type max() {
+    return limits::max();
   }
 
-  uint32_t GenInt32() {
-    uint32_t y;
+  void seed() {
+    seed(static_cast<result_type>(std::time(NULL)));
+  }
+
+  void seed(result_type s) {
+    mt_[0] = s & 0xffffffffUL;
+    for (mti_ = 1; mti_ < N; ++mti_) {
+      mt_[mti_] = (1812433253UL * (mt_[mti_-1] ^ (mt_[mti_-1] >> 30)) + mti_);
+      mt_[mti_] &= 0xffffffffUL;
+    }
+  }
+
+  void discard(std::size_t count) {
+    for (std::size_t i = 0; i < count; ++i) {
+      (*this)();
+    }
+  }
+
+  result_type operator()() {
+    result_type y;
     if (mti_ >= N) {
       int kk;
       for (kk = 0; kk < N-M; ++kk) {
@@ -58,44 +81,20 @@ class MT19937 {
     return y;
   }
 
-  uint32_t operator()() {
-    return GenInt32();
+  MT19937(const uint32_t* vec, int len)
+    : mti_(N+1) {
+    InitByArray(vec, len);
   }
 
-  int32_t GenInt31() {
-    return static_cast<int32_t>(GenInt32() >> 1);
-  }
-
-  double GenReal1() {
-    return GenInt32() * (1.0 / 4294967295.0);
-  }
-
-  double GenReal2() {
-    return GenInt32() * (1.0 / 4294967296.0);
-  }
-
-  double GenReal3() {
-    return (static_cast<double>(GenInt32()) + 0.5) * (1.0 / 4294967296.0);
-  }
-
-  double GenReal53() {
-    const uint32_t a = GenInt32() >> 5;
-    const uint32_t b = GenInt32() >> 6;
-    return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
+  explicit MT19937(const std::vector<uint32_t>& vec)
+    : mti_(N+1) {
+    InitByArray(vec.begin(), vec.size());
   }
 
  private:
-  void InitGenRand(uint32_t s) {
-    mt_[0] = s & 0xffffffffUL;
-    for (mti_ = 1; mti_ < N; ++mti_) {
-      mt_[mti_] = (1812433253UL * (mt_[mti_-1] ^ (mt_[mti_-1] >> 30)) + mti_);
-      mt_[mti_] &= 0xffffffffUL;
-    }
-  }
-
   template<typename I>
   void InitByArray(const I vec, const int len) {
-    InitGenRand(19650218UL);
+    seed(19650218UL);
     int i = 1, j = 0;
     for (int k = (N > len ? N : len); k; k--) {
       mt_[i] = (mt_[i] ^ ((mt_[i-1] ^ (mt_[i-1] >> 30)) * 1664525UL))
@@ -124,6 +123,7 @@ class MT19937 {
     mt_[0] = 0x80000000UL;  // MSB is 1; assuring non-zero initial array
   }
 
+  typedef std::numeric_limits<result_type> limits;
   static const int N = 624;
   static const int M = 397;
   static const uint32_t MATRIX_A = 0x9908b0dfUL;    // constant vector a
@@ -134,42 +134,5 @@ class MT19937 {
   int mti_;
 };
 
-namespace detail {
-
-template<typename T>
-class UniformIntDistribution {
- public:
-  UniformIntDistribution(T min, T max)
-    : min_(min),
-      max_(max) {
-  }
-  template<typename EngineType>
-  T operator()(EngineType& engine) {  // NOLINT
-    return engine() % (max_ - min_ + 1) + min_;
-  }
- private:
-  const T min_;
-  const T max_;
-};
-
-template<typename T>
-class UniformRealDistribution {
- public:
-  UniformRealDistribution(T min, T max)
-    : min_(min),
-      max_(max) {
-  }
-  template<typename EngineType>
-  T operator()(EngineType& engine) {  // NOLINT
-    const uint32_t a = engine() >> 5;
-    const uint32_t b = engine() >> 6;
-    return (a * 67108864.0 + b)
-        * (1.0 / 9007199254740992.0) * (max_ - min_) + min_;
-  }
- private:
-  const T min_;
-  const T max_;
-};
-
-} } }  // namespace iv::core::detail
+} }  // namespace iv::core
 #endif  // IV_MT19937_H_
