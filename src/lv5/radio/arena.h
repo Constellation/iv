@@ -3,8 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
-#include <iostream>
 #include "detail/cstdint.h"
+#include "detail/type_traits.h"
 #include "utils.h"
 #include "noncopyable.h"
 #include "os_allocator.h"
@@ -39,9 +39,14 @@ class Arena : private core::Noncopyable<Arena> {
     typedef typename super_type::reference reference;
     typedef const typename super_type::reference const_reference;
     typedef typename super_type::difference_type difference_type;
+    typedef iterator_base<typename std::remove_const<T>::type> iterator;
+    typedef iterator_base<typename std::add_const<T>::type> const_iterator;
 
     iterator_base() : ptr_(NULL) { }
-    explicit iterator_base(pointer ptr) : ptr_(ptr) { }
+
+    iterator_base(pointer ptr) : ptr_(ptr) { }  // NOLINT
+
+    iterator_base(const iterator& it) : ptr_(it.ptr()) { }  // NOLINT
 
     reference operator*() const {
       return *ptr_;
@@ -49,6 +54,9 @@ class Arena : private core::Noncopyable<Arena> {
     reference operator[](difference_type d) const {
       return *reinterpret_cast<pointer>(
           reinterpret_cast<uintptr_t>(ptr_) + d * kBlockSize);
+    }
+    pointer operator->() const {
+      return ptr_;
     }
     this_type& operator++() {
       return ((*this) += 1);
@@ -107,6 +115,8 @@ class Arena : private core::Noncopyable<Arena> {
       return (reinterpret_cast<uintptr_t>(lhs.ptr_) -
               reinterpret_cast<uintptr_t>(rhs.ptr_)) / kBlockSize;
     }
+
+    pointer ptr() const { return ptr_; }
 
    private:
     pointer ptr_;
