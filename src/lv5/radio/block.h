@@ -147,14 +147,16 @@ class Block : private core::Noncopyable<Block> {
   iterator end() {
     return iterator(
         (reinterpret_cast<Cell*>(
-                reinterpret_cast<uintptr_t>(this) + GetControlSize()) + size()),
+                reinterpret_cast<uintptr_t>(this) +
+                GetControlSize() + cell_size() * size())),
         cell_size());
   }
 
   const_iterator end() const {
     return const_iterator(
         (reinterpret_cast<const Cell*>(
-                reinterpret_cast<uintptr_t>(this) + GetControlSize()) + size()),
+                reinterpret_cast<uintptr_t>(this) +
+                GetControlSize() + cell_size() * size())),
         cell_size());
   }
 

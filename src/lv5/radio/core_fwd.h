@@ -37,10 +37,10 @@ class Core : private core::Noncopyable<Core> {
       Block* block = &*it;
       ++it;
       if (it != last) {
+        block->set_next(&*it);
+      } else {
         block->set_next(NULL);
         break;
-      } else {
-        block->set_next(&*it);
       }
     }
   }

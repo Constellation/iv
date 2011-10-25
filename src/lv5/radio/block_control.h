@@ -39,10 +39,10 @@ class BlockControl : private core::Noncopyable<BlockControl> {
       Cell* cell = &*it;
       ++it;
       if (it != last) {
+        cell->set_next(&*it);
+      } else {
         cell->set_next(NULL);
         break;
-      } else {
-        cell->set_next(&*it);
       }
     }
   }
