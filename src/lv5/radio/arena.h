@@ -3,7 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
-#include "detail/type_traits.h"
+#include <iostream>
+#include "detail/cstdint.h"
 #include "utils.h"
 #include "noncopyable.h"
 #include "os_allocator.h"
@@ -13,24 +14,25 @@ namespace iv {
 namespace lv5 {
 namespace radio {
 
+static const std::size_t kBlockSize = core::Size::KB * 4;
+static const std::size_t kBlocks = 64;
+static const std::size_t kArenaSize =
+    IV_ALIGNED_SIZE(kBlockSize * kBlocks, kBlockSize);
+
 // radio::Arena has 64 Blocks
 class Arena : private core::Noncopyable<Arena> {
  public:
   typedef Arena this_type;
   typedef std::size_t size_type;
 
-  static const size_type kBlockSize = core::Size::KB * 4;
-  static const size_type kBlocks = 64;
-  static const size_type kArenaSize =
-      IV_ALIGNED_SIZE(kBlockSize * kBlocks, kBlockSize);
 
   // iterator
   // http://episteme.wankuma.com/stlprog/_02.html
-  template<typename T, typename CharPointer>
+  template<typename T>
   class iterator_base
     : public std::iterator<std::random_access_iterator_tag, T> {
    public:
-    typedef iterator_base<T, CharPointer> this_type;
+    typedef iterator_base<T> this_type;
     typedef std::iterator<std::random_access_iterator_tag, T> super_type;
     typedef typename super_type::pointer pointer;
     typedef const typename super_type::pointer const_pointer;
@@ -46,7 +48,7 @@ class Arena : private core::Noncopyable<Arena> {
     }
     reference operator[](difference_type d) const {
       return *reinterpret_cast<pointer>(
-          reinterpret_cast<CharPointer>(ptr_) + d * Arena::kBlockSize);
+          reinterpret_cast<uintptr_t>(ptr_) + d * kBlockSize);
     }
     this_type& operator++() {
       return ((*this) += 1);
@@ -66,7 +68,7 @@ class Arena : private core::Noncopyable<Arena> {
     }
     this_type& operator+=(difference_type d) {
       ptr_ = reinterpret_cast<pointer>(
-          reinterpret_cast<CharPointer>(ptr_) + Arena::kBlockSize * d);
+          reinterpret_cast<uintptr_t>(ptr_) + kBlockSize * d);
       return *this;
     }
     this_type& operator-=(difference_type d) {
@@ -102,16 +104,16 @@ class Arena : private core::Noncopyable<Arena> {
     }
     friend difference_type operator-(const this_type& lhs,
                                      const this_type& rhs) {
-      return (reinterpret_cast<CharPointer>(lhs.ptr_) -
-              reinterpret_cast<CharPointer>(rhs.ptr_)) / Arena::kBlockSize;
+      return (reinterpret_cast<uintptr_t>(lhs.ptr_) -
+              reinterpret_cast<uintptr_t>(rhs.ptr_)) / kBlockSize;
     }
 
    private:
     pointer ptr_;
   };
 
-  typedef iterator_base<Block, char*> iterator;
-  typedef iterator_base<const Block, const char*> const_iterator;
+  typedef iterator_base<Block> iterator;
+  typedef iterator_base<const Block> const_iterator;
 
   explicit Arena(Arena* prev)
     : next_(NULL),
@@ -141,13 +143,13 @@ class Arena : private core::Noncopyable<Arena> {
   iterator end() {
     return iterator(
         reinterpret_cast<Block*>(
-            reinterpret_cast<Block*>(block_) + kBlockSize * kBlocks));
+            reinterpret_cast<uintptr_t>(block_) + kBlockSize * kBlocks));
   }
 
   const_iterator end() const {
     return const_iterator(
         reinterpret_cast<const Block*>(
-            reinterpret_cast<const Block*>(block_) + kBlockSize * kBlocks));
+            reinterpret_cast<uintptr_t>(block_) + kBlockSize * kBlocks));
   }
 
   const_iterator cend() const {
