@@ -16,14 +16,19 @@ enum CellTag {
 
 class Cell {
  public:
-  explicit Cell(int tag) : tag_(tag) { }
+  explicit Cell(int tag) : tag_(tag), next_(NULL) { }
 
   int tag() const {
     return tag_;
   }
 
+  Cell* next() const { return next_; }
+
+  void set_next(Cell* cell) { next_ = next; }
+
  private:
   int tag_;
+  Cell* next_;
 };
 
 template<CellTag TAG = POINTER>
