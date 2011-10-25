@@ -21,6 +21,16 @@ class Core : private core::Noncopyable<Core> {
     stack_.reserve(kInitialMarkStackSize);
   }
 
+  ~Core() {
+    // Destroy All Arenas
+    for (Arena* arena = working_; arena;) {
+      Arena* next = arena->prev();
+      arena->DestroyAllCells();
+      arena->~Arena();
+      arena = next;
+    }
+  }
+
   void AddArena() {
     working_ = new Arena(working_);
   }

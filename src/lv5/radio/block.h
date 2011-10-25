@@ -85,6 +85,9 @@ class Block : private core::Noncopyable<Block> {
     top_ = cell;
   }
 
+  void DestroyAllCells() {
+  }
+
  private:
   size_type object_size_;
   Cell* top_;
