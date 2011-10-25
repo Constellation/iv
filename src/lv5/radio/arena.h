@@ -170,6 +170,12 @@ class Arena : private core::Noncopyable<Arena> {
     core::OSAllocator::Deallocate(top_, kArenaSize);
   }
 
+  void DestroyAllBlocks() {
+    for (iterator it = begin(), last = end(); it != last; ++it) {
+      it->DestroyAllCells();
+    }
+  }
+
   size_type size() const { return kBlocks; }
  private:
   void Initialize() {
@@ -177,12 +183,6 @@ class Arena : private core::Noncopyable<Arena> {
     block_ = reinterpret_cast<Block*>(
         IV_ALIGNED_ADDRESS(reinterpret_cast<uintptr_t>(top_), kBlockSize));
     core::OSAllocator::Commit(top_, kArenaSize);
-  }
-
-  void DestroyAllBlocks() {
-    for (iterator it = begin(), last = end(); it != last; ++it) {
-      it->DestroyAllCells();
-    }
   }
 
   Arena* next_;
