@@ -8,7 +8,7 @@ namespace radio {
 
 class Scope : private core::Noncopyable<Scope> {
  public:
-  Scope(Core* core)
+  explicit Scope(Core* core)
     : core_(core) {
     core_->EnterScope(this);
   }
