@@ -27,7 +27,7 @@ class Arena : private core::Noncopyable<Arena> {
 
 
   // iterator
-  // http://episteme.wankuma.com/stlprog/_02.html
+  // see http://stackoverflow.com/questions/2150192/how-to-avoid-code-duplication-implementing-const-and-non-const-iterators
   template<typename T>
   class iterator_base
     : public std::iterator<std::random_access_iterator_tag, T> {
