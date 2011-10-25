@@ -28,7 +28,7 @@ class Malloced {
     return result;
   }
   static void OutOfMemory() {
-    std::printf("OUT OF MEMORY!");
+    std::puts("OUT OF MEMORY!");
     std::abort();
   }
   static inline void Delete(void* p) {
