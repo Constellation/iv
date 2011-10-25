@@ -36,6 +36,11 @@ class AlignOfImpl {
 
 #define AlignType(offset, type) AlignOffset(offset, AlignOf(type))
 
+// see http://www5d.biglobe.ne.jp/~noocyte/Programming/BigAlignmentBlock.html
+#define IV_ALIGNED_SIZE(size, alignment) ((size) + (alignment) - 1)
+#define IV_ALIGNED_ADDRESS(address, alignment)\
+  ((address + (alignment - 1)) & ~(alignment - 1))
+
 #define IV_ROUNDUP(x, y)\
   (((x) + (y - 1)) & ~(y - 1))
 
