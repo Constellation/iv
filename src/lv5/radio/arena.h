@@ -24,7 +24,6 @@ class Arena : private core::Noncopyable<Arena> {
   typedef Arena this_type;
   typedef std::size_t size_type;
 
-
   // iterator
   // see http://stackoverflow.com/questions/2150192/how-to-avoid-code-duplication-implementing-const-and-non-const-iterators
   template<typename T>
