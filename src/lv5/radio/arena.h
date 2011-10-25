@@ -3,9 +3,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
+#include "detail/type_traits.h"
 #include "utils.h"
 #include "noncopyable.h"
 #include "os_allocator.h"
+#include "static_assert.h"
 #include "lv5/radio/block.h"
 namespace iv {
 namespace lv5 {
@@ -13,6 +15,7 @@ namespace radio {
 
 // radio::Arena has 64 Blocks
 class Arena : private core::Noncopyable<Arena> {
+ public:
   typedef Arena this_type;
   typedef std::size_t size_type;
 
@@ -25,16 +28,25 @@ class Arena : private core::Noncopyable<Arena> {
   // http://episteme.wankuma.com/stlprog/_02.html
   template<typename T, typename CharPointer>
   class iterator_base
-    : public std::iterator<std::random_access_iterator_tag, Block> {
+    : public std::iterator<std::random_access_iterator_tag, T> {
    public:
     typedef iterator_base<T, CharPointer> this_type;
+    typedef std::iterator<std::random_access_iterator_tag, T> super_type;
+    typedef typename super_type::pointer pointer;
+    typedef const typename super_type::pointer const_pointer;
+    typedef typename super_type::reference reference;
+    typedef const typename super_type::reference const_reference;
+    typedef typename super_type::difference_type difference_type;
 
-    iterator() : ptr_(NULL) { }
+    iterator_base() : ptr_(NULL) { }
+    explicit iterator_base(pointer ptr) : ptr_(ptr) { }
+
     reference operator*() const {
       return *ptr_;
     }
     reference operator[](difference_type d) const {
-      reinterpret_cast<pointer>(reinterpret_cast<CharPointer>(ptr_) + d * kBlockSize);
+      return *reinterpret_cast<pointer>(
+          reinterpret_cast<CharPointer>(ptr_) + d * Arena::kBlockSize);
     }
     this_type& operator++() {
       return ((*this) += 1);
@@ -54,7 +66,7 @@ class Arena : private core::Noncopyable<Arena> {
     }
     this_type& operator+=(difference_type d) {
       ptr_ = reinterpret_cast<pointer>(
-          reinterpret_cast<CharPointer>(ptr_) + kBlockSize * d);
+          reinterpret_cast<CharPointer>(ptr_) + Arena::kBlockSize * d);
       return *this;
     }
     this_type& operator-=(difference_type d) {
@@ -64,7 +76,7 @@ class Arena : private core::Noncopyable<Arena> {
     friend bool operator==(const this_type& lhs, const this_type& rhs) {
       return lhs.ptr_ == rhs.ptr_;
     }
-    friend bool operator==(const this_type& lhs, const this_type& rhs) {
+    friend bool operator!=(const this_type& lhs, const this_type& rhs) {
       return lhs.ptr_ != rhs.ptr_;
     }
     friend bool operator<(const this_type& lhs, const this_type& rhs) {
@@ -91,7 +103,7 @@ class Arena : private core::Noncopyable<Arena> {
     friend difference_type operator-(const this_type& lhs,
                                      const this_type& rhs) {
       return (reinterpret_cast<CharPointer>(lhs.ptr_) -
-              reinterpret_cast<CharPointer>(rhs.ptr_)) / kBlockSize;
+              reinterpret_cast<CharPointer>(rhs.ptr_)) / Arena::kBlockSize;
     }
 
    private:
@@ -115,11 +127,11 @@ class Arena : private core::Noncopyable<Arena> {
   }
 
   iterator begin() {
-    return iterator(top_);
+    return static_cast<iterator>(block_);
   }
 
   const_iterator begin() const {
-    return const_iterator(top_);
+    return const_iterator(block_);
   }
 
   const_iterator cbegin() const {
@@ -129,13 +141,13 @@ class Arena : private core::Noncopyable<Arena> {
   iterator end() {
     return iterator(
         reinterpret_cast<Block*>(
-            reinterpret_cast<Block*>(top_) + kBlockSize * kBlocks));
+            reinterpret_cast<Block*>(block_) + kBlockSize * kBlocks));
   }
 
   const_iterator end() const {
     return const_iterator(
         reinterpret_cast<const Block*>(
-            reinterpret_cast<const Block*>(top_) + kBlockSize * kBlocks));
+            reinterpret_cast<const Block*>(block_) + kBlockSize * kBlocks));
   }
 
   const_iterator cend() const {
@@ -150,7 +162,8 @@ class Arena : private core::Noncopyable<Arena> {
  private:
   void Initialize() {
     top_ = core::OSAllocator::Allocate(kArenaSize);
-    data_ = reinterpret_cast<Block*>(IV_ALIGNED_ADDRESS(top_, kBlockSize));
+    block_ = reinterpret_cast<Block*>(
+        IV_ALIGNED_ADDRESS(reinterpret_cast<uintptr_t>(top_), kBlockSize));
     core::OSAllocator::Commit(top_, kArenaSize);
   }
 

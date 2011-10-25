@@ -24,7 +24,7 @@ class Cell {
 
   Cell* next() const { return next_; }
 
-  void set_next(Cell* cell) { next_ = next; }
+  void set_next(Cell* cell) { next_ = cell; }
 
  private:
   int tag_;

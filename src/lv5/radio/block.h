@@ -20,7 +20,7 @@ class Block : private core::Noncopyable<Block> {
   Block(size_type object_size)
     : object_size_(object_size) { }
 
-  static size_type GetControlSize() {
+  size_type GetControlSize() const {
     return IV_ROUNDUP(sizeof(this_type), object_size_);
   }
 
@@ -50,7 +50,7 @@ class Block : private core::Noncopyable<Block> {
 
   template<typename Func>
   void Iterate(Func func) const {
-    for (const_memory_type data = begin(), last = end(),
+    for (const_memory_type data = begin(), last = end();
          data < last; data += object_size_) {
       func(reinterpret_cast<const Cell*>(data));
     }
