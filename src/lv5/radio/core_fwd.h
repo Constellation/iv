@@ -2,6 +2,7 @@
 #ifndef IV_LV5_RADIO_CORE_FWD_H_
 #define IV_LV5_RADIO_CORE_FWD_H_
 #include <vector>
+#include <new>
 #include "detail/array.h"
 #include "noncopyable.h"
 #include "debug.h"
@@ -25,10 +26,23 @@ class Core : private core::Noncopyable<Core> {
   ~Core();
 
   void AddArena() {
+    assert(!free_blocks_);
     working_ = new Arena(working_);
-  }
-
-  void ShrinkArena() {
+    // assign
+    Arena::iterator it = working_->begin();
+    const Arena::const_iterator last = working_->end();
+    assert(it != last);
+    free_blocks_ = &*it;
+    while (true) {
+      Block* block = &*it;
+      ++it;
+      if (it != last) {
+        block->set_next(NULL);
+        break;
+      } else {
+        block->set_next(&*it);
+      }
+    }
   }
 
   void CollectGarbage() {
@@ -45,7 +59,13 @@ class Core : private core::Noncopyable<Core> {
   }
 
   Block* AllocateBlock(std::size_t size) {
-    return NULL;
+    if (free_blocks_) {
+      Block* block = free_blocks_;
+      free_blocks_ = free_blocks_->next();
+      return new(block)Block(size);
+    }
+    AddArena();
+    return AllocateBlock(size);
   }
 
  private:
@@ -65,6 +85,7 @@ class Core : private core::Noncopyable<Core> {
   void Drain() { }
 
   Arena* working_;
+  Block* free_blocks_;
   std::vector<Cell*> handles_;  // scoped handles
   std::vector<Cell*> stack_;  // mark stack
   std::array<BlockControl*, 13> controls_;  // blocks. first block is 8 bytes

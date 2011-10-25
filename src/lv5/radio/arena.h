@@ -125,13 +125,9 @@ class Arena : private core::Noncopyable<Arena> {
     : next_(NULL),
       prev_(prev) {
     Initialize();
-    prev->next_ = this;
-  }
-
-  Arena()
-    : next_(NULL),
-      prev_(NULL) {
-    Initialize();
+    if (prev) {
+      prev->next_ = this;
+    }
   }
 
   Arena* next() const { return next_; }

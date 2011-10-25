@@ -9,13 +9,15 @@ namespace lv5 {
 namespace radio {
 
 inline Core::Core()
-  : working_(new Arena()),
+  : working_(NULL),
+    free_blocks_(NULL),
     handles_(),
     stack_(),
     controls_() {
   stack_.reserve(kInitialMarkStackSize);
+  AddArena();
   for (std::size_t i = 3; i < 16; ++i) {
-    controls_[i] = new BlockControl(1 << i);
+    controls_[i - 3] = new BlockControl(1 << i);
   }
 }
 
@@ -32,6 +34,7 @@ inline Core::~Core() {
 }
 
 inline Cell* Core::AllocateFrom(BlockControl* control) {
+  assert(control);
   return control->Allocate(this);
 }
 

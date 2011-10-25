@@ -172,10 +172,6 @@ class Block : private core::Noncopyable<Block> {
     }
   }
 
-  void* Allocate() {
-    return NULL;
-  }
-
   // destruct and chain to free list
   struct Drainer {
     Drainer(Block* block) : block_(block) { }
@@ -205,6 +201,8 @@ class Block : private core::Noncopyable<Block> {
   void set_next(Block* block) {
     next_ = block;
   }
+
+  Block* next() const { return next_; }
 
  private:
   size_type cell_size_;

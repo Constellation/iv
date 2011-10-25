@@ -8,7 +8,8 @@ namespace radio {
 
 class BlockControl : private core::Noncopyable<BlockControl> {
  public:
-  BlockControl(std::size_t size) : size_(size) { }
+  BlockControl(std::size_t size)
+    : size_(size), block_(NULL), free_cells_(NULL) { }
 
   Cell* Allocate(Core* core) {
     if (free_cells_) {
@@ -32,6 +33,7 @@ class BlockControl : private core::Noncopyable<BlockControl> {
     // assign
     Block::iterator it = block->begin();
     const Block::const_iterator last = block->end();
+    assert(it != last);
     free_cells_ = &*it;
     while (true) {
       Cell* cell = &*it;
