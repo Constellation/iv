@@ -20,7 +20,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 's');
+    EXPECT_EQ(code->filter(), 's');
   }
   {
     space.Clear();
@@ -31,7 +31,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 0);
   }
   {
     space.Clear();
@@ -42,7 +42,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 63);
   }
   {
     space.Clear();
@@ -53,7 +53,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 0);
   }
   {
     space.Clear();
@@ -64,7 +64,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 's' | 't');
+    EXPECT_EQ(code->filter(), 's' | 't');
   }
   {
     space.Clear();
@@ -75,7 +75,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 's' | 't');
+    EXPECT_EQ(code->filter(), 's' | 't');
   }
   {
     space.Clear();
@@ -86,7 +86,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 127);
   }
   {
     space.Clear();
@@ -97,7 +97,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 0);
   }
   {
     space.Clear();
@@ -108,6 +108,6 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_EQ(code->filter(), 0);
+    EXPECT_EQ(code->filter(), 0);
   }
 }

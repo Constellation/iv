@@ -77,7 +77,19 @@ inline void QuickCheck::Visit(CharacterAtom* atom) {
 }
 
 inline void QuickCheck::Visit(RangeAtom* atom) {
-  Fail();
+  if (atom->inverted()) {
+    Fail();
+  }
+  for (Ranges::const_iterator it = atom->ranges().begin(),
+       last = atom->ranges().end(); it != last; ++it) {
+    if (IsFailed()) {
+      return;
+    }
+    FilterCheck check(this);
+    for (uint32_t ch = it->first; ch <= it->second; ++ch) {
+      filter_.Add(ch);
+    }
+  }
 }
 
 inline void QuickCheck::Visit(DisjunctionAtom* atom) {
