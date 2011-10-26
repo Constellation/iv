@@ -18,14 +18,18 @@ class BloomFilter {
     return ((filter_ & val) == val);
   }
 
+  value_type value() const {
+    return filter_;
+  }
+
  private:
   value_type filter_;
 };
 
-template<typename T>
-class HashedBloomFilter : private BloomFilter<std::size_t> {
+template<typename T, typename R = std::size_t>
+class HashedBloomFilter : private BloomFilter<R> {
  public:
-  typedef BloomFilter<std::size_t> super_type;
+  typedef BloomFilter<R> super_type;
 
   void Add(const T& val) {
     super_type::Add(std::hash<T>()(val));
@@ -34,6 +38,8 @@ class HashedBloomFilter : private BloomFilter<std::size_t> {
   bool Contains(const T& val) const {
     return super_type::Contains(std::hash<T>()(val));
   }
+
+  using super_type::value;
 };
 
 } }  // namespace iv::core
