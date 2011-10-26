@@ -10,20 +10,6 @@ from GenerateFile import TOOL_SUBST
 def GetVariables():
   return Variables()
 
-def CheckEndian(ctx):
-  ctx.Message('checking endianess ... ')
-  import struct
-  array = struct.pack('cccc', '\x01', '\x02', '\x03', '\x04')
-  i = struct.unpack('i', array)
-  if i == struct.unpack('<i', array):
-    ctx.Result('little')
-    return 'litte'
-  elif i == struct.unpack('>i', array):
-    ctx.Result('big')
-    return 'big'
-  ctx.Result('unknown')
-  return 'unknown'
-
 def Test(context):
   test_task = context.SConscript(
     'test/SConscript',
@@ -89,17 +75,11 @@ def Build():
       duplicate=False,
       exports='root_dir env options')
 
-  option_dict = {
-    '%VERSION%': '0.0.1',
-    '%DEVELOPER%': 'Yusuke Suzuki',
-    '%EMAIL%': 'utatane.tea@gmail.com'
-  }
-
   if env['clang']:
     env.Replace(CXX='clang++', CC='clang')
 
   if not env.GetOption('clean'):
-    conf = Configure(env, custom_tests = { 'CheckEndian' : CheckEndian })
+    conf = Configure(env)
 #    if not conf.CheckFunc('snprintf'):
 #      print 'snprintf must be provided'
 #      Exit(1)
@@ -113,11 +93,6 @@ def Build():
 
   if options.get('cache'):
     env.CacheDir('cache')
-
-  header = env.SubstInFile(
-      join(root_dir, 'src', 'config', 'config.h'),
-      join(root_dir, 'src', 'config', 'config.h.in'),
-      SUBST_DICT=option_dict)
 
   if env['prof']:
     env.Append(CCFLAGS=['-g3'])
@@ -153,6 +128,9 @@ def Build():
     env.Append(CPPDEFINES="IV_USE_DIRECT_THREADED_CODE")
   else:
     env.Append(CCFLAGS="-pedantic")
+
+  if env["CC"] == "gcc":
+    env.Append(CCFLAGS="-fno-operator-names")
 
   env.Append(
     CCFLAGS=[
