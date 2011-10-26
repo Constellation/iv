@@ -42,15 +42,34 @@ class VM : private core::Noncopyable<VM> {
 
   int ExecuteOnce(Code* code, const core::UStringPiece& subject,
                   int offset, int* captures) {
-    int size = subject.size();
-    do {
-      const int res = Execute(subject, code, captures, offset);
-      if (res == AERO_SUCCESS || res == AERO_ERROR) {
-        return res;
-      } else {
-        ++offset;
+    const int size = subject.size();
+    const uint16_t filter = code->filter();
+    if (!filter) {
+      // normal path
+      do {
+        const int res = Execute(subject, code, captures, offset);
+        if (res == AERO_SUCCESS || res == AERO_ERROR) {
+          return res;
+        } else {
+          ++offset;
+        }
+      } while (offset <= size);
+    } else {
+      // bloom filter path
+      while (offset <= size) {
+        const uint16_t ch = subject[offset];
+        if ((filter & ch) != ch) {
+          ++offset;
+        } else {
+          const int res = Execute(subject, code, captures, offset);
+          if (res == AERO_SUCCESS || res == AERO_ERROR) {
+            return res;
+          } else {
+            ++offset;
+          }
+        }
       }
-    } while (offset <= size);
+    }
     return AERO_FAILURE;
   }
 

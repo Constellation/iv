@@ -7,10 +7,12 @@ static const int kUndefined = -1;
 
 class Code {
  public:
-  Code(const std::vector<uint8_t>& vec, int captures, int counters)
+  Code(const std::vector<uint8_t>& vec,
+       int captures, int counters, uint16_t filter)
     : bytes_(vec),
       captures_(captures),
-      counters_(counters) { }
+      counters_(counters),
+      filter_(filter) { }
 
   const std::vector<uint8_t>& bytes() const { return bytes_; }
 
@@ -20,10 +22,13 @@ class Code {
 
   int captures() const { return captures_; }
 
+  uint16_t filter() const { return filter_; }
+
  private:
   std::vector<uint8_t> bytes_;
   int captures_;
   int counters_;
+  uint16_t filter_;
 };
 
 } }  // namespace iv::aero

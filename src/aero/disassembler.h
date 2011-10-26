@@ -25,6 +25,8 @@ class DisAssembler : private core::Noncopyable<> {
       ss << code.captures();
       ss << " counters: ";
       ss << code.counters();
+      ss << " filter : ";
+      ss << code.filter();
       OutputLine(ss.str());
     }
     std::vector<char> line;
