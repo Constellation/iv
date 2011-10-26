@@ -44,7 +44,12 @@ inline void Core::EnterScope(Scope* scope) {
 }
 
 inline void Core::ExitScope(Scope* scope) {
-  handles_.resize(scope->current());
+  if (Cell* cell = scope->reserved()) {
+    handles_.resize(scope->current() + 1);
+    handles_.back() = cell;
+  } else {
+    handles_.resize(scope->current());
+  }
 }
 
 } } }  // namespace iv::lv5::radio
