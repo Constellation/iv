@@ -312,7 +312,7 @@ class Compiler
     void EmitJumps(std::size_t break_target) {
       for (std::vector<std::size_t>::const_iterator it = breaks_.begin(),
            last = breaks_.end(); it != last; ++it) {
-        compiler_->EmitArgAt(break_target, *it);
+        compiler_->EmitJump(break_target, *it);
       }
     }
 
@@ -342,7 +342,7 @@ class Compiler
       BreakTarget::EmitJumps(break_target);
       for (std::vector<std::size_t>::const_iterator it = continues_.begin(),
            last = continues_.end(); it != last; ++it) {
-        compiler_->EmitArgAt(continue_target, *it);
+        compiler_->EmitJump(continue_target, *it);
       }
     }
 
@@ -369,7 +369,7 @@ class Compiler
       assert(pair.second == &vec_);
       for (std::vector<std::size_t>::const_iterator it = pair.second->begin(),
            last = pair.second->end(); it != last; ++it) {
-        compiler_->EmitArgAt(finally_target, *it);
+        compiler_->EmitJump(finally_target, *it);
       }
       compiler_->PopLevel();
     }
@@ -477,8 +477,8 @@ class Compiler
     if (cond == Condition::COND_INDETERMINATE) {
       stmt->cond()->Accept(this);
     }
-    const std::size_t arg_index = CurrentSize() + 1;
 
+    const std::size_t label = CurrentSize();
     if (cond == Condition::COND_INDETERMINATE) {
       Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
       stack_depth_.Down();
@@ -497,10 +497,10 @@ class Compiler
       }
       assert(stack_depth_.IsBaseLine());
 
-      const std::size_t second_label_index = CurrentSize();
+      const std::size_t second = CurrentSize();
       if (cond == Condition::COND_INDETERMINATE) {
-        Emit<OP::JUMP_FORWARD>(0);  // dummy index
-        EmitArgAt(CurrentSize(), arg_index);
+        Emit<OP::JUMP_BY>(0);  // dummy index
+        EmitJump(CurrentSize(), label);
       }
 
       if (cond != Condition::COND_TRUE) {
@@ -515,7 +515,7 @@ class Compiler
       assert(stack_depth_.IsBaseLine());
 
       if (cond == Condition::COND_INDETERMINATE) {
-        EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
+        EmitJump(CurrentSize(), second);
       }
     } else {
       if (cond == Condition::COND_FALSE) {
@@ -530,7 +530,7 @@ class Compiler
       }
       assert(stack_depth_.IsBaseLine());
       if (cond == Condition::COND_INDETERMINATE) {
-        EmitArgAt(CurrentSize(), arg_index);
+        EmitJump(CurrentSize(), label);
       }
     }
     assert(stack_depth_.IsBaseLine());
@@ -547,7 +547,7 @@ class Compiler
 
     stmt->cond()->Accept(this);
 
-    Emit<OP::POP_JUMP_IF_TRUE>(start_index);
+    Emit<OP::POP_JUMP_IF_TRUE>(Instruction::Diff(start_index, CurrentSize()));
     stack_depth_.Down();
 
     jump.EmitJumps(CurrentSize(), cond_index);
@@ -577,7 +577,7 @@ class Compiler
 
     if (stmt->body()->IsEffectiveStatement()) {
       if (cond == Condition::COND_INDETERMINATE) {
-        const std::size_t arg_index = CurrentSize() + 1;
+        const std::size_t label = CurrentSize();
 
         Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
         stack_depth_.Down();
@@ -585,25 +585,25 @@ class Compiler
         stmt->body()->Accept(this);  // STMT
         assert(stack_depth_.IsBaseLine());
 
-        Emit<OP::JUMP_ABSOLUTE>(start_index);
-        EmitArgAt(CurrentSize(), arg_index);
+        Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+        EmitJump(CurrentSize(), label);
       } else {
         assert(cond == Condition::COND_TRUE);
 
         stmt->body()->Accept(this);  // STMT
         assert(stack_depth_.IsBaseLine());
 
-        Emit<OP::JUMP_ABSOLUTE>(start_index);
+        Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
       }
       jump.EmitJumps(CurrentSize(), start_index);
       continuation_status_.ResolveJump(stmt);
     } else {
       if (cond == Condition::COND_INDETERMINATE) {
-        Emit<OP::POP_JUMP_IF_TRUE>(start_index);
+        Emit<OP::POP_JUMP_IF_TRUE>(Instruction::Diff(start_index, CurrentSize()));
         stack_depth_.Down();
       } else {
         assert(cond == Condition::COND_TRUE);
-        Emit<OP::JUMP_ABSOLUTE>(start_index);
+        Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
       }
     }
 
@@ -632,11 +632,11 @@ class Compiler
 
     const std::size_t start_index = CurrentSize();
     const core::Maybe<const Expression> cond = stmt->cond();
-    std::size_t arg_index = 0;
+    std::size_t label = 0;
 
     if (cond) {
       cond.Address()->Accept(this);
-      arg_index = CurrentSize() + 1;
+      label = CurrentSize();
       Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
       stack_depth_.Down();
     }
@@ -651,10 +651,10 @@ class Compiler
       stack_depth_.Down();
     }
 
-    Emit<OP::JUMP_ABSOLUTE>(start_index);
+    Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
 
     if (cond) {
-      EmitArgAt(CurrentSize(), arg_index);
+      EmitJump(CurrentSize(), label);
     }
 
     jump.EmitJumps(CurrentSize(), prev_next);
@@ -687,11 +687,10 @@ class Compiler
       stmt->enumerable()->Accept(this);
       stack_depth_.BaseUp(1);
       PushLevelForIn();
-      const std::size_t for_in_setup_jump = CurrentSize() + 1;
+      const std::size_t for_in_setup_jump = CurrentSize();
       Emit<OP::FORIN_SETUP>(0);  // dummy index
-      const std::size_t start_index = CurrentSize();
-      const std::size_t arg_index = CurrentSize() + 1;
 
+      const std::size_t start_index = CurrentSize();
       Emit<OP::FORIN_ENUMERATE>(0);  // dummy index
       stack_depth_.Up();
 
@@ -747,10 +746,11 @@ class Compiler
 
       stmt->body()->Accept(this);  // STMT
 
-      Emit<OP::JUMP_ABSOLUTE>(start_index);
+      Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+
       const std::size_t end_index = CurrentSize();
-      EmitArgAt(end_index, arg_index);
-      EmitArgAt(end_index, for_in_setup_jump);
+      EmitJump(end_index, start_index);
+      EmitJump(end_index, for_in_setup_jump);
 
       stack_depth_.BaseDown(1);
       stack_depth_.Down();
@@ -772,9 +772,9 @@ class Compiler
          last = std::get<0>(entry); level > last; --level) {
       const LevelEntry& le = level_stack_[level - 1];
       if (le.first == FINALLY) {
-        const std::size_t finally_jump_index = CurrentSize() + 1;
+        const std::size_t finally_jump = CurrentSize();
         Emit<OP::JUMP_SUBROUTINE>(0);
-        le.second->push_back(finally_jump_index);
+        le.second->push_back(finally_jump);
       } else if (le.first == WITH) {
         Emit<OP::POP_ENV>();
       } else if (le.first == SUB) {
@@ -786,8 +786,8 @@ class Compiler
         }
       }
     }
-    const std::size_t arg_index = CurrentSize() + 1;
-    Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
+    const std::size_t arg_index = CurrentSize();
+    Emit<OP::JUMP_BY>(0);
     std::get<2>(entry)->push_back(arg_index);
 
     continuation_status_.JumpTo(stmt->target());
@@ -803,9 +803,9 @@ class Compiler
            last = std::get<0>(entry); level > last; --level) {
         const LevelEntry& le = level_stack_[level - 1];
         if (le.first == FINALLY) {
-          const std::size_t finally_jump_index = CurrentSize() + 1;
+          const std::size_t finally_jump = CurrentSize();
           Emit<OP::JUMP_SUBROUTINE>(0);
-          le.second->push_back(finally_jump_index);
+          le.second->push_back(finally_jump);
         } else if (le.first == WITH) {
           Emit<OP::POP_ENV>();
         } else if (le.first == SUB) {
@@ -817,8 +817,8 @@ class Compiler
           }
         }
       }
-      const std::size_t arg_index = CurrentSize() + 1;
-      Emit<OP::JUMP_ABSOLUTE>(0);  // dummy
+      const std::size_t arg_index = CurrentSize();
+      Emit<OP::JUMP_BY>(0);  // dummy
       std::get<1>(entry)->push_back(arg_index);
     }
 
@@ -845,9 +845,9 @@ class Compiler
       for (uint16_t level = CurrentLevel(); level > 0; --level) {
         const LevelEntry& le = level_stack_[level - 1];
         if (le.first == FINALLY) {
-          const std::size_t finally_jump_index = CurrentSize() + 1;
+          const std::size_t finally_jump = CurrentSize();
           Emit<OP::JUMP_RETURN_HOOKED_SUBROUTINE>(0);
-          le.second->push_back(finally_jump_index);
+          le.second->push_back(finally_jump);
         } else if (le.first == WITH) {
           Emit<OP::POP_ENV>();
         } else if (le.first == SUB) {
@@ -907,7 +907,7 @@ class Compiler
         if (const core::Maybe<const Expression> expr = (*it)->expr()) {
           // case
           expr.Address()->Accept(this);
-          *idx = CurrentSize() + 1;
+          *idx = CurrentSize();
           Emit<OP::SWITCH_CASE>(0);  // dummy index
           stack_depth_.Down();
         } else {
@@ -916,7 +916,7 @@ class Compiler
         }
       }
       if (default_it != indexes.end()) {
-        *default_it = CurrentSize() + 1;
+        *default_it = CurrentSize();
         has_default_clause = true;
         Emit<OP::SWITCH_DEFAULT>(0);  // dummy index
       }
@@ -926,7 +926,7 @@ class Compiler
       std::vector<std::size_t>::const_iterator idx = indexes.begin();
       for (CaseClauses::const_iterator it = clauses.begin(),
            last = clauses.end(); it != last; ++it, ++idx) {
-        EmitArgAt(CurrentSize(), *idx);
+        EmitJump(CurrentSize(), *idx);
         const Statements& stmts = (*it)->body();
         for (Statements::const_iterator stmt_it = stmts.begin(),
              stmt_last = stmts.end(); stmt_it != stmt_last; ++stmt_it) {
@@ -967,12 +967,12 @@ class Compiler
     TryTarget target(this, has_finally);
     stmt->body()->Accept(this);  // STMT
     if (has_finally) {
-      const std::size_t finally_jump_index = CurrentSize() + 1;
+      const std::size_t finally_jump = CurrentSize();
       Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-      level_stack_[CurrentLevel() - 1].second->push_back(finally_jump_index);
+      level_stack_[CurrentLevel() - 1].second->push_back(finally_jump);
     }
-    const std::size_t label_index = CurrentSize();
-    Emit<OP::JUMP_FORWARD>(0);  // dummy index
+    const std::size_t label = CurrentSize();
+    Emit<OP::JUMP_BY>(0);  // dummy index
 
     std::size_t catch_return_label_index = 0;
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
@@ -1002,12 +1002,12 @@ class Compiler
       PopLevel();
       Emit<OP::POP_ENV>();
       if (has_finally) {
-        const std::size_t finally_jump_index = CurrentSize() + 1;
+        const std::size_t finally_jump = CurrentSize();
         Emit<OP::JUMP_SUBROUTINE>(0);  // dummy index
-        level_stack_[CurrentLevel() - 1].second->push_back(finally_jump_index);
+        level_stack_[CurrentLevel() - 1].second->push_back(finally_jump);
       }
       catch_return_label_index = CurrentSize();
-      Emit<OP::JUMP_FORWARD>(0);  // dummy index
+      Emit<OP::JUMP_BY>(0);  // dummy index
 
       if (continuation_status_.Has(stmt)) {
         continuation_status_.Erase(stmt);
@@ -1050,11 +1050,10 @@ class Compiler
       }
     }
     // try last
-    EmitArgAt(CurrentSize() - label_index, label_index + 1);
+    EmitJump(CurrentSize(), label);
     // catch last
     if (has_catch) {
-      EmitArgAt(CurrentSize() - catch_return_label_index,
-                catch_return_label_index + 1);
+      EmitJump(CurrentSize(), catch_return_label_index);
     }
 
     assert(stack_depth_.IsBaseLine());
@@ -1171,21 +1170,21 @@ class Compiler
     switch (token) {
       case Token::TK_LOGICAL_AND: {  // &&
         binary->left()->Accept(this);
-        const std::size_t arg_index = CurrentSize() + 1;
+        const std::size_t label = CurrentSize();
         Emit<OP::JUMP_IF_FALSE_OR_POP>(0);  // dummy index
         stack_depth_.Down();
         binary->right()->Accept(this);
-        EmitArgAt(CurrentSize(), arg_index);
+        EmitJump(CurrentSize(), label);
         break;
       }
 
       case Token::TK_LOGICAL_OR: {  // ||
         binary->left()->Accept(this);
-        const std::size_t arg_index = CurrentSize() + 1;
+        const std::size_t label = CurrentSize();
         Emit<OP::JUMP_IF_TRUE_OR_POP>(0);  // dummy index
         stack_depth_.Down();
         binary->right()->Accept(this);
-        EmitArgAt(CurrentSize(), arg_index);
+        EmitJump(CurrentSize(), label);
         break;
       }
 
@@ -1374,16 +1373,16 @@ class Compiler
   void Visit(const ConditionalExpression* cond) {
     DepthPoint point(&stack_depth_);
     cond->cond()->Accept(this);
-    const std::size_t arg_index = CurrentSize() + 1;
-    Emit<OP::POP_JUMP_IF_FALSE>(0);  // dummy index
+    const std::size_t first = CurrentSize();
+    Emit<OP::POP_JUMP_IF_FALSE>(0);
     stack_depth_.Down();
     cond->left()->Accept(this);
     stack_depth_.Down();
-    const std::size_t second_label_index = CurrentSize();
-    Emit<OP::JUMP_FORWARD>(0);  // dummy index
-    EmitArgAt(CurrentSize(), arg_index);
+    const std::size_t second = CurrentSize();
+    Emit<OP::JUMP_BY>(0);
+    EmitJump(CurrentSize(), first);
     cond->right()->Accept(this);  // STMT
-    EmitArgAt(CurrentSize() - second_label_index, second_label_index + 1);
+    EmitJump(CurrentSize(), second);
     point.LevelCheck(1);
   }
 
@@ -2237,6 +2236,10 @@ class Compiler
 
   void EmitArgAt(Instruction arg, std::size_t index) {
     (*data_)[code_->start() + index] = arg;
+  }
+
+  void EmitJump(std::size_t to, std::size_t from) {
+    EmitArgAt(Instruction::Diff(to, from), from + 1);
   }
 
   void set_code(Code* code) {
