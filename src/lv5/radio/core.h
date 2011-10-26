@@ -40,9 +40,11 @@ inline Cell* Core::AllocateFrom(BlockControl* control) {
 }
 
 inline void Core::EnterScope(Scope* scope) {
+  scope->set_current(handles_.size());
 }
 
 inline void Core::ExitScope(Scope* scope) {
+  handles_.resize(scope->current());
 }
 
 } } }  // namespace iv::lv5::radio
