@@ -16,10 +16,17 @@ struct Instruction {
     const void* label;  // use for direct threading
     uint32_t value;
     int32_t i32;
+    ptrdiff_t diff;
     Map* map;
     Chain* chain;
     StringSymbol symbol;
   };
+
+  static Instruction Diff(ptrdiff_t to, ptrdiff_t from) {
+    Instruction instr(0u);
+    instr.diff = to - from;
+    return instr;
+  }
 
   inline OP::Type GetOP() const;
 

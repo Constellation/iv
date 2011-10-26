@@ -654,7 +654,7 @@ do {\
         const JSVal v = POP();
         const bool x = v.ToBoolean(ERR);
         if (!x) {
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(POP_JUMP_IF_FALSE);
@@ -664,7 +664,7 @@ do {\
         const JSVal v = POP();
         const bool x = v.ToBoolean(ERR);
         if (x) {
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(POP_JUMP_IF_TRUE);
@@ -674,7 +674,7 @@ do {\
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         if (x) {
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         } else {
           POP_UNUSED();
@@ -686,7 +686,7 @@ do {\
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         if (!x) {
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         } else {
           POP_UNUSED();
@@ -702,7 +702,7 @@ do {\
         PUSH(JSEmpty);
         PUSH(addr);
         PUSH(JSVal::Int32(kJumpFromSubroutine));
-        JUMPTO(instr[1].value);
+        JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
@@ -713,17 +713,12 @@ do {\
             OPLength<OP::JUMP_RETURN_HOOKED_SUBROUTINE>::value;
         PUSH(addr);
         PUSH(JSVal::Int32(kJumpFromReturn));
-        JUMPTO(instr[1].value);
+        JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
-      DEFINE_OPCODE(JUMP_FORWARD) {
-        JUMPBY(instr[1].value);
-        DISPATCH_WITH_NO_INCREMENT();
-      }
-
-      DEFINE_OPCODE(JUMP_ABSOLUTE) {
-        JUMPTO(instr[1].value);
+      DEFINE_OPCODE(JUMP_BY) {
+        JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
@@ -1455,7 +1450,7 @@ do {\
         const JSVal w = TOP();
         if (JSVal::StrictEqual(v, w)) {
           POP_UNUSED();
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(SWITCH_CASE);
@@ -1463,14 +1458,14 @@ do {\
 
       DEFINE_OPCODE(SWITCH_DEFAULT) {
         POP_UNUSED();
-        JUMPTO(instr[1].value);
+        JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
       DEFINE_OPCODE(FORIN_SETUP) {
         const JSVal v = TOP();
         if (v.IsNull() || v.IsUndefined()) {
-          JUMPTO(instr[1].value);  // skip for-in stmt
+          JUMPBY(instr[1].diff);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }
         POP_UNUSED();
@@ -1487,7 +1482,7 @@ do {\
           it->Next();
           PUSH(JSString::New(ctx_, sym));
         } else {
-          JUMPTO(instr[1].value);
+          JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(FORIN_ENUMERATE);
