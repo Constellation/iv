@@ -7,7 +7,7 @@ a lot of inspired from V8, SpiderMonkey, JavaScriptCore
 ## License
 
 under New BSD License
-see LICENSE file
+see LICENSE files
 
 ## iv / lv5
 
