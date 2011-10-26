@@ -4,6 +4,43 @@
 #include "detail/cinttypes.h"
 namespace iv {
 namespace core {
+namespace detail {
+
+template<uint32_t X, uint32_t N>
+struct CLP2ST {
+  static const uint32_t value = X | (X >> N);
+};
+
+template<uint32_t X>
+struct CLP2 {
+  static const uint32_t value =
+      CLP2ST<
+        CLP2ST<
+          CLP2ST<
+            CLP2ST<
+              CLP2ST<X - 1, 1>::value,
+              2>::value,
+            4>::value,
+          8>::value,
+      16>::value + 1;
+};
+
+template<uint32_t X>
+struct FLP2 {
+  static const uint32_t x =
+      CLP2ST<
+        CLP2ST<
+          CLP2ST<
+            CLP2ST<
+              CLP2ST<X, 1>::value,
+              2>::value,
+            4>::value,
+          8>::value,
+      16>::value;
+  static const uint32_t value = x - (x >> 1);
+};
+
+}  // namespace detail
 
 // from "Hacker's Delight" section 2-12
 inline bool IsAdditionOverflow(int32_t lhs, int32_t rhs) {
@@ -93,7 +130,6 @@ inline uint64_t NTZ64(int64_t x) {
   return kNTZ64[
       static_cast<uint64_t>(x & -x) * UINT64_C(0x03F566ED27179461) >> 58];
 }
-
 
 } }  // namespace iv::core
 #endif  // IV_ARITH_H_
