@@ -147,7 +147,6 @@ def Build():
   env['ENV']['HOME'] = os.environ.get('HOME')
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
   Help(var.GenerateHelpText(env))
-  # env.ParseConfig('llvm-config all --ldflags --libs')
 
   lv5_prog, lv5_objs, lv5_libs = Lv5(env)
   env.Alias('lv5', [lv5_prog])
