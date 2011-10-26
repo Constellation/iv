@@ -17,10 +17,6 @@ class Scope : private core::Noncopyable<Scope> {
     core_->ExitScope(this);
   }
 
-  JSVal Return(const JSVal& val) {
-    return val;
-  }
-
   void set_current(std::size_t current) {
     current_ = current;
   }
