@@ -56,7 +56,7 @@ class Core : private core::Noncopyable<Core> {
     IV_STATIC_ASSERT(cond::value);
     IV_STATIC_ASSERT(sizeof(T) >= 8);
     IV_STATIC_ASSERT(sizeof(T) <= (1 << 18));
-    return AllocateFrom(GetBlockControl(core::detail::CLP2<sizeof(T)>::value));
+    return AllocateFrom(GetBlockControl<core::detail::CLP2<sizeof(T)>::value>());
   }
 
   Block* AllocateBlock(std::size_t size) {
@@ -75,11 +75,13 @@ class Core : private core::Noncopyable<Core> {
  private:
   Cell* AllocateFrom(BlockControl* control);
 
-  BlockControl* GetBlockControl(std::size_t size) {
-    assert(size % 2 == 0);
+  template<std::size_t N>
+  BlockControl* GetBlockControl() {
     // first block bytes is 8
-    const std::size_t n = core::NTZ64(size) - 3;
-    return controls_[n];
+    IV_STATIC_ASSERT(N % 2 == 0);
+    IV_STATIC_ASSERT(core::detail::NTZ<N>::value >= 3);
+    IV_STATIC_ASSERT(core::detail::NTZ<N>::value <= 15);
+    return controls_[core::detail::NTZ<N>::value - 3];
   }
 
   void Mark() { }
