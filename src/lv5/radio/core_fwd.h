@@ -56,7 +56,7 @@ class Core : private core::Noncopyable<Core> {
     IV_STATIC_ASSERT(cond::value);
     IV_STATIC_ASSERT(sizeof(T) >= 8);
     IV_STATIC_ASSERT(sizeof(T) <= (1 << 18));
-    return AllocateFrom(GetBlockControl(core::CLP2(sizeof(T))));
+    return AllocateFrom(GetBlockControl(core::detail::CLP2<sizeof(T)>::value));
   }
 
   Block* AllocateBlock(std::size_t size) {
