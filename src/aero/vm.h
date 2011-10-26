@@ -56,7 +56,7 @@ class VM : private core::Noncopyable<VM> {
       } while (offset <= size);
     } else {
       // bloom filter path
-      while (offset <= size) {
+      while (offset < size) {
         const uint16_t ch = subject[offset];
         if ((filter & ch) != ch) {
           ++offset;
