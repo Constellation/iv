@@ -41,8 +41,11 @@ class AlignOfImpl {
 #define IV_ALIGNED_ADDRESS(address, alignment)\
   ((address + (alignment - 1)) & ~(alignment - 1))
 
-#define IV_ROUNDUP(x, y)\
-  (((x) + (y - 1)) & ~(y - 1))
+// only 2^n and unsigned
+#define IV_ROUNDUP(x, y) (((x) + (y - 1)) & ~(y - 1))
+
+// only 2^n and unsinged
+#define IV_ROUNDDOWN(x, y) ((x) & (-(y)))
 
 template<class T>
 T LowestOneBit(T value) {

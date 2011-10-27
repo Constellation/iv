@@ -121,6 +121,7 @@ inline void Core::Collect(Context* ctx) {
 }
 
 inline void Core::ReturnBlock(Block* block) {
+  block->Release();
   block->set_next(free_blocks_);
   free_blocks_ = block;
 }

@@ -130,11 +130,12 @@ class Block : private core::Noncopyable<Block> {
   Block(size_type cell_size)
     : cell_size_(cell_size) {
     assert((reinterpret_cast<uintptr_t>(this) % kBlockSize) == 0);
+    control_size_ = core::Ceil(sizeof(this_type), cell_size_);
     size_ = (kBlockSize - GetControlSize()) / cell_size_;
   }
 
   size_type GetControlSize() const {
-    return IV_ROUNDUP(sizeof(this_type), cell_size_);
+    return control_size_;
   }
 
   iterator begin() {
@@ -162,6 +163,7 @@ class Block : private core::Noncopyable<Block> {
   }
 
   bool Collect(Core* core, Context* ctx, BlockControl* control) {
+    assert(IsUsed());
     bool used_cell_found = false;
     for (iterator it = begin(), last = end(); it != last; ++it) {
       Cell* cell = it.Extract();
@@ -179,12 +181,21 @@ class Block : private core::Noncopyable<Block> {
 
   // last
   void DestroyAllCells() {
+    assert(IsUsed());
     for (iterator it = begin(), last = end(); it != last; ++it) {
       Cell* cell = it.Extract();
       if (cell->color() != Color::CLEAR) {
         cell->~Cell();
       }
     }
+  }
+
+  bool IsUsed() const { return size_ != 0; }
+
+  void Release() {
+    cell_size_ = 0;
+    size_ = 0;
+    control_size_ = 0;
   }
 
   size_type size() const { return size_; }
@@ -200,6 +211,7 @@ class Block : private core::Noncopyable<Block> {
  private:
   size_type cell_size_;
   size_type size_;
+  size_type control_size_;
   Block* next_;
 };
 

@@ -157,5 +157,10 @@ inline uint64_t NTZ64(int64_t x) {
       static_cast<uint64_t>(x & -x) * UINT64_C(0x03F566ED27179461) >> 58];
 }
 
+// too big m is not accepted
+inline std::size_t Ceil(std::size_t n, std::size_t m) {
+  return (n + m - 1) / m * m;
+}
+
 } }  // namespace iv::core
 #endif  // IV_ARITH_H_

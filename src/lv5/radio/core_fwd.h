@@ -79,14 +79,18 @@ class Core : private core::Noncopyable<Core> {
     Arena::iterator it = working_->begin();
     const Arena::const_iterator last = working_->end();
     assert(it != last);
-    free_blocks_ = &*it;
+    Block* prev = free_blocks_ = &*it;
+    prev->Release();
+    ++it;
     while (true) {
-      Block* block = &*it;
-      ++it;
       if (it != last) {
-        block->set_next(&*it);
+        Block* block = &*it;
+        block->Release();
+        prev->set_next(block);
+        prev = block;
+        ++it;
       } else {
-        block->set_next(NULL);
+        prev->set_next(NULL);
         break;
       }
     }

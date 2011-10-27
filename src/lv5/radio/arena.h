@@ -168,7 +168,9 @@ class Arena : private core::Noncopyable<Arena> {
 
   void DestroyAllBlocks() {
     for (iterator it = begin(), last = end(); it != last; ++it) {
-      it->DestroyAllCells();
+      if (it->IsUsed()) {
+        it->DestroyAllCells();
+      }
     }
   }
 

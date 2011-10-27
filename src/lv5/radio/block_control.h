@@ -28,9 +28,10 @@ inline void BlockControl::Collect(Core* core, Context* ctx) {
       } else {
         block_ = block->next();
       }
-      core->ReturnBlock(block);
+      Block* will_released = block;
       // enumeration
       block = block->next();
+      core->ReturnBlock(will_released);
     } else {
       // enumeration
       prev = block;
@@ -44,6 +45,8 @@ inline void BlockControl::AllocateBlock(Core* core) {
   Block* block = core->AllocateBlock(size_);
   block->set_next(block_);
   block_ = block;
+
+  assert(block->IsUsed());
 
   // assign
   Block::iterator it = block->begin();
