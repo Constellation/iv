@@ -177,7 +177,14 @@ class Block : private core::Noncopyable<Block> {
     return used_cell_found;
   }
 
+  // last
   void DestroyAllCells() {
+    for (iterator it = begin(), last = end(); it != last; ++it) {
+      Cell* cell = it.Extract();
+      if (cell->color() != Color::CLEAR) {
+        cell->~Cell();
+      }
+    }
   }
 
   size_type size() const { return size_; }
