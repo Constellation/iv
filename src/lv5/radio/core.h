@@ -65,23 +65,13 @@ inline bool Core::MarkCell(Cell* cell) {
   return false;
 }
 
-inline void Core::Mark(Context* ctx) {
-  // mark phase start
+inline void Core::CollectGarbage(Context* ctx) {
+  // mark & sweep
+  Mark(ctx);
+  Collect(ctx);
+}
 
-  // mark all roots
-  {
-    // mark context (and global data, vm stack)
-    // ctx->Mark(this);
-    // mark handles
-    std::for_each(handles_.begin(), handles_.end(), Marker(this));
-    // mark persistent handles
-    std::for_each(persistents_.begin(), persistents_.end(), Marker(this));
-  }
-
-  // see harmony proposal gc algorithm
-  // http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps#abstract_gc_algorithm
-
-  // TODO(Constellation): stack all mark is faster? implement it.
+inline void Core::Drain() {
   while (!stack_.empty()) {
     Cell* cell = stack_.back();
     stack_.pop_back();
@@ -92,13 +82,42 @@ inline void Core::Mark(Context* ctx) {
   }
 }
 
+inline bool Core::MarkWeaks() {
+  // TODO(Constellation): implement it
+  bool newly_marked = false;
+  return newly_marked;
+}
+
+inline void Core::MarkRoots(Context* ctx) {
+  // mark context (and global data, vm stack)
+  if (ctx) {
+    ctx->Mark(this);
+  }
+  // mark handles
+  std::for_each(handles_.begin(), handles_.end(), Marker(this));
+  // mark persistent handles
+  std::for_each(persistents_.begin(), persistents_.end(), Marker(this));
+}
+
+inline void Core::Mark(Context* ctx) {
+  // mark all roots
+  MarkRoots(ctx);
+
+  // see harmony proposal gc algorithm
+  // http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps#abstract_gc_algorithm
+  // TODO(Constellation): stack all mark is faster? implement it.
+  Drain();
+  while (MarkWeaks()) {
+    Drain();
+  }
+}
+
 inline void Core::Collect(Context* ctx) {
   for (BlockControls::const_iterator it = controls_.begin(),
        last = controls_.end(); it != last; ++it) {
     (*it)->Collect(this, ctx);
   }
 }
-
 
 inline void Core::ReturnBlock(Block* block) {
   block->set_next(free_blocks_);

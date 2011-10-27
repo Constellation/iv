@@ -28,26 +28,6 @@ class Core : private core::Noncopyable<Core> {
 
   ~Core();
 
-  void AddArena() {
-    assert(!free_blocks_);
-    working_ = new Arena(working_);
-    // assign
-    Arena::iterator it = working_->begin();
-    const Arena::const_iterator last = working_->end();
-    assert(it != last);
-    free_blocks_ = &*it;
-    while (true) {
-      Block* block = &*it;
-      ++it;
-      if (it != last) {
-        block->set_next(&*it);
-      } else {
-        block->set_next(NULL);
-        break;
-      }
-    }
-  }
-
   // allocate memory for radio::Cell
   template<typename T>
   Cell* Allocate() {
@@ -57,6 +37,9 @@ class Core : private core::Noncopyable<Core> {
     IV_STATIC_ASSERT(sizeof(T) <= (1 << 18));
     return AllocateFrom(GetBlockControl<core::detail::CLP2<sizeof(T)>::value>());
   }
+
+  // GC trigger
+  void CollectGarbage(Context* ctx);
 
   Block* AllocateBlock(std::size_t size) {
     if (free_blocks_) {
@@ -85,6 +68,32 @@ class Core : private core::Noncopyable<Core> {
   void ReturnBlock(Block* block);
 
  private:
+  void AddArena() {
+    assert(!free_blocks_);
+    working_ = new Arena(working_);
+    // assign
+    Arena::iterator it = working_->begin();
+    const Arena::const_iterator last = working_->end();
+    assert(it != last);
+    free_blocks_ = &*it;
+    while (true) {
+      Block* block = &*it;
+      ++it;
+      if (it != last) {
+        block->set_next(&*it);
+      } else {
+        block->set_next(NULL);
+        break;
+      }
+    }
+  }
+
+  void MarkRoots(Context* ctx);
+
+  bool MarkWeaks();
+
+  void Drain();
+
   Cell* AllocateFrom(BlockControl* control);
 
   template<std::size_t N>
