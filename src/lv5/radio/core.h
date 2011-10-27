@@ -20,8 +20,11 @@ inline Core::Core()
     controls_() {
   stack_.reserve(kInitialMarkStackSize);
   AddArena();
-  for (std::size_t i = 3; i < 16; ++i) {
-    controls_[i - 3] = new BlockControl(1 << i);
+  std::size_t size = kBlockControlStep;
+  for (BlockControls::iterator it = controls_.begin(),
+       last = controls_.end(); it != last; ++it, size += kBlockControlStep) {
+    assert(size <= kMaxObjectSize);
+    it->Initialize(size);
   }
 }
 
@@ -33,8 +36,6 @@ inline Core::~Core() {
     arena->~Arena();
     arena = next;
   }
-  std::for_each(controls_.begin(), controls_.end(),
-                core::Deleter<BlockControl>());
 }
 
 inline Cell* Core::AllocateFrom(BlockControl* control) {
@@ -113,9 +114,9 @@ inline void Core::Mark(Context* ctx) {
 }
 
 inline void Core::Collect(Context* ctx) {
-  for (BlockControls::const_iterator it = controls_.begin(),
+  for (BlockControls::iterator it = controls_.begin(),
        last = controls_.end(); it != last; ++it) {
-    (*it)->Collect(this, ctx);
+    it->Collect(this, ctx);
   }
 }
 

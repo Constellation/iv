@@ -11,19 +11,23 @@
 #include "lv5/radio/arena.h"
 #include "lv5/radio/cell.h"
 #include "lv5/radio/block.h"
+#include "lv5/radio/block_control_fwd.h"
 namespace iv {
 namespace lv5 {
 class Context;
 namespace radio {
 
 static const std::size_t kInitialMarkStackSize = 64;
+static const std::size_t kMaxObjectSize = 512;
+static const std::size_t kBlockControlStep = 16;
+static const std::size_t kBlockControls = kMaxObjectSize / kBlockControlStep;
 
 class BlockControl;
 class Scope;
 
 class Core : private core::Noncopyable<Core> {
  public:
-  typedef std::array<BlockControl*, 13> BlockControls;
+  typedef std::array<BlockControl, kBlockControls> BlockControls;
   Core();
 
   ~Core();
@@ -33,9 +37,8 @@ class Core : private core::Noncopyable<Core> {
   Cell* Allocate() {
     typedef std::is_base_of<Cell, T> cond;
     IV_STATIC_ASSERT(cond::value);
-    IV_STATIC_ASSERT(sizeof(T) >= 8);
-    IV_STATIC_ASSERT(sizeof(T) <= (1 << 18));
-    return AllocateFrom(GetBlockControl<core::detail::CLP2<sizeof(T)>::value>());
+    return AllocateFrom(
+        GetBlockControl<IV_ROUNDUP(sizeof(T), kBlockControlStep)>());
   }
 
   // GC trigger
@@ -100,9 +103,9 @@ class Core : private core::Noncopyable<Core> {
   BlockControl* GetBlockControl() {
     // first block bytes is 8
     IV_STATIC_ASSERT(N % 2 == 0);
-    IV_STATIC_ASSERT(core::detail::NTZ<N>::value >= 3);
-    IV_STATIC_ASSERT(core::detail::NTZ<N>::value <= 15);
-    return controls_[core::detail::NTZ<N>::value - 3];
+    IV_STATIC_ASSERT(N <= kMaxObjectSize);
+    IV_STATIC_ASSERT(((N + 1) / kBlockControlStep) < kBlockControls);
+    return &controls_[(N + 1) / kBlockControlStep];
   }
 
   struct Marker {
