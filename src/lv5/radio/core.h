@@ -2,6 +2,7 @@
 #define IV_LV5_RADIO_CORE_H_
 #include <algorithm>
 #include "functor.h"
+#include "lv5/context.h"
 #include "lv5/radio/core_fwd.h"
 #include "lv5/radio/scope.h"
 #include "lv5/radio/block_control.h"

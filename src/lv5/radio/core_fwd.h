@@ -8,12 +8,12 @@
 #include "debug.h"
 #include "arith.h"
 #include "static_assert.h"
-#include "lv5/context.h"
 #include "lv5/radio/arena.h"
 #include "lv5/radio/cell.h"
 #include "lv5/radio/block.h"
 namespace iv {
 namespace lv5 {
+class Context;
 namespace radio {
 
 static const std::size_t kInitialMarkStackSize = 64;
