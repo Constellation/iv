@@ -1,6 +1,7 @@
 // arithmetic functions
 #ifndef IV_ARITH_H_
 #define IV_ARITH_H_
+#include "detail/array.h"
 #include "detail/cinttypes.h"
 namespace iv {
 namespace core {

@@ -6,13 +6,12 @@
 #include "debug.h"
 #include "noncopyable.h"
 #include "lv5/radio/cell.h"
+#include "lv5/radio/block_size.h"
 // this is radio::Block
 // control space and memory block
 namespace iv {
 namespace lv5 {
 namespace radio {
-
-static const std::size_t kBlockSize = core::Size::KB * 512;
 
 class Block : private core::Noncopyable<Block> {
  public:

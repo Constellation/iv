@@ -2,6 +2,7 @@
 #define IV_LV5_RADIO_CELL_H_
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
+#include "lv5/radio/block_size.h"
 namespace iv {
 namespace lv5 {
 namespace radio {
@@ -20,6 +21,11 @@ class Cell {
 
   int tag() const {
     return tag_;
+  }
+
+  Block* block() const {
+    return reinterpret_cast<Block*>(
+        reinterpret_cast<uintptr_t>(this) & kBlockMask);
   }
 
   Cell* next() const { return next_; }
