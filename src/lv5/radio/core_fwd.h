@@ -37,7 +37,6 @@ class Core : private core::Noncopyable<Core> {
   Cell* Allocate() {
     typedef std::is_base_of<Cell, T> cond;
     IV_STATIC_ASSERT(cond::value);
-    IV_STATIC_ASSERT(AlignOf(T) <= kBlockControlStep);
     return AllocateFrom(
         GetBlockControl<IV_ROUNDUP(sizeof(T), kBlockControlStep)>());
   }
