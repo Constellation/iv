@@ -130,36 +130,25 @@ class Block : private core::Noncopyable<Block> {
   Block(size_type cell_size)
     : cell_size_(cell_size) {
     assert((reinterpret_cast<uintptr_t>(this) % kBlockSize) == 0);
-    control_size_ = core::Ceil(sizeof(this_type), cell_size_);
-    size_ = (kBlockSize - GetControlSize()) / cell_size_;
-  }
-
-  size_type GetControlSize() const {
-    return control_size_;
+    const std::size_t offset = core::Ceil(sizeof(this_type), cell_size_);
+    start_ = reinterpret_cast<uintptr_t>(this) + offset;
+    size_ = (kBlockSize - offset) / cell_size_;
   }
 
   iterator begin() {
-    return iterator(
-        reinterpret_cast<uintptr_t>(this) + GetControlSize(), cell_size());
+    return iterator(start_, cell_size());
   }
 
   const_iterator begin() const {
-    return const_iterator(
-        reinterpret_cast<uintptr_t>(this) + GetControlSize(), cell_size());
+    return const_iterator(start_, cell_size());
   }
 
   iterator end() {
-    return iterator(
-        reinterpret_cast<uintptr_t>(this) +
-        GetControlSize() + cell_size() * size(),
-        cell_size());
+    return iterator(start_ + cell_size() * size(), cell_size());
   }
 
   const_iterator end() const {
-    return const_iterator(
-        reinterpret_cast<uintptr_t>(this) +
-        GetControlSize() + cell_size() * size(),
-        cell_size());
+    return const_iterator(start_ + cell_size() * size(), cell_size());
   }
 
   bool Collect(Core* core, Context* ctx, BlockControl* control) {
@@ -190,15 +179,15 @@ class Block : private core::Noncopyable<Block> {
     }
   }
 
+  size_type size() const { return size_; }
+
   bool IsUsed() const { return size_ != 0; }
 
   void Release() {
     cell_size_ = 0;
     size_ = 0;
-    control_size_ = 0;
+    start_ = 0;
   }
-
-  size_type size() const { return size_; }
 
   size_type cell_size() const { return cell_size_; }
 
@@ -211,7 +200,7 @@ class Block : private core::Noncopyable<Block> {
  private:
   size_type cell_size_;
   size_type size_;
-  size_type control_size_;
+  uintptr_t start_;
   Block* next_;
 };
 
