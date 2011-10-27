@@ -170,6 +170,7 @@ class Block : private core::Noncopyable<Block> {
       if (color == Color::WHITE) {
         control->CollectCell(core, ctx, cell);
       } else if (color == Color::BLACK) {
+        cell->Coloring(Color::WHITE);
         used_cell_found = true;
       }
     }
