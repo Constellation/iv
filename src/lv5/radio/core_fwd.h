@@ -82,7 +82,7 @@ class Core : private core::Noncopyable<Core> {
 
   void Mark(Context* ctx);
 
-  void Sweep() { }
+  void Sweep(Context* ctx);
 
   void Drain() { }
 

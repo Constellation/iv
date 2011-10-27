@@ -22,7 +22,7 @@ class Cell {
  public:
   // next is used for free list ptr and gc mark bits
   explicit Cell(int tag) : tag_(tag), next_(Color::WHITE) { }
-  Cell() : tag_(0), next_(Color::WHITE) { }
+  Cell() : tag_(0), next_(Color::CLEAR) { }
   virtual ~Cell() { }
 
   int tag() const {

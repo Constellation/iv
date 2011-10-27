@@ -6,9 +6,10 @@ namespace radio {
 
 struct Color {
   enum Type {
-    WHITE = 0,
-    BLACK = 1,
-    GRAY  = 2
+    CLEAR = 0,
+    WHITE = 1,
+    BLACK = 2,
+    GRAY  = 3
   };
   static const uintptr_t kMask = 3;  // (11)2
 };

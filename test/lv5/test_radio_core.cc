@@ -21,7 +21,8 @@ TEST(RadioCoreCase, BlockAddrTest) {
 TEST(RadioCoreCase, ColoringWhiteTest) {
   iv::core::ScopedPtr<iv::lv5::radio::Core> core(new iv::lv5::radio::Core);
   iv::lv5::radio::Cell* cell = core->Allocate<iv::lv5::JSString>();
-  EXPECT_EQ(iv::lv5::radio::Color::WHITE, cell->color());
+  EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
+  cell->Coloring(iv::lv5::radio::Color::WHITE);
 
   core->Mark(NULL);
 
@@ -34,6 +35,9 @@ TEST(RadioCoreCase, ColoringBlackTest) {
   {
     const iv::lv5::radio::Scope scope(core.get());
     cell = core->Allocate<iv::lv5::JSString>();
+    EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
+    // construct
+    cell->Coloring(iv::lv5::radio::Color::WHITE);
     core->ChainToScope(cell);
     EXPECT_EQ(iv::lv5::radio::Color::WHITE, cell->color());
     core->Mark(NULL);
