@@ -69,7 +69,7 @@ class Core : private core::Noncopyable<Core> {
 
   void Collect(Context* ctx);
 
-  void ReturnBlock(Block* block);
+  void ReleaseBlock(Block* block);
 
  private:
   void AddArena() {

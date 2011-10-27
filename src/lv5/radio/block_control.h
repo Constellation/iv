@@ -31,7 +31,7 @@ inline void BlockControl::Collect(Core* core, Context* ctx) {
       Block* will_released = block;
       // enumeration
       block = block->next();
-      core->ReturnBlock(will_released);
+      core->ReleaseBlock(will_released);
     } else {
       // enumeration
       prev = block;
