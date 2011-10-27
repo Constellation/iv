@@ -48,9 +48,6 @@ class Core : private core::Noncopyable<Core> {
     }
   }
 
-  void CollectGarbage() {
-  }
-
   // allocate memory for radio::Cell
   template<typename T>
   Cell* Allocate() {
@@ -84,8 +81,6 @@ class Core : private core::Noncopyable<Core> {
   void Mark(Context* ctx);
 
   void Collect(Context* ctx);
-
-  void Drain() { }
 
   void ReturnBlock(Block* block);
 

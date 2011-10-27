@@ -23,10 +23,10 @@ TEST(RadioCoreCase, ColoringWhiteTest) {
   iv::lv5::radio::Cell* cell = core->Allocate<iv::lv5::JSString>();
   EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
   cell->Coloring(iv::lv5::radio::Color::WHITE);
-
   core->Mark(NULL);
-
   EXPECT_EQ(iv::lv5::radio::Color::WHITE, cell->color());
+  core->Collect(NULL);
+  EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
 }
 
 TEST(RadioCoreCase, ColoringBlackTest) {
@@ -43,6 +43,24 @@ TEST(RadioCoreCase, ColoringBlackTest) {
     core->Mark(NULL);
     EXPECT_EQ(iv::lv5::radio::Color::BLACK, cell->color());
   }
-  // core->Mark(NULL);
-  // EXPECT_EQ(cell->color(), iv::lv5::radio::Color::WHITE);
+  core->Collect(NULL);
+  EXPECT_EQ(iv::lv5::radio::Color::BLACK, cell->color());
+}
+
+TEST(RadioCoreCase, ColoringScopedTest) {
+  iv::core::ScopedPtr<iv::lv5::radio::Core> core(new iv::lv5::radio::Core);
+  iv::lv5::radio::Cell* cell = NULL;
+  {
+    const iv::lv5::radio::Scope scope(core.get());
+    cell = core->Allocate<iv::lv5::JSString>();
+    EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
+    // construct
+    cell->Coloring(iv::lv5::radio::Color::WHITE);
+    core->ChainToScope(cell);
+    EXPECT_EQ(iv::lv5::radio::Color::WHITE, cell->color());
+  }
+  core->Mark(NULL);
+  EXPECT_EQ(iv::lv5::radio::Color::WHITE, cell->color());
+  core->Collect(NULL);
+  EXPECT_EQ(iv::lv5::radio::Color::CLEAR, cell->color());
 }
