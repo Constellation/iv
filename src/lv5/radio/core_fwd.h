@@ -70,7 +70,12 @@ class Core : private core::Noncopyable<Core> {
     return AllocateBlock(size);
   }
 
+  void ChainToScope(Cell* cell) {
+    handles_.push_back(cell);
+  }
+
   void EnterScope(Scope* scope);
+
   void ExitScope(Scope* scope);
 
   bool MarkCell(Cell* cell);

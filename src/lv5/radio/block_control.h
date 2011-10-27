@@ -1,5 +1,6 @@
 #ifndef IV_LV5_RADIO_BLOCK_CONTROL_H_
 #define IV_LV5_RADIO_BLOCK_CONTROL_H_
+#include <new>
 #include "lv5/radio/block.h"
 #include "lv5/radio/core_fwd.h"
 namespace iv {
@@ -34,14 +35,17 @@ class BlockControl : private core::Noncopyable<BlockControl> {
     Block::iterator it = block->begin();
     const Block::const_iterator last = block->end();
     assert(it != last);
-    free_cells_ = &*it;
+    free_cells_ = new(reinterpret_cast<void*>(&*it))Cell;
+    Cell* prev = free_cells_;
+    ++it;
     while (true) {
-      Cell* cell = &*it;
-      ++it;
       if (it != last) {
-        cell->set_next(&*it);
+        Cell* cell = new(reinterpret_cast<void*>(&*it))Cell;
+        prev->set_next(cell);
+        prev = cell;
+        ++it;
       } else {
-        cell->set_next(NULL);
+        prev->set_next(NULL);
         break;
       }
     }

@@ -70,7 +70,7 @@ inline void Core::Mark(Context* ctx) {
   // mark all roots
   {
     // mark context (and global data, vm stack)
-    ctx->Mark(this);
+    // ctx->Mark(this);
     // mark handles
     std::for_each(handles_.begin(), handles_.end(), Marker(this));
     // mark persistent handles
@@ -89,6 +89,9 @@ inline void Core::Mark(Context* ctx) {
       cell->Coloring(Color::BLACK);
     }
   }
+}
+
+inline void Core::Sweep(Context* ctx) {
 }
 
 } } }  // namespace iv::lv5::radio

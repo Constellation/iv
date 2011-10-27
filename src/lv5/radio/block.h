@@ -32,21 +32,20 @@ class Block : private core::Noncopyable<Block> {
     typedef iterator_base<typename std::remove_const<T>::type> iterator;
     typedef iterator_base<typename std::add_const<T>::type> const_iterator;
 
-    iterator_base(pointer ptr, std::size_t size)  // NOLINT
+    iterator_base(uintptr_t ptr, std::size_t size)  // NOLINT
       : ptr_(ptr), size_(size) { }
 
     iterator_base(const iterator& it)  // NOLINT
       : ptr_(it.ptr()), size_(it.size()) { }
 
     reference operator*() const {
-      return *ptr_;
+      return *static_cast<pointer>(reinterpret_cast<void*>(ptr_));
     }
     reference operator[](difference_type d) const {
-      return *reinterpret_cast<pointer>(
-          reinterpret_cast<uintptr_t>(ptr_) + d * size_);
+      return *static_cast<pointer>(reinterpret_cast<void*>(ptr_ + d * size_));
     }
     pointer operator->() const {
-      return ptr_;
+      return static_cast<pointer>(reinterpret_cast<void*>(ptr_));
     }
     this_type& operator++() {
       return ((*this) += 1);
@@ -65,8 +64,7 @@ class Block : private core::Noncopyable<Block> {
       return iter;
     }
     this_type& operator+=(difference_type d) {
-      ptr_ = reinterpret_cast<pointer>(
-          reinterpret_cast<uintptr_t>(ptr_) + size_ * d);
+      ptr_ = ptr_ + size_ * d;
       return *this;
     }
     this_type& operator-=(difference_type d) {
@@ -107,12 +105,12 @@ class Block : private core::Noncopyable<Block> {
               reinterpret_cast<uintptr_t>(rhs.ptr_)) / lhs.size_;
     }
 
-    pointer ptr() const { return ptr_; }
+    uintptr_t ptr() const { return ptr_; }
 
     size_type size() const { return size_; }
 
    private:
-    pointer ptr_;
+    uintptr_t ptr_;
     size_type size_;
   };
 
@@ -131,31 +129,25 @@ class Block : private core::Noncopyable<Block> {
 
   iterator begin() {
     return iterator(
-        (reinterpret_cast<Cell*>(
-                reinterpret_cast<uintptr_t>(this) + GetControlSize())),
-        cell_size());
+        reinterpret_cast<uintptr_t>(this) + GetControlSize(), cell_size());
   }
 
   const_iterator begin() const {
     return const_iterator(
-        (reinterpret_cast<const Cell*>(
-                reinterpret_cast<uintptr_t>(this) + GetControlSize())),
-        cell_size());
+        reinterpret_cast<uintptr_t>(this) + GetControlSize(), cell_size());
   }
 
   iterator end() {
     return iterator(
-        (reinterpret_cast<Cell*>(
-                reinterpret_cast<uintptr_t>(this) +
-                GetControlSize() + cell_size() * size())),
+        reinterpret_cast<uintptr_t>(this) +
+        GetControlSize() + cell_size() * size(),
         cell_size());
   }
 
   const_iterator end() const {
     return const_iterator(
-        (reinterpret_cast<const Cell*>(
-                reinterpret_cast<uintptr_t>(this) +
-                GetControlSize() + cell_size() * size())),
+        reinterpret_cast<uintptr_t>(this) +
+        GetControlSize() + cell_size() * size(),
         cell_size());
   }
 
