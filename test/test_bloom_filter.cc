@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "detail/array.h"
+#include "detail/cstdint.h"
 #include "bloom_filter.h"
 
 TEST(BloomFilterCase, BloomFilterTest) {
