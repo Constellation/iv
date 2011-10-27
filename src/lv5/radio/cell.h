@@ -12,21 +12,22 @@ class Core;
 
 enum CellTag {
   STRING = 0,
-  OBJECT,
-  REFERENCE,
-  ENVIRONMENT,
-  POINTER
+  OBJECT = 1,
+  REFERENCE = 2,
+  ENVIRONMENT = 3,
+  POINTER = 4
 };
+
 
 class Cell {
  public:
   // next is used for free list ptr and gc mark bits
-  explicit Cell(int tag) : tag_(tag), next_(Color::WHITE) { }
-  Cell() : tag_(0), next_(Color::CLEAR) { }
+  explicit Cell(int tag) : next_(tag << Color::kOffset | Color::WHITE) { }
+  Cell() : next_(Color::CLEAR) { }
   virtual ~Cell() { }
 
   int tag() const {
-    return tag_;
+    return next_ >> Color::kOffset;
   }
 
   Block* block() const {
@@ -50,7 +51,6 @@ class Cell {
   virtual void MarkChildren(Core* core) { }
 
  private:
-  int tag_;
   uintptr_t next_;
 };
 

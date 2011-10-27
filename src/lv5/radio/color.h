@@ -11,6 +11,8 @@ struct Color {
     BLACK = 2,
     GRAY  = 3
   };
+
+  static const int kOffset = 2;
   static const uintptr_t kMask = 3;  // (11)2
 };
 
