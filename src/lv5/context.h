@@ -30,9 +30,7 @@ class Object;
 
 class JSObjectEnv;
 
-class Context
-  : public gc_cleanup,
-    private core::Noncopyable<Context> {
+class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
  public:
   friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
   friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);

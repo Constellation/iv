@@ -15,7 +15,8 @@ enum CellTag {
   OBJECT = 1,
   REFERENCE = 2,
   ENVIRONMENT = 3,
-  POINTER = 4
+  POINTER = 4,
+  POINTER_CLEANUP = 5
 };
 
 
@@ -69,7 +70,15 @@ class HeapObject<STRING>
   : public gc_cleanup,
     public Cell {
  public:
-  HeapObject() : gc(), Cell(STRING) { }
+  HeapObject() : gc_cleanup(), Cell(STRING) { }
+};
+
+template<>
+class HeapObject<POINTER_CLEANUP>
+  : public gc_cleanup,
+    public Cell {
+ public:
+  HeapObject() : gc_cleanup(), Cell(POINTER) { }
 };
 
 } } }  // namespace iv::lv5::radio
