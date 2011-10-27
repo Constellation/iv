@@ -5,13 +5,14 @@
 namespace iv {
 namespace aero {
 
-inline uint16_t QuickCheck::Emit(const ParsedData& data) {
+inline
+std::pair<uint16_t, std::size_t> QuickCheck::Emit(const ParsedData& data) {
   data.pattern()->Accept(this);
   if (!IsFailed()) {
     const uint16_t value = filter_.value();
-    return value;
+    return std::make_pair(value, added_character_count());
   }
-  return 0;
+  return std::make_pair(0, added_character_count());
 }
 
 inline void QuickCheck::Visit(Disjunction* dis) {
@@ -63,17 +64,17 @@ inline void QuickCheck::Visit(CharacterAtom* atom) {
     const uint16_t lu = core::character::ToLowerCase(ch);
     if (!(uu == lu && uu == ch)) {
       if (uu == ch || lu == ch) {
-        filter_.Add(uu);
-        filter_.Add(lu);
+        Emit(uu);
+        Emit(lu);
       } else {
-        filter_.Add(ch);
-        filter_.Add(uu);
-        filter_.Add(lu);
+        Emit(ch);
+        Emit(uu);
+        Emit(lu);
       }
       return;
     }
   }
-  filter_.Add(ch);
+  Emit(ch);
 }
 
 inline void QuickCheck::Visit(RangeAtom* atom) {
@@ -87,7 +88,7 @@ inline void QuickCheck::Visit(RangeAtom* atom) {
     }
     FilterCheck check(this);
     for (uint32_t ch = it->first; ch <= it->second; ++ch) {
-      filter_.Add(ch);
+      Emit(ch);
     }
   }
 }

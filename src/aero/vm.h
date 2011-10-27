@@ -54,6 +54,21 @@ class VM : private core::Noncopyable<VM> {
           ++offset;
         }
       } while (offset <= size);
+    } else if (code->IsQuickCheckOneChar()) {
+      // one char check path
+      while (offset < size) {
+        const uint16_t ch = subject[offset];
+        if (ch != filter) {
+          ++offset;
+        } else {
+          const int res = Execute(subject, code, captures, offset);
+          if (res == AERO_SUCCESS || res == AERO_ERROR) {
+            return res;
+          } else {
+            ++offset;
+          }
+        }
+      }
     } else {
       // bloom filter path
       while (offset < size) {

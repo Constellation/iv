@@ -42,10 +42,19 @@ class Compiler : private Visitor {
   Code* Compile(const ParsedData& data) {
     max_captures_ = data.max_captures();
     current_captures_num_ = 0;
-    const uint16_t filter = EmitQuickCheck(data);
+    const std::pair<uint16_t, std::size_t> ret = EmitQuickCheck(data);
+    const uint16_t filter = ret.first;
     data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
-    return new Code(code_, max_captures_, counters_size_, filter);
+    if (filter) {
+      if (ret.second == 1) {
+        return new Code(code_, max_captures_, counters_size_, filter, true);
+      } else {
+        return new Code(code_, max_captures_, counters_size_, filter, false);
+      }
+    } else {
+      return new Code(code_, max_captures_, counters_size_, filter, false);
+    }
   }
 
   uint32_t counters_size() const { return counters_size_; }
@@ -53,7 +62,7 @@ class Compiler : private Visitor {
   bool IsMultiline() const { return flags_ & MULTILINE; }
 
  private:
-  uint16_t EmitQuickCheck(const ParsedData& data) {
+  std::pair<uint16_t, std::size_t> EmitQuickCheck(const ParsedData& data) {
     // emit quick check phase for this pattern.
     // when RegExp /test/ is provided, we emit code that searching 't'
     // and if it is accepted, goto main body with this character position.

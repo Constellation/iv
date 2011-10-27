@@ -21,6 +21,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 's');
+    EXPECT_TRUE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -32,6 +33,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 0);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -43,6 +45,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 63);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -54,6 +57,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 0);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -65,6 +69,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 's' | 't');
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -76,6 +81,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 's' | 't');
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -87,6 +93,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 127);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -98,6 +105,7 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 0);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
     space.Clear();
@@ -109,5 +117,6 @@ TEST(AeroFilterCase, ContentTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(code->filter(), 0);
+    EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
 }

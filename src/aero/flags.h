@@ -15,6 +15,5 @@ enum RegExpResult {
   AERO_ERROR = 2
 };
 
-
 } }  // namespace iv::aero
 #endif  // IV_AERO_FLAGS_H_

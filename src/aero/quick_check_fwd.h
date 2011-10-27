@@ -23,12 +23,19 @@ class QuickCheck : private Visitor {
     QuickCheck* check_;
   };
   explicit QuickCheck(Compiler* compiler)
-    : compiler_(compiler), filter_(), enabled_(true) { }
+    : compiler_(compiler),
+      filter_(),
+      enabled_(true),
+      added_character_count_(0) { }
 
-  uint16_t Emit(const ParsedData& data);
+  std::pair<uint16_t, std::size_t> Emit(const ParsedData& data);
 
   const core::BloomFilter<uint16_t>& filter() {
     return filter_;
+  }
+
+  std::size_t added_character_count() const {
+    return added_character_count_;
   }
 
   void Fail() {
@@ -51,9 +58,15 @@ class QuickCheck : private Visitor {
   void Visit(DisjunctionAtom* atom);
   void Visit(Quantifiered* atom);
 
+  void Emit(uint16_t ch) {
+    filter_.Add(ch);
+    ++added_character_count_;
+  }
+
   Compiler* compiler_;
   core::BloomFilter<uint16_t> filter_;
   bool enabled_;
+  std::size_t added_character_count_;
 };
 
 } }  // namespace iv::aero
