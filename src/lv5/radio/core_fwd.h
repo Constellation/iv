@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "arith.h"
 #include "static_assert.h"
+#include "lv5/context.h"
 #include "lv5/radio/arena.h"
 #include "lv5/radio/cell.h"
 #include "lv5/radio/block.h"
@@ -72,6 +73,14 @@ class Core : private core::Noncopyable<Core> {
   void EnterScope(Scope* scope);
   void ExitScope(Scope* scope);
 
+  bool MarkCell(Cell* cell);
+
+  void Mark(Context* ctx);
+
+  void Sweep() { }
+
+  void Drain() { }
+
  private:
   Cell* AllocateFrom(BlockControl* control);
 
@@ -84,16 +93,22 @@ class Core : private core::Noncopyable<Core> {
     return controls_[core::detail::NTZ<N>::value - 3];
   }
 
-  void Mark() { }
+  struct Marker {
+    Marker(Core* core) : core_(core) { }
 
-  void Sweep() { }
+    void operator()(Cell* cell) {
+      core_->MarkCell(cell);
+    }
 
-  void Drain() { }
+    Core* core_;
+  };
 
   Arena* working_;
   Block* free_blocks_;
+  Cell* weak_maps_;
   std::vector<Cell*> handles_;  // scoped handles
   std::vector<Cell*> stack_;  // mark stack
+  std::vector<Cell*> persistents_;  // persistent handles
   std::array<BlockControl*, 13> controls_;  // blocks. first block is 8 bytes
 };
 

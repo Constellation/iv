@@ -2,10 +2,13 @@
 #define IV_LV5_RADIO_CELL_H_
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
+#include "lv5/radio/color.h"
 #include "lv5/radio/block_size.h"
 namespace iv {
 namespace lv5 {
 namespace radio {
+
+class Core;
 
 enum CellTag {
   STRING = 0,
@@ -17,7 +20,8 @@ enum CellTag {
 
 class Cell {
  public:
-  explicit Cell(int tag) : tag_(tag), next_(NULL) { }
+  // next is used for free list ptr and gc mark bits
+  explicit Cell(int tag) : tag_(tag), next_(Color::WHITE) { }
 
   int tag() const {
     return tag_;
@@ -28,13 +32,24 @@ class Cell {
         reinterpret_cast<uintptr_t>(this) & kBlockMask);
   }
 
-  Cell* next() const { return next_; }
+  int color() const {
+    return next_ & Color::kMask;
+  }
 
-  void set_next(Cell* cell) { next_ = cell; }
+  void Coloring(Color::Type color) {
+    next_ &= ~Color::kMask;  // clear color
+    next_ |= color;
+  }
+
+  Cell* next() const { return reinterpret_cast<Cell*>(next_); }
+
+  void set_next(Cell* cell) { next_ = reinterpret_cast<uintptr_t>(cell); }
+
+  virtual void MarkChildren(Core* core) { }
 
  private:
   int tag_;
-  Cell* next_;
+  uintptr_t next_;
 };
 
 template<CellTag TAG = POINTER>

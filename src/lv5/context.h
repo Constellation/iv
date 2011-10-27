@@ -19,10 +19,11 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
-
 JSVal ThrowTypeError(const Arguments& args, Error* e);
-
 }  // namespace runtime
+namespace radio {
+class Core;
+}  // namespace radio
 namespace bind {
 class Object;
 }  // namespace bind
@@ -104,6 +105,8 @@ class Context
   core::Space* regexp_allocator() { return &regexp_allocator_; }
 
   aero::VM* regexp_vm() { return &regexp_vm_; }
+
+  void Mark(radio::Core* core) { }  // FIXME:(Constellation) implement it
 
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);

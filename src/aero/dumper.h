@@ -2,6 +2,7 @@
 #ifndef IV_AERO_DUMPER_H_
 #define IV_AERO_DUMPER_H_
 #include "string_builder.h"
+#include "ustring.h"
 #include "aero/visitor.h"
 #include "aero/ast.h"
 namespace iv {

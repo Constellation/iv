@@ -12,8 +12,10 @@ namespace radio {
 inline Core::Core()
   : working_(NULL),
     free_blocks_(NULL),
+    weak_maps_(NULL),
     handles_(),
     stack_(),
+    persistents_(),
     controls_() {
   stack_.reserve(kInitialMarkStackSize);
   AddArena();
@@ -48,7 +50,44 @@ inline void Core::ExitScope(Scope* scope) {
     handles_.resize(scope->current() + 1);
     handles_.back() = cell;
   } else {
+    assert(handles_.size() > scope->current());
     handles_.resize(scope->current());
+  }
+}
+
+inline bool Core::MarkCell(Cell* cell) {
+  if (cell->color() == Color::WHITE) {
+    cell->Coloring(Color::GRAY);
+    stack_.push_back(cell);
+    return true;
+  }
+  return false;
+}
+
+inline void Core::Mark(Context* ctx) {
+  // mark phase start
+
+  // mark all roots
+  {
+    // mark context (and global data, vm stack)
+    ctx->Mark(this);
+    // mark handles
+    std::for_each(handles_.begin(), handles_.end(), Marker(this));
+    // mark persistent handles
+    std::for_each(persistents_.begin(), persistents_.end(), Marker(this));
+  }
+
+  // see harmony proposal gc algorithm
+  // http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps#abstract_gc_algorithm
+
+  // TODO(Constellation): stack all mark is faster? implement it.
+  while (!stack_.empty()) {
+    Cell* cell = stack_.back();
+    stack_.pop_back();
+    if (cell->color() == Color::GRAY) {
+      cell->MarkChildren(this);
+      cell->Coloring(Color::BLACK);
+    }
   }
 }
 
