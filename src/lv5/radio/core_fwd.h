@@ -23,6 +23,7 @@ class Scope;
 
 class Core : private core::Noncopyable<Core> {
  public:
+  typedef std::array<BlockControl*, 13> BlockControls;
   Core();
 
   ~Core();
@@ -82,9 +83,11 @@ class Core : private core::Noncopyable<Core> {
 
   void Mark(Context* ctx);
 
-  void Sweep(Context* ctx);
+  void Collect(Context* ctx);
 
   void Drain() { }
+
+  void ReturnBlock(Block* block);
 
  private:
   Cell* AllocateFrom(BlockControl* control);
@@ -100,11 +103,9 @@ class Core : private core::Noncopyable<Core> {
 
   struct Marker {
     Marker(Core* core) : core_(core) { }
-
     void operator()(Cell* cell) {
       core_->MarkCell(cell);
     }
-
     Core* core_;
   };
 
@@ -114,7 +115,7 @@ class Core : private core::Noncopyable<Core> {
   std::vector<Cell*> handles_;  // scoped handles
   std::vector<Cell*> stack_;  // mark stack
   std::vector<Cell*> persistents_;  // persistent handles
-  std::array<BlockControl*, 13> controls_;  // blocks. first block is 8 bytes
+  BlockControls controls_;  // blocks. first block is 8 bytes
 };
 
 

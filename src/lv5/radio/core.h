@@ -91,7 +91,17 @@ inline void Core::Mark(Context* ctx) {
   }
 }
 
-inline void Core::Sweep(Context* ctx) {
+inline void Core::Collect(Context* ctx) {
+  for (BlockControls::const_iterator it = controls_.begin(),
+       last = controls_.end(); it != last; ++it) {
+    (*it)->Collect(this, ctx);
+  }
+}
+
+
+inline void Core::ReturnBlock(Block* block) {
+  block->set_next(free_blocks_);
+  free_blocks_ = block;
 }
 
 } } }  // namespace iv::lv5::radio

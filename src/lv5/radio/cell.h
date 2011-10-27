@@ -35,8 +35,8 @@ class Cell {
         reinterpret_cast<uintptr_t>(this) & kBlockMask);
   }
 
-  int color() const {
-    return next_ & Color::kMask;
+  Color::Type color() const {
+    return static_cast<Color::Type>(next_ & Color::kMask);
   }
 
   void Coloring(Color::Type color) {
@@ -46,7 +46,9 @@ class Cell {
 
   Cell* next() const { return reinterpret_cast<Cell*>(next_); }
 
-  void set_next(Cell* cell) { next_ = reinterpret_cast<uintptr_t>(cell); }
+  void set_next(Cell* cell) {
+    next_ = reinterpret_cast<uintptr_t>(cell);
+  }
 
   virtual void MarkChildren(Core* core) { }
 

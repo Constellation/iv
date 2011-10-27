@@ -7,11 +7,17 @@
 #include "noncopyable.h"
 #include "lv5/radio/cell.h"
 #include "lv5/radio/block_size.h"
+#include "lv5/radio/block_control_fwd.h"
 // this is radio::Block
 // control space and memory block
 namespace iv {
 namespace lv5 {
+
+class Context;
+
 namespace radio {
+
+class BlockControl;
 
 class Block : private core::Noncopyable<Block> {
  public:
@@ -107,6 +113,10 @@ class Block : private core::Noncopyable<Block> {
 
     uintptr_t ptr() const { return ptr_; }
 
+    pointer Extract() const {
+      return static_cast<pointer>(reinterpret_cast<void*>(ptr_));
+    }
+
     size_type size() const { return size_; }
 
    private:
@@ -151,37 +161,19 @@ class Block : private core::Noncopyable<Block> {
         cell_size());
   }
 
-  template<typename Func>
-  void Iterate(Func func) {
+  bool Collect(Core* core, Context* ctx, BlockControl* control) {
+    bool used_cell_found = false;
     for (iterator it = begin(), last = end(); it != last; ++it) {
-      func(*it);
+      Cell* cell = it.Extract();
+      const Color::Type color = cell->color();
+      assert(color != Color::GRAY);
+      if (color == Color::WHITE) {
+        control->CollectCell(core, ctx, cell);
+      } else if (color == Color::BLACK) {
+        used_cell_found = true;
+      }
     }
-  }
-
-  template<typename Func>
-  void Iterate(Func func) const {
-    for (const_iterator it = begin(), last = end(); it != last; ++it) {
-      func(*it);
-    }
-  }
-
-  // destruct and chain to free list
-  struct Drainer {
-    Drainer(Block* block) : block_(block) { }
-    void operator()(Cell& cell) {
-      cell.~Cell();
-      block_->Chain(&cell);
-    }
-    Block* block_;
-  };
-
-  void Drain() {
-    Iterate(Drainer(this));
-  }
-
-  void Chain(Cell* cell) {
-    cell->set_next(top_);
-    top_ = cell;
+    return used_cell_found;
   }
 
   void DestroyAllCells() {
@@ -200,7 +192,6 @@ class Block : private core::Noncopyable<Block> {
  private:
   size_type cell_size_;
   size_type size_;
-  Cell* top_;
   Block* next_;
 };
 
