@@ -81,5 +81,30 @@ class UniformRandomGenerator {
   double max_;
 };
 
+template<typename EngineType, typename IntType = int>
+class Uniform32RandomGenerator {
+ public:
+  Uniform32RandomGenerator(IntType min = 0, IntType max = 10, int seed = 0)
+    : engine_(seed),
+      min_(min),
+      max_(max) {
+    engine_.discard(20);
+  }
+
+  void init(int seed = 0) {
+    engine_.seed(seed);
+    engine_.discard(20);
+  }
+
+  IntType get() {
+    return (engine_() % (max_ - min_ + 1)) + min_;
+  }
+
+ private:
+  EngineType engine_;
+  const IntType min_;
+  const IntType max_;
+};
+
 } }  // namespace iv::core
 #endif  // IV_RANDOM_H_
