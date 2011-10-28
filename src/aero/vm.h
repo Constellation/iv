@@ -33,7 +33,8 @@ class VM : private core::Noncopyable<VM> {
   static const std::size_t kInitialStackSize = 10000;
 
   VM()
-    : stack_(kInitialStackSize) {
+    : stack_(kInitialStackSize),
+      state_() {
   }
 
   int Execute(const core::UStringPiece& subject,
@@ -102,6 +103,7 @@ class VM : private core::Noncopyable<VM> {
   }
 
   std::vector<int> stack_;
+  std::vector<int> state_;
 };
 
 // #define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
@@ -124,8 +126,8 @@ inline int VM::Execute(const core::UStringPiece& subject,
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
   // state layout is following
   // [ captures ][ captures ][ target ]
-  std::vector<int> state(size, kUndefined);
-  state[0] = current_position;
+  state_.assign(size, kUndefined);
+  state_[0] = current_position;
   int* sp = stack_.data();
   const uint8_t* instr = code->data();
   const uint8_t* const first_instr = instr;
@@ -137,7 +139,7 @@ inline int VM::Execute(const core::UStringPiece& subject,
         if ((sp = NewState(sp, size))) {
           // copy state and push to backtrack stack
           int* target = sp - size;
-          std::copy(state.begin(), state.begin() + size - 1, target);
+          std::copy(state_.begin(), state_.begin() + size - 1, target);
           target[size - 1] = static_cast<int>(Load4Bytes(instr + 1));
           target[1] = current_position;
         } else {
@@ -149,32 +151,32 @@ inline int VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(START_CAPTURE) {
         const uint32_t target = Load4Bytes(instr + 1);
-        state[target * 2] = current_position;
-        state[target * 2 + 1] = kUndefined;
+        state_[target * 2] = current_position;
+        state_[target * 2 + 1] = kUndefined;
         DISPATCH_NEXT(START_CAPTURE);
       }
 
       DEFINE_OPCODE(END_CAPTURE) {
         const uint32_t target = Load4Bytes(instr + 1);
-        state[target * 2 + 1] = current_position;
+        state_[target * 2 + 1] = current_position;
         DISPATCH_NEXT(END_CAPTURE);
       }
 
       DEFINE_OPCODE(CLEAR_CAPTURES) {
         const uint32_t from = Load4Bytes(instr + 1);
         const uint32_t to = Load4Bytes(instr + 5);
-        std::fill_n(state.begin() + from * 2, (to - from) * 2, kUndefined);
+        std::fill_n(state_.begin() + from * 2, (to - from) * 2, kUndefined);
         DISPATCH_NEXT(CLEAR_CAPTURES);
       }
 
       DEFINE_OPCODE(BACK_REFERENCE) {
         const uint16_t ref = Load2Bytes(instr + 1);
         assert(ref != 0);  // limited by parser
-        if (ref < code->captures() && state[ref * 2 + 1] != kUndefined) {
-          assert(state[ref * 2] != kUndefined);
-          assert(state[ref * 2 + 1] != kUndefined);
-          const int start = state[ref * 2];
-          const int length = state[ref * 2 + 1] - start;
+        if (ref < code->captures() && state_[ref * 2 + 1] != kUndefined) {
+          assert(state_[ref * 2] != kUndefined);
+          assert(state_[ref * 2 + 1] != kUndefined);
+          const int start = state_[ref * 2];
+          const int length = state_[ref * 2 + 1] - start;
           if (current_position + length > subject.size()) {
             // out of range
             BACKTRACK();
@@ -194,10 +196,10 @@ inline int VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(BACK_REFERENCE_IGNORE_CASE) {
         const uint16_t ref = Load2Bytes(instr + 1);
         if (ref < code->captures() &&
-            state[ref * 2] != kUndefined &&
-            state[ref * 2 + 1] != kUndefined) {
-          const int start = state[ref * 2];
-          const int length = state[ref * 2 + 1] - start;
+            state_[ref * 2] != kUndefined &&
+            state_[ref * 2 + 1] != kUndefined) {
+          const int start = state_[ref * 2];
+          const int length = state_[ref * 2 + 1] - start;
           if (current_position + length > subject.size()) {
             // out of range
             BACKTRACK();
@@ -223,7 +225,7 @@ inline int VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(STORE_POSITION) {
-        state[code->captures() * 2 + Load4Bytes(instr + 1)] =
+        state_[code->captures() * 2 + Load4Bytes(instr + 1)] =
             static_cast<int>(current_position);
         DISPATCH_NEXT(STORE_POSITION);
       }
@@ -231,21 +233,21 @@ inline int VM::Execute(const core::UStringPiece& subject,
       DEFINE_OPCODE(POSITION_TEST) {
         if (current_position !=
             static_cast<std::size_t>(
-                state[code->captures() * 2 + Load4Bytes(instr + 1)])) {
+                state_[code->captures() * 2 + Load4Bytes(instr + 1)])) {
           DISPATCH_NEXT(POSITION_TEST);
         }
         BACKTRACK();
       }
 
       DEFINE_OPCODE(COUNTER_ZERO) {
-        state[code->captures() * 2 + Load4Bytes(instr + 1)] = 0;
+        state_[code->captures() * 2 + Load4Bytes(instr + 1)] = 0;
         DISPATCH_NEXT(COUNTER_ZERO);
       }
 
       DEFINE_OPCODE(COUNTER_NEXT) {
         // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
         const int32_t max = static_cast<int32_t>(Load4Bytes(instr + 5));
-        if (++state[code->captures() * 2 + Load4Bytes(instr + 1)] < max) {
+        if (++state_[code->captures() * 2 + Load4Bytes(instr + 1)] < max) {
           instr = first_instr + Load4Bytes(instr + 9);
           DISPATCH();
         }
@@ -295,14 +297,15 @@ inline int VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(STORE_SP) {
-        state[code->captures() * 2 + Load4Bytes(instr + 1)]
+        state_[code->captures() * 2 + Load4Bytes(instr + 1)]
             = sp - stack_.data();
         DISPATCH_NEXT(STORE_SP);
       }
 
       DEFINE_OPCODE(ASSERTION_SUCCESS) {
         int* previous = sp =
-            stack_.data() + state[code->captures() * 2 + Load4Bytes(instr + 1)];
+            stack_.data() +
+            state_[code->captures() * 2 + Load4Bytes(instr + 1)];
         current_position = previous[1];
         instr = first_instr + Load4Bytes(instr + 5);
         DISPATCH();
@@ -310,7 +313,8 @@ inline int VM::Execute(const core::UStringPiece& subject,
 
       DEFINE_OPCODE(ASSERTION_FAILURE) {
         sp =
-            stack_.data() + state[code->captures() * 2 + Load4Bytes(instr + 1)];
+            stack_.data() +
+            state_[code->captures() * 2 + Load4Bytes(instr + 1)];
         BACKTRACK();
       }
 
@@ -413,9 +417,9 @@ inline int VM::Execute(const core::UStringPiece& subject,
       }
 
       DEFINE_OPCODE(SUCCESS) {
-        state[1] = current_position;
-        std::copy(state.begin(),
-                  state.begin() + code->captures() * 2, captures);
+        state_[1] = current_position;
+        std::copy(state_.begin(),
+                  state_.begin() + code->captures() * 2, captures);
         return AERO_SUCCESS;
       }
 
@@ -427,9 +431,9 @@ inline int VM::Execute(const core::UStringPiece& subject,
     // backtrack stack unwind
     if (sp > stack_.data()) {
       sp -= size;
-      std::copy(sp, sp + size, state.begin());
-      current_position = state[1];
-      instr = first_instr + state[size - 1];
+      std::copy(sp, sp + size, state_.begin());
+      current_position = state_[1];
+      instr = first_instr + state_[size - 1];
       DISPATCH();
     }
     return AERO_FAILURE;
