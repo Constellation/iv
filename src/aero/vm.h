@@ -37,18 +37,14 @@ class VM : private core::Noncopyable<VM> {
       state_() {
   }
 
-  int Execute(const core::UStringPiece& subject,
-              Code* code, int* captures,
-              std::size_t current_position);
-
   int ExecuteOnce(Code* code, const core::UStringPiece& subject,
-                  int offset, int* captures) {
+                  int* captures, int offset) {
     const int size = subject.size();
     const uint16_t filter = code->filter();
     if (!filter) {
       // normal path
       do {
-        const int res = Execute(subject, code, captures, offset);
+        const int res = Execute(code, subject, captures, offset);
         if (res == AERO_SUCCESS || res == AERO_ERROR) {
           return res;
         } else {
@@ -62,7 +58,7 @@ class VM : private core::Noncopyable<VM> {
         if (ch != filter) {
           ++offset;
         } else {
-          const int res = Execute(subject, code, captures, offset);
+          const int res = Execute(code, subject, captures, offset);
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -77,7 +73,7 @@ class VM : private core::Noncopyable<VM> {
         if ((filter & ch) != ch) {
           ++offset;
         } else {
-          const int res = Execute(subject, code, captures, offset);
+          const int res = Execute(code, subject, captures, offset);
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -90,6 +86,9 @@ class VM : private core::Noncopyable<VM> {
   }
 
  private:
+  int Execute(Code* code, const core::UStringPiece& subject,
+              int* captures, std::size_t current_position);
+
   int* NewState(int* current, std::size_t size) {
     const std::size_t offset = (current - stack_.data()) + size;
     do {
@@ -118,9 +117,8 @@ class VM : private core::Noncopyable<VM> {
   DISPATCH()
 #define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
-inline int VM::Execute(const core::UStringPiece& subject,
-                       Code* code, int* captures,
-                       std::size_t current_position) {
+inline int VM::Execute(Code* code, const core::UStringPiece& subject,
+                       int* captures, std::size_t current_position) {
   assert(code->captures() >= 1);
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;

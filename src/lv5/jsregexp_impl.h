@@ -73,7 +73,7 @@ class JSRegExpImpl : public gc_cleanup {
                   int offset,
                   int* offset_vector) const {
     assert(IsValid());
-    return ctx->regexp_vm()->ExecuteOnce(code_, subject, offset, offset_vector);
+    return ctx->regexp_vm()->ExecuteOnce(code_, subject, offset_vector, offset);
   }
 
  private:
