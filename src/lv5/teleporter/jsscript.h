@@ -33,6 +33,8 @@ class JSScript : public lv5::JSScript {
     return function_;
   }
 
+  void MarkChildren(radio::Core* core) { }
+
  private:
   const FunctionLiteral* function_;
 };

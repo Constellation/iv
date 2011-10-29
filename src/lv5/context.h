@@ -104,7 +104,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   aero::VM* regexp_vm() { return &regexp_vm_; }
 
-  void Mark(radio::Core* core) { }  // FIXME:(Constellation) implement it
+  void MarkChildren(radio::Core* core) { }
 
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);

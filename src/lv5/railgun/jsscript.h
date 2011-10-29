@@ -21,6 +21,8 @@ class JSScript : public lv5::JSScript {
 
   virtual Type type() const = 0;
 
+  void MarkChildren(radio::Core* core) { }
+
   virtual core::UStringPiece SubString(std::size_t start,
                                        std::size_t len) const = 0;
 };

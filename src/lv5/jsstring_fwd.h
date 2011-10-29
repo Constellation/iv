@@ -642,6 +642,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
+  void MarkChildren(radio::Core* core) { }
+
  private:
   void SlowFlatten() const {
     Fiber* fiber = Fiber::NewWithSize(size_);

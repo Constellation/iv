@@ -11,6 +11,7 @@
 #include "lv5/railgun/fwd.h"
 #include "lv5/railgun/op.h"
 #include "lv5/railgun/core_data_fwd.h"
+#include "lv5/railgun/jsscript.h"
 #include "lv5/railgun/direct_threading.h"
 namespace iv {
 namespace lv5 {
@@ -24,7 +25,7 @@ struct Handler {
   };
 };
 
-class Code : public radio::HeapObject<> {
+class Code : public radio::HeapObject<radio::POINTER> {
  public:
   enum CodeType {
     FUNCTION,
@@ -283,6 +284,15 @@ class Code : public radio::HeapObject<> {
       construct_map_ = Map::New(ctx);
     }
     return construct_map_;
+  }
+
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(script_);
+    // core->MarkCell(core_);
+    std::for_each(codes_.begin(), codes_.end(), radio::Core::Marker(core));
+    std::for_each(constants_.begin(),
+                  constants_.end(), radio::Core::Marker(core));
+    core->MarkCell(construct_map_);
   }
 
  private:

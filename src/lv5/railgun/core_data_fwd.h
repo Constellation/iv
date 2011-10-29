@@ -17,10 +17,12 @@ class CoreData : public GCKind<CoreData> {
     return new CoreData(new (GC) Data());
   }
 
-  inline GC_ms_entry* MarkChildren(GC_word* top,
-                                   GC_ms_entry* entry,
-                                   GC_ms_entry* mark_sp_limit,
-                                   GC_word env);
+  GC_ms_entry* MarkChildren(GC_word* top,
+                            GC_ms_entry* entry,
+                            GC_ms_entry* mark_sp_limit,
+                            GC_word env);
+
+  void MarkChildren(radio::Core* core);
 
   Data* data() {
     return data_;
