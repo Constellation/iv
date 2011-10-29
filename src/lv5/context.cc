@@ -22,6 +22,7 @@
 #include "lv5/jserror.h"
 #include "lv5/bind.h"
 #include "lv5/internal.h"
+#include "lv5/radio/radio.h"
 namespace iv {
 namespace lv5 {
 namespace context {

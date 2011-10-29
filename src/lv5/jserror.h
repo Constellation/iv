@@ -51,7 +51,6 @@ class JSError : public JSObject {
 
  private:
   Error::Code code_;
-  JSString* detail_;
 };
 
 class JSEvalError : public JSError {

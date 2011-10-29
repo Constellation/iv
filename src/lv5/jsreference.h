@@ -4,6 +4,7 @@
 #include "lv5/jsval_fwd.h"
 #include "lv5/symbol.h"
 #include "lv5/radio/cell.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -33,6 +34,10 @@ class JSReference : public radio::HeapObject<radio::REFERENCE> {
   static JSReference* New(Context* ctx,
                           JSVal base, Symbol name, bool is_strict) {
     return new JSReference(base, name, is_strict);
+  }
+
+  void MarkChildren(radio::Core* core) {
+    core->MarkValue(base_);
   }
 
  private:

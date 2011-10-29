@@ -129,6 +129,10 @@ class Chain : private core::Noncopyable<Chain> {
     return (current && cache == current->map()) ? current : NULL;
   }
 
+  void MarkChildren(radio::Core* core) {
+    std::for_each(begin(), end(), radio::Core::Marker(core));
+  }
+
  private:
   template<typename Iter>
   Chain(Iter it, std::size_t count)

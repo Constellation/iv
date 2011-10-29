@@ -14,6 +14,7 @@
 #include "lv5/map.h"
 #include "lv5/slot.h"
 #include "lv5/error_check.h"
+#include "lv5/radio/radio.h"
 namespace iv {
 namespace lv5 {
 
@@ -338,6 +339,12 @@ JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
   return new JSObject(map);
 }
 
+void JSObject::MarkChildren(radio::Core* core) {
+  core->MarkCell(prototype_);
+  core->MarkCell(map_);
+  std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
+}
+
 void Map::GetOwnPropertyNames(const JSObject* obj,
                               Context* ctx,
                               std::vector<Symbol>* vec,
@@ -353,5 +360,6 @@ void Map::GetOwnPropertyNames(const JSObject* obj,
     }
   }
 }
+
 
 } }  // namespace iv::lv5

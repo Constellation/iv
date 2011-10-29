@@ -18,6 +18,7 @@
 #include "lv5/object_utils.h"
 #include "lv5/adapter/select1st.h"
 #include "lv5/railgun/fwd.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace detail {
@@ -241,6 +242,17 @@ class JSArray : public JSObject {
       }
     }
     JSObject::GetOwnPropertyNames(ctx, vec, mode);
+  }
+
+  void MarkChildren(radio::Core* core) {
+    JSObject::MarkChildren(core);
+    std::for_each(vector_.begin(), vector_.end(), radio::Core::Marker(core));
+    if (map_) {
+      for (SparseArray::const_iterator it = map_->begin(),
+           last = map_->end(); it != last; ++it) {
+        core->MarkValue(it->second);
+      }
+    }
   }
 
  private:

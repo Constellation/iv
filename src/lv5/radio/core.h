@@ -66,6 +66,27 @@ inline bool Core::MarkCell(Cell* cell) {
   return false;
 }
 
+inline bool Core::MarkValue(const JSVal& val) {
+  return (val.IsCell()) ? MarkCell(val.cell()) : false;
+}
+
+inline bool Core::MarkPropertyDescriptor(const PropertyDescriptor& desc) {
+  if (desc.IsDataDescriptor()) {
+    return MarkValue(desc.AsDataDescriptor()->value());
+  } else {
+    assert(desc.IsAccessorDescriptor());
+    const AccessorDescriptor* accs = desc.AsAccessorDescriptor();
+    bool res = false;
+    if (accs->get()) {
+      res |= MarkCell(accs->get());
+    }
+    if (accs->set()) {
+      res |= MarkCell(accs->set());
+    }
+    return res;
+  }
+}
+
 inline void Core::CollectGarbage(Context* ctx) {
   // mark & sweep
   Mark(ctx);
@@ -92,7 +113,7 @@ inline bool Core::MarkWeaks() {
 inline void Core::MarkRoots(Context* ctx) {
   // mark context (and global data, vm stack)
   if (ctx) {
-    ctx->Mark(this);
+    // ctx->Mark(this);
   }
   // mark handles
   std::for_each(handles_.begin(), handles_.end(), Marker(this));

@@ -13,6 +13,7 @@
 #include "lv5/error_check.h"
 #include "lv5/bind.h"
 #include "lv5/specialized_ast.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -200,6 +201,11 @@ class JSNormalArguments : public JSObject {
       }
     }
     return result;
+  }
+
+  void MarkChildren(radio::Core* core) {
+    JSObject::MarkChildren(core);
+    core->MarkCell(env_);
   }
 
  private:

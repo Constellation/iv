@@ -51,7 +51,7 @@ class Cell {
     next_ = reinterpret_cast<uintptr_t>(cell);
   }
 
-  virtual void MarkChildren(Core* core) { }
+  inline virtual void MarkChildren(Core* core) { }
 
  private:
   uintptr_t next_;

@@ -96,6 +96,11 @@ class JSCodeFunction : public JSFunction {
     return function_->strict();
   }
 
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(script_);
+    core->MarkCell(env_);
+  }
+
  private:
   JSCodeFunction(Context* ctx,
                  const FunctionLiteral* func,

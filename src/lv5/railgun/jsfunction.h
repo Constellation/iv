@@ -148,6 +148,11 @@ class JSVMFunction : public JSFunction {
     return code_->strict();
   }
 
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(code_);
+    core->MarkCell(env_);
+  }
+
  private:
   JSVMFunction(Context* ctx,
                railgun::Code* code, JSEnv* env)

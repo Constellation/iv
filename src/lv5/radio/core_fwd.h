@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "arith.h"
 #include "static_assert.h"
+#include "lv5/property_fwd.h"
 #include "lv5/radio/arena.h"
 #include "lv5/radio/cell.h"
 #include "lv5/radio/block.h"
@@ -64,11 +65,31 @@ class Core : private core::Noncopyable<Core> {
 
   bool MarkCell(Cell* cell);
 
+  bool MarkValue(const JSVal& val);
+
+  bool MarkPropertyDescriptor(const PropertyDescriptor& desc);
+
   void Mark(Context* ctx);
 
   void Collect(Context* ctx);
 
   void ReleaseBlock(Block* block);
+
+  struct Marker {
+    Marker(Core* core) : core_(core) { }
+    void operator()(Cell* cell) {
+      if (cell) {
+        core_->MarkCell(cell);
+      }
+    }
+    void operator()(const PropertyDescriptor& desc) {
+      core_->MarkPropertyDescriptor(desc);
+    }
+    void operator()(const JSVal& val) {
+      core_->MarkValue(val);
+    }
+    Core* core_;
+  };
 
  private:
   void AddArena() {
@@ -111,14 +132,6 @@ class Core : private core::Noncopyable<Core> {
     IV_STATIC_ASSERT(((N + 1) / kBlockControlStep) < kBlockControls);
     return &controls_[(N + 1) / kBlockControlStep];
   }
-
-  struct Marker {
-    Marker(Core* core) : core_(core) { }
-    void operator()(Cell* cell) {
-      core_->MarkCell(cell);
-    }
-    Core* core_;
-  };
 
   Arena* working_;
   Block* free_blocks_;

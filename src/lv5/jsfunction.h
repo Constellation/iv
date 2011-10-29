@@ -9,6 +9,7 @@
 #include "lv5/class.h"
 #include "lv5/map.h"
 #include "lv5/arguments.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -219,6 +220,14 @@ class JSBoundFunction : public JSFunction {
                               const JSVal& this_binding,
                               const Arguments& args) {
     return new JSBoundFunction(ctx, target, this_binding, args);
+  }
+
+  void MarkChildren(radio::Core* core) {
+    JSObject::MarkChildren(core);
+    core->MarkCell(target_);
+    core->MarkValue(this_binding_);
+    std::for_each(arguments_.begin(),
+                  arguments_.end(), radio::Core::Marker(core));
   }
 
  private:

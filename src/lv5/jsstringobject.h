@@ -90,6 +90,10 @@ class JSStringObject : public JSObject {
     return &cls;
   }
 
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(value_);
+  }
+
  private:
   JSString* value_;
   uint32_t length_;

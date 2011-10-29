@@ -12,6 +12,7 @@
 #include "lv5/error.h"
 #include "lv5/jsval_fwd.h"
 #include "lv5/radio/cell.h"
+#include "lv5/radio/core_fwd.h"
 
 namespace iv {
 namespace lv5 {
@@ -39,6 +40,10 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
   virtual bool IsLookupNeeded() const = 0;
   inline JSEnv* outer() const {
     return outer_;
+  }
+
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(outer_);
   }
 
  protected:
@@ -165,10 +170,6 @@ class JSDeclEnv : public JSEnv {
     return NULL;
   }
 
-  Record& record() {
-    return record_;
-  }
-
   const Record& record() const {
     return record_;
   }
@@ -236,6 +237,14 @@ class JSDeclEnv : public JSEnv {
       return JSUndefined;
     }
     return entry.value;
+  }
+
+  void MarkChildren(radio::Core* core) {
+    JSEnv::MarkChildren(core);
+    for (Record::const_iterator it = record_.begin(),
+         last = record_.end(); it != last; ++it) {
+      core->MarkValue(it->value);
+    }
   }
 
  private:
@@ -350,6 +359,11 @@ class JSObjectEnv : public JSEnv {
     return true;
   }
 
+  void MarkChildren(radio::Core* core) {
+    JSEnv::MarkChildren(core);
+    core->MarkCell(record_);
+  }
+
  private:
   explicit JSObjectEnv(JSEnv* outer, JSObject* rec)
     : JSEnv(outer),
@@ -413,6 +427,11 @@ class JSStaticEnv : public JSEnv {
 
   bool IsLookupNeeded() const {
     return true;
+  }
+
+  void MarkChildren(radio::Core* core) {
+    JSEnv::MarkChildren(core);
+    core->MarkValue(value_);
   }
 
  private:

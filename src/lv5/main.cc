@@ -29,6 +29,7 @@
 #include "lv5/railgun/interactive.h"
 #include "lv5/teleporter/teleporter.h"
 #include "lv5/teleporter/interactive.h"
+#include "lv5/radio/radio.h"
 
 namespace {
 

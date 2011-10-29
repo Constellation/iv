@@ -3,6 +3,7 @@
 #include <gc/gc_cpp.h>
 #include "lv5/jsobject.h"
 #include "lv5/radio/cell.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -32,6 +33,8 @@ class NameIterator : public radio::HeapObject<> {
   static NameIterator* New(Context* ctx, JSObject* obj) {
     return new NameIterator(ctx, obj);
   }
+
+  void MarkChildren(radio::Core* core) { }
 
  private:
   GCVector<Symbol>::type keys_;

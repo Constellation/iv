@@ -8,6 +8,7 @@
 #include "lv5/symbol.h"
 #include "lv5/class.h"
 #include "lv5/radio/cell.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 
@@ -146,6 +147,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   Map* map() const {
     return map_;
   }
+
+  void MarkChildren(radio::Core* core);
 
  protected:
   explicit JSObject(Map* map);

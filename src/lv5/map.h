@@ -222,6 +222,13 @@ class Map : public radio::HeapObject<radio::POINTER> {
       transitions_.EnableUniqueTransition();
     }
   }
+
+  void MarkChildren(radio::Core* core) {
+    if (previous_) {
+      core->MarkCell(previous_);
+    }
+  }
+
  private:
   bool IsUnique() const {
     return !transitions_.IsEnabled();
