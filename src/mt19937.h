@@ -12,7 +12,9 @@
 #define IV_MT19937_H_
 #include <vector>
 #include <ctime>
+#include <limits>
 #include "detail/cstdint.h"
+#include "detail/array.h"
 namespace iv {
 namespace core {
 
@@ -130,7 +132,7 @@ class MT19937 {
   static const uint32_t UPPER_MASK = 0x80000000UL;  // most significant w-r bits
   static const uint32_t LOWER_MASK = 0x7fffffffUL;  // least significant r bits
 
-  uint32_t mt_[N];
+  std::array<uint32_t, N> mt_;
   int mti_;
 };
 
