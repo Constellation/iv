@@ -2,6 +2,7 @@
 #ifndef IV_LV5_RADIO_CORE_FWD_H_
 #define IV_LV5_RADIO_CORE_FWD_H_
 #include <vector>
+#include <deque>
 #include <new>
 #include "detail/array.h"
 #include "noncopyable.h"
@@ -31,6 +32,8 @@ class Core : private core::Noncopyable<Core> {
  public:
   typedef std::array<BlockControl, kBlockControls> BlockControls;
   typedef std::vector<Cell*> MarkStack;
+  typedef std::deque<Cell*> HandleStack;
+  typedef std::deque<Cell*> PersistentStack;
   Core();
 
   ~Core();
@@ -138,9 +141,9 @@ class Core : private core::Noncopyable<Core> {
   Arena* working_;
   Block* free_blocks_;
   Cell* weak_maps_;
-  std::vector<Cell*> handles_;  // scoped handles
+  HandleStack handles_;  // scoped handles
   MarkStack stack_;  // mark stack
-  std::vector<Cell*> persistents_;  // persistent handles
+  PersistentStack persistents_;  // persistent handles
   BlockControls controls_;  // blocks. first block is 8 bytes
 };
 
