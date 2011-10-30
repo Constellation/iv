@@ -288,7 +288,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void MarkChildren(radio::Core* core) {
     core->MarkCell(script_);
-    // core->MarkCell(core_);
+    core_->MarkChildren(core);
     std::for_each(codes_.begin(), codes_.end(), radio::Core::Marker(core));
     std::for_each(constants_.begin(),
                   constants_.end(), radio::Core::Marker(core));
@@ -321,6 +321,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   std::size_t start_position_;
   std::size_t end_position_;
   std::size_t stack_depth_;
+  // TODO(Constellation): use std::shared_ptr for CoreData
   CoreData* core_;
   std::size_t start_;
   std::size_t end_;

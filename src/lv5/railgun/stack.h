@@ -16,6 +16,7 @@
 #include "lv5/gc_kind.h"
 #include "lv5/railgun/frame.h"
 #include "lv5/railgun/direct_threading.h"
+#include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -246,6 +247,16 @@ class Stack : core::Noncopyable<Stack> {
     return current_;
   }
 
+  void MarkChildren(radio::Core* core) {
+    // mark Frame member
+    MarkFrame(core, current_, stack_pointer_);
+    // traverse frames
+    for (Frame *next = current_, *now = current_->prev_;
+         now; next = now, now = next->prev_) {
+      MarkFrame(core, now, next->GetFrameBase());
+    }
+  }
+
  private:
   static GC_ms_entry* MarkFrame(GC_ms_entry* entry,
                                 GC_ms_entry* mark_sp_limit,
@@ -276,6 +287,14 @@ class Stack : core::Noncopyable<Stack> {
       }
     }
     return entry;
+  }
+
+  void MarkFrame(radio::Core* core, Frame* frame, JSVal* last) {
+    core->MarkCell(frame->code_);
+    core->MarkCell(frame->lexical_env_);
+    core->MarkCell(frame->variable_env_);
+    core->MarkValue(frame->ret_);
+    std::for_each(frame->GetLocal(), last, radio::Core::Marker(core));
   }
 
   void SetSafeStackPointerForFrame(Frame* prev, Frame* current) {
