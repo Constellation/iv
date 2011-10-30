@@ -41,8 +41,7 @@ class Core : private core::Noncopyable<Core> {
   // allocate memory for radio::Cell
   template<typename T>
   Cell* Allocate() {
-    typedef std::is_base_of<Cell, T> cond;
-    IV_STATIC_ASSERT(cond::value);
+    IV_STATIC_ASSERT((std::is_base_of<Cell, T>::value));
     return AllocateFrom(
         GetBlockControl<IV_ROUNDUP(sizeof(T), kBlockControlStep)>());
   }

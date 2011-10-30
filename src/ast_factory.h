@@ -40,10 +40,8 @@ class BasicAstFactory {
           new(static_cast<Factory*>(this))TrueLiteral()),
       false_instance_(
           new(static_cast<Factory*>(this))FalseLiteral()) {
-    typedef std::is_convertible<Factory, this_type> is_convertible_to_this;
-    typedef std::is_base_of<this_type, Factory> is_base_of_factory;
-    IV_STATIC_ASSERT(is_convertible_to_this::value ||
-                     is_base_of_factory::value);
+    IV_STATIC_ASSERT((std::is_convertible<Factory, this_type>::value) ||
+                     (std::is_base_of<this_type, Factory>::value));
   }
 
   template<typename Range>
