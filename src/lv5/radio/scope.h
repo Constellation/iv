@@ -21,7 +21,7 @@ class Scope : private core::Noncopyable<Scope> {
   explicit Scope(Context* ctx) { }
 
   ~Scope() {
-    // core_->ExitScope(this);
+    core_->ExitScope(this);
   }
 
   std::size_t current() const {
@@ -51,21 +51,18 @@ class Scope : private core::Noncopyable<Scope> {
   std::size_t current_;
 };
 
+#ifdef DEBUG
 // for debug
 class NoAllocationScope : private core::Noncopyable<NoAllocationScope> {
  public:
   friend class Core;
   explicit NoAllocationScope(Core* core)
     : core_(core) {
-#ifdef DEBUG
     core_->EnterScope(this);
-#endif
   }
 
   ~NoAllocationScope() {
-#ifdef DEBUG
     core_->FenceScope(this);
-#endif
   }
 
   std::size_t current() const {
@@ -79,6 +76,16 @@ class NoAllocationScope : private core::Noncopyable<NoAllocationScope> {
   Core* core_;
   std::size_t current_;
 };
+
+#else
+
+class NoAllocationScope : private core::Noncopyable<NoAllocationScope> {
+ public:
+  friend class Core;
+  explicit NoAllocationScope(Core* core) { }
+};
+
+#endif  // ifdef DEBUG
 
 } } }  // namespace iv::lv5::radio
 #endif  // IV_LV5_RADIO_BLOCK_H_

@@ -616,7 +616,7 @@ do {\
                           symbol::MakeSymbolFromIndex(index), strict, ERR);
           SET_TOP(JSVal::Bool(result));
         } else {
-          const radio::Scope scope(ctx_);
+          // const radio::Scope scope(ctx_);
           const Symbol s = element.ToSymbol(ctx_, ERR);
           JSObject* const obj = base.ToObject(ctx_, ERR);
           const bool result = obj->Delete(ctx_, s, strict, ERR);
