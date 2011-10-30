@@ -8,7 +8,7 @@
 namespace iv {
 namespace core {
 
-template<typename CharT = uint16_t>
+template<typename CharT>
 class BasicStringBuilder : protected std::vector<CharT> {
  public:
   typedef BasicStringBuilder this_type;
