@@ -57,11 +57,15 @@ class NoAllocationScope : private core::Noncopyable<NoAllocationScope> {
   friend class Core;
   explicit NoAllocationScope(Core* core)
     : core_(core) {
+#ifdef DEBUG
     core_->EnterScope(this);
+#endif
   }
 
   ~NoAllocationScope() {
+#ifdef DEBUG
     core_->FenceScope(this);
+#endif
   }
 
   std::size_t current() const {
