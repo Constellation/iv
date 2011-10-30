@@ -27,7 +27,6 @@ TEST(AeroCompilerCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    disasm.DisAssemble(*code.get());
   }
   {
     space.Clear();
