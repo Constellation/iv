@@ -18,7 +18,8 @@ namespace lv5 {
 class Context;
 namespace radio {
 
-static const std::size_t kInitialMarkStackSize = 64;
+static const std::size_t kInitialMarkStackSize =
+    (4 * core::Size::KB) / sizeof(Cell*);
 static const std::size_t kMaxObjectSize = 512;
 static const std::size_t kBlockControlStep = 16;
 static const std::size_t kBlockControls = kMaxObjectSize / kBlockControlStep;
@@ -29,6 +30,7 @@ class Scope;
 class Core : private core::Noncopyable<Core> {
  public:
   typedef std::array<BlockControl, kBlockControls> BlockControls;
+  typedef std::vector<Cell*> MarkStack;
   Core();
 
   ~Core();
@@ -137,7 +139,7 @@ class Core : private core::Noncopyable<Core> {
   Block* free_blocks_;
   Cell* weak_maps_;
   std::vector<Cell*> handles_;  // scoped handles
-  std::vector<Cell*> stack_;  // mark stack
+  MarkStack stack_;  // mark stack
   std::vector<Cell*> persistents_;  // persistent handles
   BlockControls controls_;  // blocks. first block is 8 bytes
 };

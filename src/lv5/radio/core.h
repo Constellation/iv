@@ -132,6 +132,7 @@ inline void Core::Mark(Context* ctx) {
   while (MarkWeaks()) {
     Drain();
   }
+  assert(stack_.empty());
 }
 
 inline void Core::Collect(Context* ctx) {
