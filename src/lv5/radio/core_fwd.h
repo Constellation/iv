@@ -73,7 +73,7 @@ class Core : private core::Noncopyable<Core> {
     if (Cell* cell = scope->reserved()) {
       handles_.resize(scope->current() + 1);
       handles_.back() = cell;
-    } else {
+    } else if (handles_.size() != scope->current()) {
       assert(handles_.size() > scope->current());
       handles_.resize(scope->current());
     }
