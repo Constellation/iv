@@ -2,6 +2,7 @@
 #define IV_LV5_RADIO_SCOPE_H_
 #include "noncopyable.h"
 #include "lv5/jsval_fwd.h"
+#include "lv5/context_utils.h"
 #include "lv5/radio/core_fwd.h"
 namespace iv {
 namespace lv5 {
@@ -9,6 +10,7 @@ namespace radio {
 
 class Scope : private core::Noncopyable<Scope> {
  public:
+  friend class Core;
   explicit Scope(Core* core)
     : core_(core),
       reserved_(NULL),
@@ -16,12 +18,10 @@ class Scope : private core::Noncopyable<Scope> {
     core_->EnterScope(this);
   }
 
-  ~Scope() {
-    core_->ExitScope(this);
-  }
+  explicit Scope(Context* ctx) { }
 
-  void set_current(std::size_t current) {
-    current_ = current;
+  ~Scope() {
+    // core_->ExitScope(this);
   }
 
   std::size_t current() const {
@@ -42,8 +42,37 @@ class Scope : private core::Noncopyable<Scope> {
   }
 
  private:
+  void set_current(std::size_t current) {
+    current_ = current;
+  }
+
   Core* core_;
   Cell* reserved_;
+  std::size_t current_;
+};
+
+// for debug
+class NoAllocationScope : private core::Noncopyable<NoAllocationScope> {
+ public:
+  friend class Core;
+  explicit NoAllocationScope(Core* core)
+    : core_(core) {
+    core_->EnterScope(this);
+  }
+
+  ~NoAllocationScope() {
+    core_->FenceScope(this);
+  }
+
+  std::size_t current() const {
+    return current_;
+  }
+ private:
+  void set_current(std::size_t current) {
+    current_ = current;
+  }
+
+  Core* core_;
   std::size_t current_;
 };
 

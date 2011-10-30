@@ -63,9 +63,26 @@ class Core : private core::Noncopyable<Core> {
     handles_.push_back(cell);
   }
 
-  void EnterScope(Scope* scope);
+  template<typename Scope>
+  void EnterScope(Scope* scope) {
+    scope->set_current(handles_.size());
+  }
 
-  void ExitScope(Scope* scope);
+  template<typename Scope>
+  void ExitScope(Scope* scope) {
+    if (Cell* cell = scope->reserved()) {
+      handles_.resize(scope->current() + 1);
+      handles_.back() = cell;
+    } else {
+      assert(handles_.size() > scope->current());
+      handles_.resize(scope->current());
+    }
+  }
+
+  template<typename Scope>
+  void FenceScope(Scope* scope) {
+    assert(scope->current() == handles_.current());
+  }
 
   bool MarkCell(Cell* cell);
 

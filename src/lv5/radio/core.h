@@ -43,20 +43,6 @@ inline Cell* Core::AllocateFrom(BlockControl* control) {
   return control->Allocate(this);
 }
 
-inline void Core::EnterScope(Scope* scope) {
-  scope->set_current(handles_.size());
-}
-
-inline void Core::ExitScope(Scope* scope) {
-  if (Cell* cell = scope->reserved()) {
-    handles_.resize(scope->current() + 1);
-    handles_.back() = cell;
-  } else {
-    assert(handles_.size() > scope->current());
-    handles_.resize(scope->current());
-  }
-}
-
 inline bool Core::MarkCell(Cell* cell) {
   if (cell->color() == Color::WHITE) {
     cell->Coloring(Color::GRAY);

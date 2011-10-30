@@ -122,8 +122,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
       JSObject* const obj = first.object();
       Symbol name;
       if (args.size() > 1) {
-        JSString* const str = args[1].ToString(args.ctx(), IV_LV5_ERROR(e));
-        name = context::Intern(args.ctx(), str);
+        name = args[1].ToSymbol(args.ctx(), IV_LV5_ERROR(e));
       } else {
         name = context::Intern(args.ctx(), "undefined");
       }
@@ -198,9 +197,7 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
       JSObject* const obj = first.object();
       Symbol name;
       if (args.size() > 1) {
-        const JSString* const str =
-            args[1].ToString(args.ctx(), IV_LV5_ERROR(e));
-        name = context::Intern(args.ctx(), str);
+        name = args[1].ToSymbol(args.ctx(), IV_LV5_ERROR(e));
       } else {
         name = context::Intern(args.ctx(), "undefined");
       }
@@ -471,10 +468,10 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     const JSVal& val = args[0];
     Context* const ctx = args.ctx();
-    JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+    const Symbol name = val.ToSymbol(ctx, IV_LV5_ERROR(e));
     JSObject* const obj =
         args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-    if (!obj->GetOwnProperty(ctx, context::Intern(ctx, str)).IsEmpty()) {
+    if (!obj->GetOwnProperty(ctx, name).IsEmpty()) {
       return JSTrue;
     } else {
       return JSFalse;
@@ -510,8 +507,7 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, e);
   Symbol name;
   if (args.size() > 0) {
-    JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
-    name = context::Intern(args.ctx(), str);
+    name = args[0].ToSymbol(args.ctx(), IV_LV5_ERROR(e));
   } else {
     name = context::Intern(args.ctx(), "undefined");
   }

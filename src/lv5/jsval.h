@@ -644,6 +644,46 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
   }
 }
 
+Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
+  uint32_t index;
+  if (GetUInt32(&index)) {
+    return symbol::MakeSymbolFromIndex(index);
+  } else {
+    if (IsString()) {
+      return context::Intern(ctx, string());
+    } else if (IsNumber()) {
+      // int32 short cut
+      if (IsInt32()) {
+        std::array<char, 15> buffer;
+        char* end = core::Int32ToString(int32(), buffer.data());
+        return context::Intern(
+            ctx,
+            core::StringPiece(buffer.data(),
+                              std::distance(buffer.data(), end)));
+      } else {
+        std::array<char, 80> buffer;
+        const char* const str =
+            core::DoubleToCString(number(), buffer.data(), buffer.size());
+        return context::Intern(ctx, str);
+      }
+    } else if (IsBoolean()) {
+      return context::Intern(ctx, (boolean() ? "true" : "false"));
+    } else if (IsNull()) {
+      return context::Intern(ctx, "null");
+    } else if (IsUndefined()) {
+      return context::Intern(ctx, "undefined");
+    } else {
+      assert(IsObject());
+      const JSVal prim =
+          object()->DefaultValue(
+              ctx, Hint::STRING,
+              IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
+      JSString* str = prim.ToString(ctx, e);
+      return context::Intern(ctx, str);
+    }
+  }
+}
+
 double JSVal::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();

@@ -182,7 +182,7 @@ class Operation {
   JSVal LoadElement(const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    const Symbol s = GetSymbol(element, CHECK);
+    const Symbol s = element.ToSymbol(ctx_, CHECK);
     return LoadPropImpl(base, s, strict, e);
   }
 
@@ -244,7 +244,7 @@ class Operation {
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    const Symbol s = GetSymbol(element, CHECK);
+    const Symbol s = element.ToSymbol(ctx_, CHECK);
     StorePropImpl(base, s, stored, strict, e);
   }
 
@@ -446,7 +446,7 @@ class Operation {
       e->Report(Error::Type, "in requires object");
       return JSEmpty;
     }
-    const Symbol s = GetSymbol(lhs, CHECK);
+    const Symbol s = lhs.ToSymbol(ctx_, CHECK);
     return JSVal::Bool(rhs.object()->HasProperty(ctx_, s));
   }
 
@@ -566,7 +566,7 @@ class Operation {
   JSVal IncrementElement(const JSVal& base,
                          const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
-    const Symbol s = GetSymbol(element, CHECK);
+    const Symbol s = element.ToSymbol(ctx_, CHECK);
     const JSVal w = LoadPropImpl(base, s, strict, CHECK);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
@@ -602,17 +602,6 @@ class Operation {
       std::get<1>(results) = std::get<0>(results) + Target;
       StorePropImpl(base, s, std::get<1>(results), strict, e);
       return std::get<Returned>(results);
-    }
-  }
-
-  Symbol GetSymbol(const JSVal& val, Error* e) const {
-    uint32_t index;
-    if (val.GetUInt32(&index)) {
-      return symbol::MakeSymbolFromIndex(index);
-    } else {
-      const JSString* str =
-          val.ToString(ctx_, IV_LV5_ERROR_WITH(e, symbol::length()));
-      return context::Intern(ctx_, str);
     }
   }
 

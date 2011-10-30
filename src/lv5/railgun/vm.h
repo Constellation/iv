@@ -28,6 +28,7 @@
 #include "lv5/railgun/jsfunction.h"
 #include "lv5/railgun/stack.h"
 #include "lv5/railgun/direct_threading.h"
+#include "lv5/radio/radio.h"
 
 namespace iv {
 namespace lv5 {
@@ -615,8 +616,8 @@ do {\
                           symbol::MakeSymbolFromIndex(index), strict, ERR);
           SET_TOP(JSVal::Bool(result));
         } else {
-          const JSString* str = element.ToString(ctx_, ERR);
-          const Symbol s = context::Intern(ctx_, str);
+          const radio::Scope scope(ctx_);
+          const Symbol s = element.ToSymbol(ctx_, ERR);
           JSObject* const obj = base.ToObject(ctx_, ERR);
           const bool result = obj->Delete(ctx_, s, strict, ERR);
           SET_TOP(JSVal::Bool(result));
