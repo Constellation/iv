@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <limits>
 #include <cmath>
-#include "lv5/jsval.h"
+#include <iv/lv5/jsval.h>
 
 TEST(JSValCase, NaNTest) {
   using iv::lv5::JSVal;

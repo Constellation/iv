@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <string>
-#include "space.h"
-#include "ast_factory.h"
-#include "ast_serializer.h"
-#include "parser.h"
+#include <iv/space.h>
+#include <iv/ast_factory.h>
+#include <iv/ast_serializer.h>
+#include <iv/parser.h>
 
 class AstFactory
   : public iv::core::Space,

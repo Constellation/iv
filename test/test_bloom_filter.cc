@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "detail/array.h"
-#include "detail/cstdint.h"
-#include "bloom_filter.h"
+#include <iv/detail/array.h>
+#include <iv/detail/cstdint.h>
+#include <iv/bloom_filter.h>
 
 TEST(BloomFilterCase, BloomFilterTest) {
   iv::core::BloomFilter<uint32_t> filter;

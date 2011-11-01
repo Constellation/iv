@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <iostream>
-#include "digit_iterator.h"
+#include <iv/digit_iterator.h>
 
 using iv::core::DigitIterator;
 

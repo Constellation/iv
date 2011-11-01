@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "detail/array.h"
-#include "arith.h"
+#include <iv/detail/array.h>
+#include <iv/arith.h>
 
 TEST(ArithCase, FLP2Test) {
   typedef std::array<uint32_t, 64> Samples;

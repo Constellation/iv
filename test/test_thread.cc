@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "thread.h"
+#include <iv/thread.h>
 
 TEST(ThreadCase, ScopedLockTest) {
   using iv::core::thread::Mutex;

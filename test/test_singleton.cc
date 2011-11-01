@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "singleton.h"
+#include <iv/singleton.h>
 namespace {
 
 static int global_counter_ = 0;

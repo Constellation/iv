@@ -30,7 +30,7 @@
 //         dtoa(v, 3, number_digits, &decimal_point, &sign, NULL);
 #ifndef IV_TEST_DTOA_FIXED_H_
 #define IV_TEST_DTOA_FIXED_H_
-#include "detail/array.h"
+#include <iv/detail/array.h>
 
 struct PrecomputedFixed {
   double v;

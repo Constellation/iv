@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ctime>
-#include "mt19937.h"
-#include "random.h"
+#include <iv/mt19937.h>
+#include <iv/random.h>
 
 TEST(MT19937Case, Test) {
   iv::core::MT19937 g;

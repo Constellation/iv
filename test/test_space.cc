@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "detail/cstdint.h"
-#include "scoped_ptr.h"
-#include "alloc.h"
+#include <iv/detail/cstdint.h>
+#include <iv/scoped_ptr.h>
+#include <iv/alloc.h>
 
 TEST(SpaceCase, AllocateMemoryAlignemntTest) {
   iv::core::ScopedPtr<iv::core::Space> space(new iv::core::Space());

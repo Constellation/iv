@@ -30,7 +30,7 @@
 //         dtoa(v, 2, number_digits, &decimal_point, &sign, NULL);
 #ifndef IV_TEST_DTOA_PRECISION_H_
 #define IV_TEST_DTOA_PRECISION_H_
-#include "detail/array.h"
+#include <iv/detail/array.h>
 
 struct PrecomputedPrecision {
   double v;

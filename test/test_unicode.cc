@@ -2,8 +2,8 @@
 #include <iterator>
 #include <algorithm>
 #include <gtest/gtest.h>
-#include "detail/cstdint.h"
-#include "unicode.h"
+#include <iv/detail/cstdint.h>
+#include <iv/unicode.h>
 
 namespace c = iv::core::unicode;
 

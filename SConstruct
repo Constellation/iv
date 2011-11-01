@@ -34,9 +34,9 @@ def TestLv5(context, object_files, libs):
 
 def Lv5(context):
   lv5_task, lv5_objs, lv5_libs = context.SConscript(
-    'src/lv5/SConscript',
+    'iv/lv5/SConscript',
     variant_dir=join(root_dir, 'obj', 'lv5'),
-    src=join(root_dir, 'src', 'lv5'),
+    src=join(root_dir, 'iv', 'lv5'),
     duplicate=False,
     exports="context root_dir"
   )
@@ -44,9 +44,9 @@ def Lv5(context):
 
 def Main(context, deps):
   return context.SConscript(
-    'src/SConscript',
-    variant_dir=join(root_dir, 'obj', 'src'),
-    src=join(root_dir, 'src'),
+    'iv/SConscript',
+    variant_dir=join(root_dir, 'obj', 'iv'),
+    src=join(root_dir, 'iv'),
     duplicate=False,
     exports='root_dir context deps'
   )
@@ -65,7 +65,7 @@ def Build():
     BoolVariable('release', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
-  env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'src'), 0)
+  env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'iv'), 0)
 
   env.PrependENVPath('PATH', os.environ['PATH']) #especially MacPorts's /opt/local/bin
 
@@ -137,7 +137,7 @@ def Build():
       "-Wall", "-Wextra", '-pipe',
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
-    CPPPATH=[join(root_dir, 'src'), join(root_dir, 'obj', 'src')],
+    CPPPATH=root_dir,
     CPPDEFINES=[
       "_GNU_SOURCE",
       "__STDC_LIMIT_MACROS",

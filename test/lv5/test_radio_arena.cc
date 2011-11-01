@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <algorithm>
-#include "scoped_ptr.h"
-#include "lv5/radio/arena.h"
+#include <iv/scoped_ptr.h>
+#include <iv/lv5/radio/arena.h>
 
 TEST(RadioArenaCase, ArenaBlocksTest) {
   // check blocks size and iterator / const_iterator behavior

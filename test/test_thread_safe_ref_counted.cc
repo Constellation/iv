@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "thread_safe_ref_counted.h"
+#include <iv/thread_safe_ref_counted.h>
 namespace {
 
 class Check : public iv::core::ThreadSafeRefCounted<Check> {

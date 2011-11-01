@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <iostream>
-#include "conversions.h"
-#include "platform_math.h"
+#include <iv/conversions.h>
+#include <iv/platform_math.h>
 
 TEST(ConversionsCase, UStringToDoubleTest) {
   using iv::core::StringToDouble;

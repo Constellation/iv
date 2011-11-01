@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "character.h"
+#include <iv/character.h>
 
 TEST(CharacterCase, CategoryTest) {
   using iv::core::character::GetCategory;

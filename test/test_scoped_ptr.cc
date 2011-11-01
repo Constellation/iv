@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "detail/array.h"
-#include "scoped_ptr.h"
+#include <iv/detail/array.h>
+#include <iv/scoped_ptr.h>
 namespace {
 
 class Checker {

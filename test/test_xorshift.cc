@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <ctime>
-#include "random.h"
+#include <iv/random.h>
 
 TEST(XorshiftCase, Test) {
   iv::core::Xor128 g;

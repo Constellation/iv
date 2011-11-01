@@ -1,8 +1,8 @@
 #include <cstring>
 #include <iostream>
 #include <gtest/gtest.h>
-#include "detail/array.h"
-#include "dtoa.h"
+#include <iv/detail/array.h>
+#include <iv/dtoa.h>
 #include "dtoa_fixed.h"
 #include "dtoa_precision.h"
 #include "dtoa_shortest.h"

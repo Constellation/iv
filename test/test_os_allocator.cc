@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "os_allocator.h"
-#include "utils.h"
+#include <iv/os_allocator.h>
+#include <iv/utils.h>
 
 TEST(OSAllocatorCase, SmallAllocateAndDeallocateTest) {
   // small memory
