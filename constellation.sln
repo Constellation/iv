@@ -1,9 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "iv", "iv.vcxproj", "{0EA709BB-9392-40C9-B5FF-69FDC0B70CBF}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "az", "..\az\az.vcxproj", "{E09C93DE-C654-444A-9463-CF68B22B2B94}"
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lv5", "iv.vcxproj", "{0EA709BB-9392-40C9-B5FF-69FDC0B70CBF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +17,6 @@ Global
 		{0EA709BB-9392-40C9-B5FF-69FDC0B70CBF}.Release|Win32.ActiveCfg = Release|Win32
 		{0EA709BB-9392-40C9-B5FF-69FDC0B70CBF}.Release|Win32.Build.0 = Release|Win32
 		{0EA709BB-9392-40C9-B5FF-69FDC0B70CBF}.Release|x64.ActiveCfg = Release|x64
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Debug|Win32.Build.0 = Debug|Win32
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Debug|x64.ActiveCfg = Debug|x64
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Debug|x64.Build.0 = Debug|x64
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Release|Win32.ActiveCfg = Release|Win32
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Release|Win32.Build.0 = Release|Win32
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Release|x64.ActiveCfg = Release|x64
-		{E09C93DE-C654-444A-9463-CF68B22B2B94}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

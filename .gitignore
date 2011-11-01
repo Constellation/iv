@@ -14,6 +14,14 @@ src/phonic/Manifest.txt
 src/phonic/lib/iv/phonic.so
 src/phonic/ext/iv/phonic/third_party
 test/sputnik/sputniktests/
+*.sdf
+*.vcxproj.user
+*.opensdf
+*.suo
+ipch/
+Release/
+Debug/
+build/
 
 .DS_Store
 i*.swp
