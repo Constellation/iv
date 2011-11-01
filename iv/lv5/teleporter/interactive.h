@@ -42,7 +42,8 @@ class Interactive {
       } else {
         std::printf("| ");
       }
-      const char* str = std::fgets(line.data(), line.size(), stdin);
+      const char* str =
+          std::fgets(line.data(), static_cast<int>(line.size()), stdin);
       if (!str) {
         break;
       }

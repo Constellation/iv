@@ -394,7 +394,8 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
       Context* const ctx = args.ctx();
       std::vector<Symbol> keys;
       obj->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-      JSArray* const ary = JSArray::New(args.ctx(), keys.size());
+      JSArray* const ary =
+          JSArray::New(args.ctx(), static_cast<uint32_t>(keys.size()));
       uint32_t index = 0;
       for (std::vector<Symbol>::const_iterator it = keys.begin(),
            last = keys.end(); it != last; ++it, ++index) {

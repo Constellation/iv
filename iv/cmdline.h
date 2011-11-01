@@ -710,7 +710,7 @@ class Parser {
     std::vector<const char*> argv(argc);
     std::transform(args.begin(), args.end(),
                    argv.begin(), mem_fun_ref(&std::string::c_str));
-    return Parse(argc, argv.data());
+    return Parse(static_cast<int>(argc), argv.data());
   }
 
   bool Parse(int argc, const char * const argv[]) {

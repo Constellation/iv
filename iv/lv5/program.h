@@ -49,7 +49,7 @@ template<typename T>
 ProgramImpl<T>* ProgramImpl<T>::instance_ = NULL;
 typedef ProgramImpl<void> Program;
 
-void Init(int argc, char ** argv) {
+inline void Init(int argc, char ** argv) {
   Program::Init(argc, argv);
 }
 

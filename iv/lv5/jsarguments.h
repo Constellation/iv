@@ -46,7 +46,7 @@ class JSNormalArguments : public JSObject {
                                 JSDeclEnv* env,
                                 Error* e) {
     JSNormalArguments* const obj = new JSNormalArguments(ctx, env);
-    const uint32_t len = std::distance(it, last);
+    const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
     bind::Object binder(ctx, obj);
@@ -222,7 +222,7 @@ class JSNormalArguments : public JSObject {
                            ArgsReverseIter it, ArgsReverseIter last,
                            uint32_t len) {
     uint32_t index = len - 1;
-    const uint32_t names_len = names.size();
+    const uint32_t names_len = static_cast<uint32_t>(names.size());
     obj->mapping_.resize((std::min)(len, names_len), symbol::kDummySymbol);
     for (; it != last; ++it) {
       binder->def(symbol::MakeSymbolFromIndex(index),
@@ -257,7 +257,7 @@ class JSStrictArguments : public JSObject {
                                 ArgsReverseIter last,
                                 Error* e) {
     JSStrictArguments* const obj = new JSStrictArguments(ctx);
-    const uint32_t len = std::distance(it, last);
+    const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
     obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
     bind::Object binder(ctx, obj);

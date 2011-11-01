@@ -20,7 +20,7 @@ class Context;
 namespace radio {
 
 static const std::size_t kInitialMarkStackSize =
-    (4 * core::Size::KB) / sizeof(Cell*);
+    (4 * core::Size::KB) / sizeof(Cell*);  // NOLINT
 static const std::size_t kMaxObjectSize = 512;
 static const std::size_t kBlockControlStep = 16;
 static const std::size_t kBlockControls = kMaxObjectSize / kBlockControlStep;
@@ -81,7 +81,7 @@ class Core : private core::Noncopyable<Core> {
 
   template<typename Scope>
   void FenceScope(Scope* scope) {
-    assert(scope->current() == handles_.current());
+    assert(scope->current() == handles_.size());
   }
 
   bool MarkCell(Cell* cell);
@@ -97,7 +97,7 @@ class Core : private core::Noncopyable<Core> {
   void ReleaseBlock(Block* block);
 
   struct Marker {
-    Marker(Core* core) : core_(core) { }
+    explicit Marker(Core* core) : core_(core) { }
     void operator()(Cell* cell) {
       if (cell) {
         core_->MarkCell(cell);
