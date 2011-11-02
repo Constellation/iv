@@ -2,6 +2,8 @@
 #define IV_ASSOC_VECTOR_H_
 #include <vector>
 #include <utility>
+#include <functional>
+#include <algorithm>
 namespace iv {
 namespace core {
 namespace detail {
@@ -18,13 +20,14 @@ struct AssocVectorValueCompare
 
 }  // namespace detail
 
+// prevent up-cast, so using private inheritance
 template<
   typename Key,
   typename Val,
   typename Compare=std::less<Key>,
   typename Alloc=std::allocator<std::pair<Key, Val> > >
 class AssocVector
-  : protected std::vector<std::pair<Key, Val>, Alloc> {
+  : private std::vector<std::pair<Key, Val>, Alloc> {
  public:
   typedef Key key_type;
   typedef Val mapped_type;

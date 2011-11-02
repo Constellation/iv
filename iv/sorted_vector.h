@@ -2,15 +2,16 @@
 #define IV_SORTED_VECTOR_H_
 #include <vector>
 #include <functional>
+#include <algorithm>
 namespace iv {
 namespace core {
 
-// prevent upcase, so using protected inheritance
+// prevent up-cast, so using private inheritance
 template<
   typename T,
   typename Compare=std::less<T>,
   typename Alloc=std::allocator<T> >
-class SortedVector : protected std::vector<T, Alloc> {
+class SortedVector : private std::vector<T, Alloc> {
  public:
   typedef std::vector<T, Alloc> container_type;
   typedef const container_type const_container_type;
