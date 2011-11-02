@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iv/noncopyable.h>
 #include <iv/character.h>
+#include <iv/sorted_vector.h>
 #include <iv/aero/range.h>
 #include <iv/aero/escape.h>
 namespace iv {
@@ -13,12 +14,14 @@ namespace aero {
 class RangeBuilder : private core::Noncopyable<RangeBuilder> {
  public:
   explicit RangeBuilder(bool ignore_case)
-    : ignore_case_(ignore_case), ranges_() { }
+    : ignore_case_(ignore_case), sorted_(), ranges_() { }
 
   // range value is [start, last]
   typedef std::vector<Range> Ranges;
+  typedef core::SortedVector<Range> SortedRanges;
 
   void Clear() {
+    sorted_.clear();
     ranges_.clear();
   }
 
@@ -34,7 +37,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
           AddCharacterIgnoreCase(ch);
         }
       } else {
-        ranges_.push_back(std::make_pair(start, last));
+        sorted_.push_back(std::make_pair(start, last));
       }
     }
   }
@@ -51,7 +54,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     if (IsIgnoreCase() && ignore_case) {
       AddCharacterIgnoreCase(ch);
     } else {
-      ranges_.push_back(std::make_pair(ch, ch));
+      sorted_.push_back(std::make_pair(ch, ch));
     }
   }
 
@@ -62,25 +65,22 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
   }
 
   const Ranges& Finish() {
-    if (ranges_.empty()) {
+    if (sorted_.empty()) {
       return ranges_;
     }
-    Ranges result;
-    std::sort(ranges_.begin(), ranges_.end());
-    Ranges::const_iterator it = ranges_.begin();
-    const Ranges::const_iterator last = ranges_.end();
+    SortedRanges::const_iterator it = sorted_.begin();
+    const SortedRanges::const_iterator last = sorted_.end();
     Range current = *it;
     ++it;
     for (; it != last; ++it) {
       if ((current.second + 1) >= it->first) {
         current.second = std::max(current.second, it->second);
       } else {
-        result.push_back(current);
+        ranges_.push_back(current);
         current = *it;
       }
     }
-    result.push_back(current);
-    ranges_.swap(result);
+    ranges_.push_back(current);
     return ranges_;
   }
 
@@ -130,11 +130,11 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     const uint16_t lu = core::character::ToLowerCase(ch);
     const uint16_t uu = core::character::ToUpperCase(ch);
     if (lu == uu && lu == ch) {
-      ranges_.push_back(std::make_pair(ch, ch));
+      sorted_.push_back(std::make_pair(ch, ch));
     } else {
-      ranges_.push_back(std::make_pair(lu, lu));
-      ranges_.push_back(std::make_pair(uu, uu));
-      ranges_.push_back(std::make_pair(ch, ch));
+      sorted_.push_back(std::make_pair(lu, lu));
+      sorted_.push_back(std::make_pair(uu, uu));
+      sorted_.push_back(std::make_pair(ch, ch));
     }
   }
 
@@ -156,6 +156,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
   }
 
   bool ignore_case_;
+  SortedRanges sorted_;
   Ranges ranges_;
 };
 
