@@ -27,14 +27,14 @@ class SortedVector : protected std::vector<T, Alloc> {
   typedef typename container_type::value_type value_type;
   typedef typename container_type::allocator_type allocator_type;
   typedef Compare key_compare;
-  using const_container_type::begin;
-  using const_container_type::end;
-  using const_container_type::rbegin;
-  using const_container_type::rend;
-  using const_container_type::operator[];
-  using const_container_type::at;
-  using const_container_type::front;
-  using const_container_type::back;
+  using container_type::begin;
+  using container_type::end;
+  using container_type::rbegin;
+  using container_type::rend;
+  using container_type::operator[];
+  using container_type::at;
+  using container_type::front;
+  using container_type::back;
   using container_type::erase;
   using container_type::size;
   using container_type::max_size;
@@ -44,8 +44,8 @@ class SortedVector : protected std::vector<T, Alloc> {
   using container_type::clear;
   using container_type::get_allocator;
 
-  void insert(const T& val) {
-    container_type::insert(
+  iterator insert(const T& val) {
+    return container_type::insert(
         std::upper_bound(container_type::begin(),
                          container_type::end(),
                          val, Compare()), val);
