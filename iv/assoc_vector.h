@@ -65,10 +65,7 @@ class AssocVector
   }
 
   iterator find(const Key& key) {
-    const iterator it =
-        std::lower_bound(container_type::begin(),
-                         container_type::end(),
-                         std::make_pair(key, mapped_type()), value_comp());
+    const iterator it = lower_bound(key);
     if (it != container_type::end() && it->first == key) {
       return it;
     }
@@ -76,19 +73,52 @@ class AssocVector
   }
 
   const_iterator find(const Key& key) const {
-    const const_iterator it =
-        std::lower_bound(container_type::begin(),
-                         container_type::end(),
-                         std::make_pair(key, mapped_type()), value_comp());
+    const const_iterator it = lower_bound(key);
     if (it != container_type::end() && it->first == key) {
       return it;
     }
     return container_type::end();
   }
 
+  iterator lower_bound(const key_type& key) {
+    return std::lower_bound(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
+  const_iterator lower_bound(const key_type& key) const {
+    return std::lower_bound(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
+  iterator upper_bound(const key_type& key) {
+    return std::upper_bound(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
+  const_iterator upper_bound(const key_type& key) const {
+    return std::upper_bound(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
+  iterator equal_range(const key_type& key) {
+    return std::equal_range(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
+  const_iterator equal_range(const key_type& key) const {
+    return std::equal_range(container_type::begin(),
+                            container_type::end(),
+                            std::make_pair(key, mapped_type()), value_comp());
+  }
+
   iterator insert(const value_type& val) {
-    const iterator it = find(val.first);
-    if (it != container_type::end()) {
+    const iterator it = lower_bound(val.first);
+    if (it != end() && it->first == val.first) {
       return it;
     }
     return container_type::insert(it, val);
