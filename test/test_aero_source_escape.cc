@@ -39,7 +39,7 @@ TEST(AeroSourceEscapeCase, LineTerminatorTest) {
 }
 
 TEST(AeroSourceEscapeCase, SpecialCharactersTest) {
-  EXPECT_TRUE(ExpectEqual("^$\\.*+?()[]{}|", "^$\\.*+?()[]{}|"));
+  EXPECT_TRUE(ExpectEqual("^$\\.*+?()[]{}|!=", "^$\\.*+?()[]{}|!="));
 }
 
 TEST(AeroSourceEscapeCase, OneCharTest) {
