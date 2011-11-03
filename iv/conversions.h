@@ -608,10 +608,17 @@ inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t c) {
   return out;
 }
 
+struct JSONQuoteFunctor {
+  template<typename MemoType, typename CharType>
+  MemoType operator()(MemoType memo, CharType ch) const {
+    return JSONQuote(memo, ch);
+  }
+};
+
 template<typename U8OrU16InputIter, typename U16OutputIter>
 inline U16OutputIter JSONQuote(U8OrU16InputIter it,
                                U8OrU16InputIter last, U16OutputIter out) {
-  return std::accumulate(it, last, out, &JSONQuote<U16OutputIter>);
+  return std::accumulate(it, last, out, JSONQuoteFunctor());
 }
 
 // If provided string is passed in RegExp parser, this function provides valid
