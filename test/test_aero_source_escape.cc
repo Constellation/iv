@@ -19,12 +19,15 @@ bool ExpectEqual(const iv::core::StringPiece& reg,
 
 TEST(AeroSourceEscapeCase, SlashInBrackTest) {
   EXPECT_TRUE(ExpectEqual("[/]", "[/]")) << "[/] => [/]";
+  EXPECT_TRUE(ExpectEqual("[\\]/]", "[\\]/]")) << "[\\]/] => [\\]/]";
 }
 
 TEST(AeroSourceEscapeCase, SlashTest) {
   EXPECT_TRUE(ExpectEqual("/", "\\/")) << "/ => \\/";
+  EXPECT_TRUE(ExpectEqual("\\/", "\\/")) << "\\/ => \\/";
 }
 
 TEST(AeroSourceEscapeCase, LineTerminatorTest) {
   EXPECT_TRUE(ExpectEqual("\n", "\\n")) << "\\n => \\n";
+  EXPECT_TRUE(ExpectEqual("\\\n", "\\\\n")) << "\\\\n => \\\\n";
 }

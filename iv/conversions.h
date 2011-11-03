@@ -624,17 +624,20 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
   // and, LineTerminator is not allowed in RegExpLiteral (see grammar), so
   // escape it.
   bool character = false;
+  bool previous_is_backslash = false;
   for (; it != last; ++it) {
     const uint16_t c = *it;
-    if (character) {
-      if (c == ']') {
-        character = false;
-      }
-    } else {
-      if (c == '/') {
-        *out++ = '\\';
-      } else if (c == '[') {
-        character = true;
+    if (!previous_is_backslash) {
+      if (character) {
+        if (c == ']') {
+          character = false;
+        }
+      } else {
+        if (c == '/') {
+          *out++ = '\\';
+        } else if (c == '[') {
+          character = true;
+        }
       }
     }
     if (character::IsLineTerminator(c)) {
@@ -642,6 +645,7 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
     } else {
       *out++ = c;
     }
+    previous_is_backslash = c == '\\';
   }
   return out;
 }
