@@ -400,7 +400,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
         builder.Append(hexbuf.begin(), hexbuf.size());
       } else {
         uint16_t val = ch;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; ++i) {
           ubuf[5 - i] = kHexDigits[val % 16];
           val /= 16;
         }

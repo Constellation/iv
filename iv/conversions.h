@@ -555,6 +555,18 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
+template<typename U16OutputIter>
+inline U16OutputIter UnicodeSequenceEscape(uint16_t val, U16OutputIter out) {
+  std::array<char, 4> buf = { { } };
+  *out++ = '\\';
+  *out++ = 'u';
+  for (int i = 0; i < 4; ++i) {
+    buf[3 - i] = core::kHexDigits[val % 16];
+    val /= 16;
+  }
+  return std::copy(buf.begin(), buf.end(), out);
+}
+
 template<typename U8OrU16InputIter, typename U16OutputIter>
 inline U16OutputIter JSONQuote(U8OrU16InputIter it,
                                U8OrU16InputIter last, U16OutputIter out) {
@@ -591,15 +603,7 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
           break;
       }
     } else if (c < ' ') {
-      uint16_t val = c;
-      std::array<char, 4> buf = { { '0', '0', '0', '0' } };
-      *out++ = '\\';
-      *out++ = 'u';
-      for (int i = 0; (i < 4) && val; i++) {
-        buf[3 - i] = core::kHexDigits[val % 16];
-        val /= 16;
-      }
-      out = std::copy(buf.begin(), buf.end(), out);
+      out = UnicodeSequenceEscape(c, out);
     } else {
       *out++ = c;
     }
@@ -607,15 +611,34 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
   return out;
 }
 
+// If provided string is passed in RegExp parser, this function provides valid
+// escaped string. But, if provided string is invalid for RegExp, result of this
+// function isn't guaranteed.
 template<typename U8OrU16InputIter, typename U16OutputIter>
 inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
                                   U8OrU16InputIter last, U16OutputIter out) {
+  // allow / in [] (see Lexer#ScanRegExpLiteral)
+  // and, LineTerminator is not allowed in RegExpLiteral (see grammar), so
+  // escape it.
+  bool character = false;
   for (; it != last; ++it) {
     const uint16_t c = *it;
-    if (c == '/') {
-      *out++ = '\\';
+    if (character) {
+      if (c == ']') {
+        character = false;
+      }
+    } else {
+      if (c == '/') {
+        *out++ = '\\';
+      } else if (c == '[') {
+        character = true;
+      }
     }
-    *out++ = c;
+    if (character::IsLineTerminator(c)) {
+      out = UnicodeSequenceEscape(c, out);
+    } else {
+      *out++ = c;
+    }
   }
   return out;
 }
