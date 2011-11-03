@@ -687,9 +687,12 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
           character_in_brack = true;
         }
       }
+      previous_is_backslash = ch == '\\';
+    } else {
+      // prevent like /\\[/]/
+      previous_is_backslash = false;
     }
     out = RegExpEscape(out, ch);
-    previous_is_backslash = ch == '\\';
   }
   return out;
 }

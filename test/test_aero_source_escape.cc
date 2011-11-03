@@ -23,6 +23,7 @@ bool ExpectEqual(T reg,
 TEST(AeroSourceEscapeCase, SlashInBrackTest) {
   EXPECT_TRUE(ExpectEqual("[/]", "[/]")) << "[/] => [/]";
   EXPECT_TRUE(ExpectEqual("[\\]/]", "[\\]/]")) << "[\\]/] => [\\]/]";
+  EXPECT_TRUE(ExpectEqual("\\\\[/]", "\\\\[/]")) << "\\\\[/] => \\\\[/]";
 }
 
 TEST(AeroSourceEscapeCase, SlashTest) {
