@@ -627,35 +627,14 @@ inline U16OutputIter RegExpEscape(U16OutputIter out, uint16_t ch) {
   // not handling '\' and handling \u2028 or \u2029 to unicode escape sequence
   if (character::IsLineOrParagraphSeparator(ch)) {
     return UnicodeSequenceEscape(out, ch);
-  } else if (ch == '\b' ||
-             ch == '\f' ||
-             ch == '\n' ||
-             ch == '\r' ||
-             ch == '\t') {
+  } else if (ch == '\n' || ch == '\r') {
+    // these are LineTerminator
     *out++ = '\\';
-    switch (ch) {
-      case '\b':
-        *out++ = 'b';
-        break;
-
-      case '\f':
-        *out++ = 'f';
-        break;
-
-      case '\n':
-        *out++ = 'n';
-        break;
-
-      case '\r':
-        *out++ = 'r';
-        break;
-
-      case '\t':
-        *out++ = 't';
-        break;
+    if (ch == '\n') {
+      *out++ = 'n';
+    } else {
+      *out++ = 'r';
     }
-  } else if (ch < ' ') {
-    return UnicodeSequenceEscape(out, ch);
   } else {
     *out++ = ch;
   }
