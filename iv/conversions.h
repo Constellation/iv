@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <limits>
+#include <numeric>
 #include <vector>
 #include <iv/detail/array.h>
 #include <iv/detail/cstdint.h>
@@ -567,48 +568,50 @@ inline U16OutputIter UnicodeSequenceEscape(uint16_t val, U16OutputIter out) {
   return std::copy(buf.begin(), buf.end(), out);
 }
 
+template<typename U16OutputIter>
+inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t c) {
+  if (c == '"' || c == '\\') {
+    *out++ = '\\';
+    *out++ = c;
+  } else if (c == '\b' ||
+             c == '\f' ||
+             c == '\n' ||
+             c == '\r' ||
+             c == '\t') {
+    *out++ = '\\';
+    switch (c) {
+      case '\b':
+        *out++ = 'b';
+        break;
+
+      case '\f':
+        *out++ = 'f';
+        break;
+
+      case '\n':
+        *out++ = 'n';
+        break;
+
+      case '\r':
+        *out++ = 'r';
+        break;
+
+      case '\t':
+        *out++ = 't';
+        break;
+    }
+  } else if (c < ' ') {
+    return UnicodeSequenceEscape(c, out);
+  } else {
+    *out++ = c;
+  }
+  return out;
+}
+
 template<typename U8OrU16InputIter, typename U16OutputIter>
 inline U16OutputIter JSONQuote(U8OrU16InputIter it,
                                U8OrU16InputIter last, U16OutputIter out) {
-  for (; it != last; ++it) {
-    const uint16_t c = *it;
-    if (c == '"' || c == '\\') {
-      *out++ = '\\';
-      *out++ = c;
-    } else if (c == '\b' ||
-               c == '\f' ||
-               c == '\n' ||
-               c == '\r' ||
-               c == '\t') {
-      *out++ = '\\';
-      switch (c) {
-        case '\b':
-          *out++ = 'b';
-          break;
-
-        case '\f':
-          *out++ = 'f';
-          break;
-
-        case '\n':
-          *out++ = 'n';
-          break;
-
-        case '\r':
-          *out++ = 'r';
-          break;
-
-        case '\t':
-          *out++ = 't';
-          break;
-      }
-    } else if (c < ' ') {
-      out = UnicodeSequenceEscape(c, out);
-    } else {
-      *out++ = c;
-    }
-  }
-  return out;
+  return std::accumulate(it, last, out, &JSONQuote<U16OutputIter>);
 }
 
 // If provided string is passed in RegExp parser, this function provides valid
@@ -635,7 +638,7 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
       }
     }
     if (character::IsLineTerminator(c)) {
-      out = UnicodeSequenceEscape(c, out);
+      out = JSONQuote(out, c);
     } else {
       *out++ = c;
     }

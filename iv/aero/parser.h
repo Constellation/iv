@@ -263,8 +263,7 @@ class Parser {
       }
       case 'n': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('n')));
+        return new(factory_)CharacterAtom('\n');
       }
       case 'r': {
         Advance();
@@ -531,11 +530,14 @@ class Parser {
         case 'd':
         case 'D':
         case 's':
-        case 'S':
-        case 'n': {
+        case 'S': {
           *ranged = c_;
           Advance();
           return 0;
+        }
+        case 'n': {
+          Advance();
+          return '\n';
         }
         case 'f': {
           Advance();

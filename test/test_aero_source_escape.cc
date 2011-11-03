@@ -26,5 +26,5 @@ TEST(AeroSourceEscapeCase, SlashTest) {
 }
 
 TEST(AeroSourceEscapeCase, LineTerminatorTest) {
-  EXPECT_TRUE(ExpectEqual("\n", "\\u000a")) << "\\n => \\u000a";
+  EXPECT_TRUE(ExpectEqual("\n", "\\n")) << "\\n => \\n";
 }
