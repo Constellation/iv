@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <ctime>
 #include <iv/mt19937.h>
-#include <iv/random.h>
+#include <iv/random_generator.h>
 
 TEST(MT19937Case, Test) {
   iv::core::MT19937 g;
   for (int i = 0; i < 1000; ++i) {
-    iv::core::Xor128::result_type res = g();
+    iv::core::MT19937::result_type res = g();
     ASSERT_LE(g.min(), res);
     ASSERT_GE(g.max(), res);
   }

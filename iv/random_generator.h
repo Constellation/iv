@@ -1,15 +1,13 @@
-// @file
+#ifndef IV_RANDOM_GENERATOR_H_
+#define IV_RANDOM_GENERATOR_H_
+#include <iv/detail/cstdint.h>
+namespace iv {
+namespace core {
+
 // @brief normal random generator
 //
 // Copyright (C) 2010 Cybozu Inc., all rights reserved.
 // @author MITSUNARI Shigeo
-#ifndef IV_RANDOM_H_
-#define IV_RANDOM_H_
-#include <iv/xorshift.h>
-namespace iv {
-namespace core {
-
-// normal random generator
 template<typename EngineType>
 class NormalRandomGenerator {
  public:
@@ -107,4 +105,4 @@ class Uniform32RandomGenerator {
 };
 
 } }  // namespace iv::core
-#endif  // IV_RANDOM_H_
+#endif  // IV_RANDOM_GENERATOR_H_

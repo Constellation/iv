@@ -8,7 +8,7 @@
 #include <iv/ustringpiece.h>
 #include <iv/ustring.h>
 #include <iv/xorshift.h>
-#include <iv/random.h>
+#include <iv/random_generator.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/gc_template.h>
