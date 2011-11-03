@@ -19,6 +19,8 @@ static const uint16_t LF = 0x000A;
 static const uint16_t ZWNJ = 0x200C;
 static const uint16_t ZWJ = 0x200D;
 static const uint16_t BOM = 0xFEFF;
+static const uint16_t LINE_SEPARATOR = 0x2028;
+static const uint16_t PARAGRAPH_SEPARATOR = 0x2029;
 
 }  // namespace code
 
@@ -786,6 +788,10 @@ inline bool IsLineTerminator(uint16_t c) {
       c == code::CR ||
       c == code::LF ||
       (c & ~1) == 0x2028;  // 0x2028 or 0x2029
+}
+
+inline bool IsLineOrParagraphSeparator(uint16_t c) {
+  return (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
 inline bool IsIdentifierStart(uint16_t c) {

@@ -7,11 +7,12 @@
 #include "test_aero.h"
 namespace {
 
-bool ExpectEqual(const iv::core::StringPiece& reg,
+template<typename T>
+bool ExpectEqual(T reg,
                  const iv::core::StringPiece& expected) {
   const iv::core::UString r = iv::core::ToUString(reg);
   iv::core::UString res;
-  iv::core::RegExpEscape(reg.begin(), reg.end(), std::back_inserter(res));
+  iv::core::RegExpEscape(r.begin(), r.end(), std::back_inserter(res));
   return res == iv::core::ToUString(expected);
 }
 
@@ -30,4 +31,6 @@ TEST(AeroSourceEscapeCase, SlashTest) {
 TEST(AeroSourceEscapeCase, LineTerminatorTest) {
   EXPECT_TRUE(ExpectEqual("\n", "\\n")) << "\\n => \\n";
   EXPECT_TRUE(ExpectEqual("\\\n", "\\\\n")) << "\\\\n => \\\\n";
+  EXPECT_TRUE(ExpectEqual(0x2028, "\\u2028")) << "2028 code => \\u2028";
+  EXPECT_TRUE(ExpectEqual(0x2029, "\\u2029")) << "2029 code => \\u2029";
 }

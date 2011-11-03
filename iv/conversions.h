@@ -557,7 +557,7 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
 }
 
 template<typename U16OutputIter>
-inline U16OutputIter UnicodeSequenceEscape(uint16_t val, U16OutputIter out) {
+inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out, uint16_t val) {
   std::array<char, 4> buf = { { } };
   *out++ = '\\';
   *out++ = 'u';
@@ -569,17 +569,17 @@ inline U16OutputIter UnicodeSequenceEscape(uint16_t val, U16OutputIter out) {
 }
 
 template<typename U16OutputIter>
-inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t c) {
-  if (c == '"' || c == '\\') {
+inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t ch) {
+  if (ch == '"' || ch == '\\') {
     *out++ = '\\';
-    *out++ = c;
-  } else if (c == '\b' ||
-             c == '\f' ||
-             c == '\n' ||
-             c == '\r' ||
-             c == '\t') {
+    *out++ = ch;
+  } else if (ch == '\b' ||
+             ch == '\f' ||
+             ch == '\n' ||
+             ch == '\r' ||
+             ch == '\t') {
     *out++ = '\\';
-    switch (c) {
+    switch (ch) {
       case '\b':
         *out++ = 'b';
         break;
@@ -600,10 +600,10 @@ inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t c) {
         *out++ = 't';
         break;
     }
-  } else if (c < ' ') {
-    return UnicodeSequenceEscape(c, out);
+  } else if (ch < ' ') {
+    return UnicodeSequenceEscape(out, ch);
   } else {
-    *out++ = c;
+    *out++ = ch;
   }
   return out;
 }
@@ -621,6 +621,47 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
   return std::accumulate(it, last, out, JSONQuoteFunctor());
 }
 
+
+template<typename U16OutputIter>
+inline U16OutputIter RegExpEscape(U16OutputIter out, uint16_t ch) {
+  // not handling '\' and handling \u2028 or \u2029 to unicode escape sequence
+  if (character::IsLineOrParagraphSeparator(ch)) {
+    return UnicodeSequenceEscape(out, ch);
+  } else if (ch == '\b' ||
+             ch == '\f' ||
+             ch == '\n' ||
+             ch == '\r' ||
+             ch == '\t') {
+    *out++ = '\\';
+    switch (ch) {
+      case '\b':
+        *out++ = 'b';
+        break;
+
+      case '\f':
+        *out++ = 'f';
+        break;
+
+      case '\n':
+        *out++ = 'n';
+        break;
+
+      case '\r':
+        *out++ = 'r';
+        break;
+
+      case '\t':
+        *out++ = 't';
+        break;
+    }
+  } else if (ch < ' ') {
+    return UnicodeSequenceEscape(out, ch);
+  } else {
+    *out++ = ch;
+  }
+  return out;
+}
+
 // If provided string is passed in RegExp parser, this function provides valid
 // escaped string. But, if provided string is invalid for RegExp, result of this
 // function isn't guaranteed.
@@ -630,29 +671,25 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
   // allow / in [] (see Lexer#ScanRegExpLiteral)
   // and, LineTerminator is not allowed in RegExpLiteral (see grammar), so
   // escape it.
-  bool character = false;
+  bool character_in_brack = false;
   bool previous_is_backslash = false;
   for (; it != last; ++it) {
-    const uint16_t c = *it;
+    const uint16_t ch = *it;
     if (!previous_is_backslash) {
-      if (character) {
-        if (c == ']') {
-          character = false;
+      if (character_in_brack) {
+        if (ch == ']') {
+          character_in_brack = false;
         }
       } else {
-        if (c == '/') {
+        if (ch == '/') {
           *out++ = '\\';
-        } else if (c == '[') {
-          character = true;
+        } else if (ch == '[') {
+          character_in_brack = true;
         }
       }
     }
-    if (character::IsLineTerminator(c)) {
-      out = JSONQuote(out, c);
-    } else {
-      *out++ = c;
-    }
-    previous_is_backslash = c == '\\';
+    out = RegExpEscape(out, ch);
+    previous_is_backslash = ch == '\\';
   }
   return out;
 }
