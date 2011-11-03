@@ -37,6 +37,10 @@ TEST(AeroSourceEscapeCase, LineTerminatorTest) {
   EXPECT_TRUE(ExpectEqual(0x2029, "\\u2029")) << "2029 code => \\u2029";
 }
 
+TEST(AeroSourceEscapeCase, SpecialCharactersTest) {
+  EXPECT_TRUE(ExpectEqual("^$\\.*+?()[]{}|", "^$\\.*+?()[]{}|"));
+}
+
 TEST(AeroSourceEscapeCase, OneCharTest) {
   iv::core::Space space;
   for (uint32_t ch = 0; ch <= 0xFFFF; ++ch) {
