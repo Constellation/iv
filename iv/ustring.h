@@ -11,8 +11,12 @@ namespace core {
 typedef std::basic_string<uint16_t,
                           std::char_traits<uint16_t> > UString;
 
-inline UString ToUString(StringPiece str) {
-  return UString(str.begin(), str.end());
+inline UString ToUString(const StringPiece& piece) {
+  return UString(piece.begin(), piece.end());
+}
+
+inline UString ToUString(const UStringPiece& piece) {
+  return UString(piece.begin(), piece.end());
 }
 
 inline UString ToUString(uint16_t ch) {

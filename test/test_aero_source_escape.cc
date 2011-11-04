@@ -33,9 +33,60 @@ TEST(AeroSourceEscapeCase, SlashTest) {
 
 TEST(AeroSourceEscapeCase, LineTerminatorTest) {
   EXPECT_TRUE(ExpectEqual("\n", "\\n")) << "\\n => \\n";
-  EXPECT_TRUE(ExpectEqual("\\\n", "\\\\n")) << "\\\\n => \\\\n";
+  EXPECT_TRUE(ExpectEqual("\\\n", "\\n")) << "\\\\n code => \\n";
+  EXPECT_TRUE(ExpectEqual("\r", "\\r")) << "\\r => \\r";
+  EXPECT_TRUE(ExpectEqual("\\\r", "\\r")) << "\\\\r code => \\r";
   EXPECT_TRUE(ExpectEqual(0x2028, "\\u2028")) << "2028 code => \\u2028";
+  {
+    iv::core::UString str;
+    str.push_back('\\');
+    str.push_back(0x2028);
+    EXPECT_TRUE(ExpectEqual(str, "\\u2028")) << "\\2028 code => \\u2028";
+  }
   EXPECT_TRUE(ExpectEqual(0x2029, "\\u2029")) << "2029 code => \\u2029";
+  {
+    iv::core::UString str;
+    str.push_back('\\');
+    str.push_back(0x2029);
+    EXPECT_TRUE(ExpectEqual(str, "\\u2029")) << "\\2029 code => \\u2029";
+  }
+}
+
+TEST(AeroSourceEscapeCase, LineTerminatorInBrackTest) {
+  EXPECT_TRUE(ExpectEqual("[\n]", "[\\n]")) << "[\\n] => [\\n]";
+  EXPECT_TRUE(ExpectEqual("[\\\n]", "[\\n]")) << "[\\\\n code] => [\\n]";
+  EXPECT_TRUE(ExpectEqual("[\r]", "[\\r]")) << "[\\r] => [\\r]";
+  EXPECT_TRUE(ExpectEqual("[\\\r]", "[\\r]")) << "[\\\\r code] => [\\r]";
+  {
+    iv::core::UString str;
+    str.push_back('[');
+    str.push_back(0x2028);
+    str.push_back(']');
+    EXPECT_TRUE(ExpectEqual(str, "[\\u2028]")) << "[\\2028 code] => [\\u2028]";
+  }
+  {
+    iv::core::UString str;
+    str.push_back('[');
+    str.push_back('\\');
+    str.push_back(0x2028);
+    str.push_back(']');
+    EXPECT_TRUE(ExpectEqual(str, "[\\u2028]")) << "[\\\\2028 code] => [\\u2028]";
+  }
+  {
+    iv::core::UString str;
+    str.push_back('[');
+    str.push_back(0x2029);
+    str.push_back(']');
+    EXPECT_TRUE(ExpectEqual(str, "[\\u2029]")) << "[\\2029 code] => [\\u2029]";
+  }
+  {
+    iv::core::UString str;
+    str.push_back('[');
+    str.push_back('\\');
+    str.push_back(0x2029);
+    str.push_back(']');
+    EXPECT_TRUE(ExpectEqual(str, "[\\u2029]")) << "[\\\\2029 code] => [\\u2029]";
+  }
 }
 
 TEST(AeroSourceEscapeCase, SpecialCharactersTest) {

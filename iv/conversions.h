@@ -557,10 +557,11 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
 }
 
 template<typename U16OutputIter>
-inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out, uint16_t val) {
+inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out,
+                                           uint16_t val,
+                                           const StringPiece& prefix = "\\u") {
   std::array<char, 4> buf = { { } };
-  *out++ = '\\';
-  *out++ = 'u';
+  out = std::copy(prefix.begin(), prefix.end(), out);
   for (int i = 0; i < 4; ++i) {
     buf[3 - i] = core::kHexDigits[val % 16];
     val /= 16;
@@ -623,13 +624,17 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
 
 
 template<typename U16OutputIter>
-inline U16OutputIter RegExpEscape(U16OutputIter out, uint16_t ch) {
+inline U16OutputIter RegExpEscape(U16OutputIter out,
+                                  uint16_t ch, bool previous_is_backslash) {
   // not handling '\' and handling \u2028 or \u2029 to unicode escape sequence
   if (character::IsLineOrParagraphSeparator(ch)) {
-    return UnicodeSequenceEscape(out, ch);
+    return UnicodeSequenceEscape(out,
+                                 ch, (previous_is_backslash) ? "u" : "\\u");
   } else if (ch == '\n' || ch == '\r') {
     // these are LineTerminator
-    *out++ = '\\';
+    if (!previous_is_backslash) {
+      *out++ = '\\';
+    }
     if (ch == '\n') {
       *out++ = 'n';
     } else {
@@ -666,12 +671,14 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
           character_in_brack = true;
         }
       }
+      out = RegExpEscape(out, ch, previous_is_backslash);
       previous_is_backslash = ch == '\\';
     } else {
+      // if new RegExp("\\\n") is provided, create /\n/
+      out = RegExpEscape(out, ch, previous_is_backslash);
       // prevent like /\\[/]/
       previous_is_backslash = false;
     }
-    out = RegExpEscape(out, ch);
   }
   return out;
 }
