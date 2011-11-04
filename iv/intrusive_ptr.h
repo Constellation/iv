@@ -22,6 +22,12 @@ class IntrusivePtr {
     Retain(ptr_);
   }
 
+  template<typename U>
+  IntrusivePtr(const IntrusivePtr<U>& rhs)
+    : ptr_(rhs.get()) {
+    Retain(ptr_);
+  }
+
   ~IntrusivePtr() { Release(ptr_); }
 
   void reset(T* ptr = NULL) {
@@ -73,8 +79,19 @@ class IntrusivePtr {
     return ptr_ == NULL;
   }
 
-  this_type& operator=(this_type& rhs) {
+  this_type& operator=(const this_type& rhs) {
     reset(rhs.get());
+    return *this;
+  }
+
+  template<typename U>
+  this_type& operator=(const IntrusivePtr<U>& rhs) {
+    reset(rhs.get());
+    return *this;
+  }
+
+  this_type& operator=(T* rhs) {
+    reset(rhs);
     return *this;
   }
 
@@ -94,24 +111,61 @@ class IntrusivePtr {
   }
 
   T* ptr_;
-
-  template<typename U> bool operator==(const IntrusivePtr<U>& rhs) const;
-  template<typename U> bool operator!=(const IntrusivePtr<U>& rhs) const;
 };
 
-template <class T>
-void swap(IntrusivePtr<T>& lhs, IntrusivePtr<T>& rhs) {
+template <typename T>
+inline void swap(IntrusivePtr<T>& lhs, IntrusivePtr<T>& rhs) {
   lhs.swap(rhs);
 }
 
-template <class T>
-bool operator==(T* lhs, const IntrusivePtr<T>& rhs) {
+template<typename T, typename U>
+inline bool operator==(const IntrusivePtr<T>& lhs, const IntrusivePtr<U>& rhs) {
+  return lhs.get() == rhs.get();
+}
+
+template<typename T, typename U>
+inline bool operator!=(const IntrusivePtr<T>& lhs, const IntrusivePtr<U>& rhs) {
+  return lhs.get() != rhs.get();
+}
+
+template <typename T>
+inline bool operator==(const IntrusivePtr<T>& lhs, T* rhs) {
+  return lhs.get() == rhs;
+}
+
+template <typename T>
+inline bool operator!=(const IntrusivePtr<T>& lhs, T* rhs) {
+  return lhs.get() != rhs;
+}
+
+template <typename T>
+inline bool operator==(T* lhs, const IntrusivePtr<T>& rhs) {
   return lhs == rhs.get();
 }
 
-template <class T>
-bool operator!=(T* lhs, const IntrusivePtr<T>& rhs) {
+template <typename T>
+inline bool operator!=(T* lhs, const IntrusivePtr<T>& rhs) {
   return lhs != rhs.get();
+}
+
+template <typename T, typename U>
+inline bool operator<(const IntrusivePtr<T>& lhs, const IntrusivePtr<U>& rhs) {
+  return lhs.get() < rhs.get();
+}
+
+template <typename T>
+inline T* get_pointer(const IntrusivePtr<T>& ptr) {
+  return ptr.get();
+}
+
+template <typename T, typename U>
+inline IntrusivePtr<T> static_pointer_cast(const IntrusivePtr<U>& ptr) {
+  return IntrusivePtr<T>(static_cast<T*>(ptr.get()));
+}
+
+template <typename T, typename U>
+inline IntrusivePtr<T> dynamic_pointer_cast(const IntrusivePtr<U>& ptr) {
+  return IntrusivePtr<T>(dynamic_cast<T*>(ptr.get()));
 }
 
 } }  // namespace iv::core

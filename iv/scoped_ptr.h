@@ -159,17 +159,17 @@ class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
 };
 
 template <class T>
-void swap(ScopedPtr<T[]>& lhs, ScopedPtr<T[]>& rhs) {
+inline void swap(ScopedPtr<T[]>& lhs, ScopedPtr<T[]>& rhs) {
   lhs.swap(rhs);
 }
 
 template <class T>
-bool operator==(T* lhs, const ScopedPtr<T[]>& rhs) {
+inline bool operator==(T* lhs, const ScopedPtr<T[]>& rhs) {
   return lhs == rhs.get();
 }
 
 template <class T>
-bool operator!=(T* lhs, const ScopedPtr<T[]>& rhs) {
+inline bool operator!=(T* lhs, const ScopedPtr<T[]>& rhs) {
   return lhs != rhs.get();
 }
 
