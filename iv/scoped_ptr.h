@@ -1,5 +1,6 @@
 #ifndef IV_SCOPRED_PTR_H_
 #define IV_SCOPRED_PTR_H_
+#include <algorithm>
 #include <iv/noncopyable.h>
 namespace iv {
 namespace core {
@@ -50,7 +51,8 @@ class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
   }
 
   void swap(ScopedPtr& rhs) {
-    std::swap(ptr_, rhs.ptr_);
+    using std::swap;
+    swap(ptr_, rhs.ptr_);
   }
 
   operator bool_type() const {
