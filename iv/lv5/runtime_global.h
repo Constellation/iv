@@ -378,10 +378,7 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   const std::size_t len = str->size();
   static const char kHexDigits[17] = "0123456789ABCDEF";
-  std::array<uint16_t, 6> ubuf;
   std::array<uint16_t, 3> hexbuf;
-  ubuf[0] = '%';
-  ubuf[1] = 'u';
   hexbuf[0] = '%';
   JSStringBuilder builder;
   if (len == 0) {
@@ -399,12 +396,8 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
         hexbuf[2] = kHexDigits[ch % 16];
         builder.Append(hexbuf.begin(), hexbuf.size());
       } else {
-        uint16_t val = ch;
-        for (int i = 0; i < 4; ++i) {
-          ubuf[5 - i] = kHexDigits[val % 16];
-          val /= 16;
-        }
-        builder.Append(ubuf.begin(), ubuf.size());
+        core::UnicodeSequenceEscape(
+            std::back_inserter(builder), ch, "%u");
       }
     }
   }
