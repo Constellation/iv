@@ -3,17 +3,9 @@
 #include <iv/ustringpiece.h>
 #include <iv/ustring.h>
 
-void JoinFilePathStr(const iv::core::StringPiece& dir,
-                     const iv::core::StringPiece& base,
-                     std::string* out) {
-  dir.CopyToString(out);
-  out->push_back('/');
-  base.AppendToString(out);
-}
-
-void JoinFilePathStr(const iv::core::UStringPiece& dir,
-                     const iv::core::UStringPiece& base,
-                     iv::core::UString* out) {
+static void JoinFilePathStr(const iv::core::StringPiece& dir,
+                            const iv::core::StringPiece& base,
+                            std::string* out) {
   dir.CopyToString(out);
   out->push_back('/');
   base.AppendToString(out);
