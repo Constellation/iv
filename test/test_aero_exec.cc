@@ -74,4 +74,16 @@ TEST(AeroExecCase, MainTest) {
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
   }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\s");
+    iv::core::UString str = iv::core::ToUString(0xFEFF);
+    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+  }
 }

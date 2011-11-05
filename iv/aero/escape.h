@@ -7,7 +7,9 @@ namespace iv {
 namespace aero {
 
 // escape ranges from V8 irregexp
-static const std::array<Range, 10> kSpaceRanges = { {
+
+// WhiteSpace and LineTerminator
+static const std::array<Range, 11> kSpaceRanges = { {
   std::make_pair(0x0009, 0x000D),
   std::make_pair(0x0020, 0x0020),
   std::make_pair(0x00A0, 0x00A0),
@@ -17,7 +19,8 @@ static const std::array<Range, 10> kSpaceRanges = { {
   std::make_pair(0x2028, 0x2029),
   std::make_pair(0x202F, 0x202F),
   std::make_pair(0x205F, 0x205F),
-  std::make_pair(0x3000, 0x3000)
+  std::make_pair(0x3000, 0x3000),
+  std::make_pair(0xFEFF, 0xFEFF)
 } };
 
 static const std::array<Range, 4> kWordRanges = { {
