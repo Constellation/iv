@@ -108,6 +108,7 @@ def Build():
     if env['CC'] == 'clang':
       # use libc++
       env.Append(CXXFLAGS=["-stdlib=libc++"])
+      env.Append(LIBS=["c++"])
 
   if not env['nosse']:
     env.Append(
