@@ -76,7 +76,7 @@ inline JSVal StringSplit(Context* ctx,
       return target->Split(ctx, ary, lim, e);
     }
   } else if (rsize == 1) {
-    return target->Split(ctx, ary, (*rstr->GetFiber())[0], lim, e);
+    return target->Split(ctx, ary, rstr->GetAt(0), lim, e);
   }
   const uint32_t size = target->size();
   const JSString::Fiber* fiber = target->GetFiber();
