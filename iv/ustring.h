@@ -8,8 +8,7 @@
 namespace iv {
 namespace core {
 
-typedef std::basic_string<uint16_t,
-                          std::char_traits<uint16_t> > UString;
+typedef std::basic_string<uint16_t> UString;
 
 inline UString ToUString(const StringPiece& piece) {
   return UString(piece.begin(), piece.end());
