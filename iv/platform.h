@@ -64,4 +64,15 @@
 #define IV_64
 #endif
 
+// CPU
+#if defined(__x86_64__) || defined(_WIN64)
+#define IV_CPU_X64
+#elif defined(__i386__)
+#define IV_CPU_IA32
+#elif defined(__arm__)
+#define IV_CPU_ARM
+#else
+#define IV_CPU_OTHERS
+#endif
+
 #endif  // IV_PLATFORM_H_
