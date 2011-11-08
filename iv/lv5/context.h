@@ -7,7 +7,7 @@
 #include <iv/space.h>
 #include <iv/aero/aero.h>
 #include <iv/lv5/error_check.h>
-#include <iv/lv5/jsval.h>
+#include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsfunction.h>

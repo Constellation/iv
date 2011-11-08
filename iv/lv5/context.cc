@@ -92,7 +92,7 @@ Map* GetErrorMap(Context* ctx) {
 }
 
 JSString* EmptyString(Context* ctx) {
-  return ctx->global_data()->GetEmptyString();
+  return ctx->global_data()->string_empty();
 }
 
 JSString* LookupSingleString(Context* ctx, uint16_t ch) {

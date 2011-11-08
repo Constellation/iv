@@ -561,7 +561,7 @@ inline JSVal StringIndexOf(const Arguments& args, Error* e) {
     }
   } else {
     // undefined -> "undefined"
-    search_str = JSString::NewAsciiString(args.ctx(), "undefined");
+    search_str = args.ctx()->global_data()->string_undefined();
   }
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
@@ -595,7 +595,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
     }
   } else {
     // undefined -> "undefined"
-    search_str = JSString::NewAsciiString(args.ctx(), "undefined");
+    search_str = args.ctx()->global_data()->string_undefined();
   }
   const core::UStringPiece base(*str->GetFiber());
   const core::UStringPiece::size_type loc =
@@ -613,7 +613,7 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* e) {
   if (!args.empty()) {
     that = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
-    that = JSString::NewAsciiString(args.ctx(), "undefined");
+    that = args.ctx()->global_data()->string_undefined();
   }
   return str->GetFiber()->compare(*that->GetFiber());
 }
@@ -683,7 +683,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       if (args_count > 1) {
         replace_value = args[1].ToString(ctx, IV_LV5_ERROR(e));
       } else {
-        replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
+        replace_value = ctx->global_data()->string_undefined();
       }
       detail::StringReplacer replacer(ctx, str, *reg, *replace_value);
       if (reg->global()) {
@@ -695,7 +695,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     return builder.Build(ctx);
   } else {
     if (args_count == 0) {
-      search_str = JSString::NewAsciiString(args.ctx(), "undefined");
+      search_str = ctx->global_data()->string_undefined();
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
@@ -724,7 +724,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
       if (args_count > 1) {
         replace_value = args[1].ToString(ctx, IV_LV5_ERROR(e));
       } else {
-        replace_value = JSString::NewAsciiString(args.ctx(), "undefined");
+        replace_value = ctx->global_data()->string_undefined();
       }
       detail::ReplaceOnce(&builder,
                           fiber, *search_str,

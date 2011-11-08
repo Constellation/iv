@@ -62,7 +62,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string;
     if (args.empty()) {
-      string = JSString::NewAsciiString(ctx, "undefined");
+      string = ctx->global_data()->string_undefined();
     } else {
       string = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
@@ -82,7 +82,7 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string;
     if (args.empty()) {
-      string = JSString::NewAsciiString(ctx, "undefined");
+      string = ctx->global_data()->string_undefined();
     } else {
       string = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }

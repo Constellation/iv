@@ -853,7 +853,7 @@ do {\
           PUSH(expr.TypeOf(ctx_));
         } else {
           // unresolvable reference
-          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
+          PUSH(ctx_->global_data()->string_undefined());
         }
         DISPATCH(TYPEOF_NAME);
       }
@@ -881,7 +881,7 @@ do {\
           PUSH(expr.TypeOf(ctx_));
         } else {
           // unresolvable reference
-          PUSH(JSString::NewAsciiString(ctx_, "undefined"));
+          PUSH(ctx_->global_data()->string_undefined());
         }
         DISPATCH(TYPEOF_GLOBAL);
       }

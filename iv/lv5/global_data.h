@@ -13,7 +13,7 @@
 #include <iv/lv5/class.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/gc_hook.h>
-#include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/symboltable.h>
@@ -35,8 +35,9 @@ class GlobalData {
       table_(),
       classes_(),
       string_cache_(),
-      empty_(new JSString()),
       global_obj_(JSGlobal::New(ctx)),
+      string_empty_(new JSString()),
+      string_undefined_(JSString::NewAsciiString(ctx, "undefined")),
       empty_object_map_(Map::New(ctx)),
       function_map_(Map::New(ctx)),
       array_map_(Map::New(ctx)),
@@ -93,9 +94,9 @@ class GlobalData {
     return classes_[cls];
   }
 
-  JSString* GetEmptyString() const {
-    return empty_;
-  }
+  JSString* string_empty() const { return string_empty_; }
+
+  JSString* string_undefined() const { return string_undefined_; }
 
   JSString* GetSingleString(uint16_t ch) {
     if (ch <= 0xFF) {
@@ -108,44 +109,25 @@ class GlobalData {
     return NULL;
   }
 
-  Map* GetEmptyObjectMap() const {
-    return empty_object_map_;
-  }
+  Map* GetEmptyObjectMap() const { return empty_object_map_; }
 
-  Map* GetFunctionMap() const {
-    return function_map_;
-  }
+  Map* GetFunctionMap() const { return function_map_; }
 
-  Map* GetArrayMap() const {
-    return array_map_;
-  }
+  Map* GetArrayMap() const { return array_map_; }
 
-  Map* GetStringMap() const {
-    return string_map_;
-  }
+  Map* GetStringMap() const { return string_map_; }
 
-  Map* GetBooleanMap() const {
-    return boolean_map_;
-  }
+  Map* GetBooleanMap() const { return boolean_map_; }
 
-  Map* GetNumberMap() const {
-    return number_map_;
-  }
+  Map* GetNumberMap() const { return number_map_; }
 
-  Map* GetDateMap() const {
-    return date_map_;
-  }
+  Map* GetDateMap() const { return date_map_; }
 
-  Map* GetRegExpMap() const {
-    return regexp_map_;
-  }
+  Map* GetRegExpMap() const { return regexp_map_; }
 
-  Map* GetErrorMap() const {
-    return error_map_;
-  }
+  Map* GetErrorMap() const { return error_map_; }
 
-  void OnGarbageCollect() {
-  }
+  void OnGarbageCollect() { }
 
   void RegExpClear() { regs_.clear(); }
 
@@ -155,8 +137,10 @@ class GlobalData {
   SymbolTable table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0xFF + 1> string_cache_;
-  JSString* empty_;
   JSGlobal* global_obj_;
+
+  JSString* string_empty_;
+  JSString* string_undefined_;
 
   // builtin maps
   Map* empty_object_map_;

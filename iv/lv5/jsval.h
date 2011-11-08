@@ -7,6 +7,7 @@
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsreference.h>
@@ -583,7 +584,7 @@ JSString* JSVal::TypeOf(Context* ctx) const {
     return JSString::NewAsciiString(ctx, "object");
   } else {
     assert(IsUndefined());
-    return JSString::NewAsciiString(ctx, "undefined");
+    return ctx->global_data()->string_undefined();
   }
 }
 
@@ -635,7 +636,7 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
   } else if (IsNull()) {
     return JSString::NewAsciiString(ctx, "null");
   } else if (IsUndefined()) {
-    return JSString::NewAsciiString(ctx, "undefined");
+    return ctx->global_data()->string_undefined();
   } else {
     assert(IsObject());
     JSVal prim = object()->DefaultValue(ctx, Hint::STRING,

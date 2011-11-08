@@ -322,7 +322,7 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
-    uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
+    uri_string = args.ctx()->global_data()->string_undefined();
   }
   return detail::Decode<detail::URI>(args.ctx(), *uri_string, e);
 }
@@ -334,7 +334,7 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
-    component_string = JSString::NewAsciiString(args.ctx(), "undefined");
+    component_string = args.ctx()->global_data()->string_undefined();
   }
   return detail::Decode<detail::URIComponent>(args.ctx(),
                                               *component_string, e);
@@ -347,7 +347,7 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     uri_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
-    uri_string = JSString::NewAsciiString(args.ctx(), "undefined");
+    uri_string = args.ctx()->global_data()->string_undefined();
   }
   return detail::Encode<detail::URI>(args.ctx(), *uri_string, e);
 }
@@ -359,7 +359,7 @@ inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
   if (args.size() > 0) {
     component_string = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
   } else {
-    component_string = JSString::NewAsciiString(args.ctx(), "undefined");
+    component_string = args.ctx()->global_data()->string_undefined();
   }
   return detail::Encode<detail::URIComponent>(args.ctx(),
                                               *component_string, e);
