@@ -54,6 +54,7 @@ class AssocVector
   using container_type::size;
   using container_type::clear;
   using container_type::get_allocator;
+  using container_type::reserve;
   key_compare key_comp() const { return key_compare(); }
   value_compare value_comp() const { return value_compare(key_compare()); }
 
