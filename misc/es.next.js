@@ -36,7 +36,7 @@ var Lexer, Parser;
 
   var KEYWORDS = {
     "if": IDENT, "in": IDENT, "do": IDENT,
-    "for": IDENT, "var": IDENT, "new": IDENT, "try": IDENT,
+    "for": IDENT, "var": IDENT, "let": IDENT, "new": IDENT, "try": IDENT,
     "else": IDENT, "case": IDENT, "true": IDENT,
     "null": IDENT, "this": IDENT,
     "void": IDENT, "with": IDENT, "enum": IDENT,
