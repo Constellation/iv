@@ -231,22 +231,21 @@ var Lexer, Parser;
   };
   Parser.prototype.parseSourceElements = function(end, func) {
     while (this.token !== end) {
-      if (this.token === OP["function"]) {
-        // parse function declaration
-        var decl = this.parseFunctionDeclaration();
-        func.body.push(decl);
-      } else if (this.token === OP["const"]) {
-        var decl = this.parseConstDeclaration();
-        func.body.push(decl);
-      } else if (this.token === OP["let"]) {
-        var decl = this.parseLetDeclaration();
-        func.body.push(decl);
-      } else {
-        var stmt = this.parseStatement();
-        func.body.push(stmt);
-      }
+      func.body.push(this.parseStatementAndDeclaration());
     }
-  }
+  };
+  Parser.prototype.parseStatementAndDeclaration = function() {
+    if (this.token === OP["function"]) {
+      // parse function declaration
+      return this.parseFunctionDeclaration();
+    } else if (this.token === OP["const"]) {
+      return this.parseConstDeclaration();
+    } else if (this.token === OP["let"]) {
+      return this.parseLetDeclaration();
+    } else {
+      return this.parseStatement();
+    }
+  };
   Parser.prototype.parseStatement = function() {
     if (this.token === ILLEGAL) {
       throw new Error("ILLEGAL");
@@ -300,9 +299,6 @@ var Lexer, Parser;
         this.next();
         this.expectSemicolon();
         return {type: "DebuggerStatement"};
-
-      case OP["function"]:
-        return this.parseFunctionStatement();
 
       default:
         return this.parseExpressionOrLabelledStatement();
@@ -366,17 +362,6 @@ var Lexer, Parser;
     this.expectSemicolon();
     return res;
   };
-  Parser.prototype.parseFunctionStatement = function() {
-    this.next();
-    if (this.token === OP["IDENTIFIER"]) {
-      return {
-        type: "FunctionStatement",
-        func: this.parseFunctionLiteral(STMT, 0)
-      };
-    } else {
-      throw new Error("ILLEGAL");
-    }
-  };
   Parser.prototype.parseBlock = function() {
     this.next();
     var block = {
@@ -384,7 +369,7 @@ var Lexer, Parser;
       body: []
     };
     while (this.token !== OP["}"]) {
-      block.body.push(this.parseStatement());
+      block.body.push(this.parseStatementAndDeclaration());
     }
     this.next();
     return block;
