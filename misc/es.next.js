@@ -1254,7 +1254,6 @@ var Lexer, Parser;
             val: this.parseAssignmentExpression(true)
           });
         } else if (this.token === OP["("]) {
-          this.next();
           literal.values.push({
             key: is_getter ? "get" : "set",
             val: this.parseFunctionLiteral(EXP, 0)
@@ -1288,7 +1287,6 @@ var Lexer, Parser;
             val: this.parseAssignmentExpression(true)
           });
         } else if (this.token === OP["("]) {
-          this.next();
           literal.values.push({
             key: key,
             val: this.parseFunctionLiteral(EXP, 0)
