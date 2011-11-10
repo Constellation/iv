@@ -1253,6 +1253,12 @@ var Lexer, Parser;
             key: is_getter ? "get" : "set",
             val: this.parseAssignmentExpression(true)
           });
+        } else if (this.token === OP["("]) {
+          this.next();
+          literal.values.push({
+            key: is_getter ? "get" : "set",
+            val: this.parseFunctionLiteral(EXP, 0)
+          });
         } else {
           if (this.token === OP["IDENTIFIER"] ||
               this.token === OP["STRING"] ||
@@ -1270,23 +1276,26 @@ var Lexer, Parser;
             throw new Error("ILLEGAL");
           }
         }
-      } else if (this.token === OP["IDENTIFIER"]) {
-        var key = this.lexer.value;
-        this.next();
-        this.expect(OP[":"]);
-        literal.values.push({
-          key: key,
-          val: this.parseAssignmentExpression(true)
-        });
-      }  else if (this.token === OP["STRING"] ||
+      } else if (this.token === OP["IDENTIFIER"] ||
+                 this.token === OP["STRING"] ||
                  this.token === OP["NUMBER"]) {
         var key = this.lexer.value;
         this.next();
-        this.expect(OP[":"]);
-        literal.values.push({
-          key: key,
-          val: this.parseAssignmentExpression(true)
-        });
+        if (this.token === OP[":"]) {
+          this.next();
+          literal.values.push({
+            key: key,
+            val: this.parseAssignmentExpression(true)
+          });
+        } else if (this.token === OP["("]) {
+          this.next();
+          literal.values.push({
+            key: key,
+            val: this.parseFunctionLiteral(EXP, 0)
+          });
+        } else {
+          throw new Error("ILLEGAL");
+        }
       } else {
         throw new Error("ILLEGAL");
       }
@@ -1300,7 +1309,6 @@ var Lexer, Parser;
     this.next();
     return literal;
   };
-  // TODO(Constellation) fix get / set with initializer is not allowed
   Parser.prototype.parseFunctionLiteral = function(kind, getterOrSetter) {
     var literal = {
       type: "Function",
