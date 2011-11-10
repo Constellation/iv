@@ -512,6 +512,7 @@ var Lexer, Parser;
           };
         }
       } else {
+        var save = this.save();
         var initExpr = this.parseExpression(false);
         var init = {
           type: "ExpressionStatement",
@@ -519,7 +520,11 @@ var Lexer, Parser;
         };
         if (this.token === OP["in"]) {
           if (!isValidLHS(initExpr)) {
-            throw new Error("ILLEGAL");
+            this.restore(save);
+            initExpr = this.parseAssignmentPattern();
+            if (!isValidLHS(initExpr)) {
+              throw new Error("ILLEGAL");
+            }
           }
           this.next();
           var enumerable = this.parseExpression(true);
@@ -909,9 +914,14 @@ var Lexer, Parser;
       case OP["++"]:
       case OP["--"]:
         this.next();
+        var save = this.save();
         var expr = this.parseMemberExpression();
         if (!isValidLHS(expr)) {
-          throw new Error("ILLEGAL");
+          this.restore(save);
+          expr = this.parseAssignmentPattern();
+          if (!isValidLHS(expr)) {
+            throw new Error("ILLEGAL");
+          }
         }
         return {type: "UnaryExpression", op: op, expr: expr};
 
@@ -920,11 +930,16 @@ var Lexer, Parser;
     }
   };
   Parser.prototype.parsePostfixExpression = function() {
+    var save = this.save();
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         (this.token === OP["++"] || this.token === OP["--"])) {
       if (!isValidLHS(expr)) {
-        throw new Error("ILLEGAL");
+        this.restore(save);
+        expr = this.parseAssignmentPattern();
+        if (!isValidLHS(expr)) {
+          throw new Error("ILLEGAL");
+        }
       }
       expr = {
         type:"PostfixExpression",
@@ -950,7 +965,7 @@ var Lexer, Parser;
       }
     } else if (this.token === OP["super"]) {
       this.next();
-      expr = { type: "Super" };
+      expr = this.parseSuper();
     } else {
       expr = this.parsePrimaryExpression();
     }
@@ -1012,6 +1027,36 @@ var Lexer, Parser;
           return expr;
       }
     }
+  };
+  Parser.prototype.parseSuper = function() {
+    this.next();
+    if (this.token === OP["["]) {
+      this.next();
+      var index = this.parseExpression(true);
+      var expr = {
+        type: "PropertyAccess",
+        target: expr,
+        key: index
+      };
+      this.expect(OP["]"]);
+      return expr;
+    } else if (this.token === OP["."]) {
+      this.next(IgnoreReservedWords);
+      if (this.token !== OP["IDENTIFIER"]) {
+        throw new Error("ILLEGAL");
+      }
+      var index = {
+        type: "Identifier",
+        value: this.lexer.value
+      };
+      this.next();
+      return {
+        type: "PropertyAccess",
+        target: expr,
+        key: index
+      };
+    }
+    throw new Error("ILLEGAL");
   };
   Parser.prototype.parseProtoLiteral = function() {
     switch (this.token) {
@@ -1480,9 +1525,14 @@ var Lexer, Parser;
         }
         if (this.token === OP[":"]) {
           this.next();
+          var save = this.save();
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
-            throw new Error("ILLEGAL");
+            this.restore(save);
+            target = this.parseAssignmentPattern();
+            if (!isValidLHS(target)) {
+              throw new Error("ILLEGAL");
+            }
           }
           pattern.pattern.patterns.push({
             type: "AssignmentProperty",
@@ -1516,9 +1566,14 @@ var Lexer, Parser;
           pattern.pattern.patterns.push({ type: "Elision" });
         } else if (this.token === OP["..."]) {
           this.next();
+          var save = this.save();
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
-            throw new Error("ILLEGAL");
+            this.restore(save);
+            target = this.parseAssignmentPattern();
+            if (!isValidLHS(target)) {
+              throw new Error("ILLEGAL");
+            }
           }
           pattern.pattern.patterns.push({
             type: "AssignmentRestElement",
@@ -1530,9 +1585,14 @@ var Lexer, Parser;
           }
           break;
         } else {
+          var save = this.save();
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
-            throw new Error("ILLEGAL");
+            this.restore(save);
+            target = this.parseAssignmentPattern();
+            if (!isValidLHS(target)) {
+              throw new Error("ILLEGAL");
+            }
           }
           pattern.pattern.patterns.push(target);
         }
@@ -1566,4 +1626,4 @@ var Lexer, Parser;
   };
 })();
 
-// print(JSON.stringify(new Parser("var [test] = [10]").parse()));
+// print(JSON.stringify(new Parser("super()").parse()));
