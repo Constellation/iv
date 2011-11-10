@@ -300,6 +300,9 @@ var Lexer, Parser;
         this.expectSemicolon();
         return {type: "DebuggerStatement"};
 
+      case OP["function"]:
+        throw new Error("ILLEGAL");
+
       default:
         return this.parseExpressionOrLabelledStatement();
     }
