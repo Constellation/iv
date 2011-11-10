@@ -964,7 +964,6 @@ var Lexer, Parser;
         this.parseArguments(expr);
       }
     } else if (this.token === OP["super"]) {
-      this.next();
       expr = this.parseSuper();
     } else {
       expr = this.parsePrimaryExpression();
