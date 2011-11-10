@@ -1407,5 +1407,3 @@ var Lexer, Parser;
     }
   };
 })();
-
-print(JSON.stringify(new Parser("var [test] = [10, 20]").parse()));
