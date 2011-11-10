@@ -1034,7 +1034,7 @@ var Lexer, Parser;
       var index = this.parseExpression(true);
       var expr = {
         type: "PropertyAccess",
-        target: expr,
+        target: { type: "Super" },
         key: index
       };
       this.expect(OP["]"]);
@@ -1051,7 +1051,7 @@ var Lexer, Parser;
       this.next();
       return {
         type: "PropertyAccess",
-        target: expr,
+        target: { type: "Super" },
         key: index
       };
     }
