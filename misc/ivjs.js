@@ -646,6 +646,10 @@ var Lexer, Parser;
     var hasCatchOrFinally = false;
     this.next();
 
+    if (this.token !== OP["{"]) {
+      throw new Error("ILLEGAL");
+    }
+
     var res = {
       type : "TryStatement",
       block: this.parseBlock()
@@ -661,6 +665,9 @@ var Lexer, Parser;
       var ident = {type: "Identifier", value: this.lexer.value };
       this.next();
       this.expect(OP[")"]);
+      if (this.token !== OP["{"]) {
+        throw new Error("ILLEGAL");
+      }
       var block = this.parseBlock();
       res.catchBlock = {
         name: ident,
@@ -671,6 +678,9 @@ var Lexer, Parser;
     if (this.token === OP["finally"]) {
       hasCatchOrFinally = true;
       this.next();
+      if (this.token !== OP["{"]) {
+        throw new Error("ILLEGAL");
+      }
       var block = this.parseBlock();
       res.finallyBlock = {
         block: block
