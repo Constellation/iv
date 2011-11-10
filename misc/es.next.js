@@ -24,6 +24,7 @@ var Lexer, Parser;
 (function() {
   var IDENT = new Object(), EOS = 0, ILLEGAL = 1, NOTFOUND = 2,
       EXP = "EXP", STMT = "STMT", DECL = "DECL",
+      GETTER = 1, SETTER = 2,
       IdentifyReservedWords = 1, IgnoreReservedWords = 2,
       IgnoreReservedWordsAndIdentifyGetterOrSetter = 3;
 
@@ -208,6 +209,11 @@ var Lexer, Parser;
     return false;
   };
 
+  function isValidLHS(expr) {
+    var type = expr.type;
+    return type === "Identifier" || type === "PropertyAccess" || type == "AssignmentPattern";
+  }
+
   Parser = function Parser(source) {
     this.lexer = new Lexer(source);
     this.next();
@@ -326,7 +332,7 @@ var Lexer, Parser;
     if (this.token === OP["IDENTIFIER"]) {
       return {
         type: "FunctionDeclaration",
-        func: this.parseFunctionLiteral(DECL, true)
+        func: this.parseFunctionLiteral(DECL, 0)
       };
     } else {
       throw new Error("ILLEGAL");
@@ -365,7 +371,7 @@ var Lexer, Parser;
     if (this.token === OP["IDENTIFIER"]) {
       return {
         type: "FunctionStatement",
-        func: this.parseFunctionLiteral(STMT, true)
+        func: this.parseFunctionLiteral(STMT, 0)
       };
     } else {
       throw new Error("ILLEGAL");
@@ -512,7 +518,7 @@ var Lexer, Parser;
           expr: initExpr
         };
         if (this.token === OP["in"]) {
-          if (initExpr.type !== "Identifier" && initExpr.type !== "PropertyAccess") {
+          if (!isValidLHS(initExpr)) {
             throw new Error("ILLEGAL");
           }
           this.next();
@@ -738,12 +744,17 @@ var Lexer, Parser;
     return result;
   };
   Parser.prototype.parseAssignmentExpression = function(containsIn) {
+    var save = this.save();
     var result = this.parseConditionalExpression(containsIn);
     if (!isAssignOp(this.token)) {
       return result;
     }
-    if (result.type !== "Identifier" && result.type !== "PropertyAccess") {
-      throw new Error("ILLEGAL");
+    if (!isValidLHS(result)) {
+      this.restore(save);
+      result = this.parseAssignmentPattern();
+      if (!isValidLHS(result)) {
+        throw new Error("ILLEGAL");
+      }
     }
     var op = Lexer.opToString(this.token);
     this.next();
@@ -899,7 +910,7 @@ var Lexer, Parser;
       case OP["--"]:
         this.next();
         var expr = this.parseMemberExpression();
-        if (expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+        if (!isValidLHS(expr)) {
           throw new Error("ILLEGAL");
         }
         return {type: "UnaryExpression", op: op, expr: expr};
@@ -912,7 +923,7 @@ var Lexer, Parser;
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         (this.token === OP["++"] || this.token === OP["--"])) {
-      if(expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+      if (!isValidLHS(expr)) {
         throw new Error("ILLEGAL");
       }
       expr = {
@@ -1006,7 +1017,7 @@ var Lexer, Parser;
     switch (this.token) {
       case OP["function"]:
         this.next();
-        return this.parseFunctionLiteral(EXP, true);
+        return this.parseFunctionLiteral(EXP, 0);
 
       case OP["NUMBER"]:
         var value = this.lexer.value;
@@ -1055,7 +1066,7 @@ var Lexer, Parser;
     switch (this.token) {
       case OP["function"]:
         this.next();
-        return this.parseFunctionLiteral(EXP, true);
+        return this.parseFunctionLiteral(EXP, 0);
 
       case OP["this"]:
         this.next();
@@ -1132,7 +1143,15 @@ var Lexer, Parser;
   Parser.prototype.parseArguments = function(func) {
     this.next();
     while (this.token !== OP[")"]) {
-      var expr = this.parseAssignmentExpression(true);
+      if (this.token === OP["..."]) {
+        this.next();
+        var expr = {
+          type: "AssignmentRestExpression",
+          expr: this.parseAssignmentExpression(true)
+        };
+      } else {
+        var expr = this.parseAssignmentExpression(true);
+      }
       func.args.push(expr);
       if (this.token !== OP[")"]) {
         this.expect(OP[","]);
@@ -1196,7 +1215,7 @@ var Lexer, Parser;
               this.token === OP["NUMBER"]) {
             var name = this.lexer.value;
             this.next();
-            var expr = this.parseFunctionLiteral(EXP, false);
+            var expr = this.parseFunctionLiteral(EXP, is_getter ? GETTER : SETTER);
             literal.accessors.push({
               type: "Accessor",
               kind: is_getter ? "getter" : "setter",
@@ -1238,44 +1257,56 @@ var Lexer, Parser;
     return literal;
   };
   // TODO(Constellation) fix get / set with initializer is not allowed
-  Parser.prototype.parseFunctionLiteral = function(kind, allowIdentifier) {
+  Parser.prototype.parseFunctionLiteral = function(kind, getterOrSetter) {
     var literal = {
       type: "Function",
       kind: kind,
       params: [],
       body: []
     };
-    if (allowIdentifier && this.token === OP["IDENTIFIER"]) {
-      literal.name = this.lexer.value;
-      this.next();
-    }
-    this.expect(OP["("]);
-    while (this.token !== OP[")"]) {
-      if (this.token === OP["..."]) {
+    if (!getterOrSetter) {
+      if (this.token === OP["IDENTIFIER"]) {
+        literal.name = this.lexer.value;
         this.next();
-        if (this.token !== OP["IDENTIFIER"]) {
-          throw new Error("ILLEGAL");
-        }
-        literal.params.push({
-          type: "RestParameter",
-          name: {
-            type: "Identifier",
-            value: this.lexer.value
+      }
+      this.expect(OP["("]);
+      while (this.token !== OP[")"]) {
+        if (this.token === OP["..."]) {
+          this.next();
+          if (this.token !== OP["IDENTIFIER"]) {
+            throw new Error("ILLEGAL");
           }
-        });
-        this.next();
-        if (this.token !== OP[")"]) {
-          throw new Error("ILLEGAL");
+          literal.params.push({
+            type: "RestParameter",
+            name: {
+              type: "Identifier",
+              value: this.lexer.value
+            }
+          });
+          this.next();
+          if (this.token !== OP[")"]) {
+            throw new Error("ILLEGAL");
+          }
+          break;
+        } else {
+          literal.params.push(this.parseBindingElement());
         }
-        break;
-      } else {
-        literal.params.push(this.parseBindingElement());
+        if (this.token !== OP[")"]) {
+          this.expect(OP[","]);
+        }
       }
-      if (this.token !== OP[")"]) {
-        this.expect(OP[","]);
+      this.next();
+    } else {
+      // getter or setter
+      if (getterOrSetter === GETTER) {
+        this.expect(OP["("]);
+        this.expect(OP[")"]);
+      } else {
+        this.expect(OP["("]);
+        literal.params.push(this.parseBinding());
+        this.expect(OP[")"]);
       }
     }
-    this.next();
 
     this.expect(OP["{"]);
     this.parseSourceElements(OP["}"], literal);
@@ -1285,7 +1316,6 @@ var Lexer, Parser;
   Parser.prototype.parseBindingPattern = function() {
     if (this.token === OP["{"]) {
       // ObjectBindingPattern
-      this.next();
       var pattern = {
         type: "ObjectBindingPattern",
         patterns: []
@@ -1293,15 +1323,24 @@ var Lexer, Parser;
       this.next(IgnoreReservedWords);
       while (this.token !== OP["}"]) {
         var ident;
-        if (this.token === OP["IDENTIFIER"] ||
-            this.token === OP["STRING"] ||
-            this.token === OP["NUMBER"]) {
+        if (this.token === OP["IDENTIFIER"]) {
           var key = this.lexer.value;
           this.next();
           ident = {
             type: "Identifier",
             value: key
           };
+        } else if (this.token === OP["STRING"] ||
+                   this.token === OP["NUMBER"]) {
+          var key = this.lexer.value;
+          this.next();
+          ident = {
+            type: "Identifier",
+            value: key
+          };
+          if (this.token !== OP[":"]) {
+            throw new Error("ILLEGAL");
+          }
         } else {
           throw new Error("ILLEGAL");
         }
@@ -1405,4 +1444,126 @@ var Lexer, Parser;
       return this.parseBindingPattern();
     }
   };
+  Parser.prototype.parseAssignmentPattern = function() {
+    if (this.token === OP["{"]) {
+      // ObjectAssignmentPattern
+      var pattern = {
+        type: "AssignmentPattern",
+        pattern: {
+          type: "ObjectAssignmentPattern",
+          patterns: []
+        }
+      };
+      this.next(IgnoreReservedWords);
+      while (this.token !== OP["}"]) {
+        var ident;
+        if (this.token === OP["IDENTIFIER"]) {
+          var key = this.lexer.value;
+          this.next();
+          ident = {
+            type: "Identifier",
+            value: key
+          };
+        } else if (this.token === OP["STRING"] ||
+                   this.token === OP["NUMBER"]) {
+          var key = this.lexer.value;
+          this.next();
+          ident = {
+            type: "Identifier",
+            value: key
+          };
+          if (this.token !== OP[":"]) {
+            throw new Error("ILLEGAL");
+          }
+        } else {
+          throw new Error("ILLEGAL");
+        }
+        if (this.token === OP[":"]) {
+          this.next();
+          var target = this.parseMemberExpression();
+          if (!isValidLHS(target)) {
+            throw new Error("ILLEGAL");
+          }
+          pattern.pattern.patterns.push({
+            type: "AssignmentProperty",
+            key: ident,
+            target: target
+          });
+        } else {
+          pattern.pattern.patterns.push(ident);
+        }
+        if (this.token !== OP["}"]) {
+          if (this.token !== OP[","]) {
+            throw new Error("ILLEGAL");
+          }
+          this.next(IgnoreReservedWords);
+        }
+      }
+      this.next();
+      return pattern;
+    } else if (this.token === OP["["]) {
+      // ArrayAssignmentPattern
+      this.next();
+      var pattern = {
+        type: "AssignmentPattern",
+        pattern: {
+          type: "ArrayAssignmentPattern",
+          patterns: []
+        }
+      };
+      while (this.token !== OP["]"]) {
+        if (this.token === OP[","]) {
+          pattern.pattern.patterns.push({ type: "Elision" });
+        } else if (this.token === OP["..."]) {
+          this.next();
+          var target = this.parseMemberExpression();
+          if (!isValidLHS(target)) {
+            throw new Error("ILLEGAL");
+          }
+          pattern.pattern.patterns.push({
+            type: "AssignmentRestElement",
+            expr: target
+          });
+          this.next();
+          if (this.token !== OP["]"]) {
+            throw new Error("ILLEGAL");
+          }
+          break;
+        } else {
+          var target = this.parseMemberExpression();
+          if (!isValidLHS(target)) {
+            throw new Error("ILLEGAL");
+          }
+          pattern.pattern.patterns.push(target);
+        }
+        if (this.token !== OP["]"]) {
+          this.expect(OP[","]);
+        }
+      }
+      this.next();
+      return pattern;
+    } else {
+      throw new Error("ILLEGAL");
+    }
+  };
+  Parser.prototype.save = function() {
+    return {
+      token: this.token,
+      current: this.lexer.current,
+      value: this.lexer.value,
+      pos: this.lexer.pos,
+      flags: this.lexer.flags,
+      hasLineTerminatorBeforeNext: this.lexer.hasLineTerminatorBeforeNext
+    };
+  };
+  Parser.prototype.restore = function(obj) {
+    this.token = obj.token;
+    this.lexer.current = obj.current;
+    this.lexer.value = obj.value;
+    this.lexer.pos = obj.pos;
+    this.lexer.flags = obj.flags;
+    this.lexer.hasLineTerminatorBeforeNext = obj.hasLineTerminatorBeforeNext;
+  };
 })();
+
+print(JSON.stringify(new Parser("var [test] = [10]").parse()));
