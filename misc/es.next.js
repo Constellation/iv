@@ -177,8 +177,7 @@ var Lexer, Parser;
           this.current = m[2] || "";
         } else if ((m = this.current.match(LineTerminator)) && m.length) {
           // scan line terminator
-          var num = m[1];
-          this.current = m[2] || "";
+          this.current = m[1] || "";
           this.hasLineTerminatorBeforeNext = true;
         } else {
           token = ILLEGAL;
