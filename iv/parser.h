@@ -1608,19 +1608,12 @@ class Parser
 //
 //  MemberExpression
 //    : PrimaryExpression
-//    | FunctionExpression
 //    | MemberExpression '[' Expression ']'
 //    | NEW MemberExpression Arguments
   Expression* ParseMemberExpression(bool allow_call, bool *res) {
     Expression* expr;
     if (token_ != Token::TK_NEW) {
-      if (token_ == Token::TK_FUNCTION) {
-        // FunctionExpression
-        expr = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
-                                    FunctionLiteral::GENERAL, CHECK);
-      } else {
-        expr = ParsePrimaryExpression(CHECK);
-      }
+      expr = ParsePrimaryExpression(CHECK);
     } else {
       Next();
       Expression* const target = ParseMemberExpression(false, CHECK);
@@ -1683,6 +1676,7 @@ class Parser
 //    | Literal
 //    | ArrayLiteral
 //    | ObjectLiteral
+//    | FunctionExpression
 //    | '(' Expression ')'
 //
 //  Literal
@@ -1695,6 +1689,11 @@ class Parser
   Expression* ParsePrimaryExpression(bool *res) {
     Expression* result = NULL;
     switch (token_) {
+      case Token::TK_FUNCTION:
+        result = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
+                                      FunctionLiteral::GENERAL, CHECK);
+        break;
+
       case Token::TK_THIS:
         result = factory_->NewThisLiteral(lexer_.begin_position(),
                                           lexer_.end_position());
