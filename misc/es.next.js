@@ -1224,6 +1224,16 @@ var Lexer, Parser;
     while (this.token !== OP["]"]) {
       if (this.token === OP[","]) {
         literal.items.push({ type: "Undefined" });
+      } else if (this.token === OP["..."]) {
+        this.next();
+        literal.items.push({
+          type: "RestElement",
+          expr: this.parseAssignmentExpression(true)
+        });
+        if (this.token !== OP["]"]) {
+          throw new Error("ILLEGAL");
+        }
+        break;
       } else {
         literal.items.push(this.parseAssignmentExpression(true));
       }
@@ -1629,4 +1639,4 @@ var Lexer, Parser;
   };
 })();
 
-// print(JSON.stringify(new Parser("super()").parse()));
+// print(JSON.stringify(new Parser("var i = [...ret]").parse()));
