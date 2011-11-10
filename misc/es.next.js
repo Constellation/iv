@@ -1566,4 +1566,4 @@ var Lexer, Parser;
   };
 })();
 
-print(JSON.stringify(new Parser("var [test] = [10]").parse()));
+// print(JSON.stringify(new Parser("var [test] = [10]").parse()));
