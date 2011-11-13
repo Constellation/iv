@@ -58,7 +58,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     return JSUndefined;
   }
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  Code* code = Compile(ctx, *eval, script);
+  Code* code = CompileIndirectEval(ctx, *eval, script);
   if (code->strict()) {
     JSDeclEnv* const env = JSDeclEnv::New(ctx,
                                           ctx->global_env(),

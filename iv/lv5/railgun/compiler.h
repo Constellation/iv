@@ -238,11 +238,13 @@ class Compiler
       dynamic_env_level_(0),
       continuation_status_(),
       current_variable_scope_(),
-      temporary_() {
+      temporary_(),
+      use_expression_value_(false) {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     Code* code = NULL;
+    use_expression_value_ = false;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -259,6 +261,7 @@ class Compiler
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     Code* code = NULL;
+    use_expression_value_ = false;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -280,6 +283,7 @@ class Compiler
 
   Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
+    use_expression_value_ = true;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -287,6 +291,23 @@ class Compiler
       data_->reserve(core::Size::KB);
       current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, eval, core_, Code::EVAL);
+      EmitFunctionCode(eval, code, current_variable_scope_);
+      assert(!current_variable_scope_);
+    }
+    CompileEpilogue(code);
+    return code;
+  }
+
+  Code* CompileIndirectEval(const FunctionLiteral& eval, JSScript* script) {
+    Code* code = NULL;
+    use_expression_value_ = true;
+    {
+      script_ = script;
+      core_ = CoreData::New();
+      data_ = core_->data();
+      data_->reserve(4 * core::Size::KB);
+      current_variable_scope_ = std::shared_ptr<VariableScope>();
+      code = new Code(ctx_, script_, eval, core_, Code::GLOBAL);
       EmitFunctionCode(eval, code, current_variable_scope_);
       assert(!current_variable_scope_);
     }
@@ -599,7 +620,8 @@ class Compiler
       continuation_status_.ResolveJump(stmt);
     } else {
       if (cond == Condition::COND_INDETERMINATE) {
-        Emit<OP::POP_JUMP_IF_TRUE>(Instruction::Diff(start_index, CurrentSize()));
+        Emit<OP::POP_JUMP_IF_TRUE>(
+            Instruction::Diff(start_index, CurrentSize()));
         stack_depth_.Down();
       } else {
         assert(cond == Condition::COND_TRUE);
@@ -1066,7 +1088,11 @@ class Compiler
 
   void Visit(const ExpressionStatement* stmt) {
     stmt->expr()->Accept(this);
-    Emit<OP::POP_TOP_AND_RET>();
+    if (use_expression_value_) {
+      Emit<OP::POP_TOP_AND_RET>();
+    } else {
+      Emit<OP::POP_TOP>();
+    }
     stack_depth_.Down();
     assert(stack_depth_.IsBaseLine());
   }
@@ -2370,6 +2396,7 @@ class Compiler
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
   trace::Vector<Map*>::type temporary_;
+  bool use_expression_value_;
 };
 
 inline Code* Compile(Context* ctx,
@@ -2390,11 +2417,11 @@ inline Code* CompileEval(Context* ctx,
   return compiler.CompileEval(eval, script);
 }
 
-inline Code* CompileEval(Context* ctx,
-                         const FunctionLiteral& eval,
-                         JSScript* script, JSEnv* variable, JSEnv* lexical) {
+inline Code* CompileIndirectEval(Context* ctx,
+                                 const FunctionLiteral& eval,
+                                 JSScript* script) {
   Compiler compiler(ctx);
-  return compiler.CompileEval(eval, script);
+  return compiler.CompileIndirectEval(eval, script);
 }
 
 } } }  // namespace iv::lv5::railgun
