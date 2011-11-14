@@ -66,6 +66,8 @@ class BasicStringBuilder : protected std::vector<CharT> {
 
   using container_type::clear;
 
+  using container_type::reserve;
+
   core::BasicStringPiece<CharT> BuildPiece() const {
     return core::BasicStringPiece<CharT>(container_type::data(),
                                          container_type::size());

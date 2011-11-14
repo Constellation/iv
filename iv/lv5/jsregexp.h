@@ -245,6 +245,7 @@ class JSRegExp : public JSObject {
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(new JSRegExpImpl(ctx->regexp_allocator(), value, flags)) {
     JSStringBuilder builder;
+    builder.reserve(value.size());
     core::RegExpEscape(value.begin(), value.end(), std::back_inserter(builder));
     InitializeProperty(ctx, builder.Build(ctx));
   }
@@ -255,6 +256,7 @@ class JSRegExp : public JSObject {
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(reg) {
     JSStringBuilder builder;
+    builder.reserve(value.size());
     core::RegExpEscape(value.begin(), value.end(), std::back_inserter(builder));
     InitializeProperty(ctx, builder.Build(ctx));
   }
