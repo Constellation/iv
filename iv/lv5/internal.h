@@ -354,38 +354,5 @@ inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
   return length.ToUInt32(ctx, e);
 }
 
-// convert JSVal to String representation with no errors
-// for debugging purpose
-//inline core::UString Inspect(JSVal val) {
-//  if (val.IsString()) {
-//    return val.string()->GetUString();
-//  } else if (val.IsNumber()) {
-//    std::array<char, 80> buffer;
-//    const char* const str = core::DoubleToCString(val.number(),
-//                                                  buffer.data(),
-//                                                  buffer.size());
-//    return core::ToUString(str);
-//  } else if (val.IsBoolean()) {
-//    return core::ToUString(val.boolean() ? "true" : "false");
-//  } else if (val.IsNull()) {
-//    return core::ToUString("null");
-//  } else if (val.IsUndefined()) {
-//    return core::ToUString("undefined");
-//  } else if (val.IsObject()) {
-//    JSObject* obj = val.object();
-//    if (obj->IsClass<Class::Object>()) {
-//      // normal object pattern
-//    } else if (obj->IsClass<Class::Array>()) {
-//      // array object pattern
-//    } else {
-//      // object with native constructor
-//      JSArray* ary = static_cast<JSArray*>(obj);
-//    }
-//  } else {
-//    // else -> returns empty string
-//    return core::UString();
-//  }
-//}
-
 } } }  // namespace iv::lv5::internal
 #endif  // IV_LV5_INTERNAL_H_
