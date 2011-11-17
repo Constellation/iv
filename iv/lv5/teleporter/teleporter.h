@@ -5,7 +5,6 @@
 #include <iv/lv5/teleporter/fwd.h>
 #include <iv/lv5/teleporter/jsfunction.h>
 #include <iv/lv5/teleporter/stack_resource.h>
-#include <iv/lv5/teleporter/stack.h>
 #include <iv/lv5/teleporter/jsscript.h>
 #include <iv/lv5/teleporter/interpreter_fwd.h>
 #include <iv/lv5/teleporter/context.h>

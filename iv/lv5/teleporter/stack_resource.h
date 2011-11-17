@@ -6,7 +6,7 @@ extern "C" {
 #include <gc/gc_mark.h>
 }
 #include <iv/noncopyable.h>
-#include <iv/lv5/teleporter/stack.h>
+#include <iv/lv5/stack.h>
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -41,8 +41,8 @@ class StackResource : private core::Noncopyable<> {
     const Stack* vmstack = reinterpret_cast<Stack*>(stack);
     GCMSEntry* entry = GC_MARK_AND_PUSH(stack, mark_sp, mark_sp_limit, NULL);
 
-    for (Stack::iterator it = vmstack->stack_pointer_begin(),
-         last = vmstack->stack_pointer(); it != last; ++it) {
+    for (Stack::const_pointer it = vmstack->begin(),
+         last = vmstack->GetTop(); it != last; ++it) {
       if (it->IsCell()) {
         radio::Cell* ptr = it->cell();
         if (GC_least_plausible_heap_addr < ptr &&

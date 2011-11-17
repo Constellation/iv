@@ -15,6 +15,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/global_data.h>
 #include <iv/lv5/context_utils.h>
+#include <iv/lv5/stack.h>
 
 namespace iv {
 namespace lv5 {
@@ -54,8 +55,9 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     return global_env_;
   }
 
-  virtual JSVal* StackGain(std::size_t size) { return NULL; }
-  virtual void StackRelease(std::size_t size) { }
+  inline JSVal* StackGain(std::size_t size) { return stack_->Gain(size); }
+
+  inline void StackRelease(std::size_t size) { stack_->Release(size); }
 
   template<typename Func>
   void DefineFunction(const Func& f,
@@ -106,6 +108,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   void MarkChildren(radio::Core* core) { }
 
+  void RegisterStack(Stack* stack) { stack_ = stack; }
+
  private:
   void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
 
@@ -145,6 +149,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   JSObjectEnv* global_env_;
   core::Space regexp_allocator_;  // for RegExp AST
   aero::VM regexp_vm_;
+  Stack* stack_;
 };
 
 } }  // namespace iv::lv5

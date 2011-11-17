@@ -13,19 +13,12 @@ Context::Context()
     vm_() {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
+  RegisterStack(vm_->stack());
 }
 
 Context::~Context() {
   vm_->~VM();
   GC_FREE(vm_);
-}
-
-JSVal* Context::StackGain(std::size_t size) {
-  return vm_->stack()->Gain(size);
-}
-
-void Context::StackRelease(std::size_t size) {
-  vm_->stack()->Release(size);
 }
 
 } } }  // namespace iv::lv5::railgun

@@ -128,7 +128,8 @@ Context::Context()
             this, context::Intern(this, "ThrowError"))),
     global_env_(JSObjectEnv::New(this, NULL, global_obj())),
     regexp_allocator_(),
-    regexp_vm_() {
+    regexp_vm_(),
+    stack_(NULL) {
 }
 
 double Context::Random() {

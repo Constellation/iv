@@ -14,6 +14,7 @@
 #include <iv/lv5/internal.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/gc_kind.h>
+#include <iv/lv5/stack.h>
 #include <iv/lv5/railgun/frame.h>
 #include <iv/lv5/railgun/direct_threading.h>
 #include <iv/lv5/radio/core_fwd.h>
@@ -21,32 +22,8 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class Stack : core::Noncopyable<Stack> {
+class Stack : public lv5::Stack {
  public:
-  typedef JSVal* iterator;
-  typedef const JSVal* const_iterator;
-
-  typedef std::iterator_traits<iterator>::value_type value_type;
-
-  typedef std::iterator_traits<iterator>::pointer pointer;
-  typedef std::iterator_traits<const_iterator>::pointer const_pointer;
-  typedef std::iterator_traits<iterator>::reference reference;
-  typedef std::iterator_traits<const_iterator>::reference const_reference;
-
-  typedef std::reverse_iterator<iterator> reverse_iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-
-  typedef std::iterator_traits<iterator>::difference_type difference_type;
-  typedef std::size_t size_type;
-
-  // not bytes. JSVals capacity.
-  // if you calc bytes, sizeof(JSVal) * kStackCapacity
-  static const size_type kStackCapacity = 16 * 1024;
-  static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
-
-  // bytes. 4KB is page size.
-  static const size_type kCommitSize = 4 * core::Size::KB;
-
   class Resource : public GCKind<Resource> {
    public:
     explicit Resource(Stack* stack)
@@ -82,26 +59,17 @@ class Stack : core::Noncopyable<Stack> {
   };
 
   explicit Stack(JSVal global)
-    : stack_(NULL),
-      stack_pointer_(NULL),
+    : lv5::Stack(global),
       resource_(NULL),
       base_(NULL),
       current_(NULL) {
-    stack_pointer_ = stack_ =
-        reinterpret_cast<JSVal*>(
-            core::OSAllocator::Allocate(kStackBytes));
-    *stack_ = global;
-    stack_pointer_ += 1;  // for Global This
-    // register root
     resource_ = new Resource(this);
   }
 
-  explicit Stack(DispatchTableTag tag) { }  // empty
+  explicit Stack(DispatchTableTag tag) : lv5::Stack() { }  // empty
 
   ~Stack() {
-    if (stack_) {  // normal pass
-      core::OSAllocator::Decommit(stack_, kStackBytes);
-      core::OSAllocator::Deallocate(stack_, kStackBytes);
+    if (stack_) {
       delete resource_;
     }
   }
@@ -199,50 +167,6 @@ class Stack : core::Noncopyable<Stack> {
     return current_;
   }
 
-  const_iterator begin() const {
-    return stack_;
-  }
-
-  const_iterator end() const {
-    return stack_ + kStackCapacity;
-  }
-
-  iterator begin() {
-    return stack_;
-  }
-
-  iterator end() {
-    return stack_ + kStackCapacity;
-  }
-
-  pointer GetTop() {
-    return stack_pointer_;
-  }
-
-  const_pointer GetTop() const {
-    return stack_pointer_;
-  }
-
-  const_pointer GetBase() const {
-    return stack_;
-  }
-
-  // these 2 function Gain / Release is reserved for ScopedArguments
-  pointer Gain(size_type n) {
-    if (stack_pointer_ + n < end()) {
-      const pointer stack = stack_pointer_;
-      stack_pointer_ += n;
-      return stack;
-    } else {
-      // stack over flow
-      return NULL;
-    }
-  }
-
-  void Release(size_type n) {
-    stack_pointer_ -= n;
-  }
-
   Frame* current() {
     return current_;
   }
@@ -315,10 +239,6 @@ class Stack : core::Noncopyable<Stack> {
     return Gain(Frame::GetFrameSize(code->stack_depth()));
   }
 
-  // stack_pointer_ is safe point
-
-  JSVal* stack_;
-  JSVal* stack_pointer_;
   Resource* resource_;
   Frame* base_;
   Frame* current_;

@@ -1,17 +1,19 @@
-#ifndef IV_LV5_TELEPORTER_STACK_H_
-#define IV_LV5_TELEPORTER_STACK_H_
+#ifndef IV_LV5_STACK_H_
+#define IV_LV5_STACK_H_
+#include <cstddef>
+#include <cmath>
+#include <algorithm>
 #include <iterator>
-#include <iv/platform.h>
+#include <new>
 #include <iv/noncopyable.h>
+#include <iv/singleton.h>
 #include <iv/os_allocator.h>
-#include <iv/lv5/jsval.h>
+#include <iv/lv5/jsval_fwd.h>
 namespace iv {
 namespace lv5 {
-namespace teleporter {
 
-class Stack : private core::Noncopyable<> {
+class Stack : core::Noncopyable<Stack> {
  public:
-  typedef Stack this_type;
   typedef JSVal* iterator;
   typedef const JSVal* const_iterator;
 
@@ -34,38 +36,25 @@ class Stack : private core::Noncopyable<> {
   static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
 
   // bytes. 4KB is page size.
-  static const size_type kCommitSize = 4 * 1024;
+  static const size_type kCommitSize = 4 * core::Size::KB;
 
-#if defined(IV_OS_MACOSX)
-  static const size_type kMaxCallCount = 1024;
-#else
-  static const size_type kMaxCallCount = 4096;
-#endif
-
-  Stack()
+  explicit Stack(JSVal global)
     : stack_(NULL),
-      stack_pointer_(NULL),
-      call_count_(0),
-      pages_(1) {
-    stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(
-        core::OSAllocator::Allocate(kStackBytes));
+      stack_pointer_(NULL) {
+    stack_pointer_ = stack_ =
+        reinterpret_cast<JSVal*>(
+            core::OSAllocator::Allocate(kStackBytes));
+    *stack_ = global;
+    stack_pointer_ += 1;  // for Global This
   }
+
+  Stack() { }  // empty
 
   ~Stack() {
-    core::OSAllocator::Decommit(stack_, kStackBytes);
-    core::OSAllocator::Deallocate(stack_, kStackBytes);
-  }
-
-  pointer stack_pointer_begin() const {
-    return stack_;
-  }
-
-  pointer stack_pointer_end() const {
-    return stack_ + kStackCapacity;
-  }
-
-  pointer stack_pointer() const {
-    return stack_pointer_;
+    if (stack_) {  // normal pass
+      core::OSAllocator::Decommit(stack_, kStackBytes);
+      core::OSAllocator::Deallocate(stack_, kStackBytes);
+    }
   }
 
   const_iterator begin() const {
@@ -84,10 +73,21 @@ class Stack : private core::Noncopyable<> {
     return stack_ + kStackCapacity;
   }
 
+  pointer GetTop() {
+    return stack_pointer_;
+  }
+
+  const_pointer GetTop() const {
+    return stack_pointer_;
+  }
+
+  const_pointer GetBase() const {
+    return stack_;
+  }
+
+  // these 2 function Gain / Release is reserved for ScopedArguments
   pointer Gain(size_type n) {
-    if (stack_pointer_ + n < stack_pointer_end() &&
-        call_count_ < kMaxCallCount) {
-      ++call_count_;
+    if (stack_pointer_ + n < end()) {
       const pointer stack = stack_pointer_;
       stack_pointer_ += n;
       return stack;
@@ -99,15 +99,12 @@ class Stack : private core::Noncopyable<> {
 
   void Release(size_type n) {
     stack_pointer_ -= n;
-    --call_count_;
   }
 
- private:
-  pointer stack_;
-  pointer stack_pointer_;
-  std::size_t call_count_;
-  std::size_t pages_;
+ protected:
+  JSVal* stack_;
+  JSVal* stack_pointer_;
 };
 
-} } }  // namespace iv::lv5::teleporter
-#endif  // IV_LV5_TELEPORTER_STACK_H_
+} }  // namespace iv::lv5
+#endif  // IV_LV5_RAILGUN_STACK_H_
