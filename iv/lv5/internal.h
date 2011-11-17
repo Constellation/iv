@@ -254,7 +254,10 @@ CompareKind Compare(Context* ctx,
       return CMP_ERROR;
     }
   }
-  if (px.IsString() && py.IsString()) {
+  // fast case
+  if (px.IsInt32() && py.IsInt32()) {
+    return (px.int32() < py.int32()) ? CMP_TRUE : CMP_FALSE;
+  } else if (px.IsString() && py.IsString()) {
     // step 4
     return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
   } else {
