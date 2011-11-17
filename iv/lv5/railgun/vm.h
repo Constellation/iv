@@ -1264,34 +1264,50 @@ do {\
       }
 
       DEFINE_OPCODE(BINARY_LT) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = operation_.BinaryCompareLT(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() < rhs.int32()));
+        } else {
+          const JSVal res = operation_.BinaryCompareLT(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH(BINARY_LT);
       }
 
       DEFINE_OPCODE(BINARY_LTE) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = operation_.BinaryCompareLTE(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() <= rhs.int32()));
+        } else {
+          const JSVal res = operation_.BinaryCompareLTE(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH(BINARY_LTE);
       }
 
       DEFINE_OPCODE(BINARY_GT) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = operation_.BinaryCompareGT(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() > rhs.int32()));
+        } else {
+          const JSVal res = operation_.BinaryCompareGT(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH(BINARY_GT);
       }
 
       DEFINE_OPCODE(BINARY_GTE) {
-        const JSVal w = POP();
-        const JSVal& v = TOP();
-        const JSVal res = operation_.BinaryCompareGTE(v, w, ERR);
-        SET_TOP(res);
+        const JSVal rhs = POP();
+        const JSVal lhs = TOP();
+        if (lhs.IsInt32() && rhs.IsInt32()) {
+          SET_TOP(JSVal::Bool(lhs.int32() >= rhs.int32()));
+        } else {
+          const JSVal res = operation_.BinaryCompareGTE(lhs, rhs, ERR);
+          SET_TOP(res);
+        }
         DISPATCH(BINARY_GTE);
       }
 
