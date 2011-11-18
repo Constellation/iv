@@ -1,6 +1,7 @@
 #ifndef IV_PLATFORM_MATH_H_
 #define IV_PLATFORM_MATH_H_
 #include <cmath>
+#include <limits>
 #include <iv/platform.h>
 namespace iv {
 namespace core {
