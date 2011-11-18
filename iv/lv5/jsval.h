@@ -780,9 +780,7 @@ bool JSVal::GetUInt32(uint32_t* result) const {
     return true;
   } else if (IsNumber()) {
     const double val = number();
-    const uint32_t res = static_cast<uint32_t>(val);
-    if (val == res) {
-      *result = res;
+    if (val == (*result = static_cast<uint32_t>(val))) {
       return true;
     }
   }

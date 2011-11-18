@@ -182,6 +182,18 @@ class Operation {
   JSVal LoadElement(const JSVal& base,
                     const JSVal& element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
+    // array fast path
+    uint32_t index;
+    if (element.GetUInt32(&index)) {
+      if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+        JSArray* ary = static_cast<JSArray*>(base.object());
+        if (ary->CanGetIndexDirect(index)) {
+          return ary->GetIndexDirect(index);
+        } else {
+          return ary->JSArray::Get(ctx_, symbol::MakeSymbolFromIndex(index), e);
+        }
+      }
+    }
     const Symbol s = element.ToSymbol(ctx_, CHECK);
     return LoadPropImpl(base, s, strict, e);
   }
@@ -244,6 +256,22 @@ class Operation {
   void StoreElement(const JSVal& base, const JSVal& element,
                     const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
+    // array fast path
+    uint32_t index;
+    if (element.GetUInt32(&index)) {
+      if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+        JSArray* ary = static_cast<JSArray*>(base.object());
+        if (ary->CanSetIndexDirect(index)) {
+          ary->SetIndexDirect(index, stored);
+        } else {
+          ary->JSArray::Put(
+              ctx_,
+              symbol::MakeSymbolFromIndex(index),
+              stored, strict, e);
+        }
+        return;
+      }
+    }
     const Symbol s = element.ToSymbol(ctx_, CHECK);
     StorePropImpl(base, s, stored, strict, e);
   }

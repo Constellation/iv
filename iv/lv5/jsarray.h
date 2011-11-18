@@ -238,6 +238,25 @@ class JSArray : public JSObject {
     }
   }
 
+  // Array optimizations
+  inline bool CanGetIndexDirect(uint32_t index) const {
+    return !dense_ && vector_.size() > index && !vector_[index].IsEmpty();
+  }
+
+  inline JSVal GetIndexDirect(uint32_t index) const {
+    assert(CanGetIndexDirect(index));
+    return vector_[index];
+  }
+
+  inline bool CanSetIndexDirect(uint32_t index) const {
+    return !dense_ && vector_.size() > index;
+  }
+
+  inline void SetIndexDirect(uint32_t index, JSVal val) {
+    assert(CanSetIndexDirect(index));
+    vector_[index] = val;
+  }
+
  private:
   JSArray(Context* ctx, uint32_t len)
     : JSObject(context::GetArrayMap(ctx)),
