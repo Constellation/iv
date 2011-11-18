@@ -19,7 +19,15 @@ namespace symbol {
     V(valueOf)\
     V(prototype)\
     V(constructor)\
-    V(__proto__)
+    V(__proto__)\
+    V(name)\
+    V(lastIndex)\
+    V(index)\
+    V(input)\
+    V(ignoreCase)\
+    V(multiline)\
+    V(global)\
+    V(source)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:

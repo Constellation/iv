@@ -5,6 +5,8 @@
 namespace iv {
 namespace core {
 
+static const double kInfinity = std::numeric_limits<double>::infinity();
+
 #if defined(IV_COMPILER_MSVC)
 
 // http://msdn.microsoft.com/library/tzthab44.aspx

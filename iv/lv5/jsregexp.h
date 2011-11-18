@@ -26,7 +26,7 @@ class JSRegExp : public JSObject {
 
   JSString* source(Context* ctx) {
     Error e;
-    const JSVal source = Get(ctx, context::Intern(ctx, "source"), &e);
+    const JSVal source = Get(ctx, symbol::source(), &e);
     assert(!e);
     assert(source.IsString());
     return source.string();
@@ -83,12 +83,12 @@ class JSRegExp : public JSObject {
 
   int LastIndex(Context* ctx, Error* e) {
     const JSVal index =
-        Get(ctx, context::Intern(ctx, "lastIndex"), IV_LV5_ERROR_WITH(e, 0));
+        Get(ctx, symbol::lastIndex(), IV_LV5_ERROR_WITH(e, 0));
     return index.ToInt32(ctx, e);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
-    Put(ctx, context::Intern(ctx, "lastIndex"),
+    Put(ctx, symbol::lastIndex(),
         static_cast<double>(i), true, IV_LV5_ERROR_VOID(e));
   }
 
@@ -135,12 +135,12 @@ class JSRegExp : public JSObject {
     }
     ary->DefineOwnProperty(
         ctx,
-        context::Intern(ctx, "index"),
+        symbol::index(),
         DataDescriptor(start, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
-        context::Intern(ctx, "input"),
+        symbol::input(),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     return ary;
@@ -181,12 +181,12 @@ class JSRegExp : public JSObject {
     JSArray* ary = JSArray::New(ctx, num_of_captures);
     ary->DefineOwnProperty(
         ctx,
-        context::Intern(ctx, "index"),
+        symbol::index(),
         DataDescriptor(offset_vector[0], ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     ary->DefineOwnProperty(
         ctx,
-        context::Intern(ctx, "input"),
+        symbol::input(),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     for (int i = 0; i < num_of_captures; ++i) {
@@ -275,16 +275,16 @@ class JSRegExp : public JSObject {
 
   void InitializeProperty(Context* ctx, JSString* src) {
     bind::Object(ctx, this)
-        .def(context::Intern(ctx, "source"),
+        .def(symbol::source(),
              src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src,
              ATTR::NONE)
-        .def(context::Intern(ctx, "global"),
+        .def(symbol::global(),
              JSVal::Bool(impl_->global()), ATTR::NONE)
-        .def(context::Intern(ctx, "ignoreCase"),
+        .def(symbol::ignoreCase(),
              JSVal::Bool(impl_->ignore()), ATTR::NONE)
-        .def(context::Intern(ctx, "multiline"),
+        .def(symbol::multiline(),
              JSVal::Bool(impl_->multiline()), ATTR::NONE)
-        .def(context::Intern(ctx, "lastIndex"), 0.0, ATTR::W);
+        .def(symbol::lastIndex(), 0.0, ATTR::W);
   }
 
   const JSRegExpImpl* impl() const {

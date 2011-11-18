@@ -173,8 +173,6 @@ class JSVal {
     set_undefined();
   }
 
-  JSVal(const JSVal& rhs) : value_(rhs.value_) { }
-
   JSVal(double val)  // NOLINT
     : value_() {
     set_value(val);

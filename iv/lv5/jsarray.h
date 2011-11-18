@@ -23,25 +23,6 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-static bool IsDefaultDescriptor(const PropertyDescriptor& desc) {
-  // only accept
-  // { enumrable: true, configurable: true, writable:true }
-  if (!desc.IsEnumerable()) {
-    return false;
-  }
-  if (!desc.IsConfigurable()) {
-    return false;
-  }
-  if (desc.IsAccessorDescriptor()) {
-    return false;
-  }
-  if (desc.IsDataDescriptor()) {
-    const DataDescriptor* const data = desc.AsDataDescriptor();
-    return data->IsWritable();
-  }
-  return false;
-}
-
 static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
   if (!desc.IsEnumerable() && !desc.IsEnumerableAbsent()) {
     // explicitly not enumerable
@@ -78,6 +59,7 @@ class JSArray : public JSObject {
  public:
   friend class railgun::VM;
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
+  typedef JSVals JSValVector;
 
   static const uint32_t kMaxVectorSize = 10000;
 
@@ -115,7 +97,7 @@ class JSArray : public JSObject {
     return &cls;
   }
 
-  bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
+  inline bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
       slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
@@ -126,17 +108,18 @@ class JSArray : public JSObject {
           return true;
         }
       }
-      if (kMaxVectorSize > index) {
-        // this target included in vector (if dense array)
-        if (vector_.size() > index) {
-          const JSVal& val = vector_[index];
-          if (!val.IsEmpty()) {
-            // current is target
-            slot->set_descriptor(
-                DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C));
-            return true;
-          }
+      // this target included in vector (if dense array)
+      if (vector_.size() > index) {
+        const JSVal& val = vector_[index];
+        if (!val.IsEmpty()) {
+          // current is target
+          slot->set_descriptor(
+              DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C));
+          return true;
         }
+        return false;
+      } else if (kMaxVectorSize > index) {
+        return false;
       } else {
         // target is index and included in map
         if (map_) {
@@ -221,7 +204,7 @@ class JSArray : public JSObject {
         vec->push_back(symbol::length());
       }
     }
-    for (JSVals::const_iterator it = vector_.begin(),
+    for (JSValVector::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
         const Symbol sym = symbol::MakeSymbolFromIndex(index);
@@ -296,10 +279,9 @@ class JSArray : public JSObject {
 
     // dense array optimization code
     Slot slot;
-    const bool is_default_descriptor = detail::IsDefaultDescriptor(desc);
-    const bool is_absent_descriptor = detail::IsAbsentDescriptor(desc);
+    const bool is_default_descriptor = desc.IsDefault();
     if ((is_default_descriptor ||
-         (index < old_len && is_absent_descriptor)) &&
+         (index < old_len && detail::IsAbsentDescriptor(desc))) &&
          (dense_ || !JSObject::GetOwnPropertySlot(ctx, name, &slot))) {
       if (kMaxVectorSize > index) {
         if (vector_.size() > index) {
@@ -608,7 +590,7 @@ class JSArray : public JSObject {
     return true;
   }
 
-  JSVals vector_;
+  JSValVector vector_;
   SparseArray* map_;
   bool dense_;
   DescriptorSlot::Data<uint32_t> length_;

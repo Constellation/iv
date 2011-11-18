@@ -21,7 +21,6 @@ namespace core {
 namespace detail {
 
 static const std::string kInfinityString = "Infinity";
-static const double kInf = std::numeric_limits<double>::infinity();
 static const double kDoubleToInt32_Two32 = 4294967296.0;
 static const double kDoubleToInt32_Two31 = 2147483648.0;
 static const int kMaxSignificantDigits = 772;
@@ -39,9 +38,9 @@ inline double ParseIntegerOverflow(const CharT* it,
   double number = 0.0;
   double multiplier = 1.0;
   for (--it, --last; last != it; --last) {
-    if (multiplier == detail::kInf) {
+    if (multiplier == kInfinity) {
       if (*last != '0') {
-        number = detail::kInf;
+        number = kInfinity;
         break;
       }
     } else {

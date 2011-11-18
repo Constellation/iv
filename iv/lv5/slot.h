@@ -58,7 +58,7 @@ class Slot {
     return offset_;
   }
 
-  void MakeUnCacheable() {
+  inline void MakeUnCacheable() {
     cacheable_ = false;
   }
 

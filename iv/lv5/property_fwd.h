@@ -73,6 +73,12 @@ class PropertyDescriptor {
     return attrs_ & ATTR::EMPTY;
   }
 
+  inline bool IsDefault() const {
+    const int kDefault =
+        (ATTR::CONFIGURABLE | ATTR::ENUMERABLE | ATTR::DATA | ATTR::WRITABLE);
+    return (attrs_ & kDefault) == kDefault;
+  }
+
   inline const DataDescriptor* AsDataDescriptor() const;
 
   inline DataDescriptor* AsDataDescriptor();

@@ -63,8 +63,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
                                                const JSVal& target,
                                                Error* e) {
   if (!target.IsObject()) {
-    e->Report(Error::Type,
-              "ToPropertyDescriptor requires Object argument");
+    e->Report(Error::Type, "ToPropertyDescriptor requires Object argument");
     return JSEmpty;
   }
   int attr = ATTR::DEFAULT;
@@ -126,8 +125,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
-        e->Report(Error::Type,
-                  "property \"get\" is not callable");
+        e->Report(Error::Type, "property \"get\" is not callable");
         return JSEmpty;
       }
       attr |= ATTR::ACCESSOR;
@@ -143,8 +141,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
-        e->Report(Error::Type,
-                  "property \"set\" is not callable");
+        e->Report(Error::Type, "property \"set\" is not callable");
         return JSEmpty;
       }
       attr |= ATTR::ACCESSOR;
@@ -157,8 +154,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   // step 9
   if (attr & ATTR::ACCESSOR) {
     if (attr & ATTR::DATA) {
-      e->Report(Error::Type,
-                "invalid object for property descriptor");
+      e->Report(Error::Type, "invalid object for property descriptor");
       return JSEmpty;
     }
   }
@@ -223,37 +219,63 @@ inline bool AbstractEqual(Context* ctx, JSVal lhs, JSVal rhs, Error* e) {
 #undef CHECK
 
 enum CompareKind {
-  CMP_TRUE,
-  CMP_FALSE,
-  CMP_UNDEFINED,
-  CMP_ERROR
+  CMP_FALSE = 0,
+  CMP_TRUE = 1,
+  CMP_UNDEFINED = 2
 };
+
+inline CompareKind NumberCompare(double lhs, double rhs) {
+  if (core::IsNaN(lhs) || core::IsNaN(rhs)) {
+    return CMP_UNDEFINED;
+  }
+  if (lhs == rhs) {
+    return CMP_FALSE;
+  }
+  if (lhs == core::kInfinity) {
+    return CMP_FALSE;
+  }
+  if (rhs == core::kInfinity) {
+    return CMP_TRUE;
+  }
+  if (rhs == (-core::kInfinity)) {
+    return CMP_FALSE;
+  }
+  if (lhs == (-core::kInfinity)) {
+    return CMP_TRUE;
+  }
+  return (lhs < rhs) ? CMP_TRUE : CMP_FALSE;
+}
 
 // section 11.8.5
 template<bool LeftFirst>
 CompareKind Compare(Context* ctx,
                     const JSVal& lhs, const JSVal& rhs, Error* e) {
+  if (lhs.IsNumber() && rhs.IsNumber()) {
+    return NumberCompare(lhs.number(), rhs.number());
+  }
+
   JSVal px;
   JSVal py;
   if (LeftFirst) {
     px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
     if (*e) {
-      return CMP_ERROR;
+      return CMP_UNDEFINED;
     }
     py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
     if (*e) {
-      return CMP_ERROR;
+      return CMP_UNDEFINED;
     }
   } else {
     py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
     if (*e) {
-      return CMP_ERROR;
+      return CMP_UNDEFINED;
     }
     px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
     if (*e) {
-      return CMP_ERROR;
+      return CMP_UNDEFINED;
     }
   }
+
   // fast case
   if (px.IsInt32() && py.IsInt32()) {
     return (px.int32() < py.int32()) ? CMP_TRUE : CMP_FALSE;
@@ -263,35 +285,9 @@ CompareKind Compare(Context* ctx,
   } else {
     const double nx = px.ToNumber(ctx, e);
     if (*e) {
-      return CMP_ERROR;
-    }
-    const double ny = py.ToNumber(ctx, e);
-    if (*e) {
-      return CMP_ERROR;
-    }
-    if (core::IsNaN(nx) || core::IsNaN(ny)) {
       return CMP_UNDEFINED;
     }
-    if (nx == ny) {
-      if (static_cast<bool>(core::Signbit(nx)) !=
-          static_cast<bool>(core::Signbit(ny))) {
-        return CMP_FALSE;
-      }
-      return CMP_FALSE;
-    }
-    if (nx == std::numeric_limits<double>::infinity()) {
-      return CMP_FALSE;
-    }
-    if (ny == std::numeric_limits<double>::infinity()) {
-      return CMP_TRUE;
-    }
-    if (ny == (-std::numeric_limits<double>::infinity())) {
-      return CMP_FALSE;
-    }
-    if (nx == (-std::numeric_limits<double>::infinity())) {
-      return CMP_TRUE;
-    }
-    return (nx < ny) ? CMP_TRUE : CMP_FALSE;
+    return NumberCompare(nx, py.ToNumber(ctx, e));
   }
 }
 

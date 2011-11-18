@@ -116,7 +116,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   struct UniqueTag { };
 
-  static const std::size_t kMaxTransition = 64;
+  static const std::size_t kMaxTransition = 32;
 
   static Map* NewUniqueMap(Context* ctx) {
     return new Map(UniqueTag());
@@ -344,6 +344,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     }
     assert(table_);
 
+    table_->rehash(stack.size());
     for (std::vector<Map*>::const_reverse_iterator it = stack.rbegin(),
          last = stack.rend(); it != last; ++it) {
       assert((*it)->IsAddingMap());
