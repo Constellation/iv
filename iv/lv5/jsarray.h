@@ -240,7 +240,7 @@ class JSArray : public JSObject {
 
   // Array optimizations
   inline bool CanGetIndexDirect(uint32_t index) const {
-    return !dense_ && vector_.size() > index && !vector_[index].IsEmpty();
+    return dense_ && vector_.size() > index && !vector_[index].IsEmpty();
   }
 
   inline JSVal GetIndexDirect(uint32_t index) const {
@@ -249,7 +249,7 @@ class JSArray : public JSObject {
   }
 
   inline bool CanSetIndexDirect(uint32_t index) const {
-    return !dense_ && vector_.size() > index;
+    return dense_ && vector_.size() > index;
   }
 
   inline void SetIndexDirect(uint32_t index, JSVal val) {
