@@ -202,7 +202,7 @@ class Compiler
 
   struct UStringPieceHash {
     std::size_t operator()(core::UStringPiece target) const {
-      return core::StringToHash(target);
+      return core::Hash::StringToHash(target);
     }
   };
 

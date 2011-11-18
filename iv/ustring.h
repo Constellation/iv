@@ -32,7 +32,7 @@ template<>
 struct hash<iv::core::UString>
   : public std::unary_function<iv::core::UString, std::size_t> {
   result_type operator()(const argument_type& x) const {
-    return iv::core::StringToHash(x);
+    return iv::core::Hash::StringToHash(x);
   }
 };
 

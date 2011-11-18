@@ -179,7 +179,7 @@ struct hash<std::basic_string<uint16_t,
   typedef typename super_type::argument_type argument_type;
   typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {
-    return iv::core::StringToHash(x);
+    return iv::core::Hash::StringToHash(x);
   }
 };
 

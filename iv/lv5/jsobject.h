@@ -44,7 +44,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
 
-  virtual bool CanPut(Context* ctx, Symbol name) const;
+  bool CanPut(Context* ctx, Symbol name) const;
 
   virtual void Put(Context* context, Symbol name,
                    const JSVal& val, bool th, Error* e);

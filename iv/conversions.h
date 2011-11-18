@@ -137,25 +137,70 @@ inline double StringToIntegerWithRadix(const UStringPiece& piece,
                                   radix, strip_prefix);
 }
 
-inline std::size_t StringToHash(const UStringPiece& x) {
-  std::size_t len = x.size();
-  std::size_t step = (len >> 5) + 1;
-  std::size_t h = 0;
-  for (std::size_t l1 = len; l1 >= step; l1 -= step) {
-    h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+// Lua Hash
+struct LuaHash {
+  static inline std::size_t StringToHash(const UStringPiece& x) {
+    std::size_t len = x.size();
+    std::size_t step = (len >> 5) + 1;
+    std::size_t h = 0;
+    for (std::size_t l1 = len; l1 >= step; l1 -= step) {
+      h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+    }
+    return h;
   }
-  return h;
-}
 
-inline std::size_t StringToHash(const StringPiece& x) {
-  std::size_t len = x.size();
-  std::size_t step = (len >> 5) + 1;
-  std::size_t h = 0;
-  for (std::size_t l1 = len; l1 >= step; l1 -= step) {
-    h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+  static inline std::size_t StringToHash(const StringPiece& x) {
+    std::size_t len = x.size();
+    std::size_t step = (len >> 5) + 1;
+    std::size_t h = 0;
+    for (std::size_t l1 = len; l1 >= step; l1 -= step) {
+      h = h ^ ((h << 5) + (h >> 2) + x[l1-1]);
+    }
+    return h;
   }
-  return h;
-}
+};
+
+// FNV Hash
+template<std::size_t N>
+struct FNVSeed;
+
+template<>
+struct FNVSeed<4> {
+  static const std::size_t kBasis = 2166136261UL;
+  static const std::size_t kPrime = 16777619UL;
+};
+
+template<>
+struct FNVSeed<8> {
+  static const std::size_t kBasis = 14695981039346656037UL;
+  static const std::size_t kPrime = 1099511628211UL;
+};
+
+struct FNVHash {
+  static inline std::size_t StringToHash(const UStringPiece& x) {
+    std::size_t hash = FNVSeed<sizeof(std::size_t)>::kBasis;
+    for (UStringPiece::const_iterator it = x.begin(),
+         last = x.end(); it != last; ++it) {
+      hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
+      hash ^= (*it >> 8);
+      hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
+      hash ^= (*it & 0xFF);
+    }
+    return hash;
+  }
+
+  static inline std::size_t StringToHash(const StringPiece& x) {
+    std::size_t hash = FNVSeed<sizeof(std::size_t)>::kBasis;
+    for (StringPiece::const_iterator it = x.begin(),
+         last = x.end(); it != last; ++it) {
+      hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
+      hash ^= *it;
+    }
+    return hash;
+  }
+};
+
+typedef LuaHash Hash;
 
 inline int32_t DoubleToInt32(double d) {
   int32_t i = static_cast<int32_t>(d);
