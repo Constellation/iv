@@ -953,38 +953,60 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_LOCAL) {
-        const JSVal& w = GETLOCAL(instr[1].value);
-        const double prev = w.ToNumber(ctx_, ERR);
-        const double now = prev - 1;
-        SETLOCAL(instr[1].value, now);
-        PUSH(now);
+        const JSVal w = GETLOCAL(instr[1].value);
+        if (w.IsInt32() && w.int32() > INT32_MIN) {
+          const JSVal res = JSVal::Int32(w.int32() - 1);
+          SETLOCAL(instr[1].value, res);
+          PUSH(res);
+        } else {
+          const double prev = w.ToNumber(ctx_, ERR);
+          const double now = prev - 1;
+          SETLOCAL(instr[1].value, now);
+          PUSH(prev);
+        }
         DISPATCH(DECREMENT_LOCAL);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_LOCAL) {
-        const JSVal& w = GETLOCAL(instr[1].value);
-        const double prev = w.ToNumber(ctx_, ERR);
-        const double now = prev - 1;
-        SETLOCAL(instr[1].value, now);
-        PUSH(prev);
+        const JSVal w = GETLOCAL(instr[1].value);
+        if (w.IsInt32() && w.int32() > INT32_MIN) {
+          SETLOCAL(instr[1].value, JSVal::Int32(w.int32() - 1));
+          PUSH(w);
+        } else {
+          const double prev = w.ToNumber(ctx_, ERR);
+          const double now = prev - 1;
+          SETLOCAL(instr[1].value, now);
+          PUSH(prev);
+        }
         DISPATCH(POSTFIX_DECREMENT_LOCAL);
       }
 
       DEFINE_OPCODE(INCREMENT_LOCAL) {
-        const JSVal& w = GETLOCAL(instr[1].value);
-        const double prev = w.ToNumber(ctx_, ERR);
-        const double now = prev + 1;
-        SETLOCAL(instr[1].value, now);
-        PUSH(now);
+        const JSVal w = GETLOCAL(instr[1].value);
+        if (w.IsInt32() && w.int32() < INT32_MAX) {
+          const JSVal res = JSVal::Int32(w.int32() + 1);
+          SETLOCAL(instr[1].value, res);
+          PUSH(res);
+        } else {
+          const double prev = w.ToNumber(ctx_, ERR);
+          const double now = prev + 1;
+          SETLOCAL(instr[1].value, now);
+          PUSH(now);
+        }
         DISPATCH(INCREMENT_LOCAL);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_LOCAL) {
-        const JSVal& w = GETLOCAL(instr[1].value);
-        const double prev = w.ToNumber(ctx_, ERR);
-        const double now = prev + 1;
-        SETLOCAL(instr[1].value, now);
-        PUSH(prev);
+        const JSVal w = GETLOCAL(instr[1].value);
+        if (w.IsInt32() && w.int32() < INT32_MAX) {
+          SETLOCAL(instr[1].value, JSVal::Int32(w.int32() + 1));
+          PUSH(w);
+        } else {
+          const double prev = w.ToNumber(ctx_, ERR);
+          const double now = prev + 1;
+          SETLOCAL(instr[1].value, now);
+          PUSH(prev);
+        }
         DISPATCH(POSTFIX_INCREMENT_LOCAL);
       }
 
