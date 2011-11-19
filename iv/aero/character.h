@@ -37,7 +37,7 @@ inline bool IsQuantifierPrefixStart(int ch) {
       ch == '{';
 }
 
-inline bool IsWord(uint16_t ch) {
+inline bool IsWord(int ch) {
   return core::character::IsASCIIAlphanumeric(ch) || ch == '_';
 }
 

@@ -1,5 +1,6 @@
 #ifndef IV_AERO_AST_H_
 #define IV_AERO_AST_H_
+#include <limits>
 #include <iv/space.h>
 #include <iv/aero/visitor.h>
 #include <iv/aero/range.h>
