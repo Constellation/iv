@@ -20,7 +20,6 @@
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/internal.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/teleporter/interpreter_fwd.h>
 #include <iv/lv5/teleporter/context.h>
@@ -916,30 +915,26 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_LT: {  // <
-        const internal::CompareKind res =
-            internal::Compare<true>(ctx_, lhs, rhs, CHECK);
-        ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
+        const CompareResult res = JSVal::Compare<true>(ctx_, lhs, rhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == CMP_TRUE));
         return;
       }
 
       case Token::TK_GT: {  // >
-        const internal::CompareKind res =
-            internal::Compare<false>(ctx_, rhs, lhs, CHECK);
-        ctx_->Return(JSVal::Bool(res == internal::CMP_TRUE));
+        const CompareResult res = JSVal::Compare<false>(ctx_, rhs, lhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == CMP_TRUE));
         return;
       }
 
       case Token::TK_LTE: {  // <=
-        const internal::CompareKind res =
-            internal::Compare<false>(ctx_, rhs, lhs, CHECK);
-        ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
+        const CompareResult res = JSVal::Compare<false>(ctx_, rhs, lhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == CMP_FALSE));
         return;
       }
 
       case Token::TK_GTE: {  // >=
-        const internal::CompareKind res =
-            internal::Compare<true>(ctx_, lhs, rhs, CHECK);
-        ctx_->Return(JSVal::Bool(res == internal::CMP_FALSE));
+        const CompareResult res = JSVal::Compare<true>(ctx_, lhs, rhs, CHECK);
+        ctx_->Return(JSVal::Bool(res == CMP_FALSE));
         return;
       }
 
@@ -980,7 +975,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_EQ: {  // ==
-        const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
+        const bool res = JSVal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -990,7 +985,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_NE: {  // !=
-        const bool res = internal::AbstractEqual(ctx_, lhs, rhs, CHECK);
+        const bool res = JSVal::AbstractEqual(ctx_, lhs, rhs, CHECK);
         if (!res) {
           ctx_->Return(JSTrue);
         } else {

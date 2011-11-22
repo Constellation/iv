@@ -774,5 +774,108 @@ void JSVal::CheckObjectCoercible(Error* e) const {
   }
 }
 
+#define CHECK IV_LV5_ERROR_WITH(e, false)
+bool JSVal::AbstractEqual(Context* ctx,
+                          this_type lhs,
+                          this_type rhs, Error* e) {
+  do {
+    // equality phase
+    if (lhs.IsInt32() && rhs.IsInt32()) {
+      return lhs.int32() == rhs.int32();
+    }
+    if (lhs.IsNumber() && rhs.IsNumber()) {
+      return lhs.number() == rhs.number();
+    }
+    if ((lhs.IsUndefined() || lhs.IsNull()) &&
+        (rhs.IsUndefined() || rhs.IsNull())) {
+      return true;
+    }
+    if (lhs.IsString() && rhs.IsString()) {
+      return *(lhs.string()) == *(rhs.string());
+    }
+    if (lhs.IsBoolean() && rhs.IsBoolean()) {
+      return lhs.boolean() == rhs.boolean();
+    }
+    if (lhs.IsObject() && rhs.IsObject()) {
+      return lhs.object() == rhs.object();
+    }
+
+    // conversion phase
+    if (lhs.IsNumber() && rhs.IsString()) {
+      rhs = rhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (lhs.IsString() && rhs.IsNumber()) {
+      lhs = lhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (lhs.IsBoolean()) {
+      lhs = lhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if (rhs.IsBoolean()) {
+      rhs = rhs.ToNumber(ctx, CHECK);
+      continue;
+    }
+    if ((lhs.IsString() || lhs.IsNumber()) && rhs.IsObject()) {
+      rhs = rhs.ToPrimitive(ctx, Hint::NONE, CHECK);
+      continue;
+    }
+    if (lhs.IsObject() && (rhs.IsString() || rhs.IsNumber())) {
+      lhs = lhs.ToPrimitive(ctx, Hint::NONE, CHECK);
+      continue;
+    }
+    return false;
+  } while (true);
+  return false;  // makes compiler happy
+}
+#undef CHECK
+
+// section 11.8.5
+template<bool LeftFirst>
+CompareResult JSVal::Compare(Context* ctx,
+                             const this_type& lhs,
+                             const this_type& rhs, Error* e) {
+  if (lhs.IsNumber() && rhs.IsNumber()) {
+    return NumberCompare(lhs.number(), rhs.number());
+  }
+
+  JSVal px;
+  JSVal py;
+  if (LeftFirst) {
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_UNDEFINED;
+    }
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_UNDEFINED;
+    }
+  } else {
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_UNDEFINED;
+    }
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
+    if (*e) {
+      return CMP_UNDEFINED;
+    }
+  }
+
+  // fast case
+  if (px.IsInt32() && py.IsInt32()) {
+    return (px.int32() < py.int32()) ? CMP_TRUE : CMP_FALSE;
+  } else if (px.IsString() && py.IsString()) {
+    // step 4
+    return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
+  } else {
+    const double nx = px.ToNumber(ctx, e);
+    if (*e) {
+      return CMP_UNDEFINED;
+    }
+    return NumberCompare(nx, py.ToNumber(ctx, e));
+  }
+}
+
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSVAL_H_

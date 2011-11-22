@@ -158,6 +158,12 @@ static const detail::JSUndefinedType JSUndefined = {};
 static const detail::JSEmptyType JSEmpty = {};
 static const detail::JSNaNType JSNaN = {};
 
+enum CompareResult {
+  CMP_FALSE = 0,
+  CMP_TRUE = 1,
+  CMP_UNDEFINED = 2
+};
+
 class JSVal {
  public:
   typedef JSVal this_type;
@@ -372,6 +378,25 @@ class JSVal {
   static inline bool SameValue(const this_type& lhs, const this_type& rhs);
 
   static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
+
+  static inline bool AbstractEqual(Context* ctx,
+                                   this_type lhs,
+                                   this_type rhs, Error* e);
+
+  static inline CompareResult NumberCompare(double lhs, double rhs) {
+    if (core::IsNaN(lhs) || core::IsNaN(rhs)) {
+      return CMP_UNDEFINED;
+    }
+    if (lhs == rhs) {
+      return CMP_FALSE;
+    }
+    return (lhs < rhs) ? CMP_TRUE : CMP_FALSE;
+  }
+
+  template<bool LeftFirst>
+  static inline CompareResult Compare(Context* ctx,
+                                      const this_type& lhs,
+                                      const this_type& rhs, Error* e);
 
   // type specified factory functions
   static inline JSVal Bool(bool val) {

@@ -9,7 +9,6 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsstring.h>
-#include <iv/lv5/internal.h>
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/runtime_object.h>
 
@@ -537,9 +536,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   }
                 }
               }
-              const internal::CompareKind kind =
-                  internal::Compare<false>(ctx, zero, res, IV_LV5_ERROR(e));
-              if (kind == internal::CMP_TRUE) {  // res > zero is true
+              const CompareResult compare_result =
+                  JSVal::Compare<false>(ctx, zero, res, IV_LV5_ERROR(e));
+              if (compare_result == CMP_TRUE) {  // res > zero is true
                 if (t2_is_hole) {
                   obj->Delete(
                       ctx,
@@ -623,9 +622,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                 }
               }
               // if res < 0, next
-              const internal::CompareKind kind =
-                  internal::Compare<true>(ctx, res, zero, IV_LV5_ERROR(e));
-              if (kind != internal::CMP_TRUE) {
+              const CompareResult compare_result =
+                  JSVal::Compare<true>(ctx, res, zero, IV_LV5_ERROR(e));
+              if (compare_result != CMP_TRUE) {
                 break;
               }
             }
@@ -675,9 +674,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                   }
                 }
               }
-              const internal::CompareKind kind =
-                  internal::Compare<false>(ctx, zero, res, IV_LV5_ERROR(e));
-              if (kind != internal::CMP_TRUE) {  // target < s is true
+              const CompareResult compare_result =
+                  JSVal::Compare<false>(ctx, zero, res, IV_LV5_ERROR(e));
+              if (compare_result != CMP_TRUE) {  // target < s is true
                 break;
               }
             }

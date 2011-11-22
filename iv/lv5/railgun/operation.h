@@ -432,26 +432,22 @@ class Operation {
 
   JSVal BinaryCompareLT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(
-        internal::Compare<true>(ctx_, lhs, rhs, e) == internal::CMP_TRUE);
+    return JSVal::Bool(JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_TRUE);
   }
 
   JSVal BinaryCompareLTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(
-        internal::Compare<false>(ctx_, rhs, lhs, e) == internal::CMP_FALSE);
+    return JSVal::Bool(JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_FALSE);
   }
 
   JSVal BinaryCompareGT(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(
-        internal::Compare<false>(ctx_, rhs, lhs, e) == internal::CMP_TRUE);
+    return JSVal::Bool(JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_TRUE);
   }
 
   JSVal BinaryCompareGTE(const JSVal& lhs,
                          const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(
-        internal::Compare<true>(ctx_, lhs, rhs, e) == internal::CMP_FALSE);
+    return JSVal::Bool(JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_FALSE);
   }
 
   JSVal BinaryInstanceof(const JSVal& lhs,
@@ -480,7 +476,7 @@ class Operation {
 
   JSVal BinaryEqual(const JSVal& lhs,
                     const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(internal::AbstractEqual(ctx_, lhs, rhs, e));
+    return JSVal::Bool(JSVal::AbstractEqual(ctx_, lhs, rhs, e));
   }
 
   JSVal BinaryStrictEqual(const JSVal& lhs,
@@ -490,7 +486,7 @@ class Operation {
 
   JSVal BinaryNotEqual(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(!internal::AbstractEqual(ctx_, lhs, rhs, e));
+    return JSVal::Bool(!JSVal::AbstractEqual(ctx_, lhs, rhs, e));
   }
 
   JSVal BinaryStrictNotEqual(const JSVal& lhs,
