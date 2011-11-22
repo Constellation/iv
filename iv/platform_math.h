@@ -20,7 +20,7 @@ inline int IsFinite(double val) {
   return _finite(val);
 }
 
-inline int Signbit(double x) {
+inline bool Signbit(double x) {
   return (x == 0) ? (_fpclass(x) & _FPCLASS_NZ) : (x < 0);
 }
 
@@ -55,7 +55,7 @@ inline int IsFinite(double val) {
   return std::isfinite(val);
 }
 
-inline int Signbit(double x) {
+inline bool Signbit(double x) {
   return std::signbit(x);
 }
 

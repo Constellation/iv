@@ -87,15 +87,14 @@ class Escape : core::Noncopyable<> {
   }
 };
 
-template<typename URITraits>
-JSVal Encode(Context* ctx, const JSString& str, Error* e) {
+template<typename URITraits, typename FiberType>
+JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint8_t, 4> uc8buf;
   std::array<uint16_t, 3> hexbuf;
   JSStringBuilder builder;
   hexbuf[0] = '%';
-  const JSString::Fiber* fiber = str.GetFiber();
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  for (typename FiberType::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (URITraits::ContainsInEncode(ch)) {
@@ -140,16 +139,15 @@ JSVal Encode(Context* ctx, const JSString& str, Error* e) {
   return builder.Build(ctx);
 }
 
-template<typename URITraits>
-JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
+template<typename URITraits, typename FiberType>
+JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
   JSStringBuilder builder;
-  const JSString::Fiber* str = arg.GetFiber();
-  const uint32_t length = str->size();
+  const uint32_t length = fiber->size();
   std::array<uint16_t, 3> buf;
   std::array<uint8_t, 4> octets;
   buf[0] = '%';
   for (uint32_t k = 0; k < length; ++k) {
-    const uint16_t ch = (*str)[k];
+    const uint16_t ch = (*fiber)[k];
     if (ch != '%') {
       builder.Append(ch);
     } else {
@@ -158,8 +156,8 @@ JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
         e->Report(Error::URI, "invalid uri char");
         return JSUndefined;
       }
-      buf[1] = (*str)[k+1];
-      buf[2] = (*str)[k+2];
+      buf[1] = (*fiber)[k+1];
+      buf[2] = (*fiber)[k+2];
       k += 2;
       if ((!core::character::IsHexDigit(buf[1])) ||
           (!core::character::IsHexDigit(buf[2]))) {
@@ -191,12 +189,12 @@ JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
         }
         for (std::size_t j = 1; j < n; ++j) {
           ++k;
-          if ((*str)[k] != '%') {
+          if ((*fiber)[k] != '%') {
             e->Report(Error::URI, "invalid uri char");
             return JSUndefined;
           }
-          buf[1] = (*str)[k+1];
-          buf[2] = (*str)[k+2];
+          buf[1] = (*fiber)[k+1];
+          buf[2] = (*fiber)[k+2];
           k += 2;
           if ((!core::character::IsHexDigit(buf[1])) ||
               (!core::character::IsHexDigit(buf[2]))) {
@@ -221,7 +219,7 @@ JSVal Decode(Context* ctx, const JSString& arg, Error* e) {
           // not surrogate pair
           const uint16_t code = static_cast<uint16_t>(v);
           if (URITraits::ContainsInDecode(code)) {
-            builder.Append(str->begin() + start, (k - start + 1));
+            builder.Append(fiber->data() + start, (k - start + 1));
           } else {
             builder.Append(code);
           }
@@ -266,10 +264,8 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* e) {
     } else {
       radix = 10;
     }
-    const JSString::Fiber* fiber = str->GetFiber();
-    return core::StringToIntegerWithRadix(fiber->begin(), fiber->end(),
-                                          radix,
-                                          strip_prefix);
+    return core::StringToIntegerWithRadix(*str->GetFiber(),
+                                          radix, strip_prefix);
   } else {
     return JSNaN;
   }
@@ -324,7 +320,9 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
   } else {
     uri_string = args.ctx()->global_data()->string_undefined();
   }
-  return detail::Decode<detail::URI>(args.ctx(), *uri_string, e);
+  return detail::Decode<detail::URI>(
+      args.ctx(),
+      uri_string->GetFiber(), e);
 }
 
 // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
@@ -336,8 +334,9 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
   } else {
     component_string = args.ctx()->global_data()->string_undefined();
   }
-  return detail::Decode<detail::URIComponent>(args.ctx(),
-                                              *component_string, e);
+  return detail::Decode<detail::URIComponent>(
+      args.ctx(),
+      component_string->GetFiber(), e);
 }
 
 // section 15.1.3.3 encodeURI(uri)
@@ -349,7 +348,9 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
   } else {
     uri_string = args.ctx()->global_data()->string_undefined();
   }
-  return detail::Encode<detail::URI>(args.ctx(), *uri_string, e);
+  return detail::Encode<detail::URI>(
+      args.ctx(),
+      uri_string->GetFiber(), e);
 }
 
 // section 15.1.3.4 encodeURIComponent(uriComponent)
@@ -361,8 +362,9 @@ inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
   } else {
     component_string = args.ctx()->global_data()->string_undefined();
   }
-  return detail::Encode<detail::URIComponent>(args.ctx(),
-                                              *component_string, e);
+  return detail::Encode<detail::URIComponent>(
+      args.ctx(),
+      component_string->GetFiber(), e);
 }
 
 inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
@@ -384,8 +386,8 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
   if (len == 0) {
     return str;  // empty string
   }
-  const JSString::Fiber* fiber = str->GetFiber();
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  const Fiber<uint16_t>* fiber = str->GetFiber();
+  for (Fiber<uint16_t>::const_iterator it = fiber->begin(),
        last = it + len; it != last; ++it) {
     const uint16_t ch = *it;
     if (detail::Escape::ContainsInEncode(ch)) {
@@ -415,7 +417,7 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
     return s;  // empty string
   }
   JSStringBuilder builder;
-  const JSString::Fiber* str = s->GetFiber();
+  const Fiber<uint16_t>* str = s->GetFiber();
   std::size_t k = 0;
   while (k != len) {
     const uint16_t ch = (*str)[k];

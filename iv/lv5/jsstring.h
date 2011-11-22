@@ -8,12 +8,13 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
+template<typename FiberType>
 inline uint32_t SplitFiber(Context* ctx,
                            JSArray* ary,
-                           const JSString::Fiber* fiber,
+                           const FiberType* fiber,
                            uint32_t index, uint32_t limit, Error* e) {
-  for (JSString::Fiber::const_iterator it = fiber->begin(), last = fiber->end();
-       it != last && index != limit; ++it, ++index) {
+  for (typename FiberType::const_iterator it = fiber->begin(),
+       last = fiber->end(); it != last && index != limit; ++it, ++index) {
     ary->DefineOwnProperty(
         ctx, symbol::MakeSymbolFromIndex(index),
         DataDescriptor(
@@ -24,14 +25,15 @@ inline uint32_t SplitFiber(Context* ctx,
   return index;
 }
 
+template<typename FiberType>
 inline uint32_t SplitFiberWithOneChar(Context* ctx,
                                       JSArray* ary,
                                       uint16_t ch,
                                       JSStringBuilder* builder,
-                                      const JSString::Fiber* fiber,
+                                      const FiberType* fiber,
                                       uint32_t index,
                                       uint32_t limit, Error* e) {
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  for (typename FiberType::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     if (*it != ch) {
       builder->Append(*it);
@@ -60,7 +62,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     detail::SplitFiber(ctx,
                        ary,
-                       static_cast<const Fiber*>(fibers_[0]), 0, limit, e);
+                       static_cast<const Fiber<uint16_t>*>(fibers_[0]), 0, limit, e);
     return ary;
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),
@@ -77,7 +79,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
       } else {
         index = detail::SplitFiber(ctx,
                                    ary,
-                                   static_cast<const Fiber*>(current),
+                                   static_cast<const Fiber<uint16_t>*>(current),
                                    index, limit, e);
         if (index == limit || slots.empty()) {
           break;
@@ -98,7 +100,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
         ary,
         ch,
         &builder,
-        static_cast<const Fiber*>(fibers_[0]),
+        static_cast<const Fiber<uint16_t>*>(fibers_[0]),
         0, limit, e);
     if (index == limit) {
       return ary;
@@ -120,7 +122,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
             ary,
             ch,
             &builder,
-            static_cast<const Fiber*>(current),
+            static_cast<const Fiber<uint16_t>*>(current),
             index, limit, e);
         if (index == limit) {
           return ary;

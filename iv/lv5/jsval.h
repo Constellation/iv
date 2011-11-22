@@ -5,6 +5,7 @@
 #include <iv/bit_cast.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/jsstring.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/context.h>
@@ -236,25 +237,10 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
   if (lhs.IsNumber() && rhs.IsNumber()) {
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
-    if (core::IsNaN(lhsv) && core::IsNaN(rhsv)) {
-      return true;
-    }
     if (lhsv == rhsv) {
-      if (core::Signbit(lhsv)) {
-        if (core::Signbit(rhsv)) {
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        if (core::Signbit(rhsv)) {
-          return false;
-        } else {
-          return true;
-        }
-      }
+      return core::Signbit(lhsv) == core::Signbit(rhsv);
     } else {
-      return false;
+      return core::IsNaN(lhsv) && core::IsNaN(rhsv);
     }
   }
 
@@ -497,45 +483,33 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
-  if (lhs.IsUndefined()) {
+
+  if (lhs.IsUndefined() || lhs.IsNull()) {
     return true;
   }
-  if (lhs.IsNull()) {
-    return true;
-  }
+
   if (lhs.IsNumber()) {
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
-    if (core::IsNaN(lhsv) && core::IsNaN(rhsv)) {
-      return true;
-    }
     if (lhsv == rhsv) {
-      if (core::Signbit(lhsv)) {
-        if (core::Signbit(rhsv)) {
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        if (core::Signbit(rhsv)) {
-          return false;
-        } else {
-          return true;
-        }
-      }
+      return core::Signbit(lhsv) == core::Signbit(rhsv);
     } else {
-      return false;
+      return core::IsNaN(lhsv) && core::IsNaN(rhsv);
     }
   }
+
   if (lhs.IsString()) {
     return *(lhs.string()) == *(rhs.string());
   }
+
   if (lhs.IsBoolean()) {
     return lhs.boolean() == rhs.boolean();
   }
+
   if (lhs.IsObject()) {
     return lhs.object() == rhs.object();
   }
+
   assert(!lhs.IsEmpty());
   return false;
 }

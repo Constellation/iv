@@ -35,16 +35,12 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2) {
-    const JSString::Fiber* fiber = str->GetFiber();
-    if ((*fiber)[0] == '(' &&
-        (*fiber)[str->size() - 1] == ')') {
+    MaybeJSONParser maybe(str);
+    if (maybe.IsParsable()) {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(
-          ctx,
-          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
-          &json_parse_error);
+      const JSVal res = maybe.Parse(ctx, &json_parse_error);
       if (!json_parse_error) {
-        return result;
+        return res;
       }
     }
   }
@@ -97,16 +93,12 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2 && !strict) {
-    const JSString::Fiber* fiber = str->GetFiber();
-    if ((*fiber)[0] == '(' &&
-        (*fiber)[str->size() - 1] == ')') {
+    MaybeJSONParser maybe(str);
+    if (maybe.IsParsable()) {
       Error json_parse_error;
-      const JSVal result = ParseJSON<false>(
-          ctx,
-          core::UStringPiece(fiber->data() + 1, fiber->size() - 2),
-          &json_parse_error);
+      const JSVal res = maybe.Parse(ctx, &json_parse_error);
       if (!json_parse_error) {
-        return result;
+        return res;
       }
     }
   }

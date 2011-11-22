@@ -101,7 +101,7 @@ class JSRegExp : public JSObject {
     int n = 0;
     const int start = previous_index;
     const int size = str->size();
-    const JSString::Fiber* fiber = str->GetFiber();
+    const Fiber<uint16_t>* fiber = str->GetFiber();
     do {
       const int res = impl_->ExecuteOnce(ctx,
                                          *fiber,
@@ -159,7 +159,7 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const JSString::Fiber* fiber = str->GetFiber();
+    const Fiber<uint16_t>* fiber = str->GetFiber();
     const int res = impl_->ExecuteOnce(ctx,
                                        *fiber,
                                        previous_index,

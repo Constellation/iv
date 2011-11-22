@@ -248,8 +248,8 @@ inline CompareKind NumberCompare(double lhs, double rhs) {
 
 // section 11.8.5
 template<bool LeftFirst>
-CompareKind Compare(Context* ctx,
-                    const JSVal& lhs, const JSVal& rhs, Error* e) {
+inline CompareKind Compare(Context* ctx,
+                           const JSVal& lhs, const JSVal& rhs, Error* e) {
   if (lhs.IsNumber() && rhs.IsNumber()) {
     return NumberCompare(lhs.number(), rhs.number());
   }
@@ -292,7 +292,8 @@ CompareKind Compare(Context* ctx,
 }
 
 template<typename Builder>
-void BuildFunctionSource(Builder* builder, const Arguments& args, Error* e) {
+inline void BuildFunctionSource(Builder* builder,
+                                const Arguments& args, Error* e) {
   const std::size_t arg_count = args.size();
   Context* const ctx = args.ctx();
   if (arg_count == 0) {

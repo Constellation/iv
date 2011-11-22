@@ -2,7 +2,6 @@
 #define IV_LV5_JSSTRING_FWD_H_
 #include <cstdlib>
 #include <algorithm>
-#include <iterator>
 #include <vector>
 #include <new>
 #include <functional>
@@ -18,8 +17,8 @@
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
 #include <iv/static_assert.h>
-#include <iv/thread_safe_ref_counted.h>
 #include <iv/lv5/context_utils.h>
+#include <iv/lv5/fiber.h>
 #include <iv/lv5/radio/cell.h>
 namespace iv {
 namespace lv5 {
@@ -44,204 +43,19 @@ class Error;
 
 class JSString: public radio::HeapObject<radio::STRING> {
  public:
-  class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
-   public:
-    typedef std::size_t size_type;
+  friend class GlobalData;
+  typedef JSString this_type;
 
-    inline void operator delete(void* p) {
-      // this type memory is allocated by malloc
-      if (p) {
-        std::free(p);
-      }
-    }
+  // FiberSlots has FiberSlot by reverse order
+  // for example, string "THIS" and "IS" to
+  // [ "IS", "THIS", NULL, NULL, NULL ]
+  static const std::size_t kMaxFibers = 5;
+  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
+  typedef Fiber<uint16_t>::size_type size_type;
 
-    bool IsCons() const {
-      return is_cons_;
-    }
+  struct FlattenTag { };
 
-    size_type size() const {
-      return size_;
-    }
-
-   protected:
-    explicit FiberSlot(std::size_t n, bool is_cons)
-      : size_(n),
-        is_cons_(is_cons) {
-    }
-
-    size_type size_;
-    bool is_cons_;
-  };
-
-  class Fiber : public FiberSlot {
-   public:
-    typedef Fiber this_type;
-    typedef uint16_t char_type;
-    typedef std::char_traits<char_type> traits_type;
-
-    typedef char_type* iterator;
-    typedef const char_type* const_iterator;
-    typedef std::iterator_traits<iterator>::value_type value_type;
-    typedef std::iterator_traits<iterator>::pointer pointer;
-    typedef std::iterator_traits<const_iterator>::pointer const_pointer;
-    typedef std::iterator_traits<iterator>::reference reference;
-    typedef std::iterator_traits<const_iterator>::reference const_reference;
-    typedef std::reverse_iterator<iterator> reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-    typedef std::iterator_traits<iterator>::difference_type difference_type;
-    typedef std::size_t size_type;
-
-    static std::size_t GetControlSize() {
-      return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
-    }
-
-   private:
-    template<typename String>
-    explicit Fiber(const String& piece)
-      : FiberSlot(piece.size(), false) {
-      std::copy(piece.begin(), piece.end(), begin());
-    }
-
-    explicit Fiber(std::size_t n)
-      : FiberSlot(n, false) {
-    }
-
-    template<typename Iter>
-    Fiber(Iter it, std::size_t n)
-      : FiberSlot(n, false) {
-      std::copy(it, it + n, begin());
-    }
-
-   public:
-
-    template<typename String>
-    static this_type* New(const String& piece) {
-      void* mem = std::malloc(GetControlSize() +
-                              piece.size() * sizeof(char_type));
-      return new (mem) Fiber(piece);
-    }
-
-    static this_type* NewWithSize(std::size_t n) {
-      void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-      return new (mem) Fiber(n);
-    }
-
-    template<typename Iter>
-    static this_type* New(Iter it, Iter last) {
-      return New(it, std::distance(it, last));
-    }
-
-    template<typename Iter>
-    static this_type* New(Iter it, std::size_t n) {
-      void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
-      return new (mem) Fiber(it, n);
-    }
-
-    bool IsCons() const {
-      return false;
-    }
-
-    operator core::UStringPiece() const {
-      return core::UStringPiece(data(), size());
-    }
-
-    const_reference operator[](size_type n) const {
-      return (data())[n];
-    }
-
-    reference operator[](size_type n) {
-      return (data())[n];
-    }
-
-    pointer data() {
-      return reinterpret_cast<pointer>(this) +
-          GetControlSize() / sizeof(char_type);
-    }
-
-    const_pointer data() const {
-      return reinterpret_cast<const_pointer>(this) +
-          GetControlSize() / sizeof(char_type);
-    }
-
-    iterator begin() {
-      return data();
-    }
-
-    const_iterator begin() const {
-      return data();
-    }
-
-    const_iterator cbegin() const {
-      return data();
-    }
-
-    iterator end() {
-      return begin() + size_;
-    }
-
-    const_iterator end() const {
-      return begin() + size_;
-    }
-
-    const_iterator cend() const {
-      return begin() + size_;
-    }
-
-    const_reverse_iterator rbegin() const {
-      return const_reverse_iterator(end());
-    }
-
-    const_reverse_iterator crbegin() const {
-      return rbegin();
-    }
-
-    const_reverse_iterator rend() const {
-      return const_reverse_iterator(begin());
-    }
-
-    const_reverse_iterator crend() const {
-      return rend();
-    }
-
-    int compare(const this_type& x) const {
-      const int r =
-          traits_type::compare(data(), x.data(), std::min(size_, x.size_));
-      if (r == 0) {
-        if (size_ < x.size_) {
-          return -1;
-        } else if (size_ > x.size_) {
-          return 1;
-        }
-      }
-      return r;
-    }
-
-    friend bool operator==(const this_type& x, const this_type& y) {
-      return x.compare(y) == 0;
-    }
-
-    friend bool operator!=(const this_type& x, const this_type& y) {
-      return !(x == y);
-    }
-
-    friend bool operator<(const this_type& x, const this_type& y) {
-      return x.compare(y) < 0;
-    }
-
-    friend bool operator>(const this_type& x, const this_type& y) {
-      return x.compare(y) > 0;
-    }
-
-    friend bool operator<=(const this_type& x, const this_type& y) {
-      return x.compare(y) <= 0;
-    }
-
-    friend bool operator>=(const this_type& x, const this_type& y) {
-      return x.compare(y) >= 0;
-    }
-  };
  private:
-
   class Cons : public FiberSlot {
    public:
     friend class JSString;
@@ -329,14 +143,14 @@ class JSString: public radio::HeapObject<radio::STRING> {
         fiber_count_(fiber_count) {
       // insert fibers by reverse order (rhs first)
       iterator target = begin();
-      for (FiberSlots::iterator it = rhs->fibers_.begin(),
-           last = rhs->fibers_.begin() + rhs->fiber_count();
+      for (FiberSlots::const_iterator it = rhs->fibers().begin(),
+           last = rhs->fibers().begin() + rhs->fiber_count();
            it != last; ++it, ++target) {
         (*it)->Retain();
         *target = *it;
       }
-      for (FiberSlots::iterator it = lhs->fibers_.begin(),
-           last = lhs->fibers_.begin() + lhs->fiber_count();
+      for (FiberSlots::const_iterator it = lhs->fibers().begin(),
+           last = lhs->fibers().begin() + lhs->fiber_count();
            it != last; ++it, ++target) {
         (*it)->Retain();
         *target = *it;
@@ -364,8 +178,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
                        static_cast<const Cons*>(current)->end());
         } else {
           target = std::copy(
-              static_cast<const Fiber*>(current)->begin(),
-              static_cast<const Fiber*>(current)->end(),
+              static_cast<const Fiber<uint16_t>*>(current)->begin(),
+              static_cast<const Fiber<uint16_t>*>(current)->end(),
               target);
           if (slots.empty()) {
             break;
@@ -383,18 +197,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
   };
 
  public:
-  friend class Cons;
-  friend class GlobalData;
-  typedef JSString this_type;
-
-  // FiberSlots has FiberSlot by reverse order
-  // for example, string "THIS" and "IS" to
-  // [ "IS", "THIS", NULL, NULL, NULL ]
-  static const std::size_t kMaxFibers = 5;
-  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
-  typedef Fiber::size_type size_type;
-
-  struct FlattenTag { };
 
   std::size_t size() const {
     return size_;
@@ -409,9 +211,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
         // use fast case flatten
         // Fiber and Fiber
-        Fiber* fiber = Fiber::NewWithSize(size_);
-        Fiber* head = static_cast<Fiber*>(fibers_[1]);
-        Fiber* tail = static_cast<Fiber*>(fibers_[0]);
+        Fiber<uint16_t>* fiber = Fiber<uint16_t>::NewWithSize(size_);
+        Fiber<uint16_t>* head = static_cast<Fiber<uint16_t>*>(fibers_[1]);
+        Fiber<uint16_t>* tail = static_cast<Fiber<uint16_t>*>(fibers_[0]);
         assert(!head->IsCons());
         assert(!tail->IsCons());
         std::copy(
@@ -436,13 +238,13 @@ class JSString: public radio::HeapObject<radio::STRING> {
     assert(!fibers_[0]->IsCons());
   }
 
-  inline const Fiber* GetFiber() const {
+  inline const Fiber<uint16_t>* GetFiber() const {
     Flatten();
-    return static_cast<const Fiber*>(fibers_[0]);
+    return static_cast<const Fiber<uint16_t>*>(fibers_[0]);
   }
 
   std::string GetUTF8() const {
-    const Fiber* fiber = GetFiber();
+    const Fiber<uint16_t>* fiber = GetFiber();
     std::string str;
     str.reserve(size());
     if (core::unicode::UTF16ToUTF8(
@@ -463,7 +265,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   uint16_t GetAt(size_type n) const {
     const FiberSlot* first = fibers_[fiber_count_ - 1];
     if (first->size() > n && !first->IsCons()) {
-      return (*static_cast<const Fiber*>(first))[n];
+      return (*static_cast<const Fiber<uint16_t>*>(first))[n];
     }
     return (*GetFiber())[n];
   }
@@ -471,7 +273,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   template<typename Target>
   void CopyToString(Target* target) const {
     if (!empty()) {
-      const Fiber* fiber = GetFiber();
+      const Fiber<uint16_t>* fiber = GetFiber();
       target->assign(fiber->data(), fiber->size());
     } else {
       target->assign(0UL, typename Target::value_type());
@@ -481,7 +283,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   template<typename Target>
   void AppendToString(Target* target) const {
     if (!empty()) {
-      const Fiber* fiber = GetFiber();
+      const Fiber<uint16_t>* fiber = GetFiber();
       target->append(fiber->data(), fiber->size());
     }
   }
@@ -500,8 +302,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
                      static_cast<const Cons*>(current)->end());
       } else {
         target = std::copy(
-            static_cast<const Fiber*>(current)->begin(),
-            static_cast<const Fiber*>(current)->end(),
+            static_cast<const Fiber<uint16_t>*>(current)->begin(),
+            static_cast<const Fiber<uint16_t>*>(current)->end(),
             target);
         if (slots.empty()) {
           break;
@@ -642,56 +444,67 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
+  bool Is8Bit() const { return is_8bit_; }
+
   void MarkChildren(radio::Core* core) { }
+
+  std::size_t fiber_count() const {
+    return fiber_count_;
+  }
+
+  const FiberSlots& fibers() const {
+    return fibers_;
+  }
 
  private:
   void SlowFlatten() const {
-    Fiber* fiber = Fiber::NewWithSize(size_);
+    Fiber<uint16_t>* fiber = Fiber<uint16_t>::NewWithSize(size_);
     Copy(fiber->begin());
     Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
     fiber_count_ = 1;
     fibers_[0] = fiber;
   }
 
-  std::size_t fiber_count() const {
-    return fiber_count_;
-  }
-
   // empty string
   JSString()
     : size_(0),
+      is_8bit_(false),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber::NewWithSize(0);
+    fibers_[0] = Fiber<uint16_t>::NewWithSize(0);
   }
 
   // single char string
   explicit JSString(uint16_t ch)
     : size_(1),
+      is_8bit_(false),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber::New(&ch, 1);
+    fibers_[0] = Fiber<uint16_t>::New(&ch, 1);
   }
 
   template<typename Iter>
   JSString(Iter it, std::size_t n)
     : size_(n),
+      is_8bit_(false),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber::New(it, size_);
+    fibers_[0] = Fiber<uint16_t>::New(it, size_);
   }
 
   template<typename String>
   explicit JSString(const String& str)
     : size_(str.size()),
+      is_8bit_(false),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber::New(str.data(), size_);
+    fibers_[0] = Fiber<uint16_t>::New(str.data(), size_);
   }
 
   // fiber count version
   JSString(JSString* lhs, JSString* rhs)
     : size_(lhs->size() + rhs->size()),
+      is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
       fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
       fibers_() {
     assert(fiber_count_ <= kMaxFibers);
@@ -715,12 +528,14 @@ class JSString: public radio::HeapObject<radio::STRING> {
   // flatten version
   JSString(JSString* lhs, JSString* rhs, FlattenTag tag)
     : size_(lhs->size() + rhs->size()),
+      is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
       fiber_count_(1),
       fibers_() {
     fibers_[0] = Cons::New(lhs, rhs);
   }
 
   std::size_t size_;
+  bool is_8bit_;
   mutable std::size_t fiber_count_;
   mutable FiberSlots fibers_;
 };

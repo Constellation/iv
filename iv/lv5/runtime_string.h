@@ -47,17 +47,16 @@ static inline bool IsTrimmed(uint16_t c) {
          core::character::IsLineTerminator(c);
 }
 
-inline int64_t SplitMatch(const JSString::Fiber* str,
-                          uint32_t q,
-                          const JSString::Fiber* rhs) {
+template<typename FiberType>
+inline int64_t SplitMatch(const FiberType* str,
+                          uint32_t q, const FiberType* rhs) {
   const std::size_t rs = rhs->size();
   const std::size_t s = str->size();
   if (q + rs > s) {
     return -1;
   }
-  if (JSString::Fiber::traits_type::compare(rhs->data(),
-                                            str->data() + q,
-                                            rs) != 0) {
+  if (FiberType::traits_type::compare(rhs->data(),
+                                      str->data() + q, rs) != 0) {
     return -1;
   }
   return q + rs;
@@ -79,10 +78,10 @@ inline JSVal StringSplit(Context* ctx,
     return target->Split(ctx, ary, rstr->GetAt(0), lim, e);
   }
   const uint32_t size = target->size();
-  const JSString::Fiber* fiber = target->GetFiber();
+  const Fiber<uint16_t>* fiber = target->GetFiber();
   uint32_t p = 0;
   uint32_t q = p;
-  const JSString::Fiber* rhs = rstr->GetFiber();
+  const Fiber<uint16_t>* rhs = rstr->GetFiber();
   uint32_t length = 0;
   while (q != size) {
     const int64_t rs = detail::SplitMatch(fiber, q, rhs);
@@ -118,8 +117,9 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
+template<typename FiberType>
 inline regexp::MatchResult RegExpMatch(Context* ctx,
-                                       const JSString::Fiber* str,
+                                       const FiberType* str,
                                        uint32_t q,
                                        const JSRegExp& reg,
                                        regexp::PairVector* vec) {
@@ -192,7 +192,7 @@ class Replacer : private core::Noncopyable<> {
 
   Context* ctx_;
   JSString* str_;
-  const JSString::Fiber* str_fiber_;
+  const Fiber<uint16_t>* str_fiber_;
   const JSRegExp& reg_;
   regexp::PairVector vec_;
 };
@@ -215,7 +215,8 @@ class StringReplacer : public Replacer<StringReplacer> {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
-    for (typename JSString::Fiber::const_iterator it = replace_fiber_->begin(),
+    for (typename Fiber<uint16_t>::const_iterator it =
+         replace_fiber_->begin(),
          last = replace_fiber_->end(); it != last; ++it) {
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
@@ -343,7 +344,7 @@ class StringReplacer : public Replacer<StringReplacer> {
 
  private:
   const JSString& replace_;
-  const JSString::Fiber* replace_fiber_;
+  const Fiber<uint16_t>* replace_fiber_;
 };
 
 class FunctionReplacer : public Replacer<FunctionReplacer> {
@@ -386,14 +387,14 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
   JSFunction* function_;
 };
 
-template<typename Builder>
+template<typename Builder, typename FiberType>
 inline void ReplaceOnce(Builder* builder,
-                        const JSString::Fiber* str,
+                        const FiberType* str,
                         const JSString& search_str,
-                        JSString::Fiber::size_type loc,
-                        const JSString::Fiber* replace_str) {
+                        typename FiberType::size_type loc,
+                        const FiberType* replace_str) {
   Replace::State state = Replace::kNormal;
-  for (JSString::Fiber::const_iterator it = replace_str->begin(),
+  for (typename FiberType::const_iterator it = replace_str->begin(),
        last = replace_str->end(); it != last; ++it) {
     const uint16_t ch = *it;
     if (state == Replace::kNormal) {
@@ -699,7 +700,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     } else {
       search_str = args[0].ToString(ctx, IV_LV5_ERROR(e));
     }
-    const JSString::Fiber* fiber = str->GetFiber();
+    const Fiber<uint16_t>* fiber = str->GetFiber();
     const core::UStringPiece base(*fiber);
     const core::UStringPiece::size_type loc =
         base.find(*search_str->GetFiber(), 0);
@@ -779,7 +780,7 @@ inline JSVal StringSlice(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   const uint32_t len = fiber->size();
   uint32_t start;
   if (!args.empty()) {
@@ -882,7 +883,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     return ary;
   }
 
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   uint32_t p = 0;
   uint32_t q = p;
   uint32_t start_match = 0;
@@ -959,7 +960,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   const uint32_t len = fiber->size();
   uint32_t start;
   if (!args.empty()) {
@@ -995,9 +996,10 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   JSStringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  builder.reserve(fiber->size());
+  for (Fiber<uint16_t>::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
@@ -1010,9 +1012,10 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   JSStringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  builder.reserve(fiber->size());
+  for (Fiber<uint16_t>::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToLowerCase(*it));
   }
@@ -1025,9 +1028,10 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   JSStringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  builder.reserve(fiber->size());
+  for (Fiber<uint16_t>::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
@@ -1040,9 +1044,10 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   JSStringBuilder builder;
-  for (JSString::Fiber::const_iterator it = fiber->begin(),
+  builder.reserve(fiber->size());
+  for (Fiber<uint16_t>::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
     builder.Append(core::character::ToUpperCase(*it));
   }
@@ -1055,9 +1060,9 @@ inline JSVal StringTrim(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
-  JSString::Fiber::const_iterator lit = fiber->begin();
-  const JSString::Fiber::const_iterator last = fiber->end();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
+  Fiber<uint16_t>::const_iterator lit = fiber->begin();
+  const Fiber<uint16_t>::const_iterator last = fiber->end();
   // trim leading space
   bool empty = true;
   for (; lit != last; ++lit) {
@@ -1070,8 +1075,8 @@ inline JSVal StringTrim(const Arguments& args, Error* e) {
     return JSString::NewEmptyString(args.ctx());
   }
   // trim tailing space
-  JSString::Fiber::const_reverse_iterator rit = fiber->rbegin();
-  const JSString::Fiber::const_reverse_iterator rend(lit);
+  Fiber<uint16_t>::const_reverse_iterator rit = fiber->rbegin();
+  const Fiber<uint16_t>::const_reverse_iterator rend(lit);
   for (; rit != rend; ++rit) {
     if (!detail::IsTrimmed(*rit)) {
       break;
@@ -1087,7 +1092,7 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = str->GetFiber();
+  const Fiber<uint16_t>* fiber = str->GetFiber();
   const double len = fiber->size();
 
   double start;

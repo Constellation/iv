@@ -90,7 +90,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
     first = args[0];
   }
   JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
-  const JSString::Fiber* fiber = text->GetFiber();
+  const Fiber<uint16_t>* fiber = text->GetFiber();
   const JSVal result = ParseJSON<true>(ctx, *fiber, IV_LV5_ERROR(e));
   if (args_size > 1 && args[1].IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
@@ -178,7 +178,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
       gap.assign(core::DoubleToUInt32(sp), static_cast<uint16_t>(' '));
     }
   } else if (space.IsString()) {
-    const JSString::Fiber* target = space.string()->GetFiber();
+    const Fiber<uint16_t>* target = space.string()->GetFiber();
     if (target->size() <= 10) {
       gap.assign(target->data(), target->size());
     } else {

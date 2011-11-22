@@ -87,7 +87,7 @@ class JSONStringifier : private core::Noncopyable<> {
   JSString* Quote(const JSString& str, Error* e) {
     JSStringBuilder builder;
     builder.Append('"');
-    const JSString::Fiber* fiber = str.GetFiber();
+    const Fiber<uint16_t>* fiber = str.GetFiber();
     core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
     builder.Append('"');
     return builder.Build(ctx_);
