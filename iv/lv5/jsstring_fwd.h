@@ -139,7 +139,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
 
     Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
-      : FiberSlot(lhs->size() + rhs->size(), true),
+      : FiberSlot(lhs->size() + rhs->size(), FiberSlot::IS_CONS),
         fiber_count_(fiber_count) {
       // insert fibers by reverse order (rhs first)
       iterator target = begin();

@@ -2,21 +2,26 @@
 //   + Fiber<uint16_t | char>
 //       have string content
 //       this class is published to world
-//   + Cons
+//   + Cons (in JSString)
 //       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
 #ifndef IV_LV5_FIBER_H_
 #define IV_LV5_FIBER_H_
 #include <cstdlib>
 #include <iterator>
-#include <iv/thread_safe_ref_counted.h>
 #include <new>
+#include <iv/thread_safe_ref_counted.h>
 namespace iv {
 namespace lv5 {
 
 class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
  public:
   typedef std::size_t size_type;
+  enum Flag {
+    NONE = 0,
+    IS_CONS = 1,
+    IS_8BIT = 2
+  };
 
   inline void operator delete(void* p) {
     // this type memory is allocated by malloc
@@ -26,7 +31,11 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
   }
 
   bool IsCons() const {
-    return is_cons_;
+    return flags_ & IS_CONS;
+  }
+
+  bool Is8Bit() const {
+    return flags_ & IS_8BIT;
   }
 
   size_type size() const {
@@ -34,13 +43,13 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
   }
 
  protected:
-  explicit FiberSlot(std::size_t n, bool is_cons)
+  explicit FiberSlot(std::size_t n, int flags)
     : size_(n),
-      is_cons_(is_cons) {
+      flags_(flags) {
   }
 
   size_type size_;
-  bool is_cons_;
+  int flags_;
 };
 
 template<typename CharT>
@@ -69,17 +78,17 @@ class Fiber : public FiberSlot {
  private:
   template<typename String>
   explicit Fiber(const String& piece)
-    : FiberSlot(piece.size(), false) {
+    : FiberSlot(piece.size(), FiberSlot::NONE) {
     std::copy(piece.begin(), piece.end(), begin());
   }
 
   explicit Fiber(std::size_t n)
-    : FiberSlot(n, false) {
+    : FiberSlot(n, FiberSlot::NONE) {
   }
 
   template<typename Iter>
   Fiber(Iter it, std::size_t n)
-    : FiberSlot(n, false) {
+    : FiberSlot(n, FiberSlot::NONE) {
     std::copy(it, it + n, begin());
   }
 
