@@ -257,6 +257,10 @@ class JSArray : public JSObject {
     vector_[index] = val;
   }
 
+  inline void Reserve(uint32_t len) {
+    vector_.reserve((len > kMaxVectorSize) ? kMaxVectorSize : len);
+  }
+
  private:
   JSArray(Context* ctx, uint32_t len)
     : JSObject(context::GetArrayMap(ctx)),
@@ -580,11 +584,11 @@ class JSArray : public JSObject {
   //   Set
   static JSArray* ReservedNew(Context* ctx, uint32_t len) {
     JSArray* ary = New(ctx, len);
-    ary->Reserve(len);
+    ary->ReserveMap(len);
     return ary;
   }
 
-  void Reserve(uint32_t len) {
+  void ReserveMap(uint32_t len) {
     if (len > kMaxVectorSize) {
       // alloc map
       map_ = new(GC)SparseArray();

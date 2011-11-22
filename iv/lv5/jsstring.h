@@ -13,6 +13,7 @@ inline uint32_t SplitFiber(Context* ctx,
                            JSArray* ary,
                            const FiberType* fiber,
                            uint32_t index, uint32_t limit, Error* e) {
+  ary->Reserve(fiber->size());
   for (typename FiberType::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last && index != limit; ++it, ++index) {
     ary->DefineOwnProperty(
@@ -60,9 +61,10 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 JSArray* JSString::Split(Context* ctx, JSArray* ary,
                          uint32_t limit, Error* e) const {
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
-    detail::SplitFiber(ctx,
-                       ary,
-                       static_cast<const Fiber<uint16_t>*>(fibers_[0]), 0, limit, e);
+    detail::SplitFiber(
+        ctx,
+        ary,
+        static_cast<const Fiber<uint16_t>*>(fibers_[0]), 0, limit, e);
     return ary;
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),
