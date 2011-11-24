@@ -12,7 +12,8 @@
 namespace iv {
 namespace aero {
 
-inline bool IsWordSeparatorPrev(const core::UStringPiece& subject,
+template<typename Piece>
+inline bool IsWordSeparatorPrev(const Piece& subject,
                                 std::size_t current_position) {
   if (current_position == 0 || current_position > subject.size()) {
     return false;
@@ -20,7 +21,8 @@ inline bool IsWordSeparatorPrev(const core::UStringPiece& subject,
   return character::IsWord(subject[current_position - 1]);
 }
 
-inline bool IsWordSeparator(const core::UStringPiece& subject,
+template<typename Piece>
+inline bool IsWordSeparator(const Piece& subject,
                             std::size_t current_position) {
   if (current_position >= subject.size()) {
     return false;
@@ -37,8 +39,8 @@ class VM : private core::Noncopyable<VM> {
       state_() {
   }
 
-  int ExecuteOnce(Code* code, const core::UStringPiece& subject,
-                  int* captures, int offset) {
+  template<typename Piece>
+  int ExecuteOnce(Code* code, const Piece& subject, int* captures, int offset) {
     const int size = subject.size();
     const uint16_t filter = code->filter();
     if (!filter) {
@@ -86,7 +88,8 @@ class VM : private core::Noncopyable<VM> {
   }
 
  private:
-  int Execute(Code* code, const core::UStringPiece& subject,
+  template<typename Piece>
+  int Execute(Code* code, const Piece& subject,
               int* captures, std::size_t current_position);
 
   int* NewState(int* current, std::size_t size) {
@@ -117,7 +120,9 @@ class VM : private core::Noncopyable<VM> {
   DISPATCH()
 #define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
-inline int VM::Execute(Code* code, const core::UStringPiece& subject,
+
+template<typename Piece>
+inline int VM::Execute(Code* code, const Piece& subject,
                        int* captures, std::size_t current_position) {
   assert(code->captures() >= 1);
   // captures and counters and jump target
@@ -203,7 +208,7 @@ inline int VM::Execute(Code* code, const core::UStringPiece& subject,
             BACKTRACK();
           }
           bool matched = true;
-          for (core::UStringPiece::const_iterator it = subject.begin() + start,
+          for (typename Piece::const_iterator it = subject.begin() + start,
                last = subject.begin() + start + length; it != last;
                ++it, ++current_position) {
             const uint16_t current = subject[current_position];
