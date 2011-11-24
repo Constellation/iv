@@ -564,5 +564,9 @@ BasicStringPiece<CharT, Traits>::npos =
 
 typedef BasicStringPiece<char, std::char_traits<char> > StringPiece;
 
+inline StringPiece AdoptPiece(const StringPiece& piece) {
+  return piece;
+}
+
 } }  // namespace iv::core
 #endif  // IV_STRINGPIECE_H_
