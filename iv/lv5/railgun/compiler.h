@@ -12,6 +12,7 @@
 #include <iv/static_assert.h>
 #include <iv/enable_if.h>
 #include <iv/unicode.h>
+#include <iv/utils.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
@@ -1613,7 +1614,15 @@ class Compiler
     }
     // new constant value
     const uint32_t index = code_->constants_.size();
-    code_->constants_.push_back(JSString::New(ctx_, lit->value()));
+    if (core::character::IsASCII(lit->value().begin(), lit->value().end())) {
+      // ASCII String
+      code_->constants_.push_back(
+          JSString::New(ctx_,
+                        lit->value().begin(),
+                        lit->value().size(), true));
+    } else {
+      code_->constants_.push_back(JSString::New(ctx_, lit->value()));
+    }
     jsstring_to_index_map_.insert(std::make_pair(lit->value(), index));
     Emit<OP::LOAD_CONST>(index);
     stack_depth_.Up();

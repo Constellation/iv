@@ -99,7 +99,7 @@ class GlobalData {
   JSString* string_undefined() const { return string_undefined_; }
 
   JSString* GetSingleString(uint16_t ch) {
-    if (ch <= 0xFF) {
+    if (ch < 0x80) {
       // caching value
       if (string_cache_[ch]) {
         return string_cache_[ch];
@@ -136,7 +136,7 @@ class GlobalData {
   trace::Vector<JSRegExpImpl*>::type regs_;
   SymbolTable table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
-  std::array<JSString*, 0xFF + 1> string_cache_;
+  std::array<JSString*, 0x80> string_cache_;
   JSGlobal* global_obj_;
 
   JSString* string_empty_;

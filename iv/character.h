@@ -887,6 +887,18 @@ inline uint16_t ToUpperCase(uint16_t c) {
   return c;
 }
 
+struct ContainsNonASCIICharacter {
+  template<typename CharT>
+  bool operator()(CharT ch) const {
+    return !IsASCII(ch);
+  }
+};
+
+template<typename Iter>
+inline bool IsASCII(Iter it, Iter last) {
+  return std::find_if(it, last, ContainsNonASCIICharacter()) == last;
+}
+
 }  // namespace iv::core::character
 } }  // namespace iv::core
 #endif  // IV_CHARACTER_H_

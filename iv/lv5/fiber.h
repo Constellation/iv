@@ -1,10 +1,13 @@
+//
 // + FiberSlot
-//   + Fiber<uint16_t | char>
-//       have string content
-//       this class is published to world
+//   + FiberBase
+//     + Fiber<uint16_t | char>
+//         have string content
+//         this class is published to world
 //   + Cons (in JSString)
 //       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
+//
 #ifndef IV_LV5_FIBER_H_
 #define IV_LV5_FIBER_H_
 #include <cstdlib>
@@ -22,6 +25,8 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
     IS_CONS = 1,
     IS_8BIT = 2
   };
+
+  static const int kFlagShift = 2;
 
   inline void operator delete(void* p) {
     // this type memory is allocated by malloc
@@ -48,12 +53,27 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
       flags_(flags) {
   }
 
+  void set_8bit(bool val) {
+    if (val) {
+      flags_ |= IS_8BIT;
+    } else {
+      flags_ &= ~IS_8BIT;
+    }
+  }
+
   size_type size_;
   int flags_;
 };
 
+class FiberBase : public FiberSlot {
+ public:
+  FiberBase(std::size_t size, int flags) : FiberSlot(size, flags) { }
+  template<typename OutputIter>
+  inline OutputIter Copy(OutputIter out) const;
+};
+
 template<typename CharT>
-class Fiber : public FiberSlot {
+class Fiber : public FiberBase {
  public:
   typedef Fiber this_type;
   typedef CharT char_type;
@@ -71,6 +91,8 @@ class Fiber : public FiberSlot {
   typedef typename std::iterator_traits<iterator>::difference_type difference_type;  // NOLINT
   typedef std::size_t size_type;
 
+  static const int k8BitFlag = std::is_same<CharT, char>::value ? FiberSlot::IS_8BIT : FiberSlot::NONE;
+
   static std::size_t GetControlSize() {
     return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
   }
@@ -78,17 +100,17 @@ class Fiber : public FiberSlot {
  private:
   template<typename String>
   explicit Fiber(const String& piece)
-    : FiberSlot(piece.size(), FiberSlot::NONE) {
+    : FiberBase(piece.size(), k8BitFlag) {
     std::copy(piece.begin(), piece.end(), begin());
   }
 
   explicit Fiber(std::size_t n)
-    : FiberSlot(n, FiberSlot::NONE) {
+    : FiberBase(n, k8BitFlag) {
   }
 
   template<typename Iter>
   Fiber(Iter it, std::size_t n)
-    : FiberSlot(n, FiberSlot::NONE) {
+    : FiberBase(n, k8BitFlag) {
     std::copy(it, it + n, begin());
   }
 
@@ -117,12 +139,8 @@ class Fiber : public FiberSlot {
     return new (mem) Fiber(it, n);
   }
 
-  bool IsCons() const {
-    return false;
-  }
-
-  operator core::UStringPiece() const {
-    return core::UStringPiece(data(), size());
+  operator core::BasicStringPiece<char_type>() const {
+    return core::BasicStringPiece<char_type>(data(), size());
   }
 
   const_reference operator[](size_type n) const {
@@ -183,6 +201,11 @@ class Fiber : public FiberSlot {
     return rend();
   }
 
+  template<typename OutputIter>
+  inline OutputIter Copy(OutputIter out) const {
+    return std::copy(begin(), end(), out);
+  }
+
   int compare(const this_type& x) const {
     const int r =
         traits_type::compare(data(), x.data(), std::min(size_, x.size_));
@@ -220,6 +243,16 @@ class Fiber : public FiberSlot {
     return x.compare(y) >= 0;
   }
 };
+
+
+template<typename OutputIter>
+OutputIter FiberBase::Copy(OutputIter out) const {
+  if (Is8Bit()) {
+    return static_cast<const Fiber<char>*>(this)->Copy(out);
+  } else {
+    return static_cast<const Fiber<uint16_t>*>(this)->Copy(out);
+  }
+}
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_FIBER_H_

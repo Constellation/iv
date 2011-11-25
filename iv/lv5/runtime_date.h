@@ -129,7 +129,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
         sign,
         tz_hour,
         tz_min);
-    return JSString::New(args.ctx(), core::StringPiece(buf, num));
+    return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
   }
 }
 
@@ -225,7 +225,6 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -255,7 +254,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -273,7 +272,6 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
       char buf[20];
@@ -284,7 +282,7 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
           date::MonthToString(time),
           date::DateFromTime(time),
           date::YearFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -302,7 +300,6 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -328,7 +325,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -346,7 +343,6 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -376,7 +372,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -394,7 +390,6 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double time = date::LocalTime(t);
       char buf[20];
@@ -405,7 +400,7 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
           date::MonthToString(time),
           date::DateFromTime(time),
           date::YearFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -423,7 +418,6 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
     if (core::IsNaN(t)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       const double dst = date::DaylightSavingTA(t);
       double offset = date::LocalTZA() + dst;
@@ -449,7 +443,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -1320,7 +1314,6 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
     if (core::IsNaN(time)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       char buf[40];
       const int num = snprintf(
@@ -1333,7 +1326,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
           date::HourFromTime(time),
           date::MinFromTime(time),
           date::SecFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,
@@ -1351,7 +1344,6 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
     if (core::IsNaN(time)) {
       e->Report(Error::Range, "Invalid Date");
       return JSEmpty;
-      // return JSString::NewAsciiString(args.ctx(), "Invalid Date");
     } else {
       char buf[30];
       const int num = snprintf(
@@ -1364,7 +1356,7 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
           date::MinFromTime(time),
           date::SecFromTime(time),
           date::MsFromTime(time));
-      return JSString::New(args.ctx(), core::StringPiece(buf, num));
+      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num));
     }
   }
   e->Report(Error::Type,

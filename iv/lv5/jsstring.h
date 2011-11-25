@@ -61,10 +61,18 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 JSArray* JSString::Split(Context* ctx, JSArray* ary,
                          uint32_t limit, Error* e) const {
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
-    detail::SplitFiber(
-        ctx,
-        ary,
-        static_cast<const Fiber<uint16_t>*>(fibers_[0]), 0, limit, e);
+    const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
+    if (base->Is8Bit()) {
+      detail::SplitFiber(
+          ctx,
+          ary,
+          static_cast<const Fiber<char>*>(base), 0, limit, e);
+    } else {
+      detail::SplitFiber(
+          ctx,
+          ary,
+          static_cast<const Fiber<uint16_t>*>(base), 0, limit, e);
+    }
     return ary;
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),
@@ -79,10 +87,18 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
                      static_cast<const Cons*>(current)->begin(),
                      static_cast<const Cons*>(current)->end());
       } else {
-        index = detail::SplitFiber(ctx,
-                                   ary,
-                                   static_cast<const Fiber<uint16_t>*>(current),
-                                   index, limit, e);
+        const FiberBase* base = static_cast<const FiberBase*>(current);
+        if (base->Is8Bit()) {
+          index = detail::SplitFiber(ctx,
+                                     ary,
+                                     static_cast<const Fiber<char>*>(base),
+                                     index, limit, e);
+        } else {
+          index = detail::SplitFiber(ctx,
+                                     ary,
+                                     static_cast<const Fiber<uint16_t>*>(base),
+                                     index, limit, e);
+        }
         if (index == limit || slots.empty()) {
           break;
         }
@@ -97,13 +113,24 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
   JSStringBuilder builder;
   uint32_t index = 0;
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
-    index = detail::SplitFiberWithOneChar(
-        ctx,
-        ary,
-        ch,
-        &builder,
-        static_cast<const Fiber<uint16_t>*>(fibers_[0]),
-        0, limit, e);
+    const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
+    if (base->Is8Bit()) {
+      index = detail::SplitFiberWithOneChar(
+          ctx,
+          ary,
+          ch,
+          &builder,
+          static_cast<const Fiber<char>*>(fibers_[0]),
+          0, limit, e);
+    } else {
+      index = detail::SplitFiberWithOneChar(
+          ctx,
+          ary,
+          ch,
+          &builder,
+          static_cast<const Fiber<uint16_t>*>(fibers_[0]),
+          0, limit, e);
+    }
     if (index == limit) {
       return ary;
     }
@@ -119,13 +146,24 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
                      static_cast<const Cons*>(current)->begin(),
                      static_cast<const Cons*>(current)->end());
       } else {
-        index = detail::SplitFiberWithOneChar(
-            ctx,
-            ary,
-            ch,
-            &builder,
-            static_cast<const Fiber<uint16_t>*>(current),
-            index, limit, e);
+        const FiberBase* base = static_cast<const FiberBase*>(current);
+        if (base->Is8Bit()) {
+          index = detail::SplitFiberWithOneChar(
+              ctx,
+              ary,
+              ch,
+              &builder,
+              static_cast<const Fiber<char>*>(current),
+              index, limit, e);
+        } else {
+          index = detail::SplitFiberWithOneChar(
+              ctx,
+              ary,
+              ch,
+              &builder,
+              static_cast<const Fiber<uint16_t>*>(current),
+              index, limit, e);
+        }
         if (index == limit) {
           return ary;
         }
