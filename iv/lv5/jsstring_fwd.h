@@ -49,7 +49,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   // FiberSlots has FiberSlot by reverse order
   // for example, string "THIS" and "IS" to
   // [ "IS", "THIS", NULL, NULL, NULL ]
-  typedef Fiber<uint16_t>::size_type size_type;
+  typedef Fiber16::size_type size_type;
 
   static const size_type kMaxFibers = 5;
   static const size_type npos = static_cast<size_type>(-1);
@@ -496,7 +496,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       is_8bit_(true),
       fiber_count_(1),
       fibers_() {
-    fibers_[0] = Fiber<char>::NewWithSize(0);
+    fibers_[0] = Fiber8::NewWithSize(0);
   }
 
   // single char string
@@ -506,9 +506,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       fiber_count_(1),
       fibers_() {
     if (Is8Bit()) {
-      fibers_[0] = Fiber<char>::New(&ch, 1);
+      fibers_[0] = Fiber8::New(&ch, 1);
     } else {
-      fibers_[0] = Fiber<uint16_t>::New(&ch, 1);
+      fibers_[0] = Fiber16::New(&ch, 1);
     }
   }
 
@@ -519,9 +519,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       fiber_count_(1),
       fibers_() {
     if (Is8Bit()) {
-      fibers_[0] = Fiber<char>::New(it, size_);
+      fibers_[0] = Fiber8::New(it, size_);
     } else {
-      fibers_[0] = Fiber<uint16_t>::New(it, size_);
+      fibers_[0] = Fiber16::New(it, size_);
     }
   }
 

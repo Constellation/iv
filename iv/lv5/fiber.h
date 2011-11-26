@@ -73,6 +73,9 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
 template<typename CharT>
 class Fiber;
 
+typedef Fiber<char> Fiber8;
+typedef Fiber<uint16_t> Fiber16;
+
 class FiberBase : public FiberSlot {
  public:
   typedef FiberBase this_type;
@@ -84,9 +87,9 @@ class FiberBase : public FiberSlot {
 
   inline int compare(const this_type& x) const;
 
-  inline const Fiber<char>* As8Bit() const;
+  inline const Fiber8* As8Bit() const;
 
-  inline const Fiber<uint16_t>* As16Bit() const;
+  inline const Fiber16* As16Bit() const;
 
   inline friend bool operator==(const this_type& x, const this_type& y) {
     return x.compare(y) == 0;
@@ -285,9 +288,6 @@ class Fiber : public FiberBase {
     return x.compare(y) >= 0;
   }
 };
-
-typedef Fiber<char> Fiber8;
-typedef Fiber<uint16_t> Fiber16;
 
 template<typename OutputIter>
 OutputIter FiberBase::Copy(OutputIter out) const {
