@@ -653,8 +653,7 @@ Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
           object()->DefaultValue(
               ctx, Hint::STRING,
               IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
-      JSString* str = prim.ToString(ctx, e);
-      return context::Intern(ctx, str);
+      return prim.ToSymbol(ctx, e);
     }
   }
 }
