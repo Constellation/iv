@@ -17,6 +17,14 @@
 namespace iv {
 namespace lv5 {
 
+struct Encoding {
+  enum Type {
+    ASCII = 0,
+    UNKNOWN = 1,
+    UTF16 = 2
+  };
+};
+
 class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
  public:
   typedef std::size_t size_type;
