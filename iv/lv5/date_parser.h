@@ -76,10 +76,9 @@ static const int kNone = std::numeric_limits<int>::max();
 class KeywordChecker : private core::Noncopyable<> {
  public:
 
-  template<typename char_type>
   class Finder {
    public:
-    typedef std::array<char_type, 4> buf_type;
+    typedef std::array<uint16_t, 4> buf_type;
     Finder(const buf_type& buf, std::size_t len)
       : buf_(buf), len_(len) { }
 
@@ -92,6 +91,7 @@ class KeywordChecker : private core::Noncopyable<> {
       }
       return std::equal(key.keyword.begin(), key.keyword.end(), buf_.begin());
     }
+
    private:
     const buf_type& buf_;
     const std::size_t len_;
@@ -100,8 +100,7 @@ class KeywordChecker : private core::Noncopyable<> {
   template<typename Iter>
   static const Keyword& Lookup(Iter* it, Iter last) {
     // fill buffer 4 chars
-    typedef typename std::iterator_traits<Iter>::value_type char_type;
-    std::array<char_type, 4> buf = { { } };
+    std::array<uint16_t, 4> buf = { { } };
     std::size_t i = 0;
     for (;
          (*it != last) &&
@@ -110,9 +109,7 @@ class KeywordChecker : private core::Noncopyable<> {
          ++(*it), ++i) {
       buf[i] = (**it | 0x20);
     }
-    return *(std::find_if(kKeywords.begin(),
-                          kKeywords.end(),
-                          Finder<char_type>(buf, i)));
+    return *(std::find_if(kKeywords.begin(), kKeywords.end(), Finder(buf, i)));
   }
 };
 
@@ -436,9 +433,7 @@ double DateParser::Parse(const String& str) {
       ++it;
     }
   }
-
-  return tz_.MakeTz(date::MakeDate(date_.MakeDay(),
-                                   time_.MakeTime()));
+  return tz_.MakeTz(date::MakeDate(date_.MakeDay(), time_.MakeTime()));
 }
 
 template<typename String>
