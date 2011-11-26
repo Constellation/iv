@@ -74,10 +74,11 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
           }
         }
         JSStringBuilder builder;
-        core::DoubleToStringWithRadix(num,
-                                      static_cast<int>(radix),
-                                      std::back_inserter(builder));
-        return builder.Build(args.ctx());
+        core::DoubleToStringWithRadix(
+            num,
+            static_cast<int>(radix),
+            std::back_inserter(builder));
+        return builder.Build(args.ctx(), true);
       }
     } else {
       e->Report(Error::Range, "illegal radix");

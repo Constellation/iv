@@ -42,7 +42,7 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
       ary->DefineOwnProperty(
           ctx, symbol::MakeSymbolFromIndex(index),
           DataDescriptor(
-              builder->Build(ctx),
+              builder->Build(ctx, fiber->Is8Bit()),
               ATTR::W | ATTR::E | ATTR::C),
           false, e);
       ++index;

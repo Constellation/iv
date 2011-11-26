@@ -136,7 +136,8 @@ JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
       }
     }
   }
-  return builder.Build(ctx);
+  // always in ASCII range
+  return builder.Build(ctx, true);
 }
 
 template<typename URITraits, typename FiberType>
