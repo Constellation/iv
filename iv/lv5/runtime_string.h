@@ -749,7 +749,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         detail::ReplaceOnce(&builder, str, search_str,
                             loc, replace_value->Get8Bit());
       } else {
-        detail::ReplaceOnce(&builder,str, search_str,
+        detail::ReplaceOnce(&builder, str, search_str,
                             loc, replace_value->Get16Bit());
       }
     }

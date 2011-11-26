@@ -223,11 +223,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
     assert(IsFlatten());
   }
 
-  inline const FiberBase* GetFiber() const {
-    Flatten();
-    return static_cast<const FiberBase*>(fibers_[0]);
-  }
-
   inline const Fiber8* Get8Bit() const {
     assert(Is8Bit());
     return GetFiber()->As8Bit();
@@ -366,7 +361,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   template<typename Iter>
-  static this_type* New(Context* ctx, Iter it, Iter last, bool is_8bit = false) {
+  static this_type* New(Context* ctx,
+                        Iter it, Iter last, bool is_8bit = false) {
     return New(ctx, it, std::distance(it, last), is_8bit);
   }
 
@@ -451,6 +447,11 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
  private:
+  inline const FiberBase* GetFiber() const {
+    Flatten();
+    return static_cast<const FiberBase*>(fibers_[0]);
+  }
+
   template<typename CharT>
   void FastFlattenImpl(FiberBase* head, FiberBase* tail) const {
     Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);

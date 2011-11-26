@@ -21,11 +21,10 @@ inline JSVal ParseJSON(Context* ctx, const core::StringPiece& str, Error* e) {
 
 class MaybeJSONParser : private core::Noncopyable<MaybeJSONParser> {
  public:
-  MaybeJSONParser(JSString* str) : str_(str) { }
+  explicit MaybeJSONParser(JSString* str) : str_(str) { }
 
   bool IsParsable() {
-    const FiberBase* fiber = str_->GetFiber();
-    return ((*fiber)[0] == '(' && (*fiber)[fiber->size() - 1] == ')');
+    return (str_->GetAt(0) == '(' && str_->GetAt(str_->size() - 1) == ')');
   }
 
   JSVal Parse(Context* ctx, Error* e) {

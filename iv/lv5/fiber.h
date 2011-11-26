@@ -132,7 +132,8 @@ class Fiber : public FiberBase {
   typedef typename std::iterator_traits<iterator>::difference_type difference_type;  // NOLINT
   typedef std::size_t size_type;
 
-  static const int k8BitFlag = std::is_same<CharT, char>::value ? FiberSlot::IS_8BIT : FiberSlot::NONE;
+  static const int k8BitFlag =
+      std::is_same<CharT, char>::value ? FiberSlot::IS_8BIT : FiberSlot::NONE;
 
   static std::size_t GetControlSize() {
     return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
