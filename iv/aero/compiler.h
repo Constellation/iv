@@ -67,7 +67,7 @@ class Compiler : private Visitor {
     // when RegExp /test/ is provided, we emit code that searching 't'
     // and if it is accepted, goto main body with this character position.
     QuickCheck emitter(this);
-    return emitter.Emit(data);
+    return emitter.Emit(data.pattern());
   }
 
   void Visit(Disjunction* dis) {
@@ -484,7 +484,20 @@ inline Code* Compile(core::Space* space,
                      const core::UStringPiece& pattern,
                      int flags, int* error) {
   space->Clear();
-  Parser parser(space, pattern, flags);
+  Parser<core::UStringPiece> parser(space, pattern, flags);
+  ParsedData data = parser.ParsePattern(error);
+  if (*error) {
+    return NULL;
+  }
+  Compiler compiler(flags);
+  return compiler.Compile(data);
+}
+
+inline Code* Compile(core::Space* space,
+                     const core::StringPiece& pattern,
+                     int flags, int* error) {
+  space->Clear();
+  Parser<core::StringPiece> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
     return NULL;

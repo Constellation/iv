@@ -22,23 +22,31 @@ class JSRegExpImpl : public gc_cleanup {
   enum Flags {
     NONE = 0,
     GLOBAL = 1,
-    IGNORECASE = 2,
+    IGNORE_CASE = 2,
     MULTILINE = 4
   };
+
   JSRegExpImpl(core::Space* allocator,
-               const core::UStringPiece& value,
-               const core::UStringPiece& flags)
-    : flags_(NONE),
+               const core::UStringPiece& value, int flags)
+    : flags_(flags),
       error_(0),
       code_(NULL) {
-    Initialize(allocator, value, flags);
+    Initialize(allocator, value);
+  }
+
+  JSRegExpImpl(core::Space* allocator,
+               const core::StringPiece& value, int flags)
+    : flags_(flags),
+      error_(0),
+      code_(NULL) {
+    Initialize(allocator, value);
   }
 
   JSRegExpImpl(core::Space* allocator)
     : flags_(NONE),
       error_(0),
       code_(NULL) {
-    Initialize(allocator, detail::kEmptyPattern, core::UStringPiece());
+    Initialize(allocator, detail::kEmptyPattern);
   }
 
   ~JSRegExpImpl() {
@@ -56,7 +64,7 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
   bool ignore() const {
-    return flags_ & IGNORECASE;
+    return flags_ & IGNORE_CASE;
   }
 
   bool multiline() const {
@@ -68,8 +76,39 @@ class JSRegExpImpl : public gc_cleanup {
     return code_->captures();
   }
 
+  template<typename Iter>
+  static int ComputeFlags(Iter it, Iter last) {
+    int flags = 0;
+    for (; it != last; ++it) {
+      const uint16_t c = *it;
+      if (c == 'g') {
+        if (flags & GLOBAL) {
+          return -1;
+        } else {
+          flags |= GLOBAL;
+        }
+      } else if (c == 'm') {
+        if (flags & MULTILINE) {
+          return -1;
+        } else {
+          flags |= MULTILINE;
+        }
+      } else if (c == 'i') {
+        if (flags & IGNORE_CASE) {
+          return -1;
+        } else {
+          flags |= IGNORE_CASE;
+        }
+      } else {
+        return -1;
+      }
+    }
+    return flags;
+  }
+
+  template<typename T>
   int ExecuteOnce(Context* ctx,
-                  const core::UStringPiece& subject,
+                  const T& subject,
                   int offset,
                   int* offset_vector) const {
     assert(IsValid());
@@ -77,43 +116,12 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
  private:
-  void Initialize(core::Space* allocator,
-                  const core::UStringPiece& value,
-                  const core::UStringPiece& flags) {
-    bool out = false;
-    int f = aero::NONE;
-    for (core::UStringPiece::const_iterator it = flags.begin(),
-         last = flags.end(); it != last; ++it) {
-      const uint16_t c = *it;
-      if (c == 'g') {
-        if (global()) {
-          out = true;
-          break;
-        } else {
-          flags_ |= GLOBAL;
-        }
-      } else if (c == 'm') {
-        if (aero::MULTILINE & f) {
-          out = true;
-          break;
-        } else {
-          f |= aero::MULTILINE;
-          flags_ |= MULTILINE;
-        }
-      } else if (c == 'i') {
-        if (aero::IGNORE_CASE & f) {
-          out = true;
-          break;
-        } else {
-          f |= aero::IGNORE_CASE;
-          flags_ |= IGNORECASE;
-        }
-      } else {
-        out = true;
-        break;
-      }
-    }
-    if (!out) {
+  template<typename Source>
+  void Initialize(core::Space* allocator, const Source& value) {
+    if (flags_ != -1) {
+      const int f =
+          ((flags_ & MULTILINE) ? aero::MULTILINE : aero::NONE) |
+          ((flags_ & IGNORE_CASE) ? aero::IGNORE_CASE : aero::NONE);
       code_ = aero::Compile(allocator, value, f, &error_);
     }
   }

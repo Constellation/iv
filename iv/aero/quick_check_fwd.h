@@ -28,7 +28,7 @@ class QuickCheck : private Visitor {
       enabled_(true),
       added_character_count_(0) { }
 
-  std::pair<uint16_t, std::size_t> Emit(const ParsedData& data);
+  std::pair<uint16_t, std::size_t> Emit(Disjunction* dis);
 
   const core::BloomFilter<uint16_t>& filter() {
     return filter_;

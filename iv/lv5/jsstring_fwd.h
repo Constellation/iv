@@ -49,9 +49,12 @@ class JSString: public radio::HeapObject<radio::STRING> {
   // FiberSlots has FiberSlot by reverse order
   // for example, string "THIS" and "IS" to
   // [ "IS", "THIS", NULL, NULL, NULL ]
-  static const std::size_t kMaxFibers = 5;
-  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
   typedef Fiber<uint16_t>::size_type size_type;
+
+  static const size_type kMaxFibers = 5;
+  static const size_type npos = static_cast<size_type>(-1);
+
+  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
 
   struct FlattenTag { };
 
@@ -202,6 +205,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return size_ == 0;
   }
 
+  inline size_type find(const JSString& target, size_type index) const;
+
+  inline size_type rfind(const JSString& target, size_type index) const;
+
   inline void Flatten() const {
     if (fiber_count_ != 1) {
       if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
@@ -212,20 +219,23 @@ class JSString: public radio::HeapObject<radio::STRING> {
       }
     } else if (fibers_[0]->IsCons()) {
       SlowFlatten();
-    } else if (fibers_[0]->Is8Bit()) {
-      // TODO(Constellation): fix it. now expand to 16 bit
-      Fiber<uint16_t>* fiber = Fiber<uint16_t>::NewWithSize(size_);
-      static_cast<Fiber<char>*>(fibers_[0])->Copy(fiber->begin());
-      fibers_[0]->Release();
-      fibers_[0] = fiber;
     }
-    assert(fibers_[0]->size() == size());
-    assert(!fibers_[0]->IsCons());
+    assert(IsFlatten());
   }
 
-  inline const Fiber<uint16_t>* GetFiber() const {
+  inline const FiberBase* GetFiber() const {
     Flatten();
-    return static_cast<const Fiber<uint16_t>*>(fibers_[0]);
+    return static_cast<const FiberBase*>(fibers_[0]);
+  }
+
+  inline const Fiber8* Get8Bit() const {
+    assert(Is8Bit());
+    return GetFiber()->As8Bit();
+  }
+
+  inline const Fiber16* Get16Bit() const {
+    assert(!Is8Bit());
+    return GetFiber()->As16Bit();
   }
 
   std::string GetUTF8() const {
@@ -235,7 +245,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       Copy(str.begin());
       return str;
     } else {
-      const Fiber<uint16_t>* fiber = GetFiber();
+      const Fiber16* fiber = Get16Bit();
       std::string str;
       str.reserve(size());
       if (core::unicode::UTF16ToUTF8(
@@ -257,13 +267,22 @@ class JSString: public radio::HeapObject<radio::STRING> {
   uint16_t GetAt(size_type n) const {
     const FiberSlot* first = fibers_[fiber_count_ - 1];
     if (first->size() > n && !first->IsCons()) {
-      if (first->Is8Bit()) {
-        return (*static_cast<const Fiber<char>*>(first))[n];
-      } else {
-        return (*static_cast<const Fiber<uint16_t>*>(first))[n];
-      }
+      return (*static_cast<const FiberBase*>(first))[n];
     }
     return (*GetFiber())[n];
+  }
+
+  template<typename OutputIter>
+  OutputIter Copy(size_type from, size_type to, OutputIter out) const {
+    if (Is8Bit()) {
+      const Fiber8* fiber = Get8Bit();
+      return std::copy(fiber->begin() + from,
+                       fiber->begin() + to, out);
+    } else {
+      const Fiber16* fiber = Get16Bit();
+      return std::copy(fiber->begin() + from,
+                       fiber->begin() + to, out);
+    }
   }
 
   template<typename OutputIter>
@@ -294,9 +313,19 @@ class JSString: public radio::HeapObject<radio::STRING> {
   inline JSArray* Split(Context* ctx, JSArray* ary,
                         uint16_t ch, uint32_t limit, Error* e) const;
 
+  inline JSString* Substring(Context* ctx, uint32_t from, uint32_t to) const;
+
+  int compare(const this_type& x) const {
+    return GetFiber()->compare(*x.GetFiber());
+  }
+
+  bool IsFlatten() const {
+    return fiber_count() == 1 && !fibers_[0]->IsCons();
+  }
+
   friend bool operator==(const this_type& x, const this_type& y) {
     if (x.size() == y.size()) {
-      return (*x.GetFiber()) == (*y.GetFiber());
+      return x.compare(y) == 0;
     }
     return false;
   }
@@ -325,8 +354,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return New(ctx, str.begin(), str.size(), false);
   }
 
-  static this_type* NewAsciiString(Context* ctx,
-                                   const core::StringPiece& str) {
+  static this_type* NewAsciiString(Context* ctx, const core::StringPiece& str) {
     return New(ctx, str.begin(), str.size(), true);
   }
 
@@ -338,8 +366,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   template<typename Iter>
-  static this_type* New(Context* ctx, Iter it, Iter last) {
-    return New(ctx, it, std::distance(it, last), false);
+  static this_type* New(Context* ctx, Iter it, Iter last, bool is_8bit = false) {
+    return New(ctx, it, std::distance(it, last), is_8bit);
   }
 
   template<typename Iter>
@@ -410,6 +438,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   bool Is8Bit() const { return is_8bit_; }
 
+  bool Is16Bit() const { return !is_8bit_; }
+
   void MarkChildren(radio::Core* core) { }
 
   std::size_t fiber_count() const {
@@ -421,11 +451,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
  private:
-  void FastFlatten(FiberBase* head, FiberBase* tail) const {
-    // use fast case flatten
-    // Fiber and Fiber
-    // TODO(Constellation): now, only flatten to uint16_t Fiber
-    Fiber<uint16_t>* fiber = Fiber<uint16_t>::NewWithSize(size_);
+  template<typename CharT>
+  void FastFlattenImpl(FiberBase* head, FiberBase* tail) const {
+    Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
     tail->Copy(head->Copy(fiber->begin()));
     // these are Fibers, not Cons. so simply call Release
     head->Release();
@@ -434,13 +462,31 @@ class JSString: public radio::HeapObject<radio::STRING> {
     fibers_[0] = fiber;
   }
 
-  void SlowFlatten() const {
-    // TODO(Constellation): now, only flatten to uint16_t Fiber
-    Fiber<uint16_t>* fiber = Fiber<uint16_t>::NewWithSize(size_);
+  void FastFlatten(FiberBase* head, FiberBase* tail) const {
+    // use fast case flatten
+    // Fiber and Fiber
+    if (head->Is8Bit() && tail->Is8Bit()) {
+      FastFlattenImpl<char>(head, tail);
+    } else {
+      FastFlattenImpl<uint16_t>(head, tail);
+    }
+  }
+
+  template<typename CharT>
+  void SlowFlattenImpl() const {
+    Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
     Copy(fiber->begin());
     Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
     fiber_count_ = 1;
     fibers_[0] = fiber;
+  }
+
+  void SlowFlatten() const {
+    if (Is8Bit()) {
+      SlowFlattenImpl<char>();
+    } else {
+      SlowFlattenImpl<uint16_t>();
+    }
   }
 
   // empty string

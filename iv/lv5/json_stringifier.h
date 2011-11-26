@@ -87,8 +87,14 @@ class JSONStringifier : private core::Noncopyable<> {
   JSString* Quote(const JSString& str, Error* e) {
     JSStringBuilder builder;
     builder.Append('"');
-    const Fiber<uint16_t>* fiber = str.GetFiber();
-    core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
+    // TODO(Constellation) 8bit string optimization point
+    if (str.Is8Bit()) {
+      const Fiber8* fiber = str.Get8Bit();
+      core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
+    } else {
+      const Fiber16* fiber = str.Get16Bit();
+      core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
+    }
     builder.Append('"');
     return builder.Build(ctx_);
   }

@@ -599,7 +599,7 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
     // int32 short cut
     std::array<char, 15> buffer;
     char* end = core::Int32ToString(int32(), buffer.data());
-    return JSString::New(ctx, buffer.data(), end);
+    return JSString::New(ctx, buffer.data(), end, true);
   } else if (IsNumber()) {
     std::array<char, 80> buffer;
     const char* const str =
@@ -663,7 +663,12 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
-    return core::StringToDouble(*string()->GetFiber(), false);
+    const JSString* str = string();
+    if (str->Is8Bit()) {
+      return core::StringToDouble(*str->Get8Bit(), false);
+    } else {
+      return core::StringToDouble(*str->Get16Bit(), false);
+    }
   } else if (IsBoolean()) {
     return boolean() ? 1 : +0;
   } else if (IsNull()) {
@@ -683,7 +688,12 @@ JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return *this;
   } else if (IsString()) {
-    return core::StringToDouble(*string()->GetFiber(), false);
+    const JSString* str = string();
+    if (str->Is8Bit()) {
+      return core::StringToDouble(*str->Get8Bit(), false);
+    } else {
+      return core::StringToDouble(*str->Get16Bit(), false);
+    }
   } else if (IsBoolean()) {
     return JSVal::Int32(boolean() ? 1 : 0);
   } else if (IsNull()) {

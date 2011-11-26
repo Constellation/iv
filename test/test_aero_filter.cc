@@ -14,7 +14,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("s$");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -26,7 +26,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^s");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -38,7 +38,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\d");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -50,7 +50,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\s");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -62,7 +62,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(s|t)");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -74,7 +74,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(?:s|t)");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -86,7 +86,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(?:s|\\d)");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -98,7 +98,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(?=s)|d");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -110,7 +110,7 @@ TEST(AeroFilterCase, ContentTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("(?!s)|d");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

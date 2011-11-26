@@ -99,7 +99,7 @@ TEST(AeroSourceEscapeCase, OneCharTest) {
     iv::core::UString str = iv::core::ToUString(ch);
     {
       space.Clear();
-      iv::aero::Parser parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
       int error = 0;
       parser.ParsePattern(&error);
       if (error) {  // invalid, like '['
@@ -110,7 +110,7 @@ TEST(AeroSourceEscapeCase, OneCharTest) {
     iv::core::RegExpEscape(str.begin(), str.end(), std::back_inserter(res));
     {
       space.Clear();
-      iv::aero::Parser parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
       int error = 0;
       iv::aero::ParsedData data = parser.ParsePattern(&error);
       EXPECT_FALSE(error);

@@ -353,6 +353,18 @@ class BasicStringPiece {
     return ret;
   }
 
+  template<typename Iter>
+  size_type find(Iter it, Iter last, size_type pos = 0) const {
+    if (pos > length_) {
+      return npos;
+    }
+    const size_type dis = std::distance(it, last);
+    const const_pointer result = std::search(
+        ptr_ + pos, ptr_ + length_, it, last);
+    const size_type xpos = result - ptr_;
+    return xpos + dis <= length_ ? xpos : npos;
+  }
+
   size_type find(const this_type& s, size_type pos = 0) const {
     if (pos > length_) {
       return npos;
@@ -370,6 +382,23 @@ class BasicStringPiece {
     }
     const const_pointer result = Traits::find(ptr_ + pos, length_ - pos, c);
     return (result) ? static_cast<size_type>(result - ptr_) : npos;
+  }
+
+  template<typename Iter>
+  size_type rfind(Iter it, Iter last, size_type pos = 0) const {
+    const size_type dis = std::distance(it, last);
+    if (length_ < dis) {
+      return npos;
+    }
+
+    if (dis == 0) {
+      return std::min(length_, pos);
+    }
+
+    const const_pointer this_last =
+        ptr_ + std::min(length_ - dis, pos) + dis;
+    const const_pointer result = std::find_end(ptr_, this_last, it, last);
+    return result != this_last ? static_cast<size_type>(result - ptr_) : npos;
   }
 
   size_type rfind(const this_type& s, size_type pos = npos) const {

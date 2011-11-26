@@ -39,10 +39,12 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   : public Inherit<iv::lv5::AstFactory, kRegExpLiteral> {
  public:
   void Initialize(iv::lv5::Context* ctx) {
+    const int flags = iv::lv5::JSRegExpImpl::ComputeFlags(
+        Derived()->flags().begin(),
+        Derived()->flags().end());
     regexp_ = new iv::lv5::JSRegExpImpl(
         iv::lv5::context::GetRegExpAllocator(ctx),
-        Derived()->value(),
-        Derived()->flags());
+        Derived()->value(), flags);
     iv::lv5::context::RegisterLiteralRegExp(ctx, regexp_);
   }
   const iv::lv5::JSRegExpImpl* regexp() const {

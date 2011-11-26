@@ -40,7 +40,11 @@ Symbol Intern(Context* ctx, const core::UStringPiece& str) {
 }
 
 Symbol Intern(Context* ctx, const JSString* str) {
-  return ctx->global_data()->Intern(*str->GetFiber());
+  if (str->Is8Bit()) {
+    return ctx->global_data()->Intern(*str->Get8Bit());
+  } else {
+    return ctx->global_data()->Intern(*str->Get16Bit());
+  }
 }
 
 Symbol Intern(Context* ctx, uint32_t index) {

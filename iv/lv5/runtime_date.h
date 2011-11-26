@@ -39,9 +39,16 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
       // section 15.9.3.2 new Date(value)
       const JSVal v = args[0].ToPrimitive(ctx, Hint::NONE, IV_LV5_ERROR(e));
       if (v.IsString()) {
-        return JSDate::New(
-            ctx,
-            date::TimeClip(date::Parse(*v.string()->GetFiber())));
+        JSString* str = v.string();
+        if (str->Is8Bit()) {
+          return JSDate::New(
+              ctx,
+              date::TimeClip(date::Parse(*str->Get8Bit())));
+        } else {
+          return JSDate::New(
+              ctx,
+              date::TimeClip(date::Parse(*str->Get16Bit())));
+        }
       } else {
         const double V = v.ToNumber(ctx, IV_LV5_ERROR(e));
         return JSDate::New(ctx, date::TimeClip(V));
@@ -139,7 +146,11 @@ inline JSVal DateParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.parse", args, e);
   const JSVal first = (args.empty()) ? JSUndefined : args[0];
   const JSString* target = first.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return date::Parse(*target->GetFiber());
+  if (target->Is8Bit()) {
+    return date::Parse(*target->Get8Bit());
+  } else {
+    return date::Parse(*target->Get16Bit());
+  }
 }
 
 // section 15.9.4.3

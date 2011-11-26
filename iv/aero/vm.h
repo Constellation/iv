@@ -39,8 +39,20 @@ class VM : private core::Noncopyable<VM> {
       state_() {
   }
 
+  int ExecuteOnce(Code* code, const core::UStringPiece& subject,
+                      int* captures, int offset) {
+    return ExecuteOnceImpl(code, subject, captures, offset);
+  }
+
+  int ExecuteOnce(Code* code, const core::StringPiece& subject,
+                      int* captures, int offset) {
+    return ExecuteOnceImpl(code, subject, captures, offset);
+  }
+
+ private:
   template<typename Piece>
-  int ExecuteOnce(Code* code, const Piece& subject, int* captures, int offset) {
+  int ExecuteOnceImpl(Code* code, const Piece& subject,
+                      int* captures, int offset) {
     const int size = subject.size();
     const uint16_t filter = code->filter();
     if (!filter) {
@@ -87,7 +99,6 @@ class VM : private core::Noncopyable<VM> {
     return AERO_FAILURE;
   }
 
- private:
   template<typename Piece>
   int Execute(Code* code, const Piece& subject,
               int* captures, std::size_t current_position);

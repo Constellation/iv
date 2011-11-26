@@ -16,7 +16,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("s$");
     iv::core::UString str1 = iv::core::ToUString("s\n");
-    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -28,7 +28,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^\\d+");
     iv::core::UString str1 = iv::core::ToUString("abc\n123xyz");
-    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -40,7 +40,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("b{0,93}c");
     iv::core::UString str1 = iv::core::ToUString("aaabbbbcccddeeeefffff");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -54,7 +54,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\b(\\w+) \\2\\b");
     iv::core::UString str1 = iv::core::ToUString("do you listen the the band");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -66,7 +66,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\1(A)");
     iv::core::UString str1 = iv::core::ToUString("AA");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -78,7 +78,7 @@ TEST(AeroExecCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\s");
     iv::core::UString str = iv::core::ToUString(0xFEFF);
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

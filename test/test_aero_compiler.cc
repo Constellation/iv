@@ -11,7 +11,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("a*?");
-    iv::aero::Parser parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -21,7 +21,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("t+");
-    iv::aero::Parser parser(&space, str, iv::aero::IGNORE_CASE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::IGNORE_CASE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -31,7 +31,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString str = iv::core::ToUString("[\\u0000-\\uFFFF]");
-    iv::aero::Parser parser(&space, str, iv::aero::IGNORE_CASE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::IGNORE_CASE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -41,7 +41,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("[^]]*]([^]]+])*]+");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -51,7 +51,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\u10");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -61,7 +61,7 @@ TEST(AeroCompilerCase, MainTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("\\u");
-    iv::aero::Parser parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

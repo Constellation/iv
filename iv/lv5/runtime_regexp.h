@@ -16,7 +16,7 @@ namespace runtime {
 inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   const uint32_t args_count = args.size();
   Context* const ctx = args.ctx();
-  core::UString pattern;
+  JSString* pattern = ctx->global_data()->string_empty();
   if (args_count == 0) {
     return JSRegExp::New(ctx);
   } else {
@@ -34,22 +34,20 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
       }
     }
     if (!first.IsUndefined()) {
-      JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
-      pattern = str->GetUString();
+      pattern = first.ToString(ctx, IV_LV5_ERROR(e));
     }
   }
   JSRegExp* reg;
   if (args_count == 1 || args[1].IsUndefined()) {
-    reg = JSRegExp::New(ctx, pattern, core::UStringPiece());
+    reg = JSRegExp::New(ctx, pattern);
   } else {
     JSString* flags = args[1].ToString(ctx, IV_LV5_ERROR(e));
-    reg = JSRegExp::New(ctx, pattern, *flags->GetFiber());
+    reg = JSRegExp::New(ctx, pattern, flags);
   }
   if (reg->IsValid()) {
     return reg;
   } else {
-    e->Report(Error::Syntax,
-              "RegExp Constructor with invalid pattern");
+    e->Report(Error::Syntax, "RegExp Constructor with invalid pattern");
     return JSUndefined;
   }
 }

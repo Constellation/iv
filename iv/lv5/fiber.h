@@ -63,13 +63,54 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
 
   size_type size_;
   int flags_;
+
+ private:
+  // noncopyable
+  FiberSlot(const FiberSlot&);
+  const FiberSlot& operator=(const FiberSlot&);
 };
+
+template<typename CharT>
+class Fiber;
 
 class FiberBase : public FiberSlot {
  public:
+  typedef FiberBase this_type;
   FiberBase(std::size_t size, int flags) : FiberSlot(size, flags) { }
   template<typename OutputIter>
   inline OutputIter Copy(OutputIter out) const;
+
+  inline uint16_t operator[](size_type n) const;
+
+  inline int compare(const this_type& x) const;
+
+  inline const Fiber<char>* As8Bit() const;
+
+  inline const Fiber<uint16_t>* As16Bit() const;
+
+  inline friend bool operator==(const this_type& x, const this_type& y) {
+    return x.compare(y) == 0;
+  }
+
+  inline friend bool operator!=(const this_type& x, const this_type& y) {
+    return !(x == y);
+  }
+
+  inline friend bool operator<(const this_type& x, const this_type& y) {
+    return x.compare(y) < 0;
+  }
+
+  inline friend bool operator>(const this_type& x, const this_type& y) {
+    return x.compare(y) > 0;
+  }
+
+  inline friend bool operator<=(const this_type& x, const this_type& y) {
+    return x.compare(y) <= 0;
+  }
+
+  inline friend bool operator>=(const this_type& x, const this_type& y) {
+    return x.compare(y) >= 0;
+  }
 };
 
 template<typename CharT>
@@ -244,13 +285,53 @@ class Fiber : public FiberBase {
   }
 };
 
+typedef Fiber<char> Fiber8;
+typedef Fiber<uint16_t> Fiber16;
 
 template<typename OutputIter>
 OutputIter FiberBase::Copy(OutputIter out) const {
   if (Is8Bit()) {
-    return static_cast<const Fiber<char>*>(this)->Copy(out);
+    return As8Bit()->Copy(out);
   } else {
-    return static_cast<const Fiber<uint16_t>*>(this)->Copy(out);
+    return As16Bit()->Copy(out);
+  }
+}
+
+uint16_t FiberBase::operator[](size_type n) const {
+  if (Is8Bit()) {
+    return (*As8Bit())[n];
+  } else {
+    return (*As16Bit())[n];
+  }
+}
+
+const Fiber8* FiberBase::As8Bit() const {
+  assert(Is8Bit());
+  return static_cast<const Fiber8*>(this);
+}
+
+const Fiber16* FiberBase::As16Bit() const {
+  assert(!Is8Bit());
+  return static_cast<const Fiber16*>(this);
+}
+
+int FiberBase::compare(const this_type& x) const {
+  if (Is8Bit() == x.Is8Bit()) {
+    // same type. use downcast
+    if (Is8Bit()) {
+      return As8Bit()->compare(*x.As8Bit());
+    } else {
+      return As16Bit()->compare(*x.As16Bit());
+    }
+  }
+  if (Is8Bit()) {
+    return core::CompareIterators(
+        As8Bit()->begin(), As8Bit()->end(),
+        x.As16Bit()->begin(), x.As16Bit()->end());
+  } else {
+    return core::CompareIterators(
+        As16Bit()->begin(), As16Bit()->end(),
+        x.As8Bit()->begin(), x.As8Bit()->end());
   }
 }
 

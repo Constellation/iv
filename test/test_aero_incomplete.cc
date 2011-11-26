@@ -21,7 +21,7 @@ TEST(AeroIncompleteCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^\\c2$");
     iv::core::UString str1 = iv::core::ToUString("c2");
-    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -33,7 +33,7 @@ TEST(AeroIncompleteCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("^\\x2$");
     iv::core::UString str1 = iv::core::ToUString("x2");
-    iv::aero::Parser parser(&space, reg, iv::aero::MULTILINE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -63,7 +63,7 @@ TEST(AeroIncompleteCase, UnicodeEscapeSequenceTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::aero::Parser parser(&space, it->first, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, it->first, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -90,7 +90,7 @@ TEST(AeroIncompleteCase, BadQuantifierRangeTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::aero::Parser parser(&space, it->first, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, it->first, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -129,7 +129,7 @@ TEST(AeroIncompleteCase, ClassEscapeTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::aero::Parser parser(&space, it->first, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, it->first, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -170,7 +170,7 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::aero::Parser parser(&space, it->first, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, it->first, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -200,7 +200,7 @@ TEST(AeroIncompleteCase, EscapeMissFailTest) {
   for (Matchers::const_iterator it = kMatchers.begin(),
        last = kMatchers.end(); it != last; ++it) {
     space.Clear();
-    iv::aero::Parser parser(&space, it->first, iv::aero::NONE);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, it->first, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

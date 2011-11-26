@@ -112,5 +112,26 @@ inline bool ReadFile(const std::string& filename,
   }
 }
 
+template<typename LIter, typename RIter>
+inline int CompareIterators(LIter lit, LIter llast, RIter rit, RIter rlast) {
+  while (lit != llast && rit != rlast) {
+    if (*lit != *rit) {
+      return (*lit < *rit) ? -1 : 1;
+    }
+    ++lit;
+    ++rit;
+  }
+
+  if (lit == llast) {
+    if (rit == rlast) {
+      return 0;
+    } else {
+      return -1;
+    }
+  } else {
+    return 1;
+  }
+}
+
 } }  // namespace iv::core
 #endif  // IV_UTILS_H_

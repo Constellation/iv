@@ -39,18 +39,16 @@ namespace aero {
 
 class ParsedData {
  public:
-  ParsedData(Disjunction* dis, uint32_t max_captures,
-             const core::UStringPiece& source)
-    : pattern_(dis), max_captures_(max_captures), source_(source) { }
+  ParsedData(Disjunction* dis, uint32_t max_captures)
+    : pattern_(dis), max_captures_(max_captures) { }
   Disjunction* pattern() const { return pattern_; }
   uint32_t max_captures() const { return max_captures_; }
-  const core::UStringPiece& source() const { return source_; }
  private:
   Disjunction* pattern_;
   uint32_t max_captures_;
-  core::UStringPiece source_;
 };
 
+template<typename Source = core::UStringPiece>
 class Parser {
  public:
   static const std::size_t kMaxPatternSize = core::Size::MB;
@@ -64,7 +62,7 @@ class Parser {
     TOO_LONG_REGEXP = 5
   };
 
-  Parser(core::Space* factory, const core::UStringPiece& source, int flags)
+  Parser(core::Space* factory, const Source& source, int flags)
     : flags_(flags),
       factory_(factory),
       ranges_(IsIgnoreCase()),
@@ -80,14 +78,14 @@ class Parser {
   ParsedData ParsePattern(int* e) {
     if (source_.size() > kMaxPatternSize) {
       *e = TOO_LONG_REGEXP;
-      return ParsedData(NULL, captures_, source_);
+      return ParsedData(NULL, captures_);
     }
     Disjunction* dis = ParseDisjunction<EOS>(e);
     if (c_ != EOS) {
       *e = UNEXPECTED_CHARACTER;
-      return ParsedData(NULL, captures_, source_);
+      return ParsedData(NULL, captures_);
     }
-    return ParsedData(dis, captures_, source_);
+    return ParsedData(dis, captures_);
   }
 
  private:
@@ -760,7 +758,7 @@ class Parser {
   int flags_;
   core::Space* factory_;
   RangeBuilder ranges_;
-  const core::UStringPiece source_;
+  Source source_;
   std::vector<char> buffer8_;
   std::size_t pos_;
   const std::size_t end_;

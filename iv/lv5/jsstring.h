@@ -66,12 +66,12 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
       detail::SplitFiber(
           ctx,
           ary,
-          static_cast<const Fiber<char>*>(base), 0, limit, e);
+          base->As8Bit(), 0, limit, e);
     } else {
       detail::SplitFiber(
           ctx,
           ary,
-          static_cast<const Fiber<uint16_t>*>(base), 0, limit, e);
+          base->As16Bit(), 0, limit, e);
     }
     return ary;
   } else {
@@ -91,12 +91,12 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
         if (base->Is8Bit()) {
           index = detail::SplitFiber(ctx,
                                      ary,
-                                     static_cast<const Fiber<char>*>(base),
+                                     base->As8Bit(),
                                      index, limit, e);
         } else {
           index = detail::SplitFiber(ctx,
                                      ary,
-                                     static_cast<const Fiber<uint16_t>*>(base),
+                                     base->As16Bit(),
                                      index, limit, e);
         }
         if (index == limit || slots.empty()) {
@@ -120,7 +120,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
           ary,
           ch,
           &builder,
-          static_cast<const Fiber<char>*>(fibers_[0]),
+          base->As8Bit(),
           0, limit, e);
     } else {
       index = detail::SplitFiberWithOneChar(
@@ -128,7 +128,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
           ary,
           ch,
           &builder,
-          static_cast<const Fiber<uint16_t>*>(fibers_[0]),
+          base->As16Bit(),
           0, limit, e);
     }
     if (index == limit) {
@@ -153,7 +153,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
               ary,
               ch,
               &builder,
-              static_cast<const Fiber<char>*>(current),
+              base->As8Bit(),
               index, limit, e);
         } else {
           index = detail::SplitFiberWithOneChar(
@@ -161,7 +161,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
               ary,
               ch,
               &builder,
-              static_cast<const Fiber<uint16_t>*>(current),
+              base->As16Bit(),
               index, limit, e);
         }
         if (index == limit) {
@@ -180,6 +180,64 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
           ATTR::W | ATTR::E | ATTR::C),
       false, e);
   return ary;
+}
+
+JSString* JSString::Substring(Context* ctx, uint32_t from, uint32_t to) const {
+  if (Is8Bit()) {
+    const Fiber8* fiber = Get8Bit();
+    return New(ctx, fiber->begin() + from, fiber->begin() + to, true);
+  } else {
+    const Fiber16* fiber = Get16Bit();
+    return New(ctx,
+               fiber->begin() + from,
+               fiber->begin() + to,
+               core::character::IsASCII(fiber->begin() + from,
+                                        fiber->begin() + to));
+  }
+}
+
+JSString::size_type JSString::find(const JSString& target,
+                                   size_type index) const {
+  if (Is8Bit() == target.Is8Bit()) {
+    // same type
+    if (Is8Bit()) {
+      return core::StringPiece(*Get8Bit()).find(*target.Get8Bit(), index);
+    } else {
+      return core::UStringPiece(*Get16Bit()).find(*target.Get16Bit(), index);
+    }
+  } else {
+    if (Is8Bit()) {
+      const Fiber16* rhs = target.Get16Bit();
+      return core::StringPiece(*Get8Bit()).find(
+          rhs->begin(), rhs->end(), index);
+    } else {
+      const Fiber8* rhs = target.Get8Bit();
+      return core::UStringPiece(*Get16Bit()).find(
+          rhs->begin(), rhs->end(), index);
+    }
+  }
+}
+
+JSString::size_type JSString::rfind(const JSString& target,
+                                    size_type index) const {
+  if (Is8Bit() == target.Is8Bit()) {
+    // same type
+    if (Is8Bit()) {
+      return core::StringPiece(*Get8Bit()).rfind(*target.Get8Bit(), index);
+    } else {
+      return core::UStringPiece(*Get16Bit()).rfind(*target.Get16Bit(), index);
+    }
+  } else {
+    if (Is8Bit()) {
+      const Fiber16* rhs = target.Get16Bit();
+      return core::StringPiece(*Get8Bit()).rfind(
+          rhs->begin(), rhs->end(), index);
+    } else {
+      const Fiber8* rhs = target.Get8Bit();
+      return core::UStringPiece(*Get16Bit()).rfind(
+          rhs->begin(), rhs->end(), index);
+    }
+  }
 }
 
 } }  // namespace iv::lv5

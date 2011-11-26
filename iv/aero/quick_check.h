@@ -6,8 +6,8 @@ namespace iv {
 namespace aero {
 
 inline
-std::pair<uint16_t, std::size_t> QuickCheck::Emit(const ParsedData& data) {
-  data.pattern()->Accept(this);
+std::pair<uint16_t, std::size_t> QuickCheck::Emit(Disjunction* dis) {
+  Visit(dis);
   if (!IsFailed()) {
     const uint16_t value = filter_.value();
     return std::make_pair(value, added_character_count());

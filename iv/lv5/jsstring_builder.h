@@ -7,8 +7,11 @@ namespace lv5 {
 
 class JSStringBuilder : public core::BasicStringBuilder<uint16_t> {
  public:
-  JSString* Build(Context* ctx) const {
-    return JSString::New(ctx, container_type::begin(), container_type::end());
+  JSString* Build(Context* ctx, bool is_8bit = false) const {
+    return JSString::New(ctx,
+                         container_type::begin(),
+                         container_type::end(),
+                         is_8bit);
   }
 
   // override Append is failed...
