@@ -52,6 +52,13 @@ class JSString: public radio::HeapObject<radio::STRING> {
   typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
 
  private:
+  struct Retainer {
+    FiberSlot* operator()(FiberSlot* slot) {
+      slot->Retain();
+      return slot;
+    }
+  };
+
   template<typename Derived>
   class FiberEnumerator {
    public:
@@ -178,14 +185,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
     const_reverse_iterator crend() const {
       return rend();
     }
-
-   private:
-    struct Retainer {
-      FiberSlot* operator()(FiberSlot* slot) {
-        slot->Retain();
-        return slot;
-      }
-    };
 
    public:
     Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
@@ -536,21 +535,14 @@ class JSString: public radio::HeapObject<radio::STRING> {
       assert(Is8Bit() == fibers_[0]->Is8Bit());
     } else {
       assert(fiber_count_ <= kMaxFibers);
-      // reverse order
-      // rhs first
-      FiberSlots::iterator target = fibers_.begin();
-      for (FiberSlots::iterator it = rhs->fibers_.begin(),
-           last = rhs->fibers_.begin() + rhs->fiber_count();
-           it != last; ++it, ++target) {
-        (*it)->Retain();
-        *target = *it;
-      }
-      for (FiberSlots::iterator it = lhs->fibers_.begin(),
-           last = lhs->fibers_.begin() + lhs->fiber_count();
-           it != last; ++it, ++target) {
-        (*it)->Retain();
-        *target = *it;
-      }
+      // insert fibers by reverse order (rhs first)
+      std::transform(
+          lhs->fibers().begin(),
+          lhs->fibers().begin() + lhs->fiber_count(),
+          std::transform(rhs->fibers().begin(),
+                         rhs->fibers().begin() + rhs->fiber_count(),
+                         fibers_.begin(), Retainer()),
+          Retainer());
     }
   }
 
