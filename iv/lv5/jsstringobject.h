@@ -10,8 +10,6 @@ namespace lv5 {
 
 class JSStringObject : public JSObject {
  public:
-  // TODO(Constellation):
-  // using Map::New. we can use global map by setting length is same
   JSStringObject(Context* ctx, JSString* value)
     : JSObject(Map::NewUniqueMap(ctx)),
       value_(value),

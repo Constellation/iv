@@ -1614,15 +1614,13 @@ class Compiler
     }
     // new constant value
     const uint32_t index = code_->constants_.size();
-    if (core::character::IsASCII(lit->value().begin(), lit->value().end())) {
-      // ASCII String
-      code_->constants_.push_back(
-          JSString::New(ctx_,
-                        lit->value().begin(),
-                        lit->value().size(), true));
-    } else {
-      code_->constants_.push_back(JSString::New(ctx_, lit->value()));
-    }
+    code_->constants_.push_back(
+        JSString::New(
+            ctx_,
+            lit->value().begin(),
+            lit->value().end(),
+            core::character::IsASCII(lit->value().begin(),
+                                     lit->value().end())));
     jsstring_to_index_map_.insert(std::make_pair(lit->value(), index));
     Emit<OP::LOAD_CONST>(index);
     stack_depth_.Up();

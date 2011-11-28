@@ -11,8 +11,8 @@
 #ifndef IV_LV5_FIBER_H_
 #define IV_LV5_FIBER_H_
 #include <cstdlib>
-#include <iterator>
 #include <new>
+#include <iterator>
 #include <iv/thread_safe_ref_counted.h>
 namespace iv {
 namespace lv5 {
@@ -87,7 +87,9 @@ typedef Fiber<uint16_t> Fiber16;
 class FiberBase : public FiberSlot {
  public:
   typedef FiberBase this_type;
+
   FiberBase(std::size_t size, int flags) : FiberSlot(size, flags) { }
+
   template<typename OutputIter>
   inline OutputIter Copy(OutputIter out) const;
 
