@@ -16,7 +16,7 @@
 #include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsglobal.h>
-#include <iv/lv5/symboltable.h>
+#include <iv/lv5/symbol_table.h>
 namespace iv {
 namespace lv5 {
 
