@@ -239,28 +239,14 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   bool IsFlatten() const { return fiber_count() == 1 && !fibers_[0]->IsCons(); }
 
-  inline void Flatten() const {
-    if (fiber_count_ != 1) {
-      if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
-        FastFlatten(static_cast<FiberBase*>(fibers_[1]),
-                    static_cast<FiberBase*>(fibers_[0]));
-      } else {
-        SlowFlatten();
-      }
-    } else if (fibers_[0]->IsCons()) {
-      SlowFlatten();
-    }
-    assert(IsFlatten());
-  }
-
   inline const Fiber8* Get8Bit() const {
     assert(Is8Bit());
-    return GetFiber()->As8Bit();
+    return Flatten()->As8Bit();
   }
 
   inline const Fiber16* Get16Bit() const {
     assert(!Is8Bit());
-    return GetFiber()->As16Bit();
+    return Flatten()->As16Bit();
   }
 
   std::string GetUTF8() const {
@@ -294,7 +280,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     if (first->size() > n && !first->IsCons()) {
       return (*static_cast<const FiberBase*>(first))[n];
     }
-    return (*GetFiber())[n];
+    return (*Flatten())[n];
   }
 
   template<typename OutputIter>
@@ -328,7 +314,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   inline size_type rfind(const JSString& target, size_type index) const;
 
   int compare(const this_type& x) const {
-    return GetFiber()->compare(*x.GetFiber());
+    return Flatten()->compare(*x.Flatten());
   }
 
   friend bool operator==(const this_type& x, const this_type& y) {
@@ -343,19 +329,19 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   friend bool operator<(const this_type& x, const this_type& y) {
-    return (*x.GetFiber()) < (*y.GetFiber());
+    return (*x.Flatten()) < (*y.Flatten());
   }
 
   friend bool operator>(const this_type& x, const this_type& y) {
-    return (*x.GetFiber()) > (*y.GetFiber());
+    return (*x.Flatten()) > (*y.Flatten());
   }
 
   friend bool operator<=(const this_type& x, const this_type& y) {
-    return (*x.GetFiber()) <= (*y.GetFiber());
+    return (*x.Flatten()) <= (*y.Flatten());
   }
 
   friend bool operator>=(const this_type& x, const this_type& y) {
-    return (*x.GetFiber()) >= (*y.GetFiber());
+    return (*x.Flatten()) >= (*y.Flatten());
   }
 
   static this_type* New(Context* ctx, const core::UStringPiece& str) {
@@ -445,8 +431,18 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return new (PointerFreeGC) this_type(it, n, is_8bit);
   }
 
-  inline const FiberBase* GetFiber() const {
-    Flatten();
+  inline const FiberBase* Flatten() const {
+    if (fiber_count_ != 1) {
+      if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
+        FastFlatten(static_cast<FiberBase*>(fibers_[1]),
+                    static_cast<FiberBase*>(fibers_[0]));
+      } else {
+        SlowFlatten();
+      }
+    } else if (fibers_[0]->IsCons()) {
+      SlowFlatten();
+    }
+    assert(IsFlatten());
     return static_cast<const FiberBase*>(fibers_[0]);
   }
 
