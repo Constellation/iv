@@ -27,6 +27,7 @@
 #include <iv/lv5/railgun/instruction_fwd.h>
 #include <iv/lv5/railgun/jsfunction.h>
 #include <iv/lv5/railgun/stack.h>
+#include <iv/lv5/railgun/exception.h>
 #include <iv/lv5/railgun/direct_threading.h>
 #include <iv/lv5/radio/radio.h>
 
@@ -2000,7 +2001,6 @@ do {\
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
     assert(*e);
-    typedef Code::ExceptionTable ExceptionTable;
     while (true) {
       const ExceptionTable& table = frame->code()->exception_table();
       for (ExceptionTable::const_iterator it = table.begin(),

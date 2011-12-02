@@ -12,18 +12,11 @@
 #include <iv/lv5/railgun/op.h>
 #include <iv/lv5/railgun/core_data_fwd.h>
 #include <iv/lv5/railgun/jsscript.h>
+#include <iv/lv5/railgun/exception.h>
 #include <iv/lv5/railgun/direct_threading.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
-
-struct Handler {
-  enum Type {
-    CATCH,
-    FINALLY,
-    ITER
-  };
-};
 
 class Code : public radio::HeapObject<radio::POINTER> {
  public:
@@ -47,9 +40,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Code*>::type Codes;
-  typedef std::tuple<uint8_t, uint16_t, uint16_t, uint16_t, uint16_t>
-          ExceptionHandler;
-  typedef GCVector<ExceptionHandler>::type ExceptionTable;
   // symbol, decl type, configurable, param point
   typedef std::tuple<Symbol, DeclType, std::size_t, uint32_t> Decl;
   typedef GCVector<Decl>::type Decls;
