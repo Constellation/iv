@@ -326,7 +326,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const Identifier* literal) {
     builder_.Append("{\"type\":\"identifier\",\"value\":\"");
-    builder_.Append(literal->value());
+    builder_.Append(symbol::GetSymbolString(literal->symbol()));
     builder_.Append("\"}");
   }
 

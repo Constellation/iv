@@ -9,6 +9,7 @@
 #include <iv/ustring.h>
 #include <iv/xorshift.h>
 #include <iv/random_generator.h>
+#include <iv/symbol_table.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/gc_template.h>
@@ -16,7 +17,6 @@
 #include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsglobal.h>
-#include <iv/lv5/symbol_table.h>
 namespace iv {
 namespace lv5 {
 
@@ -32,7 +32,7 @@ class GlobalData {
   explicit GlobalData(Context* ctx)
     : random_generator_(0, 1, static_cast<int>(std::time(NULL))),
       regs_(),
-      table_(),
+      symbol_table_(),
       classes_(),
       string_cache_(),
       global_obj_(JSGlobal::New(ctx)),
@@ -51,11 +51,11 @@ class GlobalData {
   }
 
   Symbol Intern(const core::StringPiece& str) {
-    return table_.Lookup(str);
+    return symbol_table_.Lookup(str);
   }
 
   Symbol Intern(const core::UStringPiece& str) {
-    return table_.Lookup(str);
+    return symbol_table_.Lookup(str);
   }
 
   Symbol InternUInt32(uint32_t index) {
@@ -70,7 +70,7 @@ class GlobalData {
       const char* const str = core::DoubleToCString(number,
                                                     buffer.data(),
                                                     buffer.size());
-      return table_.Lookup(core::StringPiece(str));
+      return symbol_table_.Lookup(core::StringPiece(str));
     }
   }
 
@@ -131,10 +131,12 @@ class GlobalData {
 
   void RegExpClear() { regs_.clear(); }
 
+  core::SymbolTable* symbol_table() { return &symbol_table_; }
+
  private:
   RandomGenerator random_generator_;
   trace::Vector<JSRegExpImpl*>::type regs_;
-  SymbolTable table_;
+  core::SymbolTable symbol_table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0x80> string_cache_;
   JSGlobal* global_obj_;

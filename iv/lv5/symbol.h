@@ -1,17 +1,17 @@
+// placeholder header
 #ifndef IV_LV5_SYMBOL_H_
 #define IV_LV5_SYMBOL_H_
-#include <cstddef>
-#include <iv/lv5/symbol_fwd.h>
-#include <iv/lv5/default_symbol_provider.h>
+#include <iv/symbol.h>
+#include <gc/gc_allocator.h>
 namespace iv {
 namespace lv5 {
 
-typedef const core::UString* StringSymbol;
+using core::Symbol;
 
 namespace symbol {
+using namespace iv::core::symbol;
+}  // namespace iv::lv5::symbol
 
-static const Symbol kDummySymbol =
-    detail::MakeSymbol(static_cast<core::UString*>(NULL));
-
-} } }  // namespace iv::lv5::symbol
+} }  // namespace iv::lv5
+GC_DECLARE_PTRFREE(iv::lv5::Symbol);
 #endif  // IV_LV5_SYMBOL_H_

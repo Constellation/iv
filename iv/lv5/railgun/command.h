@@ -15,7 +15,8 @@ namespace detail {
 template<typename Source>
 Code* Compile(Context* ctx, const Source& src) {
   AstFactory factory(ctx);
-  core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
+  core::Parser<iv::lv5::AstFactory, Source> parser(&factory,
+                                                   src, ctx->symbol_table());
   const FunctionLiteral* const global = parser.ParseProgram();
   JSScript* script = JSGlobalScript::New(ctx, &src);
   if (!global) {

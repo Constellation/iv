@@ -83,7 +83,9 @@ inline JSScript* CompileScript(Context* ctx, const JSString* str,
                                bool is_strict, Error* e) {
   std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory* const factory = new AstFactory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(factory, *src);
+  core::Parser<AstFactory, EvalSource> parser(factory,
+                                              *src,
+                                              ctx->symbol_table());
   parser.set_strict(is_strict);
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {

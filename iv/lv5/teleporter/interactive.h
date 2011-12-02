@@ -91,7 +91,9 @@ class Interactive {
     std::shared_ptr<core::FileSource> src(
         new core::FileSource(text, detail::kInteractiveOrigin));
     AstFactory* const factory = new AstFactory(&ctx_);
-    core::Parser<AstFactory, core::FileSource> parser(factory, *src);
+    core::Parser<AstFactory, core::FileSource> parser(factory,
+                                                      *src,
+                                                      ctx_.symbol_table());
     parser.set_strict(ctx_.IsStrict());
     const FunctionLiteral* const eval = parser.ParseProgram();
     if (!eval) {

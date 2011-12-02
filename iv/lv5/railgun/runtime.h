@@ -47,7 +47,8 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
 
   std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory factory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(&factory, *src);
+  core::Parser<AstFactory, EvalSource> parser(&factory, *src,
+                                              ctx->symbol_table());
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
     e->Report(Error::Syntax, parser.error());
@@ -105,7 +106,8 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
 
   std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory factory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(&factory, *src);
+  core::Parser<AstFactory, EvalSource> parser(&factory, *src,
+                                              ctx->symbol_table());
   parser.set_strict(strict);
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {

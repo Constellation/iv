@@ -136,10 +136,6 @@ Context::Context()
     stack_(NULL) {
 }
 
-double Context::Random() {
-  return global_data_.Random();
-}
-
 void Context::InitContext(JSFunction* func_constructor,
                           JSFunction* eval_function) {
   bind::Object global_binder(this, global_obj());

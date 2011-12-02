@@ -29,15 +29,6 @@ class AstFactory
     }
   }
 
-  template<typename Range>
-  Identifier* NewIdentifier(core::Token::Type token,
-                            const Range& range,
-                            std::size_t begin, std::size_t end) {
-    Identifier* ident = new(this)Identifier(NewString(range));
-    ident->set_symbol(context::Intern(ctx_, ident->value()));
-    return ident;
-  }
-
   inline RegExpLiteral* NewRegExpLiteral(
       const std::vector<uint16_t>& content,
       const std::vector<uint16_t>& flags,

@@ -1,6 +1,5 @@
-#ifndef IV_LV5_SYMBOL_FWD_H_
-#define IV_LV5_SYMBOL_FWD_H_
-#include <gc/gc_allocator.h>
+#ifndef IV_SYMBOL_FWD_H_
+#define IV_SYMBOL_FWD_H_
 #include <functional>
 #include <iv/detail/cstdint.h>
 #include <iv/detail/cinttypes.h>
@@ -12,7 +11,7 @@
 #include <iv/platform.h>
 #include <iv/static_assert.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace detail {
 
 template<std::size_t PointerSize, bool IsLittle>
@@ -162,12 +161,12 @@ inline bool operator>=(SymbolStringHolder x, SymbolStringHolder y) {
 namespace symbol {
 
 inline bool IsIndexSymbol(Symbol sym) {
-  return sym.index_.low_ == lv5::detail::kSymbolIsIndex;
+  return sym.index_.low_ == detail::kSymbolIsIndex;
 }
 
 inline bool IsArrayIndexSymbol(Symbol sym) {
   return
-      (sym.index_.low_ == lv5::detail::kSymbolIsIndex) &&
+      (sym.index_.low_ == detail::kSymbolIsIndex) &&
       (sym.index_.high_ < UINT32_MAX);
 }
 
@@ -205,16 +204,13 @@ inline core::UString GetSymbolString(Symbol sym) {
   }
 }
 
-} } }  // namespace iv::lv5::symbol
-
-GC_DECLARE_PTRFREE(iv::lv5::Symbol);
-
+} } }  // namespace iv::core::symbol
 namespace IV_HASH_NAMESPACE_START {
 
 // template specialization for Symbol in std::unordered_map
 template<>
-struct hash<iv::lv5::Symbol>
-  : public std::unary_function<iv::lv5::Symbol, std::size_t> {
+struct hash<iv::core::Symbol>
+  : public std::unary_function<iv::core::Symbol, std::size_t> {
   inline result_type operator()(const argument_type& x) const {
     return hash<uint64_t>()(x.bytes_);
   }
@@ -222,12 +218,12 @@ struct hash<iv::lv5::Symbol>
 
 // template specialization for SymbolStringHolder in std::unordered_map
 template<>
-struct hash<iv::lv5::SymbolStringHolder>
-  : public std::unary_function<iv::lv5::SymbolStringHolder, std::size_t> {
+struct hash<iv::core::SymbolStringHolder>
+  : public std::unary_function<iv::core::SymbolStringHolder, std::size_t> {
   inline result_type operator()(const argument_type& x) const {
     return hash<iv::core::UString>()(*x.symbolized_);
   }
 };
 
 } IV_HASH_NAMESPACE_END  // namespace std
-#endif  // IV_LV5_SYMBOL_FWD_H_
+#endif  // IV_SYMBOL_FWD_H_

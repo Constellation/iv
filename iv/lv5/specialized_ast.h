@@ -21,20 +21,6 @@ namespace core {
 namespace ast {
 
 template<>
-class IdentifierBase<iv::lv5::AstFactory>
-  : public Inherit<iv::lv5::AstFactory, kIdentifier> {
- public:
-  void set_symbol(iv::lv5::Symbol sym) {
-    sym_ = sym;
-  }
-  iv::lv5::Symbol symbol() const {
-    return sym_;
-  }
- private:
-  iv::lv5::Symbol sym_;
-};
-
-template<>
 class RegExpLiteralBase<iv::lv5::AstFactory>
   : public Inherit<iv::lv5::AstFactory, kRegExpLiteral> {
  public:

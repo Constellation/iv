@@ -92,19 +92,17 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     return throw_type_error_;
   }
 
-  double Random();
+  double Random() { return global_data_.Random(); }
 
-  GlobalData* global_data() {
-    return &global_data_;
-  }
+  GlobalData* global_data() { return &global_data_; }
 
-  const GlobalData* global_data() const {
-    return &global_data_;
-  }
+  const GlobalData* global_data() const { return &global_data_; }
 
   core::Space* regexp_allocator() { return &regexp_allocator_; }
 
   aero::VM* regexp_vm() { return &regexp_vm_; }
+
+  core::SymbolTable* symbol_table() { return global_data_.symbol_table(); }
 
   void MarkChildren(radio::Core* core) { }
 

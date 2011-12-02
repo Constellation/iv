@@ -36,7 +36,8 @@ template<typename Source>
 iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
                                 const Source& src) {
   iv::lv5::AstFactory factory(ctx);
-  iv::core::Parser<iv::lv5::AstFactory, Source> parser(&factory, src);
+  iv::core::Parser<iv::lv5::AstFactory, Source> parser(
+      &factory, src, ctx->symbol_table());
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
   iv::lv5::railgun::JSScript* script =
       iv::lv5::railgun::JSGlobalScript::New(ctx, &src);
@@ -96,7 +97,8 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   iv::lv5::teleporter::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
   iv::core::Parser<iv::lv5::AstFactory,
-                   iv::core::FileSource> parser(&factory, src);
+                   iv::core::FileSource> parser(&factory,
+                                                src, ctx.symbol_table());
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {
@@ -127,7 +129,8 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   iv::lv5::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
   iv::core::Parser<iv::lv5::AstFactory,
-                   iv::core::FileSource> parser(&factory, src);
+                   iv::core::FileSource> parser(&factory,
+                                                src, ctx.symbol_table());
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
 
   if (!global) {

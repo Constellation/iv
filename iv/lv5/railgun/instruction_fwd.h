@@ -19,7 +19,6 @@ struct Instruction {
     ptrdiff_t diff;
     Map* map;
     Chain* chain;
-    StringSymbol symbol;
   };
 
   static Instruction Diff(ptrdiff_t to, ptrdiff_t from) {

@@ -16,8 +16,9 @@
 #include <iv/ast_fwd.h>
 #include <iv/ast_visitor.h>
 #include <iv/location.h>
-#include <iv/static_assert.h>
 #include <iv/ustringpiece.h>
+#include <iv/symbol.h>
+#include <iv/static_assert.h>
 
 namespace iv {
 namespace core {
@@ -994,50 +995,13 @@ template<typename Factory>
 class Identifier : public IdentifierBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  Identifier(const value_type* val) : value_(val) { }
-  inline const value_type& value() const {
-    return *value_;
-  }
+  Identifier(Symbol sym) : sym_(sym) { }
+  Symbol symbol() const { return sym_; }
   inline bool IsValidLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
   ACCEPT_EXPRESSION_VISITOR
  protected:
-  const value_type* value_;
-};
-
-template<typename Factory>
-class IdentifierKey {
- public:
-  typedef Identifier<Factory> value_type;
-  typedef IdentifierKey<Factory> this_type;
-  IdentifierKey(value_type* ident)  // NOLINT
-    : ident_(ident) { }
-  IdentifierKey(const this_type& rhs)  // NOLINT
-    : ident_(rhs.ident_) { }
-  inline const typename value_type::value_type& value() const {
-    return ident_->value();
-  }
-  inline bool operator==(const this_type& rhs) const {
-    if (ident_ == rhs.ident_) {
-      return true;
-    } else {
-      return value() == rhs.value();
-    }
-  }
-  inline bool operator>(const this_type& rhs) const {
-    return value() > rhs.value();
-  }
-  inline bool operator<(const this_type& rhs) const {
-    return value() < rhs.value();
-  }
-  inline bool operator>=(const this_type& rhs) const {
-    return value() >= rhs.value();
-  }
-  inline bool operator<=(const this_type& rhs) const {
-    return value() <= rhs.value();
-  }
- private:
-  value_type* ident_;
+  Symbol sym_;
 };
 
 // ThisLiteral
@@ -1396,28 +1360,6 @@ class ConstructorCall : public ConstructorCallBase<Factory> {
 };
 
 } } }  // namespace iv::core::ast
-
-namespace IV_HASH_NAMESPACE_START {
-
-// template specialization
-// for iv::core::Parser::IdentifierWrapper in std::unordered_map
-// allowed in section 17.4.3.1
-template<typename Factory>
-struct hash<iv::core::ast::IdentifierKey<Factory> >
-  : public std::unary_function<
-      iv::core::ast::IdentifierKey<Factory>, std::size_t> {
-  typedef std::unary_function<
-      iv::core::ast::IdentifierKey<Factory>, std::size_t> super_type;
-  typedef typename super_type::argument_type argument_type;
-  typedef typename super_type::result_type result_type;
-  result_type operator()(const argument_type& x) const {
-    return hash<
-        typename iv::core::ast::Identifier<Factory>::value_type>()(x.value());
-  }
-};
-
-} IV_HASH_NAMESPACE_END  // namespace std
-
 #undef ACCEPT_VISITOR
 #undef DECLARE_NODE_TYPE
 #undef DECLARE_DERIVED_NODE_TYPE

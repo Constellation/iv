@@ -81,8 +81,8 @@ class JSFunction : public JSObject {
     return kBlock;
   }
 
-  virtual core::UStringPiece GetName() const {
-    return core::UStringPiece();
+  virtual core::UString GetName() const {
+    return core::UString();
   }
 
   virtual bool IsStrict() const = 0;

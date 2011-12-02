@@ -19,7 +19,7 @@ namespace railgun {
 inline Code* CompileFunction(Context* ctx, const JSString* str, Error* e) {
   std::shared_ptr<EvalSource> const src(new EvalSource(*str));
   AstFactory factory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(&factory, *src);
+  core::Parser<AstFactory, EvalSource> parser(&factory, *src, ctx->symbol_table());
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
     e->Report(Error::Syntax, parser.error());

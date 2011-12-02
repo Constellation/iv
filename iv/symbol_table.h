@@ -1,15 +1,14 @@
-#ifndef IV_LV5_SYMBOLTABLE_H_
-#define IV_LV5_SYMBOLTABLE_H_
+#ifndef IV_SYMBOLTABLE_H_
+#define IV_SYMBOLTABLE_H_
 #include <string>
 #include <vector>
 #include <iv/detail/unordered_map.h>
 #include <iv/ustring.h>
 #include <iv/conversions.h>
-#include <iv/lv5/symbol.h>
+#include <iv/symbol.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 
-class Context;
 class SymbolTable {
  public:
   typedef std::unordered_set<SymbolStringHolder> Set;
@@ -18,7 +17,7 @@ class SymbolTable {
     : set_() {
     // insert default symbols
 #define V(sym) InsertDefaults(symbol::sym());
-    IV_LV5_DEFAULT_SYMBOLS(V)
+    IV_DEFAULT_SYMBOLS(V)
 #undef V
   }
 
@@ -68,5 +67,6 @@ class SymbolTable {
 
   Set set_;
 };
-} }  // namespace iv::lv5
-#endif  // IV_LV5_SYMBOLTABLE_H_
+
+} }  // namespace iv::core
+#endif  // IV_SYMBOLTABLE_H_

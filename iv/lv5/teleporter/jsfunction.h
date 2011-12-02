@@ -80,9 +80,9 @@ class JSCodeFunction : public JSFunction {
     return script_->SubString(start_pos, end_pos - start_pos);
   }
 
-  core::UStringPiece GetName() const {
+  core::UString GetName() const {
     if (const core::Maybe<const Identifier> name = function_->name()) {
-      return name.Address()->value();
+      return symbol::GetSymbolString(name.Address()->symbol());
     } else {
       return core::UStringPiece();
     }
@@ -134,7 +134,8 @@ class JSCodeFunction : public JSFunction {
                        ATTR::WRITABLE),
         false, &e);
     if (const core::Maybe<const Identifier> ident = function_->name()) {
-      const core::UStringPiece name = ident.Address()->value();
+      const core::UString name =
+          symbol::GetSymbolString(ident.Address()->symbol());
       if (!name.empty()) {
         DefineOwnProperty(
             ctx, context::Intern(ctx, "name"),

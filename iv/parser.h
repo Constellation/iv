@@ -20,6 +20,7 @@
 #include <iv/ustring.h>
 #include <iv/enable_if.h>
 #include <iv/none.h>
+#include <iv/symbol_table.h>
 
 #define IS(token)\
   do {\
@@ -86,8 +87,6 @@ namespace core {
 namespace detail {
 
 static const UString kUseStrict = ToUString("use strict");
-static const UString kArguments = ToUString("arguments");
-static const UString kEval = ToUString("eval");
 static const UString kGet = ToUString("get");
 static const UString kSet = ToUString("set");
 
@@ -97,8 +96,7 @@ template<typename Factory,
          typename Source,
          bool UseFunctionStatement = true,
          bool ReduceExpressions = true>
-class Parser
-  : private Noncopyable<> {
+class Parser : private Noncopyable<> {
  public:
   typedef Parser<Factory, Source,
                  UseFunctionStatement, ReduceExpressions> this_type;
@@ -194,7 +192,7 @@ class Parser
     Identifiers* labels_;
   };
 
-  Parser(Factory* factory, const Source& source)
+  Parser(Factory* factory, const Source& source, SymbolTable* table)
     : lexer_(&source),
       error_(),
       strict_(false),
@@ -202,7 +200,8 @@ class Parser
       factory_(factory),
       scope_(NULL),
       target_(NULL),
-      labels_(NULL) {
+      labels_(NULL),
+      table_(table) {
   }
 
 // Program
@@ -1879,7 +1878,7 @@ class Parser
 //  PropertySetParameterList
 //    : IDENTIFIER
   Expression* ParseObjectLiteral(bool *res) {
-    typedef std::unordered_map<IdentifierKey, int> ObjectMap;
+    typedef std::unordered_map<Symbol, int> ObjectMap;
     typedef typename ObjectLiteral::Property Property;
     typedef typename ObjectLiteral::Properties Properties;
     const std::size_t begin = lexer_.begin_position();
@@ -1903,9 +1902,9 @@ class Parser
               lexer_.previous_end_position());
           expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
-          typename ObjectMap::iterator it = map.find(ident);
+          typename ObjectMap::iterator it = map.find(ident->symbol());
           if (it == map.end()) {
-            map.insert(std::make_pair(ident, ObjectLiteral::DATA));
+            map.insert(std::make_pair(ident->symbol(), ObjectLiteral::DATA));
           } else {
             if (it->second != ObjectLiteral::DATA) {
               RAISE("accessor property and data property "
@@ -1936,9 +1935,9 @@ class Parser
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
                 CHECK);
             ObjectLiteral::AddAccessor(prop, type, ident, expr);
-            typename ObjectMap::iterator it = map.find(ident);
+            typename ObjectMap::iterator it = map.find(ident->symbol());
             if (it == map.end()) {
-              map.insert(std::make_pair(ident, type));
+              map.insert(std::make_pair(ident->symbol(), type));
             } else if (it->second & (ObjectLiteral::DATA | type)) {
               if (it->second & ObjectLiteral::DATA) {
                 RAISE("data property and accessor property "
@@ -1967,9 +1966,9 @@ class Parser
         EXPECT(Token::TK_COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         ObjectLiteral::AddDataProperty(prop, ident, expr);
-        typename ObjectMap::iterator it = map.find(ident);
+        typename ObjectMap::iterator it = map.find(ident->symbol());
         if (it == map.end()) {
-          map.insert(std::make_pair(ident, ObjectLiteral::DATA));
+          map.insert(std::make_pair(ident->symbol(), ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
             RAISE("accessor property and data property "
@@ -2003,7 +2002,7 @@ class Parser
       bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
-    std::unordered_set<IdentifierKey> param_set;
+    std::unordered_set<Symbol> param_set;
     std::size_t throw_error_if_strict_code_line = 0;
     const std::size_t begin_position = lexer_.begin_position();
     enum {
@@ -2100,13 +2099,13 @@ class Parser
               }
             }
             if ((!throw_error_if_strict_code) &&
-                (param_set.find(ident) != param_set.end())) {
+                (param_set.find(ident->symbol()) != param_set.end())) {
               throw_error_if_strict_code = kDetectDuplicateParameter;
               throw_error_if_strict_code_line = lexer_.line_number();
             }
           }
           params->push_back(ident);
-          param_set.insert(ident);
+          param_set.insert(ident->symbol());
           if (token_ == Token::TK_COMMA) {
             Next(true);
           } else {
@@ -2192,7 +2191,7 @@ class Parser
     builder.Build(val);
     Identifier* const ident = factory_->NewIdentifier(
         Token::TK_NUMBER,
-        builder.buffer(),
+        table_->Lookup(builder.buffer()),
         lexer_.begin_position(),
         lexer_.end_position());
     Next();
@@ -2204,20 +2203,22 @@ class Parser
     if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
       RAISE("octal escape sequence not allowed in strict code");
     }
-    Identifier* const ident = factory_->NewIdentifier(Token::TK_STRING,
-                                                      lexer_.Buffer(),
-                                                      lexer_.begin_position(),
-                                                      lexer_.end_position());
+    Identifier* const ident = factory_->NewIdentifier(
+        Token::TK_STRING,
+        table_->Lookup(lexer_.Buffer()),
+        lexer_.begin_position(),
+        lexer_.end_position());
     Next();
     return ident;
   }
 
   template<typename Range>
   Identifier* ParseIdentifier(const Range& range) {
-    Identifier* const ident = factory_->NewIdentifier(Token::TK_IDENTIFIER,
-                                                      range,
-                                                      lexer_.begin_position(),
-                                                      lexer_.end_position());
+    Identifier* const ident = factory_->NewIdentifier(
+        Token::TK_IDENTIFIER,
+        table_->Lookup(range),
+        lexer_.begin_position(),
+        lexer_.end_position());
     Next();
     return ident;
   }
@@ -2226,10 +2227,11 @@ class Parser
   Identifier* ParseIdentifierWithPosition(const Range& range,
                                           std::size_t begin,
                                           std::size_t end) {
-    Identifier* const ident = factory_->NewIdentifier(Token::TK_IDENTIFIER,
-                                                      range,
-                                                      begin,
-                                                      end);
+    Identifier* const ident = factory_->NewIdentifier(
+        Token::TK_IDENTIFIER,
+        table_->Lookup(range),
+        begin,
+        end);
     Next();
     return ident;
   }
@@ -2238,11 +2240,10 @@ class Parser
                      const Identifier * const label) const {
     assert(label != NULL);
     if (labels) {
-      const typename Identifier::value_type& value = label->value();
+      const Symbol name = label->symbol();
       for (typename Identifiers::const_iterator it = labels->begin(),
-           last = labels->end();
-           it != last; ++it) {
-        if ((*it)->value() == value) {
+           last = labels->end(); it != last; ++it) {
+        if ((*it)->symbol() == name) {
           return true;
         }
       }
@@ -2476,10 +2477,10 @@ class Parser
   };
 
   static EvalOrArguments IsEvalOrArguments(const Identifier* ident) {
-    const SpaceUString& str = ident->value();
-    if (str.compare(detail::kEval.data()) == 0) {
+    const Symbol sym = ident->symbol();
+    if (sym == symbol::eval()) {
       return kEval;
-    } else if (str.compare(detail::kArguments.data()) == 0) {
+    } else if (sym == symbol::arguments()) {
       return kArguments;
     } else {
       return kNone;
@@ -2495,6 +2496,7 @@ class Parser
   Scope* scope_;
   Target* target_;
   Identifiers* labels_;
+  SymbolTable* table_;
 };
 #undef IS
 #undef EXPECT

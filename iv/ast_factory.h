@@ -44,12 +44,11 @@ class BasicAstFactory {
                      (std::is_base_of<this_type, Factory>::value));
   }
 
-  template<typename Range>
   Identifier* NewIdentifier(Token::Type token,
-                            const Range& range,
+                            Symbol symbol,
                             std::size_t begin,
                             std::size_t end) {
-    return new (static_cast<Factory*>(this)) Identifier(NewString(range));
+    return new (static_cast<Factory*>(this)) Identifier(symbol);
   }
 
   NumberLiteral* NewReducedNumberLiteral(const double& val) {

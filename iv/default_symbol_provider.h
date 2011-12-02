@@ -1,15 +1,15 @@
-#ifndef IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
-#define IV_LV5_DEFAULT_SYMBOL_PROVIDER_H_
+#ifndef IV_DEFAULT_SYMBOL_PROVIDER_H_
+#define IV_DEFAULT_SYMBOL_PROVIDER_H_
 #include <iv/detail/cstdint.h>
 #include <iv/detail/type_traits.h>
 #include <iv/detail/unordered_set.h>
 #include <iv/singleton.h>
-#include <iv/lv5/symbol_fwd.h>
+#include <iv/symbol_fwd.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace symbol {
 // default symbols
-#define IV_LV5_DEFAULT_SYMBOLS(V)\
+#define IV_DEFAULT_SYMBOLS(V)\
     V(length)\
     V(eval)\
     V(arguments)\
@@ -37,7 +37,7 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
   Symbol sym() const {\
     return sym##_;\
   }
-  IV_LV5_DEFAULT_SYMBOLS(V)
+  IV_DEFAULT_SYMBOLS(V)
 #undef V
 
   bool IsDefaultSymbol(Symbol sym) const {
@@ -53,7 +53,7 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
   sym##_ = detail::MakeSymbol(\
       new core::UString(sym##_target.begin(), sym##_target.end()));\
   default_symbols_.insert(sym##_);
-    IV_LV5_DEFAULT_SYMBOLS(V)
+    IV_DEFAULT_SYMBOLS(V)
 #undef V
   }
 
@@ -68,7 +68,7 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
   }
 
 #define V(sym) Symbol sym##_;
-  IV_LV5_DEFAULT_SYMBOLS(V)
+  IV_DEFAULT_SYMBOLS(V)
 #undef V
   std::unordered_set<Symbol> default_symbols_;
 };
@@ -78,8 +78,8 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
     static const Symbol target = DefaultSymbolProvider::Instance()->sym();\
     return target;\
   }
-IV_LV5_DEFAULT_SYMBOLS(V)
+IV_DEFAULT_SYMBOLS(V)
 #undef V
 
-} } }  // namespace iv::lv5::symbol
-#endif  // IV_LV5_SYMBOL_H_
+} } }  // namespace iv::core::symbol
+#endif  // IV_SYMBOL_H_
