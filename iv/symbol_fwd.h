@@ -130,33 +130,21 @@ typedef detail::Symbol Symbol;
 IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
 #endif
 
-struct SymbolStringHolder {
-  const core::UString* symbolized_;
+struct SymbolHolderHasher
+  : public std::unary_function<const iv::core::UString*, std::size_t> {
+  inline result_type operator()(const argument_type& x) const {
+    return std::hash<iv::core::UString>()(*x);
+  }
 };
 
-inline bool operator==(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) == (*y.symbolized_);
-}
-
-inline bool operator!=(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) != (*y.symbolized_);
-}
-
-inline bool operator<(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) < (*y.symbolized_);
-}
-
-inline bool operator>(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) > (*y.symbolized_);
-}
-
-inline bool operator<=(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) <= (*y.symbolized_);
-}
-
-inline bool operator>=(SymbolStringHolder x, SymbolStringHolder y) {
-  return (*x.symbolized_) >= (*y.symbolized_);
-}
+struct SymbolHolderEqualTo
+  : public std::binary_function<const iv::core::UString*,
+                                const iv::core::UString*, bool> {
+  inline result_type operator()(const first_argument_type& x,
+                                const second_argument_type& y) const {
+    return *x == *y;
+  }
+};
 
 namespace symbol {
 
@@ -213,15 +201,6 @@ struct hash<iv::core::Symbol>
   : public std::unary_function<iv::core::Symbol, std::size_t> {
   inline result_type operator()(const argument_type& x) const {
     return hash<uint64_t>()(x.bytes_);
-  }
-};
-
-// template specialization for SymbolStringHolder in std::unordered_map
-template<>
-struct hash<iv::core::SymbolStringHolder>
-  : public std::unary_function<iv::core::SymbolStringHolder, std::size_t> {
-  inline result_type operator()(const argument_type& x) const {
-    return hash<iv::core::UString>()(*x.symbolized_);
   }
 };
 
