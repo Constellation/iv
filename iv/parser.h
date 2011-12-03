@@ -1139,7 +1139,7 @@ class Parser : private Noncopyable<> {
         CHECK);
     // define named function as variable declaration
     assert(expr);
-    assert(expr->name().IsDummy());
+    assert(!expr->name().IsDummy());
     scope_->AddUnresolved(expr->name(), false);
     return factory_->NewFunctionStatement(expr);
   }
