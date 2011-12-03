@@ -54,7 +54,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       has_eval_(false),
       has_arguments_(false),
       has_arguments_assign_(false),
-      has_name_(func.name()),
+      has_name_(func.name() != symbol::kDummySymbol),
       has_declarative_env_(true),
       arguments_hiding_(false),
       scope_nest_count_(0),
@@ -62,8 +62,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
       decl_type_(func.type()),
       name_(),
       script_(script),
-      start_position_(func.start_position()),
-      end_position_(func.end_position()),
+      block_begin_position_(func.block_begin_position()),
+      block_end_position_(func.block_end_position()),
       stack_depth_(0),
       core_(core),
       start_(),
@@ -78,12 +78,12 @@ class Code : public radio::HeapObject<radio::POINTER> {
       exception_table_(),
       construct_map_(NULL) {
     if (has_name_) {
-      name_ = func.name().Address()->symbol();
+      name_ = func.name();
     }
     Names::iterator target = params_.begin();
-    for (Identifiers::const_iterator it = func.params().begin(),
+    for (Symbols::const_iterator it = func.params().begin(),
          last = func.params().end(); it != last; ++it, ++target) {
-      if ((*target = (*it)->symbol()) == symbol::arguments()) {
+      if ((*target = *it) == symbol::arguments()) {
         set_code_hiding_arguments();
       }
     }
@@ -197,12 +197,12 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return name_;
   }
 
-  std::size_t start_position() const {
-    return start_position_;
+  std::size_t block_begin_position() const {
+    return block_begin_position_;
   }
 
-  std::size_t end_position() const {
-    return end_position_;
+  std::size_t block_end_position() const {
+    return block_end_position_;
   }
 
   std::size_t stack_depth() const {
@@ -308,8 +308,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
   FunctionLiteral::DeclType decl_type_;
   Symbol name_;
   JSScript* script_;
-  std::size_t start_position_;
-  std::size_t end_position_;
+  std::size_t block_begin_position_;
+  std::size_t block_end_position_;
   std::size_t stack_depth_;
   // TODO(Constellation): use std::shared_ptr for CoreData
   CoreData* core_;

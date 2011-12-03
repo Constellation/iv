@@ -139,8 +139,8 @@ class JSVMFunction : public JSFunction {
   }
 
   core::UStringPiece GetSource() const {
-    const std::size_t start_pos = code_->start_position();
-    const std::size_t end_pos = code_->end_position();
+    const std::size_t start_pos = code_->block_begin_position();
+    const std::size_t end_pos = code_->block_end_position();
     return code_->script()->SubString(start_pos, end_pos - start_pos);
   }
 

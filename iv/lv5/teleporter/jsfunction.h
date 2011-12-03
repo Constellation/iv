@@ -75,21 +75,17 @@ class JSCodeFunction : public JSFunction {
   }
 
   core::UStringPiece GetSource() const {
-    const std::size_t start_pos = function_->start_position();
-    const std::size_t end_pos = function_->end_position();
+    const std::size_t start_pos = function_->block_begin_position();
+    const std::size_t end_pos = function_->block_end_position();
     return script_->SubString(start_pos, end_pos - start_pos);
   }
 
   core::UString GetName() const {
-    if (const core::Maybe<const Identifier> name = function_->name()) {
-      return symbol::GetSymbolString(name.Address()->symbol());
+    if (HasName()) {
+      return symbol::GetSymbolString(function_->name());
     } else {
       return core::UStringPiece();
     }
-  }
-
-  core::Maybe<const Identifier> name() const {
-    return function_->name();
   }
 
   bool IsStrict() const {
@@ -99,6 +95,14 @@ class JSCodeFunction : public JSFunction {
   void MarkChildren(radio::Core* core) {
     core->MarkCell(script_);
     core->MarkCell(env_);
+  }
+
+  bool HasName() const {
+    return (function_->name() != symbol::kDummySymbol);
+  }
+
+  Symbol name() const {
+    return function_->name();
   }
 
  private:
@@ -133,9 +137,8 @@ class JSCodeFunction : public JSFunction {
         DataDescriptor(proto,
                        ATTR::WRITABLE),
         false, &e);
-    if (const core::Maybe<const Identifier> ident = function_->name()) {
-      const core::UString name =
-          symbol::GetSymbolString(ident.Address()->symbol());
+    if (HasName()) {
+      const core::UString name(symbol::GetSymbolString(function_->name()));
       if (!name.empty()) {
         DefineOwnProperty(
             ctx, context::Intern(ctx, "name"),
@@ -165,7 +168,6 @@ class JSCodeFunction : public JSFunction {
                         false, &e);
     }
   }
-
 
   const FunctionLiteral* function_;
   JSScript* script_;

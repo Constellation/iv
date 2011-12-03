@@ -162,7 +162,7 @@ class FunctionScope : public VariableScope {
       const Functions& functions = scope.function_declarations();
       for (Functions::const_iterator it = functions.begin(),
            last = functions.end(); it != last; ++it) {
-        const Symbol sym = (*it)->name().Address()->symbol();
+        const Symbol sym = (*it)->name();
         map_[sym] = std::make_tuple(STACK, 0, false);
       }
 
@@ -171,7 +171,7 @@ class FunctionScope : public VariableScope {
       const Variables& vars = scope.variables();
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first->symbol();
+        const Symbol name = it->first;
         if (map_.find(name) != map_.end()) {
           map_[name] = std::make_tuple(
               TypeUpgrade(std::get<0>(map_[name]), STACK), 0, false);

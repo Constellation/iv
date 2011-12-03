@@ -73,6 +73,18 @@ class Lexer: private Noncopyable<> {
     Advance();
   }
 
+  // for label lookahead
+  bool NextIsColon() const {
+    for (std::size_t pos = pos_ - 1; pos < end_; ++pos) {
+      const int ch = (*source_)[pos];
+      if (character::IsWhiteSpace(ch) || character::IsLineTerminator(ch)) {
+        continue;
+      }
+      return ch == ':';
+    }
+    return false;
+  }
+
   template<typename LexType>
   typename Token::Type Next(bool strict) {
     typename Token::Type token;

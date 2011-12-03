@@ -34,7 +34,6 @@ class JSArguments {
 
 class JSNormalArguments : public JSObject {
  public:
-  typedef core::SpaceVector<AstFactory, Identifier*>::type Identifiers;
   typedef GCVector<Symbol>::type Indice;
 
   template<typename Idents, typename ArgsReverseIter>
@@ -228,19 +227,10 @@ class JSNormalArguments : public JSObject {
       binder->def(symbol::MakeSymbolFromIndex(index),
                   *it, ATTR::W | ATTR::E | ATTR::C);
       if (index < names_len) {
-        obj->mapping_[index] = GetIdent(names, index);
+        obj->mapping_[index] = names[index];
       }
       index -= 1;
     }
-  }
-
-  static Symbol GetIdent(const Identifiers& names, uint32_t index) {
-    return names[index]->symbol();
-  }
-
-  template<typename T>
-  static Symbol GetIdent(const T& names, uint32_t index) {
-    return names[index];
   }
 
   JSDeclEnv* env_;

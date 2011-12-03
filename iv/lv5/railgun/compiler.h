@@ -469,7 +469,7 @@ class Compiler
   void Visit(const FunctionStatement* stmt) {
     const FunctionLiteral& func = *stmt->function();
     assert(func.name());  // FunctionStatement must have name
-    const uint32_t index = SymbolToNameIndex(func.name().Address()->symbol());
+    const uint32_t index = SymbolToNameIndex(func.name());
     Visit(&func);
     EmitStoreName(index);
     Emit<OP::POP_TOP>();
@@ -693,11 +693,13 @@ class Compiler
     ContinueTarget jump(this, stmt);
 
     const Expression* lhs;
+    Symbol for_decl = symbol::kDummySymbol;
     if (const VariableStatement* var = stmt->each()->AsVariableStatement()) {
       const Declaration* decl = var->decls().front();
       Visit(decl);
       // Identifier
-      lhs = decl->name();
+      lhs = NULL;
+      for_decl = decl->name();
     } else {
       // LeftHandSideExpression
       assert(stmt->each()->AsExpressionStatement());
@@ -718,9 +720,12 @@ class Compiler
       stack_depth_.Up();
 
       // TODO(Constellation) abstraction...
-      if (const Identifier* ident = lhs->AsIdentifier()) {
+      if (!lhs || lhs->AsIdentifier()) {
         // Identifier
-        const uint32_t index = SymbolToNameIndex(ident->symbol());
+        if (lhs) {
+          for_decl = lhs->AsIdentifier()->symbol();
+        }
+        const uint32_t index = SymbolToNameIndex(for_decl);
         EmitStoreName(index);
       } else if (lhs->AsPropertyAccess()) {
         // PropertyAccess
@@ -728,7 +733,7 @@ class Compiler
           // IdentifierAccess
           ac->target()->Accept(this);
           Emit<OP::ROT_TWO>();
-          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key());
           Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Down();
         } else {
@@ -818,7 +823,7 @@ class Compiler
   }
 
   void Visit(const BreakStatement* stmt) {
-    if (!stmt->target() && stmt->label()) {
+    if (!stmt->target() && stmt->label() != symbol::kDummySymbol) {
       // through
     } else {
       const JumpEntry& entry = jump_table_[stmt->target()];
@@ -1010,7 +1015,7 @@ class Compiler
           stack_depth_.GetStackBase(),
           dynamic_env_level());
       stack_depth_.Up();  // exception handler
-      const Symbol catch_symbol = stmt->catch_name().Address()->symbol();
+      const Symbol catch_symbol = stmt->catch_name();
       Emit<OP::TRY_CATCH_SETUP>(SymbolToNameIndex(catch_symbol));
       PushLevelWith();
       stack_depth_.Down();
@@ -1132,7 +1137,7 @@ class Compiler
           Emit<OP::DUP_TOP>();
           stack_depth_.Up();
 
-          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key());
           Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
           rhs.Accept(this);
           EmitAssignedBinaryOperation(token);
@@ -1434,7 +1439,7 @@ class Compiler
             if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
               // IdentifierAccess
               ac->target()->Accept(this);
-              const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+              const uint32_t index = SymbolToNameIndex(ac->key());
               Emit<OP::DELETE_PROP>(index, 0, 0, 0, 0);
             } else {
               // IndexAccess
@@ -1496,7 +1501,7 @@ class Compiler
           if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
             // IdentifierAccess
             ac->target()->Accept(this);
-            const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+            const uint32_t index = SymbolToNameIndex(ac->key());
             if (token == Token::TK_INC) {
               Emit<OP::INCREMENT_PROP>(index, 0, 0, 0, 0);
             } else {
@@ -1573,7 +1578,7 @@ class Compiler
       if (const IdentifierAccess* ac = expr.AsIdentifierAccess()) {
         // IdentifierAccess
         ac->target()->Accept(this);
-        const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+        const uint32_t index = SymbolToNameIndex(ac->key());
         if (token == Token::TK_INC) {
           Emit<OP::POSTFIX_INCREMENT_PROP>(index, 0, 0, 0, 0);
         } else {
@@ -1761,7 +1766,7 @@ class Compiler
          last = properties.end(); it != last; ++it) {
       const ObjectLiteral::Property& prop = *it;
       const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
-      const Symbol name = get<1>(prop)->symbol();
+      const Symbol name = get<1>(prop);
 
       uint32_t merged = 0;
       uint32_t position = 0;
@@ -1810,7 +1815,7 @@ class Compiler
   void Visit(const IdentifierAccess* prop) {
     DepthPoint point(&stack_depth_);
     prop->target()->Accept(this);
-    const uint32_t index = SymbolToNameIndex(prop->key()->symbol());
+    const uint32_t index = SymbolToNameIndex(prop->key());
     Emit<OP::LOAD_PROP>(index, 0, 0, 0, 0);
     point.LevelCheck(1);
   }
@@ -1835,7 +1840,7 @@ class Compiler
 
   void Visit(const Declaration* decl) {
     DepthPoint point(&stack_depth_);
-    const uint32_t index = SymbolToNameIndex(decl->name()->symbol());
+    const uint32_t index = SymbolToNameIndex(decl->name());
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
       EmitStoreName(index);
@@ -1895,7 +1900,7 @@ class Compiler
         // IdentifierAccess
         ac->target()->Accept(this);
         rhs.Accept(this);
-        const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+        const uint32_t index = SymbolToNameIndex(ac->key());
         Emit<OP::STORE_PROP>(index, 0, 0, 0, 0);
         stack_depth_.Down();
       } else {
@@ -1948,7 +1953,7 @@ class Compiler
         if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
           // IdentifierAccess
           prop->target()->Accept(this);
-          const uint32_t index = SymbolToNameIndex(ac->key()->symbol());
+          const uint32_t index = SymbolToNameIndex(ac->key());
           Emit<OP::CALL_PROP>(index, 0, 0, 0, 0);
           stack_depth_.Up();
         } else {
@@ -2007,7 +2012,7 @@ class Compiler
            last = functions.end(); it != last; ++it) {
         const FunctionLiteral* const func = *it;
         Visit(func);
-        const Symbol sym = func->name().Address()->symbol();
+        const Symbol sym = func->name();
         if (sym == symbol::arguments()) {
           // arguments hiding optimization
           // example:
@@ -2030,7 +2035,7 @@ class Compiler
       const Variables& vars = scope.variables();
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first->symbol();
+        const Symbol name = it->first;
         if (already_declared.find(name) == already_declared.end()) {
           code_->varnames_.push_back(name);
           already_declared.insert(name);

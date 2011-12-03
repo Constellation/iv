@@ -90,11 +90,10 @@ void Interpreter::Invoke(JSCodeFunction* code,
   {
     const std::size_t arg_count = args.size();
     std::size_t n = 0;
-    for (Identifiers::const_iterator it = code->code()->params().begin(),
+    for (Symbols::const_iterator it = code->code()->params().begin(),
          last = code->code()->params().end(); it != last; ++it) {
-      const Identifier* ident = *it;
       ++n;
-      const Symbol arg_name = ident->symbol();
+      const Symbol arg_name = *it;
       if (!env->HasBinding(ctx_, arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name,
                                   configurable_bindings, CHECK_IN_STMT);
@@ -115,7 +114,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
        last = scope.function_declarations().end();
        it != last; ++it) {
     const FunctionLiteral* f = *it;
-    const Symbol fn = f->name().Address()->symbol();
+    const Symbol fn = f->name();
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -159,7 +158,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   for (Scope::Variables::const_iterator it = scope.variables().begin(),
        last = scope.variables().end(); it != last; ++it) {
     const Scope::Variable& var = *it;
-    const Symbol dn = var.first->symbol();
+    const Symbol dn = var.first;
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
@@ -171,8 +170,8 @@ void Interpreter::Invoke(JSCodeFunction* code,
   {
     const FunctionLiteral::DeclType type = code->code()->type();
     if (type == FunctionLiteral::STATEMENT ||
-        (type == FunctionLiteral::EXPRESSION && code->name())) {
-      const Symbol name = code->name().Address()->symbol();
+        (type == FunctionLiteral::EXPRESSION && code->HasName())) {
+      const Symbol name = code->name();
       if (!env->HasBinding(ctx_, name)) {
         env->CreateImmutableBinding(name);
         env->InitializeImmutableBinding(name, code);
@@ -208,7 +207,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
        last = scope.function_declarations().end();
        it != last; ++it) {
     const FunctionLiteral* f = *it;
-    const Symbol fn = f->name().Address()->symbol();
+    const Symbol fn = f->name();
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -248,7 +247,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   for (Scope::Variables::const_iterator it = scope.variables().begin(),
        last = scope.variables().end(); it != last; ++it) {
     const Scope::Variable& var = *it;
-    const Symbol dn = var.first->symbol();
+    const Symbol dn = var.first;
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
@@ -309,8 +308,9 @@ void Interpreter::Visit(const Block* block) {
 
 void Interpreter::Visit(const FunctionStatement* stmt) {
   const FunctionLiteral* const func = stmt->function();
-  assert(func->name());  // FunctionStatement must have name
-  Visit(func->name().Address());
+  // FunctionStatement must have name
+  assert(func->name() != symbol::kDummySymbol);
+  Resolve(func->name());
   const JSVal lhs = ctx_->ret();
   Visit(func);
   const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
@@ -323,7 +323,7 @@ void Interpreter::Visit(const VariableStatement* var) {
   for (Declarations::const_iterator it = var->decls().begin(),
        last = var->decls().end(); it != last; ++it) {
     const Declaration* decl = *it;
-    Visit(decl->name());
+    Resolve(decl->name());
     const JSVal lhs = ctx_->ret();
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       EVAL_IN_STMT(expr.Address());
@@ -457,18 +457,22 @@ void Interpreter::Visit(const ForStatement* stmt) {
 
 void Interpreter::Visit(const ForInStatement* stmt) {
   const Expression* lexpr;
+  Symbol for_decl = symbol::kDummySymbol;
   if (stmt->each()->AsVariableStatement()) {
     const Declaration* decl =
         stmt->each()->AsVariableStatement()->decls().front();
-    const Identifier* const ident = decl->name();
-    EVAL_IN_STMT(ident);
+    for_decl = decl->name();
+    Resolve(for_decl);
+    if (ctx_->IsError()) {
+      RETURN_STMT(Context::THROW, JSEmpty, NULL);
+    }
     const JSVal lhs = ctx_->ret();
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       EVAL_IN_STMT(expr.Address());
       const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
       PutValue(lhs, val, CHECK_IN_STMT);
     }
-    lexpr = ident;
+    lexpr = NULL;
   } else {
     assert(stmt->each()->AsExpressionStatement());
     lexpr = stmt->each()->AsExpressionStatement()->expr();
@@ -486,7 +490,14 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   for (std::vector<Symbol>::const_iterator it = keys.begin(),
        last = keys.end(); it != last; ++it) {
     const JSVal rhs(JSString::New(ctx_, *it));
-    EVAL_IN_STMT(lexpr);
+    if (lexpr) {
+      EVAL_IN_STMT(lexpr);
+    } else {
+      Resolve(for_decl);
+      if (ctx_->IsError()) {
+        RETURN_STMT(Context::THROW, JSEmpty, NULL);
+      }
+    }
     const JSVal lhs = ctx_->ret();
     PutValue(lhs, rhs, CHECK_IN_STMT);
     EVAL_IN_STMT(stmt->body());
@@ -514,7 +525,7 @@ void Interpreter::Visit(const ContinueStatement* stmt) {
 
 
 void Interpreter::Visit(const BreakStatement* stmt) {
-  if (!stmt->target() && stmt->label()) {
+  if (!stmt->target() && stmt->label() != symbol::kDummySymbol) {
     // interpret as EmptyStatement
     RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
   }
@@ -651,7 +662,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
-      const Symbol name = stmt->catch_name().Address()->symbol();
+      const Symbol name = stmt->catch_name();
       JSStaticEnv* const catch_env = JSStaticEnv::New(ctx_, old_env, name, ex);
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);
@@ -1216,14 +1227,14 @@ void Interpreter::Visit(const NumberLiteral* num) {
 
 
 void Interpreter::Visit(const Identifier* ident) {
-  // section 10.3.1 Identifier Resolution
-  JSEnv* const env = ctx_->lexical_env();
-  ctx_->Return(
-      GetIdentifierReference(env,
-                             ident->symbol(),
-                             ctx_->IsStrict()));
+  return Resolve(ident->symbol());
 }
 
+void Interpreter::Resolve(Symbol sym) {
+  // section 10.3.1 Identifier Resolution
+  JSEnv* const env = ctx_->lexical_env();
+  ctx_->Return(GetIdentifierReference(env, sym, ctx_->IsStrict()));
+}
 
 void Interpreter::Visit(const ThisLiteral* literal) {
   ctx_->Return(ctx_->this_binding());
@@ -1287,8 +1298,7 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
        it != last; ++it) {
     const ObjectLiteral::Property& prop = *it;
     const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
-    const Identifier* const ident = get<1>(prop);
-    const Symbol name = ident->symbol();
+    const Symbol name = get<1>(prop);
     PropertyDescriptor desc;
     if (type == ObjectLiteral::DATA) {
       EVAL(get<2>(prop));
@@ -1335,9 +1345,8 @@ void Interpreter::Visit(const IdentifierAccess* prop) {
   EVAL(prop->target());
   const JSVal base_value = GetValue(ctx_->ret(), CHECK);
   base_value.CheckObjectCoercible(CHECK);
-  const Symbol sym = prop->key()->symbol();
   ctx_->Return(
-      JSReference::New(ctx_, base_value, sym, ctx_->IsStrict()));
+      JSReference::New(ctx_, base_value, prop->key(), ctx_->IsStrict()));
 }
 
 

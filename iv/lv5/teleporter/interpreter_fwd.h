@@ -84,6 +84,8 @@ class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
   inline JSReference* GetIdentifierReference(JSEnv* lex,
                                              Symbol name, bool strict);
 
+  inline void Resolve(Symbol sym);
+
   Context* ctx_;
 };
 

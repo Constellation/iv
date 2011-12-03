@@ -75,7 +75,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     while (it != end) {
       const Declaration& decl = **it;
       builder_.Append("{\"type\":\"decl\",\"name\":");
-      decl.name()->Accept(this);
+      Write(decl.name());
       builder_.Append(",\"exp\":");
       if (const Maybe<const Expression> expr = decl.expr()) {
         (*expr).Accept(this);
@@ -152,18 +152,18 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const ContinueStatement* continuestmt) {
     builder_.Append("{\"type\":\"continue\"");
-    if (const Maybe<const Identifier> label = continuestmt->label()) {
+    if (continuestmt->label() != symbol::kDummySymbol) {
       builder_.Append(",\"label\":");
-      (*label).Accept(this);
+      Write(continuestmt->label());
     }
     builder_.Append('}');
   }
 
   void Visit(const BreakStatement* breakstmt) {
     builder_.Append("{\"type\":\"break\"");
-    if (const Maybe<const Identifier> label = breakstmt->label()) {
+    if (breakstmt->label() != symbol::kDummySymbol) {
       builder_.Append(",\"label\":");
-      (*label).Accept(this);
+      Write(breakstmt->label());
     }
     builder_.Append('}');
   }
@@ -187,7 +187,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const LabelledStatement* labelledstmt) {
     builder_.Append("{\"type\":\"labelled\",\"label\":");
-    labelledstmt->label()->Accept(this);
+    Write(labelledstmt->label());
     builder_.Append(",\"body\":");
     labelledstmt->body()->Accept(this);
     builder_.Append('}');
@@ -237,9 +237,9 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void Visit(const TryStatement* trystmt) {
     builder_.Append("{\"type\":\"try\",\"body\":");
     trystmt->body()->Accept(this);
-    if (const Maybe<const Identifier> ident = trystmt->catch_name()) {
+    if (trystmt->catch_name() != symbol::kDummySymbol) {
       builder_.Append(",\"catch\":{\"type\":\"catch\",\"name\":");
-      Visit(ident.Address());
+      Write(trystmt->catch_name());
       builder_.Append(",\"body\":");
       Visit(trystmt->catch_block().Address());
       builder_.Append('}');
@@ -400,7 +400,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
         builder_.Append("\"getter\"");
       }
       builder_.Append(",\"key\":");
-      get<1>(*it)->Accept(this);
+      Write(get<1>(*it));
       builder_.Append(",\"val\":");
       get<2>(*it)->Accept(this);
       builder_.Append('}');
@@ -415,14 +415,14 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const FunctionLiteral* literal) {
     builder_.Append("{\"type\":\"function\",\"name\":");
-    if (const Maybe<const Identifier> name = literal->name()) {
-      Visit(name.Address());
+    if (literal->name() != symbol::kDummySymbol) {
+      Write(literal->name());
     }
     builder_.Append(",\"params\":[");
-    typename Identifiers::const_iterator it = literal->params().begin();
-    const typename Identifiers::const_iterator end = literal->params().end();
+    typename Symbols::const_iterator it = literal->params().begin();
+    const typename Symbols::const_iterator end = literal->params().end();
     while (it != end) {
-      (*it)->Accept(this);
+      Write(*it);
       ++it;
       if (it == end) {
         break;
@@ -455,7 +455,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     builder_.Append("{\"type\":\"property\",\"target\":");
     prop->target()->Accept(this);
     builder_.Append(",\"key\":");
-    prop->key()->Accept(this);
+    Write(prop->key());
     builder_.Append('}');
   }
 
@@ -500,6 +500,14 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const Declaration* dummy) {
     UNREACHABLE();
+  }
+
+  void Write(Symbol name) {
+    builder_.Append('"');
+    const core::UString str(symbol::GetSymbolString(name));
+    JSONQuote(str.begin(), str.end(),
+              std::back_inserter(builder_));
+    builder_.Append('"');
   }
 
  private:

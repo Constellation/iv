@@ -84,7 +84,7 @@ INHERIT(Scope);
 template<typename Factory>
 class Scope : public ScopeBase<Factory> {
  public:
-  typedef std::pair<Identifier<Factory>*, bool> Variable;
+  typedef std::pair<Symbol, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
   typedef typename SpaceVector<
             Factory,
@@ -99,7 +99,7 @@ class Scope : public ScopeBase<Factory> {
       direct_call_to_eval_(false),
       with_statement_(false) {
   }
-  void AddUnresolved(Identifier<Factory>* name, bool is_const) {
+  void AddUnresolved(Symbol name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
   }
   void AddFunctionDeclaration(FunctionLiteral<Factory>* func) {
@@ -154,7 +154,7 @@ class AstNode : public AstNodeBase<Factory> {
   virtual ~AstNode() = 0;
 
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  typedef typename SpaceVector<Factory, Identifier<Factory>*>::type Identifiers;
+  typedef typename SpaceVector<Factory, Symbol>::type Symbols;
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
   typedef typename SpaceVector<
       Factory,
@@ -171,6 +171,19 @@ class AstNode : public AstNodeBase<Factory> {
   virtual void Accept(
       typename AstVisitor<Factory>::const_type* visitor) const = 0;
   virtual NodeType Type() const = 0;
+
+  std::size_t begin_position() const { return begin_position_; }
+
+  std::size_t end_position() const { return end_position_; }
+
+  void set_position(std::size_t begin, std::size_t end) {
+    begin_position_ = begin;
+    end_position_ = end;
+  }
+
+ private:
+  std::size_t begin_position_;
+  std::size_t end_position_;
 };
 
 template<typename Factory>
@@ -380,20 +393,15 @@ INHERIT(Declaration);
 template<typename Factory>
 class Declaration : public DeclarationBase<Factory> {
  public:
-  Declaration(Identifier<Factory>* name,
-              Maybe<Expression<Factory> > expr)
+  Declaration(Symbol name, Maybe<Expression<Factory> > expr)
     : name_(name),
       expr_(expr) {
   }
-  inline Identifier<Factory>* name() const {
-    return name_;
-  }
-  inline Maybe<Expression<Factory> > expr() const {
-    return expr_;
-  }
+  inline Symbol name() const { return name_; }
+  inline Maybe<Expression<Factory> > expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
-  Identifier<Factory>* name_;
+  Symbol name_;
   Maybe<Expression<Factory> > expr_;
 };
 
@@ -562,20 +570,20 @@ INHERIT(ContinueStatement);
 template<typename Factory>
 class ContinueStatement : public ContinueStatementBase<Factory> {
  public:
-  ContinueStatement(Maybe<Identifier<Factory> > label,
-                    IterationStatement<Factory>** target)
+  // label is maybe dummy
+  ContinueStatement(Symbol label, IterationStatement<Factory>** target)
     : label_(label),
       target_(target) {
     assert(target_);
   }
-  inline Maybe<Identifier<Factory> > label() const { return label_; }
+  inline Symbol label() const { return label_; }
   inline IterationStatement<Factory>* target() const {
     assert(target_ && *target_);
     return *target_;
   }
   DECLARE_DERIVED_NODE_TYPE(ContinueStatement)
  private:
-  Maybe<Identifier<Factory> > label_;
+  Symbol label_;
   IterationStatement<Factory>** target_;
 };
 
@@ -589,8 +597,8 @@ INHERIT(BreakStatement);
 template<typename Factory>
 class BreakStatement : public BreakStatementBase<Factory> {
  public:
-  BreakStatement(Maybe<Identifier<Factory> > label,
-                 BreakableStatement<Factory>** target)
+  // label is maybe dummy
+  BreakStatement(Symbol label, BreakableStatement<Factory>** target)
     : label_(label),
       target_(target) {
     // example >
@@ -600,7 +608,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
     // if above example, target is NULL
     assert(target_ || label_);
   }
-  inline Maybe<Identifier<Factory> > label() const { return label_; }
+  inline Symbol label() const { return label_; }
   inline BreakableStatement<Factory>* target() const {
     if (target_) {
       assert(*target_);
@@ -611,7 +619,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
   }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:
-  Maybe<Identifier<Factory> > label_;
+  Symbol label_;
   BreakableStatement<Factory>** target_;
 };
 
@@ -667,15 +675,15 @@ INHERIT(LabelledStatement);
 template<typename Factory>
 class LabelledStatement : public LabelledStatementBase<Factory> {
  public:
-  LabelledStatement(Expression<Factory>* expr, Statement<Factory>* body)
-    : body_(body) {
-    label_ = expr->AsLiteral()->AsIdentifier();
+  LabelledStatement(Symbol name, Statement<Factory>* body)
+    : label_(name),
+      body_(body) {
   }
-  inline Identifier<Factory>* label() const { return label_; }
+  inline Symbol label() const { return label_; }
   inline Statement<Factory>* body() const { return body_; }
   DECLARE_DERIVED_NODE_TYPE(LabelledStatement)
  private:
-  Identifier<Factory>* label_;
+  Symbol label_;
   Statement<Factory>* body_;
 };
 
@@ -765,23 +773,24 @@ INHERIT(TryStatement);
 template<typename Factory>
 class TryStatement : public TryStatementBase<Factory> {
  public:
-  explicit TryStatement(Block<Factory>* try_block,
-                        Maybe<Identifier<Factory> > catch_name,
-                        Maybe<Block<Factory> > catch_block,
-                        Maybe<Block<Factory> > finally_block)
+  // catch_name is maybe dummy
+  TryStatement(Block<Factory>* try_block,
+               Symbol catch_name,
+               Maybe<Block<Factory> > catch_block,
+               Maybe<Block<Factory> > finally_block)
     : body_(try_block),
       catch_name_(catch_name),
       catch_block_(catch_block),
       finally_block_(finally_block) {
   }
   inline Block<Factory>* body() const { return body_; }
-  inline Maybe<Identifier<Factory> > catch_name() const { return catch_name_; }
+  inline Symbol catch_name() const { return catch_name_; }
   inline Maybe<Block<Factory> > catch_block() const { return catch_block_; }
   inline Maybe<Block<Factory> > finally_block() const { return finally_block_; }
   DECLARE_DERIVED_NODE_TYPE(TryStatement)
  private:
   Block<Factory>* body_;
-  Maybe<Identifier<Factory> > catch_name_;
+  Symbol catch_name_;
   Maybe<Block<Factory> > catch_block_;
   Maybe<Block<Factory> > finally_block_;
 };
@@ -1125,7 +1134,7 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
     SET  = 4
   };
   typedef std::tuple<PropertyDescriptorType,
-                     Identifier<Factory>*,
+                     Symbol,
                      Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
   explicit ObjectLiteral(Properties* properties)
@@ -1133,14 +1142,14 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
   }
 
   static inline void AddDataProperty(Properties* prop,
-                                     Identifier<Factory>* key,
+                                     Symbol key,
                                      Expression<Factory>* val) {
     prop->push_back(std::make_tuple(DATA, key, val));
   }
 
   static inline void AddAccessor(Properties* prop,
                                  PropertyDescriptorType type,
-                                 Identifier<Factory>* key,
+                                 Symbol key,
                                  Expression<Factory>* val) {
     prop->push_back(std::make_tuple(type, key, val));
   }
@@ -1166,7 +1175,7 @@ template<typename Factory>
 class FunctionLiteral : public FunctionLiteralBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Statements Statements;
-  typedef typename AstNode<Factory>::Identifiers Identifiers;
+  typedef typename AstNode<Factory>::Symbols Symbols;
   enum DeclType {
     DECLARATION,
     STATEMENT,
@@ -1178,31 +1187,11 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
     SETTER,
     GETTER
   };
-  inline Maybe<Identifier<Factory> > name() const {
-    return name_;
-  }
-  inline DeclType type() const { return type_; }
-  inline const Identifiers& params() const {
-    return *params_;
-  }
-  inline const Statements& body() const {
-    return *body_;
-  }
-  inline const Scope<Factory>& scope() const {
-    return *scope_;
-  }
-  inline std::size_t start_position() const {
-    return start_position_;
-  }
-  inline std::size_t end_position() const {
-    return end_position_;
-  }
-  inline bool strict() const {
-    return strict_;
-  }
+
+  // name maybe dummy
   FunctionLiteral(DeclType type,
-                  Maybe<Identifier<Factory> > name,
-                  Identifiers* params,
+                  Symbol name,
+                  Symbols* params,
                   Statements* body,
                   Scope<Factory>* scope,
                   bool strict,
@@ -1214,20 +1203,34 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
       body_(body),
       scope_(scope),
       strict_(strict),
-      start_position_(start_position),
-      end_position_(end_position) {
+      block_begin_position_(start_position),
+      block_end_position_(end_position) {
+  }
+
+  inline Symbol name() const { return name_; }
+  inline DeclType type() const { return type_; }
+  inline const Symbols& params() const { return *params_; }
+  inline const Statements& body() const { return *body_; }
+  inline const Scope<Factory>& scope() const { return *scope_; }
+  inline bool strict() const { return strict_; }
+
+  inline std::size_t block_begin_position() const {
+    return block_begin_position_;
+  }
+  inline std::size_t block_end_position() const {
+    return block_end_position_;
   }
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
-  Maybe<Identifier<Factory> > name_;
+  Symbol name_;
   DeclType type_;
-  Identifiers* params_;
+  Symbols* params_;
   Statements* body_;
   Scope<Factory>* scope_;
   bool strict_;
-  std::size_t start_position_;
-  std::size_t end_position_;
+  std::size_t block_begin_position_;
+  std::size_t block_end_position_;
 };
 
 // PropertyAccess
@@ -1261,16 +1264,15 @@ INHERIT(IdentifierAccess);
 template<typename Factory>
 class IdentifierAccess : public IdentifierAccessBase<Factory> {
  public:
-  IdentifierAccess(Expression<Factory>* obj,
-                   Identifier<Factory>* key)
+  IdentifierAccess(Expression<Factory>* obj, Symbol key)
     : key_(key) {
     PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
-  inline Identifier<Factory>* key() const { return key_; }
+  inline Symbol key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
   ACCEPT_EXPRESSION_VISITOR
  private:
-  Identifier<Factory>* key_;
+  Symbol key_;
 };
 
 // IndexAccess

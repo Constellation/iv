@@ -88,7 +88,7 @@ IV_STATEMENT_NODE_LIST(V)\
 IV_EXPRESSION_NODE_LIST(V)
 
 #define IV_AST_LIST_LIST(V)\
-V(Identifiers)\
+V(Symbols)\
 V(Declarations)\
 V(Expressions)\
 V(Statements)\
