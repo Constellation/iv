@@ -311,6 +311,8 @@ class JSVal {
 
   inline bool IsNull() const;
 
+  inline bool IsNullOrUndefined() const;
+
   inline bool IsBoolean() const;
 
   inline bool IsInt32() const;

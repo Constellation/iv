@@ -68,7 +68,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   // step 1
   JSVal this_value = args.this_binding();
   if (!code->IsStrict()) {
-    if (this_value.IsUndefined() || this_value.IsNull()) {
+    if (this_value.IsNullOrUndefined()) {
       this_value = ctx_->global_obj();
     } else if (!this_value.IsObject()) {
       JSObject* const obj = this_value.ToObject(ctx_, CHECK_IN_STMT);
@@ -475,7 +475,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   }
   EVAL_IN_STMT(stmt->enumerable());
   const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
-  if (expr.IsNull() || expr.IsUndefined()) {
+  if (expr.IsNullOrUndefined()) {
     RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);

@@ -71,6 +71,12 @@ bool JSVal::IsNull() const {
   return value_.bytes_ == detail::jsval64::kNull;
 }
 
+bool JSVal::IsNullOrUndefined() const {
+  // (1000)2 = 8
+  // Null is (0010)2 and Undefined is (1010)2
+  return (value_.bytes_ & ~8) == detail::jsval64::kNull;
+}
+
 bool JSVal::IsBoolean() const {
   // rm LSB (true or false) and check other bit pattern is Boolean
   return (value_.bytes_ & ~1) == detail::jsval64::kFalse;
@@ -321,6 +327,10 @@ bool JSVal::IsNull() const {
   return value_.struct_.tag_ == detail::jsval32::kNullTag;
 }
 
+bool JSVal::IsNullOrUndefined() const {
+  return IsNull() || IsUndefined();
+}
+
 bool JSVal::IsBoolean() const {
   return value_.struct_.tag_ == detail::jsval32::kBoolTag;
 }
@@ -483,11 +493,9 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
-
-  if (lhs.IsUndefined() || lhs.IsNull()) {
+  if (lhs.IsNullOrUndefined()) {
     return true;
   }
-
   if (lhs.IsNumber()) {
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
@@ -497,19 +505,15 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
       return core::IsNaN(lhsv) && core::IsNaN(rhsv);
     }
   }
-
   if (lhs.IsString()) {
     return *(lhs.string()) == *(rhs.string());
   }
-
   if (lhs.IsBoolean()) {
     return lhs.boolean() == rhs.boolean();
   }
-
   if (lhs.IsObject()) {
     return lhs.object() == rhs.object();
   }
-
   assert(!lhs.IsEmpty());
   return false;
 }
@@ -518,10 +522,7 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
-  if (lhs.IsUndefined()) {
-    return true;
-  }
-  if (lhs.IsNull()) {
+  if (lhs.IsNullOrUndefined()) {
     return true;
   }
   if (lhs.IsNumber()) {
@@ -713,9 +714,7 @@ bool JSVal::ToBoolean(Error* e) const {
     return num != 0 && !core::IsNaN(num);
   } else if (IsString()) {
     return !string()->empty();
-  } else if (IsNull()) {
-    return false;
-  } else if (IsUndefined()) {
+  } else if (IsNullOrUndefined()) {
     return false;
   } else if (IsBoolean()) {
     return boolean();
@@ -795,8 +794,7 @@ bool JSVal::AbstractEqual(Context* ctx,
     if (lhs.IsNumber() && rhs.IsNumber()) {
       return lhs.number() == rhs.number();
     }
-    if ((lhs.IsUndefined() || lhs.IsNull()) &&
-        (rhs.IsUndefined() || rhs.IsNull())) {
+    if (lhs.IsNullOrUndefined() && rhs.IsNullOrUndefined()) {
       return true;
     }
     if (lhs.IsString() && rhs.IsString()) {

@@ -76,13 +76,13 @@ inline JSVal ObjectConstructor(const Arguments& args, Error* e) {
           val.IsNumber()) {
         return val.ToObject(args.ctx(), e);
       }
-      assert(val.IsNull() || val.IsUndefined());
+      assert(val.IsNullOrUndefined());
     }
     return JSObject::New(args.ctx());
   } else {
     if (args.size() > 0) {
       const JSVal& val = args[0];
-      if (val.IsNull() || val.IsUndefined()) {
+      if (val.IsNullOrUndefined()) {
         return JSObject::New(args.ctx());
       } else {
         return val.ToObject(args.ctx(), e);

@@ -43,7 +43,7 @@ JSObject::JSObject(Map* map,
     if (method.IsCallable()) {\
       const JSVal val =\
         method.object()->AsCallable()->Call(&arg, this, IV_LV5_ERROR(e));\
-      if (val.IsPrimitive() || val.IsNull() || val.IsUndefined()) {\
+      if (val.IsPrimitive() || val.IsNullOrUndefined()) {\
         return val;\
       }\
     }\

@@ -1496,7 +1496,7 @@ do {\
 
       DEFINE_OPCODE(FORIN_SETUP) {
         const JSVal v = TOP();
-        if (v.IsNull() || v.IsUndefined()) {
+        if (v.IsNullOrUndefined()) {
           JUMPBY(instr[1].diff);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }

@@ -45,7 +45,7 @@ inline void Instantiate(Context* ctx,
   JSVal this_value = frame->GetThis();
   JSEnv* env = frame->variable_env();
   if (!code->strict()) {
-    if (this_value.IsUndefined() || this_value.IsNull()) {
+    if (this_value.IsNullOrUndefined()) {
       this_value = ctx->global_obj();
     } else if (!this_value.IsObject()) {
       JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
