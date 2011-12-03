@@ -316,6 +316,29 @@ class Compiler
     return code;
   }
 
+  Code* CompileIndirectEvalStrict(const FunctionLiteral& function,
+                                  JSScript* script) {
+    Code* code = NULL;
+    use_expression_value_ = true;
+    {
+      script_ = script;
+      core_ = CoreData::New();
+      data_ = core_->data();
+      data_->reserve(core::Size::KB);
+      // create dummy global scope
+      current_variable_scope_ =
+          std::shared_ptr<VariableScope>(
+              new FunctionScope(std::shared_ptr<VariableScope>(), data_));
+      std::shared_ptr<VariableScope> target = current_variable_scope_;
+      code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
+      EmitFunctionCode(function, code, current_variable_scope_);
+      current_variable_scope_ = current_variable_scope_->upper();
+      assert(!current_variable_scope_);
+    }
+    CompileEpilogue(code);
+    return code;
+  }
+
  private:
   class BreakTarget : private core::Noncopyable<> {
    public:
@@ -2430,11 +2453,12 @@ inline Code* CompileEval(Context* ctx,
 inline Code* CompileIndirectEval(Context* ctx,
                                  const FunctionLiteral& eval,
                                  JSScript* script) {
-  if (eval.strict()) {
-    return CompileFunction(ctx, eval, script);
-  }
   Compiler compiler(ctx);
-  return compiler.CompileIndirectEval(eval, script);
+  if (eval.strict()) {
+    return compiler.CompileIndirectEvalStrict(eval, script);
+  } else {
+    return compiler.CompileIndirectEval(eval, script);
+  }
 }
 
 } } }  // namespace iv::lv5::railgun
