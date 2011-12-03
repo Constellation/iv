@@ -74,7 +74,6 @@ V(Declaration)
 V(AstNode)\
 V(Scope)\
 V(Variable)\
-V(IdentifierKey)\
 IV_OTHER_DERIVED_NODE_LIST(V)
 
 #define IV_AST_DERIVED_NODE_LIST(V)\
@@ -102,6 +101,8 @@ template<typename Factory>\
 class AST;
 IV_AST_NODE_LIST(V)
 #undef V
+
+class SymbolHolder;
 
 } } }  // namespace iv::core::ast
 #endif  // IV_AST_FWD_H_

@@ -72,7 +72,7 @@ class BasicAstFactory {
   }
 
   FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
-                                      Symbol name,
+                                      SymbolHolder name,
                                       Symbols* params,
                                       Statements* body,
                                       Scope* scope,
@@ -203,7 +203,7 @@ class BasicAstFactory {
         begin, end);
   }
 
-  Declaration* NewDeclaration(Symbol name,
+  Declaration* NewDeclaration(SymbolHolder name,
                               Maybe<Expression> expr,
                               std::size_t begin, std::size_t end) {
     return Location(
@@ -269,7 +269,7 @@ class BasicAstFactory {
         expr->begin_position(), end);
   }
 
-  ContinueStatement* NewContinueStatement(Symbol label,
+  ContinueStatement* NewContinueStatement(SymbolHolder label,
                                           IterationStatement** target,
                                           std::size_t begin,
                                           std::size_t end) {
@@ -278,7 +278,7 @@ class BasicAstFactory {
         begin, end);
   }
 
-  BreakStatement* NewBreakStatement(Symbol label,
+  BreakStatement* NewBreakStatement(SymbolHolder label,
                                     BreakableStatement** target,
                                     std::size_t begin,
                                     std::size_t end) {
@@ -326,7 +326,7 @@ class BasicAstFactory {
   }
 
   TryStatement* NewTryStatement(Block* try_block,
-                                Symbol catch_name,
+                                SymbolHolder catch_name,
                                 Maybe<Block> catch_block,
                                 Maybe<Block> finally_block,
                                 std::size_t begin) {
@@ -335,12 +335,12 @@ class BasicAstFactory {
                                                        catch_name,
                                                        catch_block,
                                                        finally_block),
-        try_block->begin_position(),
+        begin,
         (finally_block) ?
         (*finally_block).end_position() : (*catch_block).end_position());
   }
 
-  LabelledStatement* NewLabelledStatement(Symbol label,
+  LabelledStatement* NewLabelledStatement(SymbolHolder label,
                                           Statement* stmt, std::size_t begin) {
     return Location(
         new (static_cast<Factory*>(this)) LabelledStatement(label, stmt),
@@ -409,7 +409,7 @@ class BasicAstFactory {
   }
 
   IdentifierAccess* NewIdentifierAccess(Expression* expr,
-                                        Symbol ident, std::size_t end) {
+                                        SymbolHolder ident, std::size_t end) {
     return Location(
         new (static_cast<Factory*>(this)) IdentifierAccess(expr, ident),
         expr->begin_position(), end);

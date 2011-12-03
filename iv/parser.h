@@ -231,7 +231,7 @@ class Parser : private Noncopyable<> {
 #endif
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
-                                     symbol::kDummySymbol,
+                                     ast::SymbolHolder(),
                                      params,
                                      body,
                                      scope,
@@ -534,7 +534,7 @@ class Parser : private Noncopyable<> {
       IS(Token::TK_IDENTIFIER);
       const std::size_t begin_position = lexer_.begin_position();
       std::size_t end_position = lexer_.end_position();
-      const Symbol name = ParseSymbol();
+      const ast::SymbolHolder name = ParseSymbol();
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
@@ -790,7 +790,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::TK_CONTINUE);
     const std::size_t begin = lexer_.begin_position();
-    Symbol label = symbol::kDummySymbol;
+    ast::SymbolHolder label;
     IterationStatement** target;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
@@ -819,7 +819,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::TK_BREAK);
     const std::size_t begin = lexer_.begin_position();
-    Symbol label = symbol::kDummySymbol;
+    ast::SymbolHolder label;
     BreakableStatement** target = NULL;
     Next();
     if (!lexer_.has_line_terminator_before_next() &&
@@ -1027,7 +1027,7 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     Block* catch_block = NULL;
     Block* finally_block = NULL;
-    Symbol name = symbol::kDummySymbol;
+    ast::SymbolHolder name;
     bool has_catch_or_finally = false;
 
     Next();
@@ -1108,7 +1108,7 @@ class Parser : private Noncopyable<> {
     if (lexer_.NextIsColon()) {
       // LabelledStatement
       const std::size_t begin_position = lexer_.begin_position();
-      const Symbol label = ParseSymbol();
+      const ast::SymbolHolder label = ParseSymbol();
       assert(token_ == Token::TK_COLON);
       Next();
       Symbols* labels = labels_;
@@ -1147,7 +1147,7 @@ class Parser : private Noncopyable<> {
         CHECK);
     // define named function as variable declaration
     assert(expr);
-    assert(expr->name() != symbol::kDummySymbol);
+    assert(expr->name().IsDummy());
     scope_->AddUnresolved(expr->name(), false);
     return factory_->NewFunctionStatement(expr);
   }
@@ -1651,7 +1651,7 @@ class Parser : private Noncopyable<> {
           Next<IgnoreReservedWords>();  // IDENTIFIERNAME
           IS(Token::TK_IDENTIFIER);
           const std::size_t begin_position = lexer_.begin_position();
-          const Symbol name = ParseSymbol();
+          const ast::SymbolHolder name = ParseSymbol();
           assert(expr);
           expr = factory_->NewIdentifierAccess(expr, name, begin_position);
           break;
@@ -1903,12 +1903,15 @@ class Parser : private Noncopyable<> {
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
     while (token_ != Token::TK_RBRACE) {
       if (token_ == Token::TK_GET || token_ == Token::TK_SET) {
+        const std::size_t begin = lexer_.begin_position();
+        const std::size_t end = lexer_.end_position();
         const bool is_get = token_ == Token::TK_GET;
         // this is getter or setter or usual prop
         Next<IgnoreReservedWords>();  // IDENTIFIERNAME
         if (token_ == Token::TK_COLON) {
           // property
-          const Symbol ident = (is_get) ? symbol::get() : symbol::set();
+          const ast::SymbolHolder ident(
+              (is_get) ? symbol::get() : symbol::set(), begin, end);
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
@@ -1931,7 +1934,7 @@ class Parser : private Noncopyable<> {
           if (token_ == Token::TK_IDENTIFIER ||
               token_ == Token::TK_STRING ||
               token_ == Token::TK_NUMBER) {
-            const Symbol ident = ParsePropertyName(CHECK);
+            const ast::SymbolHolder ident = ParsePropertyName(CHECK);
             typename ObjectLiteral::PropertyDescriptorType type =
                 (is_get) ? ObjectLiteral::GET : ObjectLiteral::SET;
             expr = ParseFunctionLiteral(
@@ -1960,7 +1963,7 @@ class Parser : private Noncopyable<> {
       } else if (token_ == Token::TK_IDENTIFIER ||
                  token_ == Token::TK_STRING ||
                  token_ == Token::TK_NUMBER) {
-        const Symbol ident = ParsePropertyName(CHECK);
+        const ast::SymbolHolder ident = ParsePropertyName(CHECK);
         EXPECT(Token::TK_COLON);
         expr = ParseAssignmentExpression(true, CHECK);
         ObjectLiteral::AddDataProperty(prop, ident, expr);
@@ -2014,7 +2017,7 @@ class Parser : private Noncopyable<> {
     } throw_error_if_strict_code = kDetectNone;
 
     Symbols* const params = factory_->template NewVector<Symbol>();
-    Symbol name = symbol::kDummySymbol;
+    ast::SymbolHolder name;
 
     if (arg_type == FunctionLiteral::GENERAL) {
       assert(token_ == Token::TK_FUNCTION);
@@ -2057,7 +2060,7 @@ class Parser : private Noncopyable<> {
           !Token::IsAddedFutureReservedWordInStrictCode(current)) {
         IS(Token::TK_IDENTIFIER);
       }
-      const Symbol ident = ParseSymbol();
+      const ast::SymbolHolder ident = ParseSymbol();
       if (!throw_error_if_strict_code) {
         if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
@@ -2082,7 +2085,7 @@ class Parser : private Noncopyable<> {
               !Token::IsAddedFutureReservedWordInStrictCode(current)) {
             IS(Token::TK_IDENTIFIER);
           }
-          const Symbol ident = ParseSymbol();
+          const ast::SymbolHolder ident = ParseSymbol();
           if (!throw_error_if_strict_code) {
             if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
               throw_error_if_strict_code = kDetectFutureReservedWords;
@@ -2180,37 +2183,43 @@ class Parser : private Noncopyable<> {
                                         end_block_position);
   }
 
-  Symbol ParsePropertyName(bool* res) {
+  ast::SymbolHolder ParsePropertyName(bool* res) {
     if (token_ == Token::TK_NUMBER) {
       if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
         RAISE_WITH(
             "octal integer literal not allowed in strict code",
-            symbol::kDummySymbol);
+            ast::SymbolHolder());
       }
       const double val = lexer_.Numeric();
       dtoa::StringPieceDToA builder;
       builder.Build(val);
+      const std::size_t begin = lexer_.begin_position();
+      const std::size_t end = lexer_.end_position();
       const Symbol name = table_->Lookup(builder.buffer());
       Next();
-      return name;
+      return ast::SymbolHolder(name, begin, end);
     } else if (token_ == Token::TK_STRING) {
       if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
         RAISE_WITH(
             "octal escape sequence not allowed in strict code",
-            symbol::kDummySymbol);
+            ast::SymbolHolder());
       }
+      const std::size_t begin = lexer_.begin_position();
+      const std::size_t end = lexer_.end_position();
       const Symbol name = table_->Lookup(lexer_.Buffer());
       Next();
-      return name;
+      return ast::SymbolHolder(name, begin, end);
     } else {
       return ParseSymbol();
     }
   }
 
-  Symbol ParseSymbol() {
+  ast::SymbolHolder ParseSymbol() {
+    const std::size_t begin = lexer_.begin_position();
+    const std::size_t end = lexer_.end_position();
     const Symbol ident = table_->Lookup(lexer_.Buffer());
     Next();
-    return ident;
+    return ast::SymbolHolder(ident, begin, end);
   }
 
   Identifier* ParseIdentifier() {

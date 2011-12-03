@@ -141,6 +141,36 @@ class Scope : public ScopeBase<Factory> {
   bool with_statement_;
 };
 
+class SymbolHolder {
+ public:
+  SymbolHolder()
+    : symbol_(symbol::kDummySymbol),
+      begin_position_(0),
+      end_position_(0) {
+  }
+
+  Symbol symbol() const { return symbol_; }
+
+  bool IsDummy() const { return symbol_ == symbol::kDummySymbol; }
+
+  SymbolHolder(Symbol symbol,
+               std::size_t begin_position,
+               std::size_t end_position)
+    : symbol_(symbol),
+      begin_position_(begin_position),
+      end_position_(end_position) {
+  }
+
+  operator Symbol() const {
+    return symbol_;
+  }
+
+ private:
+  Symbol symbol_;
+  std::size_t begin_position_;
+  std::size_t end_position_;
+};
+
 template<typename Factory>
 class Inherit<Factory, kAstNode>
   : public SpaceObject,
@@ -393,15 +423,16 @@ INHERIT(Declaration);
 template<typename Factory>
 class Declaration : public DeclarationBase<Factory> {
  public:
-  Declaration(Symbol name, Maybe<Expression<Factory> > expr)
+  Declaration(const SymbolHolder& name,
+              Maybe<Expression<Factory> > expr)
     : name_(name),
       expr_(expr) {
   }
-  inline Symbol name() const { return name_; }
+  inline const SymbolHolder& name() const { return name_; }
   inline Maybe<Expression<Factory> > expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
-  Symbol name_;
+  SymbolHolder name_;
   Maybe<Expression<Factory> > expr_;
 };
 
@@ -571,19 +602,20 @@ template<typename Factory>
 class ContinueStatement : public ContinueStatementBase<Factory> {
  public:
   // label is maybe dummy
-  ContinueStatement(Symbol label, IterationStatement<Factory>** target)
+  ContinueStatement(const SymbolHolder& label,
+                    IterationStatement<Factory>** target)
     : label_(label),
       target_(target) {
     assert(target_);
   }
-  inline Symbol label() const { return label_; }
+  inline const SymbolHolder& label() const { return label_; }
   inline IterationStatement<Factory>* target() const {
     assert(target_ && *target_);
     return *target_;
   }
   DECLARE_DERIVED_NODE_TYPE(ContinueStatement)
  private:
-  Symbol label_;
+  SymbolHolder label_;
   IterationStatement<Factory>** target_;
 };
 
@@ -598,7 +630,8 @@ template<typename Factory>
 class BreakStatement : public BreakStatementBase<Factory> {
  public:
   // label is maybe dummy
-  BreakStatement(Symbol label, BreakableStatement<Factory>** target)
+  BreakStatement(const SymbolHolder& label,
+                 BreakableStatement<Factory>** target)
     : label_(label),
       target_(target) {
     // example >
@@ -608,7 +641,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
     // if above example, target is NULL
     assert(target_ || label_);
   }
-  inline Symbol label() const { return label_; }
+  inline const SymbolHolder& label() const { return label_; }
   inline BreakableStatement<Factory>* target() const {
     if (target_) {
       assert(*target_);
@@ -619,7 +652,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
   }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
  private:
-  Symbol label_;
+  SymbolHolder label_;
   BreakableStatement<Factory>** target_;
 };
 
@@ -675,15 +708,15 @@ INHERIT(LabelledStatement);
 template<typename Factory>
 class LabelledStatement : public LabelledStatementBase<Factory> {
  public:
-  LabelledStatement(Symbol name, Statement<Factory>* body)
+  LabelledStatement(const SymbolHolder& name, Statement<Factory>* body)
     : label_(name),
       body_(body) {
   }
-  inline Symbol label() const { return label_; }
+  inline const SymbolHolder& label() const { return label_; }
   inline Statement<Factory>* body() const { return body_; }
   DECLARE_DERIVED_NODE_TYPE(LabelledStatement)
  private:
-  Symbol label_;
+  SymbolHolder label_;
   Statement<Factory>* body_;
 };
 
@@ -775,7 +808,7 @@ class TryStatement : public TryStatementBase<Factory> {
  public:
   // catch_name is maybe dummy
   TryStatement(Block<Factory>* try_block,
-               Symbol catch_name,
+               const SymbolHolder& catch_name,
                Maybe<Block<Factory> > catch_block,
                Maybe<Block<Factory> > finally_block)
     : body_(try_block),
@@ -784,13 +817,13 @@ class TryStatement : public TryStatementBase<Factory> {
       finally_block_(finally_block) {
   }
   inline Block<Factory>* body() const { return body_; }
-  inline Symbol catch_name() const { return catch_name_; }
+  inline const SymbolHolder& catch_name() const { return catch_name_; }
   inline Maybe<Block<Factory> > catch_block() const { return catch_block_; }
   inline Maybe<Block<Factory> > finally_block() const { return finally_block_; }
   DECLARE_DERIVED_NODE_TYPE(TryStatement)
  private:
   Block<Factory>* body_;
-  Symbol catch_name_;
+  SymbolHolder catch_name_;
   Maybe<Block<Factory> > catch_block_;
   Maybe<Block<Factory> > finally_block_;
 };
@@ -1134,7 +1167,7 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
     SET  = 4
   };
   typedef std::tuple<PropertyDescriptorType,
-                     Symbol,
+                     SymbolHolder,
                      Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
   explicit ObjectLiteral(Properties* properties)
@@ -1142,14 +1175,14 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
   }
 
   static inline void AddDataProperty(Properties* prop,
-                                     Symbol key,
+                                     const SymbolHolder& key,
                                      Expression<Factory>* val) {
     prop->push_back(std::make_tuple(DATA, key, val));
   }
 
   static inline void AddAccessor(Properties* prop,
                                  PropertyDescriptorType type,
-                                 Symbol key,
+                                 const SymbolHolder& key,
                                  Expression<Factory>* val) {
     prop->push_back(std::make_tuple(type, key, val));
   }
@@ -1190,7 +1223,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
 
   // name maybe dummy
   FunctionLiteral(DeclType type,
-                  Symbol name,
+                  const SymbolHolder& name,
                   Symbols* params,
                   Statements* body,
                   Scope<Factory>* scope,
@@ -1207,7 +1240,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
       block_end_position_(end_position) {
   }
 
-  inline Symbol name() const { return name_; }
+  inline const SymbolHolder& name() const { return name_; }
   inline DeclType type() const { return type_; }
   inline const Symbols& params() const { return *params_; }
   inline const Statements& body() const { return *body_; }
@@ -1223,7 +1256,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
-  Symbol name_;
+  SymbolHolder name_;
   DeclType type_;
   Symbols* params_;
   Statements* body_;
@@ -1264,15 +1297,15 @@ INHERIT(IdentifierAccess);
 template<typename Factory>
 class IdentifierAccess : public IdentifierAccessBase<Factory> {
  public:
-  IdentifierAccess(Expression<Factory>* obj, Symbol key)
+  IdentifierAccess(Expression<Factory>* obj, const SymbolHolder& key)
     : key_(key) {
     PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
-  inline Symbol key() const { return key_; }
+  inline const SymbolHolder& key() const { return key_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
   ACCEPT_EXPRESSION_VISITOR
  private:
-  Symbol key_;
+  SymbolHolder key_;
 };
 
 // IndexAccess
