@@ -165,6 +165,9 @@ class SymbolHolder {
     return symbol_;
   }
 
+  std::size_t begin_position() const { return begin_position_; }
+  std::size_t end_position() const { return end_position_; }
+
  private:
   Symbol symbol_;
   std::size_t begin_position_;

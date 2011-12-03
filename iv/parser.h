@@ -96,8 +96,6 @@ namespace core {
 namespace detail {
 
 static const UString kUseStrict = ToUString("use strict");
-static const UString kGet = ToUString("get");
-static const UString kSet = ToUString("set");
 
 }  // namespace iv::core::detail
 
@@ -532,8 +530,6 @@ class Parser : private Noncopyable<> {
     do {
       Next();
       IS(Token::TK_IDENTIFIER);
-      const std::size_t begin_position = lexer_.begin_position();
-      std::size_t end_position = lexer_.end_position();
       const ast::SymbolHolder name = ParseSymbol();
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
@@ -553,13 +549,10 @@ class Parser : private Noncopyable<> {
         Next();
         // AssignmentExpression
         expr = ParseAssignmentExpression(contains_in, CHECK);
-        end_position = lexer_.previous_end_position();
-        decl = factory_->NewDeclaration(name, expr,
-                                        begin_position, end_position);
+        decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
-        decl = factory_->NewDeclaration(name, NULL,
-                                        begin_position, end_position);
+        decl = factory_->NewDeclaration(name, NULL);
       }
       decls->push_back(decl);
       scope_->AddUnresolved(name, is_const);
@@ -1107,7 +1100,6 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_IDENTIFIER);
     if (lexer_.NextIsColon()) {
       // LabelledStatement
-      const std::size_t begin_position = lexer_.begin_position();
       const ast::SymbolHolder label = ParseSymbol();
       assert(token_ == Token::TK_COLON);
       Next();
@@ -1125,7 +1117,7 @@ class Parser : private Noncopyable<> {
 
       Statement* const stmt = ParseStatement(CHECK);
       assert(expr && stmt);
-      return factory_->NewLabelledStatement(label, stmt, begin_position);
+      return factory_->NewLabelledStatement(label, stmt);
     }
     Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
@@ -1650,10 +1642,9 @@ class Parser : private Noncopyable<> {
         case Token::TK_PERIOD: {
           Next<IgnoreReservedWords>();  // IDENTIFIERNAME
           IS(Token::TK_IDENTIFIER);
-          const std::size_t begin_position = lexer_.begin_position();
           const ast::SymbolHolder name = ParseSymbol();
           assert(expr);
-          expr = factory_->NewIdentifierAccess(expr, name, begin_position);
+          expr = factory_->NewIdentifierAccess(expr, name);
           break;
         }
 
@@ -1903,15 +1894,15 @@ class Parser : private Noncopyable<> {
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
     while (token_ != Token::TK_RBRACE) {
       if (token_ == Token::TK_GET || token_ == Token::TK_SET) {
-        const std::size_t begin = lexer_.begin_position();
-        const std::size_t end = lexer_.end_position();
         const bool is_get = token_ == Token::TK_GET;
         // this is getter or setter or usual prop
         Next<IgnoreReservedWords>();  // IDENTIFIERNAME
         if (token_ == Token::TK_COLON) {
           // property
           const ast::SymbolHolder ident(
-              (is_get) ? symbol::get() : symbol::set(), begin, end);
+              (is_get) ? symbol::get() : symbol::set(),
+              lexer_.previous_begin_position(),
+              lexer_.previous_end_position());
           Next();
           expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
@@ -2193,33 +2184,36 @@ class Parser : private Noncopyable<> {
       const double val = lexer_.Numeric();
       dtoa::StringPieceDToA builder;
       builder.Build(val);
-      const std::size_t begin = lexer_.begin_position();
-      const std::size_t end = lexer_.end_position();
       const Symbol name = table_->Lookup(builder.buffer());
       Next();
-      return ast::SymbolHolder(name, begin, end);
+      return ast::SymbolHolder(
+          name,
+          lexer_.previous_begin_position(),
+          lexer_.previous_end_position());
     } else if (token_ == Token::TK_STRING) {
       if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
         RAISE_WITH(
             "octal escape sequence not allowed in strict code",
             ast::SymbolHolder());
       }
-      const std::size_t begin = lexer_.begin_position();
-      const std::size_t end = lexer_.end_position();
       const Symbol name = table_->Lookup(lexer_.Buffer());
       Next();
-      return ast::SymbolHolder(name, begin, end);
+      return ast::SymbolHolder(
+          name,
+          lexer_.previous_begin_position(),
+          lexer_.previous_end_position());
     } else {
       return ParseSymbol();
     }
   }
 
   ast::SymbolHolder ParseSymbol() {
-    const std::size_t begin = lexer_.begin_position();
-    const std::size_t end = lexer_.end_position();
     const Symbol ident = table_->Lookup(lexer_.Buffer());
     Next();
-    return ast::SymbolHolder(ident, begin, end);
+    return ast::SymbolHolder(
+        ident,
+        lexer_.previous_begin_position(),
+        lexer_.previous_end_position());
   }
 
   Identifier* ParseIdentifier() {
