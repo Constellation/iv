@@ -79,7 +79,7 @@ class BasicAstFactory {
 
   FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
                                       Maybe<Assigned> name,
-                                      Symbols* params,
+                                      Assigneds* params,
                                       Statements* body,
                                       Scope* scope,
                                       bool strict,

@@ -194,6 +194,8 @@ class AstNode : public AstNodeBase<Factory> {
       Maybe<Expression<Factory> > >::type MaybeExpressions;
   typedef typename SpaceVector<Factory,
                                Declaration<Factory>*>::type Declarations;
+  typedef typename SpaceVector<Factory,
+                               Assigned<Factory>*>::type Assigneds;
   typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
 
   IV_STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
@@ -1227,7 +1229,7 @@ template<typename Factory>
 class FunctionLiteral : public FunctionLiteralBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Statements Statements;
-  typedef typename AstNode<Factory>::Symbols Symbols;
+  typedef typename AstNode<Factory>::Assigneds Assigneds;
   enum DeclType {
     DECLARATION,
     STATEMENT,
@@ -1243,7 +1245,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   // name maybe dummy
   FunctionLiteral(DeclType type,
                   Maybe<Assigned<Factory> > name,
-                  Symbols* params,
+                  Assigneds* params,
                   Statements* body,
                   Scope<Factory>* scope,
                   bool strict,
@@ -1261,7 +1263,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
 
   inline Maybe<Assigned<Factory> > name() const { return name_; }
   inline DeclType type() const { return type_; }
-  inline const Symbols& params() const { return *params_; }
+  inline const Assigneds& params() const { return *params_; }
   inline const Statements& body() const { return *body_; }
   inline const Scope<Factory>& scope() const { return *scope_; }
   inline bool strict() const { return strict_; }
@@ -1277,7 +1279,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
  private:
   Maybe<Assigned<Factory> > name_;
   DeclType type_;
-  Symbols* params_;
+  Assigneds* params_;
   Statements* body_;
   Scope<Factory>* scope_;
   bool strict_;

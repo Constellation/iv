@@ -90,10 +90,10 @@ void Interpreter::Invoke(JSCodeFunction* code,
   {
     const std::size_t arg_count = args.size();
     std::size_t n = 0;
-    for (Symbols::const_iterator it = code->code()->params().begin(),
+    for (Assigneds::const_iterator it = code->code()->params().begin(),
          last = code->code()->params().end(); it != last; ++it) {
       ++n;
-      const Symbol arg_name = *it;
+      const Symbol arg_name = (*it)->symbol();
       if (!env->HasBinding(ctx_, arg_name)) {
         env->CreateMutableBinding(ctx_, arg_name,
                                   configurable_bindings, CHECK_IN_STMT);

@@ -227,10 +227,19 @@ class JSNormalArguments : public JSObject {
       binder->def(symbol::MakeSymbolFromIndex(index),
                   *it, ATTR::W | ATTR::E | ATTR::C);
       if (index < names_len) {
-        obj->mapping_[index] = names[index];
+        obj->mapping_[index] = GetSymbol(names, index);
       }
       index -= 1;
     }
+  }
+
+  template<typename Ident>
+  static Symbol GetSymbol(const Ident& ident, uint32_t index) {
+    return ident[index];
+  }
+
+  static Symbol GetSymbol(const Assigneds& ident, uint32_t index) {
+    return ident[index]->symbol();
   }
 
   JSDeclEnv* env_;

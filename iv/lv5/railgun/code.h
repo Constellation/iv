@@ -81,9 +81,9 @@ class Code : public radio::HeapObject<radio::POINTER> {
       name_ = func.name().Address()->symbol();
     }
     Names::iterator target = params_.begin();
-    for (Symbols::const_iterator it = func.params().begin(),
+    for (Assigneds::const_iterator it = func.params().begin(),
          last = func.params().end(); it != last; ++it, ++target) {
-      if ((*target = *it) == symbol::arguments()) {
+      if ((*target = (*it)->symbol()) == symbol::arguments()) {
         set_code_hiding_arguments();
       }
     }

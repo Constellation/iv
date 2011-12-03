@@ -421,10 +421,10 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
       Write(literal->name().Address()->symbol());
     }
     builder_.Append(",\"params\":[");
-    typename Symbols::const_iterator it = literal->params().begin();
-    const typename Symbols::const_iterator end = literal->params().end();
+    typename Assigneds::const_iterator it = literal->params().begin();
+    const typename Assigneds::const_iterator end = literal->params().end();
     while (it != end) {
-      Write(*it);
+      Write((*it)->symbol());
       ++it;
       if (it == end) {
         break;

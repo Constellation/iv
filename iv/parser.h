@@ -212,7 +212,7 @@ class Parser : private Noncopyable<> {
 // Program
 //   : SourceElements
   FunctionLiteral* ParseProgram() {
-    Symbols* params = factory_->template NewVector<Symbol>();
+    Assigneds* params = factory_->template NewVector<Assigned*>();
     Statements* body = factory_->template NewVector<Statement*>();
     Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
@@ -2006,7 +2006,7 @@ class Parser : private Noncopyable<> {
       kDetectFutureReservedWords
     } throw_error_if_strict_code = kDetectNone;
 
-    Symbols* const params = factory_->template NewVector<Symbol>();
+    Assigneds* const params = factory_->template NewVector<Assigned*>();
     Assigned* name = NULL;
 
     if (arg_type == FunctionLiteral::GENERAL) {
@@ -2066,7 +2066,7 @@ class Parser : private Noncopyable<> {
           }
         }
       }
-      params->push_back(ident);
+      params->push_back(factory_->NewAssigned(ident));
       EXPECT(Token::TK_RPAREN);
     } else {
       if (token_ != Token::TK_RPAREN) {
@@ -2096,7 +2096,7 @@ class Parser : private Noncopyable<> {
               throw_error_if_strict_code_line = lexer_.line_number();
             }
           }
-          params->push_back(ident);
+          params->push_back(factory_->NewAssigned(ident));
           param_set.insert(ident);
           if (token_ == Token::TK_COMMA) {
             Next(true);
