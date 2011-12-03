@@ -2430,6 +2430,9 @@ inline Code* CompileEval(Context* ctx,
 inline Code* CompileIndirectEval(Context* ctx,
                                  const FunctionLiteral& eval,
                                  JSScript* script) {
+  if (eval.strict()) {
+    return CompileFunction(ctx, eval, script);
+  }
   Compiler compiler(ctx);
   return compiler.CompileIndirectEval(eval, script);
 }
