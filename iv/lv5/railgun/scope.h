@@ -171,7 +171,7 @@ class FunctionScope : public VariableScope {
       const Variables& vars = scope.variables();
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first;
+        const Symbol name = it->first->symbol();
         if (map_.find(name) != map_.end()) {
           map_[name] = std::make_tuple(
               TypeUpgrade(std::get<0>(map_[name]), STACK), 0, false);

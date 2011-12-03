@@ -158,7 +158,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   for (Scope::Variables::const_iterator it = scope.variables().begin(),
        last = scope.variables().end(); it != last; ++it) {
     const Scope::Variable& var = *it;
-    const Symbol dn = var.first;
+    const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);
@@ -247,7 +247,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
   for (Scope::Variables::const_iterator it = scope.variables().begin(),
        last = scope.variables().end(); it != last; ++it) {
     const Scope::Variable& var = *it;
-    const Symbol dn = var.first;
+    const Symbol dn = var.first->symbol();
     if (!env->HasBinding(ctx_, dn)) {
       env->CreateMutableBinding(ctx_, dn,
                                 configurable_bindings, CHECK_IN_STMT);

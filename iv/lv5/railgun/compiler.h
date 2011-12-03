@@ -2033,7 +2033,7 @@ class Compiler
       const Variables& vars = scope.variables();
       for (Variables::const_iterator it = vars.begin(),
            last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first;
+        const Symbol name = it->first->symbol();
         if (already_declared.find(name) == already_declared.end()) {
           code_->varnames_.push_back(name);
           already_declared.insert(name);

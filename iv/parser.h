@@ -554,7 +554,7 @@ class Parser : private Noncopyable<> {
         decl = factory_->NewDeclaration(name, NULL);
       }
       decls->push_back(decl);
-      scope_->AddUnresolved(name->symbol(), is_const);
+      scope_->AddUnresolved(name, is_const);
     } while (token_ == Token::TK_COMMA);
 
     return decls;
@@ -1139,7 +1139,7 @@ class Parser : private Noncopyable<> {
     // define named function as variable declaration
     assert(expr);
     assert(expr->name());
-    scope_->AddUnresolved(expr->name().Address()->symbol(), false);
+    scope_->AddUnresolved(expr->name().Address(), false);
     return factory_->NewFunctionStatement(expr);
   }
 

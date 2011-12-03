@@ -84,7 +84,7 @@ INHERIT(Scope);
 template<typename Factory>
 class Scope : public ScopeBase<Factory> {
  public:
-  typedef std::pair<Symbol, bool> Variable;
+  typedef std::pair<Assigned<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
   typedef typename SpaceVector<
             Factory,
@@ -99,7 +99,7 @@ class Scope : public ScopeBase<Factory> {
       direct_call_to_eval_(false),
       with_statement_(false) {
   }
-  void AddUnresolved(Symbol name, bool is_const) {
+  void AddUnresolved(Assigned<Factory>* name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
   }
   void AddFunctionDeclaration(FunctionLiteral<Factory>* func) {
