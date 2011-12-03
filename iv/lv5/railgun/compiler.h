@@ -706,8 +706,6 @@ class Compiler
       lhs = stmt->each()->AsExpressionStatement()->expr();
     }
 
-    assert(lhs->IsValidLeftHandSide());
-
     {
       stmt->enumerable()->Accept(this);
       stack_depth_.BaseUp(1);
