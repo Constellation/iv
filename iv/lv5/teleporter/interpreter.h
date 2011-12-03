@@ -456,7 +456,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
 
 
 void Interpreter::Visit(const ForInStatement* stmt) {
-  const Expression* lexpr;
+  const Expression* lexpr = NULL;
   Symbol for_decl = symbol::kDummySymbol;
   if (stmt->each()->AsVariableStatement()) {
     const Declaration* decl =
@@ -472,7 +472,6 @@ void Interpreter::Visit(const ForInStatement* stmt) {
       const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
       PutValue(lhs, val, CHECK_IN_STMT);
     }
-    lexpr = NULL;
   } else {
     assert(stmt->each()->AsExpressionStatement());
     lexpr = stmt->each()->AsExpressionStatement()->expr();

@@ -692,13 +692,11 @@ class Compiler
   void Visit(const ForInStatement* stmt) {
     ContinueTarget jump(this, stmt);
 
-    const Expression* lhs;
+    const Expression* lhs = NULL;
     Symbol for_decl = symbol::kDummySymbol;
     if (const VariableStatement* var = stmt->each()->AsVariableStatement()) {
       const Declaration* decl = var->decls().front();
       Visit(decl);
-      // Identifier
-      lhs = NULL;
       for_decl = decl->name()->symbol();
     } else {
       // LeftHandSideExpression

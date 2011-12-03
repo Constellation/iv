@@ -524,9 +524,6 @@ class Parser : private Noncopyable<> {
                                           bool is_const,
                                           bool contains_in,
                                           bool *res) {
-    Expression* expr;
-    Declaration* decl;
-
     do {
       Next();
       IS(Token::TK_IDENTIFIER);
@@ -546,10 +543,11 @@ class Parser : private Noncopyable<> {
       }
 
       Assigned* name = factory_->NewAssigned(sym);
+      Declaration* decl;
       if (token_ == Token::TK_ASSIGN) {
         Next();
         // AssignmentExpression
-        expr = ParseAssignmentExpression(contains_in, CHECK);
+        Expression* expr = ParseAssignmentExpression(contains_in, CHECK);
         decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
