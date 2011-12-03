@@ -1019,7 +1019,7 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     Block* catch_block = NULL;
     Block* finally_block = NULL;
-    ast::SymbolHolder name;
+    Assigned* name = NULL;
     bool has_catch_or_finally = false;
 
     Next();
@@ -1033,11 +1033,11 @@ class Parser : private Noncopyable<> {
       Next();
       EXPECT(Token::TK_LPAREN);
       IS(Token::TK_IDENTIFIER);
-      name = ParseSymbol();
+      const ast::SymbolHolder sym = ParseSymbol();
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
-        const EvalOrArguments val = IsEvalOrArguments(name);
+        const EvalOrArguments val = IsEvalOrArguments(sym);
         if (val) {
           if (val == kEval) {
             RAISE("catch placeholder \"eval\" not allowed in strict code");
@@ -1050,6 +1050,7 @@ class Parser : private Noncopyable<> {
       }
       EXPECT(Token::TK_RPAREN);
       IS(Token::TK_LBRACE);
+      name = factory_->NewAssigned(sym);
       catch_block = ParseBlock(CHECK);
     }
 

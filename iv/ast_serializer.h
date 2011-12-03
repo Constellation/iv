@@ -237,9 +237,9 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
   void Visit(const TryStatement* trystmt) {
     builder_.Append("{\"type\":\"try\",\"body\":");
     trystmt->body()->Accept(this);
-    if (trystmt->catch_name() != symbol::kDummySymbol) {
+    if (trystmt->catch_name()) {
       builder_.Append(",\"catch\":{\"type\":\"catch\",\"name\":");
-      Write(trystmt->catch_name());
+      Write(trystmt->catch_name().Address()->symbol());
       builder_.Append(",\"body\":");
       Visit(trystmt->catch_block().Address());
       builder_.Append('}');

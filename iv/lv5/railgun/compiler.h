@@ -1011,7 +1011,7 @@ class Compiler
           stack_depth_.GetStackBase(),
           dynamic_env_level());
       stack_depth_.Up();  // exception handler
-      const Symbol catch_symbol = stmt->catch_name();
+      const Symbol catch_symbol = stmt->catch_name().Address()->symbol();
       Emit<OP::TRY_CATCH_SETUP>(SymbolToNameIndex(catch_symbol));
       PushLevelWith();
       stack_depth_.Down();

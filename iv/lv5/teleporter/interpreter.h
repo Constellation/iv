@@ -661,7 +661,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
       ctx_->set_mode(Context::NORMAL);
       ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
-      const Symbol name = stmt->catch_name();
+      const Symbol name = stmt->catch_name().Address()->symbol();
       JSStaticEnv* const catch_env = JSStaticEnv::New(ctx_, old_env, name, ex);
       {
         const LexicalEnvSwitcher switcher(ctx_, catch_env);

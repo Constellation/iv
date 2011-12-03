@@ -331,7 +331,7 @@ class BasicAstFactory {
   }
 
   TryStatement* NewTryStatement(Block* try_block,
-                                const SymbolHolder& catch_name,
+                                Maybe<Assigned> catch_name,
                                 Maybe<Block> catch_block,
                                 Maybe<Block> finally_block,
                                 std::size_t begin) {

@@ -813,7 +813,7 @@ class TryStatement : public TryStatementBase<Factory> {
  public:
   // catch_name is maybe dummy
   TryStatement(Block<Factory>* try_block,
-               const SymbolHolder& catch_name,
+               Maybe<Assigned<Factory> > catch_name,
                Maybe<Block<Factory> > catch_block,
                Maybe<Block<Factory> > finally_block)
     : body_(try_block),
@@ -822,13 +822,13 @@ class TryStatement : public TryStatementBase<Factory> {
       finally_block_(finally_block) {
   }
   inline Block<Factory>* body() const { return body_; }
-  inline const SymbolHolder& catch_name() const { return catch_name_; }
+  inline Maybe<Assigned<Factory> > catch_name() const { return catch_name_; }
   inline Maybe<Block<Factory> > catch_block() const { return catch_block_; }
   inline Maybe<Block<Factory> > finally_block() const { return finally_block_; }
   DECLARE_DERIVED_NODE_TYPE(TryStatement)
  private:
   Block<Factory>* body_;
-  SymbolHolder catch_name_;
+  Maybe<Assigned<Factory> > catch_name_;
   Maybe<Block<Factory> > catch_block_;
   Maybe<Block<Factory> > finally_block_;
 };
