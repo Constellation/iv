@@ -426,16 +426,16 @@ INHERIT(Declaration);
 template<typename Factory>
 class Declaration : public DeclarationBase<Factory> {
  public:
-  Declaration(const SymbolHolder& name,
+  Declaration(Assigned<Factory>* name,
               Maybe<Expression<Factory> > expr)
     : name_(name),
       expr_(expr) {
   }
-  inline const SymbolHolder& name() const { return name_; }
+  inline Assigned<Factory>* name() const { return name_; }
   inline Maybe<Expression<Factory> > expr() const { return expr_; }
   DECLARE_DERIVED_NODE_TYPE(Declaration)
  private:
-  SymbolHolder name_;
+  Assigned<Factory>* name_;
   Maybe<Expression<Factory> > expr_;
 };
 
@@ -642,7 +642,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
     //     test: break test;
     //   } while (0);
     // if above example, target is NULL
-    assert(target_ || label_);
+    assert(target_ || !label_.IsDummy());
   }
   inline const SymbolHolder& label() const { return label_; }
   inline BreakableStatement<Factory>* target() const {
@@ -1039,11 +1039,27 @@ INHERIT(Identifier);
 template<typename Factory>
 class Identifier : public IdentifierBase<Factory> {
  public:
-  typedef typename SpaceUString<Factory>::type value_type;
   Identifier(Symbol sym) : sym_(sym) { }
   Symbol symbol() const { return sym_; }
   inline bool IsValidLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
+  ACCEPT_EXPRESSION_VISITOR
+ protected:
+  Symbol sym_;
+};
+
+// Assigned 
+template<typename Factory>
+class Inherit<Factory, kAssigned> : public AstNode<Factory> {
+};
+INHERIT(Assigned);
+
+template<typename Factory>
+class Assigned : public AssignedBase<Factory> {
+ public:
+  Assigned(Symbol sym) : sym_(sym) { }
+  Symbol symbol() const { return sym_; }
+  DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
   Symbol sym_;
@@ -1226,7 +1242,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
 
   // name maybe dummy
   FunctionLiteral(DeclType type,
-                  const SymbolHolder& name,
+                  Maybe<Assigned<Factory> > name,
                   Symbols* params,
                   Statements* body,
                   Scope<Factory>* scope,
@@ -1243,7 +1259,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
       block_end_position_(end_position) {
   }
 
-  inline const SymbolHolder& name() const { return name_; }
+  inline Maybe<Assigned<Factory> > name() const { return name_; }
   inline DeclType type() const { return type_; }
   inline const Symbols& params() const { return *params_; }
   inline const Statements& body() const { return *body_; }
@@ -1259,7 +1275,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
-  SymbolHolder name_;
+  Maybe<Assigned<Factory> > name_;
   DeclType type_;
   Symbols* params_;
   Statements* body_;

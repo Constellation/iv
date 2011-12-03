@@ -68,6 +68,7 @@ V(Call)\
 IV_EXPRESSION_DERIVED_NODE_LIST(V)
 
 #define IV_OTHER_DERIVED_NODE_LIST(V)\
+V(Assigned)\
 V(Declaration)
 
 #define IV_OTHER_NODE_LIST(V)\

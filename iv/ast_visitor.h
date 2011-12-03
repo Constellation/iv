@@ -62,6 +62,7 @@ class BasicAstVisitor
   virtual void Visit(typename add<ConditionalExpression<Factory> >::type cond) = 0;  //NOLINT
   virtual void Visit(typename add<UnaryOperation<Factory> >::type unary) = 0;  //NOLINT
   virtual void Visit(typename add<PostfixExpression<Factory> >::type postfix) = 0;  //NOLINT
+  virtual void Visit(typename add<Assigned<Factory> >::type assigned) = 0;  //NOLINT
 
   virtual void Visit(typename add<StringLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<NumberLiteral<Factory> >::type literal) = 0;  //NOLINT
@@ -134,6 +135,7 @@ class BasicExpressionVisitor
   virtual void Visit(typename add<UnaryOperation<Factory> >::type unary) = 0;  //NOLINT
   virtual void Visit(typename add<PostfixExpression<Factory> >::type postfix) = 0;  //NOLINT
 
+  virtual void Visit(typename add<Assigned<Factory> >::type assigned) = 0;  //NOLINT
   virtual void Visit(typename add<StringLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<NumberLiteral<Factory> >::type literal) = 0;  //NOLINT
   virtual void Visit(typename add<Identifier<Factory> >::type literal) = 0;  //NOLINT

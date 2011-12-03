@@ -41,6 +41,12 @@ class BasicAstFactory {
         begin, end);
   }
 
+  Assigned* NewAssigned(const SymbolHolder& holder) {
+    return Location(
+        new(static_cast<Factory*>(this)) Assigned(holder),
+        holder.begin_position(), holder.end_position());
+  }
+
   NumberLiteral* NewReducedNumberLiteral(const double& val) {
     return Location(
         new(static_cast<Factory*>(this)) NumberLiteral(val), 0, 0);
@@ -72,7 +78,7 @@ class BasicAstFactory {
   }
 
   FunctionLiteral* NewFunctionLiteral(typename FunctionLiteral::DeclType type,
-                                      const SymbolHolder& name,
+                                      Maybe<Assigned> name,
                                       Symbols* params,
                                       Statements* body,
                                       Scope* scope,
@@ -101,10 +107,9 @@ class BasicAstFactory {
         begin, end);
   }
 
-  ObjectLiteral*
-      NewObjectLiteral(typename ObjectLiteral::Properties* properties,
-                       std::size_t begin,
-                       std::size_t end) {
+  ObjectLiteral* NewObjectLiteral(
+      typename ObjectLiteral::Properties* properties,
+      std::size_t begin, std::size_t end) {
     return Location(
         new(static_cast<Factory*>(this)) ObjectLiteral(properties),
         begin, end);
@@ -203,12 +208,12 @@ class BasicAstFactory {
         begin, end);
   }
 
-  Declaration* NewDeclaration(const SymbolHolder& name,
+  Declaration* NewDeclaration(Assigned* name,
                               Maybe<Expression> expr) {
     return Location(
         new(static_cast<Factory*>(this)) Declaration(name, expr),
-        name.begin_position(),
-        (expr) ? (*expr).end_position() : name.end_position());
+        name->begin_position(),
+        (expr) ? (*expr).end_position() : name->end_position());
   }
 
   IfStatement* NewIfStatement(Expression* cond,

@@ -114,7 +114,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
        last = scope.function_declarations().end();
        it != last; ++it) {
     const FunctionLiteral* f = *it;
-    const Symbol fn = f->name();
+    const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     const JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -207,7 +207,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
        last = scope.function_declarations().end();
        it != last; ++it) {
     const FunctionLiteral* f = *it;
-    const Symbol fn = f->name();
+    const Symbol fn = f->name().Address()->symbol();
     EVAL_IN_STMT(f);
     JSVal fo = ctx_->ret();
     if (!env->HasBinding(ctx_, fn)) {
@@ -309,8 +309,8 @@ void Interpreter::Visit(const Block* block) {
 void Interpreter::Visit(const FunctionStatement* stmt) {
   const FunctionLiteral* const func = stmt->function();
   // FunctionStatement must have name
-  assert(func->name() != symbol::kDummySymbol);
-  Resolve(func->name());
+  assert(func->name());
+  Resolve(func->name().Address()->symbol());
   const JSVal lhs = ctx_->ret();
   Visit(func);
   const JSVal val = GetValue(ctx_->ret(), CHECK_IN_STMT);
@@ -323,7 +323,7 @@ void Interpreter::Visit(const VariableStatement* var) {
   for (Declarations::const_iterator it = var->decls().begin(),
        last = var->decls().end(); it != last; ++it) {
     const Declaration* decl = *it;
-    Resolve(decl->name());
+    Resolve(decl->name()->symbol());
     const JSVal lhs = ctx_->ret();
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       EVAL_IN_STMT(expr.Address());
@@ -461,7 +461,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   if (stmt->each()->AsVariableStatement()) {
     const Declaration* decl =
         stmt->each()->AsVariableStatement()->decls().front();
-    for_decl = decl->name();
+    for_decl = decl->name()->symbol();
     Resolve(for_decl);
     if (ctx_->IsError()) {
       RETURN_STMT(Context::THROW, JSEmpty, NULL);

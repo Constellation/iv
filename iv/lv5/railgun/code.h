@@ -54,7 +54,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       has_eval_(false),
       has_arguments_(false),
       has_arguments_assign_(false),
-      has_name_(func.name() != symbol::kDummySymbol),
+      has_name_(func.name()),
       has_declarative_env_(true),
       arguments_hiding_(false),
       scope_nest_count_(0),
@@ -78,7 +78,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       exception_table_(),
       construct_map_(NULL) {
     if (has_name_) {
-      name_ = func.name();
+      name_ = func.name().Address()->symbol();
     }
     Names::iterator target = params_.begin();
     for (Symbols::const_iterator it = func.params().begin(),

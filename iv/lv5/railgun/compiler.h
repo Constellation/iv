@@ -469,7 +469,7 @@ class Compiler
   void Visit(const FunctionStatement* stmt) {
     const FunctionLiteral& func = *stmt->function();
     assert(func.name());  // FunctionStatement must have name
-    const uint32_t index = SymbolToNameIndex(func.name());
+    const uint32_t index = SymbolToNameIndex(func.name().Address()->symbol());
     Visit(&func);
     EmitStoreName(index);
     Emit<OP::POP_TOP>();
@@ -699,7 +699,7 @@ class Compiler
       Visit(decl);
       // Identifier
       lhs = NULL;
-      for_decl = decl->name();
+      for_decl = decl->name()->symbol();
     } else {
       // LeftHandSideExpression
       assert(stmt->each()->AsExpressionStatement());
@@ -823,7 +823,7 @@ class Compiler
   }
 
   void Visit(const BreakStatement* stmt) {
-    if (!stmt->target() && stmt->label() != symbol::kDummySymbol) {
+    if (!stmt->target() && !stmt->label().IsDummy()) {
       // through
     } else {
       const JumpEntry& entry = jump_table_[stmt->target()];
@@ -1675,6 +1675,8 @@ class Compiler
     point.LevelCheck(1);
   }
 
+  void Visit(const Assigned* lit) { }
+
   void Visit(const Identifier* lit) {
     // directlly extract value and set to top version
     DepthPoint point(&stack_depth_);
@@ -1840,7 +1842,7 @@ class Compiler
 
   void Visit(const Declaration* decl) {
     DepthPoint point(&stack_depth_);
-    const uint32_t index = SymbolToNameIndex(decl->name());
+    const uint32_t index = SymbolToNameIndex(decl->name()->symbol());
     if (const core::Maybe<const Expression> expr = decl->expr()) {
       expr.Address()->Accept(this);
       EmitStoreName(index);
@@ -2012,7 +2014,7 @@ class Compiler
            last = functions.end(); it != last; ++it) {
         const FunctionLiteral* const func = *it;
         Visit(func);
-        const Symbol sym = func->name();
+        const Symbol sym = func->name().Address()->symbol();
         if (sym == symbol::arguments()) {
           // arguments hiding optimization
           // example:

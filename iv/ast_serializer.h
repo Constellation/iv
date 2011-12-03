@@ -75,7 +75,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     while (it != end) {
       const Declaration& decl = **it;
       builder_.Append("{\"type\":\"decl\",\"name\":");
-      Write(decl.name());
+      Write(decl.name()->symbol());
       builder_.Append(",\"exp\":");
       if (const Maybe<const Expression> expr = decl.expr()) {
         (*expr).Accept(this);
@@ -324,6 +324,8 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
     builder_.Append("\"}");
   }
 
+  void Visit(const Assigned* assigned) { }
+
   void Visit(const Identifier* literal) {
     builder_.Append("{\"type\":\"identifier\",\"value\":\"");
     builder_.Append(symbol::GetSymbolString(literal->symbol()));
@@ -415,8 +417,8 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Visit(const FunctionLiteral* literal) {
     builder_.Append("{\"type\":\"function\",\"name\":");
-    if (literal->name() != symbol::kDummySymbol) {
-      Write(literal->name());
+    if (literal->name()) {
+      Write(literal->name().Address()->symbol());
     }
     builder_.Append(",\"params\":[");
     typename Symbols::const_iterator it = literal->params().begin();

@@ -57,6 +57,7 @@ class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
   inline void Visit(const UnaryOperation* unary);
   inline void Visit(const PostfixExpression* postfix);
   inline void Visit(const StringLiteral* literal);
+  inline void Visit(const Assigned* assigned) { };
   inline void Visit(const NumberLiteral* literal);
   inline void Visit(const Identifier* literal);
   inline void Visit(const ThisLiteral* literal);

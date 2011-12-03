@@ -82,7 +82,7 @@ class JSCodeFunction : public JSFunction {
 
   core::UString GetName() const {
     if (HasName()) {
-      return symbol::GetSymbolString(function_->name());
+      return symbol::GetSymbolString(name());
     } else {
       return core::UStringPiece();
     }
@@ -98,11 +98,11 @@ class JSCodeFunction : public JSFunction {
   }
 
   bool HasName() const {
-    return (function_->name() != symbol::kDummySymbol);
+    return function_->name();
   }
 
   Symbol name() const {
-    return function_->name();
+    return function_->name().Address()->symbol();
   }
 
  private:
@@ -138,11 +138,11 @@ class JSCodeFunction : public JSFunction {
                        ATTR::WRITABLE),
         false, &e);
     if (HasName()) {
-      const core::UString name(symbol::GetSymbolString(function_->name()));
-      if (!name.empty()) {
+      const core::UString str(symbol::GetSymbolString(name()));
+      if (!str.empty()) {
         DefineOwnProperty(
             ctx, context::Intern(ctx, "name"),
-            DataDescriptor(JSString::New(ctx, name),
+            DataDescriptor(JSString::New(ctx, str),
                            ATTR::NONE),
             false, &e);
       } else {

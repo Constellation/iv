@@ -229,7 +229,7 @@ class Parser : private Noncopyable<> {
 #endif
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
-                                     ast::SymbolHolder(),
+                                     NULL,
                                      params,
                                      body,
                                      scope,
@@ -530,11 +530,11 @@ class Parser : private Noncopyable<> {
     do {
       Next();
       IS(Token::TK_IDENTIFIER);
-      const ast::SymbolHolder name = ParseSymbol();
+      const ast::SymbolHolder sym = ParseSymbol();
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
-        const EvalOrArguments val = IsEvalOrArguments(name);
+        const EvalOrArguments val = IsEvalOrArguments(sym);
         if (val) {
           if (val == kEval) {
             RAISE("assignment to \"eval\" not allowed in strict code");
@@ -545,6 +545,7 @@ class Parser : private Noncopyable<> {
         }
       }
 
+      Assigned* name = factory_->NewAssigned(sym);
       if (token_ == Token::TK_ASSIGN) {
         Next();
         // AssignmentExpression
@@ -555,7 +556,7 @@ class Parser : private Noncopyable<> {
         decl = factory_->NewDeclaration(name, NULL);
       }
       decls->push_back(decl);
-      scope_->AddUnresolved(name, is_const);
+      scope_->AddUnresolved(name->symbol(), is_const);
     } while (token_ == Token::TK_COMMA);
 
     return decls;
@@ -1116,7 +1117,7 @@ class Parser : private Noncopyable<> {
       const LabelSwitcher label_switcher(this, labels, exist_labels);
 
       Statement* const stmt = ParseStatement(CHECK);
-      assert(expr && stmt);
+      assert(stmt);
       return factory_->NewLabelledStatement(label, stmt);
     }
     Expression* const expr = ParseExpression(true, CHECK);
@@ -1139,8 +1140,8 @@ class Parser : private Noncopyable<> {
         CHECK);
     // define named function as variable declaration
     assert(expr);
-    assert(!expr->name().IsDummy());
-    scope_->AddUnresolved(expr->name(), false);
+    assert(expr->name());
+    scope_->AddUnresolved(expr->name().Address()->symbol(), false);
     return factory_->NewFunctionStatement(expr);
   }
 
@@ -2008,7 +2009,7 @@ class Parser : private Noncopyable<> {
     } throw_error_if_strict_code = kDetectNone;
 
     Symbols* const params = factory_->template NewVector<Symbol>();
-    ast::SymbolHolder name;
+    Assigned* name = NULL;
 
     if (arg_type == FunctionLiteral::GENERAL) {
       assert(token_ == Token::TK_FUNCTION);
@@ -2016,19 +2017,20 @@ class Parser : private Noncopyable<> {
       const Token::Type current = token_;
       if (current == Token::TK_IDENTIFIER ||
           Token::IsAddedFutureReservedWordInStrictCode(current)) {
-        name = ParseSymbol();
+        const ast::SymbolHolder sym = ParseSymbol();
         if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         } else {
           assert(current == Token::TK_IDENTIFIER);
-          const EvalOrArguments val = IsEvalOrArguments(name);
+          const EvalOrArguments val = IsEvalOrArguments(sym);
           if (val) {
             throw_error_if_strict_code = (val == kEval) ?
                 kDetectEvalName : kDetectArgumentsName;
             throw_error_if_strict_code_line = lexer_.line_number();
           }
         }
+        name = factory_->NewAssigned(sym);
       } else if (decl_type == FunctionLiteral::DECLARATION ||
                  decl_type == FunctionLiteral::STATEMENT) {
         IS(Token::TK_IDENTIFIER);
