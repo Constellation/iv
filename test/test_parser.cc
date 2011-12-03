@@ -10,10 +10,11 @@ class AstFactory
     public iv::core::ast::BasicAstFactory<AstFactory> { };
 
 TEST(ParserCase, StringTest) {
+  iv::core::SymbolTable table;
   typedef iv::core::Parser<AstFactory, std::string> Parser;
   AstFactory factory;
   std::string src("var i = 20;");
-  Parser parser(&factory, src);
+  Parser parser(&factory, src, &table);
   const Parser::FunctionLiteral* global = parser.ParseProgram();
   EXPECT_TRUE(global);
   iv::core::ast::AstSerializer<AstFactory> serializer;
