@@ -198,6 +198,23 @@ class Parser : private Noncopyable<> {
     SymbolSet* labels_;
   };
 
+  class Unresolved {
+   public:
+    explicit Unresolved(SymbolSet** unresolved)
+      : unresolved_(unresolved),
+        previous_(*unresolved),
+        content_() {
+      *unresolved_ = &content_;
+    }
+    ~Unresolved() {
+      *unresolved_ = previous_;
+    }
+   private:
+    SymbolSet** unresolved_;
+    SymbolSet* previous_;
+    SymbolSet content_;
+  };
+
   Parser(Factory* factory, const Source& source, SymbolTable* table)
     : lexer_(&source),
       error_(),
@@ -205,6 +222,7 @@ class Parser : private Noncopyable<> {
       error_state_(0),
       factory_(factory),
       scope_(NULL),
+      unresolved_(NULL),
       target_(NULL),
       labels_(NULL),
       table_(table) {
@@ -215,6 +233,7 @@ class Parser : private Noncopyable<> {
   FunctionLiteral* ParseProgram() {
     Assigneds* params = factory_->template NewVector<Assigned*>();
     Statements* body = factory_->template NewVector<Statement*>();
+    const Unresolved unresolved(&unresolved_);
     Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
     bool error_flag = true;
@@ -223,11 +242,6 @@ class Parser : private Noncopyable<> {
     Next();
     const bool strict = ParseSourceElements(Token::TK_EOS, body, CHECK);
     const std::size_t end_position = lexer_.end_position();
-#ifdef DEBUG
-    if (error_flag) {
-      assert(params && body && scope);
-    }
-#endif
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
                                      NULL,
@@ -532,14 +546,10 @@ class Parser : private Noncopyable<> {
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
-        const EvalOrArguments val = IsEvalOrArguments(sym);
-        if (val) {
-          if (val == kEval) {
-            RAISE("assignment to \"eval\" not allowed in strict code");
-          } else {
-            assert(val == kArguments);
-            RAISE("assignment to \"arguments\" not allowed in strict code");
-          }
+        if (sym == symbol::eval()) {
+          RAISE("assignment to \"eval\" not allowed in strict code");
+        } else if (sym == symbol::arguments()) {
+          RAISE("assignment to \"arguments\" not allowed in strict code");
         }
       }
 
@@ -1038,15 +1048,10 @@ class Parser : private Noncopyable<> {
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
-        const EvalOrArguments val = IsEvalOrArguments(sym);
-        if (val) {
-          if (val == kEval) {
-            RAISE("catch placeholder \"eval\" not allowed in strict code");
-          } else {
-            assert(val == kArguments);
-            RAISE(
-                "catch placeholder \"arguments\" not allowed in strict code");
-          }
+        if (sym == symbol::eval()) {
+          RAISE("catch placeholder \"eval\" not allowed in strict code");
+        } else if (sym == symbol::arguments()) {
+          RAISE("catch placeholder \"arguments\" not allowed in strict code");
         }
       }
       EXPECT(Token::TK_RPAREN);
@@ -1177,15 +1182,11 @@ class Parser : private Noncopyable<> {
     }
     // section 11.13.1 throwing SyntaxError
     if (strict_ && result->AsIdentifier()) {
-      const EvalOrArguments val =
-          IsEvalOrArguments(result->AsIdentifier()->symbol());
-      if (val) {
-        if (val == kEval) {
-          RAISE("assignment to \"eval\" not allowed in strict code");
-        } else {
-          assert(val == kArguments);
-          RAISE("assignment to \"arguments\" not allowed in strict code");
-        }
+      const Symbol sym = result->AsIdentifier()->symbol();
+      if (sym == symbol::eval()) {
+        RAISE("assignment to \"eval\" not allowed in strict code");
+      } else if (sym == symbol::arguments()) {
+        RAISE("assignment to \"arguments\" not allowed in strict code");
       }
     }
     const Token::Type op = token_;
@@ -1540,17 +1541,13 @@ class Parser : private Noncopyable<> {
         }
         // section 11.4.4, 11.4.5 throwing SyntaxError
         if (strict_ && expr->AsIdentifier()) {
-          const EvalOrArguments val =
-              IsEvalOrArguments(expr->AsIdentifier()->symbol());
-          if (val) {
-            if (val == kEval) {
-              RAISE("prefix expression to \"eval\" "
-                    "not allowed in strict code");
-            } else {
-              assert(val == kArguments);
-              RAISE("prefix expression to \"arguments\" "
-                    "not allowed in strict code");
-            }
+          const Symbol sym = expr->AsIdentifier()->symbol();
+          if (sym == symbol::eval()) {
+            RAISE("prefix expression to \"eval\" "
+                  "not allowed in strict code");
+          } else if (sym == symbol::arguments()) {
+            RAISE("prefix expression to \"arguments\" "
+                  "not allowed in strict code");
           }
         }
         assert(expr);
@@ -1577,16 +1574,12 @@ class Parser : private Noncopyable<> {
       }
       // section 11.3.1, 11.3.2 throwing SyntaxError
       if (strict_ && expr->AsIdentifier()) {
-        const EvalOrArguments val =
-            IsEvalOrArguments(expr->AsIdentifier()->symbol());
-        if (val) {
-          if (val == kEval) {
-            RAISE("postfix expression to \"eval\" not allowed in strict code");
-          } else {
-            assert(val == kArguments);
-            RAISE("postfix expression to \"arguments\" "
-                  "not allowed in strict code");
-          }
+        const Symbol sym = expr->AsIdentifier()->symbol();
+        if (sym == symbol::eval()) {
+          RAISE("postfix expression to \"eval\" not allowed in strict code");
+        } else if (sym == symbol::arguments()) {
+          RAISE("postfix expression to \"arguments\" "
+                "not allowed in strict code");
         }
       }
       assert(expr);
@@ -1652,7 +1645,7 @@ class Parser : private Noncopyable<> {
             assert(expr && args);
             // record eval call
             if (expr->AsIdentifier() &&
-                IsEvalOrArguments(expr->AsIdentifier()->symbol()) == kEval) {
+                expr->AsIdentifier()->symbol() == symbol::eval()) {
               // this is maybe direct call to eval
               scope_->RecordDirectCallToEval();
             }
@@ -1990,7 +1983,7 @@ class Parser : private Noncopyable<> {
       bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
-    std::unordered_set<Symbol> param_set;
+    SymbolSet param_set;
     std::size_t throw_error_if_strict_code_line = 0;
     const std::size_t begin_position = lexer_.begin_position();
     enum {
@@ -2018,9 +2011,9 @@ class Parser : private Noncopyable<> {
           throw_error_if_strict_code_line = lexer_.line_number();
         } else {
           assert(current == Token::TK_IDENTIFIER);
-          const EvalOrArguments val = IsEvalOrArguments(sym);
-          if (val) {
-            throw_error_if_strict_code = (val == kEval) ?
+          if (sym == symbol::eval() || sym == symbol::arguments()) {
+            throw_error_if_strict_code =
+                (sym == symbol::eval()) ?
                 kDetectEvalName : kDetectArgumentsName;
             throw_error_if_strict_code_line = lexer_.line_number();
           }
@@ -2048,22 +2041,22 @@ class Parser : private Noncopyable<> {
           !Token::IsAddedFutureReservedWordInStrictCode(current)) {
         IS(Token::TK_IDENTIFIER);
       }
-      const ast::SymbolHolder ident = ParseSymbol();
+      const ast::SymbolHolder sym = ParseSymbol();
       if (!throw_error_if_strict_code) {
         if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
           throw_error_if_strict_code = kDetectFutureReservedWords;
           throw_error_if_strict_code_line = lexer_.line_number();
         } else {
           assert(current == Token::TK_IDENTIFIER);
-          const EvalOrArguments val = IsEvalOrArguments(ident);
-          if (val) {
-            throw_error_if_strict_code = (val == kEval) ?
+          if (sym == symbol::eval() || sym == symbol::arguments()) {
+            throw_error_if_strict_code =
+                (sym == symbol::eval()) ?
                 kDetectEvalName : kDetectArgumentsName;
             throw_error_if_strict_code_line = lexer_.line_number();
           }
         }
       }
-      params->push_back(factory_->NewAssigned(ident));
+      params->push_back(factory_->NewAssigned(sym));
       EXPECT(Token::TK_RPAREN);
     } else {
       if (token_ != Token::TK_RPAREN) {
@@ -2073,28 +2066,28 @@ class Parser : private Noncopyable<> {
               !Token::IsAddedFutureReservedWordInStrictCode(current)) {
             IS(Token::TK_IDENTIFIER);
           }
-          const ast::SymbolHolder ident = ParseSymbol();
+          const ast::SymbolHolder sym = ParseSymbol();
           if (!throw_error_if_strict_code) {
             if (Token::IsAddedFutureReservedWordInStrictCode(current)) {
               throw_error_if_strict_code = kDetectFutureReservedWords;
               throw_error_if_strict_code_line = lexer_.line_number();
             } else {
               assert(current == Token::TK_IDENTIFIER);
-              const EvalOrArguments val = IsEvalOrArguments(ident);
-              if (val) {
-                throw_error_if_strict_code = (val == kEval) ?
+              if (sym == symbol::eval() || sym == symbol::arguments()) {
+                throw_error_if_strict_code =
+                    (sym == symbol::eval()) ?
                     kDetectEvalName : kDetectArgumentsName;
                 throw_error_if_strict_code_line = lexer_.line_number();
               }
             }
             if ((!throw_error_if_strict_code) &&
-                (param_set.find(ident) != param_set.end())) {
+                (param_set.find(sym) != param_set.end())) {
               throw_error_if_strict_code = kDetectDuplicateParameter;
               throw_error_if_strict_code_line = lexer_.line_number();
             }
           }
-          params->push_back(factory_->NewAssigned(ident));
-          param_set.insert(ident);
+          params->push_back(factory_->NewAssigned(sym));
+          param_set.insert(sym);
           if (token_ == Token::TK_COMMA) {
             Next(true);
           } else {
@@ -2114,6 +2107,7 @@ class Parser : private Noncopyable<> {
 
     Statements* const body = factory_->template NewVector<Statement*>();
     Scope* const scope = factory_->NewScope(decl_type);
+    const Unresolved unresolved(&unresolved_);
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
     const bool function_is_strict =
@@ -2215,13 +2209,19 @@ class Parser : private Noncopyable<> {
 
   Identifier* ParseIdentifier() {
     assert(token_ == Token::TK_IDENTIFIER);
+    const Symbol symbol = table_->Lookup(lexer_.Buffer());
     Identifier* const ident = factory_->NewIdentifier(
         Token::TK_IDENTIFIER,
-        table_->Lookup(lexer_.Buffer()),
+        symbol,
         lexer_.begin_position(),
         lexer_.end_position());
+    AddUnresolved(symbol);
     Next();
     return ident;
+  }
+
+  void AddUnresolved(Symbol ident) {
+    unresolved_->insert(ident);
   }
 
   bool ContainsLabel(const SymbolSet* labels, Symbol label) const {
@@ -2412,9 +2412,9 @@ class Parser : private Noncopyable<> {
         newly_created_(!labels_) {
       if (newly_created_) {
         labels_ = new SymbolSet;
+        parser_->set_labels(labels_);
       }
       labels_->insert(label);
-      parser_->set_labels(labels_);
     }
     ~LabelSwitcher() {
       if (newly_created_) {
@@ -2449,22 +2449,6 @@ class Parser : private Noncopyable<> {
     bool prev_;
   };
 
-  enum EvalOrArguments {
-    kNone = 0,
-    kEval = 1,
-    kArguments = 2
-  };
-
-  static EvalOrArguments IsEvalOrArguments(Symbol sym) {
-    if (sym == symbol::eval()) {
-      return kEval;
-    } else if (sym == symbol::arguments()) {
-      return kArguments;
-    } else {
-      return kNone;
-    }
-  }
-
   lexer_type lexer_;
   Token::Type token_;
   std::string error_;
@@ -2472,6 +2456,7 @@ class Parser : private Noncopyable<> {
   int error_state_;
   Factory* factory_;
   Scope* scope_;
+  SymbolSet* unresolved_;
   Target* target_;
   SymbolSet* labels_;
   SymbolTable* table_;
