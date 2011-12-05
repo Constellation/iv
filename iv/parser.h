@@ -119,13 +119,14 @@ class Parser : private Noncopyable<> {
   IV_AST_STRING(V)
 #undef V
 
+  typedef std::unordered_set<Symbol> SymbolSet;
+
   enum ErrorState {
     kNotRecoverable = 1
   };
 
   class Target : private Noncopyable<> {
    public:
-    typedef typename AstNode::Symbols Symbols;
     enum Type {
       kNamedOnlyStatement = 0,  // (00)2
       kIterationStatement = 2,  // (10)2
@@ -164,7 +165,7 @@ class Parser : private Noncopyable<> {
       }
       return node_;
     }
-    inline Symbols* labels() const { return labels_; }
+    inline SymbolSet* labels() const { return labels_; }
     inline void set_node(BreakableStatement* node) {
       if (node_) {
         *node_ = node;
@@ -173,7 +174,7 @@ class Parser : private Noncopyable<> {
    private:
     parser_type* parser_;
     Target* prev_;
-    Symbols* labels_;
+    SymbolSet* labels_;
     BreakableStatement** node_;
     int type_;
   };
@@ -194,7 +195,7 @@ class Parser : private Noncopyable<> {
    private:
     parser_type* parser_;
     Target* target_;
-    Symbols* labels_;
+    SymbolSet* labels_;
   };
 
   Parser(Factory* factory, const Source& source, SymbolTable* table)
@@ -1103,17 +1104,12 @@ class Parser : private Noncopyable<> {
       const ast::SymbolHolder label = ParseSymbol();
       assert(token_ == Token::TK_COLON);
       Next();
-      Symbols* labels = labels_;
-      const bool exist_labels = labels;
-      if (!exist_labels) {
-        labels = factory_->template NewVector<Symbol>();
-      }
+      SymbolSet* labels = labels_;
       if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
         // duplicate label
         RAISE("duplicate label");
       }
-      labels->push_back(label);
-      const LabelSwitcher label_switcher(this, labels, exist_labels);
+      const LabelSwitcher label_switcher(this, labels, label);
 
       Statement* const stmt = ParseStatement(CHECK);
       assert(stmt);
@@ -2228,9 +2224,8 @@ class Parser : private Noncopyable<> {
     return ident;
   }
 
-  bool ContainsLabel(const Symbols* labels, Symbol label) const {
-    return labels &&
-        std::find(labels->begin(), labels->end(), label) != labels->end();
+  bool ContainsLabel(const SymbolSet* labels, Symbol label) const {
+    return labels && labels->find(label) != labels->end();
   }
 
   bool TargetsContainsLabel(Symbol label) const {
@@ -2377,10 +2372,10 @@ class Parser : private Noncopyable<> {
   inline Factory* factory() const {
     return factory_;
   }
-  inline Symbols* labels() const {
+  inline SymbolSet* labels() const {
     return labels_;
   }
-  inline void set_labels(Symbols* labels) {
+  inline void set_labels(SymbolSet* labels) {
     labels_ = labels;
   }
   inline bool strict() const {
@@ -2411,20 +2406,27 @@ class Parser : private Noncopyable<> {
 
   class LabelSwitcher : private Noncopyable<> {
    public:
-    LabelSwitcher(parser_type* parser,
-                  Symbols* labels, bool exist_labels)
+    LabelSwitcher(parser_type* parser, SymbolSet* labels, Symbol label)
       : parser_(parser),
-        exist_labels_(exist_labels) {
-      parser_->set_labels(labels);
+        labels_(labels),
+        newly_created_(!labels_) {
+      if (newly_created_) {
+        labels_ = new SymbolSet;
+      }
+      labels_->insert(label);
+      parser_->set_labels(labels_);
     }
     ~LabelSwitcher() {
-      if (!exist_labels_) {
+      if (newly_created_) {
         parser_->set_labels(NULL);
+        delete labels_;
       }
     }
    private:
     parser_type* parser_;
-    bool exist_labels_;
+    SymbolSet* original_;
+    SymbolSet* labels_;
+    bool newly_created_;
   };
 
   class StrictSwitcher : private Noncopyable<> {
@@ -2471,7 +2473,7 @@ class Parser : private Noncopyable<> {
   Factory* factory_;
   Scope* scope_;
   Target* target_;
-  Symbols* labels_;
+  SymbolSet* labels_;
   SymbolTable* table_;
 };
 #undef IS

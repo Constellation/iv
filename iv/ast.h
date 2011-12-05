@@ -187,7 +187,6 @@ class AstNode : public AstNodeBase<Factory> {
   virtual ~AstNode() = 0;
 
   typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  typedef typename SpaceVector<Factory, Symbol>::type Symbols;
   typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
   typedef typename SpaceVector<
       Factory,
