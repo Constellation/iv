@@ -296,13 +296,36 @@ inline bool ConvertToUInt32(const StringPiece& str, uint32_t* value) {
   return ConvertToUInt32(str.begin(), str.end(), value);
 }
 
-template<typename OutputIter>
-inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
-  std::array<char, 10> buf;
+namespace detail {
+
+template<typename T>
+struct BufferWidth;
+
+template<>
+struct BufferWidth<int32_t> { static const int value = 10; };
+
+template<>
+struct BufferWidth<uint32_t> { static const int value = 10; };
+
+template<>
+struct BufferWidth<int64_t> { static const int value = 20; };
+
+template<>
+struct BufferWidth<uint64_t> { static const int value = 20; };
+
+template<typename IntT, typename OutputIter>
+inline OutputIter IntToString(IntT integer, OutputIter res) {
   // INT32_MAX => 2147483647
   // INT32_MIN => -2147483648
+  //  => 10
+  // INT64_MAX => 9223372036854775807
+  // INT64_MIN => -9223372036854775808
+  //  => 20
   //
-  // -INT32_MIN is overflowed, treat negative / positive separately
+  // -INT32_MIN / - INT64_MIN is overflowed,
+  // treat negative / positive separately
+  IV_STATIC_ASSERT(std::is_signed<IntT>::value);
+  std::array<char, BufferWidth<IntT>::value> buf;
   int integer_pos = buf.size();
   if (integer >= 0) {
     do {
@@ -320,10 +343,14 @@ inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
-template<typename OutputIter>
-inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
-  // UINT32_MAX => 4294967295 length: 10
-  std::array<char, 10> buf;
+template<typename UIntT, typename OutputIter>
+inline OutputIter UIntToString(UIntT integer, OutputIter res) {
+  // UINT32_MAX => 4294967295
+  //  => 10
+  // UINT64_MAX => 18446744073709551615
+  //  => 20
+  IV_STATIC_ASSERT(std::is_unsigned<UIntT>::value);
+  std::array<char, BufferWidth<UIntT>::value> buf;
   int integer_pos = buf.size();
   do {
     buf[--integer_pos] = (integer % 10) + '0';
@@ -331,6 +358,28 @@ inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
   } while (integer > 0);
   assert(integer_pos >= 0);
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
+}
+
+}  // namespace detail
+
+template<typename OutputIter>
+inline OutputIter Int32ToString(int32_t integer, OutputIter res) {
+  return detail::IntToString<int32_t>(integer, res);
+}
+
+template<typename OutputIter>
+inline OutputIter UInt32ToString(uint32_t integer, OutputIter res) {
+  return detail::UIntToString<uint32_t>(integer, res);
+}
+
+template<typename OutputIter>
+inline OutputIter Int64ToString(int64_t integer, OutputIter res) {
+  return detail::IntToString<int64_t>(integer, res);
+}
+
+template<typename OutputIter>
+inline OutputIter UInt64ToString(uint64_t integer, OutputIter res) {
+  return detail::UIntToString<uint64_t>(integer, res);
 }
 
 template<typename OutputIter>

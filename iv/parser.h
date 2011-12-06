@@ -2199,10 +2199,10 @@ class Parser : private Noncopyable<> {
   }
 
   ast::SymbolHolder ParseSymbol() {
-    const Symbol ident = table_->Lookup(lexer_.Buffer());
+    const Symbol sym = table_->Lookup(lexer_.Buffer());
     Next();
     return ast::SymbolHolder(
-        ident,
+        sym,
         lexer_.previous_begin_position(),
         lexer_.previous_end_position());
   }
@@ -2283,23 +2283,15 @@ class Parser : private Noncopyable<> {
     return NULL;
   }
 
-  inline void SetErrorHeader() {
-    SetErrorHeader(lexer_.line_number());
-  }
-
   void SetErrorHeader(std::size_t line) {
-    char buf[40];
     error_.append(lexer_.filename());
-    // uint64_t str length max is 20
-    // so, string size not over 40
-    const int num = snprintf(
-        buf, sizeof(buf) - 1,
-        ":" "%"PRIu64 ": SyntaxError: ", static_cast<uint64_t>(line));
-    error_.append(buf, num);
+    error_.append(":");
+    UInt64ToString(line, std::back_inserter(error_));
+    error_.append(": SyntaxError: ");
   }
 
   void ReportUnexpectedToken(Token::Type expected_token) {
-    SetErrorHeader();
+    SetErrorHeader(lexer_.line_number());
     switch (token_) {
       case Token::TK_STRING:
         error_.append("unexpected string");
@@ -2341,6 +2333,7 @@ class Parser : private Noncopyable<> {
   inline lexer_type* lexer() const {
     return &lexer_;
   }
+
   template<typename LexType>
   inline Token::Type Next() {
     return token_ = lexer_.Next<LexType>(strict_);
@@ -2351,39 +2344,43 @@ class Parser : private Noncopyable<> {
   inline Token::Type Next(bool strict) {
     return token_ = lexer_.Next<IdentifyReservedWords>(strict);
   }
-  inline Token::Type Peek() const {
-    return token_;
-  }
+
   inline Scope* scope() const {
     return scope_;
   }
   inline void set_scope(Scope* scope) {
     scope_ = scope;
   }
+
   inline const std::string& error() const {
     return error_;
   }
+
   inline Target* target() const {
     return target_;
   }
   inline void set_target(Target* target) {
     target_ = target;
   }
+
   inline Factory* factory() const {
     return factory_;
   }
+
   inline SymbolSet* labels() const {
     return labels_;
   }
   inline void set_labels(SymbolSet* labels) {
     labels_ = labels;
   }
+
   inline bool strict() const {
     return strict_;
   }
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
+
   inline bool RecoverableError() const {
     return (!(error_state_ & kNotRecoverable)) && token_ == Token::TK_EOS;
   }
