@@ -781,10 +781,7 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     IterationStatement** target;
     Next();
-    if (!lexer_.has_line_terminator_before_next() &&
-        token_ != Token::TK_SEMICOLON &&
-        token_ != Token::TK_RBRACE &&
-        token_ != Token::TK_EOS) {
+    if (!IsAutomaticSeimicolonInserted()) {
       IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();
       target = LookupContinuableTarget(label);
@@ -810,10 +807,7 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     BreakableStatement** target = NULL;
     Next();
-    if (!lexer_.has_line_terminator_before_next() &&
-        token_ != Token::TK_SEMICOLON &&
-        token_ != Token::TK_RBRACE &&
-        token_ != Token::TK_EOS) {
+    if (!IsAutomaticSeimicolonInserted()) {
       // label
       IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();
@@ -857,16 +851,10 @@ class Parser : private Noncopyable<> {
       RAISE("\"return\" not in function");
     }
 
-    if (lexer_.has_line_terminator_before_next() ||
-        token_ == Token::TK_SEMICOLON ||
-        token_ == Token::TK_RBRACE ||
-        token_ == Token::TK_EOS) {
-      ExpectSemicolon(CHECK);
-      return factory_->NewReturnStatement(NULL,
-                                          begin,
-                                          lexer_.previous_end_position());
+    Expression* expr = NULL;
+    if (!IsAutomaticSeimicolonInserted()) {
+      expr = ParseExpression(true, CHECK);
     }
-    Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
     return factory_->NewReturnStatement(expr, begin,
                                         lexer_.previous_end_position());
@@ -2292,6 +2280,15 @@ class Parser : private Noncopyable<> {
         break;
       }
     }
+  }
+
+  // return true if Automatic Semicolon Insertion (ASI) is executed
+  bool IsAutomaticSeimicolonInserted() {
+    return
+        lexer_.has_line_terminator_before_next() ||
+        token_ == Token::TK_SEMICOLON ||
+        token_ == Token::TK_RBRACE ||
+        token_ == Token::TK_EOS;
   }
 
   bool ExpectSemicolon(bool *res) {
