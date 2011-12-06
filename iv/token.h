@@ -176,6 +176,13 @@ class Token {
     return Token::TK_STRICT_FIRST < type && type < Token::TK_STRICT_LAST;
   }
 
+  static inline bool IsPropertyName(Token::Type token) {
+    return
+        token == Token::TK_IDENTIFIER ||
+        token == Token::TK_STRING ||
+        token == Token::TK_NUMBER;
+  }
+
   static inline const char* ToString(Token::Type type) {
     assert(0 <= type && type < TK_NUM_TOKENS);
     assert(type != Token::TK_ASSIGN_FIRST &&

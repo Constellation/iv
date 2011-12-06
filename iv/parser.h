@@ -276,8 +276,7 @@ class Parser : private Noncopyable<> {
           break;
         }
         const typename lexer_type::State state = lexer_.StringEscapeType();
-        if (!octal_escaped_directive_found &&
-            state == lexer_type::OCTAL) {
+        if (!octal_escaped_directive_found && state == lexer_type::OCTAL) {
             // octal escaped string literal
             octal_escaped_directive_found = true;
             line = lexer_.line_number();
@@ -286,31 +285,38 @@ class Parser : private Noncopyable<> {
         body->push_back(stmt);
         if (stmt->AsExpressionStatement() &&
             stmt->AsExpressionStatement()->expr()->AsStringLiteral()) {
-          Expression* const expr = stmt->AsExpressionStatement()->expr();
           // expression is directive
+          StringLiteral* const literal =
+              stmt->AsExpressionStatement()->expr()->AsStringLiteral();
+
           if (!strict_switcher.IsStrict() &&
-              state == lexer_type::NONE &&
-              expr->AsStringLiteral()->value().compare(
-                  detail::kUseStrict.data()) == 0) {
+              state == lexer_type::NONE && IsStrictDirective(literal)) {
             strict_switcher.SwitchStrictMode();
+
+            // if such a script is evaluated,
+            // function target() {
+            //   "octal \02";
+            //   "use strict";
+            // }
+            // found octal string literal and raise error.
             if (octal_escaped_directive_found) {
               RAISE_WITH_NUMBER(
                   "octal escape sequence not allowed in strict code",
                   line);
             }
+
             // and one token lexed is not in strict
             // so rescan
             if (token_ == Token::TK_IDENTIFIER) {
-              typedef Keyword<IdentifyReservedWords> KeywordChecker;
-              token_ =  KeywordChecker::Detect(lexer_.Buffer(), true);
+              token_ =
+                  Keyword<IdentifyReservedWords>::Detect(lexer_.Buffer(), true);
               break;
             }
           } else {
             // other directive
           }
         } else {
-          // not directive, like
-          // "String", "Comma"
+          // not directive
           break;
         }
       }
@@ -955,8 +961,7 @@ class Parser : private Noncopyable<> {
     assert(expr && clauses);
     SwitchStatement* const switch_stmt =
         factory_->NewSwitchStatement(expr, clauses,
-                                     begin,
-                                     lexer_.previous_end_position());
+                                     begin, lexer_.previous_end_position());
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -1004,7 +1009,7 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_THROW);
     const std::size_t begin = lexer_.begin_position();
     Next();
-    // Throw requires Expression
+    // Throw requires Expression and no LineTerminator is allowed between them.
     if (lexer_.has_line_terminator_before_next()) {
       RAISE("missing expression between throw and newline");
     }
@@ -1109,12 +1114,11 @@ class Parser : private Noncopyable<> {
       const ast::SymbolHolder label = ParseSymbol();
       assert(token_ == Token::TK_COLON);
       Next();
-      SymbolSet* labels = labels_;
-      if (ContainsLabel(labels, label) || TargetsContainsLabel(label)) {
+      if (IsDuplicateLabel(label)) {
         // duplicate label
         RAISE("duplicate label");
       }
-      const LabelSwitcher label_switcher(this, labels, label);
+      const LabelSwitcher label_switcher(this, labels_, label);
 
       Statement* const stmt = ParseStatement(CHECK);
       assert(stmt);
@@ -1739,11 +1743,8 @@ class Parser : private Noncopyable<> {
       }
 
       case Token::TK_DIV:
-        result = ParseRegExpLiteral(false, CHECK);
-        break;
-
       case Token::TK_ASSIGN_DIV:
-        result = ParseRegExpLiteral(true, CHECK);
+        result = ParseRegExpLiteral(token_ == Token::TK_ASSIGN_DIV, CHECK);
         break;
 
       case Token::TK_LBRACK:
@@ -1776,6 +1777,7 @@ class Parser : private Noncopyable<> {
 //    | ArgumentList ',' AssignmentExpression
   template<typename Container>
   Container* ParseArguments(Container* container, bool *res) {
+    assert(token_ == Token::TK_LPAREN);
     Next();
     if (token_ != Token::TK_RPAREN) {
       Expression* const first = ParseAssignmentExpression(true, CHECK);
@@ -1791,6 +1793,7 @@ class Parser : private Noncopyable<> {
   }
 
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
+    assert(token_ == Token::TK_DIV || token_ == Token::TK_ASSIGN_DIV);
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
       const std::vector<uint16_t> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
@@ -1823,6 +1826,7 @@ class Parser : private Noncopyable<> {
 //    : ','
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
+    assert(token_ == Token::TK_LBRACK);
     const std::size_t begin = lexer_.begin_position();
     MaybeExpressions* const items =
         factory_->template NewVector<Maybe<Expression> >();
@@ -1830,7 +1834,7 @@ class Parser : private Noncopyable<> {
     while (token_ != Token::TK_RBRACK) {
       if (token_ == Token::TK_COMMA) {
         // when Token::TK_COMMA, only increment length
-        items->push_back(Maybe<Expression>());
+        items->push_back(NULL);
       } else {
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
         items->push_back(expr);
@@ -1877,7 +1881,6 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     Properties* const prop = factory_->template NewVector<Property>();
     ObjectMap map;
-    Expression* expr;
 
     // IDENTIFIERNAME
     Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
@@ -1893,7 +1896,7 @@ class Parser : private Noncopyable<> {
               lexer_.previous_begin_position(),
               lexer_.previous_end_position());
           Next();
-          expr = ParseAssignmentExpression(true, CHECK);
+          Expression* expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
@@ -1911,13 +1914,11 @@ class Parser : private Noncopyable<> {
           }
         } else {
           // getter or setter
-          if (token_ == Token::TK_IDENTIFIER ||
-              token_ == Token::TK_STRING ||
-              token_ == Token::TK_NUMBER) {
+          if (Token::IsPropertyName(token_)) {
             const ast::SymbolHolder ident = ParsePropertyName(CHECK);
             typename ObjectLiteral::PropertyDescriptorType type =
                 (is_get) ? ObjectLiteral::GET : ObjectLiteral::SET;
-            expr = ParseFunctionLiteral(
+            Expression* expr = ParseFunctionLiteral(
                 FunctionLiteral::EXPRESSION,
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
                 CHECK);
@@ -1940,12 +1941,10 @@ class Parser : private Noncopyable<> {
             RAISE_RECOVERVABLE("invalid property name");
           }
         }
-      } else if (token_ == Token::TK_IDENTIFIER ||
-                 token_ == Token::TK_STRING ||
-                 token_ == Token::TK_NUMBER) {
+      } else if (Token::IsPropertyName(token_)) {
         const ast::SymbolHolder ident = ParsePropertyName(CHECK);
         EXPECT(Token::TK_COLON);
-        expr = ParseAssignmentExpression(true, CHECK);
+        Expression* expr = ParseAssignmentExpression(true, CHECK);
         ObjectLiteral::AddDataProperty(prop, ident, expr);
         typename ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
@@ -2106,8 +2105,8 @@ class Parser : private Noncopyable<> {
     EXPECT(Token::TK_LBRACE);
 
     Statements* const body = factory_->template NewVector<Statement*>();
-    Scope* const scope = factory_->NewScope(decl_type);
     const Unresolved unresolved(&unresolved_);
+    Scope* const scope = factory_->NewScope(decl_type);
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
     const bool function_is_strict =
@@ -2166,6 +2165,7 @@ class Parser : private Noncopyable<> {
   }
 
   ast::SymbolHolder ParsePropertyName(bool* res) {
+    assert(Token::IsPropertyName(token_));
     if (token_ == Token::TK_NUMBER) {
       if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
         RAISE_WITH(
@@ -2228,10 +2228,12 @@ class Parser : private Noncopyable<> {
     return labels && labels->find(label) != labels->end();
   }
 
-  bool TargetsContainsLabel(Symbol label) const {
+  bool IsDuplicateLabel(Symbol label) const {
+    if (ContainsLabel(labels_, label)) {
+      return true;
+    }
     for (const Target* target = target_;
-         target != NULL;
-         target = target->previous()) {
+         target != NULL; target = target->previous()) {
       if (ContainsLabel(target->labels(), label)) {
         return true;
       }
@@ -2241,8 +2243,7 @@ class Parser : private Noncopyable<> {
 
   BreakableStatement** LookupBreakableTarget(Symbol label) const {
     for (Target* target = target_;
-         target != NULL;
-         target = target->previous()) {
+         target != NULL; target = target->previous()) {
       if (ContainsLabel(target->labels(), label)) {
         return target->node();
       }
@@ -2252,8 +2253,7 @@ class Parser : private Noncopyable<> {
 
   BreakableStatement** LookupBreakableTarget() const {
     for (Target* target = target_;
-         target != NULL;
-         target = target->previous()) {
+         target != NULL; target = target->previous()) {
       if (target->IsAnonymous()) {
         return target->node();
       }
@@ -2263,8 +2263,7 @@ class Parser : private Noncopyable<> {
 
   IterationStatement** LookupContinuableTarget(Symbol label) const {
     for (Target* target = target_;
-         target != NULL;
-         target = target->previous()) {
+         target != NULL; target = target->previous()) {
       if (target->IsIteration() && ContainsLabel(target->labels(), label)) {
         return reinterpret_cast<IterationStatement**>(target->node());
       }
@@ -2274,8 +2273,7 @@ class Parser : private Noncopyable<> {
 
   IterationStatement** LookupContinuableTarget() const {
     for (Target* target = target_;
-         target != NULL;
-         target = target->previous()) {
+         target != NULL; target = target->previous()) {
       if (target->IsIteration()) {
         return reinterpret_cast<IterationStatement**>(target->node());
       }
@@ -2330,10 +2328,6 @@ class Parser : private Noncopyable<> {
     UNEXPECT(token_);
   }
 
-  inline lexer_type* lexer() const {
-    return &lexer_;
-  }
-
   template<typename LexType>
   inline Token::Type Next() {
     return token_ = lexer_.Next<LexType>(strict_);
@@ -2383,6 +2377,10 @@ class Parser : private Noncopyable<> {
 
   inline bool RecoverableError() const {
     return (!(error_state_ & kNotRecoverable)) && token_ == Token::TK_EOS;
+  }
+
+  static bool IsStrictDirective(StringLiteral* literal) {
+    return literal->value().compare(detail::kUseStrict.data()) == 0;
   }
 
  protected:
