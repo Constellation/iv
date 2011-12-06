@@ -945,6 +945,7 @@ class Compiler
     typedef SwitchStatement::CaseClauses CaseClauses;
     const CaseClauses& clauses = stmt->clauses();
     bool has_default_clause = false;
+    std::size_t label = 0;
     std::vector<std::size_t> indexes(clauses.size());
     {
       std::vector<std::size_t>::iterator idx = indexes.begin();
@@ -966,6 +967,10 @@ class Compiler
         *default_it = CurrentSize();
         has_default_clause = true;
         Emit<OP::SWITCH_DEFAULT>(0);  // dummy index
+      } else {
+        // all cases are not equal and no default case
+        label = CurrentSize();
+        Emit<OP::JUMP_BY>(0);
       }
     }
     stack_depth_.Down();
@@ -990,6 +995,9 @@ class Compiler
       }
     }
     jump.EmitJumps(CurrentSize());
+    if (!has_default_clause) {
+      EmitJump(CurrentSize(), label);
+    }
 
     continuation_status_.ResolveJump(stmt);
     if (continuation_status_.IsDeadStatement() && !has_default_clause) {
