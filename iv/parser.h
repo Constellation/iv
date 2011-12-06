@@ -263,7 +263,6 @@ class Parser : private Noncopyable<> {
 //   : Statements
 //   | FunctionDeclaration
   bool ParseSourceElements(Token::Type end, Statements* body, bool *res) {
-    Statement* stmt;
     const StrictSwitcher strict_switcher(this);
 
     // directive prologue
@@ -281,7 +280,7 @@ class Parser : private Noncopyable<> {
             octal_escaped_directive_found = true;
             line = lexer_.line_number();
         }
-        stmt = ParseStatement(CHECK);
+        Statement* stmt = ParseStatement(CHECK);
         body->push_back(stmt);
         if (stmt->AsExpressionStatement() &&
             stmt->AsExpressionStatement()->expr()->AsStringLiteral()) {
@@ -324,14 +323,14 @@ class Parser : private Noncopyable<> {
 
     // statements
     while (token_ != end) {
+      Statement* stmt;
       if (token_ == Token::TK_FUNCTION) {
         // FunctionDeclaration
         stmt = ParseFunctionDeclaration(CHECK);
-        body->push_back(stmt);
       } else {
         stmt = ParseStatement(CHECK);
-        body->push_back(stmt);
       }
+      body->push_back(stmt);
     }
     return strict_switcher.IsStrict();
   }
@@ -354,12 +353,10 @@ class Parser : private Noncopyable<> {
 //    | TryStatement
 //    | DebuggerStatement
   Statement* ParseStatement(bool *res) {
-    Statement *result = NULL;
     switch (token_) {
       case Token::TK_LBRACE:
         // Block
-        result = ParseBlock(CHECK);
-        break;
+        return ParseBlock(CHECK);
 
       case Token::TK_CONST:
         if (strict_) {
@@ -367,87 +364,71 @@ class Parser : private Noncopyable<> {
         }
       case Token::TK_VAR:
         // VariableStatement
-        result = ParseVariableStatement(CHECK);
-        break;
+        return ParseVariableStatement(CHECK);
 
       case Token::TK_SEMICOLON:
         // EmptyStatement
-        result = ParseEmptyStatement();
-        break;
+        return ParseEmptyStatement();
 
       case Token::TK_IF:
         // IfStatement
-        result = ParseIfStatement(CHECK);
-        break;
+        return ParseIfStatement(CHECK);
 
       case Token::TK_DO:
         // IterationStatement
         // do while
-        result = ParseDoWhileStatement(CHECK);
-        break;
+        return ParseDoWhileStatement(CHECK);
 
       case Token::TK_WHILE:
         // IterationStatement
         // while
-        result = ParseWhileStatement(CHECK);
-        break;
+        return ParseWhileStatement(CHECK);
 
       case Token::TK_FOR:
         // IterationStatement
         // for
-        result = ParseForStatement(CHECK);
-        break;
+        return ParseForStatement(CHECK);
 
       case Token::TK_CONTINUE:
         // ContinueStatement
-        result = ParseContinueStatement(CHECK);
-        break;
+        return ParseContinueStatement(CHECK);
 
       case Token::TK_BREAK:
         // BreakStatement
-        result = ParseBreakStatement(CHECK);
-        break;
+        return ParseBreakStatement(CHECK);
 
       case Token::TK_RETURN:
         // ReturnStatement
-        result = ParseReturnStatement(CHECK);
-        break;
+        return ParseReturnStatement(CHECK);
 
       case Token::TK_WITH:
         // WithStatement
-        result = ParseWithStatement(CHECK);
-        break;
+        return ParseWithStatement(CHECK);
 
       case Token::TK_SWITCH:
         // SwitchStatement
-        result = ParseSwitchStatement(CHECK);
-        break;
+        return ParseSwitchStatement(CHECK);
 
       case Token::TK_THROW:
         // ThrowStatement
-        result = ParseThrowStatement(CHECK);
-        break;
+        return ParseThrowStatement(CHECK);
 
       case Token::TK_TRY:
         // TryStatement
-        result = ParseTryStatement(CHECK);
-        break;
+        return ParseTryStatement(CHECK);
 
       case Token::TK_DEBUGGER:
         // DebuggerStatement
-        result = ParseDebuggerStatement(CHECK);
-        break;
+        return ParseDebuggerStatement(CHECK);
 
       case Token::TK_FUNCTION:
         // FunctionStatement (not in ECMA-262 5th)
         // FunctionExpression
-        result = ParseFunctionStatement<UseFunctionStatement>(CHECK);
-        break;
+        return ParseFunctionStatement<UseFunctionStatement>(CHECK);
 
       case Token::TK_IDENTIFIER:
         // LabelledStatement or ExpressionStatement
-        result = ParseExpressionOrLabelledStatement(CHECK);
-        break;
+        return ParseExpressionOrLabelledStatement(CHECK);
 
       case Token::TK_ILLEGAL:
         UNEXPECT(token_);
@@ -455,10 +436,8 @@ class Parser : private Noncopyable<> {
 
       default:
         // ExpressionStatement or ILLEGAL
-        result = ParseExpressionStatement(CHECK);
-        break;
+        return ParseExpressionStatement(CHECK);
     }
-    return result;
   }
 
 //  FunctionDeclaration
