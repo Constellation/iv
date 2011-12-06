@@ -1058,12 +1058,19 @@ INHERIT(Assigned);
 template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
-  Assigned(Symbol sym) : sym_(sym) { }
+  enum {
+    STACK = 0,
+    HEAP  = 1
+  };
+  Assigned(Symbol sym) : sym_(sym), kind_(STACK) { }
   Symbol symbol() const { return sym_; }
+  int kind() const { return kind_; }
+  void set_kind(int kind) { kind_ = kind; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
   Symbol sym_;
+  int kind_;
 };
 
 // ThisLiteral
