@@ -781,7 +781,7 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     IterationStatement** target;
     Next();
-    if (!IsAutomaticSeimicolonInserted()) {
+    if (!IsAutomaticSemicolonInserted()) {
       IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();
       target = LookupContinuableTarget(label);
@@ -807,7 +807,7 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     BreakableStatement** target = NULL;
     Next();
-    if (!IsAutomaticSeimicolonInserted()) {
+    if (!IsAutomaticSemicolonInserted()) {
       // label
       IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();
@@ -852,7 +852,7 @@ class Parser : private Noncopyable<> {
     }
 
     Expression* expr = NULL;
-    if (!IsAutomaticSeimicolonInserted()) {
+    if (!IsAutomaticSemicolonInserted()) {
       expr = ParseExpression(true, CHECK);
     }
     ExpectSemicolon(CHECK);
@@ -2283,7 +2283,7 @@ class Parser : private Noncopyable<> {
   }
 
   // return true if Automatic Semicolon Insertion (ASI) is executed
-  bool IsAutomaticSeimicolonInserted() {
+  bool IsAutomaticSemicolonInserted() {
     return
         lexer_.has_line_terminator_before_next() ||
         token_ == Token::TK_SEMICOLON ||
