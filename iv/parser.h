@@ -781,8 +781,8 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     IterationStatement** target;
     Next();
-    if (!IsAutomaticSemicolonInserted()) {
-      IS(Token::TK_IDENTIFIER);
+    if (token_ == Token::TK_IDENTIFIER &&
+        !lexer_.has_line_terminator_before_next()) {
       label = ParseSymbol();
       target = LookupContinuableTarget(label);
       if (!target) {
@@ -807,7 +807,8 @@ class Parser : private Noncopyable<> {
     ast::SymbolHolder label;
     BreakableStatement** target = NULL;
     Next();
-    if (!IsAutomaticSemicolonInserted()) {
+    if (token_ == Token::TK_IDENTIFIER &&
+        !lexer_.has_line_terminator_before_next()) {
       // label
       IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();

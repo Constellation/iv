@@ -202,7 +202,7 @@ class Lexer: private Noncopyable<> {
           Advance();
           if (c_ == '-') {
             Advance();
-            if (c_ == '>' && has_line_terminator_before_next_) {
+            if (c_ == '>' && has_line_terminator_before_next()) {
               token = SkipSingleLineComment(false);
             } else {
               token = Token::TK_DEC;
