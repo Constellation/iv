@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSDTOA_H_
 #define IV_LV5_JSDTOA_H_
 #include <iv/dtoa.h>
-#include <iv/round.h>
+#include <iv/platform_math.h>
 #include <iv/lv5/jsstring.h>
 namespace iv {
 namespace lv5 {

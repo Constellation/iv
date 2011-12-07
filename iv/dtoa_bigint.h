@@ -32,7 +32,6 @@
 #include <iv/detail/array.h>
 #include <iv/detail/memory.h>
 #include <iv/platform_math.h>
-#include <iv/round.h>
 #include <iv/thread.h>
 #include <iv/byteorder.h>
 #include <iv/stringpiece.h>

@@ -68,5 +68,15 @@ inline double Modulo(double x, double y) {
 }
 
 #endif
+
+inline double Round(double value) {
+  const double res = std::ceil(value);
+  if (res - value > 0.5) {
+    return res - 1;
+  } else {
+    return res;
+  }
+}
+
 } }  // namespace iv::core
 #endif  // IV_PLATFORM_MATH_H_

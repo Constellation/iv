@@ -1,7 +1,6 @@
 #ifndef IV_LV5_RUNTIME_MATH_H_
 #define IV_LV5_RUNTIME_MATH_H_
 #include <cmath>
-#include <iv/round.h>
 #include <iv/platform_math.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
