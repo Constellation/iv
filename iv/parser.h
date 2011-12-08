@@ -2293,13 +2293,14 @@ class Parser : private Noncopyable<> {
   }
 
   bool ExpectSemicolon(bool *res) {
+    if (lexer_.has_line_terminator_before_next()) {
+      return true;
+    }
     if (token_ == Token::TK_SEMICOLON) {
       Next();
       return true;
     }
-    if (lexer_.has_line_terminator_before_next() ||
-        token_ == Token::TK_RBRACE ||
-        token_ == Token::TK_EOS ) {
+    if (token_ == Token::TK_RBRACE || token_ == Token::TK_EOS ) {
       return true;
     }
     UNEXPECT(token_);
