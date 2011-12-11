@@ -20,6 +20,7 @@
 #include <iv/ustring.h>
 #include <iv/enable_if.h>
 #include <iv/none.h>
+#include <iv/environment.h>
 #include <iv/symbol_table.h>
 
 #define IS(token)\
@@ -198,23 +199,6 @@ class Parser : private Noncopyable<> {
     SymbolSet* labels_;
   };
 
-  class Unresolved {
-   public:
-    explicit Unresolved(SymbolSet** unresolved)
-      : unresolved_(unresolved),
-        previous_(*unresolved),
-        content_() {
-      *unresolved_ = &content_;
-    }
-    ~Unresolved() {
-      *unresolved_ = previous_;
-    }
-   private:
-    SymbolSet** unresolved_;
-    SymbolSet* previous_;
-    SymbolSet content_;
-  };
-
   Parser(Factory* factory, const Source& source, SymbolTable* table)
     : lexer_(&source),
       error_(),
@@ -222,7 +206,7 @@ class Parser : private Noncopyable<> {
       error_state_(0),
       factory_(factory),
       scope_(NULL),
-      unresolved_(NULL),
+      environment_(NULL),
       target_(NULL),
       labels_(NULL),
       table_(table) {
@@ -233,7 +217,7 @@ class Parser : private Noncopyable<> {
   FunctionLiteral* ParseProgram() {
     Assigneds* params = factory_->template NewVector<Assigned*>();
     Statements* body = factory_->template NewVector<Statement*>();
-    const Unresolved unresolved(&unresolved_);
+    FunctionEnvironment environment(environment_, &environment_);
     Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL);
     assert(target_ == NULL);
     bool error_flag = true;
@@ -876,13 +860,16 @@ class Parser : private Noncopyable<> {
 
     EXPECT(Token::TK_LPAREN);
 
-    Expression *expr = ParseExpression(true, CHECK);
+    Expression* expr = ParseExpression(true, CHECK);
 
     EXPECT(Token::TK_RPAREN);
 
-    Statement *stmt = ParseStatement(CHECK);
+    Statement* stmt = NULL;
+    {
+      WithEnvironment environment(environment_, &environment_);
+      stmt = ParseStatement(CHECK);
+    }
     assert(expr && stmt);
-    scope_->RecordWithStatement();
     return factory_->NewWithStatement(expr, stmt, begin);
   }
 
@@ -1030,7 +1017,10 @@ class Parser : private Noncopyable<> {
       EXPECT(Token::TK_RPAREN);
       IS(Token::TK_LBRACE);
       name = factory_->NewAssigned(sym);
-      catch_block = ParseBlock(CHECK);
+      {
+        CatchEnvironment environment(environment_, &environment_, sym);
+        catch_block = ParseBlock(CHECK);
+      }
     }
 
     if (token_ == Token::TK_FINALLY) {
@@ -1620,6 +1610,7 @@ class Parser : private Noncopyable<> {
                 expr->AsIdentifier()->symbol() == symbol::eval()) {
               // this is maybe direct call to eval
               scope_->RecordDirectCallToEval();
+              environment_->RecordDirectCallToEval();
             }
             expr = factory_->NewFunctionCall(expr, args,
                                              lexer_.previous_end_position());
@@ -2073,7 +2064,7 @@ class Parser : private Noncopyable<> {
     EXPECT(Token::TK_LBRACE);
 
     Statements* const body = factory_->template NewVector<Statement*>();
-    const Unresolved unresolved(&unresolved_);
+    FunctionEnvironment environment(environment_, &environment_);
     Scope* const scope = factory_->NewScope(decl_type);
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
@@ -2183,13 +2174,9 @@ class Parser : private Noncopyable<> {
         symbol,
         lexer_.begin_position(),
         lexer_.end_position());
-    AddUnresolved(symbol);
+    environment_->Referencing(symbol);
     Next();
     return ident;
-  }
-
-  void AddUnresolved(Symbol ident) {
-    unresolved_->insert(ident);
   }
 
   bool ContainsLabel(const SymbolSet* labels, Symbol label) const {
@@ -2429,7 +2416,7 @@ class Parser : private Noncopyable<> {
   int error_state_;
   Factory* factory_;
   Scope* scope_;
-  SymbolSet* unresolved_;
+  Environment* environment_;
   Target* target_;
   SymbolSet* labels_;
   SymbolTable* table_;

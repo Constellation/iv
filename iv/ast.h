@@ -123,14 +123,8 @@ class Scope : public ScopeBase<Factory> {
   bool HasDirectCallToEval() const {
     return direct_call_to_eval_;
   }
-  bool HasWithStatement() const {
-    return with_statement_;
-  }
   void RecordDirectCallToEval() {
     direct_call_to_eval_ = true;
-  }
-  void RecordWithStatement() {
-    with_statement_ = true;
   }
  protected:
   this_type* up_;
