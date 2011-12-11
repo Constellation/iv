@@ -3,6 +3,7 @@
 #include <iv/detail/unordered_map.h>
 #include <iv/noncopyable.h>
 #include <iv/symbol.h>
+#include <iv/ast.h>
 namespace iv {
 namespace core {
 
@@ -116,7 +117,8 @@ class FunctionEnvironment : public Environment {
 
   template<typename ScopeType>
   void Resolve(const ScopeType& scope) {
-    typedef typename ScopeType::Assigneds::value_type Assigned;
+    typedef typename std::remove_pointer<
+        typename ScopeType::Assigneds::value_type>::type Assigned;
     typedef std::unordered_map<Symbol, Assigned*> AssignedMap;
     AssignedMap map;
     // construct map
