@@ -84,13 +84,12 @@ INHERIT(Scope);
 template<typename Factory>
 class Scope : public ScopeBase<Factory> {
  public:
-  typedef Assigned<Factory> Assigned;
-  typedef std::pair<Assigned*, bool> Variable;
+  typedef std::pair<Assigned<Factory>*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
   typedef typename SpaceVector<
             Factory,
             FunctionLiteral<Factory>*>::type FunctionLiterals;
-  typedef typename SpaceVector<Factory, Assigned*>::type Assigneds;
+  typedef typename SpaceVector<Factory, Assigned<Factory>*>::type Assigneds;
   typedef Scope<Factory> this_type;
 
   explicit Scope(Factory* factory, bool is_global)
@@ -104,7 +103,7 @@ class Scope : public ScopeBase<Factory> {
       hiding_arguments_(false) {
   }
 
-  void AddUnresolved(Assigned* name, bool is_const) {
+  void AddUnresolved(Assigned<Factory>* name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
   }
 
@@ -151,7 +150,7 @@ class Scope : public ScopeBase<Factory> {
     for (typename FunctionLiterals::const_iterator it = funcs_.begin(),
          last = funcs_.end(); it != last; ++it) {
       const FunctionLiteral<Factory>* const func = *it;
-      Assigned* assigned = func->name().Address();
+      Assigned<Factory>* assigned = func->name().Address();
       const Symbol sym = assigned->symbol();
       if (sym == symbol::arguments()) {
         // arguments hiding optimization
@@ -171,7 +170,7 @@ class Scope : public ScopeBase<Factory> {
     // variables
     for (typename Variables::const_iterator it = vars_.begin(),
          last = vars_.end(); it != last; ++it) {
-      Assigned* assigned = it->first;
+      Assigned<Factory>* assigned = it->first;
       const Symbol sym = assigned->symbol();
       if (already.find(sym) != already.end()) {
         already.insert(sym);

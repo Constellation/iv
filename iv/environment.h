@@ -116,8 +116,8 @@ class FunctionEnvironment : public Environment {
 
   template<typename ScopeType>
   void Resolve(const ScopeType& scope) {
-    typedef std::unordered_map<Symbol,
-                               typename ScopeType::Assigned*> AssignedMap;
+    typedef typename ScopeType::Assigneds::value_type Assigned;
+    typedef std::unordered_map<Symbol, Assigned*> AssignedMap;
     AssignedMap map;
     // construct map
     for (typename ScopeType::Assigneds::const_iterator
