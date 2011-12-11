@@ -100,7 +100,7 @@ class CatchEnvironment : public Environment {
   void Referencing(Symbol symbol, bool type) {
     if (symbol != target_) {
       // trapped by this environment
-      upper()->Referencing(symbol, false);
+      upper()->Referencing(symbol, type);
     }
   }
  private:
@@ -120,6 +120,12 @@ class FunctionEnvironment : public Environment {
                                typename ScopeType::Assigned*> AssignedMap;
     AssignedMap map;
     // construct map
+    for (typename ScopeType::Assigneds::const_iterator
+         it = scope.assigneds().begin(),
+         last = scope.assigneds().end();
+         it != last; ++it) {
+      map.insert(std::make_pair((*it)->symbol(), *it));
+    }
 
     // resolve reference
     for (typename AssignedMap::const_iterator it = map.begin(),
@@ -127,11 +133,13 @@ class FunctionEnvironment : public Environment {
       const typename SymbolMap::iterator found = unresolved_.find(it->first);
       if (found != unresolved_.end()) {
         // resolve this
-        (*it->second)->set_type(found->second);
+        it->second->set_type(found->second);
         unresolved_.erase(found);
       }
     }
-    upper()->Propagate(&unresolved_);
+    if (upper()) {
+      upper()->Propagate(&unresolved_);
+    }
   }
 
   void Referencing(Symbol symbol, bool type) {

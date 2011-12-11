@@ -84,55 +84,110 @@ INHERIT(Scope);
 template<typename Factory>
 class Scope : public ScopeBase<Factory> {
  public:
-  typedef std::pair<Assigned<Factory>*, bool> Variable;
+  typedef Assigned<Factory> Assigned;
+  typedef std::pair<Assigned*, bool> Variable;
   typedef typename SpaceVector<Factory, Variable>::type Variables;
   typedef typename SpaceVector<
             Factory,
             FunctionLiteral<Factory>*>::type FunctionLiterals;
+  typedef typename SpaceVector<Factory, Assigned*>::type Assigneds;
   typedef Scope<Factory> this_type;
 
   explicit Scope(Factory* factory, bool is_global)
     : up_(NULL),
       vars_(typename Variables::allocator_type(factory)),
       funcs_(typename FunctionLiterals::allocator_type(factory)),
+      assigneds_(typename Assigneds::allocator_type(factory)),
       is_global_(is_global),
       direct_call_to_eval_(false),
-      with_statement_(false) {
+      with_statement_(false),
+      hiding_arguments_(false) {
   }
-  void AddUnresolved(Assigned<Factory>* name, bool is_const) {
+
+  void AddUnresolved(Assigned* name, bool is_const) {
     vars_.push_back(std::make_pair(name, is_const));
   }
+
   void AddFunctionDeclaration(FunctionLiteral<Factory>* func) {
     funcs_.push_back(func);
   }
+
   void SetUpperScope(this_type* scope) {
     up_ = scope;
   }
+
   inline const FunctionLiterals& function_declarations() const {
     return funcs_;
   }
+
   inline const Variables& variables() const {
     return vars_;
   }
+
+  inline const Assigneds& assigneds() const {
+    return assigneds_;
+  }
+
   inline bool IsGlobal() const {
     return is_global_;
   }
+
   this_type* GetUpperScope() {
     return up_;
   }
+
   bool HasDirectCallToEval() const {
     return direct_call_to_eval_;
   }
+
   void RecordDirectCallToEval() {
     direct_call_to_eval_ = true;
+  }
+
+  void RollUp() {
+    std::unordered_set<Symbol> already;
+
+    // function declarations
+    for (typename FunctionLiterals::const_iterator it = funcs_.begin(),
+         last = funcs_.end(); it != last; ++it) {
+      const FunctionLiteral<Factory>* const func = *it;
+      Assigned* assigned = func->name().Address();
+      const Symbol sym = assigned->symbol();
+      if (sym == symbol::arguments()) {
+        // arguments hiding optimization
+        // example:
+        //   function test() {
+        //     function arguments() { }
+        //   }
+        // arguments of test is hiding, not reachable.
+        hiding_arguments_ = true;
+      }
+      if (already.find(sym) != already.end()) {
+        already.insert(sym);
+        assigneds_.push_back(assigned);
+      }
+    }
+
+    // variables
+    for (typename Variables::const_iterator it = vars_.begin(),
+         last = vars_.end(); it != last; ++it) {
+      Assigned* assigned = it->first;
+      const Symbol sym = assigned->symbol();
+      if (already.find(sym) != already.end()) {
+        already.insert(sym);
+        assigneds_.push_back(assigned);
+      }
+    }
   }
  protected:
   this_type* up_;
   Variables vars_;
   FunctionLiterals funcs_;
+  Assigneds assigneds_;
   bool is_global_;
   bool direct_call_to_eval_;
   bool with_statement_;
+  bool hiding_arguments_;
 };
 
 class SymbolHolder {
@@ -992,7 +1047,7 @@ template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  StringLiteral(const value_type* val)
+  explicit StringLiteral(const value_type* val)
     : value_(val) {
   }
   inline const value_type& value() const {
@@ -1034,7 +1089,7 @@ INHERIT(Identifier);
 template<typename Factory>
 class Identifier : public IdentifierBase<Factory> {
  public:
-  Identifier(Symbol sym) : sym_(sym) { }
+  explicit Identifier(Symbol sym) : sym_(sym) { }
   Symbol symbol() const { return sym_; }
   inline bool IsValidLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
@@ -1043,7 +1098,7 @@ class Identifier : public IdentifierBase<Factory> {
   Symbol sym_;
 };
 
-// Assigned 
+// Assigned
 template<typename Factory>
 class Inherit<Factory, kAssigned> : public AstNode<Factory> {
 };
@@ -1052,19 +1107,16 @@ INHERIT(Assigned);
 template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
-  enum {
-    STACK = 0,
-    HEAP  = 1
-  };
-  Assigned(Symbol sym) : sym_(sym), kind_(STACK) { }
+  explicit Assigned(Symbol sym) : sym_(sym), type_(true) { }
   Symbol symbol() const { return sym_; }
-  int kind() const { return kind_; }
-  void set_kind(int kind) { kind_ = kind; }
+  int type() const { return type_; }
+  void set_type(bool type) { type_ = type; }
+  bool IsHeap() const { return type_; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
   Symbol sym_;
-  int kind_;
+  bool type_;
 };
 
 // ThisLiteral

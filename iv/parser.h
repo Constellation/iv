@@ -226,6 +226,8 @@ class Parser : private Noncopyable<> {
     Next();
     const bool strict = ParseSourceElements(Token::TK_EOS, body, CHECK);
     const std::size_t end_position = lexer_.end_position();
+    scope->RollUp();
+    environment.Resolve(*scope);
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
                                      NULL,
@@ -2110,6 +2112,8 @@ class Parser : private Noncopyable<> {
     }
     Next();
     const std::size_t end_block_position = lexer_.previous_end_position();
+    scope->RollUp();
+    environment.Resolve(*scope);
     assert(params && body && scope);
     return factory_->NewFunctionLiteral(decl_type,
                                         name,
