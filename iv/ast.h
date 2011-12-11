@@ -1113,6 +1113,7 @@ class Assigned : public AssignedBase<Factory> {
     type_ = type;
     referenced_ = true;
   }
+  bool IsReferenced() const { return referenced_; }
   bool IsHeap() const { return type_; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
