@@ -1,6 +1,7 @@
 #ifndef IV_ENVIRONMENT_H_
 #define IV_ENVIRONMENT_H_
 #include <iv/detail/unordered_map.h>
+#include <iv/detail/type_traits.h>
 #include <iv/noncopyable.h>
 #include <iv/symbol.h>
 #include <iv/ast.h>
