@@ -324,7 +324,7 @@ inline OutputIter IntToString(IntT integer, OutputIter res) {
   //
   // -INT32_MIN / - INT64_MIN is overflowed,
   // treat negative / positive separately
-  IV_STATIC_ASSERT(std::is_signed<IntT>::value);
+  // IV_STATIC_ASSERT(std::is_signed<IntT>::value);
   std::array<char, BufferWidth<IntT>::value> buf;
   int integer_pos = buf.size();
   if (integer >= 0) {
@@ -349,7 +349,7 @@ inline OutputIter UIntToString(UIntT integer, OutputIter res) {
   //  => 10
   // UINT64_MAX => 18446744073709551615
   //  => 20
-  IV_STATIC_ASSERT(std::is_unsigned<UIntT>::value);
+  // IV_STATIC_ASSERT(std::is_unsigned<UIntT>::value);
   std::array<char, BufferWidth<UIntT>::value> buf;
   int integer_pos = buf.size();
   do {
