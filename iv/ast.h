@@ -1106,16 +1106,20 @@ INHERIT(Assigned);
 template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
-  explicit Assigned(Symbol sym) : sym_(sym), type_(true) { }
+  explicit Assigned(Symbol sym) : sym_(sym), type_(true), referenced_(false) { }
   Symbol symbol() const { return sym_; }
   int type() const { return type_; }
-  void set_type(bool type) { type_ = type; }
+  void set_type(bool type) {
+    type_ = type;
+    referenced_ = true;
+  }
   bool IsHeap() const { return type_; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
   Symbol sym_;
   bool type_;
+  bool referenced_;
 };
 
 // ThisLiteral
