@@ -216,6 +216,11 @@ var Lexer, Parser;
     }
   };
 
+  function isValidLHS(expr) {
+    var type = expr.type;
+    return type === "Identifier" || type === "PropertyAccess" || type == "AssignmentPattern";
+  }
+
   Parser = function Parser(source) {
     this.lexer = new Lexer(source);
     this.next();
@@ -471,6 +476,9 @@ var Lexer, Parser;
         };
         this.parseVariableDeclarations(init);
         if (this.token === OP["in"]) {
+          if (init.body.length !== 1) {
+            throw new Error("ILLEGAL");
+          }
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
@@ -489,7 +497,7 @@ var Lexer, Parser;
           expr: initExpr
         };
         if (this.token === OP["in"]) {
-          if (initExpr.type !== "Identifier" && initExpr.type !== "PropertyAccess") {
+          if (!isValidLHS(initExpr)) {
             throw new Error("ILLEGAL");
           }
           this.next();
@@ -733,7 +741,7 @@ var Lexer, Parser;
     if (!isAssignOp(this.token)) {
       return result;
     }
-    if (result.type !== "Identifier" && result.type !== "PropertyAccess") {
+    if (!isValidLHS(result)) {
       throw new Error("ILLEGAL");
     }
     var op = Lexer.opToString(this.token);
@@ -890,7 +898,7 @@ var Lexer, Parser;
       case OP["--"]:
         this.next();
         var expr = this.parseMemberExpression();
-        if (expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+        if (!isValidLHS(expr)) {
           throw new Error("ILLEGAL");
         }
         return {type: "UnaryExpression", op: op, expr: expr};
@@ -903,7 +911,7 @@ var Lexer, Parser;
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         (this.token === OP["++"] || this.token === OP["--"])) {
-      if(expr.type !== "Identifier" && expr.type !== "PropertyAccess") {
+      if (!isValidLHS(expr)) {
         throw new Error("ILLEGAL");
       }
       expr = {

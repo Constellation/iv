@@ -484,10 +484,10 @@ var Lexer, Parser;
           body: []
         };
         this.parseDeclarations(init, false);
-        if (init.body.length !== 1) {
-          throw new Error("ILLEGAL");
-        }
         if (this.token === OP["in"]) {
+          if (init.body.length !== 1) {
+            throw new Error("ILLEGAL");
+          }
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
