@@ -20,8 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-var Lexer, Parser;
-(function() {
+(function(exp) {
   var IDENT = new Object(), EOS = 0, ILLEGAL = 1, NOTFOUND = 2,
       EXP = "EXP", STMT = "STMT", DECL = "DECL",
       GETTER = 1, SETTER = 2,
@@ -108,7 +107,7 @@ var Lexer, Parser;
   function isRelationalOp(op) {
     return OP["RELATIONAL_FIRST"] < op && op < OP["RELATIONAL_LAST"];
   }
-  Lexer = function Lexer(source) {
+  function Lexer(source) {
     this.current = source;
     this.value = null;
     this.pos = 0;
@@ -214,10 +213,10 @@ var Lexer, Parser;
     return type === "Identifier" || type === "PropertyAccess" || type == "AssignmentPattern";
   }
 
-  Parser = function Parser(source) {
+  function Parser(source) {
     this.lexer = new Lexer(source);
     this.next();
-  };
+  }
   Parser.prototype.parse = function() {
     var global = {
       type : "global",
@@ -309,13 +308,14 @@ var Lexer, Parser;
     return null;
   };
   Parser.prototype.expectSemicolon = function() {
+    if (this.lexer.hasLineTerminatorBeforeNext) {
+      return true;
+    }
     if (this.token === OP[";"]) {
       this.next();
       return true;
     }
-    if (this.lexer.hasLineTerminatorBeforeNext ||
-        this.token === OP["}"] ||
-        this.token === EOS) {
+    if (this.token === OP["}"] || this.token === EOS) {
       return true;
     }
     throw new Error("ILLEGAL");
@@ -414,19 +414,13 @@ var Lexer, Parser;
       type: "ContinueStatement",
       label: null
     };
-    if (!this.lexer.hasLineTerminatorBeforeNext &&
-        this.token !== OP[";"] &&
-        this.token !== OP["}"] &&
-        this.token !== EOS) {
-      if (this.token === OP["IDENTIFIER"]) {
-        stmt.label = {
-          type: "Identifier",
-          value: this.lexer.value
-        };
-        this.next();
-      } else {
-        throw new Error("ILLEGAL");
-      }
+    if (this.token === OP["IDENTIFIER"] &&
+        !this.lexer.hasLineTerminatorBeforeNext) {
+      stmt.label = {
+        type: "Identifier",
+        value: this.lexer.value
+      };
+      this.next();
     }
     this.expectSemicolon();
     return stmt;
@@ -564,41 +558,33 @@ var Lexer, Parser;
       type: "BreakStatement",
       label: null
     };
-    if (!this.lexer.hasLineTerminatorBeforeNext &&
-        this.token !== OP[";"] &&
-        this.token !== OP["}"] &&
-        this.token !== EOS) {
-      if (this.token === OP["IDENTIFIER"]) {
-        stmt.label = {
-          type: "Identifier",
-          value: this.lexer.value
-        };
-        this.next();
-      } else {
-        throw new Error("ILLEGAL");
-      }
+    if (this.token === OP["IDENTIFIER"] &&
+        !this.lexer.hasLineTerminatorBeforeNext) {
+      stmt.label = {
+        type: "Identifier",
+        value: this.lexer.value
+      };
+      this.next();
     }
     this.expectSemicolon();
     return stmt;
   };
   Parser.prototype.parseReturnStatement = function() {
-    this.next();
-    if (this.lexer.hasLineTerminatorBeforeNext ||
-        this.token === OP[";"] ||
-        this.token === OP["}"] ||
-        this.token === EOS) {
-      this.expectSemicolon();
-      return {
-        type: "ReturnStatement",
-        expr: { type: "Undefined" }
-      };
-    }
-    var expr = this.parseExpression(true);
-    this.expectSemicolon();
-    return {
+    var stmt = {
       type: "ReturnStatement",
-      expr: expr
+      expr: null
     };
+    this.next();
+    if (!this.lexer.hasLineTerminatorBeforeNext &&
+        this.token !== OP[";"] &&
+        this.token !== OP["}"] &&
+        this.token !== EOS) {
+      stmt.expr = this.parseExpression(true);
+    } else {
+      stmt.expr = { type: "Undefined" };
+    }
+    this.expectSemicolon();
+    return stmt;
   };
   Parser.prototype.parseWithStatement = function() {
     this.next();
@@ -1639,6 +1625,9 @@ var Lexer, Parser;
     this.lexer.flags = obj.flags;
     this.lexer.hasLineTerminatorBeforeNext = obj.hasLineTerminatorBeforeNext;
   };
-})();
+
+  exp.Parser = Parser;
+  exp.Lexer = Lexer;
+})(this);
 
 // print(JSON.stringify(new Parser("var i = [...ret]").parse()));
