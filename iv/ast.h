@@ -92,8 +92,9 @@ class Scope : public ScopeBase<Factory> {
   typedef typename SpaceVector<Factory, Assigned<Factory>*>::type Assigneds;
   typedef Scope<Factory> this_type;
 
-  explicit Scope(Factory* factory, bool is_global)
+  explicit Scope(Factory* factory, bool is_global, Assigneds* params)
     : up_(NULL),
+      params_(params),
       vars_(typename Variables::allocator_type(factory)),
       funcs_(typename FunctionLiterals::allocator_type(factory)),
       assigneds_(typename Assigneds::allocator_type(factory)),
@@ -150,6 +151,16 @@ class Scope : public ScopeBase<Factory> {
 
   void RollUp() {
     std::unordered_set<Symbol> already;
+    // parameters
+    for (typename Assigneds::const_iterator it = params_->begin(),
+         last = params_->end(); it != last; ++it) {
+      Assigned<Factory>* assigned(*it);
+      const Symbol sym = assigned->symbol();
+      if (already.find(sym) == already.end()) {
+        already.insert(sym);
+        assigneds_.push_back(assigned);
+      }
+    }
 
     // function declarations
     for (typename FunctionLiterals::const_iterator it = funcs_.begin(),
@@ -166,7 +177,7 @@ class Scope : public ScopeBase<Factory> {
         // arguments of test is hiding, not reachable.
         hiding_arguments_ = true;
       }
-      if (already.find(sym) != already.end()) {
+      if (already.find(sym) == already.end()) {
         already.insert(sym);
         assigneds_.push_back(assigned);
       }
@@ -177,7 +188,7 @@ class Scope : public ScopeBase<Factory> {
          last = vars_.end(); it != last; ++it) {
       Assigned<Factory>* assigned = it->first;
       const Symbol sym = assigned->symbol();
-      if (already.find(sym) != already.end()) {
+      if (already.find(sym) == already.end()) {
         already.insert(sym);
         assigneds_.push_back(assigned);
       }
@@ -185,6 +196,7 @@ class Scope : public ScopeBase<Factory> {
   }
  protected:
   this_type* up_;
+  Assigneds* params_;
   Variables vars_;
   FunctionLiterals funcs_;
   Assigneds assigneds_;

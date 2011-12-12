@@ -111,21 +111,22 @@ class CatchEnvironment : public Environment {
 
 class FunctionEnvironment : public Environment {
  public:
-  FunctionEnvironment(Environment* upper, Environment** placeholder)
+  FunctionEnvironment(Environment* upper,
+                      Environment** placeholder)
     : Environment(upper, placeholder),
       unresolved_() {
   }
 
   template<typename ScopeType>
-  void Resolve(const ScopeType& scope) {
+  void Resolve(ScopeType* scope) {
     typedef typename std::remove_pointer<
         typename ScopeType::Assigneds::value_type>::type Assigned;
     typedef std::unordered_map<Symbol, Assigned*> AssignedMap;
     AssignedMap map;
     // construct map
     for (typename ScopeType::Assigneds::const_iterator
-         it = scope.assigneds().begin(),
-         last = scope.assigneds().end();
+         it = scope->assigneds().begin(),
+         last = scope->assigneds().end();
          it != last; ++it) {
       map.insert(std::make_pair((*it)->symbol(), *it));
     }

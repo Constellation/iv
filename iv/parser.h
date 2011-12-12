@@ -218,7 +218,7 @@ class Parser : private Noncopyable<> {
     Assigneds* params = factory_->template NewVector<Assigned*>();
     Statements* body = factory_->template NewVector<Statement*>();
     FunctionEnvironment environment(environment_, &environment_);
-    Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL);
+    Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL, params);
     assert(target_ == NULL);
     bool error_flag = true;
     bool *res = &error_flag;
@@ -227,7 +227,7 @@ class Parser : private Noncopyable<> {
     const bool strict = ParseSourceElements(Token::TK_EOS, body, CHECK);
     const std::size_t end_position = lexer_.end_position();
     scope->RollUp();
-    environment.Resolve(*scope);
+    environment.Resolve(scope);
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
                                      NULL,
@@ -2067,7 +2067,7 @@ class Parser : private Noncopyable<> {
 
     Statements* const body = factory_->template NewVector<Statement*>();
     FunctionEnvironment environment(environment_, &environment_);
-    Scope* const scope = factory_->NewScope(decl_type);
+    Scope* const scope = factory_->NewScope(decl_type, params);
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
     const bool function_is_strict =
@@ -2113,7 +2113,7 @@ class Parser : private Noncopyable<> {
     Next();
     const std::size_t end_block_position = lexer_.previous_end_position();
     scope->RollUp();
-    environment.Resolve(*scope);
+    environment.Resolve(scope);
     assert(params && body && scope);
     return factory_->NewFunctionLiteral(decl_type,
                                         name,

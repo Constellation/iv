@@ -136,9 +136,10 @@ class BasicAstFactory {
             typename SpaceUString::allocator_type(static_cast<Factory*>(this)));
   }
 
-  Scope* NewScope(typename FunctionLiteral::DeclType type) {
+  Scope* NewScope(typename FunctionLiteral::DeclType type, Assigneds* params) {
     return new (static_cast<Factory*>(this))
-        Scope(static_cast<Factory*>(this), type == FunctionLiteral::GLOBAL);
+        Scope(static_cast<Factory*>(this),
+              type == FunctionLiteral::GLOBAL, params);
   }
 
   NullLiteral* NewNullLiteral(std::size_t begin, std::size_t end) {
