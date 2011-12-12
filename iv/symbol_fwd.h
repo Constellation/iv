@@ -5,6 +5,7 @@
 #include <iv/detail/cinttypes.h>
 #include <iv/detail/functional.h>
 #include <iv/ustring.h>
+#include <iv/unicode.h>
 #include <iv/ustringpiece.h>
 #include <iv/stringpiece.h>
 #include <iv/byteorder.h>
@@ -81,9 +82,7 @@ struct SymbolLayout<8, false> {
   };
 };
 
-typedef detail::SymbolLayout<
-    core::Size::kPointerSize,
-    core::kLittleEndian> Symbol;
+typedef SymbolLayout<core::Size::kPointerSize, core::kLittleEndian> Symbol;
 
 inline Symbol MakeSymbol(const core::UString* str) {
   Symbol symbol = { };
@@ -192,7 +191,28 @@ inline core::UString GetSymbolString(Symbol sym) {
   }
 }
 
-} } }  // namespace iv::core::symbol
+}  // namespace symbol
+namespace detail {
+
+inline std::ostream& operator<<(std::ostream& o, Symbol symbol) {
+  if (symbol::IsIndexSymbol(symbol)) {
+    return o << symbol::GetIndexFromSymbol(symbol);
+  } else {
+    const UString* str = symbol::GetStringFromSymbol(symbol);
+    if (str) {
+      std::string utf8;
+      utf8.reserve(str->size());
+      if (unicode::UTF16ToUTF8(
+              str->begin(), str->end(),
+              std::back_inserter(utf8)) == unicode::UNICODE_NO_ERROR) {
+        return o << utf8;
+      }
+    }
+  }
+  return o;
+}
+
+} } }  // namespace iv::core::detail
 namespace IV_HASH_NAMESPACE_START {
 
 // template specialization for Symbol in std::unordered_map

@@ -580,8 +580,8 @@ class BasicStringPiece {
 
 // allow StringPiece to be logged (needed for unit testing).
 template<class CharT, class Traits>
-std::ostream& operator<<(std::ostream& o,
-                         const BasicStringPiece<CharT, Traits>& piece) {
+inline std::ostream& operator<<(std::ostream& o,
+                                const BasicStringPiece<CharT, Traits>& piece) {
   o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
   return o;
 }
