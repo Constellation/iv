@@ -2178,6 +2178,9 @@ class Parser : private Noncopyable<> {
         symbol,
         lexer_.begin_position(),
         lexer_.end_position());
+    if (symbol == symbol::arguments()) {
+      scope_->RecordArguments();
+    }
     environment_->Referencing(symbol);
     Next();
     return ident;

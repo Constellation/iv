@@ -100,7 +100,8 @@ class Scope : public ScopeBase<Factory> {
       is_global_(is_global),
       direct_call_to_eval_(false),
       with_statement_(false),
-      hiding_arguments_(false) {
+      hiding_arguments_(false),
+      has_arguments_(false) {
   }
 
   void AddUnresolved(Assigned<Factory>* name, bool is_const) {
@@ -141,6 +142,10 @@ class Scope : public ScopeBase<Factory> {
 
   void RecordDirectCallToEval() {
     direct_call_to_eval_ = true;
+  }
+
+  void RecordArguments() {
+    has_arguments_ = true;
   }
 
   void RollUp() {
@@ -187,6 +192,7 @@ class Scope : public ScopeBase<Factory> {
   bool direct_call_to_eval_;
   bool with_statement_;
   bool hiding_arguments_;
+  bool has_arguments_;
 };
 
 class SymbolHolder {
