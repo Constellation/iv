@@ -41,9 +41,9 @@ class BasicAstFactory {
         begin, end);
   }
 
-  Assigned* NewAssigned(const SymbolHolder& holder) {
+  Assigned* NewAssigned(const SymbolHolder& holder, bool immutable) {
     return Location(
-        new(static_cast<Factory*>(this)) Assigned(holder),
+        new(static_cast<Factory*>(this)) Assigned(holder, immutable),
         holder.begin_position(), holder.end_position());
   }
 

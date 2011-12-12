@@ -524,7 +524,7 @@ class Parser : private Noncopyable<> {
         }
       }
 
-      Assigned* name = factory_->NewAssigned(sym);
+      Assigned* name = factory_->NewAssigned(sym, false);
       Declaration* decl;
       if (token_ == Token::TK_ASSIGN) {
         Next();
@@ -1018,7 +1018,7 @@ class Parser : private Noncopyable<> {
       }
       EXPECT(Token::TK_RPAREN);
       IS(Token::TK_LBRACE);
-      name = factory_->NewAssigned(sym);
+      name = factory_->NewAssigned(sym, false);
       {
         CatchEnvironment environment(environment_, &environment_, sym);
         catch_block = ParseBlock(CHECK);
@@ -1105,7 +1105,12 @@ class Parser : private Noncopyable<> {
     // define named function as variable declaration
     assert(expr);
     assert(expr->name());
-    scope_->AddUnresolved(expr->name().Address(), false);
+    Assigned* assigned = expr->name().Address();
+    Assigned* target = factory_->NewAssigned(
+        ast::SymbolHolder(assigned->symbol(),
+                          assigned->begin_position(),
+                          assigned->end_position()), false);
+    scope_->AddUnresolved(target, false);
     return factory_->NewFunctionStatement(expr);
   }
 
@@ -1978,7 +1983,10 @@ class Parser : private Noncopyable<> {
             throw_error_if_strict_code_line = lexer_.line_number();
           }
         }
-        name = factory_->NewAssigned(sym);
+        name = factory_->NewAssigned(
+            sym,
+            (decl_type == FunctionLiteral::STATEMENT ||
+             decl_type == FunctionLiteral::EXPRESSION));
       } else if (decl_type == FunctionLiteral::DECLARATION ||
                  decl_type == FunctionLiteral::STATEMENT) {
         IS(Token::TK_IDENTIFIER);
@@ -2016,7 +2024,7 @@ class Parser : private Noncopyable<> {
           }
         }
       }
-      params->push_back(factory_->NewAssigned(sym));
+      params->push_back(factory_->NewAssigned(sym, false));
       EXPECT(Token::TK_RPAREN);
     } else {
       if (token_ != Token::TK_RPAREN) {
@@ -2046,7 +2054,7 @@ class Parser : private Noncopyable<> {
               throw_error_if_strict_code_line = lexer_.line_number();
             }
           }
-          params->push_back(factory_->NewAssigned(sym));
+          params->push_back(factory_->NewAssigned(sym, false));
           param_set.insert(sym);
           if (token_ == Token::TK_COMMA) {
             Next(true);
@@ -2113,9 +2121,7 @@ class Parser : private Noncopyable<> {
     Next();
     const std::size_t end_block_position = lexer_.previous_end_position();
     scope->set_strict(function_is_strict);
-    environment.Resolve(
-        (decl_type == FunctionLiteral::STATEMENT ||
-         (decl_type == FunctionLiteral::EXPRESSION && name)) ? name : NULL);
+    environment.Resolve((name && name->immutable()) ? name : NULL);
     assert(params && body && scope);
     return factory_->NewFunctionLiteral(decl_type,
                                         name,
