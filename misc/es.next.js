@@ -1086,18 +1086,18 @@ var Lexer, Parser;
       case OP["#"]: {  // Sealed Literal
         this.next();
         if (this.token == OP["["]) {
-          return this.parseArrayLiteral();
+          return this.parseArrayLiteral(true);
         } else if (this.token == OP["{"]) {
-          return this.parseObjectLiteral();
+          return this.parseObjectLiteral(true);
         }
         throw new Error("ILLEGAL");
       }
 
       case OP["["]:
-        return this.parseArrayLiteral();
+        return this.parseArrayLiteral(false);
 
       case OP["{"]:
-        return this.parseObjectLiteral();
+        return this.parseObjectLiteral(false);
 
       default:
         throw new Error("ILLEGAL");
@@ -1159,18 +1159,18 @@ var Lexer, Parser;
       case OP["#"]: {  // Sealed Literal
         this.next();
         if (this.token == OP["["]) {
-          return this.parseArrayLiteral();
+          return this.parseArrayLiteral(true);
         } else if (this.token == OP["{"]) {
-          return this.parseObjectLiteral();
+          return this.parseObjectLiteral(true);
         }
         throw new Error("ILLEGAL");
       }
 
       case OP["["]:
-        return this.parseArrayLiteral();
+        return this.parseArrayLiteral(false);
 
       case OP["{"]:
-        return this.parseObjectLiteral();
+        return this.parseObjectLiteral(false);
 
       case OP["("]:
         this.next();
@@ -1215,10 +1215,10 @@ var Lexer, Parser;
       throw new Error("ILLEGAL");
     }
   };
-  Parser.prototype.parseArrayLiteral = function() {
+  Parser.prototype.parseArrayLiteral = function(sealed) {
     this.next();
     var literal = {
-      type: "Array",
+      type: (sealed) ? "SealedArray" : "Array",
       items: []
     };
     while (this.token !== OP["]"]) {
@@ -1244,9 +1244,9 @@ var Lexer, Parser;
     this.next();
     return literal;
   };
-  Parser.prototype.parseObjectLiteral = function() {
+  Parser.prototype.parseObjectLiteral = function(sealed) {
     var literal = {
-      type: "Object",
+      type: sealed ? "SealedObject" : "Object",
       values: [],
       accessors : []
     };
