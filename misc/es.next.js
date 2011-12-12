@@ -1218,7 +1218,8 @@ var Lexer, Parser;
   Parser.prototype.parseArrayLiteral = function(sealed) {
     this.next();
     var literal = {
-      type: (sealed) ? "SealedArray" : "Array",
+      type: "Array",
+      sealed: sealed,
       items: []
     };
     while (this.token !== OP["]"]) {
@@ -1246,7 +1247,8 @@ var Lexer, Parser;
   };
   Parser.prototype.parseObjectLiteral = function(sealed) {
     var literal = {
-      type: sealed ? "SealedObject" : "Object",
+      type: "Object",
+      sealed: sealed,
       values: [],
       accessors : []
     };
