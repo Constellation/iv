@@ -26,11 +26,15 @@ class Environment : private Noncopyable<Environment> {
 
   bool with_environment() const { return with_environment_; }
 
+  bool eval_environment() const { return eval_environment_; }
+
+  bool direct_call_to_eval() const { return direct_call_to_eval_; }
+
+  bool upper_of_eval() const { return upper_of_eval_; }
+
   virtual void Referencing(Symbol symbol, bool type) = 0;
 
   Environment* upper() const { return upper_; }
-
-  uint32_t scope_nest_count() const { return scope_nest_count_; }
 
   void RecordDirectCallToEval() {
     direct_call_to_eval_ = true;
@@ -51,8 +55,7 @@ class Environment : private Noncopyable<Environment> {
       with_environment_(with_environment),
       eval_environment_(false),
       direct_call_to_eval_(false),
-      upper_of_eval_(false),
-      scope_nest_count_(upper ? (upper->scope_nest_count() + 1) : 0) {
+      upper_of_eval_(false) {
     *placeholder_ = this;
   }
 
@@ -67,7 +70,6 @@ class Environment : private Noncopyable<Environment> {
   bool eval_environment_;
   bool direct_call_to_eval_;
   bool upper_of_eval_;
-  uint32_t scope_nest_count_;
 };
 
 class WithEnvironment : public Environment {
@@ -109,24 +111,29 @@ class CatchEnvironment : public Environment {
   Symbol target_;
 };
 
+template<typename ScopeType>
 class FunctionEnvironment : public Environment {
  public:
+  typedef typename std::remove_pointer<
+      typename ScopeType::Assigneds::value_type>::type Assigned;
+
   FunctionEnvironment(Environment* upper,
-                      Environment** placeholder)
+                      Environment** placeholder,
+                      ScopeType* scope)
     : Environment(upper, placeholder),
+      scope_(scope),
       unresolved_() {
   }
 
-  template<typename ScopeType>
-  void Resolve(ScopeType* scope) {
-    typedef typename std::remove_pointer<
-        typename ScopeType::Assigneds::value_type>::type Assigned;
+  void Resolve(Assigned* exp) {
     typedef std::unordered_map<Symbol, Assigned*> AssignedMap;
     AssignedMap map;
     // construct map
+    scope_->set_upper_of_eval(upper_of_eval());
+    scope_->RollUp(exp);
     for (typename ScopeType::Assigneds::const_iterator
-         it = scope->assigneds().begin(),
-         last = scope->assigneds().end();
+         it = scope_->assigneds().begin(),
+         last = scope_->assigneds().end();
          it != last; ++it) {
       map.insert(std::make_pair((*it)->symbol(), *it));
     }
@@ -137,10 +144,22 @@ class FunctionEnvironment : public Environment {
       const typename SymbolMap::iterator found = unresolved_.find(it->first);
       if (found != unresolved_.end()) {
         // resolve this
-        it->second->set_type(found->second);
+        it->second->set_type(it->second->type() || found->second);
         unresolved_.erase(found);
       }
     }
+
+    // compute needs this heap scope
+    for (typename ScopeType::Assigneds::const_iterator
+         it = scope_->assigneds().begin(),
+         last = scope_->assigneds().end();
+         it != last; ++it) {
+      if ((*it)->type()) {
+        scope_->set_needs_heap_scope(true);
+        break;
+      }
+    }
+
     if (upper()) {
       upper()->Propagate(&unresolved_);
     }
@@ -162,6 +181,7 @@ class FunctionEnvironment : public Environment {
     }
   }
  private:
+  ScopeType* scope_;
   SymbolMap unresolved_;
 };
 

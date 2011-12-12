@@ -99,10 +99,13 @@ class Scope : public ScopeBase<Factory> {
       funcs_(typename FunctionLiterals::allocator_type(factory)),
       assigneds_(typename Assigneds::allocator_type(factory)),
       is_global_(is_global),
+      strict_(false),
       direct_call_to_eval_(false),
       with_statement_(false),
       hiding_arguments_(false),
-      has_arguments_(false) {
+      has_arguments_(false),
+      upper_of_eval_(false),
+      needs_heap_scope_(false) {
   }
 
   void AddUnresolved(Assigned<Factory>* name, bool is_const) {
@@ -133,6 +136,24 @@ class Scope : public ScopeBase<Factory> {
     return is_global_;
   }
 
+  bool strict() const { return strict_; }
+
+  void set_strict(bool strict) {
+    strict_ = strict;
+  }
+
+  bool upper_of_eval() const { return upper_of_eval_; }
+
+  void set_upper_of_eval(bool val) {
+    upper_of_eval_ = val;
+  }
+
+  bool needs_heap_scope() const { return needs_heap_scope_; }
+
+  void set_needs_heap_scope(bool val) {
+    needs_heap_scope_ = val;
+  }
+
   this_type* GetUpperScope() {
     return up_;
   }
@@ -149,15 +170,26 @@ class Scope : public ScopeBase<Factory> {
     has_arguments_ = true;
   }
 
-  void RollUp() {
+  bool IsArgumentsRealized() const {
+    return !hiding_arguments_ && (has_arguments_ || direct_call_to_eval_);
+  }
+
+  bool IsParametersInHeap() const {
+    return IsArgumentsRealized() && !strict();
+  }
+
+  void RollUp(Assigned<Factory>* expression) {  // maybe NULL
     std::unordered_set<Symbol> already;
     // parameters
+    // if "arguments" is realized, move parameters to HEAP
+    const bool parameters_are_in_heap = IsParametersInHeap();
     for (typename Assigneds::const_iterator it = params_->begin(),
          last = params_->end(); it != last; ++it) {
       Assigned<Factory>* assigned(*it);
       const Symbol sym = assigned->symbol();
       if (already.find(sym) == already.end()) {
         already.insert(sym);
+        assigned->set_type(parameters_are_in_heap);
         assigneds_.push_back(assigned);
       }
     }
@@ -193,6 +225,13 @@ class Scope : public ScopeBase<Factory> {
         assigneds_.push_back(assigned);
       }
     }
+
+    if (expression) {
+      if (already.find(expression->symbol()) == already.end()) {
+        assigneds_.push_back(expression);
+        expression->set_immutable(true);
+      }
+    }
   }
  protected:
   this_type* up_;
@@ -201,10 +240,13 @@ class Scope : public ScopeBase<Factory> {
   FunctionLiterals funcs_;
   Assigneds assigneds_;
   bool is_global_;
+  bool strict_;
   bool direct_call_to_eval_;
   bool with_statement_;
   bool hiding_arguments_;
   bool has_arguments_;
+  bool upper_of_eval_;
+  bool needs_heap_scope_;
 };
 
 class SymbolHolder {
@@ -1124,21 +1166,28 @@ INHERIT(Assigned);
 template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
-  explicit Assigned(Symbol sym) : sym_(sym), type_(true), referenced_(false) { }
+  explicit Assigned(Symbol sym)
+    : sym_(sym), type_(false), referenced_(false), immutable_(false) { }
   Symbol symbol() const { return sym_; }
   int type() const { return type_; }
   void set_type(bool type) {
     type_ = type;
     referenced_ = true;
   }
+  bool immutable() const { return immutable_; }
+  void set_immutable(bool val) {
+    immutable_ = val;
+  }
   bool IsReferenced() const { return referenced_; }
   bool IsHeap() const { return type_; }
+  bool IsImmutable() const { return immutable_; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
   Symbol sym_;
   bool type_;
   bool referenced_;
+  bool immutable_;
 };
 
 // ThisLiteral
