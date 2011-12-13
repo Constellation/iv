@@ -131,19 +131,17 @@
           if (m[1] === "//") {
             // SingleLineComment
             this.current = m[2].replace(/^[^\n\r\u2028\u2029]*/, "");
-          } else {
+          } else if ((m = this.current.match(/(^\/\*[\s\S]*?\*\/)([\S\s]*)/)) && m.length) {
             // MultiLineComment
-            if ((m = this.current.match(/(^\/\*([\s\S]*?)\*\/)([\S\s]*)/)) && m.length) {
-              var result = m[1];
-              var right = m[2] || "";
-              if (/[\n\r\u2028\u2029]/.test(result)) {
-                // found LineTerminator
-                this.hasLineTerminatorBeforeNext = true;
-              }
-              this.current = right;
-            } else {
-              token = ILLEGAL;
+            var result = m[1];
+            var right = m[2] || "";
+            if (/[\n\r\u2028\u2029]/.test(result)) {
+              // found LineTerminator
+              this.hasLineTerminatorBeforeNext = true;
             }
+            this.current = right;
+          } else {
+            token = ILLEGAL;
           }
         } else if ((m = this.current.match(/(?:^"((?:\\.|[^"])*)"|^'((?:\\.|[^'])*)')([\S\s]*)/)) && m.length) {
           // scan string
