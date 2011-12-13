@@ -126,12 +126,12 @@
       this.current = this.current.replace(/^[\u0009\u000B\u000C\uFEFF\u0020\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]*/, "");
       if (this.current) {
         var m = null;
-        if ((m = this.current.match(/(^\/\/|^\/\*)([\S\s]*)/)) && m.length) {
+        if ((m = this.current.match(/^(\/[/*])([\S\s]*)/)) && m.length) {
           // skip comment
           if (m[1] === "//") {
             // SingleLineComment
             this.current = m[2].replace(/^[^\n\r\u2028\u2029]*/, "");
-          } else if ((m = this.current.match(/(^\/\*[\s\S]*?\*\/)([\S\s]*)/)) && m.length) {
+          } else if ((m = this.current.match(/^(\/\*[\s\S]*?\*\/)([\S\s]*)/)) && m.length) {
             // MultiLineComment
             var result = m[1];
             var right = m[2] || "";
@@ -143,7 +143,7 @@
           } else {
             token = ILLEGAL;
           }
-        } else if ((m = this.current.match(/(?:^"((?:\\.|[^"])*)"|^'((?:\\.|[^'])*)')([\S\s]*)/)) && m.length) {
+        } else if ((m = this.current.match(/^(?:"((?:\\.|[^"])*)"|'((?:\\.|[^'])*)')([\S\s]*)/)) && m.length) {
           // scan string
           token = OP["STRING"];
           this.value = m[1] || m[2];
@@ -232,15 +232,18 @@
     }
   };
   Parser.prototype.parseStatementAndDeclaration = function() {
-    if (this.token === OP["function"]) {
-      // parse function declaration
-      return this.parseFunctionDeclaration();
-    } else if (this.token === OP["const"]) {
-      return this.parseConstDeclaration();
-    } else if (this.token === OP["let"]) {
-      return this.parseLetDeclaration();
-    } else {
-      return this.parseStatement();
+    switch (this.token) {
+      case OP["function"]:
+        return this.parseFunctionDeclaration();
+
+      case OP["const"]:
+        return this.parseConstDeclaration();
+
+      case OP["let"]:
+        return this.parseLetDeclaration();
+
+      default:
+        return this.parseStatement();
     }
   };
   Parser.prototype.parseStatement = function() {
