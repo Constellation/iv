@@ -168,7 +168,6 @@ class ContinuationStatus : private core::Noncopyable<ContinuationStatus> {
   ContinuationSet current_;
 };
 
-
 class Compiler
     : private core::Noncopyable<Compiler>,
       public AstVisitor {
@@ -251,10 +250,9 @@ class Compiler
       core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
-      current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, global, core_, Code::GLOBAL);
-      EmitFunctionCode(global, code, current_variable_scope_);
-      assert(!current_variable_scope_);
+      EmitFunctionCode<Code::GLOBAL>(global, code,
+                                     std::shared_ptr<VariableScope>());
     }
     CompileEpilogue(code);
     return code;
@@ -268,15 +266,11 @@ class Compiler
       core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
-      // create dummy global scope
       current_variable_scope_ =
-          std::shared_ptr<VariableScope>(
-              new FunctionScope(std::shared_ptr<VariableScope>(), data_));
-      std::shared_ptr<VariableScope> target = current_variable_scope_;
+          std::shared_ptr<VariableScope>(new GlobalScope());
       code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
-      EmitFunctionCode(function, code, current_variable_scope_);
+      EmitFunctionCode<Code::FUNCTION>(function, code, current_variable_scope_);
       current_variable_scope_ = current_variable_scope_->upper();
-      assert(!current_variable_scope_);
     }
     CompileEpilogue(code);
     return code;
@@ -290,10 +284,27 @@ class Compiler
       core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
-      current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, eval, core_, Code::EVAL);
-      EmitFunctionCode(eval, code, current_variable_scope_);
-      assert(!current_variable_scope_);
+      EmitFunctionCode<Code::EVAL>(eval, code,
+                                   std::shared_ptr<VariableScope>())
+    }
+    CompileEpilogue(code);
+    return code;
+  }
+
+  Code* CompileEvalStrict(const FunctionLiteral& eval, JSScript* script) {
+    Code* code = NULL;
+    use_expression_value_ = true;
+    {
+      script_ = script;
+      core_ = CoreData::New();
+      data_ = core_->data();
+      data_->reserve(core::Size::KB);
+      current_variable_scope_ =
+          std::shared_ptr<VariableScope>(new EvalScope());
+      code = new Code(ctx_, script_, eval, core_, Code::EVAL);
+      EmitFunctionCode<Code::FUNCTION>(function, code, current_variable_scope_);
+      current_variable_scope_ = current_variable_scope_->upper();
     }
     CompileEpilogue(code);
     return code;
@@ -307,10 +318,9 @@ class Compiler
       core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
-      current_variable_scope_ = std::shared_ptr<VariableScope>();
       code = new Code(ctx_, script_, eval, core_, Code::GLOBAL);
-      EmitFunctionCode(eval, code, current_variable_scope_);
-      assert(!current_variable_scope_);
+      EmitFunctionCode<Code::GLOBAL>(eval, code,
+                                     std::shared_ptr<VariableScope>());
     }
     CompileEpilogue(code);
     return code;
@@ -325,15 +335,11 @@ class Compiler
       core_ = CoreData::New();
       data_ = core_->data();
       data_->reserve(core::Size::KB);
-      // create dummy global scope
       current_variable_scope_ =
-          std::shared_ptr<VariableScope>(
-              new FunctionScope(std::shared_ptr<VariableScope>(), data_));
-      std::shared_ptr<VariableScope> target = current_variable_scope_;
+          std::shared_ptr<VariableScope>(new GlobalScope());
       code = new Code(ctx_, script_, function, core_, Code::FUNCTION);
-      EmitFunctionCode(function, code, current_variable_scope_);
+      EmitFunctionCode<Code::FUNCTION>(function, code, current_variable_scope_);
       current_variable_scope_ = current_variable_scope_->upper();
-      assert(!current_variable_scope_);
     }
     CompileEpilogue(code);
     return code;
@@ -1143,15 +1149,8 @@ class Compiler
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint32_t index = SymbolToNameIndex(ident->symbol());
-        if (ident->symbol() == symbol::arguments()) {
-          code_->set_code_has_arguments();
-          // Emit<OP::PUSH_ARGUMENTS>();
-          EmitLoadName(index);
-          stack_depth_.Up();
-        } else {
-          EmitLoadName(index);
-          stack_depth_.Up();
-        }
+        EmitLoadName(index);
+        stack_depth_.Up();
         rhs.Accept(this);
         EmitAssignedBinaryOperation(token);
         EmitStoreName(index);
@@ -1705,19 +1704,9 @@ class Compiler
   void Visit(const Assigned* lit) { }
 
   void Visit(const Identifier* lit) {
-    // directlly extract value and set to top version
     DepthPoint point(&stack_depth_);
-    const Symbol name = lit->symbol();
-    const uint32_t index = SymbolToNameIndex(name);
-    if (name == symbol::arguments()) {
-      code_->set_code_has_arguments();
-      // Emit<OP::PUSH_ARGUMENTS>();
-      EmitLoadName(index);
-      stack_depth_.Up();
-    } else {
-      EmitLoadName(index);
-      stack_depth_.Up();
-    }
+    EmitLoadName(SymbolToNameIndex(lit->symbol()));
+    stack_depth_.Up();
     point.LevelCheck(1);
   }
 
@@ -2011,7 +2000,6 @@ class Compiler
     if (direct_call_to_eval) {
       Emit<OP::EVAL>(args.size());
       stack_depth_.Down(args.size() + 1);
-      code_->set_code_has_eval();
       current_variable_scope_->RecordEval();
     } else {
       Emit<op>(args.size());
@@ -2019,20 +2007,90 @@ class Compiler
     }
   }
 
+  void EmitFunctionBindingInstantiation(const FunctionLiteral& lit) {
+    FunctionScope* env =
+        static_cast<FunctionScope*>(current_variable_scope_.get());
+    if (env->needs_heap_scope()) {
+      Emit<OP::BUILD_ENV>(env->heap_count());
+      assert(!env->heap().empty());
+      for (FunctionScope::HeapVariables::const_iterator it = env->heap().begin(),
+           last = env->heap().end(); it != last; ++it) {
+        Emit<OP::INSTANTIATE_HEAP_BINDING>(
+            SymbolToNameIndex(it->first),
+            std::get<1>(it->second),
+            static_cast<uint32_t>(std::get<2>(it->second)));
+      }
+    }
+    {
+      std::size_t param_count = 0;
+      typedef std::unordered_map<Symbol, std::size_t> Symbol2Count;
+      Symbol2Count sym2c;
+      for (Code::Names::const_iterator it = code_->params().begin(),
+           last = code->params().end(); it != last; ++it, ++param_count) {
+        sym2c[*it] = param_count;
+      }
+      for (Symbol2Count::const_iterator it = sym2c.begin(),
+           last = sym2c.end(); it != last; ++it) {
+        const Symbol sym = it->first;
+        Emit<OP::LOAD_PARAM>(it->second);
+        EmitStoreName(SymbolToNameIndex(it->first));
+      }
+    }
+    if (env->IsArgumentsRealized()) {
+      Emit<OP::BUILD_AND_STORE_ARGUMENTS>();
+    }
+    if (env->IsFunctionNameExposed()) {
+      Emit<OP::INSTANTIATE_FUNCTION>();
+    }
+    code_->set_heap_size(env->heap_count());
+    code_->set_stack_size(env->stack_count());
+  }
+
+  void EmitPatchingBindingInstantiation(const FunctionLiteral& lit, bool eval) {
+    std::unordered_set<Symbol> already_declared;
+    const Scope& scope = lit.scope();
+    typedef Scope::FunctionLiterals Functions;
+    const Functions& functions = scope.function_declarations();
+    const uint32_t flag = eval ? 1 : 0;
+    for (Functions::const_iterator it = functions.begin(),
+         last = functions.end(); it != last; ++it) {
+      if ((*it)->IsFunctionDeclaration()) {
+        const Symbol name = (*it)->name();
+        if (already_declared.find(name) == already_declared.end()) {
+          already_declared.insert(name);
+          const uint32_t index = SymbolToNameIndex(name);
+          Emit<OP::INSTANTIATE_BINDING>(index, flag);
+        }
+      }
+    }
+    // variables
+    typedef Scope::Variables Variables;
+    const Variables& vars = scope.variables();
+    for (Variables::const_iterator it = vars.begin(),
+         last = vars.end(); it != last; ++it) {
+      const Symbol name = it->first->symbol();
+      if (already_declared.find(name) == already_declared.end()) {
+        already_declared.insert(name);
+        const uint32_t index = SymbolToNameIndex(name);
+        Emit<OP::INSTANTIATE_BINDING>(index, flag);
+      }
+    }
+  }
+
+  template<Code::CodeType TYPE>
   void EmitFunctionCode(const FunctionLiteral& lit,
                         Code* code,
                         std::shared_ptr<VariableScope> upper) {
     CodeContextPrologue(code);
+    const std::size_t code_info_stack_size = code_info_stack_.size();
     const Scope& scope = lit.scope();
     current_variable_scope_ =
-        std::shared_ptr<VariableScope>(
-            new FunctionScope(upper,
-                              ctx_,
-                              code,
-                              data_,
-                              scope));
-    const std::size_t code_info_stack_size = code_info_stack_.size();
-
+        std::shared_ptr<VariableScope>(new CodeScope<TYPE>(upper, scope));
+    if (TYPE == Code::FUNCTION) {
+      EmitFunctionBindingInstantiation(lit);
+    } else {
+      EmitPatchingBindingInstantiation(lit, TYPE == Code::GLOBAL);
+    }
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
@@ -2042,51 +2100,24 @@ class Compiler
         const FunctionLiteral* const func = *it;
         Visit(func);
         const Symbol sym = func->name().Address()->symbol();
-        if (sym == symbol::arguments()) {
-          // arguments hiding optimization
-          // example:
-          //   function test() {
-          //     function arguments() { }
-          //   }
-          // arguments of test is hiding, not reachable.
-          code_->set_code_hiding_arguments();
-        }
         const uint32_t index = SymbolToNameIndex(sym);
         EmitStoreName(index);
         Emit<OP::POP_TOP>();
         stack_depth_.Down();
       }
     }
-    {
-      // variables
-      std::unordered_set<Symbol> already_declared;
-      typedef Scope::Variables Variables;
-      const Variables& vars = scope.variables();
-      for (Variables::const_iterator it = vars.begin(),
-           last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first->symbol();
-        if (already_declared.find(name) == already_declared.end()) {
-          code_->varnames_.push_back(name);
-          already_declared.insert(name);
-        }
+    // main
+    const Statements& stmts = lit.body();
+    for (Statements::const_iterator it = stmts.begin(),
+         last = stmts.end(); it != last; ++it) {
+      (*it)->Accept(this);
+      if (continuation_status_.IsDeadStatement()) {
+        break;
       }
     }
-    {
-      // main
-      const Statements& stmts = lit.body();
-      for (Statements::const_iterator it = stmts.begin(),
-           last = stmts.end(); it != last; ++it) {
-        (*it)->Accept(this);
-        if (continuation_status_.IsDeadStatement()) {
-          break;
-        }
-      }
-    }
-
-    // epilogue
     Emit<OP::STOP_CODE>();
     CodeContextEpilogue(code);
-    std::shared_ptr<VariableScope> target = current_variable_scope_;
+    const std::shared_ptr<VariableScope> target = current_variable_scope_;
     {
       // lazy code compile
       std::size_t code_info_stack_index = code_info_stack_size;
@@ -2095,11 +2126,11 @@ class Compiler
            it != last; ++it, ++code_info_stack_index) {
         const CodeInfo info = code_info_stack_[code_info_stack_index];
         assert(std::get<0>(info) == *it);
-        EmitFunctionCode(*std::get<1>(info), *it, std::get<2>(info));
+        EmitFunctionCode<FUNCTION>(*std::get<1>(info), *it, std::get<2>(info));
       }
     }
     current_variable_scope_ = target->upper();
-    // clear code info stack
+    // shrink code info stack
     code_info_stack_.erase(
         code_info_stack_.begin() + code_info_stack_size,
         code_info_stack_.end());
@@ -2169,58 +2200,79 @@ class Compiler
     stack_depth_.Down();
   }
 
+  template<OP::Type op>
+  void EmitOptimizedLookup(uint32_t index) {
+    const LookupInfo info =
+        current_variable_scope_->Lookup(code_->names_[index]);
+    switch (info.type()) {
+      case LookupInfo::STACK: {
+        const bool immutable = info.immutable();
+        const OP::Type res = (immutable) ?
+            OP::ToLocalImmutable(op, code_->strict()) : OP::ToLocal(op);
+        Emit(res, info.location());
+        break;
+      }
+      case LookupInfo::HEAP: {
+        Emit(OP::ToHeap(op), index,
+             current_variable_scope_->scope_nest_count() - info.scope(),
+             info.location());
+        break;
+      }
+      case LookupInfo::GLOBAL: {
+        // last 2 zeros are placeholders for PIC
+        Emit(OP::ToGlobal(op), index, 0u, 0u);
+        break;
+      }
+      case LookupInfo::LOOKUP: {
+        Emit<op>(index);
+        break;
+      }
+    }
+  }
+
   void EmitLoadName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::LOAD_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::LOAD_NAME>(index);
   }
 
   void EmitStoreName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::STORE_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::STORE_NAME>(index);
   }
 
   void EmitCallName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::CALL_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::CALL_NAME>(index);
   }
 
   void EmitIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::INCREMENT_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::INCREMENT_NAME>(index);
   }
 
   void EmitPostfixIncrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::POSTFIX_INCREMENT_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::POSTFIX_INCREMENT_NAME>(index);
   }
 
   void EmitDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::DECREMENT_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::DECREMENT_NAME>(index);
   }
 
   void EmitPostfixDecrementName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::POSTFIX_DECREMENT_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::POSTFIX_DECREMENT_NAME>(index, 0, 0);
   }
 
   void EmitTypeofName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::TYPEOF_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::TYPEOF_NAME>(index, 0, 0);
   }
 
   void EmitDeleteName(uint32_t index) {
     const std::size_t point = data_->size();
-    Emit<OP::DELETE_NAME>(index, 0, 0);
-    current_variable_scope_->Lookup(code_->names_[index], point, code_);
+    EmitOptimizedLookup<OP::DELETE_NAME>(index, 0, 0);
   }
 
   std::size_t CurrentSize() const {
@@ -2255,14 +2307,6 @@ class Compiler
     data_->push_back(arg1);
     data_->push_back(arg2);
     data_->push_back(arg3);
-    if (OP::IsNameLookupOP<op>::value &&
-        code_->names()[arg1.value] == symbol::arguments()) {
-      if (op == OP::STORE_NAME) {
-        code_->set_code_has_arguments_assign();
-      } else {
-        code_->set_code_has_arguments();
-      }
-    }
   }
 
   template<OP::Type op>
@@ -2295,6 +2339,19 @@ class Compiler
   void Emit(OP::Type op, Instruction arg) {
     data_->push_back(op);
     data_->push_back(arg);
+  }
+
+  void Emit(OP::Type op, Instruction arg1, Instruction arg2) {
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+  }
+
+  void Emit(OP::Type op, Instruction arg1, Instruction arg2, Instruction arg3) {
+    data_->push_back(op);
+    data_->push_back(arg1);
+    data_->push_back(arg2);
+    data_->push_back(arg3);
   }
 
   void EmitOPAt(OP::Type op, std::size_t index) {
@@ -2455,7 +2512,11 @@ inline Code* CompileFunction(Context* ctx,
 inline Code* CompileEval(Context* ctx,
                          const FunctionLiteral& eval, JSScript* script) {
   Compiler compiler(ctx);
-  return compiler.CompileEval(eval, script);
+  if (eval.strict()) {
+    return compiler.CompileEvalStrict(eval, script);
+  } else {
+    return compiler.CompileEval(eval, script);
+  }
 }
 
 inline Code* CompileIndirectEval(Context* ctx,

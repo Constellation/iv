@@ -36,13 +36,11 @@ class Code : public radio::HeapObject<radio::POINTER> {
     FEXPR_LOCAL
   };
   friend class Compiler;
-  friend class FunctionScope;
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Code*>::type Codes;
   // symbol, decl type, configurable, param point
   typedef std::tuple<Symbol, DeclType, std::size_t, uint32_t> Decl;
-  typedef GCVector<Decl>::type Decls;
 
   Code(Context* ctx,
        JSScript* script,
@@ -55,11 +53,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
       has_arguments_(false),
       has_arguments_assign_(false),
       has_name_(func.name()),
-      has_declarative_env_(true),
-      arguments_hiding_(false),
       scope_nest_count_(0),
-      reserved_record_size_(0),
-      decl_type_(func.type()),
+      heap_size_(0),
       name_(),
       script_(script),
       block_begin_position_(func.block_begin_position()),
@@ -70,10 +65,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       end_(),
       codes_(),
       names_(),
-      varnames_(),
       params_(func.params().size()),
-      locals_(),
-      decls_(),
       constants_(),
       exception_table_(),
       construct_map_(NULL) {
@@ -109,14 +101,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return names_;
   }
 
-  const Names& varnames() const {
-    return varnames_;
-  }
-
-  Names& varnames() {
-    return varnames_;
-  }
-
   const Names& params() const {
     return params_;
   }
@@ -133,89 +117,25 @@ class Code : public radio::HeapObject<radio::POINTER> {
         std::make_tuple(type, begin, end, stack_base_level, dynamic_env_level));
   }
 
-  bool strict() const {
-    return strict_;
-  }
+  bool strict() const { return strict_; }
 
-  bool HasEval() const {
-    return has_eval_;
-  }
+  JSScript* script() const { return script_; }
 
-  JSScript* script() const {
-    return script_;
-  }
+  bool HasName() const { return has_name_; }
 
-  bool HasArguments() const {
-    return has_arguments_;
-  }
+  const Symbol& name() const { return name_; }
 
-  bool HasArgumentsAssign() const {
-    return has_arguments_assign_;
-  }
+  std::size_t block_begin_position() const { return block_begin_position_; }
 
-  bool HasDeclEnv() const {
-    return has_declarative_env_;
-  }
+  std::size_t block_end_position() const { return block_end_position_; }
 
-  bool IsShouldCreateArguments() const {
-    return !arguments_hiding_ && (has_arguments_ || has_eval_);
-  }
-
-  bool IsShouldCreateHeapArguments() const {
-     return IsShouldCreateArguments() && !strict();
-  }
-
-  bool IsFunctionDeclaration() const {
-    return decl_type_ == FunctionLiteral::DECLARATION;
-  }
-
-  FunctionLiteral::DeclType decl_type() const {
-    return decl_type_;
-  }
-
-  void set_code_has_eval() {
-    has_eval_ = true;
-  }
-
-  void set_code_has_arguments() {
-    has_arguments_ = true;
-  }
-
-  void set_code_has_arguments_assign() {
-    has_arguments_assign_ = true;
-  }
-
-  void set_code_hiding_arguments() {
-    arguments_hiding_ = true;
-  }
-
-  bool HasName() const {
-    return has_name_;
-  }
-
-  const Symbol& name() const {
-    return name_;
-  }
-
-  std::size_t block_begin_position() const {
-    return block_begin_position_;
-  }
-
-  std::size_t block_end_position() const {
-    return block_end_position_;
-  }
-
-  std::size_t stack_depth() const {
-    return stack_depth_;
-  }
+  std::size_t stack_depth() const { return stack_depth_; }
 
   void set_stack_depth(std::size_t depth) {
-    stack_depth_ = depth;
+    stack_depth_ = depth + stack_size_;
   }
 
-  std::size_t start() const {
-    return start_;
-  }
+  std::size_t start() const { return start_; }
 
   const Instruction* begin() const {
     return core_->data()->data() + start_;
@@ -233,37 +153,19 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return core_->data()->data() + end_;
   }
 
-  const Names& locals() const {
-    return locals_;
-  }
+  CodeType code_type() const { return code_type_; }
 
-  CodeType code_type() const {
-    return code_type_;
-  }
+  void set_heap_size(uint32_t size) { heap_size_ = size; }
 
-  const Decls& decls() const {
-    return decls_;
-  }
+  uint32_t heap_size() const { return heap_size_; }
 
-  void set_has_declarative_env(bool val) {
-    has_declarative_env_ = val;
-  }
+  void set_stack_size(uint32_t size) { stack_size_ = size; }
 
-  void set_reserved_record_size(uint32_t size) {
-    reserved_record_size_ = size;
-  }
+  uint32_t stack_size() const { return stack_size_; }
 
-  uint32_t reserved_record_size() const {
-    return reserved_record_size_;
-  }
+  void set_scope_nest_count(uint32_t count) { scope_nest_count_ = count; }
 
-  void set_scope_nest_count(uint32_t count) {
-    scope_nest_count_ = count;
-  }
-
-  uint32_t scope_nest_count() const {
-    return scope_nest_count_;
-  }
+  uint32_t scope_nest_count() const { return scope_nest_count_; }
 
   Data* GetData() {
     return core_->data();
@@ -297,30 +199,21 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   CodeType code_type_;
   bool strict_;
-  bool has_eval_;
-  bool has_arguments_;
-  bool has_arguments_assign_;
   bool has_name_;
-  bool has_declarative_env_;
-  bool arguments_hiding_;
   uint32_t scope_nest_count_;
-  uint32_t reserved_record_size_;
-  FunctionLiteral::DeclType decl_type_;
+  uint32_t heap_size_;
+  uint32_t stack_size_;
   Symbol name_;
   JSScript* script_;
   std::size_t block_begin_position_;
   std::size_t block_end_position_;
   std::size_t stack_depth_;
-  // TODO(Constellation): use std::shared_ptr for CoreData
   CoreData* core_;
   std::size_t start_;
   std::size_t end_;
   Codes codes_;
   Names names_;
-  Names varnames_;
   Names params_;
-  Names locals_;
-  Decls decls_;
   JSVals constants_;
   ExceptionTable exception_table_;
   Map* construct_map_;

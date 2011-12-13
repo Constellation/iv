@@ -13,95 +13,101 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-class VariableScope : private core::Noncopyable<VariableScope> {
+class LookupInfo {
  public:
   enum Type {
-    STACK = 0,
+    STACK,
     HEAP,
     GLOBAL,
     LOOKUP
   };
 
+  LookupInfo(Type type,
+             uint32_t location = 0,
+             bool immutable = false,
+             uint32_t scope = 0)
+    : type_(type),
+      location_(location),
+      scope_(scope),
+      immutable_(immutable) {
+  }
+
+  Type type() const { return type_; }
+
+  uint32_t location() const { return location_; }
+
+  uint32_t scope() const { return scope_; }
+
+  bool immutable() const { return immutable_; }
+
+ private:
+  Type type_;
+  uint32_t location_;
+  uint32_t scope_;
+  bool immutable_;
+};
+
+class VariableScope : private core::Noncopyable<VariableScope> {
+ public:
   virtual ~VariableScope() { }
 
-  std::shared_ptr<VariableScope> upper() const {
+  const std::shared_ptr<VariableScope>& upper() const {
     return upper_;
   }
 
-  void Lookup(Symbol sym, std::size_t target, Code* from) {
-    // first, so this is stack
-    LookupImpl(sym, target, (InWith())? LOOKUP : STACK, from);
-  }
-
-  virtual bool InWith() const {
-    return false;
-  }
-
-  static Type TypeUpgrade(Type now, Type next) {
-    return std::max<Type>(now, next);
-  }
-
-  virtual void LookupImpl(Symbol sym,
-                          std::size_t target, Type type, Code* from) = 0;
-
-  virtual void MakeUpperOfEval() { }
-
-  void RecordEval() {
-    MakeUpperOfEval();
-    VariableScope* scope = GetRawUpper();
-    while (scope) {
-      scope->MakeUpperOfEval();
-      scope = scope->GetRawUpper();
-    }
-  }
+  virtual LookupInfo Lookup(Symbol sym) = 0;
 
   uint32_t scope_nest_count() const {
     return scope_nest_count_;
   }
 
  protected:
-  explicit VariableScope(std::shared_ptr<VariableScope> upper)
+  // from catch or with
+  explicit VariableScope(const std::shared_ptr<VariableScope>& upper)
     : upper_(upper),
-      scope_nest_count_(upper ? (upper->scope_nest_count() + 1) : 0) {
+      scope_nest_count_(upper->scope_nest_count() + 1) {
+    // automatically count up nest
   }
 
-  VariableScope* GetRawUpper() const {
-    return upper_.get();
+  // from function
+  VariableScope(const std::shared_ptr<VariableScope>& upper, uint32_t nest)
+    : upper_(upper),
+      scope_nest_count_(nest) {
   }
 
+  // from eval or global
+  VariableScope() : upper_(), scope_nest_count_(0) { }
+
+ private:
   std::shared_ptr<VariableScope> upper_;
   uint32_t scope_nest_count_;
 };
 
 class WithScope : public VariableScope {
  public:
-  explicit WithScope(std::shared_ptr<VariableScope> upper)
+  explicit WithScope(const std::shared_ptr<VariableScope>& upper)
     : VariableScope(upper) {
     assert(upper);
   }
 
-  bool InWith() const {
-    return true;
-  }
-
-  void LookupImpl(Symbol sym,
-                  std::size_t target, Type type, Code* from) {
-    upper_->LookupImpl(sym, target, TypeUpgrade(type, LOOKUP), from);
+  LookupInfo Lookup(Symbol sym) {
+    return LookupInfo(LookupInfo::LOOKUP);
   }
 };
 
 class CatchScope : public VariableScope {
  public:
-  CatchScope(std::shared_ptr<VariableScope> upper, Symbol sym)
+  CatchScope(const std::shared_ptr<VariableScope>& upper, Symbol sym)
     : VariableScope(upper),
       target_(sym) {
     assert(upper);
   }
 
-  void LookupImpl(Symbol sym,
-                  std::size_t target, Type type, Code* from) {
-    if (sym != target_) {
-      upper_->LookupImpl(sym, target, TypeUpgrade(type, HEAP), from);
+  LookupInfo Lookup(Symbol sym) {
+    if (sym == target_) {
+      return LookupInfo(LookupInfo::LOOKUP);
+    } else {
+      return upper()->Lookup(sym);
     }
   }
 
@@ -109,380 +115,131 @@ class CatchScope : public VariableScope {
   Symbol target_;
 };
 
-class FunctionScope : public VariableScope {
+template<Code::CodeType TYPE>
+class CodeScope;
+
+typedef CodeScope<Code::FUNCTION> FunctionScope;
+
+template<>
+class CodeScope<Code::FUNCTION> : public VariableScope {
  public:
+  // Variable is tuple<heap, location, immutable>
+  typedef std::tuple<bool, uint32_t, bool> Variable;
+  typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
+  typedef std::unordered_map<Symbol, Variable> VariableMap;
 
-  // Load sites vector (variable load sites)
-  // symbol, point, type, from
-  typedef std::vector<std::tuple<Symbol, std::size_t, Type, Code*> > Sites;
-  // type, refcount, immutable
-  typedef std::tuple<Type, std::size_t, bool> Variable;
-  typedef std::unordered_map<Symbol, Variable> Variables;
-  // Symbol -> used, location
-  typedef std::unordered_map<Symbol, std::tuple<bool, uint32_t> > Locations;
-  typedef std::unordered_map<Symbol, uint32_t> HeapOffsetMap;
-
-  // this is dummy global environment constructor
-  FunctionScope(std::shared_ptr<VariableScope> upper, Code::Data* data)
-    : VariableScope(upper),
+  CodeScope(std::shared_ptr<VariableScope> upper, const Scope* scope),
+    : VariableScope(
+        upper,
+        upper->scope_nest_count() + (scope->needs_heap_scope() ? 1 : 0)),
+      scope_(scope),
       map_(),
-      sites_(),
-      code_(NULL),
-      data_(data),
-      upper_of_eval_(false),
-      eval_top_scope_(false),
-      dynamic_target_scope_(false) {
-  }
-
-  FunctionScope(std::shared_ptr<VariableScope> upper,
-                Context* ctx,
-                Code* code,
-                Code::Data* data,
-                const Scope& scope)
-    : VariableScope(upper),
-      map_(),
-      sites_(),
-      code_(code),
-      data_(data),
-      upper_of_eval_(false),
-      eval_top_scope_(code->code_type() == Code::EVAL),
-      dynamic_target_scope_(scope.HasDirectCallToEval() && !code->strict()) {
-    if (!IsTop()) {
-      // is global or not
-      map_[symbol::arguments()] = std::make_tuple(STACK, 0, code_->strict());
-
-      // params
-      for (Code::Names::const_iterator it = code->params().begin(),
-           last = code->params().end(); it != last; ++it) {
-        map_[*it] = std::make_tuple(STACK, 0, false);
+      heap_(),
+      stack_count_(0) {
+    assert(upper);
+    for (Scope::Assigneds::const_iterator it = scope->assigneds().begin(),
+         last = scope->assigneds().end(); it != last; ++it) {
+      // already unique
+      assert(map_.find((*it)->symbol()) == map_.end());
+      const Assigned* assigned = (*it);
+      if (assigned->IsHeap() || scope_->upper_of_eval()) {
+        const std::pair<Symbol, Variable> item =
+            std::make_pair(
+                assigned->symbol(),
+                std::make_tuple(true, heap_.size(), assigned->immutable()));
+        heap_.push_back(item);
+        map_.insert(item);
+      } else if (assigned->IsReferenced()) {
+        const std::pair<Symbol, Variable> item =
+            std::make_pair(
+                assigned->symbol(),
+                std::make_tuple(false, stack_count_++, assigned->immutable()));
+        map_.insert(item);
       }
+    }
 
-      // function declarations
-      typedef Scope::FunctionLiterals Functions;
-      const Functions& functions = scope.function_declarations();
-      for (Functions::const_iterator it = functions.begin(),
-           last = functions.end(); it != last; ++it) {
-        const Symbol sym = (*it)->name().Address()->symbol();
-        map_[sym] = std::make_tuple(STACK, 0, false);
-      }
-
-      // variables
-      typedef Scope::Variables Variables;
-      const Variables& vars = scope.variables();
-      for (Variables::const_iterator it = vars.begin(),
-           last = vars.end(); it != last; ++it) {
-        const Symbol name = it->first->symbol();
-        if (map_.find(name) != map_.end()) {
-          map_[name] = std::make_tuple(
-              TypeUpgrade(std::get<0>(map_[name]), STACK), 0, false);
-        } else {
-          map_[name] = std::make_tuple(STACK, 0, false);
-        }
-      }
-
-      const FunctionLiteral::DeclType type = code->decl_type();
-      if (type == FunctionLiteral::STATEMENT ||
-          (type == FunctionLiteral::EXPRESSION && code_->HasName())) {
-        const Symbol& name = code_->name();
-        if (map_.find(name) == map_.end()) {
-          map_[name] = std::make_tuple(STACK, 0, true);
-        }
+    if (map_.find(symbol::arguments()) == map_.end()) {
+      // not hidden
+      if (scope_->arguments_is_heap() || scope_->upper_of_eval()) {
+        const std::pair<Symbol, Variable> item =
+            std::make_pair(
+                symbol::arguments(),
+                std::make_tuple(true, heap_.size(), scope->strict()));
+        heap_.push_back(item);
+        map_.insert(item);
+      } else if (scope_->has_arguments()) {
+        const std::pair<Symbol, Variable> item =
+            std::make_pair(
+                symbol::arguments(),
+                std::make_tuple(false, stack_count_++, scope->strict()));
+        map_.insert(item);
       }
     }
   }
 
-  ~FunctionScope() {
-    if (IsTop()) {
-      // if direct call to eval top scope
-      // all variable is {configurable : true}, so not STACK
-      if (!eval_top_scope_) {
-        for (Sites::const_iterator it = sites_.begin(),
-             last = sites_.end(); it != last; ++it) {
-          const Symbol sym = std::get<0>(*it);
-          const std::size_t point = std::get<1>(*it);
-          const Type type = TypeUpgrade(std::get<0>(map_[sym]),
-                                        std::get<2>(*it));
-          if (type == GLOBAL) {
-            // emit global opt
-            const uint32_t op = (*data_)[point].value;
-            (*data_)[point] = OP::ToGlobal(op);
-          }
-        }
+  LookupInfo Lookup(Symbol sym) {
+    const VariableMap::const_iterator it = map_.find(sym);
+    if (it != map_.end()) {
+      const bool heap = std::get<0>(it->second);
+      const uint32_t location = std::get<1>(it->second);
+      const bool immutable = std::get<2>(it->second);
+      if (heap) {
+        return LookupInfo(LookupInfo::HEAP, location,
+                          immutable, scope_nest_count());
+      } else {
+        return LookupInfo(LookupInfo::STACK, location, immutable);
       }
     } else {
-      assert(code_);
-      Locations locations;
-      uint32_t location = 0;
-
-      // arguments heap conversion
-      if (code_->IsShouldCreateHeapArguments()) {
-        for (Code::Names::const_iterator it = code_->params().begin(),
-             last = code_->params().end(); it != last; ++it) {
-          std::get<0>(map_[*it]) = TypeUpgrade(std::get<0>(map_[*it]), HEAP);
-        }
+      // not found in this scope
+      if (scope_->direct_call_to_eval()) {
+        // maybe new variable in this scope
+        return LookupInfo(LookupInfo::LOOKUP);
       }
-
-      if (!upper_of_eval_) {
-        // stack variable calculation
-        for (Variables::const_iterator it = map_.begin(),
-             last = map_.end(); it != last; ++it) {
-          if (std::get<0>(it->second) == STACK) {
-            if (std::get<1>(it->second) == 0) {  // ref count is 0
-              locations.insert(
-                  std::make_pair(it->first, std::make_tuple(false, 0u)));
-            } else {
-              locations.insert(
-                  std::make_pair(it->first, std::make_tuple(true, location++)));
-              code_->locals_.push_back(it->first);
-            }
-          }
-        }
-        code_->set_stack_depth(code_->stack_depth() + code_->locals().size());
-      }
-
-      code_->set_scope_nest_count(scope_nest_count());
-      HeapOffsetMap offsets;
-      InsertDecls(code_, locations, &offsets);
-
-      // opcode optimization
-      if (upper_of_eval_) {
-        // only HEAP analyzer is allowed
-        for (Sites::const_iterator it = sites_.begin(),
-             last = sites_.end(); it != last; ++it) {
-          const Symbol sym = std::get<0>(*it);
-          const std::size_t point = std::get<1>(*it);
-          const Type type = TypeUpgrade(std::get<0>(map_[sym]),
-                                        std::get<2>(*it));
-          if (type == HEAP) {  // not LOOKUP
-            // emit heap opt
-            const uint32_t op = (*data_)[point].value;
-            (*data_)[point] = OP::ToHeap(op);
-            (*data_)[point + 2] = scope_nest_count();
-            (*data_)[point + 3] = offsets[sym];
-          }
-        }
-      } else {
-        for (Sites::const_iterator it = sites_.begin(),
-             last = sites_.end(); it != last; ++it) {
-          const Symbol sym = std::get<0>(*it);
-          const std::size_t point = std::get<1>(*it);
-          const Type type = TypeUpgrade(std::get<0>(map_[sym]),
-                                        std::get<2>(*it));
-          if (type == STACK) {
-            const bool immutable = std::get<2>(map_[sym]);
-            Code* from = std::get<3>(*it);
-            const uint32_t op = (*data_)[point].value;
-            (*data_)[point] = (immutable) ?
-                OP::ToLocalImmutable(op, from->strict()) : OP::ToLocal(op);
-            assert(locations.find(sym) != locations.end());
-            assert(std::get<0>(locations[sym]));
-            const uint32_t loc = std::get<1>(locations[sym]);
-            (*data_)[point + 1] = loc;
-          } else if (type == GLOBAL) {
-            // emit global opt
-            const uint32_t op = (*data_)[point].value;
-            (*data_)[point] = OP::ToGlobal(op);
-          } else if (type == HEAP) {  // Not Lookup
-            // emit heap opt
-            const uint32_t op = (*data_)[point].value;
-            (*data_)[point] = OP::ToHeap(op);
-            (*data_)[point + 2] = scope_nest_count();
-            (*data_)[point + 3] = offsets[sym];
-          }
-        }
-      }
+      return upper()->Lookup(sym);
     }
   }
 
-  void LookupImpl(Symbol sym, std::size_t target, Type type, Code* from) {
-    if (map_.find(sym) == map_.end()) {
-      if (IsTop()) {
-        // this is global
-        map_[sym] =
-            std::make_tuple((eval_top_scope_) ? LOOKUP : GLOBAL, 1, false);
-        sites_.push_back(
-            std::make_tuple(
-                sym,
-                target,
-                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type),
-                from));
-      } else {
-        upper_->LookupImpl(
-            sym,
-            target,
-            TypeUpgrade(type, (IsDynamicTargetScope()) ? LOOKUP : HEAP),
-            from);
-      }
-    } else {
-      if (IsTop()) {
-        ++std::get<1>(map_[sym]);
-        sites_.push_back(
-            std::make_tuple(
-                sym,
-                target,
-                TypeUpgrade((eval_top_scope_) ? LOOKUP : GLOBAL, type),
-                from));
-      } else {
-        const Type stored = (type == LOOKUP || type == GLOBAL) ? HEAP : type;
-        assert(stored == HEAP || stored == STACK);
-        std::get<0>(map_[sym]) = TypeUpgrade(std::get<0>(map_[sym]), stored);
-        ++std::get<1>(map_[sym]);
-        sites_.push_back(std::make_tuple(sym, target, type, from));
-      }
-    }
-  }
+  const HeapVariables& heap() const { return heap_; }
 
-  virtual void MakeUpperOfEval() {
-    upper_of_eval_ = true;
-  }
-
-  bool IsDynamicTargetScope() const {
-    return dynamic_target_scope_;
-  }
-
-  bool IsTop() const {
-    return !upper_;
-  }
+  uint32_t stack_count() const { return stack_count_; }
 
  private:
-  class SearchDecl {
-   public:
-    explicit SearchDecl(Symbol sym) : sym_(sym) { }
-    template<typename DeclTuple>
-    bool operator()(const DeclTuple& decl) const {
-      return std::get<0>(decl) == sym_;
-    }
-   private:
-    Symbol sym_;
-  };
+  const Scope* scope_;
+  VariableMap map_;
+  HeapVariables heap_;
+  uint32_t stack_count_;
+};
 
-  void InsertDecls(Code* code,
-                   const Locations& locations,
-                   HeapOffsetMap* offsets) {
-    bool needs_env = false;
-    std::unordered_set<Symbol> already_decled;
-    {
-      std::size_t param_count = 0;
-      typedef std::unordered_map<Symbol, std::size_t> Symbol2Count;
-      Symbol2Count sym2c;
-      for (Code::Names::const_iterator it = code->params().begin(),
-           last = code->params().end(); it != last; ++it, ++param_count) {
-        sym2c[*it] = param_count;
-      }
-      for (Symbol2Count::const_iterator it = sym2c.begin(),
-           last = sym2c.end(); it != last; ++it) {
-        const Symbol sym = it->first;
-        const Locations::const_iterator f = locations.find(sym);
-        if (f == locations.end()) {
-          needs_env = true;
-          const uint32_t offset = offsets->size();
-          offsets->insert(std::make_pair(sym, offset));
-          code->decls_.push_back(
-              std::make_tuple(
-                  sym,
-                  Code::PARAM,
-                  it->second,
-                  offset));
-        } else {
-          // PARAM on STACK
-          if (std::get<0>(f->second)) {  // used
-            code->decls_.push_back(
-                std::make_tuple(
-                    sym,
-                    Code::PARAM_LOCAL,
-                    it->second,
-                    std::get<1>(f->second)));
-          }
-        }
-        already_decled.insert(sym);
-      }
-    }
+typedef CodeScope<Code::EVAL> EvalScope;
 
-    for (Code::Codes::const_iterator it = code->codes().begin(),
-         last = code->codes().end(); it != last; ++it) {
-      if ((*it)->IsFunctionDeclaration()) {
-        const Symbol& fn = (*it)->name();
-        if (locations.find(fn) == locations.end() &&
-            already_decled.find(fn) == already_decled.end()) {
-          needs_env = true;
-          const uint32_t offset = offsets->size();
-          offsets->insert(std::make_pair(fn, offset));
-          code->decls_.push_back(
-              std::make_tuple(fn, Code::FDECL, 0, offset));
-          already_decled.insert(fn);
-        }
-      }
-    }
+template<>
+class CodeScope<Code::EVAL> : public VariableScope {
+ public:
+  EvalScope() : VariableScope() { }
 
-    if (code->IsShouldCreateArguments()) {
-      const Locations::const_iterator f = locations.find(symbol::arguments());
-      if (f == locations.end()) {
-        needs_env = true;
-        const uint32_t offset = offsets->size();
-        offsets->insert(std::make_pair(symbol::arguments(), offset));
-        code->decls_.push_back(
-            std::make_tuple(symbol::arguments(), Code::ARGUMENTS, 0, offset));
-      } else {
-        assert(std::get<0>(f->second));  // used
-        code->decls_.push_back(
-            std::make_tuple(symbol::arguments(),
-                            Code::ARGUMENTS_LOCAL,
-                            0,
-                            std::get<1>(f->second)));
-      }
-      already_decled.insert(symbol::arguments());
-    }
-
-    for (Code::Names::const_iterator it = code->varnames().begin(),
-         last = code->varnames().end(); it != last; ++it) {
-      const Symbol& dn = *it;
-      if (locations.find(dn) == locations.end() &&
-          already_decled.find(dn) == already_decled.end()) {
-        needs_env = true;
-        const uint32_t offset = offsets->size();
-        offsets->insert(std::make_pair(dn, offset));
-        code->decls_.push_back(std::make_tuple(dn, Code::VAR, 0, offset));
-        already_decled.insert(dn);
-      }
-    }
-
-    const FunctionLiteral::DeclType type = code->decl_type();
-    if (type == FunctionLiteral::STATEMENT ||
-        (type == FunctionLiteral::EXPRESSION && code->HasName())) {
-      const Symbol& fn = code->name();
-      if (already_decled.find(fn) == already_decled.end()) {
-        const Locations::const_iterator f = locations.find(fn);
-        if (f == locations.end()) {
-          needs_env = true;
-          const uint32_t offset = offsets->size();
-          offsets->insert(std::make_pair(fn, offset));
-          code->decls_.push_back(std::make_tuple(fn, Code::FEXPR, 0, offset));
-        } else {
-          if (std::get<0>(f->second)) {  // used
-            code->decls_.push_back(
-                std::make_tuple(fn,
-                                Code::FEXPR_LOCAL,
-                                0,
-                                std::get<1>(f->second)));
-          }
-        }
-        already_decled.insert(fn);
-      }
-    }
-    if (!needs_env) {
-      code->set_has_declarative_env(false);
-    } else {
-      code->set_reserved_record_size(offsets->size());
-    }
+  EvalScope(std::shared_ptr<VariableScope> upper, const Scope* scope)
+    : VariableScope() {
   }
 
-  Variables map_;
-  Sites sites_;
-  Code* code_;
-  Code::Data* data_;
-  bool upper_of_eval_;
-  bool eval_top_scope_;
-  bool dynamic_target_scope_;
+  LookupInfo Lookup(Symbol sym) {
+    return LookupInfo(LookupInfo::LOOKUP);
+  }
+};
+
+typedef CodeScope<Code::GLOBAL> GlobalScope;
+
+template<>
+class CodeScope<Code::GLOBAL> : public VariableScope {
+ public:
+  GlobalScope() : VariableScope() { }
+
+  GlobalScope(std::shared_ptr<VariableScope> upper, const Scope* scope)
+    : VariableScope() {
+  }
+
+  LookupInfo Lookup(Symbol sym) {
+    return LookupInfo(LookupInfo::GLOBAL);
+  }
 };
 
 } } }  // namespace iv::lv5::railgun

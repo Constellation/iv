@@ -105,7 +105,8 @@ class Scope : public ScopeBase<Factory> {
       hiding_arguments_(false),
       has_arguments_(false),
       upper_of_eval_(false),
-      needs_heap_scope_(false) {
+      needs_heap_scope_(false),
+      arguments_is_heap_(false) {
   }
 
   void AddUnresolved(Assigned<Factory>* name, bool is_const) {
@@ -113,6 +114,16 @@ class Scope : public ScopeBase<Factory> {
   }
 
   void AddFunctionDeclaration(FunctionLiteral<Factory>* func) {
+    const Symbol sym = func->name().Address()->symbol();
+    if (sym == symbol::arguments()) {
+      // arguments hiding optimization
+      // example:
+      //   function test() {
+      //     function arguments() { }
+      //   }
+      // arguments of test is hiding, not reachable.
+      hiding_arguments_ = true;
+    }
     funcs_.push_back(func);
   }
 
@@ -150,6 +161,12 @@ class Scope : public ScopeBase<Factory> {
 
   bool needs_heap_scope() const { return needs_heap_scope_; }
 
+  void set_arguments_is_heap(bool val) {
+    arguments_is_heap_ = val;
+  }
+
+  bool arguments_is_heap() const { return arguments_is_heap_; }
+
   void set_needs_heap_scope(bool val) {
     needs_heap_scope_ = val;
   }
@@ -170,6 +187,8 @@ class Scope : public ScopeBase<Factory> {
     has_arguments_ = true;
   }
 
+  bool has_arguments() const { return has_arguments_; }
+
   bool IsArgumentsRealized() const {
     return !hiding_arguments_ && (has_arguments_ || direct_call_to_eval_);
   }
@@ -180,6 +199,7 @@ class Scope : public ScopeBase<Factory> {
 
   void RollUp(Assigned<Factory>* expression) {  // maybe NULL
     std::unordered_set<Symbol> already;
+
     // parameters
     // if "arguments" is realized, move parameters to HEAP
     const bool parameters_are_in_heap = IsParametersInHeap();
@@ -200,15 +220,6 @@ class Scope : public ScopeBase<Factory> {
       const FunctionLiteral<Factory>* const func = *it;
       Assigned<Factory>* assigned = func->name().Address();
       const Symbol sym = assigned->symbol();
-      if (sym == symbol::arguments()) {
-        // arguments hiding optimization
-        // example:
-        //   function test() {
-        //     function arguments() { }
-        //   }
-        // arguments of test is hiding, not reachable.
-        hiding_arguments_ = true;
-      }
       if (already.find(sym) == already.end()) {
         already.insert(sym);
         assigneds_.push_back(assigned);
@@ -246,6 +257,7 @@ class Scope : public ScopeBase<Factory> {
   bool has_arguments_;
   bool upper_of_eval_;
   bool needs_heap_scope_;
+  bool arguments_is_heap_;
 };
 
 class SymbolHolder {

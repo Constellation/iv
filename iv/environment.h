@@ -123,6 +123,7 @@ class FunctionEnvironment : public Environment {
     : Environment(upper, placeholder),
       scope_(scope),
       unresolved_() {
+    assert(upper);
   }
 
   void Resolve(Assigned* exp) {
@@ -148,19 +149,32 @@ class FunctionEnvironment : public Environment {
         unresolved_.erase(found);
       }
     }
-
-    // compute needs this heap scope
-    for (typename ScopeType::Assigneds::const_iterator
-         it = scope_->assigneds().begin(),
-         last = scope_->assigneds().end();
-         it != last; ++it) {
-      if ((*it)->type()) {
-        scope_->set_needs_heap_scope(true);
-        break;
+    {
+      const SymbolMap::const_iterator it = unresolved_.find(symbol::arguments());
+      if (it != unresolved_.end()) {
+        // assigned have no symbol::arguments
+        // hold it in scope.
+        scope_->set_arguments_is_heap(it->second);
+        unresolved_.erase(symbol::arguments());
       }
     }
 
-    if (upper()) {
+    if (upper_of_eval()) {
+      scope_->set_needs_heap_scope(!scope_->assigneds().empty());
+    } else {
+      // compute needs this heap scope
+      for (typename ScopeType::Assigneds::const_iterator
+           it = scope_->assigneds().begin(),
+           last = scope_->assigneds().end();
+           it != last; ++it) {
+        if ((*it)->type()) {
+          scope_->set_needs_heap_scope(true);
+          break;
+        }
+      }
+    }
+
+    if (!unresolved_.empty()) {
       upper()->Propagate(&unresolved_);
     }
   }
