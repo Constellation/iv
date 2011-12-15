@@ -5,7 +5,7 @@
 namespace iv {
 namespace core {
 namespace thread {
-#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40100)
+#if (defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40100)) || (IV_COMPILER_CLANG)
 
 inline int CompareAndSwap(volatile int* target,
                           int new_value, int old_value) {
