@@ -56,26 +56,13 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   }
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
   Code* code = CompileIndirectEval(ctx, *eval, script);
-  if (code->strict()) {
-    JSDeclEnv* const env = JSDeclEnv::New(ctx, ctx->global_env());
-    VM* const vm = ctx->vm();
-    const JSVal res = vm->RunEval(
-        code,
-        env,
-        env,
-        vm->stack()->current()->GetThis(),
-        IV_LV5_ERROR(e));
-    return res;
-  } else {
-    VM* const vm = ctx->vm();
-    const JSVal res = vm->RunEval(
-        code,
-        ctx->global_env(),
-        ctx->global_env(),
-        ctx->global_obj(),
-        IV_LV5_ERROR(e));
-    return res;
-  }
+  VM* const vm = ctx->vm();
+  return vm->RunEval(
+      code,
+      ctx->global_env(),
+      ctx->global_env(),
+      (code->strict()) ?
+      vm->stack()->current()->GetThis() : ctx->global_obj(), e);
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
@@ -114,34 +101,12 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
   }
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
   Code* code = CompileEval(ctx, *eval, script);
-  if (code->strict()) {
-    VM* const vm = ctx->vm();
-    JSDeclEnv* const env =
-        JSDeclEnv::New(ctx,
-                       vm->stack()->current()->lexical_env());
-    const JSVal res = vm->RunEval(
-        code,
-        env,
-        env,
-        vm->stack()->current()->GetThis(),
-        IV_LV5_ERROR(e));
-    return res;
-  } else {
-    // TODO(Constellation)
-    // if not mutating environment, not mark env
-    VM* const vm = ctx->vm();
-    if (JSDeclEnv* decl =
-        vm->stack()->current()->variable_env()->AsJSDeclEnv()) {
-      decl->MarkMutated();
-    }
-    const JSVal res = vm->RunEval(
-        code,
-        vm->stack()->current()->variable_env(),
-        vm->stack()->current()->lexical_env(),
-        vm->stack()->current()->GetThis(),
-        IV_LV5_ERROR(e));
-    return res;
-  }
+  VM* const vm = ctx->vm();
+  return vm->RunEval(
+      code,
+      vm->stack()->current()->variable_env(),
+      vm->stack()->current()->lexical_env(),
+      vm->stack()->current()->GetThis(), e);
 }
 
 } } }  // namespace iv::lv5::railgun
