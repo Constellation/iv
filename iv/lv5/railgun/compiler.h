@@ -2086,13 +2086,19 @@ class Compiler
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(
             new CodeScope<TYPE>(upper, &scope, is_eval_decl));
-    if (TYPE == Code::FUNCTION) {
-      EmitFunctionBindingInstantiation(lit, is_eval_decl);
-    } else {
-      EmitPatchingBindingInstantiation(lit, TYPE == Code::EVAL);
+    {
+      // binding instantiation
+      DepthPoint point(&stack_depth_);
+      if (TYPE == Code::FUNCTION) {
+        EmitFunctionBindingInstantiation(lit, is_eval_decl);
+      } else {
+        EmitPatchingBindingInstantiation(lit, TYPE == Code::EVAL);
+      }
+      point.LevelCheck(0);
     }
     {
       // function declarations
+      DepthPoint point(&stack_depth_);
       typedef Scope::FunctionLiterals Functions;
       const Functions& functions = scope.function_declarations();
       for (Functions::const_iterator it = functions.begin(),
@@ -2103,6 +2109,7 @@ class Compiler
         const uint32_t index = SymbolToNameIndex(sym);
         EmitInstantiateName(index);
       }
+      point.LevelCheck(0);
     }
     // main
     const Statements& stmts = lit.body();
