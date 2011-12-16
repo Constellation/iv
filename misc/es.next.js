@@ -162,8 +162,6 @@
         } else if (IdentifierStart.test(this.current)) {
           // scan identifier
           m = this.current.match(IdentifierPart);
-          print(JSON.stringify(IdentifierStart.test("||")));
-          // print(JSON.stringify(m));
           this.value = m[1];
           if (type === IdentifyReservedWords) {
             token = KEYWORDS[this.value] === IDENT ? OP[this.value] : OP["IDENTIFIER"];
