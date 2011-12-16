@@ -79,6 +79,7 @@ class Stack : public lv5::Stack {
                       JSVal* sp,
                       Code* code,
                       JSEnv* env,
+                      JSVal callee,
                       Instruction* pc,
                       std::size_t argc,
                       bool constructor_call) {
@@ -87,20 +88,13 @@ class Stack : public lv5::Stack {
       Frame* frame = reinterpret_cast<Frame*>(mem);
       frame->code_ = code;
       frame->prev_pc_ = pc;
-      if (code->HasDeclEnv()) {
-        frame->variable_env_ = frame->lexical_env_ =
-            JSDeclEnv::New(ctx, env,
-                           code->scope_nest_count(),
-                           code->reserved_record_size());
-      } else {
-        frame->variable_env_ = frame->lexical_env_ = env;
-      }
+      frame->variable_env_ = frame->lexical_env_ = env;
       frame->prev_ = current_;
       frame->ret_ = JSUndefined;
+      frame->callee_ = callee;
       frame->argc_ = argc;
       frame->dynamic_env_level_ = 0;
-      frame->localc_ = code->locals().size();
-      // FIXME(Constellation): for clang++ with C++0x patching
+      frame->localc_ = code->stack_size();
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->GetLocal(), frame->localc_, JSUndefined);
       frame->constructor_call_ = constructor_call;
@@ -126,6 +120,7 @@ class Stack : public lv5::Stack {
       frame->lexical_env_ = lexical_env;
       frame->prev_ = current_;
       frame->ret_ = JSUndefined;
+      frame->callee_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
       frame->localc_ = 0;
@@ -147,6 +142,7 @@ class Stack : public lv5::Stack {
       frame->variable_env_ = frame->lexical_env_ = ctx->global_env();
       frame->prev_ = NULL;
       frame->ret_ = JSUndefined;
+      frame->callee_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
       frame->localc_ = 0;
@@ -200,6 +196,12 @@ class Stack : public lv5::Stack {
                                entry, mark_sp_limit,
                                reinterpret_cast<void**>(&frame));
     }
+    if (frame->callee_.IsCell()) {
+      radio::Cell* ptr = frame->callee_.cell();
+      entry = GC_MARK_AND_PUSH(ptr,
+                               entry, mark_sp_limit,
+                               reinterpret_cast<void**>(&frame));
+    }
 
     // start current frame marking
     for (JSVal *it = frame->GetLocal(); it != last; ++it) {
@@ -218,6 +220,7 @@ class Stack : public lv5::Stack {
     core->MarkCell(frame->lexical_env_);
     core->MarkCell(frame->variable_env_);
     core->MarkValue(frame->ret_);
+    core->MarkValue(frame->callee_);
     std::for_each(frame->GetLocal(), last, radio::Core::Marker(core));
   }
 

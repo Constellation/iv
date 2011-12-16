@@ -84,16 +84,11 @@ class Operation {
   }
 
   JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t scope_nest_count) const {
-    while (env) {
-      assert(env->AsJSDeclEnv() || env->AsJSStaticEnv());
-      if (JSDeclEnv* decl = env->AsJSDeclEnv()) {
-        if (decl->scope_nest_count() == scope_nest_count) {
-          return decl;
-        }
-      }
+    for (uint32_t i = 0; i < scope_nest_count; ++i) {
       env = env->outer();
     }
-    return NULL;
+    assert(env->AsJSDeclEnv());
+    return static_cast<JSDeclEnv*>(env);
   }
 
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
@@ -107,13 +102,9 @@ class Operation {
   }
 
   JSVal LoadHeap(JSEnv* env, const Symbol& name,
-                 bool strict, uint32_t scope_nest_count,
-                 uint32_t offset, Error* e) {
-    if (JSDeclEnv* target = GetHeapEnv(env, scope_nest_count)) {
-        return target->GetByOffset(offset, strict, e);
-    }
-    UNREACHABLE();
-    return JSEmpty;
+                 bool strict, uint32_t offset,
+                 uint32_t scope_nest_count, Error* e) {
+    return GetHeapEnv(env, scope_nest_count)->GetByOffset(offset, strict, e);
   }
 
   JSVal LoadProp(const JSVal& base,
@@ -245,12 +236,8 @@ class Operation {
 
   void StoreHeap(JSEnv* env, const Symbol& name,
                  const JSVal& stored, bool strict,
-                 uint32_t scope_nest_count, uint32_t offset, Error* e) {
-    if (JSDeclEnv* target = GetHeapEnv(env, scope_nest_count)) {
-      target->SetByOffset(offset, stored, strict, e);
-      return;
-    }
-    UNREACHABLE();
+                 uint32_t offset, uint32_t scope_nest_count, Error* e) {
+    GetHeapEnv(env, scope_nest_count)->SetByOffset(offset, stored, strict, e);
   }
 
   void StoreElement(const JSVal& base, const JSVal& element,
@@ -540,27 +527,24 @@ class Operation {
 
   template<int Target, std::size_t Returned>
   JSVal IncrementHeap(JSEnv* env, const Symbol& s,
-                      bool strict, uint32_t scope_nest_count,
-                      uint32_t offset, Error* e) {
-    if (JSDeclEnv* decl = GetHeapEnv(env, scope_nest_count)) {
-      const JSVal w = decl->GetByOffset(offset, strict, CHECK);
-      if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
-        std::tuple<JSVal, JSVal> results;
-        const int32_t target = w.int32();
-        std::get<0>(results) = w;
-        std::get<1>(results) = JSVal::Int32(target + Target);
-        decl->SetByOffset(offset, std::get<1>(results), strict, e);
-        return std::get<Returned>(results);
-      } else {
-        std::tuple<double, double> results;
-        std::get<0>(results) = w.ToNumber(ctx_, CHECK);
-        std::get<1>(results) = std::get<0>(results) + Target;
-        decl->SetByOffset(offset, std::get<1>(results), strict, e);
-        return std::get<Returned>(results);
-      }
+                      bool strict, uint32_t offset,
+                      uint32_t scope_nest_count, Error* e) {
+    JSDeclEnv* decl = GetHeapEnv(env, scope_nest_count);
+    const JSVal w = decl->GetByOffset(offset, strict, CHECK);
+    if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+      std::tuple<JSVal, JSVal> results;
+      const int32_t target = w.int32();
+      std::get<0>(results) = w;
+      std::get<1>(results) = JSVal::Int32(target + Target);
+      decl->SetByOffset(offset, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
+    } else {
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx_, CHECK);
+      std::get<1>(results) = std::get<0>(results) + Target;
+      decl->SetByOffset(offset, std::get<1>(results), strict, e);
+      return std::get<Returned>(results);
     }
-    UNREACHABLE();
-    return JSEmpty;
   }
 
   template<int Target, std::size_t Returned>

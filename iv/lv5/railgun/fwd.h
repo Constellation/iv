@@ -15,7 +15,6 @@ struct Frame;
 class Stack;
 
 class VariableScope;
-class FunctionScope;
 class WithScope;
 class CatchScope;
 

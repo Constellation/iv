@@ -23,8 +23,10 @@ class DisAssembler : private core::Noncopyable<> {
     {
       // code description
       std::ostringstream ss;
-      ss << "[code] stack: "
-         << code.stack_depth() << " locals: " << code.locals().size();
+      ss << "[code]"
+         << " depth: " << code.stack_depth()
+         << " local: " << code.stack_size()
+         << " heap: " << code.heap_size();
       OutputLine(ss.str());
     }
     const Code::Codes& codes = code.codes();
@@ -71,7 +73,10 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
     const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);
     if (rv == str.size()) {
       std::fputc('\n', file_);
+    } else {
+      std::abort();
     }
+    std::fflush(file_);
   }
 
  private:

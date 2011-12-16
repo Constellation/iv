@@ -19,7 +19,8 @@ class LookupInfo {
     STACK,
     HEAP,
     GLOBAL,
-    LOOKUP
+    LOOKUP,
+    UNUSED
   };
 
   LookupInfo(Type type,
@@ -124,19 +125,26 @@ template<>
 class CodeScope<Code::FUNCTION> : public VariableScope {
  public:
   // Variable is tuple<heap, location, immutable>
-  typedef std::tuple<bool, uint32_t, bool> Variable;
+  enum Type {
+    STACK  = 0,
+    HEAP   = 1,
+    UNUSED = 2
+  };
+  typedef std::tuple<Type, uint32_t, bool> Variable;
   typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
   typedef std::unordered_map<Symbol, Variable> VariableMap;
 
-  CodeScope(std::shared_ptr<VariableScope> upper, const Scope* scope),
+  CodeScope(const std::shared_ptr<VariableScope>& up,
+            const Scope* scope,
+            bool is_eval_decl)
     : VariableScope(
-        upper,
-        upper->scope_nest_count() + (scope->needs_heap_scope() ? 1 : 0)),
+        up,
+        (up->scope_nest_count() + (scope->needs_heap_scope() ? 1 : 0))),
       scope_(scope),
       map_(),
       heap_(),
-      stack_count_(0) {
-    assert(upper);
+      stack_size_(0) {
+    assert(upper());
     for (Scope::Assigneds::const_iterator it = scope->assigneds().begin(),
          last = scope->assigneds().end(); it != last; ++it) {
       // already unique
@@ -146,32 +154,40 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 assigned->symbol(),
-                std::make_tuple(true, heap_.size(), assigned->immutable()));
+                std::make_tuple(HEAP, heap_.size(), assigned->immutable()));
         heap_.push_back(item);
         map_.insert(item);
-      } else if (assigned->IsReferenced()) {
-        const std::pair<Symbol, Variable> item =
-            std::make_pair(
-                assigned->symbol(),
-                std::make_tuple(false, stack_count_++, assigned->immutable()));
-        map_.insert(item);
+      } else {
+        if (assigned->IsReferenced()) {
+          const std::pair<Symbol, Variable> item =
+              std::make_pair(
+                  assigned->symbol(),
+                  std::make_tuple(STACK, stack_size_++, assigned->immutable()));
+          map_.insert(item);
+        } else {
+          const std::pair<Symbol, Variable> item =
+              std::make_pair(
+                  assigned->symbol(),
+                  std::make_tuple(UNUSED, 0, assigned->immutable()));
+          map_.insert(item);
+        }
       }
     }
 
-    if (map_.find(symbol::arguments()) == map_.end()) {
+    if (!is_eval_decl && map_.find(symbol::arguments()) == map_.end()) {
       // not hidden
-      if (scope_->arguments_is_heap() || scope_->upper_of_eval()) {
+      if (scope_->arguments_is_heap() || scope_->direct_call_to_eval()) {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                std::make_tuple(true, heap_.size(), scope->strict()));
+                std::make_tuple(HEAP, heap_.size(), scope->strict()));
         heap_.push_back(item);
         map_.insert(item);
       } else if (scope_->has_arguments()) {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                std::make_tuple(false, stack_count_++, scope->strict()));
+                std::make_tuple(STACK, stack_size_++, scope->strict()));
         map_.insert(item);
       }
     }
@@ -180,14 +196,16 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   LookupInfo Lookup(Symbol sym) {
     const VariableMap::const_iterator it = map_.find(sym);
     if (it != map_.end()) {
-      const bool heap = std::get<0>(it->second);
+      const Type type = std::get<0>(it->second);
       const uint32_t location = std::get<1>(it->second);
       const bool immutable = std::get<2>(it->second);
-      if (heap) {
+      if (type == HEAP) {
         return LookupInfo(LookupInfo::HEAP, location,
                           immutable, scope_nest_count());
-      } else {
+      } else if (type == STACK) {
         return LookupInfo(LookupInfo::STACK, location, immutable);
+      } else {
+        return LookupInfo(LookupInfo::UNUSED);
       }
     } else {
       // not found in this scope
@@ -201,13 +219,17 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
   const HeapVariables& heap() const { return heap_; }
 
-  uint32_t stack_count() const { return stack_count_; }
+  uint32_t stack_size() const { return stack_size_; }
+
+  uint32_t heap_size() const { return heap_.size(); }
+
+  const Scope* scope() const { return scope_; }
 
  private:
   const Scope* scope_;
   VariableMap map_;
   HeapVariables heap_;
-  uint32_t stack_count_;
+  uint32_t stack_size_;
 };
 
 typedef CodeScope<Code::EVAL> EvalScope;
@@ -215,9 +237,11 @@ typedef CodeScope<Code::EVAL> EvalScope;
 template<>
 class CodeScope<Code::EVAL> : public VariableScope {
  public:
-  EvalScope() : VariableScope() { }
+  CodeScope() : VariableScope() { }
 
-  EvalScope(std::shared_ptr<VariableScope> upper, const Scope* scope)
+  CodeScope(std::shared_ptr<VariableScope> upper,
+            const Scope* scope,
+            bool is_eval_decl)
     : VariableScope() {
   }
 
@@ -231,9 +255,11 @@ typedef CodeScope<Code::GLOBAL> GlobalScope;
 template<>
 class CodeScope<Code::GLOBAL> : public VariableScope {
  public:
-  GlobalScope() : VariableScope() { }
+  CodeScope() : VariableScope() { }
 
-  GlobalScope(std::shared_ptr<VariableScope> upper, const Scope* scope)
+  CodeScope(std::shared_ptr<VariableScope> upper,
+            const Scope* scope,
+            bool is_eval_decl)
     : VariableScope() {
   }
 

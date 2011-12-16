@@ -123,7 +123,6 @@ class FunctionEnvironment : public Environment {
     : Environment(upper, placeholder),
       scope_(scope),
       unresolved_() {
-    assert(upper);
   }
 
   void Resolve(Assigned* exp) {
@@ -159,7 +158,12 @@ class FunctionEnvironment : public Environment {
       }
     }
 
-    if (upper_of_eval()) {
+    if (scope_->arguments_is_heap()) {
+      scope_->set_needs_heap_scope(true);
+    } else if (direct_call_to_eval()) {
+      scope_->set_needs_heap_scope(true);
+    } else if (upper_of_eval()) {
+      // always have "arguments"
       scope_->set_needs_heap_scope(!scope_->assigneds().empty());
     } else {
       // compute needs this heap scope
@@ -174,7 +178,7 @@ class FunctionEnvironment : public Environment {
       }
     }
 
-    if (!unresolved_.empty()) {
+    if (!unresolved_.empty() && upper()) {
       upper()->Propagate(&unresolved_);
     }
   }

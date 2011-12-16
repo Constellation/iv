@@ -174,25 +174,16 @@ class JSDeclEnv : public JSEnv {
     return record_;
   }
 
-  static JSDeclEnv* New(Context* ctx,
-                        JSEnv* outer,
-                        uint32_t scope_nest_count) {
-    return new JSDeclEnv(outer, scope_nest_count);
+  static JSDeclEnv* New(Context* ctx, JSEnv* outer) {
+    return new JSDeclEnv(outer);
   }
 
-  static JSDeclEnv* New(Context* ctx,
-                        JSEnv* outer,
-                        uint32_t scope_nest_count,
-                        uint32_t reserved) {
-    return new JSDeclEnv(outer, scope_nest_count, reserved);
+  static JSDeclEnv* New(Context* ctx, JSEnv* outer, uint32_t reserved) {
+    return new JSDeclEnv(outer, reserved);
   }
 
   bool IsLookupNeeded() const {
     return mutated_;
-  }
-
-  uint32_t scope_nest_count() const {
-    return scope_nest_count_;
   }
 
   void MarkMutated() {
@@ -200,20 +191,17 @@ class JSDeclEnv : public JSEnv {
   }
 
   // for VM optimization methods
-  void CreateAndSetMutable(Symbol name, std::size_t offset, const JSVal& val) {
+  void InstantiateMutable(Symbol name, std::size_t offset) {
     offsets_[name] = offset;
-    record_[offset] = Entry(MUTABLE, val);
+    record_[offset] = Entry(MUTABLE, JSUndefined);
   }
 
-  void CreateAndSetImmutable(Symbol name,
-                             std::size_t offset, const JSVal& val) {
+  void InstantiateImmutable(Symbol name, std::size_t offset) {
     offsets_[name] = offset;
+  }
+
+  void InitializeImmutable(std::size_t offset, const JSVal& val) {
     record_[offset] = Entry(IM_INITIALIZED, val);
-  }
-
-  void CreateFDecl(Symbol name, std::size_t offset) {
-    offsets_[name] = offset;
-    record_[offset] = Entry(MUTABLE);
   }
 
   void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
@@ -248,27 +236,24 @@ class JSDeclEnv : public JSEnv {
   }
 
  private:
-  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count)
+  JSDeclEnv(JSEnv* outer)
     : JSEnv(outer),
       record_(),
       offsets_(),
-      scope_nest_count_(scope_nest_count),
       mutated_(false) {
   }
 
   // for VM optimization only
-  JSDeclEnv(JSEnv* outer, uint32_t scope_nest_count, std::size_t reserved)
+  JSDeclEnv(JSEnv* outer, std::size_t reserved)
     : JSEnv(outer),
       record_(reserved),
       offsets_(),
-      scope_nest_count_(scope_nest_count),
       mutated_(false) {
     assert(record_.size() == reserved);
   }
 
   Record record_;
   Offsets offsets_;
-  uint32_t scope_nest_count_;
   bool mutated_;
 };
 

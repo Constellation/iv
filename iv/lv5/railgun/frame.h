@@ -54,6 +54,10 @@ struct Frame {
     return reinterpret_cast<JSVal*>(this);
   }
 
+  const JSVal* GetFrameBase() const {
+    return reinterpret_cast<const JSVal*>(this);
+  }
+
   JSVal GetThis() const {
     return this_binding();
   }
@@ -70,67 +74,94 @@ struct Frame {
     *(reinterpret_cast<JSVal*>(this) - (argc_ + 1)) = val;
   }
 
-  JSVal* arguments_begin() {
+  iterator arguments_begin() {
     return reinterpret_cast<JSVal*>(this) - argc_;
   }
 
-  JSVal* arguments_end() {
+  const_iterator arguments_begin() const {
+    return reinterpret_cast<const JSVal*>(this) - argc_;
+  }
+
+  const_iterator arguments_cbegin() const {
+    return arguments_begin();
+  }
+
+  iterator arguments_end() {
     return GetFrameBase();
+  }
+
+  const_iterator arguments_end() const {
+    return GetFrameBase();
+  }
+
+  const_iterator arguments_cend() const {
+    return arguments_end();
   }
 
   reverse_iterator arguments_rbegin() {
     return reverse_iterator(arguments_end());
   }
 
-  reverse_iterator arguments_rend() {
-    return reverse_iterator(arguments_begin());
+  const_reverse_iterator arguments_rbegin() const {
+    return const_reverse_iterator(arguments_end());
+  }
+
+  const_reverse_iterator arguments_crbegin() const {
+    return arguments_rbegin();
+  }
+
+  const_reverse_iterator arguments_rend() const {
+    return const_reverse_iterator(arguments_begin());
+  }
+
+  const_reverse_iterator arguments_crend() const {
+    return arguments_rend();
+  }
+
+  JSVal GetArg(uint32_t index) const {
+    const const_iterator it = arguments_begin() + index;
+    if (it < arguments_end()) {
+      return *it;
+    }
+    return JSUndefined;
+  }
+
+  JSVal GetConstant(uint32_t index) const {
+    return code()->constants()[index];
+  }
+
+  Symbol GetName(uint32_t index) const {
+    return code()->names()[index];
   }
 
   static std::size_t GetFrameSize(std::size_t n) {
     return n + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
-  const Code* code() const {
-    return code_;
-  }
+  const Code* code() const { return code_; }
 
-  Instruction* data() {
-    return code_->data();
-  }
+  Instruction* data() { return code_->data(); }
 
-  const Instruction* data() const {
-    return code_->data();
-  }
+  const Instruction* data() const { return code_->data(); }
 
-  JSVal* stacktop() {
-    return GetStackBase();
-  }
+  JSVal* stacktop() { return GetStackBase(); }
 
-  JSVal* locals() {
-    return GetLocal();
-  }
+  JSVal* locals() { return GetLocal(); }
 
-  JSEnv* lexical_env() {
-    return lexical_env_;
-  }
+  JSEnv* lexical_env() { return lexical_env_; }
 
-  void set_lexical_env(JSEnv* lex) {
-    lexical_env_ = lex;
-  }
+  void set_lexical_env(JSEnv* lex) { lexical_env_ = lex; }
 
-  JSEnv* variable_env() {
-    return variable_env_;
-  }
+  JSEnv* variable_env() { return variable_env_; }
 
-  const JSVals& constants() const {
-    return code_->constants();
-  }
+  JSVal callee() const { return callee_; }
 
   Code* code_;
   Instruction* prev_pc_;
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;
+  JSVal callee_;
   JSVal ret_;
   uint16_t argc_;
   uint16_t dynamic_env_level_;

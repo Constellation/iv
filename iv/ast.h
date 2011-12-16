@@ -107,6 +107,12 @@ class Scope : public ScopeBase<Factory> {
       upper_of_eval_(false),
       needs_heap_scope_(false),
       arguments_is_heap_(false) {
+    for (typename Assigneds::const_iterator it = params->begin(),
+         last = params->end(); it != last; ++it) {
+      if ((*it)->symbol() == symbol::arguments()) {
+        hiding_arguments_ = true;
+      }
+    }
   }
 
   void AddUnresolved(Assigned<Factory>* name, bool is_const) {
@@ -175,19 +181,17 @@ class Scope : public ScopeBase<Factory> {
     return up_;
   }
 
-  bool HasDirectCallToEval() const {
-    return direct_call_to_eval_;
-  }
+  bool direct_call_to_eval() const { return direct_call_to_eval_; }
 
   void RecordDirectCallToEval() {
     direct_call_to_eval_ = true;
   }
 
+  bool has_arguments() const { return has_arguments_; }
+
   void RecordArguments() {
     has_arguments_ = true;
   }
-
-  bool has_arguments() const { return has_arguments_; }
 
   bool IsArgumentsRealized() const {
     return !hiding_arguments_ && (has_arguments_ || direct_call_to_eval_);
@@ -232,6 +236,9 @@ class Scope : public ScopeBase<Factory> {
       Assigned<Factory>* assigned = it->first;
       const Symbol sym = assigned->symbol();
       if (already.find(sym) == already.end()) {
+        if (sym == symbol::arguments()) {
+          assigned->set_immutable(strict());
+        }
         already.insert(sym);
         assigneds_.push_back(assigned);
       }
@@ -1186,6 +1193,7 @@ class Assigned : public AssignedBase<Factory> {
     referenced_ = true;
   }
   bool immutable() const { return immutable_; }
+  void set_immutable(bool val) { immutable_ = val; }
   bool IsReferenced() const { return referenced_; }
   bool IsHeap() const { return type_; }
   bool IsImmutable() const { return immutable_; }
@@ -1398,6 +1406,9 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline const Statements& body() const { return *body_; }
   inline const Scope<Factory>& scope() const { return *scope_; }
   inline bool strict() const { return strict_; }
+  inline bool IsFunctionNameExposed() const {
+    return (type_ == STATEMENT || type_  == EXPRESSION) && name();
+  }
 
   inline std::size_t block_begin_position() const {
     return block_begin_position_;

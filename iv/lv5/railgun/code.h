@@ -49,12 +49,9 @@ class Code : public radio::HeapObject<radio::POINTER> {
        CodeType code_type)
     : code_type_(code_type),
       strict_(func.strict()),
-      has_eval_(false),
-      has_arguments_(false),
-      has_arguments_assign_(false),
       has_name_(func.name()),
-      scope_nest_count_(0),
       heap_size_(0),
+      stack_size_(0),
       name_(),
       script_(script),
       block_begin_position_(func.block_begin_position()),
@@ -75,9 +72,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
     Names::iterator target = params_.begin();
     for (Assigneds::const_iterator it = func.params().begin(),
          last = func.params().end(); it != last; ++it, ++target) {
-      if ((*target = (*it)->symbol()) == symbol::arguments()) {
-        set_code_hiding_arguments();
-      }
+      *target = (*it)->symbol();
     }
   }
 
@@ -163,10 +158,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   uint32_t stack_size() const { return stack_size_; }
 
-  void set_scope_nest_count(uint32_t count) { scope_nest_count_ = count; }
-
-  uint32_t scope_nest_count() const { return scope_nest_count_; }
-
   Data* GetData() {
     return core_->data();
   }
@@ -200,7 +191,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
   CodeType code_type_;
   bool strict_;
   bool has_name_;
-  uint32_t scope_nest_count_;
   uint32_t heap_size_;
   uint32_t stack_size_;
   Symbol name_;
