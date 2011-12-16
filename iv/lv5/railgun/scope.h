@@ -62,6 +62,8 @@ class VariableScope : private core::Noncopyable<VariableScope> {
     return scope_nest_count_;
   }
 
+  virtual bool UseExpressionReturn() const { return false; }
+
  protected:
   // from catch or with
   explicit VariableScope(const std::shared_ptr<VariableScope>& upper)
@@ -94,6 +96,8 @@ class WithScope : public VariableScope {
   LookupInfo Lookup(Symbol sym) {
     return LookupInfo(LookupInfo::LOOKUP);
   }
+
+  bool UseExpressionReturn() const { return upper()->UseExpressionReturn(); }
 };
 
 class CatchScope : public VariableScope {
@@ -111,6 +115,8 @@ class CatchScope : public VariableScope {
       return upper()->Lookup(sym);
     }
   }
+
+  bool UseExpressionReturn() const { return upper()->UseExpressionReturn(); }
 
  private:
   Symbol target_;
@@ -143,7 +149,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       scope_(scope),
       map_(),
       heap_(),
-      stack_size_(0) {
+      stack_size_(0),
+      is_eval_decl_(is_eval_decl) {
     assert(upper());
     for (Scope::Assigneds::const_iterator it = scope->assigneds().begin(),
          last = scope->assigneds().end(); it != last; ++it) {
@@ -217,6 +224,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     }
   }
 
+  bool UseExpressionReturn() const { return is_eval_decl_; }
+
   const HeapVariables& heap() const { return heap_; }
 
   uint32_t stack_size() const { return stack_size_; }
@@ -230,6 +239,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   VariableMap map_;
   HeapVariables heap_;
   uint32_t stack_size_;
+  bool is_eval_decl_;
 };
 
 typedef CodeScope<Code::EVAL> EvalScope;
@@ -244,6 +254,8 @@ class CodeScope<Code::EVAL> : public VariableScope {
             bool is_eval_decl)
     : VariableScope() {
   }
+
+  bool UseExpressionReturn() const { return true; }
 
   LookupInfo Lookup(Symbol sym) {
     return LookupInfo(LookupInfo::LOOKUP);

@@ -238,13 +238,11 @@ class Compiler
       dynamic_env_level_(0),
       continuation_status_(),
       current_variable_scope_(),
-      temporary_(),
-      use_expression_value_(false) {
+      temporary_() {
   }
 
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = false;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -260,7 +258,6 @@ class Compiler
 
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = false;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -278,7 +275,6 @@ class Compiler
 
   Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = true;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -294,7 +290,6 @@ class Compiler
 
   Code* CompileEvalStrict(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = true;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -312,7 +307,6 @@ class Compiler
 
   Code* CompileIndirectEval(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = true;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -329,7 +323,6 @@ class Compiler
   Code* CompileIndirectEvalStrict(const FunctionLiteral& function,
                                   JSScript* script) {
     Code* code = NULL;
-    use_expression_value_ = true;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -1128,7 +1121,7 @@ class Compiler
 
   void Visit(const ExpressionStatement* stmt) {
     stmt->expr()->Accept(this);
-    if (use_expression_value_) {
+    if (current_variable_scope_->UseExpressionReturn()) {
       Emit<OP::POP_TOP_AND_RET>();
     } else {
       Emit<OP::POP_TOP>();
@@ -2510,7 +2503,6 @@ class Compiler
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
   trace::Vector<Map*>::type temporary_;
-  bool use_expression_value_;
 };
 
 inline Code* Compile(Context* ctx,
