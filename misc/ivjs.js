@@ -1196,4 +1196,4 @@
   exp.Lexer = Lexer;
 })(this);
 
-print(JSON.stringify(new Parser("if(a||!a);").parse()));
+// print(JSON.stringify(new Parser("if(a||!a);").parse()));
