@@ -334,8 +334,8 @@ class DateParser : private core::Noncopyable<> {
     return result;
   }
 
-  template<typename String>
-  inline double Parse(const String& str);
+  template<typename Iter>
+  inline double Parse(Iter it, Iter last);
 
  private:
   DateComponent date_;
@@ -343,11 +343,10 @@ class DateParser : private core::Noncopyable<> {
   TimezoneComponent tz_;
 };
 
-template<typename String>
-double DateParser::Parse(const String& str) {
-  typedef typename String::value_type char_type;
-  for (typename String::const_iterator it = str.begin(),
-       last = str.end(); it != last;) {
+template<typename Iter>
+double DateParser::Parse(Iter it, Iter last) {
+  typedef typename std::iterator_traits<Iter>::value_type char_type;
+  for (; it != last;) {
     if (core::character::IsDigit(*it)) {
       // YYYY or HH
       const uint32_t value = ReadUInt32(&it, last);
@@ -359,12 +358,12 @@ double DateParser::Parse(const String& str) {
           if (it != last && core::character::IsDigit(*it)) {
             const uint32_t min = ReadUInt32(&it, last);
             time_.SetMin(min);
-            if (*it == ':') {
+            if (it != last && *it == ':') {
               ++it;
               if (it != last && core::character::IsDigit(*it)) {
                 const uint32_t sec = ReadUInt32(&it, last);
                 time_.SetSec(sec);
-                if (*it == '.') {
+                if (it != last && *it == '.') {
                   ++it;
                   if (it != last && core::character::IsDigit(*it)) {
                     const uint32_t msec = ReadUInt32(&it, last);
@@ -381,7 +380,7 @@ double DateParser::Parse(const String& str) {
           if (it != last && core::character::IsDigit(*it)) {
             const uint32_t month = ReadUInt32(&it, last);
             date_.Add(month);
-            if (*it == '-') {
+            if (it != last && *it == '-') {
               ++it;
               if (it != last && core::character::IsDigit(*it)) {
                 const uint32_t d = ReadUInt32(&it, last);
@@ -439,7 +438,7 @@ double DateParser::Parse(const String& str) {
 template<typename String>
 double Parse(const String& str) {
   DateParser parser;
-  return parser.Parse(str);
+  return parser.Parse(str.begin(), str.end());
 }
 
 } } }  // namespace iv::lv5::date
