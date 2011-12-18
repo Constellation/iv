@@ -17,13 +17,7 @@
 namespace iv {
 namespace lv5 {
 
-struct Encoding {
-  enum Type {
-    ASCII = 0,
-    UNKNOWN = 1,
-    UTF16 = 2
-  };
-};
+class JSString;
 
 class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
  public:
@@ -88,6 +82,126 @@ class FiberBase : public FiberSlot {
  public:
   typedef FiberBase this_type;
 
+ private:
+  friend class JSString;
+  template<typename T>
+  class iterator_base
+    : public std::iterator<std::random_access_iterator_tag, uint16_t> {
+   public:
+    typedef iterator_base<T> this_type;
+    typedef std::iterator<std::random_access_iterator_tag, T> super_type;
+    typedef typename super_type::pointer pointer;
+    typedef const typename super_type::pointer const_pointer;
+    typedef typename super_type::reference reference;
+    typedef const typename super_type::reference const_reference;
+    typedef typename super_type::difference_type difference_type;
+    typedef iterator_base<typename std::remove_const<T>::type> iterator;
+    typedef iterator_base<typename std::add_const<T>::type> const_iterator;
+
+    iterator_base(T fiber)  // NOLINT
+      : fiber_(fiber), position_(0) { }
+
+    iterator_base(const iterator& it)  // NOLINT
+      : fiber_(it.fiber()), position_(it.position()) { }
+
+    uint16_t operator*() const {
+      return (*fiber_)[position_];
+    }
+
+    uint16_t operator[](difference_type d) const {
+      return (*fiber_)[position_ + d];
+    }
+
+    this_type& operator++() {
+      return ((*this) += 1);
+    }
+
+    this_type& operator++(int) {  // NOLINT
+      this_type iter(*this);
+      (*this)++;
+      return iter;
+    }
+
+    this_type& operator--() {
+      return ((*this) -= 1);
+    }
+
+    this_type& operator--(int) {  // NOLINT
+      this_type iter(*this);
+      (*this)--;
+      return iter;
+    }
+
+    this_type& operator+=(difference_type d) {
+      position_ += d;
+      return *this;
+    }
+
+    this_type& operator-=(difference_type d) {
+      return ((*this) += (-d));
+    }
+
+    friend bool operator==(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() == rhs.position();
+    }
+    friend bool operator!=(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() != rhs.position();
+    }
+    friend bool operator<(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() < rhs.position();
+    }
+    friend bool operator<=(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() <= rhs.position();
+    }
+    friend bool operator>(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() > rhs.position();
+    }
+    friend bool operator>=(const this_type& lhs, const this_type& rhs) {
+      return lhs.position() >= rhs.position();
+    }
+
+    friend this_type operator+(const this_type& lhs, difference_type d) {
+      this_type iter(lhs);
+      return iter += d;
+    }
+    friend this_type operator-(const this_type& lhs, difference_type d) {
+      this_type iter(lhs);
+      return iter -= d;
+    }
+    friend difference_type operator-(const this_type& lhs,
+                                     const this_type& rhs) {
+      return lhs.position() - rhs.position();
+    }
+
+    T fiber() const { return fiber_; }
+
+    difference_type position() const { return position_; }
+
+   private:
+    T fiber_;
+    difference_type position_;
+  };
+
+  typedef iterator_base<const this_type*> const_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+  const_iterator begin() const { return const_iterator(this); }
+
+  const_iterator cbegin() const { return begin(); }
+
+  const_iterator end() const { return begin() + size(); }
+
+  const_iterator cend() const { return end(); }
+
+  const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+
+  const_reverse_iterator crbegin() const { return rbegin(); }
+
+  const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+  const_reverse_iterator crend() const { return rend(); }
+
+ public:
   FiberBase(std::size_t size, int flags) : FiberSlot(size, flags) { }
 
   template<typename OutputIter>

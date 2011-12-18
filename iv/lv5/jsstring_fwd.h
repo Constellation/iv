@@ -224,7 +224,33 @@ class JSString: public radio::HeapObject<radio::STRING> {
   };
 
  public:
+  // iterators
+  typedef FiberBase::const_iterator iterator;
+  typedef FiberBase::const_iterator const_iterator;
+  typedef FiberBase::const_reverse_iterator reverse_iterator;
+  typedef FiberBase::const_reverse_iterator const_reverse_iterator;
 
+  const_iterator begin() const { return Flatten()->cbegin(); }
+
+  const_iterator cbegin() const { return begin(); }
+
+  const_iterator end() const { return Flatten()->cend(); }
+
+  const_iterator cend() const { return end(); }
+
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
+  }
+
+  const_reverse_iterator crbegin() const { return rbegin(); }
+
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
+
+  const_reverse_iterator crend() const { return rend(); }
+
+  // getters
   std::size_t size() const { return size_; }
 
   bool empty() const { return size() == 0; }
