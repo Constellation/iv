@@ -146,8 +146,7 @@ std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
   assert(start);
   // current frame values
   Frame* frame = start;
-  Instruction* first_instr = frame->data();
-  Instruction* instr = first_instr;
+  Instruction* instr = frame->data();
   JSVal* sp = frame->stacktop();
   bool strict = frame->code()->strict();
 
@@ -216,7 +215,7 @@ std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-#define JUMPTO(x) (instr = first_instr + (x))
+#define JUMPTO(x) (instr = frame->data() + (x))
 #define JUMPBY(x) (instr += (x))
 
 #ifdef DEBUG
@@ -299,7 +298,6 @@ do {\
         instr = frame->prev_pc_ + 2;  // EVAL / CALL / CONSTRUCT => 2
         sp = frame->GetPreviousFrameStackTop();
         frame = stack_.Unwind(frame);
-        first_instr = frame->data();
         strict = frame->code()->strict();
         PUSH(ret);
         DISPATCH_WITH_NO_INCREMENT();
@@ -789,7 +787,7 @@ do {\
       DEFINE_OPCODE(JUMP_SUBROUTINE) {
         // calc next address
         PUSH(JSEmpty);
-        PUSH(std::distance(first_instr, instr) +
+        PUSH(std::distance(frame->data(), instr) +
              OPLength<OP::JUMP_SUBROUTINE>::value);
         PUSH(JSVal::Int32(kJumpFromSubroutine));
         JUMPBY(instr[1].diff);
@@ -798,7 +796,7 @@ do {\
 
       DEFINE_OPCODE(JUMP_RETURN_HOOKED_SUBROUTINE) {
         // calc next address
-        PUSH(std::distance(first_instr, instr) +
+        PUSH(std::distance(frame->data(), instr) +
              OPLength<OP::JUMP_RETURN_HOOKED_SUBROUTINE>::value);
         PUSH(JSVal::Int32(kJumpFromReturn));
         JUMPBY(instr[1].diff);
@@ -1528,7 +1526,6 @@ do {\
         instr = frame->prev_pc_ + 2;  // EVAL / CALL / CONSTRUCT => 2
         sp = frame->GetPreviousFrameStackTop();
         frame = stack_.Unwind(frame);
-        first_instr = frame->data();
         strict = frame->code()->strict();
         PUSH(ret);
         DISPATCH_WITH_NO_INCREMENT();
@@ -1778,8 +1775,7 @@ do {\
             DISPATCH_ERROR();
           }
           frame = new_frame;
-          first_instr = frame->data();
-          instr = first_instr;
+          instr = frame->data();
           sp = frame->stacktop();
           strict = frame->code()->strict();
           InitThisBinding(ctx_, frame, ERR);
@@ -1815,8 +1811,7 @@ do {\
             DISPATCH_ERROR();
           }
           frame = new_frame;
-          first_instr = frame->data();
-          instr = first_instr;
+          instr = frame->data();
           sp = frame->stacktop();
           strict = code->strict();
           JSObject* const obj = JSObject::New(ctx_, code->ConstructMap(ctx_));
@@ -1858,8 +1853,7 @@ do {\
             DISPATCH_ERROR();
           }
           frame = new_frame;
-          first_instr = frame->data();
-          instr = first_instr;
+          instr = frame->data();
           sp = frame->stacktop();
           strict = frame->code()->strict();
           InitThisBinding(ctx_, frame, ERR);
@@ -2085,7 +2079,7 @@ do {\
         const uint16_t end = std::get<2>(*it);
         const uint16_t stack_base_level = std::get<3>(*it);
         const uint16_t env_level = std::get<4>(*it);
-        const uint32_t offset = static_cast<uint32_t>(instr - first_instr);
+        const uint32_t offset = static_cast<uint32_t>(instr - frame->data());
         if (offset < begin) {
           break;  // not found in this exception table
         } else if (offset < end) {
@@ -2117,7 +2111,6 @@ do {\
         instr = frame->prev_pc_;
         sp = frame->GetPreviousFrameStackTop();
         frame = stack_.Unwind(frame);
-        first_instr = frame->data();
         strict = frame->code()->strict();
       }
     }
