@@ -298,7 +298,8 @@ class Compiler
       current_variable_scope_ =
           std::shared_ptr<VariableScope>(new EvalScope());
       code = new Code(ctx_, script_, eval, core_, Code::EVAL);
-      EmitFunctionCode<Code::FUNCTION>(eval, code, current_variable_scope_, true);
+      EmitFunctionCode<Code::FUNCTION>(eval, code,
+                                       current_variable_scope_, true);
       current_variable_scope_ = current_variable_scope_->upper();
     }
     CompileEpilogue(code);
@@ -1879,6 +1880,12 @@ class Compiler
     return index;
   }
 
+  bool IsUsedReference(uint32_t index) {
+    const LookupInfo info =
+        current_variable_scope_->Lookup(code_->names_[index]);
+    return info.type() != LookupInfo::UNUSED;
+  }
+
   template<OP::Type PropOP,
            OP::Type ElementOP>
   void EmitElement(const IndexAccess& prop) {
@@ -2007,8 +2014,9 @@ class Compiler
     if (env->scope()->needs_heap_scope()) {
       Emit<OP::BUILD_ENV>(env->heap_size());
       assert(!env->heap().empty());
-      for (FunctionScope::HeapVariables::const_iterator it = env->heap().begin(),
-           last = env->heap().end(); it != last; ++it) {
+      for (FunctionScope::HeapVariables::const_iterator
+           it = env->heap().begin(), last = env->heap().end();
+           it != last; ++it) {
         Emit<OP::INSTANTIATE_HEAP_BINDING>(
             SymbolToNameIndex(it->first),
             std::get<1>(it->second),
@@ -2036,9 +2044,13 @@ class Compiler
         EmitInstantiateName(index);
       }
       if (lit.IsFunctionNameExposed()) {
-        stack_depth_.Up();
-        Emit<OP::LOAD_CALLEE>();
-        EmitInstantiateName(SymbolToNameIndex(lit.name().Address()->symbol()));
+        const uint32_t index =
+            SymbolToNameIndex(lit.name().Address()->symbol());
+        if (IsUsedReference(index)) {
+          stack_depth_.Up();
+          Emit<OP::LOAD_CALLEE>();
+          EmitInstantiateName(index);
+        }
       }
     }
     code_->set_heap_size(env->heap_size());
@@ -2466,33 +2478,19 @@ class Compiler
     level_stack_.pop_back();
   }
 
-  void ClearJumpTable() {
-    jump_table_.clear();
-  }
+  void ClearJumpTable() { jump_table_.clear(); }
 
-  void ClearLevelStack() {
-    level_stack_.clear();
-  }
+  void ClearLevelStack() { level_stack_.clear(); }
 
-  void ClearStackDepth() {
-    stack_depth_.Clear();
-  }
+  void ClearStackDepth() { stack_depth_.Clear(); }
 
-  void ClearSymbolToIndexMap() {
-    symbol_to_index_map_.clear();
-  }
+  void ClearSymbolToIndexMap() { symbol_to_index_map_.clear(); }
 
-  void ClearJSStringToIndexMap() {
-    jsstring_to_index_map_.clear();
-  }
+  void ClearJSStringToIndexMap() { jsstring_to_index_map_.clear(); }
 
-  void ClearDoubleToIndexMap() {
-    double_to_index_map_.clear();
-  }
+  void ClearDoubleToIndexMap() { double_to_index_map_.clear(); }
 
-  void ClearContinuation() {
-    continuation_status_.Clear();
-  }
+  void ClearContinuation() { continuation_status_.Clear(); }
 
   Context* ctx_;
   Code* code_;
