@@ -2116,10 +2116,12 @@ class Compiler
       for (Functions::const_iterator it = functions.begin(),
            last = functions.end(); it != last; ++it) {
         const FunctionLiteral* const func = *it;
-        Visit(func);
         const Symbol sym = func->name().Address()->symbol();
         const uint32_t index = SymbolToNameIndex(sym);
-        EmitInstantiateName(index);
+        if (IsUsedReference(index)) {
+          Visit(func);
+          EmitInstantiateName(index);
+        }
       }
       point.LevelCheck(0);
     }
