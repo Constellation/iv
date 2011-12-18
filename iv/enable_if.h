@@ -27,6 +27,5 @@ struct disable_if_c<true, T> {
 template<class Cond, class T = void>
 struct disable_if : public disable_if_c<Cond::value, T> { };
 
-
 }  // namespace iv
 #endif  // IV_ENABLE_IF_H_
