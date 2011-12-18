@@ -66,7 +66,8 @@ class Stack : public lv5::Stack {
     resource_ = new Resource(this);
   }
 
-  explicit Stack(DispatchTableTag tag) : lv5::Stack() { }  // empty
+  explicit Stack(DispatchTableTag tag)
+    : lv5::Stack(lv5::Stack::EmptyTag()) { }  // empty
 
   ~Stack() {
     if (stack_) {

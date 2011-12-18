@@ -183,8 +183,6 @@ class ScopedArguments : public Arguments {
       e->Report(Error::Range, "maximum call stack size exceeded");
     } else {
       assert(stack_);
-      // init
-      // FIXME(Constellation): for clang++ with C++0x patching
       std::fill<JSVal*, JSVal>(stack_, stack_ + size_ + 1, JSUndefined);
     }
   }

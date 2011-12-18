@@ -14,6 +14,8 @@ namespace lv5 {
 
 class Stack : core::Noncopyable<Stack> {
  public:
+  struct EmptyTag { };
+
   typedef JSVal* iterator;
   typedef const JSVal* const_iterator;
 
@@ -48,7 +50,7 @@ class Stack : core::Noncopyable<Stack> {
     stack_pointer_ += 1;  // for Global This
   }
 
-  Stack() { }  // empty
+  Stack(EmptyTag tag) { }  // empty
 
   ~Stack() {
     if (stack_) {  // normal pass
