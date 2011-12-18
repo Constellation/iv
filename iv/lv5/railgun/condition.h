@@ -13,6 +13,40 @@ namespace railgun {
 
 class Condition {
  public:
+  static bool NoSideEffect(const Expression* expr) {
+    const Literal* literal = expr->AsLiteral();
+    if (!literal) {
+      return false;
+    }
+
+    if (literal->AsTrueLiteral()) {
+      return true;
+    }
+
+    if (literal->AsFalseLiteral()) {
+      return true;
+    }
+
+    if (literal->AsNullLiteral()) {
+      return true;
+    }
+
+    if (literal->AsNumberLiteral()) {
+      return true;
+    }
+
+    if (literal->AsStringLiteral()) {
+      return true;
+    }
+
+    if (literal->AsFunctionLiteral()) {
+      return true;
+    }
+
+    // ObjectLiteral and ArrayLiteral have side effect expressions...
+    return false;
+  }
+
   enum Type {
     COND_FALSE = 0,
     COND_TRUE = 1,

@@ -1854,11 +1854,15 @@ class Compiler
   void Visit(const Declaration* decl) {
     DepthPoint point(&stack_depth_);
     const uint32_t index = SymbolToNameIndex(decl->name()->symbol());
-    if (const core::Maybe<const Expression> expr = decl->expr()) {
-      expr.Address()->Accept(this);
-      EmitStoreName(index);
-      Emit<OP::POP_TOP>();
-      stack_depth_.Down();
+    if (const core::Maybe<const Expression> maybe = decl->expr()) {
+      const Expression* expr = maybe.Address();
+      if (IsUsedReference(index) || !Condition::NoSideEffect(expr)) {
+        // be used or has side effect
+        expr->Accept(this);
+        EmitStoreName(index);
+        Emit<OP::POP_TOP>();
+        stack_depth_.Down();
+      }
     }
     point.LevelCheck(0);
   }
