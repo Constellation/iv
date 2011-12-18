@@ -49,6 +49,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
        CodeType code_type)
     : code_type_(code_type),
       strict_(func.strict()),
+      empty_(false),
       has_name_(func.name()),
       heap_size_(0),
       stack_size_(0),
@@ -150,13 +151,11 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   CodeType code_type() const { return code_type_; }
 
-  void set_heap_size(uint32_t size) { heap_size_ = size; }
-
   uint32_t heap_size() const { return heap_size_; }
 
-  void set_stack_size(uint32_t size) { stack_size_ = size; }
-
   uint32_t stack_size() const { return stack_size_; }
+
+  bool empty() const { return empty_; }
 
   Data* GetData() {
     return core_->data();
@@ -180,16 +179,19 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
  private:
 
-  void set_start(std::size_t start) {
-    start_ = start;
-  }
+  void set_start(std::size_t start) { start_ = start; }
 
-  void set_end(std::size_t end) {
-    end_ = end;
-  }
+  void set_end(std::size_t end) { end_ = end; }
+
+  void set_heap_size(uint32_t size) { heap_size_ = size; }
+
+  void set_stack_size(uint32_t size) { stack_size_ = size; }
+
+  void set_empty(bool val) { empty_ = val; }
 
   CodeType code_type_;
   bool strict_;
+  bool empty_;
   bool has_name_;
   uint32_t heap_size_;
   uint32_t stack_size_;

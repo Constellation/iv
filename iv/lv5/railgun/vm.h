@@ -1763,11 +1763,19 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
+          JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
+          Code* code = vm_func->code();
+          if (code->empty()) {
+            // shrink sp and goto next opcode
+            sp -= (argc + 2);
+            PUSH(JSUndefined);
+            DISPATCH(CALL);
+          }
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               sp,
-              static_cast<JSVMFunction*>(func)->code(),
-              static_cast<JSVMFunction*>(func)->scope(),
+              code,
+              vm_func->scope(),
               func,
               instr, argc, false);
           if (!new_frame) {
@@ -1798,12 +1806,13 @@ do {\
         JSFunction* func = v.object()->AsCallable();
         if (!func->IsNativeFunction()) {
           // inline call
-          Code* code = static_cast<JSVMFunction*>(func)->code();
+          JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
+          Code* code = vm_func->code();
           Frame* new_frame = stack_.NewCodeFrame(
               ctx_,
               sp,
               code,
-              static_cast<JSVMFunction*>(func)->scope(),
+              vm_func->scope(),
               func,
               instr, argc, true);
           if (!new_frame) {

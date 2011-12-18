@@ -2138,6 +2138,10 @@ class Compiler
         break;
       }
     }
+    if (IsCodeEmpty()) {
+      // only STOP_CODE
+      code_->set_empty(true);
+    }
     Emit<OP::STOP_CODE>();
     CodeContextEpilogue(code);
     const std::shared_ptr<VariableScope> target = current_variable_scope_;
@@ -2406,6 +2410,10 @@ class Compiler
 
   Code* code() const {
     return code_;
+  }
+
+  bool IsCodeEmpty() const {
+    return data_->size() == code_->start();
   }
 
   const LevelStack& level_stack() const {
