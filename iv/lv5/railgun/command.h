@@ -7,6 +7,7 @@
 #include <iv/lv5/date_utils.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/railgun/disassembler.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -60,7 +61,7 @@ class TickTimer : private core::Noncopyable<TickTimer> {
 };
 
 inline JSVal Run(const Arguments& args, Error* e) {
-  if (args.size() > 0) {
+  if (!args.empty()) {
     const JSVal val = args[0];
     if (val.IsString()) {
       const JSString* const f = val.string();
@@ -76,6 +77,24 @@ inline JSVal Run(const Arguments& args, Error* e) {
     }
   }
   return JSUndefined;
+}
+
+inline JSVal Dis(const Arguments& args, Error* e) {
+  if (!args.empty()) {
+    const JSVal val = args[0];
+    if (val.IsObject()) {
+      JSObject* obj = val.object();
+      if (JSFunction* func = obj->AsCallable()) {
+        if (!func->IsNativeFunction()) {
+          JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
+          OutputDisAssembler dis(static_cast<Context*>(args.ctx()), stdout);
+          dis.DisAssemble(*vm_func->code(), false);
+          return JSTrue;
+        }
+      }
+    }
+  }
+  return JSFalse;
 }
 
 } } }  // namespace iv::lv5::railgun

@@ -63,6 +63,7 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
+  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
   ctx.vm()->Run(code, &e);
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);

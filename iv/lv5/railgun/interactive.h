@@ -34,6 +34,7 @@ class Interactive {
     ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
     ctx_.DefineFunction<&railgun::Run, 0>("run");
     ctx_.DefineFunction<&railgun::StackDepth, 0>("StackDepth");
+    ctx_.DefineFunction<&railgun::Dis, 1>("dis");
   }
 
   int Run() {

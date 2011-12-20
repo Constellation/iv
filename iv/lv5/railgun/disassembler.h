@@ -19,7 +19,7 @@ class DisAssembler : private core::Noncopyable<> {
  public:
   explicit DisAssembler(Context* ctx) { }
 
-  void DisAssemble(const Code& code) {
+  void DisAssemble(const Code& code, bool all = true) {
     {
       // code description
       std::ostringstream ss;
@@ -52,9 +52,11 @@ class DisAssembler : private core::Noncopyable<> {
       std::advance(it, length);
       index += length;
     }
-    for (Code::Codes::const_iterator it = codes.begin(),
-         last = codes.end(); it != last; ++it) {
-      DisAssemble(**it);
+    if (all) {
+      for (Code::Codes::const_iterator it = codes.begin(),
+           last = codes.end(); it != last; ++it) {
+        DisAssemble(**it);
+      }
     }
   }
 
