@@ -114,10 +114,9 @@ inline void Core::Mark(Context* ctx) {
   // see harmony proposal gc algorithm
   // http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps#abstract_gc_algorithm
   // TODO(Constellation): stack all mark is faster? implement it.
-  Drain();
-  while (MarkWeaks()) {
+  do {
     Drain();
-  }
+  } while (MarkWeaks());
   assert(stack_.empty());
 }
 
