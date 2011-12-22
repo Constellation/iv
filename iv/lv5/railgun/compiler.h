@@ -229,6 +229,7 @@ class Compiler
       jump_table_(),
       level_stack_(),
       stack_depth_(),
+      registers_(),
       symbol_to_index_map_(),
       jsstring_to_index_map_(),
       double_to_index_map_(),
@@ -455,14 +456,15 @@ class Compiler
 
   void CodeContextPrologue(Code* code) {
     set_code(code);
-    ClearJumpTable();
-    ClearLevelStack();
-    ClearStackDepth();
     set_dynamic_env_level(0);
-    ClearContinuation();
-    ClearSymbolToIndexMap();
-    ClearJSStringToIndexMap();
-    ClearDoubleToIndexMap();
+    jump_table_.clear();
+    level_stack_.clear();
+    stack_depth_.Clear();
+    registers_.clear();
+    symbol_to_index_map_.clear();
+    jsstring_to_index_map_.clear();
+    double_to_index_map_.clear();
+    continuation_status_.Clear();
     code->set_start(data_->size());
   }
 
@@ -2512,20 +2514,6 @@ class Compiler
     level_stack_.pop_back();
   }
 
-  void ClearJumpTable() { jump_table_.clear(); }
-
-  void ClearLevelStack() { level_stack_.clear(); }
-
-  void ClearStackDepth() { stack_depth_.Clear(); }
-
-  void ClearSymbolToIndexMap() { symbol_to_index_map_.clear(); }
-
-  void ClearJSStringToIndexMap() { jsstring_to_index_map_.clear(); }
-
-  void ClearDoubleToIndexMap() { double_to_index_map_.clear(); }
-
-  void ClearContinuation() { continuation_status_.Clear(); }
-
   Context* ctx_;
   Code* code_;
   CoreData* core_;
@@ -2535,6 +2523,7 @@ class Compiler
   JumpTable jump_table_;
   LevelStack level_stack_;
   StackDepth stack_depth_;
+  std::unordered_set<uint32_t> registers_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
   JSStringToIndexMap jsstring_to_index_map_;
   JSDoubleToIndexMap double_to_index_map_;
