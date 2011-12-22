@@ -229,7 +229,8 @@ class Compiler
       jump_table_(),
       level_stack_(),
       stack_depth_(),
-      registers_(),
+      temporary_registers_size_(0),
+      temporary_registers_(),
       symbol_to_index_map_(),
       jsstring_to_index_map_(),
       double_to_index_map_(),
@@ -460,7 +461,8 @@ class Compiler
     jump_table_.clear();
     level_stack_.clear();
     stack_depth_.Clear();
-    registers_.clear();
+    temporary_registers_size_ = 0;
+    temporary_registers_.clear();
     symbol_to_index_map_.clear();
     jsstring_to_index_map_.clear();
     double_to_index_map_.clear();
@@ -2514,6 +2516,21 @@ class Compiler
     level_stack_.pop_back();
   }
 
+  uint32_t AcquireRegister() {
+    if (temporary_registers_.empty()) {
+      return temporary_registers_size_++;
+    } else {
+      const std::unordered_set<uint32_t>::iterator it = temporary_registers_.begin();
+      const uint32_t res = *it;
+      temporary_registers_.erase(it);
+      return res;
+    }
+  }
+
+  void ReleaseRegister(uint32_t reg) {
+    temporary_registers_.insert(reg);
+  }
+
   Context* ctx_;
   Code* code_;
   CoreData* core_;
@@ -2523,7 +2540,8 @@ class Compiler
   JumpTable jump_table_;
   LevelStack level_stack_;
   StackDepth stack_depth_;
-  std::unordered_set<uint32_t> registers_;
+  uint32_t temporary_registers_size_;
+  std::unordered_set<uint32_t> temporary_registers_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
   JSStringToIndexMap jsstring_to_index_map_;
   JSDoubleToIndexMap double_to_index_map_;
