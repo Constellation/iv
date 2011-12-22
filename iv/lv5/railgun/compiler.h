@@ -193,10 +193,7 @@ class Compiler
 
   struct JSDoubleEquals {
     bool operator()(double lhs, double rhs) const {
-      return
-          lhs == rhs &&
-          (static_cast<bool>(core::Signbit(lhs)) ==
-           static_cast<bool>(core::Signbit(rhs)));
+      return lhs == rhs && (core::Signbit(lhs)) == core::Signbit(rhs);
     }
   };
 
