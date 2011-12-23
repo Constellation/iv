@@ -159,14 +159,17 @@ class Stack : public lv5::Stack {
   Frame* Unwind(Frame* frame) {
     assert(current_ == frame);
     assert(frame->code());
-    SetSafeStackPointerForFrame(frame, frame->prev_);
     current_ = frame->prev_;
+    if (current_) {
+      stack_pointer_ = std::max(current_->GetFrameEnd(), frame->GetFrameEnd());
+    } else {
+      // previous of Global Frame is NULL
+      stack_pointer_ = stack_ + 1;
+    }
     return current_;
   }
 
-  Frame* current() {
-    return current_;
-  }
+  Frame* current() { return current_; }
 
   void MarkChildren(radio::Core* core) {
     // mark Frame member
@@ -223,17 +226,6 @@ class Stack : public lv5::Stack {
     core->MarkValue(frame->ret_);
     core->MarkValue(frame->callee_);
     std::for_each(frame->GetLocal(), last, radio::Core::Marker(core));
-  }
-
-  void SetSafeStackPointerForFrame(Frame* prev, Frame* current) {
-    if (current) {
-      JSVal* frame_last = current->GetFrameEnd();
-      JSVal* prev_first = prev->GetFrameBase();
-      stack_pointer_ = std::max(frame_last, prev_first);
-    } else {
-      // previous of Global Frame is NULL
-      stack_pointer_ = stack_ + 1;
-    }
   }
 
   JSVal* GainFrame(JSVal* top, Code* code) {
