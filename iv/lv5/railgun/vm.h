@@ -277,6 +277,10 @@ do {\
         DISPATCH(NOP);
       }
 
+      DEFINE_OPCODE(MV) {
+        DISPATCH(MV);
+      }
+
       DEFINE_OPCODE(STOP_CODE) {
         // no return at last
         // return undefined
@@ -384,7 +388,7 @@ do {\
         DISPATCH(LOAD_CALLEE);
       }
 
-      DEFINE_OPCODE(BUILD_ARGUMENTS) {
+      DEFINE_OPCODE(LOAD_ARGUMENTS) {
         if (!strict) {
           JSObject* args_obj = JSNormalArguments::New(
               ctx_, frame->callee().object()->AsCallable(),
@@ -402,7 +406,7 @@ do {\
               ERR);
           PUSH(args_obj);
         }
-        DISPATCH(BUILD_ARGUMENTS);
+        DISPATCH(LOAD_ARGUMENTS);
       }
 
       DEFINE_OPCODE(LOAD_CONST) {
@@ -641,18 +645,6 @@ do {\
         DISPATCH(STORE_PROP_GENERIC);
       }
 
-      DEFINE_OPCODE(STORE_CALL_RESULT) {
-        // lv5 reject `func() = 20`
-        e->Report(Error::Reference, "target is not reference");
-        DISPATCH_ERROR();
-      }
-
-      DEFINE_OPCODE(DELETE_CALL_RESULT) {
-        // lv5 ignore `delete func()`
-        SET_TOP(JSTrue);
-        DISPATCH(DELETE_CALL_RESULT);
-      }
-
       DEFINE_OPCODE(DELETE_NAME) {
         const Symbol s = frame->GetName(instr[1].value);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), s)) {
@@ -723,22 +715,7 @@ do {\
         DISPATCH(DELETE_PROP);
       }
 
-      DEFINE_OPCODE(POP_TOP) {
-        POP_UNUSED();
-        DISPATCH(POP_TOP);
-      }
-
-      DEFINE_OPCODE(POP_TOP_AND_RET) {
-        frame->ret_ = POP();
-        DISPATCH(POP_TOP_AND_RET);
-      }
-
-      DEFINE_OPCODE(POP_N) {
-        STACKADJ(static_cast<int>(instr[1].value));
-        DISPATCH(POP_N);
-      }
-
-      DEFINE_OPCODE(POP_JUMP_IF_FALSE) {
+      DEFINE_OPCODE(IF_FALSE) {
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         POP_UNUSED();
@@ -746,10 +723,10 @@ do {\
           JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
-        DISPATCH(POP_JUMP_IF_FALSE);
+        DISPATCH(IF_FALSE);
       }
 
-      DEFINE_OPCODE(POP_JUMP_IF_TRUE) {
+      DEFINE_OPCODE(IF_TRUE) {
         const JSVal v = TOP();
         const bool x = v.ToBoolean(ERR);
         POP_UNUSED();
@@ -757,31 +734,7 @@ do {\
           JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
         }
-        DISPATCH(POP_JUMP_IF_TRUE);
-      }
-
-      DEFINE_OPCODE(JUMP_IF_TRUE_OR_POP) {
-        const JSVal v = TOP();
-        const bool x = v.ToBoolean(ERR);
-        if (x) {
-          JUMPBY(instr[1].diff);
-          DISPATCH_WITH_NO_INCREMENT();
-        } else {
-          POP_UNUSED();
-        }
-        DISPATCH(JUMP_IF_TRUE_OR_POP);
-      }
-
-      DEFINE_OPCODE(JUMP_IF_FALSE_OR_POP) {
-        const JSVal v = TOP();
-        const bool x = v.ToBoolean(ERR);
-        if (!x) {
-          JUMPBY(instr[1].diff);
-          DISPATCH_WITH_NO_INCREMENT();
-        } else {
-          POP_UNUSED();
-        }
-        DISPATCH(JUMP_IF_FALSE_OR_POP);
+        DISPATCH(IF_TRUE);
       }
 
       DEFINE_OPCODE(JUMP_SUBROUTINE) {
@@ -794,75 +747,44 @@ do {\
         DISPATCH_WITH_NO_INCREMENT();
       }
 
-      DEFINE_OPCODE(JUMP_RETURN_HOOKED_SUBROUTINE) {
-        // calc next address
-        PUSH(std::distance(frame->data(), instr) +
-             OPLength<OP::JUMP_RETURN_HOOKED_SUBROUTINE>::value);
-        PUSH(JSVal::Int32(kJumpFromReturn));
-        JUMPBY(instr[1].diff);
-        DISPATCH_WITH_NO_INCREMENT();
-      }
-
       DEFINE_OPCODE(JUMP_BY) {
         JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
-      DEFINE_OPCODE(ROT_TWO) {
-        using std::swap;
-        swap(TOP(), SECOND());
-        DISPATCH(ROT_TWO);
-      }
-
-      DEFINE_OPCODE(ROT_THREE) {
-        const JSVal v = TOP();
-        TOP() = SECOND();
-        SECOND() = THIRD();
-        THIRD() = v;
-        DISPATCH(ROT_THREE);
-      }
-
-      DEFINE_OPCODE(ROT_FOUR) {
-        const JSVal v = TOP();
-        TOP() = SECOND();
-        SECOND() = THIRD();
-        THIRD() = FOURTH();
-        FOURTH() = v;
-        DISPATCH(ROT_FOUR);
-      }
-
-      DEFINE_OPCODE(DUP_TOP) {
-        const JSVal v = TOP();
-        PUSH(v);
-        DISPATCH(DUP_TOP);
-      }
-
-      DEFINE_OPCODE(DUP_TWO) {
-        const JSVal v = TOP();
-        const JSVal w = SECOND();
-        PUSH(w);
-        PUSH(v);
-        DISPATCH(DUP_TWO);
-      }
-
-      DEFINE_OPCODE(PUSH_NULL) {
+      DEFINE_OPCODE(LOAD_NULL) {
         PUSH(JSNull);
-        DISPATCH(PUSH_NULL);
+        DISPATCH(LOAD_NULL);
       }
 
-      DEFINE_OPCODE(PUSH_TRUE) {
+      DEFINE_OPCODE(LOAD_TRUE) {
         PUSH(JSTrue);
-        DISPATCH(PUSH_TRUE);
+        DISPATCH(LOAD_TRUE);
       }
 
-      DEFINE_OPCODE(PUSH_FALSE) {
+      DEFINE_OPCODE(LOAD_FALSE) {
         PUSH(JSFalse);
-        DISPATCH(PUSH_FALSE);
+        DISPATCH(LOAD_FALSE);
       }
 
-      DEFINE_OPCODE(PUSH_EMPTY) {
-        PUSH(JSEmpty);
-        DISPATCH(PUSH_EMPTY);
+      DEFINE_OPCODE(LOAD_UNDEFINED) {
+        PUSH(JSUndefined);
+        DISPATCH(LOAD_UNDEFINED);
+      }
+
+      DEFINE_OPCODE(LOAD_THIS) {
+        PUSH(frame->GetThis());
+        DISPATCH(LOAD_THIS);
+      }
+
+      DEFINE_OPCODE(LOAD_UINT32) {
+        PUSH(JSVal::UInt32(instr[1].value));
+        DISPATCH(LOAD_UINT32);
+      }
+
+      DEFINE_OPCODE(LOAD_INT32) {
+        PUSH(JSVal::Int32(instr[1].i32));
+        DISPATCH(LOAD_INT32);
       }
 
       DEFINE_OPCODE(PUSH_UNDEFINED) {
@@ -870,19 +792,9 @@ do {\
         DISPATCH(PUSH_UNDEFINED);
       }
 
-      DEFINE_OPCODE(PUSH_THIS) {
-        PUSH(frame->GetThis());
-        DISPATCH(PUSH_THIS);
-      }
-
-      DEFINE_OPCODE(PUSH_UINT32) {
-        PUSH(JSVal::UInt32(instr[1].value));
-        DISPATCH(PUSH_UINT32);
-      }
-
-      DEFINE_OPCODE(PUSH_INT32) {
-        PUSH(JSVal::Int32(instr[1].i32));
-        DISPATCH(PUSH_INT32);
+      DEFINE_OPCODE(PUSH) {
+        PUSH(JSUndefined);
+        DISPATCH(PUSH);
       }
 
       DEFINE_OPCODE(UNARY_POSITIVE) {
@@ -1560,24 +1472,6 @@ do {\
         }
       }
 
-      DEFINE_OPCODE(SWITCH_CASE) {
-        const JSVal v = TOP();
-        const JSVal w = SECOND();
-        if (JSVal::StrictEqual(v, w)) {
-          STACKADJ(2);
-          JUMPBY(instr[1].diff);
-          DISPATCH_WITH_NO_INCREMENT();
-        }
-        POP_UNUSED();
-        DISPATCH(SWITCH_CASE);
-      }
-
-      DEFINE_OPCODE(SWITCH_DEFAULT) {
-        POP_UNUSED();
-        JUMPBY(instr[1].diff);
-        DISPATCH_WITH_NO_INCREMENT();
-      }
-
       DEFINE_OPCODE(FORIN_SETUP) {
         const JSVal v = TOP();
         if (v.IsNullOrUndefined()) {
@@ -1689,12 +1583,12 @@ do {\
         DISPATCH(BUILD_OBJECT);
       }
 
-      DEFINE_OPCODE(BUILD_FUNCTION) {
+      DEFINE_OPCODE(LOAD_FUNCTION) {
         Code* target = frame->code()->codes()[instr[1].value];
         JSFunction* func =
             JSVMFunction::New(ctx_, target, frame->lexical_env());
         PUSH(func);
-        DISPATCH(BUILD_FUNCTION);
+        DISPATCH(LOAD_FUNCTION);
       }
 
       DEFINE_OPCODE(BUILD_REGEXP) {
@@ -2074,11 +1968,6 @@ do {\
         SET_TOP(res);
         PUSH(base);
         DISPATCH(CALL_PROP_GENERIC);
-      }
-
-      DEFINE_OPCODE(CALL_CALL_RESULT) {
-        PUSH(JSUndefined);
-        DISPATCH(CALL_CALL_RESULT);
       }
 
       default: {

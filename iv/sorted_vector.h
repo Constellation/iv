@@ -37,6 +37,7 @@ class SortedVector : private std::vector<T, Alloc> {
   using container_type::front;
   using container_type::back;
   using container_type::erase;
+  using container_type::pop_back;
   using container_type::size;
   using container_type::max_size;
   using container_type::capacity;

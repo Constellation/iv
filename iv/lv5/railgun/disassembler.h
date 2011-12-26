@@ -26,6 +26,7 @@ class DisAssembler : private core::Noncopyable<> {
       ss << "[code]"
          << " depth: " << code.stack_depth()
          << " local: " << code.stack_size()
+         << " registers: " << code.registers()
          << " heap: " << code.heap_size();
       OutputLine(ss.str());
     }

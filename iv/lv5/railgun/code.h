@@ -106,11 +106,12 @@ class Code : public radio::HeapObject<radio::POINTER> {
   }
 
   template<Handler::Type type>
-  void RegisterHandler(uint16_t begin, uint16_t end,
-                       uint16_t stack_base_level,
+  void RegisterHandler(uint16_t begin,
+                       uint16_t end,
+                       uint32_t reg,
                        uint16_t dynamic_env_level) {
     exception_table_.push_back(
-        std::make_tuple(type, begin, end, stack_base_level, dynamic_env_level));
+        std::make_tuple(type, begin, end, dynamic_env_level, reg));
   }
 
   bool strict() const { return strict_; }
@@ -129,6 +130,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void set_stack_depth(std::size_t depth) {
     stack_depth_ = depth + stack_size_;
+  }
+
+  void set_registers(std::size_t size) {
+    registers_ = size;
   }
 
   std::size_t start() const { return start_; }
@@ -154,6 +159,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
   uint32_t heap_size() const { return heap_size_; }
 
   uint32_t stack_size() const { return stack_size_; }
+
+  uint32_t registers() const { return registers_; }
 
   bool empty() const { return empty_; }
 
@@ -200,6 +207,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   std::size_t block_begin_position_;
   std::size_t block_end_position_;
   std::size_t stack_depth_;
+  std::size_t registers_;
   CoreData* core_;
   std::size_t start_;
   std::size_t end_;

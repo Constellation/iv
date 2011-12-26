@@ -16,7 +16,7 @@ struct Handler {
 };
 
 typedef std::tuple<uint8_t, uint16_t,
-                   uint16_t, uint16_t, uint16_t> ExceptionHandler;
+                   uint16_t, uint16_t, uint32_t> ExceptionHandler;
 typedef GCVector<ExceptionHandler>::type ExceptionTable;
 
 
