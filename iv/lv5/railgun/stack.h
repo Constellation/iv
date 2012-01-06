@@ -161,7 +161,7 @@ class Stack : public lv5::Stack {
     assert(frame->code());
     current_ = frame->prev_;
     if (current_) {
-      stack_pointer_ = std::max(current_->GetFrameEnd(), frame->GetFrameEnd());
+      stack_pointer_ = std::max(current_->GetFrameEnd(), frame->GetFrameBase());
     } else {
       // previous of Global Frame is NULL
       stack_pointer_ = stack_ + 1;
