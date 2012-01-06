@@ -132,8 +132,17 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   std::size_t Get(Context* ctx, Symbol name) {
-    if (!AllocateTableIfNeeded()) {
-      return core::kNotFound;
+    if (!HasTable()) {
+      if (!previous_) {
+        // empty top table
+        return core::kNotFound;
+      }
+      if (IsAddingMap()) {
+        if (added_.first == name) {
+          return added_.second;
+        }
+      }
+      AllocateTable();
     }
     const TargetTable::const_iterator it = table_->find(name);
     if (it != table_->end()) {
