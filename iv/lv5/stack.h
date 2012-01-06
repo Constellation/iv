@@ -40,14 +40,12 @@ class Stack : core::Noncopyable<Stack> {
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * core::Size::KB;
 
-  explicit Stack(JSVal global)
+  explicit Stack()
     : stack_(NULL),
       stack_pointer_(NULL) {
     stack_pointer_ = stack_ =
         reinterpret_cast<JSVal*>(
             core::OSAllocator::Allocate(kStackBytes));
-    *stack_ = global;
-    stack_pointer_ += 1;  // for Global This
   }
 
   Stack(EmptyTag tag) { }  // empty
@@ -87,23 +85,36 @@ class Stack : core::Noncopyable<Stack> {
     return stack_;
   }
 
-  // these 2 function Gain / Release is reserved for ScopedArguments
+  // these 2 function Gain / Restore is reserved for ScopedArguments
   pointer Gain(size_type n) {
     if (stack_pointer_ + n < end()) {
       const pointer stack = stack_pointer_;
       stack_pointer_ += n;
       return stack;
-    } else {
-      // stack over flow
-      return NULL;
     }
+    // stack over flow
+    return NULL;
   }
 
-  void Release(size_type n) {
-    stack_pointer_ -= n;
+  pointer Gain(pointer ptr, size_type n) {
+    assert(stack_ <= ptr);
+    if (ptr + n < end()) {
+      stack_pointer_ = ptr + n;
+      return ptr;
+    }
+    // stack over flow
+    return NULL;
   }
 
- protected:
+  void Restore(pointer ptr) {
+    stack_pointer_ = ptr;
+  }
+
+  void Restore() {
+    stack_pointer_ = stack_;
+  }
+
+ private:
   JSVal* stack_;
   JSVal* stack_pointer_;
 };

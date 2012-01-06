@@ -19,27 +19,12 @@ class Condition {
       return false;
     }
 
-    if (literal->AsTrueLiteral()) {
-      return true;
-    }
-
-    if (literal->AsFalseLiteral()) {
-      return true;
-    }
-
-    if (literal->AsNullLiteral()) {
-      return true;
-    }
-
-    if (literal->AsNumberLiteral()) {
-      return true;
-    }
-
-    if (literal->AsStringLiteral()) {
-      return true;
-    }
-
-    if (literal->AsFunctionLiteral()) {
+    if (literal->AsTrueLiteral() ||
+        literal->AsFalseLiteral() ||
+        literal->AsNullLiteral() ||
+        literal->AsNumberLiteral() ||
+        literal->AsStringLiteral() ||
+        literal->AsFunctionLiteral()) {
       return true;
     }
 

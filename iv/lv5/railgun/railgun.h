@@ -12,6 +12,8 @@
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/scope.h>
 #include <iv/lv5/railgun/compiler.h>
+#include <iv/lv5/railgun/compiler_expression.h>
+#include <iv/lv5/railgun/compiler_statement.h>
 #include <iv/lv5/railgun/disassembler.h>
 #include <iv/lv5/railgun/runtime.h>
 #include <iv/lv5/railgun/jsscript.h>

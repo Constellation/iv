@@ -17,8 +17,11 @@ class Arguments : private core::Noncopyable<> {
  public:
   typedef Arguments this_type;
 
-  typedef JSVal* iterator;
-  typedef const JSVal* const_iterator;
+  typedef JSVal* reverse_iterator;
+  typedef const JSVal* const_reverse_iterator;
+  // arguments order is reversed
+  typedef std::reverse_iterator<reverse_iterator> iterator;
+  typedef std::reverse_iterator<const_reverse_iterator> const_iterator;
 
   typedef std::iterator_traits<iterator>::value_type value_type;
 
@@ -27,76 +30,61 @@ class Arguments : private core::Noncopyable<> {
   typedef std::iterator_traits<iterator>::reference reference;
   typedef std::iterator_traits<const_iterator>::reference const_reference;
 
-  typedef std::reverse_iterator<iterator> reverse_iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
-  inline pointer data() { return stack_ + 1; }
+  inline iterator begin() { return iterator(rend()); }
 
-  inline const_pointer data() const { return stack_ + 1; }
+  inline const_iterator begin() const { return const_iterator(crend()); }
 
-  inline iterator begin() { return data(); }
+  inline const_iterator cbegin() const { return begin(); }
 
-  inline const_iterator begin() const { return data(); }
+  inline iterator end() { return iterator(rbegin()); }
 
-  inline const_iterator cbegin() const { return data(); }
+  inline const_iterator end() const { return const_iterator(rbegin()); }
 
-  inline iterator end() { return begin() + size_; }
-
-  inline const_iterator end() const { return begin() + size_; }
-
-  inline const_iterator cend() const { return begin() + size_; }
+  inline const_iterator cend() const { return end(); }
 
   inline reverse_iterator rbegin() {
-    return reverse_iterator(end());
+    return stack_ - size_;
   }
 
   inline const_reverse_iterator rbegin() const {
-    return const_reverse_iterator(end());
+    return stack_ - size_;
   }
 
   inline const_reverse_iterator crbegin() const {
-    return const_reverse_iterator(end());
+    return stack_ - size_;
   }
 
   inline reverse_iterator rend() {
-    return reverse_iterator(begin());
+    return stack_;
   }
 
   inline const_reverse_iterator rend() const {
-    return const_reverse_iterator(begin());
+    return stack_;
   }
 
   inline const_reverse_iterator crend() const {
-    return const_reverse_iterator(begin());
+    return stack_;
   }
 
-  size_type max_size() const {
-    return size_;
-  }
+  size_type max_size() const { return size_; }
 
-  size_type capacity() const {
-    return size_;
-  }
+  size_type capacity() const { return size_; }
 
-  size_type size() const {
-    return size_;
-  }
+  size_type size() const { return size_; }
 
-  bool empty() const {
-    return size_ == 0;
-  }
+  bool empty() const { return size_ == 0; }
 
   reference operator[](size_type n) {
     assert(size() > n);
-    return stack_[n + 1];
+    return *(stack_ - (n + 1));
   }
 
   const_reference operator[](size_type n) const {
     assert(size() > n);
-    return stack_[n + 1];
+    return *(stack_ - (n + 1));
   }
 
   reference front() {
@@ -121,15 +109,13 @@ class Arguments : private core::Noncopyable<> {
 
   JSVal At(size_type n) const {
     if (n < size_) {
-      return stack_[n + 1];
+      return (*this)[n];
     } else {
       return JSUndefined;
     }
   }
 
-  Context* ctx() const {
-    return ctx_;
-  }
+  Context* ctx() const { return ctx_; }
 
   inline JSVal this_binding() const {
     return stack_[0];
@@ -147,11 +133,16 @@ class Arguments : private core::Noncopyable<> {
     return constructor_call_;
   }
 
-  pointer GetEnd() const {
-    return stack_ + 1 + size_;
+  pointer ExtractBase() const {
+    return stack_ - size();
   }
 
  protected:
+  // Arguments Layout
+  // [arg3][arg2][arg1][this]
+  //                     ^
+  //                     stack_
+
   // for ScopedArguments
   Arguments(Context* ctx, std::size_t n, Error* e)
     : ctx_(ctx),
@@ -160,9 +151,7 @@ class Arguments : private core::Noncopyable<> {
       constructor_call_(false) { }
 
   // for VM
-  Arguments(Context* ctx,
-            pointer ptr,
-            std::size_t n)
+  Arguments(Context* ctx, pointer ptr, std::size_t n)
     : ctx_(ctx),
       stack_(ptr),
       size_(n),
@@ -176,31 +165,23 @@ class Arguments : private core::Noncopyable<> {
 
 class ScopedArguments : public Arguments {
  public:
+  // layout is
+  // [arg2][arg1][this]
   ScopedArguments(Context* ctx, std::size_t n, Error* e)
     : Arguments(ctx, n, e) {
-    stack_ = context::StackGain(ctx_, size_ + 1);
-    if (!stack_) {  // stack overflow
-      e->Report(Error::Range, "maximum call stack size exceeded");
+    if (pointer ptr = context::StackGain(ctx_, size() + 1)) {
+      std::fill<JSVal*, JSVal>(ptr, ptr + size() + 1, JSUndefined);
+      stack_ = ptr + size();  // [this] position
     } else {
-      assert(stack_);
-      std::fill<JSVal*, JSVal>(stack_, stack_ + size_ + 1, JSUndefined);
+      // stack overflow
+      e->Report(Error::Range, "maximum call stack size exceeded");
     }
   }
 
   ~ScopedArguments() {
     if (stack_) {
-      context::StackRelease(ctx_, size_ + 1);
+      context::StackRestore(ctx_, stack_ - size());
     }
-    stack_ = NULL;
-  }
-};
-
-class VMArguments : public Arguments {
- public:
-  VMArguments(Context* ctx,
-              pointer ptr,
-              std::size_t n)
-    : Arguments(ctx, ptr, n) {
   }
 };
 

@@ -57,7 +57,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   inline JSVal* StackGain(std::size_t size) { return stack_->Gain(size); }
 
-  inline void StackRelease(std::size_t size) { stack_->Release(size); }
+  inline void StackRestore(JSVal* ptr) { stack_->Restore(ptr); }
 
   template<typename Func>
   void DefineFunction(const Func& f,

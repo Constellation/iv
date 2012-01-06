@@ -24,6 +24,13 @@ inline bool IsIncrementOverflowSafe<1>(int32_t val) {
   return val < INT32_MAX;
 }
 
+class VMArguments : public lv5::Arguments {
+ public:
+  VMArguments(Context* ctx, pointer ptr, std::size_t n)
+    : lv5::Arguments(ctx, ptr, n) {
+  }
+};
+
 }  // namespace detail
 
 class Operation {
@@ -32,30 +39,37 @@ class Operation {
     : ctx_(ctx) {
   }
 
-  JSVal Invoke(JSFunction* func, JSVal* sp, int argc, Error* e) {
-    VMArguments args(ctx_, sp - argc - 1, argc);
-    return func->Call(&args, sp[-(argc + 1)], e);
+  JSVal Invoke(JSFunction* func, JSVal* arg, int argc_with_this, Error* e) {
+    detail::VMArguments args(ctx_,
+                             arg + (argc_with_this - 1),
+                             argc_with_this - 1);
+    return func->Call(&args, args.this_binding(), e);
   }
 
   JSVal InvokeMaybeEval(JSFunction* func,
-                        JSVal* sp, int argc, Frame* prev, Error* e) {
-    VMArguments args(ctx_, sp - argc - 1, argc);
+                        JSVal* arg, int argc_with_this,
+                        Frame* prev, Error* e) {
+    detail::VMArguments args(ctx_,
+                             arg + (argc_with_this - 1),
+                             argc_with_this - 1);
     const JSAPI native = func->NativeFunction();
     if (native && native == &GlobalEval) {
       // direct call to eval point
-      args.set_this_binding(sp[-(argc + 1)]);
+      args.set_this_binding(args.this_binding());
       return DirectCallToEval(args, prev, e);
     }
-    return func->Call(&args, sp[-(argc + 1)], e);
+    return func->Call(&args, args.this_binding(), e);
   }
 
-  JSVal Construct(JSFunction* func, JSVal* sp, int argc, Error* e) {
-    VMArguments args(ctx_, sp - argc - 1, argc);
+  JSVal Construct(JSFunction* func, JSVal* arg, int argc_with_this, Error* e) {
+    detail::VMArguments args(ctx_,
+                             arg + (argc_with_this - 1),
+                             argc_with_this - 1);
     args.set_constructor_call(true);
     return func->Construct(&args, e);
   }
 
-  void RaiseReferenceError(const Symbol& name, Error* e) const {
+  void RaiseReferenceError(Symbol name, Error* e) const {
     core::UStringBuilder builder;
     builder.Append('"');
     builder.Append(symbol::GetSymbolString(name));
@@ -69,7 +83,7 @@ class Operation {
     e->Report(Error::Reference, builder.BuildPiece());
   }
 
-  void RaiseImmutable(const Symbol& name, Error* e) const {
+  void RaiseImmutable(Symbol name, Error* e) const {
     core::UStringBuilder builder;
     builder.Append("mutating immutable binding \"");
     builder.Append(symbol::GetSymbolString(name));
@@ -77,7 +91,7 @@ class Operation {
     e->Report(Error::Type, builder.BuildPiece());
   }
 
-  JSEnv* GetEnv(JSEnv* env, const Symbol& name) const {
+  JSEnv* GetEnv(JSEnv* env, Symbol name) const {
     JSEnv* current = env;
     while (current) {
       if (current->HasBinding(ctx_, name)) {
@@ -99,7 +113,7 @@ class Operation {
 
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
-  JSVal LoadName(JSEnv* env, const Symbol& name, bool strict, Error* e) {
+  JSVal LoadName(JSEnv* env, Symbol name, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, name)) {
       return current->GetBindingValue(ctx_, name, strict, e);
     }
@@ -107,22 +121,21 @@ class Operation {
     return JSEmpty;
   }
 
-  JSVal LoadHeap(JSEnv* env, const Symbol& name,
+  JSVal LoadHeap(JSEnv* env, Symbol name,
                  bool strict, uint32_t offset,
                  uint32_t scope_nest_count, Error* e) {
     return GetHeapEnv(env, scope_nest_count)->GetByOffset(offset, strict, e);
   }
 
-  JSVal LoadProp(const JSVal& base,
-                 const Symbol& s, bool strict, Error* e) {
+  JSVal LoadProp(const JSVal& base, Symbol s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     return LoadPropImpl(base, s, strict, e);
   }
 
   template<OP::Type own, OP::Type proto, OP::Type chain, OP::Type generic>
   JSVal LoadProp(Instruction* instr,
-                 const JSVal& base,
-                 const Symbol& s, bool strict, Error* e) {
+                 const JSVal& base, Symbol s, bool strict, Error* e) {
+    // opcode | dst | base | name | nop | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
@@ -150,8 +163,8 @@ class Operation {
       if (slot.base() == obj) {
         // own property
         instr[0] = Instruction::GetOPInstruction(own);
-        instr[2].map = obj->map();
-        instr[3].value = slot.offset();
+        instr[4].map = obj->map();
+        instr[5].value = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
@@ -159,17 +172,17 @@ class Operation {
         // proto property
         obj->FlattenMap();
         instr[0] = Instruction::GetOPInstruction(proto);
-        instr[2].map = obj->map();
-        instr[3].map = slot.base()->map();
-        instr[4].value = slot.offset();
+        instr[4].map = obj->map();
+        instr[5].map = slot.base()->map();
+        instr[6].value = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
       // chain property
       instr[0] = Instruction::GetOPInstruction(chain);
-      instr[2].chain = Chain::New(obj, slot.base());
-      instr[3].map = slot.base()->map();
-      instr[4].value = slot.offset();
+      instr[4].chain = Chain::New(obj, slot.base());
+      instr[5].map = slot.base()->map();
+      instr[6].value = slot.offset();
       return slot.Get(ctx_, base, e);
     } else {
       return JSUndefined;
@@ -196,7 +209,7 @@ class Operation {
   }
 
   JSVal LoadPropImpl(const JSVal& base,
-                     const Symbol& s, bool strict, Error* e) {
+                     Symbol s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       return LoadPropPrimitive(base, s, strict, e);
     } else {
@@ -205,7 +218,7 @@ class Operation {
   }
 
   JSVal LoadPropPrimitive(const JSVal& base,
-                          const Symbol& s, bool strict, Error* e) {
+                          Symbol s, bool strict, Error* e) {
     JSVal res;
     if (GetPrimitiveOwnProperty(base, s, &res)) {
       return res;
@@ -225,7 +238,7 @@ class Operation {
 
 #define CHECK IV_LV5_ERROR_VOID(e)
 
-  void StoreName(JSEnv* env, const Symbol& name,
+  void StoreName(JSEnv* env, Symbol name,
                  const JSVal& stored, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, name)) {
       current->SetMutableBinding(ctx_, name, stored, strict, e);
@@ -240,7 +253,7 @@ class Operation {
     }
   }
 
-  void StoreHeap(JSEnv* env, const Symbol& name,
+  void StoreHeap(JSEnv* env, Symbol name,
                  const JSVal& stored, bool strict,
                  uint32_t offset, uint32_t scope_nest_count, Error* e) {
     GetHeapEnv(env, scope_nest_count)->SetByOffset(offset, stored, strict, e);
@@ -269,7 +282,7 @@ class Operation {
     StorePropImpl(base, s, stored, strict, e);
   }
 
-  void StoreProp(const JSVal& base, const Symbol& s,
+  void StoreProp(const JSVal& base, Symbol s,
                  const JSVal& stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     StorePropImpl(base, s, stored, strict, e);
@@ -278,24 +291,24 @@ class Operation {
   void StoreProp(const JSVal& base,
                  Instruction* instr,
                  OP::Type generic,
-                 const Symbol& s,
-                 const JSVal& stored, bool strict, Error* e) {
+                 Symbol s, const JSVal& stored, bool strict, Error* e) {
+    // opcode | base | index | src | nop | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
       StorePropPrimitive(base, s, stored, strict, e);
     } else {
       // cache patten
       JSObject* obj = base.object();
-      if (instr[2].map == obj->map()) {
+      if (instr[4].map == obj->map()) {
         // map is cached, so use previous index code
-        return obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
+        return obj->PutToSlotOffset(ctx_, instr[5].value, stored, strict, e);
       } else {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
           if (slot.IsCacheable()) {
-            instr[2].map = obj->map();
-            instr[3].value = slot.offset();
-            obj->PutToSlotOffset(ctx_, instr[3].value, stored, strict, e);
+            instr[4].map = obj->map();
+            instr[5].value = slot.offset();
+            obj->PutToSlotOffset(ctx_, instr[5].value, stored, strict, e);
           } else {
             // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
@@ -303,7 +316,7 @@ class Operation {
           }
           return;
         } else {
-          instr[2].map = NULL;
+          instr[4].map = NULL;
           obj->Put(ctx_, s, stored, strict, e);
           return;
         }
@@ -321,8 +334,7 @@ class Operation {
     }
   }
 
-  void StorePropPrimitive(const JSVal& base,
-                          const Symbol& s,
+  void StorePropPrimitive(const JSVal& base, Symbol s,
                           const JSVal& stored, bool strict, Error* e) {
     assert(base.IsPrimitive());
     JSObject* const o = base.ToObject(ctx_, CHECK);
@@ -506,7 +518,7 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementName(JSEnv* env, const Symbol& s, bool strict, Error* e) {
+  JSVal IncrementName(JSEnv* env, Symbol s, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, s)) {
       const JSVal w = current->GetBindingValue(ctx_, s, strict, CHECK);
       if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
@@ -532,7 +544,7 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementHeap(JSEnv* env, const Symbol& s,
+  JSVal IncrementHeap(JSEnv* env, Symbol s,
                       bool strict, uint32_t offset,
                       uint32_t scope_nest_count, Error* e) {
     JSDeclEnv* decl = GetHeapEnv(env, scope_nest_count);
@@ -600,7 +612,7 @@ class Operation {
 
   template<int Target, std::size_t Returned>
   JSVal IncrementProp(const JSVal& base,
-                      const Symbol& s, bool strict, Error* e) {
+                      Symbol s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSVal w = LoadPropImpl(base, s, strict, CHECK);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
@@ -622,20 +634,21 @@ class Operation {
   template<int Target, std::size_t Returned>
   JSVal IncrementGlobal(JSGlobal* global,
                         Instruction* instr,
-                        const Symbol& s, bool strict, Error* e) {
-    if (instr[2].map == global->map()) {
+                        Symbol s, bool strict, Error* e) {
+    // opcode | dst | name | nop | nop
+    if (instr[3].map == global->map()) {
       // map is cached, so use previous index code
       return IncrementGlobal<Target, Returned>(global,
-                                               instr[3].value, strict, e);
+                                               instr[4].value, strict, e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        instr[2].map = global->map();
-        instr[3].value = slot.offset();
+        instr[3].map = global->map();
+        instr[4].value = slot.offset();
         return IncrementGlobal<Target, Returned>(global,
-                                                 instr[3].value, strict, e);
+                                                 instr[4].value, strict, e);
       } else {
-        instr[2].map = NULL;
+        instr[3].map = NULL;
         return IncrementName<Target, Returned>(ctx_->global_env(),
                                                s, strict, e);
       }
@@ -644,19 +657,20 @@ class Operation {
 
   JSVal LoadGlobal(JSGlobal* global,
                    Instruction* instr, const Symbol& s, bool strict, Error* e) {
-    if (instr[2].map == global->map()) {
+    // opcode | dst | index | nop | nop
+    if (instr[3].map == global->map()) {
       // map is cached, so use previous index code
-      return global->GetBySlotOffset(ctx_, instr[3].value, e);
+      return global->GetBySlotOffset(ctx_, instr[4].value, e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         // now Own Property Pattern only implemented
         assert(slot.IsCacheable());
-        instr[2].map = global->map();
-        instr[3].value = slot.offset();
+        instr[3].map = global->map();
+        instr[4].value = slot.offset();
         return slot.Get(ctx_, global, e);
       } else {
-        instr[2].map = NULL;
+        instr[3].map = NULL;
         return LoadName(ctx_->global_env(), s, strict, e);
       }
     }

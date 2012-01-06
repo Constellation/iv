@@ -122,7 +122,6 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   // implementation depended locale based separator
   const char separator = ',';
   const Symbol toLocaleString = context::Intern(ctx, "toLocaleString");
-  ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
   JSStringBuilder builder;
   {
     const JSVal first =
@@ -134,6 +133,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
+      ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
       const JSVal R = method.object()->AsCallable()->Call(&args_list,
                                                           elm_obj,
                                                           IV_LV5_ERROR(e));
@@ -156,6 +156,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         e->Report(Error::Type, "toLocaleString is not function");
         return JSUndefined;
       }
+      ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
       const JSVal R = method.object()->AsCallable()->Call(&args_list,
                                                           elm_obj,
                                                           IV_LV5_ERROR(e));
@@ -484,7 +485,6 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     std::array<int64_t, kStackSize> lstack, rstack;
     lstack[0] = 0;
     rstack[0] = len - 1;
-    ScopedArguments a(ctx, 2, IV_LV5_ERROR(e));
     while (sp > 0) {
       --sp;
       l = lstack[sp];
@@ -529,9 +529,10 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                     if (t2.IsUndefined()) {
                       res = JSVal::Int32(1);
                     } else {
-                      a[0] = t2;
-                      a[1] = t;
-                      res = comparefn->Call(&a, JSUndefined, IV_LV5_ERROR(e));
+                      ScopedArguments arg(ctx, 2, IV_LV5_ERROR(e));
+                      arg[0] = t2;
+                      arg[1] = t;
+                      res = comparefn->Call(&arg, JSUndefined, IV_LV5_ERROR(e));
                     }
                   }
                 }
@@ -614,9 +615,10 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                     if (s.IsUndefined()) {
                       continue;
                     } else {
-                      a[0] = target;
-                      a[1] = s;
-                      res = comparefn->Call(&a, JSUndefined, IV_LV5_ERROR(e));
+                      ScopedArguments arg(ctx, 2, IV_LV5_ERROR(e));
+                      arg[0] = target;
+                      arg[1] = s;
+                      res = comparefn->Call(&arg, JSUndefined, IV_LV5_ERROR(e));
                     }
                   }
                 }
@@ -667,9 +669,10 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
                     if (s.IsUndefined()) {
                       break;
                     } else {
-                      a[0] = target;
-                      a[1] = s;
-                      res = comparefn->Call(&a, JSUndefined, IV_LV5_ERROR(e));
+                      ScopedArguments arg(ctx, 2, IV_LV5_ERROR(e));
+                      arg[0] = target;
+                      arg[1] = s;
+                      res = comparefn->Call(&arg, JSUndefined, IV_LV5_ERROR(e));
                     }
                   }
                 }
@@ -1014,10 +1017,10 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       arg_list[0] = obj->Get(ctx,
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
@@ -1049,10 +1052,10 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       arg_list[0] = obj->Get(ctx,
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
@@ -1084,10 +1087,10 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       arg_list[0] = obj->Get(ctx,
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
@@ -1116,10 +1119,10 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
 
   JSArray* const ary = JSArray::New(ctx, len);
 
-  ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       arg_list[0] = obj->Get(ctx,
                              symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
@@ -1154,10 +1157,10 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
 
   JSArray* const ary = JSArray::New(ctx);
 
-  ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
   for (uint32_t k = 0, to = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       const JSVal k_value =
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[0] = k_value;
@@ -1226,9 +1229,9 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
     }
   }
 
-  ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
   for (;k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
       arg_list[0] = accumulator;
       arg_list[1] =
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
@@ -1287,9 +1290,9 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
     }
   }
 
-  ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
   while (k--) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+      ScopedArguments arg_list(ctx, 4, IV_LV5_ERROR(e));
       arg_list[0] = accumulator;
       arg_list[1] =
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));

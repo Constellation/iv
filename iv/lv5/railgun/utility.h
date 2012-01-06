@@ -1,7 +1,9 @@
 #ifndef IV_LV5_RAILGUN_UTILITY_H_
 #define IV_LV5_RAILGUN_UTILITY_H_
+#include <iostream>
 #include <iv/detail/memory.h>
 #include <iv/parser.h>
+#include <iv/unicode.h>
 #include <iv/lv5/factory.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/jsval.h>

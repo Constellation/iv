@@ -23,44 +23,44 @@ inline GC_ms_entry* CoreData::MarkChildren(GC_word* top,
         if (VM::IsOP<OP::LOAD_GLOBAL>(instr) ||
             VM::IsOP<OP::STORE_GLOBAL>(instr) ||
             VM::IsOP<OP::DELETE_GLOBAL>(instr) ||
-            VM::IsOP<OP::CALL_GLOBAL>(instr) ||
             VM::IsOP<OP::INCREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
-          // OPCODE | SYM | MAP
+          // opcode | dst | index | map | offset
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 3].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::LOAD_OBJECT>(instr)) {
+          // opcode | index | map
           entry = GC_MARK_AND_PUSH(
               (*data_)[n + 2].map,
-              entry, mark_sp_limit, reinterpret_cast<void**>(this));
-        } else if (VM::IsOP<OP::BUILD_OBJECT>(instr)) {
-          // OPCODE | MAP
-          entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 1].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::STORE_PROP>(instr)) {
+          // opcode | base | index | src | nop | nop | nop | nop
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 2].map,
+              (*data_)[n + 4].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
-        } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr) ||
-                   VM::IsOP<OP::CALL_PROP_OWN>(instr)) {
+        } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr)) {
+          // opcode | dst | base | name | map | offset | nop | nop
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 2].map,
+              (*data_)[n + 4].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
-        } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr) ||
-                   VM::IsOP<OP::CALL_PROP_PROTO>(instr)) {
+        } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr)) {
+          // opcode | dst | base | name | map | map | offset | nop
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 2].map,
-              entry, mark_sp_limit, reinterpret_cast<void**>(this));
-          entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 3].map,
-              entry, mark_sp_limit, reinterpret_cast<void**>(this));
-        } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr) ||
-                   VM::IsOP<OP::CALL_PROP_CHAIN>(instr)) {
-          entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 2].chain,
+              (*data_)[n + 4].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 3].map,
+              (*data_)[n + 5].map,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+        } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr)) {
+          // opcode | dst | base | name | chain | map | offset | nop
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 4].chain,
+              entry, mark_sp_limit, reinterpret_cast<void**>(this));
+          entry = GC_MARK_AND_PUSH(
+              (*data_)[n + 5].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         }
         n += instr.GetLength();
@@ -79,29 +79,29 @@ inline void CoreData::MarkChildren(radio::Core* core) {
       if (VM::IsOP<OP::LOAD_GLOBAL>(instr) ||
           VM::IsOP<OP::STORE_GLOBAL>(instr) ||
           VM::IsOP<OP::DELETE_GLOBAL>(instr) ||
-          VM::IsOP<OP::CALL_GLOBAL>(instr) ||
           VM::IsOP<OP::INCREMENT_GLOBAL>(instr) ||
           VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
           VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
           VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
-        // OPCODE | SYM | MAP
+        // opcode | dst | index | map | offset
+        core->MarkCell((*data_)[n + 3].map);
+      } else if (VM::IsOP<OP::LOAD_OBJECT>(instr)) {
+        // opcode | index | map
         core->MarkCell((*data_)[n + 2].map);
-      } else if (VM::IsOP<OP::BUILD_OBJECT>(instr)) {
-        // OPCODE | MAP
-        core->MarkCell((*data_)[n + 1].map);
       } else if (VM::IsOP<OP::STORE_PROP>(instr)) {
-        core->MarkCell((*data_)[n + 2].map);
-      } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr) ||
-                 VM::IsOP<OP::CALL_PROP_OWN>(instr)) {
-        core->MarkCell((*data_)[n + 2].map);
-      } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr) ||
-                 VM::IsOP<OP::CALL_PROP_PROTO>(instr)) {
-        core->MarkCell((*data_)[n + 2].map);
-        core->MarkCell((*data_)[n + 3].map);
-      } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr) ||
-                 VM::IsOP<OP::CALL_PROP_CHAIN>(instr)) {
-        // core->MarkCell((*data_)[n + 2].chain);
-        core->MarkCell((*data_)[n + 3].map);
+        // opcode | base | index | src | nop | nop | nop | nop
+        core->MarkCell((*data_)[n + 4].map);
+      } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr)) {
+        // opcode | dst | base | name | map | offset | nop | nop
+        core->MarkCell((*data_)[n + 4].map);
+      } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr)) {
+        // opcode | dst | base | name | map | map | offset | nop
+        core->MarkCell((*data_)[n + 4].map);
+        core->MarkCell((*data_)[n + 5].map);
+      } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr)) {
+        // opcode | dst | base | name | chain | map | offset | nop
+        // core->MarkCell((*data_)[n + 4].chain);
+        core->MarkCell((*data_)[n + 5].map);
       }
       n += instr.GetLength();
     }

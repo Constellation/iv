@@ -14,11 +14,6 @@ class Context : public lv5::Context {
   VM* vm() {
     return vm_;
   }
-
-  inline JSVal* StackGain(std::size_t size);
-
-  inline void StackRelease(std::size_t size);
-
  private:
   VM* vm_;
 };

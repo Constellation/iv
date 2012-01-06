@@ -26,13 +26,9 @@ class Stack : public lv5::Stack {
  public:
   class Resource : public GCKind<Resource> {
    public:
-    explicit Resource(Stack* stack)
-      : stack_(stack) {
-    }
+    explicit Resource(Stack* stack) : stack_(stack) { }
 
-    Stack* stack() const {
-      return stack_;
-    }
+    Stack* stack() const { return stack_; }
 
     GC_ms_entry* MarkChildren(GC_word* top,
                               GC_ms_entry* entry,
@@ -43,7 +39,7 @@ class Stack : public lv5::Stack {
         if (current) {
           // mark Frame member
           entry = MarkFrame(entry, mark_sp_limit,
-                            current, stack_->stack_pointer_);
+                            current, stack_->GetTop());
           // traverse frames
           for (Frame *next = current, *now = current->prev_;
                now; next = now, now = next->prev_) {
@@ -58,8 +54,8 @@ class Stack : public lv5::Stack {
     Stack* stack_;
   };
 
-  explicit Stack(JSVal global)
-    : lv5::Stack(global),
+  Stack()
+    : lv5::Stack(),
       resource_(NULL),
       base_(NULL),
       current_(NULL) {
@@ -70,35 +66,35 @@ class Stack : public lv5::Stack {
     : lv5::Stack(lv5::Stack::EmptyTag()) { }  // empty
 
   ~Stack() {
-    if (stack_) {
+    if (GetBase()) {
       delete resource_;
     }
   }
 
   // returns new frame for function call
   Frame* NewCodeFrame(Context* ctx,
-                      JSVal* sp,
+                      JSVal* arg,
                       Code* code,
                       JSEnv* env,
                       JSVal callee,
                       Instruction* pc,
-                      std::size_t argc,
+                      std::size_t argc_with_this,
                       bool constructor_call) {
     assert(code);
-    if (JSVal* mem = GainFrame(sp, code)) {
-      Frame* frame = reinterpret_cast<Frame*>(mem);
+    assert(argc_with_this >= 1);
+    if (Frame* frame = GainFrame(arg, argc_with_this, code)) {
       frame->code_ = code;
       frame->prev_pc_ = pc;
       frame->variable_env_ = frame->lexical_env_ = env;
       frame->prev_ = current_;
-      frame->ret_ = JSUndefined;
       frame->callee_ = callee;
-      frame->argc_ = argc;
+      frame->argc_ = argc_with_this - 1;
       frame->dynamic_env_level_ = 0;
-      frame->localc_ = code->stack_size();
+      frame->registers_ = code->registers();
       std::fill_n<JSVal*, std::size_t, JSVal>(
-          frame->GetLocal(), frame->localc_, JSUndefined);
+          frame->RegisterFile(), frame->registers_, JSUndefined);
       frame->constructor_call_ = constructor_call;
+      frame->r_ = (pc) ? pc[1].value : 0;
       current_ = frame;
       return frame;
     } else {
@@ -108,46 +104,25 @@ class Stack : public lv5::Stack {
   }
 
   Frame* NewEvalFrame(Context* ctx,
-                      JSVal* sp,
+                      JSVal* arg,
                       Code* code,
                       JSEnv* variable_env,
                       JSEnv* lexical_env) {
     assert(code);
-    if (JSVal* mem = GainFrame(sp, code)) {
-      Frame* frame = reinterpret_cast<Frame*>(mem);
+    if (Frame* frame = GainFrame(arg, 1, code)) {
       frame->code_ = code;
       frame->prev_pc_ = NULL;
       frame->variable_env_ = variable_env;
       frame->lexical_env_ = lexical_env;
       frame->prev_ = current_;
-      frame->ret_ = JSUndefined;
       frame->callee_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
-      frame->localc_ = 0;
+      frame->registers_ = code->registers();
+      std::fill_n<JSVal*, std::size_t, JSVal>(
+          frame->RegisterFile(), frame->registers_, JSUndefined);
       frame->constructor_call_ = false;
-      current_ = frame;
-      return frame;
-    } else {
-      // stack overflow
-      return NULL;
-    }
-  }
-
-  Frame* NewGlobalFrame(Context* ctx, Code* code) {
-    assert(code);
-    if (JSVal* mem = GainFrame(stack_ + 1, code)) {
-      Frame* frame = reinterpret_cast<Frame*>(mem);
-      frame->code_ = code;
-      frame->prev_pc_ = NULL;
-      frame->variable_env_ = frame->lexical_env_ = ctx->global_env();
-      frame->prev_ = NULL;
-      frame->ret_ = JSUndefined;
-      frame->callee_ = JSUndefined;
-      frame->argc_ = 0;
-      frame->dynamic_env_level_ = 0;
-      frame->localc_ = 0;
-      frame->constructor_call_ = false;
+      frame->r_ = 0;
       current_ = frame;
       return frame;
     } else {
@@ -161,10 +136,11 @@ class Stack : public lv5::Stack {
     assert(frame->code());
     current_ = frame->prev_;
     if (current_) {
-      stack_pointer_ = std::max(current_->GetFrameEnd(), frame->GetFrameBase());
+      // because of ScopedArguments
+      Restore(std::max(current_->GetFrameEnd(), frame->GetFrameBase()));
     } else {
       // previous of Global Frame is NULL
-      stack_pointer_ = stack_ + 1;
+      Restore();
     }
     return current_;
   }
@@ -173,7 +149,7 @@ class Stack : public lv5::Stack {
 
   void MarkChildren(radio::Core* core) {
     // mark Frame member
-    MarkFrame(core, current_, stack_pointer_);
+    MarkFrame(core, current_, GetTop());
     // traverse frames
     for (Frame *next = current_, *now = current_->prev_;
          now; next = now, now = next->prev_) {
@@ -194,12 +170,6 @@ class Stack : public lv5::Stack {
     entry = GC_MARK_AND_PUSH(frame->variable_env_,
                              entry, mark_sp_limit,
                              reinterpret_cast<void**>(&frame));
-    if (frame->ret_.IsCell()) {
-      radio::Cell* ptr = frame->ret_.cell();
-      entry = GC_MARK_AND_PUSH(ptr,
-                               entry, mark_sp_limit,
-                               reinterpret_cast<void**>(&frame));
-    }
     if (frame->callee_.IsCell()) {
       radio::Cell* ptr = frame->callee_.cell();
       entry = GC_MARK_AND_PUSH(ptr,
@@ -208,7 +178,7 @@ class Stack : public lv5::Stack {
     }
 
     // start current frame marking
-    for (JSVal *it = frame->GetLocal(); it != last; ++it) {
+    for (JSVal *it = frame->RegisterFile(); it != last; ++it) {
       if (it->IsCell()) {
         radio::Cell* ptr = it->cell();
         entry = GC_MARK_AND_PUSH(ptr,
@@ -223,16 +193,25 @@ class Stack : public lv5::Stack {
     core->MarkCell(frame->code_);
     core->MarkCell(frame->lexical_env_);
     core->MarkCell(frame->variable_env_);
-    core->MarkValue(frame->ret_);
     core->MarkValue(frame->callee_);
-    std::for_each(frame->GetLocal(), last, radio::Core::Marker(core));
+    std::for_each(frame->RegisterFile(), last, radio::Core::Marker(core));
   }
 
-  JSVal* GainFrame(JSVal* top, Code* code) {
-    assert(stack_ < top);
-    assert(top <= stack_pointer_);
-    stack_pointer_ = top;
-    return Gain(Frame::GetFrameSize(code->stack_depth()));
+  // argc_with_this is this + args size
+  Frame* GainFrame(JSVal* arg, int argc_with_this, Code* code) {
+    const int diff =
+        static_cast<int>(code->params().size()) - (argc_with_this - 1);
+    const std::size_t capacity = Frame::GetFrameSize(code->after_frame_size());
+    JSVal* top = arg + argc_with_this;
+    if (diff <= 0) {
+      return reinterpret_cast<Frame*>(Gain(top, capacity));
+    }
+
+    // fill and move args
+    JSVal* ptr = Gain(top, capacity + diff) + diff;
+    std::copy_backward(arg, arg + argc_with_this, ptr);
+    std::fill_n<JSVal*, std::size_t, JSVal>(arg, diff, JSUndefined);
+    return reinterpret_cast<Frame*>(ptr);
   }
 
   Resource* resource_;

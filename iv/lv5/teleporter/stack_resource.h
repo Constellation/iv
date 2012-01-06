@@ -15,13 +15,13 @@ class StackResource : private core::Noncopyable<> {
  public:
   typedef struct GC_ms_entry GCMSEntry;
 
-  StackResource(JSVal global)
+  StackResource()
     : stack_free_list_(GC_new_free_list()),
       stack_mark_proc_(GC_new_proc(&StackMark)),
       stack_kind_(GC_new_kind(stack_free_list_,
                               GC_MAKE_PROC(stack_mark_proc_, 0), 0, 1)),
       stack_(NULL) {
-    stack_ = new(GC_generic_malloc(sizeof(Stack), stack_kind_))Stack(global);
+    stack_ = new(GC_generic_malloc(sizeof(Stack), stack_kind_))Stack;
   }
 
   ~StackResource() {

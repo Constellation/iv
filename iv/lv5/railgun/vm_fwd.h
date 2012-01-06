@@ -24,20 +24,18 @@ class VM {
 
   inline JSVal Run(Code* code, Error* e);
 
-  inline JSVal RunGlobal(Code* code, Error* e);
-
   inline JSVal RunEval(Code* code,
                        JSEnv* variable_env, JSEnv* lexical_env,
                        JSVal this_binding, Error* e);
 
-  inline std::pair<JSVal, State> Execute(const Arguments& args,
+  inline std::pair<JSVal, State> Execute(Arguments* args,
                                          JSVMFunction* func, Error* e);
 
   // normal pass
   explicit VM(Context* ctx)
     : ctx_(ctx),
       operation_(ctx),
-      stack_(ctx->global_obj()),
+      stack_(),
       direct_threading_dispatch_table_(NULL) {
   }
 

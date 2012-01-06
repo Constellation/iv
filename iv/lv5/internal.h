@@ -180,9 +180,10 @@ inline void BuildFunctionSource(Builder* builder,
     builder->AppendJSString(*str);
     builder->Append("\n})");
   } else {
+    assert(!args.empty());
     builder->Append("(function(");
-    Arguments::const_pointer it = args.data();
-    const Arguments::const_pointer last = args.data() + args.size() - 1;
+    Arguments::const_iterator it = args.cbegin();
+    const Arguments::const_iterator last = args.cbegin() + (args.size() - 1);
     do {
       JSString* const str = it->ToString(ctx, IV_LV5_ERROR_VOID(e));
       builder->AppendJSString(*str);

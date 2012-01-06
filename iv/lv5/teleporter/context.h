@@ -34,7 +34,7 @@ class Context : public iv::lv5::Context {
       generate_script_counter_(0),
       current_script_(NULL),
       strict_(false),
-      stack_resource_(global_data()->global_obj()) {
+      stack_resource_() {
     RegisterStack(stack_resource_.stack());
     Initialize<&FunctionConstructor, &GlobalEval>();
   }

@@ -111,8 +111,8 @@ JSVal* StackGain(Context* ctx, std::size_t size) {
   return ctx->StackGain(size);
 }
 
-void StackRelease(Context* ctx, std::size_t size) {
-  ctx->StackRelease(size);
+void StackRestore(Context* ctx, JSVal* ptr) {
+  ctx->StackRestore(ptr);
 }
 
 void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {

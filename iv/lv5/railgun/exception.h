@@ -7,17 +7,54 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-struct Handler {
+class Handler {
+ public:
   enum Type {
     CATCH,
     FINALLY,
     ITER
   };
+
+  Handler(Type type,
+          uint32_t begin,
+          uint32_t end, 
+          uint32_t jmp,
+          uint32_t ret,
+          uint32_t flag,
+          uint32_t dynamic_env_level)
+    : type_(type),
+      begin_(begin),
+      end_(end),
+      jmp_(jmp),
+      ret_(ret),
+      flag_(flag),
+      dynamic_env_level_(dynamic_env_level) { }
+
+  Type type() const { return type_; }
+
+  uint32_t begin() const { return begin_; }
+
+  uint32_t end() const { return end_; }
+
+  uint32_t jmp() const { return jmp_; }
+
+  uint32_t ret() const { return ret_; }
+
+  uint32_t flag() const { return flag_; }
+
+  uint32_t dynamic_env_level() const { return dynamic_env_level_; }
+
+ private:
+  Type type_;
+  uint32_t begin_;
+  uint32_t end_;
+  uint32_t jmp_;
+  uint32_t ret_;
+  uint32_t flag_;
+  uint32_t dynamic_env_level_;
 };
 
-typedef std::tuple<uint8_t, uint16_t,
-                   uint16_t, uint16_t, uint32_t> ExceptionHandler;
-typedef GCVector<ExceptionHandler>::type ExceptionTable;
+typedef GCVector<Handler>::type ExceptionTable;
 
 
 } } }  // namespace iv::lv5::railgun

@@ -1,7 +1,9 @@
 #ifndef IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
 #define IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
+#include <iv/debug.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/railgun/op.h>
+#include <iv/lv5/railgun/register_id.h>
 namespace iv {
 namespace lv5 {
 
@@ -12,6 +14,11 @@ namespace railgun {
 
 struct Instruction {
   Instruction(uint32_t arg) : value(arg) { }  // NOLINT
+
+  Instruction(RegisterID reg) : value(reg->reg()) {  // NOLINT
+    assert(reg);
+  }
+
   union {
     const void* label;  // use for direct threading
     uint32_t value;

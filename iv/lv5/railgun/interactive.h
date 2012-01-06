@@ -58,6 +58,8 @@ class Interactive {
           core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
+        OutputDisAssembler dis(&ctx_, stdout);
+        dis.DisAssemble(*code);
         JSVal ret = ctx_.vm()->Run(code, &e);
         if (e) {
           ret = iv::lv5::JSError::Detail(&ctx_, &e);
