@@ -284,6 +284,8 @@ class JSVal {
 
   inline Symbol ToSymbol(Context* ctx, Error* e) const;
 
+  inline core::UString ToUString(Context* ctx, Error* e) const;
+
   inline double ToNumber(Context* ctx, Error* e) const;
 
   inline JSVal ToNumberValue(Context* ctx, Error* e) const;

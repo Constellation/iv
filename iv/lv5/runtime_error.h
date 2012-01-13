@@ -67,9 +67,6 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
         msg = target.ToString(ctx, IV_LV5_ERROR(e));
       }
     }
-    if (name->empty() && msg->empty()) {
-      return JSString::NewAsciiString(ctx, "Error");
-    }
     if (name->empty()) {
       return msg;
     }

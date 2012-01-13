@@ -659,6 +659,41 @@ Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
   }
 }
 
+core::UString JSVal::ToUString(Context* ctx, Error* e) const {
+  if (IsString()) {
+    JSString* str = string();
+    return core::UString(str->begin(), str->end());
+  } else if (IsNumber()) {
+    // int32 short cut
+    if (IsInt32()) {
+      std::array<char, 15> buffer;
+      char* end = core::Int32ToString(int32(), buffer.data());
+      return core::UString(buffer.data(), end);
+    } else {
+      std::array<char, 80> buffer;
+      const char* const str =
+          core::DoubleToCString(number(), buffer.data(), buffer.size());
+      return core::UString(str, str + std::strlen(str));
+    }
+  } else if (IsBoolean()) {
+    const char* str = (boolean()) ? "true" : "false";
+    return core::UString(str, str + std::strlen(str));
+  } else if (IsNull()) {
+    const char* str = "null";
+    return core::UString(str, str + std::strlen(str));
+  } else if (IsUndefined()) {
+    const char* str = "undefined";
+    return core::UString(str, str + std::strlen(str));
+  } else {
+    assert(IsObject());
+    const JSVal prim =
+        object()->DefaultValue(
+            ctx, Hint::STRING,
+            IV_LV5_ERROR_WITH(e, core::UString()));
+    return prim.ToUString(ctx, e);
+  }
+}
+
 double JSVal::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
