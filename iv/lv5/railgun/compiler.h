@@ -1140,7 +1140,9 @@ class Compiler
 
       if (!lhs.IsValidLeftHandSide()) {
         lhs.Accept(this);
-        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>();
+        rhs.Accept(this);
+        Emit<OP::RAISE_REFERENCE>();
+        stack_depth_.Down();
         return;
       }
 
@@ -1924,7 +1926,9 @@ class Compiler
   void EmitAssign(const Expression& lhs, const Expression& rhs) {
     if (!lhs.IsValidLeftHandSide()) {
       lhs.Accept(this);
+      rhs.Accept(this);
       Emit<OP::RAISE_REFERENCE>();
+      stack_depth_.Down();
       return;
     }
 
