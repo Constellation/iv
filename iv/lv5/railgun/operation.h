@@ -63,6 +63,12 @@ class Operation {
     e->Report(Error::Reference, builder.BuildPiece());
   }
 
+  void RaiseReferenceError(Error* e) const {
+    core::UStringBuilder builder;
+    builder.Append("Invalid left-hand side expression");
+    e->Report(Error::Reference, builder.BuildPiece());
+  }
+
   void RaiseImmutable(const Symbol& name, Error* e) const {
     core::UStringBuilder builder;
     builder.Append("mutating immutable binding \"");

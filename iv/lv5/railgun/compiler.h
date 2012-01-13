@@ -1137,7 +1137,13 @@ class Compiler
     } else {
       const Expression& lhs = *assign->left();
       const Expression& rhs = *assign->right();
-      assert(lhs.IsValidLeftHandSide());
+
+      if (!lhs.IsValidLeftHandSide()) {
+        lhs.Accept(this);
+        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>();
+        return;
+      }
+
       if (const Identifier* ident = lhs.AsIdentifier()) {
         // Identifier
         const uint32_t index = SymbolToNameIndex(ident->symbol());
@@ -1505,7 +1511,11 @@ class Compiler
       case Token::TK_INC:
       case Token::TK_DEC: {
         const Expression& expr = *unary->expr();
-        assert(expr.IsValidLeftHandSide());
+        if (!expr.IsValidLeftHandSide()) {
+          expr.Accept(this);
+          Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>();
+          return;
+        }
         if (const Identifier* ident = expr.AsIdentifier()) {
           const uint32_t index = SymbolToNameIndex(ident->symbol());
           if (token == Token::TK_INC) {
@@ -1582,7 +1592,11 @@ class Compiler
     DepthPoint point(&stack_depth_);
     const Expression& expr = *postfix->expr();
     const Token::Type token = postfix->op();
-    assert(expr.IsValidLeftHandSide());
+    if (!expr.IsValidLeftHandSide()) {
+      expr.Accept(this);
+      Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>();
+      return;
+    }
     if (const Identifier* ident = expr.AsIdentifier()) {
       const uint32_t index = SymbolToNameIndex(ident->symbol());
       if (token == Token::TK_INC) {
@@ -1908,7 +1922,12 @@ class Compiler
   }
 
   void EmitAssign(const Expression& lhs, const Expression& rhs) {
-    assert(lhs.IsValidLeftHandSide());
+    if (!lhs.IsValidLeftHandSide()) {
+      lhs.Accept(this);
+      Emit<OP::RAISE_REFERENCE>();
+      return;
+    }
+
     if (const Identifier* ident = lhs.AsIdentifier()) {
       // Identifier
       const uint32_t index = SymbolToNameIndex(ident->symbol());

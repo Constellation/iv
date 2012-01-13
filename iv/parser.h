@@ -1146,9 +1146,6 @@ class Parser : private Noncopyable<> {
     if (!Token::IsAssignOp(token_)) {
       return result;
     }
-    if (!result->IsValidLeftHandSide()) {
-      RAISE("invalid left-hand-side in assignment");
-    }
     // section 11.13.1 throwing SyntaxError
     if (strict_ && result->AsIdentifier()) {
       const Symbol sym = result->AsIdentifier()->symbol();
@@ -1505,9 +1502,6 @@ class Parser : private Noncopyable<> {
       case Token::TK_DEC:
         Next();
         expr = ParseMemberExpression(true, CHECK);
-        if (!expr->IsValidLeftHandSide()) {
-          RAISE("invalid left-hand-side in prefix expression");
-        }
         // section 11.4.4, 11.4.5 throwing SyntaxError
         if (strict_ && expr->AsIdentifier()) {
           const Symbol sym = expr->AsIdentifier()->symbol();
@@ -1538,9 +1532,6 @@ class Parser : private Noncopyable<> {
     Expression* expr = ParseMemberExpression(true, CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
         (token_ == Token::TK_INC || token_ == Token::TK_DEC)) {
-      if (!expr->IsValidLeftHandSide()) {
-        RAISE("invalid left-hand-side in postfix expression");
-      }
       // section 11.3.1, 11.3.2 throwing SyntaxError
       if (strict_ && expr->AsIdentifier()) {
         const Symbol sym = expr->AsIdentifier()->symbol();

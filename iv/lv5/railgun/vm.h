@@ -1617,6 +1617,18 @@ do {\
         DISPATCH_ERROR();
       }
 
+      DEFINE_OPCODE(RAISE_REFERENCE) {
+        operation_.RaiseReferenceError(e);
+        DISPATCH_ERROR();
+      }
+
+      DEFINE_OPCODE(TO_NUMBER_AND_RAISE_REFERENCE) {
+        const JSVal val = TOP();
+        val.ToNumber(ctx_, ERR);
+        operation_.RaiseReferenceError(e);
+        DISPATCH_ERROR();
+      }
+
       DEFINE_OPCODE(DEBUGGER) {
         DISPATCH(DEBUGGER);
       }
