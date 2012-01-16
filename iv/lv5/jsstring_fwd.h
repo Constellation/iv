@@ -575,7 +575,15 @@ class JSString: public radio::HeapObject<radio::STRING> {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
-  return os << str.GetUTF8();
+  if (str.Is8Bit()) {
+    const Fiber8* fiber = str.Get8Bit();
+    os.write(fiber->data(), fiber->size());
+  } else {
+    const Fiber16* fiber = str.Get16Bit();
+    core::unicode::UTF16ToUTF8(fiber->begin(),
+                               fiber->end(),std::ostream_iterator<char>(os));
+  }
+  return os;
 }
 
 } }  // namespace iv::lv5
