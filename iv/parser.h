@@ -1501,7 +1501,7 @@ class Parser : private Noncopyable<> {
       case Token::TK_INC:
       case Token::TK_DEC:
         Next();
-        expr = ParseMemberExpression(true, CHECK);
+        expr = ParseUnaryExpression(CHECK);
         // section 11.4.4, 11.4.5 throwing SyntaxError
         if (strict_ && expr->AsIdentifier()) {
           const Symbol sym = expr->AsIdentifier()->symbol();
