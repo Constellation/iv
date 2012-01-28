@@ -41,14 +41,15 @@ class Thunk : private core::Noncopyable<Thunk> {
 
   bool Spill(ThunkList* list, RegisterID reg);
 
-  operator Instruction() {
-    return Instruction(reg_);
-  }
+  RegisterID Release();
+
+  RegisterID reg() const { return reg_; }
 
   ~Thunk();
  private:
   RegisterID reg_;
   ThunkList* list_;
+  bool released_;
 };
 
 } } }  // namespace iv::lv5::railgun

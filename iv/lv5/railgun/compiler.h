@@ -95,7 +95,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       registers_(),
       thunklist_(this),
       ignore_result_(false),
-      rhs_has_assignment_(false),
       dst_(),
       eval_result_(),
       symbol_to_index_map_(),
@@ -399,21 +398,17 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
    public:
     EmitExpressionContext(Compiler* compiler,
                           RegisterID dst,
-                          bool ignore_result,
-                          bool rhs_has_assignment)
+                          bool ignore_result)
       : compiler_(compiler),
         dst_(compiler->dst()),
-        ignore_result_(compiler->ignore_result()),
-        rhs_has_assignment_(compiler->rhs_has_assignment()) {
+        ignore_result_(compiler->ignore_result()) {
       compiler->set_dst(dst);
       compiler->set_ignore_result(ignore_result);
-      compiler->set_rhs_has_assignment(rhs_has_assignment);
     }
 
     ~EmitExpressionContext() {
       compiler_->set_dst(dst_);
       compiler_->set_ignore_result(ignore_result_);
-      compiler_->set_rhs_has_assignment(rhs_has_assignment_);
     }
 
     RegisterID dst() const { return dst_; }
@@ -422,7 +417,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     Compiler* compiler_;
     RegisterID dst_;
     bool ignore_result_;
-    bool rhs_has_assignment_;
   };
 
   class DestGuard {
@@ -439,27 +433,19 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   RegisterID EmitExpression(const Expression* expr,
                             RegisterID dst,
-                            bool ignore_result, bool rhs) {
-    EmitExpressionContext context(this, dst, ignore_result, rhs);
+                            bool ignore_result) {
+    EmitExpressionContext context(this, dst, ignore_result);
     expr->Accept(this);
-    if (rhs_has_assignment() && dst_->IsLocal()) {
-      return EmitMV(registers_.Acquire(), dst_);
-    } else {
-      return dst_;
-    }
+    return dst_;
   }
 
   RegisterID EmitExpression(const Expression* expr) {
-    return EmitExpression(expr, RegisterID(), false, false);
+    return EmitExpression(expr, RegisterID(), false);
   }
 
   // force write
   RegisterID EmitExpression(const Expression* expr, RegisterID dst) {
-    return EmitExpression(expr, dst, false, false);
-  }
-
-  RegisterID EmitLHS(const Expression* expr, bool rhs_has_assignment) {
-    return EmitExpression(expr, RegisterID(), false, rhs_has_assignment);
+    return EmitExpression(expr, dst, false);
   }
 
   LookupInfo Lookup(const Symbol sym) {
@@ -487,20 +473,25 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   template<OP::Type PropOP, OP::Type ElementOP>
   RegisterID EmitElement(const IndexAccess* prop, RegisterID dst) {
-    RegisterID base = EmitExpression(prop->target());
-    dst = Dest(dst);
+    Thunk base(&thunklist_, EmitExpression(prop->target()));
     const Expression* key = prop->key();
     if (const StringLiteral* str = key->AsStringLiteral()) {
       const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, str->value()));
-      Emit<PropOP>(dst, base, index, 0, 0, 0, 0);
+      dst = Dest(dst, base.Release());
+      thunklist_.Spill(dst);
+      Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
     } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
       const uint32_t index =
           SymbolToNameIndex(context::Intern(ctx_, num->value()));
-      Emit<PropOP>(dst, base, index, 0, 0, 0, 0);
+      dst = Dest(dst, base.Release());
+      thunklist_.Spill(dst);
+      Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
     } else {
       RegisterID element = EmitExpression(prop->key());
-      Emit<ElementOP>(dst, base, element);
+      dst = Dest(dst, base.Release(), element);
+      thunklist_.Spill(dst);
+      Emit<ElementOP>(dst, base.reg(), element);
     }
     return dst;
   }
@@ -623,8 +614,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
 
     dst = Dest(dst);
+    thunklist_.Spill(dst);
     if (direct_call_to_eval) {
-      Emit<OP::EVAL>(dst, site.callee(), site.GetFirstPosition(), args.size() + 1);
+      Emit<OP::EVAL>(dst, site.callee(),
+                     site.GetFirstPosition(), args.size() + 1);
     } else {
       Emit<op>(dst, site.callee(), site.GetFirstPosition(), args.size() + 1);
     }
@@ -665,6 +658,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     assert(info.type() != LookupInfo::STACK);
     switch (info.type()) {
       case LookupInfo::HEAP: {
+        thunklist_.Spill(dst);
         Emit(OP::ToHeap(op),
              dst,
              index, info.location(),
@@ -673,10 +667,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       case LookupInfo::GLOBAL: {
         // last 2 zeros are placeholders for PIC
+        thunklist_.Spill(dst);
         Emit(OP::ToGlobal(op), dst, index, 0u, 0u);
         return dst;
       }
       case LookupInfo::LOOKUP: {
+        thunklist_.Spill(dst);
         Emit(op, dst, index);
         return dst;
       }
@@ -724,12 +720,13 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return from;
     }
     if (to != from) {
+      thunklist_.Spill(to);
       Emit<OP::MV>(to, from);
     }
     return to;
   }
 
-  RegisterID EmitMV(RegisterID from) {
+  RegisterID SpillRegister(RegisterID from) {
     RegisterID to = registers_.Acquire();
     Emit<OP::MV>(to, from);
     return to;
@@ -892,13 +889,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       for (Symbol2Count::const_iterator it = sym2c.begin(),
            last = sym2c.end(); it != last; ++it) {
-        EmitLoadParam(SymbolToNameIndex(it->first), it->second);
+        InstantiateLoadParam(SymbolToNameIndex(it->first), it->second);
       }
       if (env->scope()->IsArgumentsRealized()) {
-        EmitArguments();
+        InstantiateArguments();
       }
       if (lit.IsFunctionNameExposed()) {
-        EmitLoadCallee(SymbolToNameIndex(lit.name().Address()->symbol()));
+        InstantiateLoadCallee(
+            SymbolToNameIndex(lit.name().Address()->symbol()));
       }
     }
     code_->set_heap_size(env->heap_size());
@@ -1048,7 +1046,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
-  void EmitLoadParam(uint32_t index, uint32_t param) {
+  void InstantiateLoadParam(uint32_t index, uint32_t param) {
     const LookupInfo info = Lookup(code_->names_[index]);
     if (info.type() == LookupInfo::STACK) {
       Emit<OP::LOAD_PARAM>(info.location(), param);
@@ -1059,7 +1057,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
-  void EmitArguments() {
+  void InstantiateArguments() {
     const LookupInfo info = Lookup(symbol::arguments());
     if (info.type() == LookupInfo::STACK) {
       Emit<OP::LOAD_ARGUMENTS>(info.location());
@@ -1070,7 +1068,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
-  void EmitLoadCallee(uint32_t index) {
+  void InstantiateLoadCallee(uint32_t index) {
     const LookupInfo info = Lookup(code_->names_[index]);
     if (info.type() == LookupInfo::STACK) {
       Emit<OP::LOAD_CALLEE>(info.location());
@@ -1155,10 +1153,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void set_ignore_result(bool val) { ignore_result_ = val; }
 
-  bool rhs_has_assignment() const { return rhs_has_assignment_; }
-
-  void set_rhs_has_assignment(bool val) { rhs_has_assignment_ = val; }
-
   RegisterID dst() const { return dst_; }
 
   void set_dst(RegisterID dst) { dst_ = dst; }
@@ -1175,7 +1169,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   Registers registers_;
   ThunkList thunklist_;
   bool ignore_result_;
-  bool rhs_has_assignment_;
   RegisterID dst_;
   RegisterID eval_result_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;

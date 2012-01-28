@@ -271,6 +271,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
           if (info.immutable()) {
             local = registers_.Acquire();
           }
+          thunklist_.Spill(local);
           Emit<OP::FORIN_ENUMERATE>(0, local, iterator);
           if (code_->strict() && info.immutable()) {
             Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(for_decl));
@@ -305,9 +306,9 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
                   SymbolToNameIndex(context::Intern(ctx_, num->value()));
               Emit<OP::STORE_PROP>(base, index, tmp, 0, 0, 0, 0);
             } else {
-              RegisterID base = EmitExpression(idx->target());
+              Thunk base(&thunklist_, EmitExpression(idx->target()));
               RegisterID element = EmitExpression(idx->key());
-              Emit<OP::STORE_ELEMENT>(base, element, tmp);
+              Emit<OP::STORE_ELEMENT>(base.Release(), element, tmp);
             }
           }
         } else {
@@ -416,9 +417,10 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
       if (const core::Maybe<const Expression> expr = (*it)->expr()) {
         // case
         RegisterID tmp = EmitExpression(expr.Address());
-        Emit<OP::BINARY_STRICT_EQ>(tmp, cond, tmp);
+        RegisterID ret = tmp->IsLocal() ? registers_.Acquire() : tmp;
+        Emit<OP::BINARY_STRICT_EQ>(ret, cond, tmp);
         *idx = CurrentSize();
-        Emit<OP::IF_TRUE>(0, tmp);
+        Emit<OP::IF_TRUE>(0, ret);
       } else {
         // default
         default_it = idx;

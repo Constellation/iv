@@ -31,10 +31,10 @@ struct ThunkSpiller {
 
 inline void ThunkList::Spill(RegisterID reg) {
   if (reg->IsLocal()) {
-    table_.clear();
     vec_.erase(
         std::remove_if(vec_.begin(),
                        vec_.end(), ThunkSpiller(this, reg)), vec_.end());
+    table_.clear();
   }
 }
 
@@ -44,14 +44,15 @@ inline RegisterID ThunkList::EmitMV(RegisterID local) {
   if (it != table_.end()) {
     return it->second;
   }
-  RegisterID reg = compiler_->EmitMV(local);
+  RegisterID reg = compiler_->SpillRegister(local);
   table_.insert(std::make_pair(local->reg(), reg));
   return reg;
 }
 
 inline Thunk::Thunk(ThunkList* list, RegisterID reg)
   : reg_(reg),
-    list_(list) {
+    list_(list),
+    released_(false) {
   assert(list);
   assert(reg);
   if (reg->IsLocal()) {
@@ -71,11 +72,17 @@ inline bool Thunk::Spill(ThunkList* list, RegisterID reg) {
   return false;
 }
 
-
-inline Thunk::~Thunk() {
-  if (reg_->IsLocal()) {
+inline RegisterID Thunk::Release() {
+  assert(reg_);
+  if (!released_ && reg_->IsLocal()) {
+    released_ = true;
     list_->Remove(this);
   }
+  return reg_;
+}
+
+inline Thunk::~Thunk() {
+  Release();
 }
 
 } } }  // namespace iv::lv5::railgun
