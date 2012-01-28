@@ -22,6 +22,7 @@
 #include <iv/lv5/utility.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/op.h>
+#include <iv/lv5/railgun/thunk_fwd.h>
 #include <iv/lv5/railgun/register_id.h>
 #include <iv/lv5/railgun/instruction_fwd.h>
 #include <iv/lv5/railgun/core_data.h>
@@ -80,6 +81,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       uint32_t,
       UStringPieceHash, UStringPieceEquals> JSStringToIndexMap;
 
+  friend class ThunkList;
+
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
       code_(NULL),
@@ -90,6 +93,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       jump_table_(),
       level_stack_(),
       registers_(),
+      thunklist_(this),
       ignore_result_(false),
       rhs_has_assignment_(false),
       dst_(),
@@ -725,6 +729,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return to;
   }
 
+  RegisterID EmitMV(RegisterID from) {
+    RegisterID to = registers_.Acquire();
+    Emit<OP::MV>(to, from);
+    return to;
+  }
+
   // primitive emit
 
   template<OP::Type op>
@@ -896,6 +906,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void EmitPatchingBindingInstantiation(const FunctionLiteral& lit, bool eval) {
+    assert(thunklist_.empty());
     registers_.Clear(0);
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
@@ -1162,6 +1173,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   JumpTable jump_table_;
   LevelStack level_stack_;
   Registers registers_;
+  ThunkList thunklist_;
   bool ignore_result_;
   bool rhs_has_assignment_;
   RegisterID dst_;
