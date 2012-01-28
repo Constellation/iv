@@ -34,19 +34,12 @@ inline void ThunkList::Spill(RegisterID reg) {
     vec_.erase(
         std::remove_if(vec_.begin(),
                        vec_.end(), ThunkSpiller(this, reg)), vec_.end());
-    table_.clear();
   }
 }
 
 inline RegisterID ThunkList::EmitMV(RegisterID local) {
   assert(local->IsLocal());
-  TransTable::const_iterator it = table_.find(local->reg());
-  if (it != table_.end()) {
-    return it->second;
-  }
-  RegisterID reg = compiler_->SpillRegister(local);
-  table_.insert(std::make_pair(local->reg(), reg));
-  return reg;
+  return compiler_->SpillRegister(local);
 }
 
 inline Thunk::Thunk(ThunkList* list, RegisterID reg)

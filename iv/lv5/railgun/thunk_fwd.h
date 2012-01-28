@@ -12,10 +12,9 @@ class Thunk;
 class ThunkList : private core::Noncopyable<ThunkList> {
  public:
   typedef std::vector<Thunk*> Thunks;
-  typedef std::unordered_map<uint32_t, RegisterID> TransTable;
 
   ThunkList(Compiler* compiler)
-    : vec_(), table_(), compiler_(compiler) { }
+    : vec_(), compiler_(compiler) { }
 
   void Push(Thunk* thunk);
 
@@ -31,7 +30,6 @@ class ThunkList : private core::Noncopyable<ThunkList> {
 
  private:
   Thunks vec_;
-  TransTable table_;
   Compiler* compiler_;
 };
 
