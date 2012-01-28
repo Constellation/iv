@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
       iv::lv5::teleporter::Interactive shell;
       return shell.Run();
     } else {
-      iv::lv5::railgun::Interactive shell;
+      iv::lv5::railgun::Interactive shell(cmd.Exist("dis"));
       return shell.Run();
     }
   }

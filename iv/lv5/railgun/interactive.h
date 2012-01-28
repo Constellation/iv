@@ -27,8 +27,9 @@ static const std::string kInteractiveOrigin = "(shell)";
 
 class Interactive {
  public:
-  Interactive()
-    : ctx_() {
+  Interactive(bool disassemble)
+    : ctx_(),
+      disassemble_(disassemble) {
     ctx_.DefineFunction<&Print, 1>("print");
     ctx_.DefineFunction<&Quit, 1>("quit");
     ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
@@ -58,8 +59,10 @@ class Interactive {
           core::StringPiece(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
-        OutputDisAssembler dis(&ctx_, stdout);
-        dis.DisAssemble(*code);
+        if (disassemble_) {
+          OutputDisAssembler dis(&ctx_, stdout);
+          dis.DisAssemble(*code);
+        }
         JSVal ret = ctx_.vm()->Run(code, &e);
         if (e) {
           ret = iv::lv5::JSError::Detail(&ctx_, &e);
@@ -109,6 +112,7 @@ class Interactive {
   }
 
   Context ctx_;
+  bool disassemble_;
 };
 
 } } }  // namespace iv::lv5::railgun
