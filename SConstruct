@@ -60,6 +60,7 @@ def Build():
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
+    BoolVariable('cxx1x', '', 0),
     BoolVariable('nosse', '', 0),
     BoolVariable('direct_threading', '', 0),
     BoolVariable('release', '', 0)
@@ -103,7 +104,7 @@ def Build():
       LINKFLAGS=["-coverage"]
     )
 
-  if env['cxx0x']:
+  if env['cxx0x'] or env['cxx1x']:
     env.Append(CXXFLAGS=["-std=c++0x"])
     if env['CC'] == 'clang':
       # use libc++
