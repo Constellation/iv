@@ -108,7 +108,7 @@ inline void Compiler::Visit(const Assignment* assign) {
           Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
         }
       } else {
-        dst_ = Dest(dst_);
+        dst_ = Dest(dst_, lv, rv);
         Emit(OP::BinaryOP(token), dst_, lv, rv);
         EmitStore(ident->symbol(), dst_);
       }
@@ -118,11 +118,11 @@ inline void Compiler::Visit(const Assignment* assign) {
         // IdentifierAccess
         RegisterID base = EmitExpression(ac->target());
         const uint32_t index = SymbolToNameIndex(ac->key());
-        RegisterID prop = registers_.Acquire();
-        Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
         {
+          RegisterID prop = registers_.Acquire();
+          Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
           RegisterID tmp = EmitExpression(rhs);
-          dst_ = Dest(dst_);
+          dst_ = Dest(dst_, tmp, prop);
           Emit(OP::BinaryOP(token), dst_, prop, tmp);
         }
         Emit<OP::STORE_PROP>(base, index, dst_, 0, 0, 0, 0);
@@ -136,11 +136,11 @@ inline void Compiler::Visit(const Assignment* assign) {
               EmitLHS(idx->target(), Analyzer::ExpressionHasAssignment(rhs));
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, str->value()));
-          RegisterID prop = registers_.Acquire();
-          Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
           {
+            RegisterID prop = registers_.Acquire();
+            Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
             RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_);
+            dst_ = Dest(dst_, tmp, prop);
             Emit(OP::BinaryOP(token), dst_, prop, tmp);
           }
           Emit<OP::STORE_PROP>(base, index, dst_, 0, 0, 0, 0);
@@ -150,11 +150,11 @@ inline void Compiler::Visit(const Assignment* assign) {
               EmitLHS(idx->target(), Analyzer::ExpressionHasAssignment(rhs));
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          RegisterID prop = registers_.Acquire();
-          Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
           {
+            RegisterID prop = registers_.Acquire();
+            Emit<OP::LOAD_PROP>(prop, base, index, 0, 0, 0, 0);
             RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_);
+            dst_ = Dest(dst_, tmp, prop);
             Emit(OP::BinaryOP(token), dst_, prop, tmp);
           }
           Emit<OP::STORE_PROP>(base, index, dst_, 0, 0, 0, 0);
@@ -166,11 +166,11 @@ inline void Compiler::Visit(const Assignment* assign) {
                       Analyzer::ExpressionHasAssignment(rhs));
           RegisterID element =
               EmitLHS(key, Analyzer::ExpressionHasAssignment(rhs));
-          RegisterID prop = registers_.Acquire();
-          Emit<OP::LOAD_ELEMENT>(prop, base, element);
           {
+            RegisterID prop = registers_.Acquire();
+            Emit<OP::LOAD_ELEMENT>(prop, base, element);
             RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_);
+            dst_ = Dest(dst_, tmp, prop);
             Emit(OP::BinaryOP(token), dst_, prop, tmp);
           }
           Emit<OP::STORE_ELEMENT>(base, element, dst_);
@@ -182,7 +182,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       RegisterID src = EmitLHS(lhs, Analyzer::ExpressionHasAssignment(rhs));
       {
         RegisterID tmp = EmitExpression(rhs);
-        dst_ = Dest(dst_);
+        dst_ = Dest(dst_, src, tmp);
         Emit(OP::BinaryOP(token), dst_, src, tmp);
       }
       Emit<OP::RAISE_REFERENCE>();
@@ -324,7 +324,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         }
       } else {
         RegisterID src = EmitExpression(expr);
-        dst_ = Dest(dst_);
+        dst_ = Dest(dst_, src);
         Emit<OP::TYPEOF>(dst_, src);
       }
       break;
@@ -390,7 +390,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
 
     default: {
       RegisterID src = EmitExpression(expr);
-      dst_ = Dest(dst_);
+      dst_ = Dest(dst_, src);
       Emit(OP::UnaryOP(token), dst_, src);
     }
   }
