@@ -50,7 +50,8 @@
     "package": IDENT, "private": IDENT,
     "debugger": IDENT, "continue": IDENT, "function": IDENT,
     "interface": IDENT, "protected": IDENT,
-    "instanceof": IDENT, "implements": IDENT
+    "instanceof": IDENT, "implements": IDENT,
+    "is": IDENT, "isnt": IDENT
   };
   var OPLIST = [
     "EOS", "ILLEGAL", "NOTFOUND",
