@@ -626,9 +626,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     thunklist_.Spill(dst);
     if (direct_call_to_eval) {
       Emit<OP::EVAL>(dst, site.callee(),
-                     site.GetFirstPosition(), args.size() + 1);
+                     site.GetFirstPosition(),
+                     static_cast<uint32_t>(site.argc_with_this()));
     } else {
-      Emit<op>(dst, site.callee(), site.GetFirstPosition(), args.size() + 1);
+      Emit<op>(dst, site.callee(),
+               site.GetFirstPosition(),
+               static_cast<uint32_t>(site.argc_with_this()));
     }
     return dst;
   }
