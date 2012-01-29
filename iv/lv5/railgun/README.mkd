@@ -1,3 +1,3 @@
 # iv / lv5 / railgun
 
-railgun is ECMAScript Stack VM
+railgun is ECMAScript Register VM
