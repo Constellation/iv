@@ -511,7 +511,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         registers_(registers),
         callee_(registers->Acquire()),
         args_(argc_with_this()),
-        start_(registers->AcquireCallBase(argc_with_this())) { }
+        start_(registers->AcquireCallBase(argc_with_this())) {
+      // reserve all registers
+      for (int i = 0, len = argc_with_this() - 1; i < len; ++i) {
+        Arg(i);
+      }
+    }
 
     int argc_with_this() const { return call_.args().size() + 1; }
 
