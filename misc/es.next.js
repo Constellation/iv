@@ -85,6 +85,7 @@
     "delete", "typeof", "void", "break", "case", "catch", "continue", "debugger",
     "default", "do", "else", "finaly", "for", "function", "if", "in", "new",
     "return", "switch", "this", "throw", "try", "var", "while", "with",
+    "is", "isnt",
 
     "abstract", "boolean", "byte", "char", "class", "const",
     "double","enum", "export", "extends", "final", "float",
@@ -822,7 +823,9 @@
     while (this.token === OP["==="] ||
            this.token === OP["!=="] ||
            this.token === OP["=="] ||
-           this.token === OP["!="]) {
+           this.token === OP["!="] ||
+           this.token === OP["is"] ||
+           this.token === OP["isnt"]) {
       var op = Lexer.opToString(this.token);
       this.next();
       var right = this.parseBinaryExpression(containsIn, 3);
@@ -1039,6 +1042,14 @@
         target: { type: "Super" },
         key: index
       };
+    } else if (this.token === OP["("]) {
+      var expr = {
+        type: "FuncCall",
+        target: { type: "Super" },
+        args: []
+      };
+      this.parseArguments(expr);
+      return expr;
     }
     throw new Error("ILLEGAL");
   };
