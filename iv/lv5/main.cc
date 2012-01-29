@@ -128,7 +128,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
 int main(int argc, char **argv) {
   iv::lv5::FPU fpu;
   iv::lv5::program::Init(argc, argv);
-  GC_INIT();
+  iv::lv5::Init();
 
   iv::cmdline::Parser cmd("lv5");
 
