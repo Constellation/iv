@@ -15,7 +15,7 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx, const Source& src) {
   return lv5::railgun::CompileIndirectEval(ctx, *global, script);
 }
 
-static const const char* kPassFileNames[] = {
+static const char* kPassFileNames[] = {
   "test/lv5/suite/pass001.js",
   "test/lv5/suite/pass002.js",
   "test/lv5/suite/pass003.js"
