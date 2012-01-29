@@ -824,8 +824,8 @@
            this.token === OP["!=="] ||
            this.token === OP["=="] ||
            this.token === OP["!="] ||
-           this.token === OP["is"] ||
-           this.token === OP["isnt"]) {
+           (!this.lexer.hasLineTerminatorBeforeNext &&
+            (this.token === OP["is"] || this.token === OP["isnt"]))) {
       var op = Lexer.opToString(this.token);
       this.next();
       var right = this.parseBinaryExpression(containsIn, 3);
