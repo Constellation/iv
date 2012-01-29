@@ -513,7 +513,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         args_(argc_with_this()),
         start_(registers->AcquireCallBase(argc_with_this())) {
       // reserve all registers
-      for (int i = 0, len = argc_with_this() - 1; i < len; ++i) {
+      for (int i = -1, len = argc_with_this() - 1; i < len; ++i) {
         Arg(i);
       }
     }
@@ -532,11 +532,15 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return args_[target] = registers_->Acquire(start_ + target);
     }
 
+    const std::vector<RegisterID>& args() const {
+      return args_;
+    }
+
     RegisterID base() {
       return Arg(-1);
     }
 
-    RegisterID callee() {
+    RegisterID callee() const {
       return callee_;
     }
 
@@ -618,7 +622,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
     }
 
-    dst = Dest(dst);
+    dst = DestCallSite(dst, &site);
     thunklist_.Spill(dst);
     if (direct_call_to_eval) {
       Emit<OP::EVAL>(dst, site.callee(),
@@ -710,6 +714,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return cand2;
     }
     return registers_.Acquire();
+  }
+
+  template<typename CallSite>
+  RegisterID DestCallSite(RegisterID dst, CallSite* site) {
+    if (dst) {
+      return dst;
+    }
+    return site->callee();
   }
 
   RegisterID GetLocal(Symbol sym) {
