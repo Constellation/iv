@@ -56,6 +56,18 @@ class Registers {
     return variable_registers_ > reg;
   }
 
+  // for debug in Compiler::EmitCall
+  bool IsLiveTop(uint32_t reg) {
+    uint32_t pos = lives_.size() + variable_registers_ - 1;
+    for (std::vector<bool>::const_reverse_iterator it = lives_.rbegin(),
+         last = lives_.rend(); it != last; ++it, --pos) {
+      if (*it) {  // live register
+        return pos == reg;
+      }
+    }
+    return false;
+  }
+
  private:
   void Release(uint32_t reg) {
     if (!IsLocalID(reg)) {
@@ -91,8 +103,8 @@ inline RegisterID Registers::Acquire() {
 }
 
 inline RegisterID Registers::Acquire(uint32_t reg) {
-  Pool::iterator it = std::find(temporary_registers_.begin(),
-                                temporary_registers_.end(), reg);
+  const Pool::iterator it = std::find(temporary_registers_.begin(),
+                                      temporary_registers_.end(), reg);
   assert(it != temporary_registers_.end());
   temporary_registers_.erase(it);
   lives_[reg - variable_registers_] = true;
