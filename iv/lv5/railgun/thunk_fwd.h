@@ -22,6 +22,8 @@ class ThunkList : private core::Noncopyable<ThunkList> {
 
   void Spill(RegisterID reg);
 
+  void ForceSpill();
+
   bool empty() const {
     return vec_.empty();
   }
@@ -38,6 +40,8 @@ class Thunk : private core::Noncopyable<Thunk> {
   Thunk(ThunkList* list, RegisterID reg);
 
   bool Spill(ThunkList* list, RegisterID reg);
+
+  void ForceSpill(ThunkList* list);
 
   RegisterID Release();
 

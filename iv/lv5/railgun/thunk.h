@@ -37,6 +37,14 @@ inline void ThunkList::Spill(RegisterID reg) {
   }
 }
 
+inline void ThunkList::ForceSpill() {
+  for (Thunks::const_iterator it = vec_.begin(),
+       last = vec_.end(); it != last; ++it) {
+    (*it)->ForceSpill(this);
+  }
+  vec_.clear();
+}
+
 inline RegisterID ThunkList::EmitMV(RegisterID local) {
   assert(local->IsLocal());
   return compiler_->SpillRegister(local);
@@ -63,6 +71,12 @@ inline bool Thunk::Spill(ThunkList* list, RegisterID reg) {
     }
   }
   return false;
+}
+
+inline void Thunk::ForceSpill(ThunkList* list) {
+  assert(reg_->IsLocal());
+  reg_ = list_->EmitMV(reg_);
+  assert(!reg_->IsLocal());
 }
 
 inline RegisterID Thunk::Release() {

@@ -16,9 +16,10 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx, const Source& src) {
 }
 
 static const char* kPassFileNames[] = {
+  "test/lv5/suite/pass000.js",
   "test/lv5/suite/pass001.js",
   "test/lv5/suite/pass002.js",
-  "test/lv5/suite/pass003.js"
+  "test/lv5/suite/pass004.js"
 };
 static const std::size_t kPassFileNamesSize =
   sizeof(kPassFileNames) / sizeof(const char*);

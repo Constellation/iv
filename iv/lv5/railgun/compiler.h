@@ -506,16 +506,20 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   template<typename Call>
   class CallSite {
    public:
-    explicit CallSite(const Call& call, Registers* registers)
+    explicit CallSite(const Call& call,
+                      ThunkList* thunklist,
+                      Registers* registers)
       : call_(call),
-        registers_(registers),
-        callee_(registers->Acquire()),
+        callee_(),
         args_(argc_with_this()),
-        start_(registers->AcquireCallBase(argc_with_this())) {
-      // reserve all registers
-      for (int i = -1, len = argc_with_this() - 1; i < len; ++i) {
-        Arg(i);
+        start_(),
+        registers_(registers) {
+      // spill all thunks
+      if (Analyzer::ExpressionHasAssignment(&call)) {
+        thunklist->ForceSpill();
       }
+      callee_ = registers->Acquire();
+      start_ = registers->AcquireCallBase(argc_with_this());
     }
 
     int argc_with_this() const { return call_.args().size() + 1; }
@@ -524,16 +528,23 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return Arg(static_cast<int>(call_.args().size()) - 1);
     }
 
-    RegisterID Arg(int size) {
-      const int target = argc_with_this() - size - 2;
-      if (args_[target]) {
+    RegisterID Arg(int i) {
+        const int target = argc_with_this() - i - 2;
+        if (!args_[target]) {
+          args_[target] = registers_->Acquire(start_ + target);
+        }
         return args_[target];
-      }
-      return args_[target] = registers_->Acquire(start_ + target);
     }
 
-    const std::vector<RegisterID>& args() const {
-      return args_;
+    void EmitArguments(Compiler* compiler) {
+      const Expressions& args = call_.args();
+      {
+        int i = 0;
+        for (Expressions::const_iterator it = args.begin(),
+             last = args.end(); it != last; ++it, ++i) {
+          compiler->EmitExpression(*it, Arg(i));
+        }
+      }
     }
 
     RegisterID base() {
@@ -546,17 +557,17 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
    private:
     const Call& call_;
-    Registers* registers_;
     RegisterID callee_;
     std::vector<RegisterID> args_;
     int32_t start_;
+    Registers* registers_;
   };
 
   template<OP::Type op, typename Call>
   RegisterID EmitCall(const Call& call, RegisterID dst) {
     bool direct_call_to_eval = false;
     const Expression* target = call.target();
-    CallSite<Call> site(call, &registers_);
+    CallSite<Call> site(call, &thunklist_, &registers_);
 
     if (target->IsValidLeftHandSide()) {
       if (const Identifier* ident = target->AsIdentifier()) {
@@ -613,14 +624,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       Emit<OP::LOAD_UNDEFINED>(site.base());
     }
 
-    const Expressions& args = call.args();
-    {
-      int i = 0;
-      for (Expressions::const_iterator it = args.begin(),
-           last = args.end(); it != last; ++it, ++i) {
-        EmitExpression(*it, site.Arg(i));
-      }
-    }
+    site.EmitArguments(this);
 
     dst = DestCallSite(dst, &site);
     thunklist_.Spill(dst);
