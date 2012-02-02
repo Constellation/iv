@@ -334,11 +334,22 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   inline this_type* Repeat(Context* ctx, uint32_t count) {
-    if (count == 0) {
+    if (count == 0 || empty()) {
       return JSString::NewEmptyString(ctx);
     }
     if (count == 1) {
       return this;
+    }
+
+    if (size() == 1) {
+      // single character
+      if (Is8Bit()) {
+        const std::vector<char> vec(count, GetAt(0));
+        return new (PointerFreeGC) this_type(vec.begin(), count, true);
+      } else {
+        const std::vector<uint16_t> vec(count, GetAt(0));
+        return new (PointerFreeGC) this_type(vec.begin(), count, false);
+      }
     }
     return new (PointerFreeGC) this_type(this, count);
   }
