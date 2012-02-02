@@ -467,6 +467,10 @@ inline void ReplaceOnce(Builder* builder,
   }
 }
 
+
+template<typename FiberType>
+JSVal StringTrimHelper(Context* ctx, const FiberType* fiber);
+
 }  // namespace detail
 
 // section 15.5.1
@@ -1084,10 +1088,8 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   return detail::ConvertCase(args.ctx(), str, detail::ToLocaleUpperCase());
 }
 
-namespace detail {
-
 template<typename FiberType>
-JSVal StringTrimHelper(Context* ctx, const FiberType* fiber) {
+JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
   typename FiberType::const_iterator lit = fiber->begin();
   const typename FiberType::const_iterator last = fiber->end();
   // trim leading space
@@ -1112,8 +1114,6 @@ JSVal StringTrimHelper(Context* ctx, const FiberType* fiber) {
   return JSString::New(ctx, lit, rit.base());
 }
 
-}  // namespace detail
-
 // section 15.5.4.20 String.prototype.trim()
 inline JSVal StringTrim(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, e);
@@ -1125,6 +1125,20 @@ inline JSVal StringTrim(const Arguments& args, Error* e) {
   } else {
     return detail::StringTrimHelper(args.ctx(), str->Get16Bit());
   }
+}
+
+// section 15.5.4.21 String.prototype.repeat(count)
+inline JSVal StringRepeat(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.repeat", args, e);
+  const JSVal& val = args.this_binding();
+  Context* ctx = args.ctx();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  const int32_t count = args.At(0).ToInt32(ctx, IV_LV5_ERROR(e));
+  if (count < 0) {
+    return JSString::NewEmptyString(ctx);
+  }
+  return str->Repeat(ctx, count);
 }
 
 // section B.2.3 String.prototype.substr(start, length)

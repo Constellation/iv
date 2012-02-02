@@ -186,28 +186,33 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return rend();
     }
 
-   public:
-    Cons(const JSString* lhs, const JSString* rhs, std::size_t fiber_count)
-      : FiberSlot(lhs->size() + rhs->size(),
+    Cons(std::size_t size, bool is_8bit, std::size_t fiber_count)
+      : FiberSlot(size,
                   FiberSlot::IS_CONS |
-                  ((lhs->Is8Bit() && rhs->Is8Bit()) ?
-                   FiberSlot::IS_8BIT : FiberSlot::NONE)),
+                  ((is_8bit) ? FiberSlot::IS_8BIT : FiberSlot::NONE)),
         fiber_count_(fiber_count) {
-      // insert fibers by reverse order (rhs first)
+    }
+
+    static this_type* New(const JSString* lhs, const JSString* rhs) {
+      this_type* cons = NewWithSize(lhs->size() + rhs->size(),
+                                    lhs->Is8Bit() && rhs->Is8Bit(),
+                                    lhs->fiber_count() + rhs->fiber_count());
       std::transform(
           lhs->fibers().begin(),
           lhs->fibers().begin() + lhs->fiber_count(),
           std::transform(rhs->fibers().begin(),
                          rhs->fibers().begin() + rhs->fiber_count(),
-                         begin(), Retainer()),
+                         cons->begin(), Retainer()),
           Retainer());
+      return cons;
     }
 
-    static this_type* New(const JSString* lhs, const JSString* rhs) {
-      const std::size_t fiber_count = lhs->fiber_count() + rhs->fiber_count();
+    static this_type* NewWithSize(std::size_t size,
+                                  bool is_8bit,
+                                  std::size_t fiber_count) {
       void* mem = std::malloc(GetControlSize() +
                               fiber_count * sizeof(value_type));
-      return new (mem) Cons(lhs, rhs, fiber_count);
+      return new (mem) Cons(size, is_8bit, fiber_count);
     }
 
     template<typename OutputIter>
@@ -220,6 +225,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return fiber_count_;
     }
 
+   private:
     size_type fiber_count_;
   };
 
@@ -327,6 +333,16 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return copier.Copy();
   }
 
+  inline this_type* Repeat(Context* ctx, uint32_t count) {
+    if (count == 0) {
+      return JSString::NewEmptyString(ctx);
+    }
+    if (count == 1) {
+      return this;
+    }
+    return new (PointerFreeGC) this_type(this, count);
+  }
+
   inline JSArray* Split(Context* ctx, JSArray* ary,
                         uint32_t limit, Error* e) const;
 
@@ -369,6 +385,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   friend bool operator>=(const this_type& x, const this_type& y) {
     return (*x.Flatten()) >= (*y.Flatten());
   }
+
+  // factory methods
 
   static this_type* New(Context* ctx, const core::UStringPiece& str) {
     return New(ctx, str.begin(), str.size(), false);
@@ -418,6 +436,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return New(ctx, *symbol::GetStringFromSymbol(sym));
     }
   }
+
+  // destructor
 
   ~JSString() {
     Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
@@ -550,10 +570,11 @@ class JSString: public radio::HeapObject<radio::STRING> {
       is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
       fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
       fibers_() {
-    if (fiber_count() <= kMaxFibers) {
+    if (fiber_count() > kMaxFibers) {
       // flatten version
+      Cons* cons = Cons::New(lhs, rhs);
       fiber_count_ = 1;
-      fibers_[0] = Cons::New(lhs, rhs);
+      fibers_[0] = cons;
       assert(Is8Bit() == fibers_[0]->Is8Bit());
     } else {
       assert(fiber_count_ <= kMaxFibers);
@@ -565,6 +586,33 @@ class JSString: public radio::HeapObject<radio::STRING> {
                          rhs->fibers().begin() + rhs->fiber_count(),
                          fibers_.begin(), Retainer()),
           Retainer());
+    }
+  }
+
+  JSString(JSString* target, uint32_t repeat)
+    : size_(target->size() * repeat),
+      is_8bit_(target->Is8Bit()),
+      fiber_count_(target->fiber_count() * repeat),
+      fibers_() {
+    if (fiber_count() > kMaxFibers) {
+      Cons* cons = Cons::NewWithSize(size(), Is8Bit(), fiber_count());
+      fiber_count_ = 1;
+      Cons::iterator it = cons->begin();
+      for (uint32_t i = 0; i < repeat; ++i) {
+        it = std::transform(
+            target->fibers().begin(),
+            target->fibers().begin() + target->fiber_count(),
+            it, Retainer());
+      }
+      fibers_[0] = cons;
+    } else {
+      FiberSlots::iterator it = fibers_.begin();
+      for (uint32_t i = 0; i < repeat; ++i) {
+        it = std::transform(
+            target->fibers().begin(),
+            target->fibers().begin() + target->fiber_count(),
+            it, Retainer());
+      }
     }
   }
 
