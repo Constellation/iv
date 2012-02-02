@@ -300,7 +300,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* e) {
       return JSFalse;
     }
     const double number = args[0].ToNumber(args.ctx(), e);
-    return JSVal::Bool(core::IsNaN(number));
+    return JSVal::Bool(core::math::IsNaN(number));
   } else {
     return JSTrue;
   }
@@ -314,7 +314,7 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* e) {
       return JSTrue;
     }
     const double number = args[0].ToNumber(args.ctx(), e);
-    return JSVal::Bool(core::IsFinite(number));
+    return JSVal::Bool(core::math::IsFinite(number));
   } else {
     return JSFalse;
   }

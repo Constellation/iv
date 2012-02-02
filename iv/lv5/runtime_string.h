@@ -612,7 +612,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
     // undefined -> NaN
     if (args.size() > 1) {
       const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      if (!core::IsNaN(position)) {
+      if (!core::math::IsNaN(position)) {
         const double integer = core::DoubleToInteger(position);
         if (integer < 0) {
           target = 0;

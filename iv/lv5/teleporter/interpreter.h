@@ -749,7 +749,7 @@ void Interpreter::Visit(const Assignment* assign) {
       case Token::TK_ASSIGN_MOD: {  // %=
         const double left_num = lhs.ToNumber(ctx_, CHECK);
         const double right_num = rhs.ToNumber(ctx_, CHECK);
-        result = core::Modulo(left_num, right_num);
+        result = core::math::Modulo(left_num, right_num);
         break;
       }
       case Token::TK_ASSIGN_DIV: {  // /=

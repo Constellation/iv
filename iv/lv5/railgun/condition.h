@@ -54,7 +54,7 @@ class Condition {
 
     if (const NumberLiteral* num = literal->AsNumberLiteral()) {
       const double val = num->value();
-      if (val != 0 && !core::IsNaN(val)) {
+      if (val != 0 && !core::math::IsNaN(val)) {
         return COND_TRUE;
       } else {
         return COND_FALSE;

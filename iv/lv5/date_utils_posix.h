@@ -10,7 +10,7 @@ namespace date {
 
 inline double DaylightSavingTA(double utc) {
   // t is utc time
-  if (core::IsNaN(utc)) {
+  if (core::math::IsNaN(utc)) {
     return utc;
   }
   const std::time_t current =
@@ -40,7 +40,7 @@ inline double HighResTime() {
 }
 
 inline const char* LocalTimeZone(double t) {
-  if (core::IsNaN(t)) {
+  if (core::math::IsNaN(t)) {
     return "";
   }
   const std::time_t tv = static_cast<time_t>(std::floor(t / kMsPerSecond));

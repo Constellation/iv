@@ -64,9 +64,9 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
-        if (core::IsNaN(num)) {
+        if (core::math::IsNaN(num)) {
           return JSString::NewAsciiString(args.ctx(), "NaN");
-        } else if (core::IsInf(num)) {
+        } else if (core::math::IsInf(num)) {
           if (num > 0) {
             return JSString::NewAsciiString(args.ctx(), "Infinity");
           } else {
@@ -199,9 +199,9 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
     x = obj.number();
   }
 
-  if (core::IsNaN(x)) {
+  if (core::math::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
-  } else if (core::IsInf(x)) {
+  } else if (core::math::IsInf(x)) {
     if (x < 0) {
       return JSString::NewAsciiString(ctx, "-Infinity");
     } else {
@@ -270,9 +270,9 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
     }
   }
 
-  if (core::IsNaN(x)) {
+  if (core::math::IsNaN(x)) {
     return JSString::NewAsciiString(ctx, "NaN");
-  } else if (core::IsInf(x)) {
+  } else if (core::math::IsInf(x)) {
     if (x < 0) {
       return JSString::NewAsciiString(ctx, "-Infinity");
     } else {

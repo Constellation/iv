@@ -39,9 +39,9 @@ inline double ParseIntegerOverflow(const CharT* it,
   double number = 0.0;
   double multiplier = 1.0;
   for (--it, --last; last != it; --last) {
-    if (multiplier == kInfinity) {
+    if (multiplier == math::kInfinity) {
       if (*last != '0') {
-        number = kInfinity;
+        number = math::kInfinity;
         break;
       }
     } else {
@@ -208,11 +208,11 @@ inline int32_t DoubleToInt32(double d) {
   if (static_cast<double>(i) == d) {
     return i;
   }
-  if (!IsFinite(d) || d == 0) {
+  if (!math::IsFinite(d) || d == 0) {
     return 0;
   }
   if (d < 0 || d >= detail::kDoubleToInt32_Two32) {
-    d = Modulo(d, detail::kDoubleToInt32_Two32);
+    d = math::Modulo(d, detail::kDoubleToInt32_Two32);
   }
   d = (d >= 0) ?
       std::floor(d) : std::ceil(d) + detail::kDoubleToInt32_Two32;
@@ -229,14 +229,14 @@ inline int64_t DoubleToInt64(double d) {
   if (static_cast<double>(i) == d) {
     return i;
   }
-  if (!IsFinite(d) || d == 0) {
+  if (!math::IsFinite(d) || d == 0) {
     return 0;
   }
   if (detail::kDoubleToInt32_Two32 >= d) {
     return static_cast<int64_t>(DoubleToInt32(d));
   }
   const int32_t lo = DoubleToInt32(
-      Modulo(d, detail::kDoubleToInt32_Two32));
+      math::Modulo(d, detail::kDoubleToInt32_Two32));
   const int32_t hi = DoubleToInt32(d / detail::kDoubleToInt32_Two32);
   return hi * INT64_C(4294967296) + lo;
 }
@@ -246,13 +246,13 @@ inline uint64_t DoubleToUInt64(double d) {
 }
 
 inline double DoubleToInteger(double d) {
-  if (IsNaN(d)) {
+  if (math::IsNaN(d)) {
     return 0;
   }
-  if (!IsFinite(d) || d == 0) {
+  if (!math::IsFinite(d) || d == 0) {
     return d;
   }
-  return std::floor(std::abs(d)) * (Signbit(d) ? -1 : 1);
+  return std::floor(std::abs(d)) * (math::Signbit(d) ? -1 : 1);
 }
 
 template<typename Iter>
@@ -399,7 +399,7 @@ inline OutputIter DoubleToStringWithRadix(double v, int radix, OutputIter res) {
   int integer_pos = kMaxBufSize - 1;
   do {
     buffer[integer_pos--] =
-        kHexDigits[static_cast<std::size_t>(Modulo(integer, radix))];
+        kHexDigits[static_cast<std::size_t>(math::Modulo(integer, radix))];
     integer /= radix;
   } while (integer >= 1.0);
   if (is_negative) {

@@ -6,7 +6,7 @@ namespace lv5 {
 
 struct JSDoubleEquals {
   bool operator()(double lhs, double rhs) const {
-    return lhs == rhs && (core::Signbit(lhs)) == core::Signbit(rhs);
+    return lhs == rhs && (core::math::Signbit(lhs)) == core::math::Signbit(rhs);
   }
 };
 

@@ -181,7 +181,7 @@ void JSVal::set_value_uint32(uint32_t val) {
 
 void JSVal::set_value(double val) {
   const int32_t i = static_cast<int32_t>(val);
-  if (val != i || (!i && core::Signbit(val))) {
+  if (val != i || (!i && core::math::Signbit(val))) {
     // this value is not represented by int32_t
     value_.bytes_ = (val == val) ?
         (core::BitCast<uint64_t>(val) + detail::jsval64::kDoubleOffset) :
@@ -244,9 +244,9 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
     if (lhsv == rhsv) {
-      return core::Signbit(lhsv) == core::Signbit(rhsv);
+      return core::math::Signbit(lhsv) == core::math::Signbit(rhsv);
     } else {
-      return core::IsNaN(lhsv) && core::IsNaN(rhsv);
+      return core::math::IsNaN(lhsv) && core::math::IsNaN(rhsv);
     }
   }
 
@@ -435,7 +435,7 @@ void JSVal::set_value_uint32(uint32_t val) {
 
 void JSVal::set_value(double val) {
   const int32_t i = static_cast<int32_t>(val);
-  if (val != i || (!i && core::Signbit(val))) {
+  if (val != i || (!i && core::math::Signbit(val))) {
     // this value is not represented by int32_t
     value_.number_.as_ = (val == val) ? val : core::kNaN;
   } else {
@@ -500,9 +500,9 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
     if (lhsv == rhsv) {
-      return core::Signbit(lhsv) == core::Signbit(rhsv);
+      return core::math::Signbit(lhsv) == core::math::Signbit(rhsv);
     } else {
-      return core::IsNaN(lhsv) && core::IsNaN(rhsv);
+      return core::math::IsNaN(lhsv) && core::math::IsNaN(rhsv);
     }
   }
   if (lhs.IsString()) {
@@ -746,7 +746,7 @@ JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
 bool JSVal::ToBoolean(Error* e) const {
   if (IsNumber()) {
     const double num = number();
-    return num != 0 && !core::IsNaN(num);
+    return num != 0 && !core::math::IsNaN(num);
   } else if (IsString()) {
     return !string()->empty();
   } else if (IsNullOrUndefined()) {

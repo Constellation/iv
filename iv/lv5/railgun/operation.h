@@ -416,7 +416,7 @@ class Operation {
 
   JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
-    return core::Modulo(left, rhs.ToNumber(ctx_, e));
+    return core::math::Modulo(left, rhs.ToNumber(ctx_, e));
   }
 
   JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {

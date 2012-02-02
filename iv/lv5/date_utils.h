@@ -33,7 +33,7 @@ inline double Day(double t) {
 }
 
 inline double TimeWithinDay(double t) {
-  const double res = core::Modulo(t, kMsPerDay);
+  const double res = core::math::Modulo(t, kMsPerDay);
   if (res < 0) {
     return res + kMsPerDay;
   }
@@ -144,7 +144,7 @@ static const std::array<const char*, 7> kWeekDays = { {
 } };
 
 inline int WeekDay(double t) {
-  const int res = core::DoubleToInt32(core::Modulo((Day(t) + 4), 7));
+  const int res = core::DoubleToInt32(core::math::Modulo((Day(t) + 4), 7));
   if (res < 0) {
     return res + 7;
   }
@@ -185,7 +185,7 @@ inline double DaylightSavingTAFallback(double utc) {
   // Daylight Saving Time
   // from    2 AM the first Sunday in April
   // through 2 AM the last Sunday in October
-  assert(!core::IsNaN(utc));
+  assert(!core::math::IsNaN(utc));
   const int year = YearFromTime(utc);
   const int leap = IsLeapYear(utc);
 
@@ -228,7 +228,7 @@ inline double UTC(double t) {
 
 inline int HourFromTime(double t) {
   const int res = core::DoubleToInt32(
-      core::Modulo(std::floor(t / kMsPerHour), kHoursPerDay));
+      core::math::Modulo(std::floor(t / kMsPerHour), kHoursPerDay));
   if (res < 0) {
     return res + kHoursPerDay;
   }
@@ -237,7 +237,7 @@ inline int HourFromTime(double t) {
 
 inline int MinFromTime(double t) {
   const int res = core::DoubleToInt32(
-      core::Modulo(std::floor(t / kMsPerMinute), kMinutesPerHour));
+      core::math::Modulo(std::floor(t / kMsPerMinute), kMinutesPerHour));
   if (res < 0) {
     return res + kMinutesPerHour;
   }
@@ -246,7 +246,7 @@ inline int MinFromTime(double t) {
 
 inline int SecFromTime(double t) {
   const int res = core::DoubleToInt32(
-      core::Modulo(std::floor(t / kMsPerSecond), kSecondsPerMinute));
+      core::math::Modulo(std::floor(t / kMsPerSecond), kSecondsPerMinute));
   if (res < 0) {
     return res + kSecondsPerMinute;
   }
@@ -254,7 +254,7 @@ inline int SecFromTime(double t) {
 }
 
 inline int MsFromTime(double t) {
-  const int res = core::DoubleToInt32(core::Modulo(t, kMsPerSecond));
+  const int res = core::DoubleToInt32(core::math::Modulo(t, kMsPerSecond));
   if (res < 0) {
     return res + kMsPerSecond;
   }
@@ -262,10 +262,10 @@ inline int MsFromTime(double t) {
 }
 
 inline double MakeTime(double hour, double min, double sec, double ms) {
-  if (!core::IsFinite(hour) ||
-      !core::IsFinite(min) ||
-      !core::IsFinite(sec) ||
-      !core::IsFinite(ms)) {
+  if (!core::math::IsFinite(hour) ||
+      !core::math::IsFinite(min) ||
+      !core::math::IsFinite(sec) ||
+      !core::math::IsFinite(ms)) {
     return core::kNaN;
   } else {
     return
@@ -289,9 +289,9 @@ inline double DateToDays(int year, int month, int date) {
 }
 
 inline double MakeDay(double year, double month, double date) {
-  if (!core::IsFinite(year) ||
-      !core::IsFinite(month) ||
-      !core::IsFinite(date)) {
+  if (!core::math::IsFinite(year) ||
+      !core::math::IsFinite(month) ||
+      !core::math::IsFinite(date)) {
     return core::kNaN;
   } else {
     const int y = core::DoubleToInt32(year);
@@ -312,7 +312,7 @@ inline double MakeDate(double day, double time) {
 }
 
 inline double TimeClip(double time) {
-  if (!core::IsFinite(time)) {
+  if (!core::math::IsFinite(time)) {
     return core::kNaN;
   }
   if (std::abs(time) > kMaxTime) {

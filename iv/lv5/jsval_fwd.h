@@ -388,7 +388,7 @@ class JSVal {
                                    this_type rhs, Error* e);
 
   static inline CompareResult NumberCompare(double lhs, double rhs) {
-    if (core::IsNaN(lhs) || core::IsNaN(rhs)) {
+    if (core::math::IsNaN(lhs) || core::math::IsNaN(rhs)) {
       return CMP_UNDEFINED;
     }
     if (lhs == rhs) {

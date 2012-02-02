@@ -115,9 +115,9 @@ inline JSVal MathMax(const Arguments& args, Error* e) {
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    if (core::IsNaN(x)) {
+    if (core::math::IsNaN(x)) {
       return x;
-    } else if (x > max || (x == 0.0 && max == 0.0 && !core::Signbit(x))) {
+    } else if (x > max || (x == 0.0 && max == 0.0 && !core::math::Signbit(x))) {
       max = x;
     }
   }
@@ -130,9 +130,9 @@ inline JSVal MathMin(const Arguments& args, Error* e) {
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    if (core::IsNaN(x)) {
+    if (core::math::IsNaN(x)) {
       return x;
-    } else if (x < min || (x == 0.0 && min == 0.0 && core::Signbit(x))) {
+    } else if (x < min || (x == 0.0 && min == 0.0 && core::math::Signbit(x))) {
       min = x;
     }
   }
@@ -146,8 +146,8 @@ inline JSVal MathPow(const Arguments& args, Error* e) {
     const double y = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
     if (y == 0) {
       return 1.0;
-    } else if (core::IsNaN(y) ||
-               ((x == 1 || x == -1) && core::IsInf(y))) {
+    } else if (core::math::IsNaN(y) ||
+               ((x == 1 || x == -1) && core::math::IsInf(y))) {
       return JSNaN;
     } else {
       return std::pow(x, y);
@@ -165,7 +165,7 @@ inline JSVal MathRound(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.round", args, e);
   if (!args.empty()) {
     const double x = args.front().ToNumber(args.ctx(), e);
-    return core::Round(x);
+    return core::math::Round(x);
   }
   return JSNaN;
 }
@@ -205,10 +205,10 @@ inline JSVal MathTrunc(const Arguments& args, Error* e) {
       return target;
     }
     const double x = target.ToNumber(args.ctx(), e);
-    if (!core::IsFinite(x) || x == 0) {
+    if (!core::math::IsFinite(x) || x == 0) {
       return x;
     }
-    return core::Trunc(x);
+    return core::math::Trunc(x);
   }
   return JSNaN;
 }
@@ -217,7 +217,7 @@ inline JSVal MathSign(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
   if (!args.empty()) {
     const double x = args.front().ToNumber(args.ctx(), e);
-    if (core::IsNaN(x) || x == 0) {
+    if (core::math::IsNaN(x) || x == 0) {
       return x;
     }
     return (x < 0) ? -1 : 1;

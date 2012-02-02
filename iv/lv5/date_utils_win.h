@@ -47,7 +47,7 @@ inline std::time_t SystemTimeToUnixTime(const SYSTEMTIME& st) {
 inline double DaylightSavingTA(double utc) {
   // GetTimeZoneInformation
   // http://msdn.microsoft.com/en-us/library/ms724421(VS.85).aspx
-  if (core::IsNaN(utc)) {
+  if (core::math::IsNaN(utc)) {
     return utc;
   }
   TIME_ZONE_INFORMATION tzi;
@@ -164,7 +164,7 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
 }
 
 inline const char* LocalTimeZone(double t) {
-  if (core::IsNaN(t)) {
+  if (core::math::IsNaN(t)) {
     return "";
   }
   static const std::array<char, kMaxTZNameSize> kTZ = LocalTimeZoneImpl(t);

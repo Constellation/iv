@@ -5,6 +5,7 @@
 #include <iv/platform.h>
 namespace iv {
 namespace core {
+namespace math {
 
 static const double kInfinity = std::numeric_limits<double>::infinity();
 
@@ -86,5 +87,5 @@ inline double Trunc(double value) {
   }
 }
 
-} }  // namespace iv::core
+} } }  // namespace iv::core::math
 #endif  // IV_PLATFORM_MATH_H_
