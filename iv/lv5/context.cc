@@ -647,6 +647,7 @@ void Context::InitMath(const ClassSlot& func_cls,
       // section 15.8.2.18 tan(x)
       .def<&runtime::MathTan, 1>("tan")
       // ES.next math extensions
+      .def<&runtime::MathTrunc, 1>("trunc")
       .def<&runtime::MathSign, 1>("sign");
 }
 

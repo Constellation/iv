@@ -197,6 +197,22 @@ inline JSVal MathTan(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+inline JSVal MathTrunc(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);
+  if (!args.empty()) {
+    const JSVal target = args.front();
+    if (target.IsInt32()) {
+      return target;
+    }
+    const double x = target.ToNumber(args.ctx(), e);
+    if (!core::IsFinite(x) || x == 0) {
+      return x;
+    }
+    return core::Trunc(x);
+  }
+  return JSNaN;
+}
+
 inline JSVal MathSign(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
   if (!args.empty()) {

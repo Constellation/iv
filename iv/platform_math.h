@@ -78,5 +78,13 @@ inline double Round(double value) {
   }
 }
 
+inline double Trunc(double value) {
+  if (value > 0) {
+    return std::floor(value);
+  } else {
+    return std::ceil(value);
+  }
+}
+
 } }  // namespace iv::core
 #endif  // IV_PLATFORM_MATH_H_
