@@ -645,7 +645,9 @@ void Context::InitMath(const ClassSlot& func_cls,
       // section 15.8.2.17 sqrt(x)
       .def<&runtime::MathSqrt, 1>("sqrt")
       // section 15.8.2.18 tan(x)
-      .def<&runtime::MathTan, 1>("tan");
+      .def<&runtime::MathTan, 1>("tan")
+      // ES.next math extensions
+      .def<&runtime::MathSign, 1>("sign");
 }
 
 void Context::InitDate(const ClassSlot& func_cls,

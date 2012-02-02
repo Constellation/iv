@@ -111,7 +111,7 @@ inline JSVal MathLog(const Arguments& args, Error* e) {
 
 inline JSVal MathMax(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.max", args, e);
-  double max = -math_detail::kMathInfinity;
+  double max = -math_detail::kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
@@ -126,7 +126,7 @@ inline JSVal MathMax(const Arguments& args, Error* e) {
 
 inline JSVal MathMin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.min", args, e);
-  double min = math_detail::kMathInfinity;
+  double min = math_detail::kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
