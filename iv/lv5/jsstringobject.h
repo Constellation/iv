@@ -34,7 +34,7 @@ class JSStringObject : public JSObject {
       }
       slot->set_descriptor(
           DataDescriptor(
-              JSString::NewSingle(ctx, value_->GetAt(index)),
+              JSString::NewSingle(ctx, value_->At(index)),
               ATTR::ENUMERABLE));
       return true;
     } else {

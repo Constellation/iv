@@ -307,7 +307,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return str;
   }
 
-  uint16_t GetAt(size_type n) const {
+  uint16_t At(size_type n) const {
     const FiberSlot* first = fibers_[fiber_count_ - 1];
     if (first->size() > n && !first->IsCons()) {
       return (*static_cast<const FiberBase*>(first))[n];
@@ -344,10 +344,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
     if (size() == 1) {
       // single character
       if (Is8Bit()) {
-        const std::vector<char> vec(count, GetAt(0));
+        const std::vector<char> vec(count, At(0));
         return new (PointerFreeGC) this_type(vec.begin(), count, true);
       } else {
-        const std::vector<uint16_t> vec(count, GetAt(0));
+        const std::vector<uint16_t> vec(count, At(0));
         return new (PointerFreeGC) this_type(vec.begin(), count, false);
       }
     }

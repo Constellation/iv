@@ -107,7 +107,7 @@ inline JSVal StringSplit(Context* ctx,
       return target->Split(ctx, ary, lim, e);
     }
   } else if (rsize == 1) {
-    return target->Split(ctx, ary, rhs->GetAt(0), lim, e);
+    return target->Split(ctx, ary, rhs->At(0), lim, e);
   }
   const uint32_t size = target->size();
   uint32_t p = 0;
@@ -537,7 +537,7 @@ inline JSVal StringCharAt(const Arguments& args, Error* e) {
     return JSString::NewEmptyString(args.ctx());
   } else {
     return JSString::NewSingle(args.ctx(),
-                               str->GetAt(static_cast<std::size_t>(position)));
+                               str->At(static_cast<std::size_t>(position)));
   }
 }
 
@@ -558,7 +558,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
   if (position < 0 || position >= str->size()) {
     return JSNaN;
   } else {
-    return JSVal::UInt16(str->GetAt(core::DoubleToUInt32(position)));
+    return JSVal::UInt16(str->At(core::DoubleToUInt32(position)));
   }
 }
 

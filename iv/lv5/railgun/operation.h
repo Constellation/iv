@@ -689,7 +689,7 @@ class Operation {
       if (symbol::IsArrayIndexSymbol(s)) {
         const uint32_t index = symbol::GetIndexFromSymbol(s);
         if (index < str->size()) {
-          *res = JSString::NewSingle(ctx_, str->GetAt(index));
+          *res = JSString::NewSingle(ctx_, str->At(index));
           return true;
         }
       }

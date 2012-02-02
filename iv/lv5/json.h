@@ -24,7 +24,7 @@ class MaybeJSONParser : private core::Noncopyable<MaybeJSONParser> {
   explicit MaybeJSONParser(JSString* str) : str_(str) { }
 
   bool IsParsable() {
-    return (str_->GetAt(0) == '(' && str_->GetAt(str_->size() - 1) == ')');
+    return (str_->At(0) == '(' && str_->At(str_->size() - 1) == ')');
   }
 
   JSVal Parse(Context* ctx, Error* e) {
