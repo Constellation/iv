@@ -12,11 +12,11 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace detail {
+namespace math_detail {
 
-static const double kMathInfinity = std::numeric_limits<double>::infinity();
+static const double kInfinity = std::numeric_limits<double>::infinity();
 
-}  // namespace detail
+}  // namespace math_detail
 
 inline JSVal MathAbs(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.abs", args, e);
@@ -111,7 +111,7 @@ inline JSVal MathLog(const Arguments& args, Error* e) {
 
 inline JSVal MathMax(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.max", args, e);
-  double max = -detail::kMathInfinity;
+  double max = -math_detail::kMathInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
@@ -126,7 +126,7 @@ inline JSVal MathMax(const Arguments& args, Error* e) {
 
 inline JSVal MathMin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.min", args, e);
-  double min = detail::kMathInfinity;
+  double min = math_detail::kMathInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
@@ -193,6 +193,18 @@ inline JSVal MathTan(const Arguments& args, Error* e) {
   if (!args.empty()) {
     const double x = args.front().ToNumber(args.ctx(), e);
     return std::tan(x);
+  }
+  return JSNaN;
+}
+
+inline JSVal MathSign(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    if (core::IsNaN(x) || x == 0) {
+      return x;
+    }
+    return (x < 0) ? -1 : 1;
   }
   return JSNaN;
 }
