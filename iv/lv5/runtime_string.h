@@ -1141,6 +1141,26 @@ inline JSVal StringRepeat(const Arguments& args, Error* e) {
   return str->Repeat(ctx, count);
 }
 
+// section 15.5.4.25 String.prototype.toArray()
+inline JSVal StringToArray(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toArray", args, e);
+  const JSVal& val = args.this_binding();
+  Context* ctx = args.ctx();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  const uint32_t len = str->size();
+  JSArray* ary = JSArray::New(ctx, len);
+  for (uint32_t i = 0; i < len; ++i) {
+      ary->DefineOwnProperty(
+          ctx,
+          symbol::MakeSymbolFromIndex(i),
+          DataDescriptor(JSString::NewSingle(ctx, str->At(i)),
+                         ATTR::W | ATTR::E | ATTR::C),
+          false, IV_LV5_ERROR(e));
+  }
+  return ary;
+}
+
 // section B.2.3 String.prototype.substr(start, length)
 // this method is deprecated.
 inline JSVal StringSubstr(const Arguments& args, Error* e) {

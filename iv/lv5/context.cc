@@ -480,6 +480,8 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringTrim, 0>("trim")
       // section 15.5.4.21 String.prototype.repeat(count)
       .def<&runtime::StringRepeat, 1>("repeat")
+      // section 15.5.4.25 String.prototype.toArray()
+      .def<&runtime::StringToArray, 0>("toArray")
       // section B.2.3 String.prototype.substr(start, length)
       // this method is deprecated.
       .def<&runtime::StringSubstr, 2>("substr");
