@@ -19,7 +19,8 @@ static const char* kPassFileNames[] = {
   "test/lv5/suite/pass000.js",
   "test/lv5/suite/pass001.js",
   "test/lv5/suite/pass002.js",
-  "test/lv5/suite/pass004.js"
+  "test/lv5/suite/pass004.js",
+  "test/lv5/suite/pass005.js"
 };
 static const std::size_t kPassFileNamesSize =
   sizeof(kPassFileNames) / sizeof(const char*);
