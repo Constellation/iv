@@ -87,5 +87,9 @@ inline double Trunc(double value) {
   }
 }
 
+inline double Log10(double value) {
+  return std::log(value) / std::log(10);
+}
+
 } } }  // namespace iv::core::math
 #endif  // IV_PLATFORM_MATH_H_

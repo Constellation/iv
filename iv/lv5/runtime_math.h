@@ -18,6 +18,7 @@ static const double kInfinity = std::numeric_limits<double>::infinity();
 
 }  // namespace math_detail
 
+// section 15.8.2.1 abs(x)
 inline JSVal MathAbs(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.abs", args, e);
   if (!args.empty()) {
@@ -27,6 +28,7 @@ inline JSVal MathAbs(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.2 acos(x)
 inline JSVal MathAcos(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.acos", args, e);
   if (!args.empty()) {
@@ -36,6 +38,7 @@ inline JSVal MathAcos(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.3 asin(x)
 inline JSVal MathAsin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.asin", args, e);
   if (!args.empty()) {
@@ -45,6 +48,7 @@ inline JSVal MathAsin(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.4 atan(x)
 inline JSVal MathAtan(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.atan", args, e);
   if (!args.empty()) {
@@ -54,6 +58,7 @@ inline JSVal MathAtan(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.5 atan2(y, x)
 inline JSVal MathAtan2(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.atan2", args, e);
   if (args.size() > 1) {
@@ -64,6 +69,7 @@ inline JSVal MathAtan2(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.6 ceil(x)
 inline JSVal MathCeil(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.ceil", args, e);
   if (!args.empty()) {
@@ -73,6 +79,7 @@ inline JSVal MathCeil(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.7 cos(x)
 inline JSVal MathCos(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.cos", args, e);
   if (!args.empty()) {
@@ -82,6 +89,7 @@ inline JSVal MathCos(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.8 exp(x)
 inline JSVal MathExp(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.exp", args, e);
   if (!args.empty()) {
@@ -91,6 +99,7 @@ inline JSVal MathExp(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.9 floor(x)
 inline JSVal MathFloor(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.floor", args, e);
   if (!args.empty()) {
@@ -100,6 +109,7 @@ inline JSVal MathFloor(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.10 log(x)
 inline JSVal MathLog(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.log", args, e);
   if (!args.empty()) {
@@ -109,6 +119,7 @@ inline JSVal MathLog(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.11 max([value1[, value2[, ... ]]])
 inline JSVal MathMax(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.max", args, e);
   double max = -math_detail::kInfinity;
@@ -124,6 +135,7 @@ inline JSVal MathMax(const Arguments& args, Error* e) {
   return max;
 }
 
+// section 15.8.2.12 min([value1[, value2[, ... ]]])
 inline JSVal MathMin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.min", args, e);
   double min = math_detail::kInfinity;
@@ -139,6 +151,7 @@ inline JSVal MathMin(const Arguments& args, Error* e) {
   return min;
 }
 
+// section 15.8.2.13 pow(x, y)
 inline JSVal MathPow(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.pow", args, e);
   if (args.size() > 1) {
@@ -156,11 +169,13 @@ inline JSVal MathPow(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.14 random()
 inline JSVal MathRandom(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.random", args, e);
   return args.ctx()->Random();
 }
 
+// section 15.8.2.15 round(x)
 inline JSVal MathRound(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.round", args, e);
   if (!args.empty()) {
@@ -170,6 +185,7 @@ inline JSVal MathRound(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.16 sin(x)
 inline JSVal MathSin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sin", args, e);
   if (!args.empty()) {
@@ -179,6 +195,7 @@ inline JSVal MathSin(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.17 sqrt(x)
 inline JSVal MathSqrt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sqrt", args, e);
   if (!args.empty()) {
@@ -188,6 +205,7 @@ inline JSVal MathSqrt(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.18 tan(x)
 inline JSVal MathTan(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.tan", args, e);
   if (!args.empty()) {
@@ -197,6 +215,17 @@ inline JSVal MathTan(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.19 log10(x)
+inline JSVal MathLog10(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.log10", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Log10(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.29 trunc(x)
 inline JSVal MathTrunc(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);
   if (!args.empty()) {
@@ -213,6 +242,7 @@ inline JSVal MathTrunc(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.30 sign(x)
 inline JSVal MathSign(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
   if (!args.empty()) {

@@ -667,8 +667,11 @@ void Context::InitMath(const ClassSlot& func_cls,
       .def<&runtime::MathSqrt, 1>("sqrt")
       // section 15.8.2.18 tan(x)
       .def<&runtime::MathTan, 1>("tan")
-      // ES.next math extensions
+      // section 15.8.2.19 log10(x)
+      .def<&runtime::MathLog10, 1>("log10")
+      // section 15.8.2.29 trunc(x)
       .def<&runtime::MathTrunc, 1>("trunc")
+      // section 15.8.2.30 sign(x)
       .def<&runtime::MathSign, 1>("sign");
 }
 
