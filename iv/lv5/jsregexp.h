@@ -20,10 +20,6 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
-  inline bool IsValid() const {
-    return impl_->IsValid();
-  }
-
   JSString* source(Context* ctx) {
     Error e;
     const JSVal source = Get(ctx, symbol::source(), &e);
@@ -74,17 +70,15 @@ class JSRegExp : public JSObject {
     return new JSRegExp(ctx, map);
   }
 
-  bool global() const {
-    return impl_->global();
-  }
+  bool IsValid() const { return impl_->IsValid(); }
 
-  bool ignore() const {
-    return impl_->ignore();
-  }
+  bool global() const { return impl_->global(); }
 
-  bool multiline() const {
-    return impl_->multiline();
-  }
+  bool ignore() const { return impl_->ignore(); }
+
+  bool multiline() const { return impl_->multiline(); }
+
+  bool sticky() const { return impl_->sticky(); }
 
   int LastIndex(Context* ctx, Error* e) {
     const JSVal index =
@@ -120,14 +114,9 @@ class JSRegExp : public JSObject {
     result->clear();
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector(num_of_captures * 2);
-    int res;
-    if (str->Is8Bit()) {
-      res = impl_->Execute(ctx, *str->Get8Bit(),
-                           index, offset_vector.data());
-    } else {
-      res = impl_->Execute(ctx, *str->Get16Bit(),
-                           index, offset_vector.data());
-    }
+    const int res = (str->Is8Bit()) ?
+        impl_->Execute(ctx, *str->Get8Bit(), &index, offset_vector.data()) :
+        impl_->Execute(ctx, *str->Get16Bit(), &index, offset_vector.data());
     if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       return std::make_tuple(0, 0, false);
     }
@@ -236,7 +225,8 @@ class JSRegExp : public JSObject {
   }
 
   template<typename FiberType>
-  JSVal ExecGlobal(Context* ctx, JSString* str, const FiberType* fiber, Error* e) {
+  JSVal ExecGlobal(Context* ctx, JSString* str,
+                   const FiberType* fiber, Error* e) {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures) * 2);
     JSArray* ary = JSArray::New(ctx);
@@ -246,10 +236,8 @@ class JSRegExp : public JSObject {
     const int start = previous_index;
     const int size = fiber->size();
     do {
-      const int res = impl_->Execute(ctx,
-                                     *fiber,
-                                     previous_index,
-                                     offset_vector.data());
+      const int res =
+          impl_->Execute(ctx, *fiber, &previous_index, offset_vector.data());
       if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
         break;
       }
@@ -303,10 +291,10 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const int res = impl_->Execute(ctx,
-                                   *fiber,
-                                   previous_index,
-                                   offset_vector.data());
+
+    const int res =
+        impl_->Execute(ctx, *fiber, &previous_index, offset_vector.data());
+
     if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       SetLastIndex(ctx, 0, e);
       return JSNull;

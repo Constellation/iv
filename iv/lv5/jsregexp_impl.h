@@ -23,7 +23,8 @@ class JSRegExpImpl : public gc_cleanup {
     NONE = 0,
     GLOBAL = 1,
     IGNORE_CASE = 2,
-    MULTILINE = 4
+    MULTILINE = 4,
+    STICKY = 8
   };
 
   JSRegExpImpl(core::Space* allocator,
@@ -55,21 +56,15 @@ class JSRegExpImpl : public gc_cleanup {
     }
   }
 
-  bool IsValid() const {
-    return code_;
-  }
+  bool IsValid() const { return code_; }
 
-  bool global() const {
-    return flags_ & GLOBAL;
-  }
+  bool global() const { return flags_ & GLOBAL; }
 
-  bool ignore() const {
-    return flags_ & IGNORE_CASE;
-  }
+  bool ignore() const { return flags_ & IGNORE_CASE; }
 
-  bool multiline() const {
-    return flags_ & MULTILINE;
-  }
+  bool multiline() const { return flags_ & MULTILINE; }
+
+  bool sticky() const { return flags_ & STICKY; }
 
   int number_of_captures() const {
     assert(IsValid());
@@ -99,6 +94,14 @@ class JSRegExpImpl : public gc_cleanup {
         } else {
           flags |= IGNORE_CASE;
         }
+      } else if (c == 'y') {
+        if (flags & STICKY) {
+          return -1;
+        } else {
+          // currently not supported
+          // flags |= STICKY;
+          return -1;
+        }
       } else {
         return -1;
       }
@@ -109,10 +112,10 @@ class JSRegExpImpl : public gc_cleanup {
   template<typename T>
   int Execute(Context* ctx,
               const T& subject,
-              int offset,
+              int* offset,
               int* offset_vector) const {
     assert(IsValid());
-    return ctx->regexp_vm()->Execute(code_, subject, offset_vector, offset);
+    return ctx->regexp_vm()->Execute(code_, subject, offset_vector, *offset);
   }
 
  private:
