@@ -117,6 +117,7 @@ class JSRegExp : public JSObject {
                             JSString* str,
                             int index,
                             regexp::PairVector* result) const {
+    result->clear();
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector(num_of_captures * 2);
     int res;

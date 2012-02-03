@@ -145,15 +145,6 @@ inline JSVal StringSplit(Context* ctx,
   return ary;
 }
 
-inline regexp::MatchResult RegExpMatch(Context* ctx,
-                                       JSString* str,
-                                       uint32_t q,
-                                       const JSRegExp& reg,
-                                       regexp::PairVector* vec) {
-  vec->clear();
-  return reg.Match(ctx, str, q, vec);
-}
-
 struct Replace {
   enum State {
     kNormal,
@@ -169,8 +160,7 @@ class Replacer : private core::Noncopyable<> {
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
-    const regexp::MatchResult res =
-        RegExpMatch(ctx_, str_, 0, reg_, &vec_);
+    const regexp::MatchResult res = reg_.Match(ctx_, str_, 0, &vec_);
     if (get<2>(res)) {
       str_->Copy(0, get<0>(res), std::back_inserter(*builder));
       static_cast<T*>(this)->DoReplace(builder, res, e);
@@ -185,10 +175,8 @@ class Replacer : private core::Noncopyable<> {
     int not_matched_index = previous_index;
     const int size = str_->size();
     do {
-      const regexp::MatchResult res = detail::RegExpMatch(ctx_,
-                                                          str_,
-                                                          previous_index,
-                                                          reg_, &vec_);
+      const regexp::MatchResult res =
+          reg_.Match(ctx_, str_, previous_index, &vec_);
       if (!get<2>(res)) {
         break;
       }
@@ -878,7 +866,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   regexp::PairVector cap;
   const uint32_t size = str->size();
   if (size == 0) {
-    if (get<2>(detail::RegExpMatch(ctx, str, 0, *reg, &cap))) {
+    if (get<2>(reg->Match(ctx, str, 0, &cap))) {
       return ary;
     }
     ary->DefineOwnProperty(
@@ -894,8 +882,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t start_match = 0;
   uint32_t length = 0;
   while (q != size) {
-    const regexp::MatchResult rs =
-        detail::RegExpMatch(ctx, str, q, *reg, &cap);
+    const regexp::MatchResult rs = reg->Match(ctx, str, q, &cap);
     if (!get<2>(rs) ||
         size == (start_match = get<0>(rs))) {
         break;
