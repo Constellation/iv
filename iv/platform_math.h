@@ -87,42 +87,82 @@ inline double Trunc(double value) {
   }
 }
 
-inline double Log10(double value) {
+inline double Log10(double x) {
   // log10(n) = log(n) / log(10)
-  return std::log(value) / std::log(10);
+  return std::log(x) / std::log(10);
 }
 
-inline double Log2(double value) {
+inline double Log2(double x) {
   // log2(n) = log(n) / log(2)
-  return std::log(value) / std::log(2);
+  return std::log(x) / std::log(2);
 }
 
-inline double Log1p(double value) {
+inline double Log1p(double x) {
   // log1p(n) = log(n + 1)
-  return std::log(value + 1);
-}
-
-inline double Expm1(double value) {
-  // expm1(n) = exp(n) - 1
-  return std::exp(value) - 1;
-}
-
-inline double Cosh(double value) {
-  // cosh(x) = (exp(x) + exp(-x)) / 2
-  return (std::exp(value) + std::exp(-value)) / 2;
-}
-
-inline double Sinh(double value) {
-  // sinh(x) = (exp(x) - exp(-x)) / 2
-  if (value == 0) {
-    // if value is -0, sinh(-0) is -0
-    return value;
+  if (x == 0) {
+    return x;
   }
-  return (std::exp(value) - std::exp(-value)) / 2;
+  return std::log(x + 1);
 }
 
-inline double Tanh(double value) {
-  return Sinh(value) / Cosh(value);
+inline double Expm1(double x) {
+  // expm1(n) = exp(n) - 1
+  if (x == 0) {
+    return x;
+  }
+  return std::exp(x) - 1;
+}
+
+inline double Cosh(double x) {
+  // cosh(x) = (exp(x) + exp(-x)) / 2
+  return (std::exp(x) + std::exp(-x)) / 2;
+}
+
+inline double Sinh(double x) {
+  // sinh(x) = (exp(x) - exp(-x)) / 2
+  if (x == 0 || x == kInfinity || x == -kInfinity) {
+    // if x is -0, sinh(-0) is -0
+    return x;
+  }
+  return (std::exp(x) - std::exp(-x)) / 2;
+}
+
+inline double Tanh(double x) {
+  // tanh(x) = sinh(x) / cosh(x)
+  if (x == kInfinity) {
+    return 1;
+  }
+  if (x == -kInfinity) {
+    return -1;
+  }
+  return Sinh(x) / Cosh(x);
+}
+
+inline double Acosh(double x) {
+  // acosh(x) = log(x + sqrt(x^2 - 1))
+  return std::log(x + std::sqrt(x * x - 1));
+}
+
+inline double Asinh(double x) {
+  // asinh(x) = log(x + sqrt(x^2 + 1))
+  if (x == 0 || x == -kInfinity) {
+    return x;
+  }
+  return std::log(x + std::sqrt(x * x + 1));
+}
+
+inline double Atanh(double x) {
+  // atanh(x) = log((1 + x) / (1 - x)) / 2
+  if (x == 0) {
+    return x;
+  }
+  return std::log((1 + x) / (1 - x)) / 2;
+}
+
+inline double Hypot(double x, double y) {
+  // hypot(x, y)^2 = x^2 + y^2
+  // hypot(x, y) = sqrt(x^2 + y^2)
+  return std::sqrt(x * x + y * y);
 }
 
 } } }  // namespace iv::core::math

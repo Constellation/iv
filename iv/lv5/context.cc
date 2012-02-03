@@ -681,9 +681,17 @@ void Context::InitMath(const ClassSlot& func_cls,
       .def<&runtime::MathSinh, 1>("sinh")
       // section 15.8.2.25 tanh(x)
       .def<&runtime::MathTanh, 1>("tanh")
-      // section 15.8.2.29 trunc(x)
+      // section 15.8.2.26 acosh(x)
+      .def<&runtime::MathAcosh, 1>("acosh")
+      // section 15.8.2.27 asinh(x)
+      .def<&runtime::MathAsinh, 1>("asinh")
+      // section 15.8.2.28 atanh(x)
+      .def<&runtime::MathAtanh, 1>("atanh")
+      // section 15.8.2.29 hypot(y, x)
+      .def<&runtime::MathHypot, 1>("hypot")
+      // section 15.8.2.30 trunc(x)
       .def<&runtime::MathTrunc, 1>("trunc")
-      // section 15.8.2.30 sign(x)
+      // section 15.8.2.31 sign(x)
       .def<&runtime::MathSign, 1>("sign");
 }
 

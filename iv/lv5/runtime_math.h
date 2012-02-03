@@ -285,7 +285,48 @@ inline JSVal MathTanh(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
-// section 15.8.2.29 trunc(x)
+// section 15.8.2.26 acosh(x)
+inline JSVal MathAcosh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.acosh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Acosh(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.27 asinh(x)
+inline JSVal MathAsinh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.asinh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Asinh(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.28 atanh(x)
+inline JSVal MathAtanh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.atanh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Atanh(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.29 hypot(y, x)
+inline JSVal MathHypot(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.hypot", args, e);
+  if (args.size() > 1) {
+    const double x = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    const double y = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    return core::math::Hypot(x, y);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.30 trunc(x)
 inline JSVal MathTrunc(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);
   if (!args.empty()) {
@@ -302,7 +343,7 @@ inline JSVal MathTrunc(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
-// section 15.8.2.30 sign(x)
+// section 15.8.2.31 sign(x)
 inline JSVal MathSign(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
   if (!args.empty()) {
@@ -310,7 +351,7 @@ inline JSVal MathSign(const Arguments& args, Error* e) {
     if (core::math::IsNaN(x) || x == 0) {
       return x;
     }
-    return (x < 0) ? -1 : 1;
+    return (core::math::Signbit(x)) ? -1 : 1;
   }
   return JSNaN;
 }
