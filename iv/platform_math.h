@@ -107,5 +107,23 @@ inline double Expm1(double value) {
   return std::exp(value) - 1;
 }
 
+inline double Cosh(double value) {
+  // cosh(x) = (exp(x) + exp(-x)) / 2
+  return (std::exp(value) + std::exp(-value)) / 2;
+}
+
+inline double Sinh(double value) {
+  // sinh(x) = (exp(x) - exp(-x)) / 2
+  if (value == 0) {
+    // if value is -0, sinh(-0) is -0
+    return value;
+  }
+  return (std::exp(value) - std::exp(-value)) / 2;
+}
+
+inline double Tanh(double value) {
+  return Sinh(value) / Cosh(value);
+}
+
 } } }  // namespace iv::core::math
 #endif  // IV_PLATFORM_MATH_H_

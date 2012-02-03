@@ -255,6 +255,36 @@ inline JSVal MathExpm1(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.23 cosh(x)
+inline JSVal MathCosh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.cosh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Cosh(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.24 sinh(x)
+inline JSVal MathSinh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.sinh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Sinh(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.25 tanh(x)
+inline JSVal MathTanh(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.tanh", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Tanh(x);
+  }
+  return JSNaN;
+}
+
 // section 15.8.2.29 trunc(x)
 inline JSVal MathTrunc(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);
