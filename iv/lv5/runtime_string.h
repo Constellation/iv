@@ -1188,6 +1188,24 @@ inline JSVal StringEndsWith(const Arguments& args, Error* e) {
       std::equal(search_string->begin(), search_string->end(), it));
 }
 
+// section 15.5.4.24 String.prototype.contains(searchString, [position])
+inline JSVal StringContains(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.contains", args, e);
+  const JSVal& val = args.this_binding();
+  Context* ctx = args.ctx();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
+  const double arg1 = args.At(1).ToNumber(ctx, IV_LV5_ERROR(e));
+  const double position = core::DoubleToInteger(arg1);
+  const std::size_t start = std::min(
+      static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+  if (search_string->size() + start > str->size()) {
+    return JSFalse;
+  }
+  return JSVal::Bool(str->find(*search_string, start) != JSString::npos);
+}
+
 // section 15.5.4.25 String.prototype.toArray()
 inline JSVal StringToArray(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toArray", args, e);
