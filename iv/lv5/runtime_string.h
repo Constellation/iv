@@ -1163,12 +1163,12 @@ inline JSVal StringToArray(const Arguments& args, Error* e) {
 
 // section 15.5.4.26 String.prototype.reverse()
 inline JSVal StringReverse(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toArray", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.reverse", args, e);
   const JSVal& val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  return JSString::New(ctx, str->rbegin(), str->rend(), str->Is8Bit());
+  return JSString::New(ctx, str->crbegin(), str->crend(), str->Is8Bit());
 }
 
 // section B.2.3 String.prototype.substr(start, length)
