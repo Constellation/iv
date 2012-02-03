@@ -33,7 +33,17 @@ static const char* kPassFileNames[] = {
   "test/lv5/suite/ex/atanh.js",
   "test/lv5/suite/ex/hypot.js",
   "test/lv5/suite/ex/trunc.js",
-  "test/lv5/suite/ex/sign.js"
+  "test/lv5/suite/ex/sign.js",
+  "test/lv5/suite/ex/isnan.js",
+  "test/lv5/suite/ex/isfinite.js",
+  "test/lv5/suite/ex/isinteger.js",
+  "test/lv5/suite/ex/tointeger.js",
+  "test/lv5/suite/ex/repeat.js",
+  "test/lv5/suite/ex/startswith.js",
+  "test/lv5/suite/ex/endswith.js",
+  "test/lv5/suite/ex/contains.js",
+  "test/lv5/suite/ex/toarray.js",
+  "test/lv5/suite/ex/reverse.js"
 };
 static const std::size_t kPassFileNamesSize =
   sizeof(kPassFileNames) / sizeof(const char*);

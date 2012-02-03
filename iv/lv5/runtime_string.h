@@ -1182,7 +1182,7 @@ inline JSVal StringContains(const Arguments& args, Error* e) {
   const double position = core::DoubleToInteger(arg1);
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
-  if (search_string->size() + start > str->size()) {
+  if ((search_string->size() + start) > str->size()) {
     return JSFalse;
   }
   return JSVal::Bool(str->find(*search_string, start) != JSString::npos);

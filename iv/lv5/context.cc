@@ -486,7 +486,7 @@ void Context::InitString(const ClassSlot& func_cls,
       // String.prototype.endsWith(searchString, [endPosition])
       .def<&runtime::StringEndsWith, 1>("endsWith")
       // section 15.5.4.24 String.prototype.contains(searchString, [position])
-      .def<&runtime::StringEndsWith, 1>("contains")
+      .def<&runtime::StringContains, 1>("contains")
       // section 15.5.4.25 String.prototype.toArray()
       .def<&runtime::StringToArray, 0>("toArray")
       // section 15.5.4.26 String.prototype.reverse()
