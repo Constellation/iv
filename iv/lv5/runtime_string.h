@@ -1141,6 +1141,53 @@ inline JSVal StringRepeat(const Arguments& args, Error* e) {
   return str->Repeat(ctx, count);
 }
 
+// section 15.5.4.22 String.prototype.startsWith(searchString, [position])
+inline JSVal StringStartsWith(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.startsWith", args, e);
+  const JSVal& val = args.this_binding();
+  Context* ctx = args.ctx();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
+  const double arg1 = args.At(1).ToNumber(ctx, IV_LV5_ERROR(e));
+  const double position = core::DoubleToInteger(arg1);
+  const std::size_t start = std::min(
+      static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+  if (search_string->size() + start > str->size()) {
+    return JSFalse;
+  }
+  JSString::const_iterator it = str->begin() + start;
+  return JSVal::Bool(
+      std::equal(search_string->begin(), search_string->end(), it));
+}
+
+// section 15.5.4.23 String.prototype.endsWith(searchString, [endPosition])
+inline JSVal StringEndsWith(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.endsWith", args, e);
+  const JSVal& val = args.this_binding();
+  Context* ctx = args.ctx();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
+  JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
+  const JSVal arg1 = args.At(1);
+  std::size_t end;
+  if (arg1.IsUndefined()) {
+    end = str->size();
+  } else {
+    const double pos = arg1.ToNumber(ctx, IV_LV5_ERROR(e));
+    const double position = core::DoubleToInteger(pos);
+    end = std::min(
+        static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+  }
+  if (search_string->size() > end) {
+    return JSFalse;
+  }
+  const std::size_t start = end - search_string->size();
+  JSString::const_iterator it = str->begin() + start;
+  return JSVal::Bool(
+      std::equal(search_string->begin(), search_string->end(), it));
+}
+
 // section 15.5.4.25 String.prototype.toArray()
 inline JSVal StringToArray(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toArray", args, e);
