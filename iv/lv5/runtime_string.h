@@ -525,14 +525,8 @@ inline JSVal StringCharAt(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  double position;
-  if (!args.empty()) {
-    position = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    position = core::DoubleToInteger(position);
-  } else {
-    // undefined -> NaN -> 0
-    position = 0;
-  }
+  const double pos = args.At(0).ToNumber(args.ctx(), IV_LV5_ERROR(e));
+  const double position = core::DoubleToInteger(pos);
   if (position < 0 || position >= str->size()) {
     return JSString::NewEmptyString(args.ctx());
   } else {
@@ -547,14 +541,8 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  double position;
-  if (!args.empty()) {
-    position = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    position = core::DoubleToInteger(position);
-  } else {
-    // undefined -> NaN -> 0
-    position = 0;
-  }
+  const double pos = args.At(0).ToNumber(args.ctx(), IV_LV5_ERROR(e));
+  const double position = core::DoubleToInteger(pos);
   if (position < 0 || position >= str->size()) {
     return JSNaN;
   } else {
@@ -639,15 +627,9 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  JSString* that;
-  if (!args.empty()) {
-    that = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
-  } else {
-    that = args.ctx()->global_data()->string_undefined();
-  }
+  JSString* that = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   return str->compare(*that);
 }
-
 
 // section 15.5.4.10 String.prototype.match(regexp)
 inline JSVal StringMatch(const Arguments& args, Error* e) {
