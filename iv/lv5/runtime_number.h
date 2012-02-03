@@ -36,6 +36,57 @@ inline JSVal NumberConstructor(const Arguments& args, Error* e) {
   }
 }
 
+// section 15.7.3.7 Number.isNaN(number)
+inline JSVal NumberIsNaN(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.isNaN", args, e);
+  const JSVal num = args.At(0);
+  if (!num.IsNumber()) {
+    return JSFalse;
+  }
+  if (num.IsInt32()) {
+    return JSFalse;
+  }
+  return JSVal::Bool(core::math::IsNaN(num.number()));
+}
+
+// section 15.7.3.8 Number.isFinite(number)
+inline JSVal NumberIsFinite(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.isFinite", args, e);
+  const JSVal num = args.At(0);
+  if (!num.IsNumber()) {
+    return JSFalse;
+  }
+  if (num.IsInt32()) {
+    return JSTrue;
+  }
+  return JSVal::Bool(core::math::IsFinite(num.number()));
+}
+
+// section 15.7.3.9 Number.isInteger(number)
+inline JSVal NumberIsInteger(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.isInteger", args, e);
+  const JSVal num = args.At(0);
+  if (!num.IsNumber()) {
+    return JSFalse;
+  }
+  if (num.IsInt32()) {
+    return JSTrue;
+  }
+  const double n = num.number();
+  return JSVal::Bool(core::DoubleToInteger(n) == n);
+}
+
+// section 15.7.3.10 Number.toInteger(number)
+inline JSVal NumberToInteger(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.toInteger", args, e);
+  const JSVal num = args.At(0);
+  if (num.IsInt32()) {
+    return num;
+  }
+  const double n = num.ToNumber(args.ctx(), IV_LV5_ERROR(e));
+  return core::DoubleToInteger(n);
+}
+
 // section 15.7.4.2 Number.prototype.toString([radix])
 inline JSVal NumberToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toString", args, e);

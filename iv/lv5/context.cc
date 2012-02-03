@@ -569,7 +569,15 @@ void Context::InitNumber(const ClassSlot& func_cls,
       // section 15.7.3.5 Number.NEGATIVE_INFINITY
       .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
       // section 15.7.3.6 Number.POSITIVE_INFINITY
-      .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity());
+      .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity())
+      // section 15.7.3.7 Number.isNaN(number)
+      .def<&runtime::NumberIsNaN, 1>("isNaN")
+      // section 15.7.3.8 Number.isFinite(number)
+      .def<&runtime::NumberIsFinite, 1>("isFinite")
+      // section 15.7.3.9 Number.isInteger(number)
+      .def<&runtime::NumberIsInteger, 1>("isInteger")
+      // section 15.7.3.10 Number.toInteger(number)
+      .def<&runtime::NumberToInteger, 1>("toInteger");
 
   bind::Object(this, proto)
       .cls(cls.cls)
