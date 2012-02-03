@@ -482,6 +482,8 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringRepeat, 1>("repeat")
       // section 15.5.4.25 String.prototype.toArray()
       .def<&runtime::StringToArray, 0>("toArray")
+      // section 15.5.4.26 String.prototype.reverse()
+      .def<&runtime::StringReverse, 0>("reverse")
       // section B.2.3 String.prototype.substr(start, length)
       // this method is deprecated.
       .def<&runtime::StringSubstr, 2>("substr");

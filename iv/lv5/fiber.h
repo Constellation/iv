@@ -92,8 +92,8 @@ class FiberBase : public FiberSlot {
     typedef std::iterator<std::random_access_iterator_tag, T> super_type;
     typedef typename super_type::pointer pointer;
     typedef const typename super_type::pointer const_pointer;
-    typedef typename super_type::reference reference;
-    typedef const typename super_type::reference const_reference;
+    typedef uint16_t reference;
+    typedef uint16_t const_reference;
     typedef typename super_type::difference_type difference_type;
     typedef iterator_base<typename std::remove_const<T>::type> iterator;
     typedef iterator_base<typename std::add_const<T>::type> const_iterator;
@@ -104,11 +104,11 @@ class FiberBase : public FiberSlot {
     iterator_base(const iterator& it)  // NOLINT
       : fiber_(it.fiber()), position_(it.position()) { }
 
-    uint16_t operator*() const {
+    const_reference operator*() const {
       return (*fiber_)[position_];
     }
 
-    uint16_t operator[](difference_type d) const {
+    const_reference operator[](difference_type d) const {
       return (*fiber_)[position_ + d];
     }
 
