@@ -22,7 +22,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -34,7 +34,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -46,7 +46,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -58,7 +58,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -70,7 +70,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::MULTILINE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -82,7 +82,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -94,7 +94,7 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
     space.Clear();
@@ -112,13 +112,13 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str2, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str3, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str4, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str5, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str6, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str7, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str4, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str5, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str6, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str7, vec.data(), 0));
   }
   {
     space.Clear();
@@ -136,13 +136,13 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str2, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str3, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str4, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str5, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str6, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str7, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str4, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str5, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str6, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str7, vec.data(), 0));
   }
   {
     space.Clear();
@@ -160,13 +160,13 @@ TEST(AeroVMCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str2, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str3, vec.data(), 0));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str4, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str5, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str6, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str7, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str4, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str5, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str6, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str7, vec.data(), 0));
   }
 }
 
@@ -192,29 +192,29 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(6, vec[1]);
     EXPECT_EQ(2, vec[2]);
     EXPECT_EQ(6, vec[3]);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str2, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(7, vec[1]);
     EXPECT_EQ(3, vec[2]);
     EXPECT_EQ(7, vec[3]);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str3, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
     EXPECT_EQ(2, vec[2]);
     EXPECT_EQ(4, vec[3]);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str4, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str4, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(5, vec[1]);
     EXPECT_EQ(3, vec[2]);
     EXPECT_EQ(5, vec[3]);
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str5, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str6, vec.data(), 0));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str7, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str5, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str6, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str7, vec.data(), 0));
   }
   {
     space.Clear();
@@ -227,7 +227,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
     EXPECT_EQ(0, vec[2]);
@@ -246,7 +246,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(0, vec[1]);
   }
@@ -261,7 +261,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
     EXPECT_EQ(8,  vec[1]);
     EXPECT_EQ(0,  vec[2]);
@@ -282,7 +282,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
     EXPECT_EQ(10, vec[1]);
     EXPECT_EQ(0,  vec[2]);
@@ -307,7 +307,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(4, vec[1]);
     EXPECT_EQ(2, vec[2]);
@@ -324,7 +324,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
   }
@@ -339,7 +339,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(5, vec[1]);
   }
@@ -354,7 +354,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
   }
@@ -369,7 +369,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
     EXPECT_EQ(0, vec[2]);
@@ -396,7 +396,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(str1.size(), vec[1]);
     EXPECT_EQ(0, vec[2]);
@@ -413,7 +413,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(0, vec[1]);
     EXPECT_EQ(-1, vec[2]);
@@ -430,7 +430,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
     EXPECT_EQ(0, vec[2]);
@@ -447,7 +447,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -460,7 +460,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(32, vec[1]);
     EXPECT_EQ(7, vec[2]);
@@ -489,7 +489,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
   }
@@ -504,7 +504,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(1, vec[1]);
   }
@@ -519,7 +519,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(3, vec[1]);
   }

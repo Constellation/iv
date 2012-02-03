@@ -27,7 +27,7 @@ TEST(AeroIncompleteCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -39,7 +39,7 @@ TEST(AeroIncompleteCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
 }
 
@@ -69,7 +69,7 @@ TEST(AeroIncompleteCase, UnicodeEscapeSequenceTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
 
@@ -96,7 +96,7 @@ TEST(AeroIncompleteCase, BadQuantifierRangeTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
 
@@ -135,7 +135,7 @@ TEST(AeroIncompleteCase, ClassEscapeTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
 
@@ -176,7 +176,7 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), it->second, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
 
@@ -206,6 +206,6 @@ TEST(AeroIncompleteCase, EscapeMissFailTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), it->second, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }

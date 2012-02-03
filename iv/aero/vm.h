@@ -39,26 +39,26 @@ class VM : private core::Noncopyable<VM> {
       state_() {
   }
 
-  int ExecuteOnce(Code* code, const core::UStringPiece& subject,
-                      int* captures, int offset) {
-    return ExecuteOnceImpl(code, subject, captures, offset);
+  int Execute(Code* code, const core::UStringPiece& subject,
+              int* captures, int offset) {
+    return ExecuteImpl(code, subject, captures, offset);
   }
 
-  int ExecuteOnce(Code* code, const core::StringPiece& subject,
-                      int* captures, int offset) {
-    return ExecuteOnceImpl(code, subject, captures, offset);
+  int Execute(Code* code, const core::StringPiece& subject,
+              int* captures, int offset) {
+    return ExecuteImpl(code, subject, captures, offset);
   }
 
  private:
   template<typename Piece>
-  int ExecuteOnceImpl(Code* code, const Piece& subject,
+  int ExecuteImpl(Code* code, const Piece& subject,
                       int* captures, int offset) {
     const int size = subject.size();
     const uint16_t filter = code->filter();
     if (!filter) {
       // normal path
       do {
-        const int res = Execute(code, subject, captures, offset);
+        const int res = Main(code, subject, captures, offset);
         if (res == AERO_SUCCESS || res == AERO_ERROR) {
           return res;
         } else {
@@ -72,7 +72,7 @@ class VM : private core::Noncopyable<VM> {
         if (ch != filter) {
           ++offset;
         } else {
-          const int res = Execute(code, subject, captures, offset);
+          const int res = Main(code, subject, captures, offset);
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -87,7 +87,7 @@ class VM : private core::Noncopyable<VM> {
         if ((filter & ch) != ch) {
           ++offset;
         } else {
-          const int res = Execute(code, subject, captures, offset);
+          const int res = Main(code, subject, captures, offset);
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -100,8 +100,8 @@ class VM : private core::Noncopyable<VM> {
   }
 
   template<typename Piece>
-  int Execute(Code* code, const Piece& subject,
-              int* captures, std::size_t current_position);
+  int Main(Code* code, const Piece& subject,
+           int* captures, std::size_t current_position);
 
   int* NewState(int* current, std::size_t size) {
     const std::size_t offset = (current - stack_.data()) + size;
@@ -133,8 +133,8 @@ class VM : private core::Noncopyable<VM> {
 #define BACKTRACK() break;
 
 template<typename Piece>
-inline int VM::Execute(Code* code, const Piece& subject,
-                       int* captures, std::size_t current_position) {
+inline int VM::Main(Code* code, const Piece& subject,
+                    int* captures, std::size_t current_position) {
   assert(code->captures() >= 1);
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;

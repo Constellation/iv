@@ -107,12 +107,12 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
   template<typename T>
-  int ExecuteOnce(Context* ctx,
-                  const T& subject,
-                  int offset,
-                  int* offset_vector) const {
+  int Execute(Context* ctx,
+              const T& subject,
+              int offset,
+              int* offset_vector) const {
     assert(IsValid());
-    return ctx->regexp_vm()->ExecuteOnce(code_, subject, offset_vector, offset);
+    return ctx->regexp_vm()->Execute(code_, subject, offset_vector, offset);
   }
 
  private:

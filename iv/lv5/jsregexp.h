@@ -122,11 +122,11 @@ class JSRegExp : public JSObject {
     std::vector<int> offset_vector(num_of_captures * 2);
     int res;
     if (str->Is8Bit()) {
-      res = impl_->ExecuteOnce(ctx, *str->Get8Bit(),
-                               index, offset_vector.data());
+      res = impl_->Execute(ctx, *str->Get8Bit(),
+                           index, offset_vector.data());
     } else {
-      res = impl_->ExecuteOnce(ctx, *str->Get16Bit(),
-                               index, offset_vector.data());
+      res = impl_->Execute(ctx, *str->Get16Bit(),
+                           index, offset_vector.data());
     }
     if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       return std::make_tuple(0, 0, false);
@@ -246,10 +246,10 @@ class JSRegExp : public JSObject {
     const int start = previous_index;
     const int size = fiber->size();
     do {
-      const int res = impl_->ExecuteOnce(ctx,
-                                         *fiber,
-                                         previous_index,
-                                         offset_vector.data());
+      const int res = impl_->Execute(ctx,
+                                     *fiber,
+                                     previous_index,
+                                     offset_vector.data());
       if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
         break;
       }
@@ -303,10 +303,10 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
-    const int res = impl_->ExecuteOnce(ctx,
-                                       *fiber,
-                                       previous_index,
-                                       offset_vector.data());
+    const int res = impl_->Execute(ctx,
+                                   *fiber,
+                                   previous_index,
+                                   offset_vector.data());
     if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
       SetLastIndex(ctx, 0, e);
       return JSNull;

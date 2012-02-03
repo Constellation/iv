@@ -22,7 +22,7 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::MULTILINE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -34,7 +34,7 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::MULTILINE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -46,7 +46,7 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(3, vec[0]);
     EXPECT_EQ(8, vec[1]);
   }
@@ -60,7 +60,7 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_FALSE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -72,7 +72,7 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
     space.Clear();
@@ -84,6 +84,6 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    ASSERT_TRUE(vm.ExecuteOnce(code.get(), str, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
 }
