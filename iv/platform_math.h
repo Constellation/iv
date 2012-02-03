@@ -178,6 +178,13 @@ inline double Hypot(double x, double y) {
   if (y > x) {
     std::swap(y, x);
   }
+  if (y == 0) {
+    if (x == 0) {
+      // if x and y are -0, hypot(-0, -0) returns +0
+      return 0;
+    }
+    return x;
+  }
   y /= x;
   return x * std::sqrt(1.0 + y * y);
 }
