@@ -225,6 +225,36 @@ inline JSVal MathLog10(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.20 log2(x)
+inline JSVal MathLog2(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.log2", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Log2(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.21 log1p(x)
+inline JSVal MathLog1p(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.log1p", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Log1p(x);
+  }
+  return JSNaN;
+}
+
+// section 15.8.2.22 expm1(x)
+inline JSVal MathExpm1(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.expm1", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    return core::math::Expm1(x);
+  }
+  return JSNaN;
+}
+
 // section 15.8.2.29 trunc(x)
 inline JSVal MathTrunc(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);

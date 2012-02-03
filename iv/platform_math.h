@@ -88,7 +88,23 @@ inline double Trunc(double value) {
 }
 
 inline double Log10(double value) {
+  // log10(n) = log(n) / log(10)
   return std::log(value) / std::log(10);
+}
+
+inline double Log2(double value) {
+  // log2(n) = log(n) / log(2)
+  return std::log(value) / std::log(2);
+}
+
+inline double Log1p(double value) {
+  // log1p(n) = log(n + 1)
+  return std::log(value + 1);
+}
+
+inline double Expm1(double value) {
+  // expm1(n) = exp(n) - 1
+  return std::exp(value) - 1;
 }
 
 } } }  // namespace iv::core::math
