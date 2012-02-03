@@ -162,7 +162,24 @@ inline double Atanh(double x) {
 inline double Hypot(double x, double y) {
   // hypot(x, y)^2 = x^2 + y^2
   // hypot(x, y) = sqrt(x^2 + y^2)
-  return std::sqrt(x * x + y * y);
+  //
+  // but, x*x + y*y is too large. so we transform this expression to
+  //
+  //  hypot(x, y) = x * sqrt(1.0 + (y/x)^2)
+  //
+  // http://d.hatena.ne.jp/scior/20101214/1292333501
+  // http://d.hatena.ne.jp/rubikitch/20081020/1224507459
+  if (x < 0) {
+    x = -x;
+  }
+  if (y < 0) {
+    y = -y;
+  }
+  if (y > x) {
+    std::swap(y, x);
+  }
+  y /= x;
+  return x * std::sqrt(1.0 + y * y);
 }
 
 } } }  // namespace iv::core::math
