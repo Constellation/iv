@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <iv/platform.h>
+#include <iv/detail/cmath.h>
 namespace iv {
 namespace core {
 namespace math {
@@ -89,74 +90,104 @@ inline double Trunc(double value) {
 
 inline double Log10(double x) {
   // log10(n) = log(n) / log(10)
-  return std::log(x) / std::log(10);
+  //
+  // missing impl
+  //   return std::log(x) / std::log(10);
+  return std::log10(x);
 }
 
 inline double Log2(double x) {
   // log2(n) = log(n) / log(2)
-  return std::log(x) / std::log(2);
+  //
+  // missing impl
+  //   return std::log(x) / std::log(2);
+  return std::log2(x);
 }
 
 inline double Log1p(double x) {
   // log1p(n) = log(n + 1)
-  if (x == 0) {
-    return x;
-  }
-  return std::log(x + 1);
+  //
+  // missing impl
+  //   if (x == 0) {
+  //     return x;
+  //   }
+  //   return std::log(x + 1);
+  return std::log1p(x);
 }
 
 inline double Expm1(double x) {
   // expm1(n) = exp(n) - 1
-  if (x == 0) {
-    return x;
-  }
-  return std::exp(x) - 1;
+  //
+  // missing impl
+  //   if (x == 0) {
+  //     return x;
+  //   }
+  //   return std::exp(x) - 1;
+  return std::expm1(x);
 }
 
 inline double Cosh(double x) {
   // cosh(x) = (exp(x) + exp(-x)) / 2
-  return (std::exp(x) + std::exp(-x)) / 2;
+  //
+  // missing impl
+  //   return (std::exp(x) + std::exp(-x)) / 2;
+  return std::cosh(x);
 }
 
 inline double Sinh(double x) {
   // sinh(x) = (exp(x) - exp(-x)) / 2
-  if (x == 0 || x == kInfinity || x == -kInfinity) {
-    // if x is -0, sinh(-0) is -0
-    return x;
-  }
-  return (std::exp(x) - std::exp(-x)) / 2;
+  //
+  // missing impl
+  //   if (x == 0 || x == kInfinity || x == -kInfinity) {
+  //     // if x is -0, sinh(-0) is -0
+  //     return x;
+  //   }
+  //   return (std::exp(x) - std::exp(-x)) / 2;
+  return std::sinh(x);
 }
 
 inline double Tanh(double x) {
   // tanh(x) = sinh(x) / cosh(x)
-  if (x == kInfinity) {
-    return 1;
-  }
-  if (x == -kInfinity) {
-    return -1;
-  }
-  return Sinh(x) / Cosh(x);
+  //
+  // missing impl
+  //   if (x == kInfinity) {
+  //     return 1;
+  //   }
+  //   if (x == -kInfinity) {
+  //     return -1;
+  //   }
+  //   return Sinh(x) / Cosh(x);
+  return std::tanh(x);
 }
 
 inline double Acosh(double x) {
   // acosh(x) = log(x + sqrt(x^2 - 1))
-  return std::log(x + std::sqrt(x * x - 1));
+  //
+  // missing impl
+  //   return std::log(x + std::sqrt(x * x - 1));
+  return std::acosh(x);
 }
 
 inline double Asinh(double x) {
   // asinh(x) = log(x + sqrt(x^2 + 1))
-  if (x == 0 || x == -kInfinity) {
-    return x;
-  }
-  return std::log(x + std::sqrt(x * x + 1));
+  //
+  // missing impl
+  //   if (x == 0 || x == -kInfinity) {
+  //     return x;
+  //   }
+  //   return std::log(x + std::sqrt(x * x + 1));
+  return std::asinh(x);
 }
 
 inline double Atanh(double x) {
   // atanh(x) = log((1 + x) / (1 - x)) / 2
-  if (x == 0) {
-    return x;
-  }
-  return std::log((1 + x) / (1 - x)) / 2;
+  //
+  // missing impl
+  //   if (x == 0) {
+  //     return x;
+  //   }
+  //   return std::log((1 + x) / (1 - x)) / 2;
+  return std::atanh(x);
 }
 
 inline double Hypot(double x, double y) {
