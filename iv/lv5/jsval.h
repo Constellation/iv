@@ -283,6 +283,31 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
+inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
+  if (val.IsInt32()) {
+    return std::hash<int32_t>()(val.int32());
+  }
+
+  if (val.IsNumber()) {
+    const double d = val.number();
+    if (core::math::IsNaN(d)) {
+      return std::hash<double>()(core::kNaN);
+    }
+    return std::hash<double>()(d);
+  }
+
+  if (val.IsString()) {
+    JSString* str = val.string();
+    if (str->Is8Bit()) {
+      return core::Hash::StringToHash(*str->Get8Bit());
+    } else {
+      return core::Hash::StringToHash(*str->Get16Bit());
+    }
+  }
+
+  return std::hash<uint64_t>()(val.value_.bytes_);
+}
+
 #else
 // 32bit version (or 128bit JSVal in Solaris)
 //
@@ -540,7 +565,41 @@ bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
   }
   return false;
 }
-#endif
+
+inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
+  if (val.IsInt32()) {
+    return std::hash<int32_t>()(val.int32());
+  }
+
+  if (val.IsNumber()) {
+    const double d = val.number();
+    if (core::math::IsNaN(d)) {
+      return std::hash<double>()(core::kNaN);
+    }
+    return std::hash<double>()(d);
+  }
+
+  if (val.IsString()) {
+    JSString* str = val.string();
+    if (str->Is8Bit()) {
+      return core::Hash::StringToHash(*str->Get8Bit());
+    } else {
+      return core::Hash::StringToHash(*str->Get16Bit());
+    }
+  }
+
+  if (val.IsCell()) {
+    return std::hash<radio::Cell*>()(val.cell());
+  }
+
+  if (val.IsBoolean()) {
+    return std::hash<bool>(val.boolean());
+  }
+
+  return std::hash<uint32_t>(val.GetType());
+}
+
+#endif  // 32 or 64 bit JSVal ifdef
 
 JSString* JSVal::TypeOf(Context* ctx) const {
   if (IsObject()) {

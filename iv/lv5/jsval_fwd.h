@@ -171,6 +171,25 @@ class JSVal {
       core::Size::kPointerSize,
       core::kLittleEndian> value_type;
 
+  // JSVal Hasher is used by SameValue algorithm
+  struct Hasher {
+    std::size_t operator()(const JSVal& val) const;
+  };
+
+  friend struct Hasher;
+
+  struct SameValueEqualer {
+    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+      return JSVal::SameValue(lhs, rhs);
+    }
+  };
+
+  struct StrictEqualer {
+    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+      return JSVal::StrictEqual(lhs, rhs);
+    }
+  };
+
 #if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
   IV_STATIC_ASSERT(std::is_pod<value_type>::value);
 #endif

@@ -17,30 +17,26 @@ struct Vector {
   typedef std::vector<T, traceable_allocator<T> > type;
 };
 
-template<typename T1, typename T2>
+template<typename T1, typename T2, typename Less = std::less<T1> >
 struct Map {
-  typedef std::map<T1,
-                   T2,
-                   std::less<T1>,
+  typedef std::map<T1, T2, Less,
                    traceable_allocator<std::pair<const T1, T2> > > type;
 };
 
-template<typename T1, typename T2>
+template<typename T1, typename T2,
+         typename Hash = std::hash<T1>,
+         typename Equal = std::equal_to<T1> >
 struct HashMap {
-  typedef std::unordered_map<T1,
-                                  T2,
-                                  std::hash<T1>,
-                                  std::equal_to<T1>,
-                                  traceable_allocator<
-                                    std::pair<const T1, T2> > > type;
+  typedef std::unordered_map<T1, T2, Hash, Equal,
+                             traceable_allocator<
+                               std::pair<const T1, T2> > > type;
 };
 
-template<typename T>
+template<typename T,
+         typename Hash = std::hash<T>,
+         typename Equal = std::equal_to<T> >
 struct HashSet {
-  typedef std::unordered_set<T,
-                                  std::hash<T>,
-                                  std::equal_to<T>,
-                                  traceable_allocator<T> > type;
+  typedef std::unordered_set<T, Hash, Equal, traceable_allocator<T> > type;
 };
 
 }  // namespace trace
@@ -50,30 +46,25 @@ struct GCVector {
   typedef std::vector<T, gc_allocator<T> > type;
 };
 
-template<typename T1, typename T2>
+template<typename T1, typename T2, typename Less = std::less<T1> >
 struct GCMap {
-  typedef std::map<T1,
-                   T2,
-                   std::less<T1>,
+  typedef std::map<T1, T2, Less,
                    gc_allocator<std::pair<const T1, T2> > > type;
 };
 
-template<typename T1, typename T2>
+template<typename T1, typename T2,
+         typename Hash = std::hash<T1>,
+         typename Equal = std::equal_to<T1> >
 struct GCHashMap {
-  typedef std::unordered_map<T1,
-                                  T2,
-                                  std::hash<T1>,
-                                  std::equal_to<T1>,
-                                  gc_allocator<
-                                    std::pair<const T1, T2> > > type;
+  typedef std::unordered_map<T1, T2, Hash, Equal,
+                             gc_allocator<std::pair<const T1, T2> > > type;
 };
 
-template<typename T>
+template<typename T,
+         typename Hash = std::hash<T>,
+         typename Equal = std::equal_to<T> >
 struct GCHashSet {
-  typedef std::unordered_set<T,
-                                  std::hash<T>,
-                                  std::equal_to<T>,
-                                  gc_allocator<T> > type;
+  typedef std::unordered_set<T, Hash, Equal, gc_allocator<T> > type;
 };
 
 typedef std::basic_string<uint16_t,

@@ -142,6 +142,10 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void InitJSON(const ClassSlot& func_cls,
                 JSObject* obj_proto, bind::Object* global_binder);
 
+  // ES.next
+  void InitSet(const ClassSlot& func_cls,
+               JSObject* obj_proto, bind::Object* global_binder);
+
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;

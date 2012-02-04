@@ -8,6 +8,7 @@
 #include <iv/lv5/jsmath.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsjson.h>
+#include <iv/lv5/jsset.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsarguments.h>
@@ -268,6 +269,9 @@ void Context::InitContext(JSFunction* func_constructor,
   InitError(func_cls, obj_proto, &global_binder);
   // section 15.12 JSON
   InitJSON(func_cls, obj_proto, &global_binder);
+
+  // ES.next
+  InitSet(func_cls, obj_proto, &global_binder);
 
   {
     // Arguments
@@ -1130,6 +1134,40 @@ void Context::InitJSON(const ClassSlot& func_cls,
       .def<&runtime::JSONParse, 2>("parse")
       // section 15.12.3 stringify(value[, replacer[, space]])
       .def<&runtime::JSONStringify, 3>("stringify");
+}
+
+void Context::InitSet(const ClassSlot& func_cls,
+                      JSObject* obj_proto, bind::Object* global_binder) {
+  // ES.next Set
+  // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
+  JSObject* const proto = JSSet::NewPlain(this, Map::NewUniqueMap(this));
+  JSFunction* const constructor =
+      JSInlinedFunction<&runtime::SetConstructor, 0>::NewPlain(
+          this,
+          context::Intern(this, "Set"));
+
+  struct ClassSlot cls = {
+    JSSet::GetClass(),
+    context::Intern(this, "Set"),
+    JSString::NewAsciiString(this, "Set"),
+    constructor,
+    proto
+  };
+  global_data_.RegisterClass<Class::Set>(cls);
+  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+
+  bind::Object(this, constructor)
+      .cls(func_cls.cls)
+      .prototype(func_cls.prototype)
+      .def(symbol::prototype(), proto, ATTR::NONE);
+
+  bind::Object(this, proto)
+      .cls(cls.cls)
+      .prototype(obj_proto)
+      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+      .def<&runtime::SetHas, 1>("has")
+      .def<&runtime::SetAdd, 1>("add")
+      .def<&runtime::SetDelete, 1>("delete");
 }
 
 } }  // namespace iv::lv5
