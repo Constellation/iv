@@ -47,6 +47,58 @@ inline double Modulo(double x, double y) {
   return x;
 }
 
+inline double Log2(double x) {
+  // log2(n) = log(n) / log(2)
+  //
+  // 0.693147180559945309417232121458176568 is log(2) constant
+  // and it isn't provided in default windows math.h
+  //
+  // http://msdn.microsoft.com/ja-jp/library/4hwaceh6(v=vs.80).aspx
+  //
+  return std::log(x) / 0.693147180559945309417232121458176568;
+}
+
+inline double Log1p(double x) {
+  // log1p(n) = log(n + 1)
+  if (x == 0) {
+    return x;
+  }
+  return std::log(x + 1);
+}
+
+inline double Expm1(double x) {
+  // expm1(n) = exp(n) - 1
+  //
+  // Taylor series
+  //   exp(x) = 1 + x + (x^2)/2 + (x^3)*6 + ...
+  //
+  if (x == 0) {
+    return x;
+  }
+  return std::exp(x) - 1;
+}
+
+inline double Acosh(double x) {
+  // acosh(x) = log(x + sqrt(x^2 - 1))
+  return std::log(x + std::sqrt(x * x - 1));
+}
+
+inline double Asinh(double x) {
+  // asinh(x) = log(x + sqrt(x^2 + 1))
+  if (x == 0 || x == -kInfinity) {
+    return x;
+  }
+  return std::log(x + std::sqrt(x * x + 1));
+}
+
+inline double Atanh(double x) {
+  // atanh(x) = log((1 + x) / (1 - x)) / 2
+  if (x == 0) {
+    return x;
+  }
+  return std::log((1 + x) / (1 - x)) / 2;
+}
+
 #else
 
 inline int IsNaN(double val) {
@@ -69,6 +121,30 @@ inline double Modulo(double x, double y) {
   return std::fmod(x, y);
 }
 
+inline double Log2(double x) {
+  return std::log2(x);
+}
+
+inline double Log1p(double x) {
+  return std::log1p(x);
+}
+
+inline double Expm1(double x) {
+  return std::expm1(x);
+}
+
+inline double Acosh(double x) {
+  return std::acosh(x);
+}
+
+inline double Asinh(double x) {
+  return std::asinh(x);
+}
+
+inline double Atanh(double x) {
+  return std::atanh(x);
+}
+
 #endif
 
 inline double Round(double value) {
@@ -81,11 +157,7 @@ inline double Round(double value) {
 }
 
 inline double Trunc(double value) {
-  if (value > 0) {
-    return std::floor(value);
-  } else {
-    return std::ceil(value);
-  }
+  return (value > 0) ? std::floor(value) : std::ceil(value);
 }
 
 inline double Log10(double x) {
@@ -94,36 +166,6 @@ inline double Log10(double x) {
   // missing impl
   //   return std::log(x) / std::log(10);
   return std::log10(x);
-}
-
-inline double Log2(double x) {
-  // log2(n) = log(n) / log(2)
-  //
-  // missing impl
-  //   return std::log(x) / std::log(2);
-  return std::log2(x);
-}
-
-inline double Log1p(double x) {
-  // log1p(n) = log(n + 1)
-  //
-  // missing impl
-  //   if (x == 0) {
-  //     return x;
-  //   }
-  //   return std::log(x + 1);
-  return std::log1p(x);
-}
-
-inline double Expm1(double x) {
-  // expm1(n) = exp(n) - 1
-  //
-  // missing impl
-  //   if (x == 0) {
-  //     return x;
-  //   }
-  //   return std::exp(x) - 1;
-  return std::expm1(x);
 }
 
 inline double Cosh(double x) {
@@ -160,35 +202,6 @@ inline double Tanh(double x) {
   return std::tanh(x);
 }
 
-inline double Acosh(double x) {
-  // acosh(x) = log(x + sqrt(x^2 - 1))
-  //
-  // missing impl
-  //   return std::log(x + std::sqrt(x * x - 1));
-  return std::acosh(x);
-}
-
-inline double Asinh(double x) {
-  // asinh(x) = log(x + sqrt(x^2 + 1))
-  //
-  // missing impl
-  //   if (x == 0 || x == -kInfinity) {
-  //     return x;
-  //   }
-  //   return std::log(x + std::sqrt(x * x + 1));
-  return std::asinh(x);
-}
-
-inline double Atanh(double x) {
-  // atanh(x) = log((1 + x) / (1 - x)) / 2
-  //
-  // missing impl
-  //   if (x == 0) {
-  //     return x;
-  //   }
-  //   return std::log((1 + x) / (1 - x)) / 2;
-  return std::atanh(x);
-}
 
 inline double Hypot(double x, double y) {
   // hypot(x, y)^2 = x^2 + y^2
