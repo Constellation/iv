@@ -593,10 +593,10 @@ inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
   }
 
   if (val.IsBoolean()) {
-    return std::hash<uint32_t>(val.boolean());
+    return std::hash<uint32_t>()(val.boolean());
   }
 
-  return std::hash<uint32_t>(detail::jsval32::GetType(val));
+  return std::hash<uint32_t>()(detail::jsval32::GetType(val));
 }
 
 #endif  // 32 or 64 bit JSVal ifdef
