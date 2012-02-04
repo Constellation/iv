@@ -29,8 +29,9 @@ class JSString;
   V(URIError, 16)\
   V(global, 17)\
   V(Arguments, 18)\
-  V(Set, 19)\
-  V(NOT_CACHED, 20)
+  V(Map, 19)\
+  V(Set, 20)\
+  V(NOT_CACHED, 21)
 
 struct Class {
   enum JSClassType {

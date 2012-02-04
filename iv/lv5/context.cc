@@ -8,6 +8,7 @@
 #include <iv/lv5/jsmath.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsjson.h>
+#include <iv/lv5/jsmap.h>
 #include <iv/lv5/jsset.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/jsfunction.h>
@@ -271,6 +272,7 @@ void Context::InitContext(JSFunction* func_constructor,
   InitJSON(func_cls, obj_proto, &global_binder);
 
   // ES.next
+  InitMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
 
   {
@@ -1134,6 +1136,41 @@ void Context::InitJSON(const ClassSlot& func_cls,
       .def<&runtime::JSONParse, 2>("parse")
       // section 15.12.3 stringify(value[, replacer[, space]])
       .def<&runtime::JSONStringify, 3>("stringify");
+}
+
+void Context::InitMap(const ClassSlot& func_cls,
+                      JSObject* obj_proto, bind::Object* global_binder) {
+  // ES.next Map
+  // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
+  JSObject* const proto = JSMap::NewPlain(this, Map::NewUniqueMap(this));
+  JSFunction* const constructor =
+      JSInlinedFunction<&runtime::MapConstructor, 0>::NewPlain(
+          this,
+          context::Intern(this, "Map"));
+
+  struct ClassSlot cls = {
+    JSMap::GetClass(),
+    context::Intern(this, "Map"),
+    JSString::NewAsciiString(this, "Map"),
+    constructor,
+    proto
+  };
+  global_data_.RegisterClass<Class::Map>(cls);
+  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+
+  bind::Object(this, constructor)
+      .cls(func_cls.cls)
+      .prototype(func_cls.prototype)
+      .def(symbol::prototype(), proto, ATTR::NONE);
+
+  bind::Object(this, proto)
+      .cls(cls.cls)
+      .prototype(obj_proto)
+      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+      .def<&runtime::MapHas, 1>("has")
+      .def<&runtime::MapGet, 1>("get")
+      .def<&runtime::MapSet, 2>("set")
+      .def<&runtime::MapDelete, 1>("delete");
 }
 
 void Context::InitSet(const ClassSlot& func_cls,

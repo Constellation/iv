@@ -15,6 +15,7 @@
 #include <iv/lv5/runtime_regexp.h>
 #include <iv/lv5/runtime_error.h>
 #include <iv/lv5/runtime_json.h>
+#include <iv/lv5/runtime_map.h>
 #include <iv/lv5/runtime_set.h>
 
 #endif  // IV_LV5_RUNTIME_H_
