@@ -31,27 +31,9 @@ class IsEnumerable {
   }
 };
 
-inline void DefinePropertiesImpl(Context* ctx,
-                                 JSObject* obj,
-                                 JSObject* props, Error* e) {
-  typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
-  Descriptors descriptors;
-  std::vector<Symbol> keys;
-  props->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-  for (std::vector<Symbol>::const_iterator it = keys.begin(),
-       last = keys.end(); it != last; ++it) {
-    const JSVal desc_obj = props->Get(ctx, *it,
-                                      IV_LV5_ERROR_VOID(e));
-    const PropertyDescriptor desc =
-        internal::ToPropertyDescriptor(ctx, desc_obj, IV_LV5_ERROR_VOID(e));
-    descriptors.push_back(std::make_pair(*it, desc));
-  }
-  for (Descriptors::const_iterator it = descriptors.begin(),
-       last = descriptors.end(); it != last; ++it) {
-    obj->DefineOwnProperty(ctx, it->first, it->second,
-                           true, IV_LV5_ERROR_VOID(e));
-  }
-}
+
+void DefinePropertiesHelper(Context* ctx, JSObject* obj,
+                            JSObject* props, Error* e);
 
 }  // namespace detail
 
@@ -163,6 +145,28 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
+inline void detail::DefinePropertiesHelper(Context* ctx,
+                                           JSObject* obj,
+                                           JSObject* props, Error* e) {
+  typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
+  Descriptors descriptors;
+  std::vector<Symbol> keys;
+  props->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
+  for (std::vector<Symbol>::const_iterator it = keys.begin(),
+       last = keys.end(); it != last; ++it) {
+    const JSVal desc_obj = props->Get(ctx, *it,
+                                      IV_LV5_ERROR_VOID(e));
+    const PropertyDescriptor desc =
+        internal::ToPropertyDescriptor(ctx, desc_obj, IV_LV5_ERROR_VOID(e));
+    descriptors.push_back(std::make_pair(*it, desc));
+  }
+  for (Descriptors::const_iterator it = descriptors.begin(),
+       last = descriptors.end(); it != last; ++it) {
+    obj->DefineOwnProperty(ctx, it->first, it->second,
+                           true, IV_LV5_ERROR_VOID(e));
+  }
+}
+
 // section 15.2.3.5 Object.create(O[, Properties])
 inline JSVal ObjectCreate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.create", args, e);
@@ -178,7 +182,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* e) {
       }
       if (args.size() > 1 && !args[1].IsUndefined()) {
         JSObject* const props = args[1].ToObject(args.ctx(), IV_LV5_ERROR(e));
-        detail::DefinePropertiesImpl(args.ctx(), res, props, IV_LV5_ERROR(e));
+        detail::DefinePropertiesHelper(args.ctx(), res, props, IV_LV5_ERROR(e));
       }
       return res;
     }
@@ -225,7 +229,7 @@ inline JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
       JSObject* const obj = first.object();
       if (args.size() > 1) {
         JSObject* const props = args[1].ToObject(args.ctx(), IV_LV5_ERROR(e));
-        detail::DefinePropertiesImpl(args.ctx(), obj, props, IV_LV5_ERROR(e));
+        detail::DefinePropertiesHelper(args.ctx(), obj, props, IV_LV5_ERROR(e));
         return obj;
       } else {
         // raise TypeError
