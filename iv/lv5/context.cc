@@ -208,7 +208,9 @@ void Context::InitContext(JSFunction* func_constructor,
       // section 15.2.3.13 Object.isExtensible(O)
       .def<&runtime::ObjectIsExtensible, 1>("isExtensible")
       // section 15.2.3.14 Object.keys(O)
-      .def<&runtime::ObjectKeys, 1>("keys");
+      .def<&runtime::ObjectKeys, 1>("keys")
+      // ES.next Object.is(x, y)
+      .def<&runtime::ObjectIs, 2>("is");
 
   bind::Object(this, func_proto)
       .cls(func_cls.cls)

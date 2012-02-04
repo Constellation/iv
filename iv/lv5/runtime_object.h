@@ -418,6 +418,13 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
+// ES.next Object.is(x, y)
+// http://wiki.ecmascript.org/doku.php?id=harmony:egal
+inline JSVal ObjectIs(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Object.is", args, e);
+  return JSVal::Bool(JSVal::SameValue(args.At(0), args.At(1)));
+}
+
 // section 15.2.4.2 Object.prototype.toString()
 inline JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
