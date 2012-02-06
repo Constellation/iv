@@ -430,6 +430,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       if (info.immutable() || dst_ == local) {
         local = EmitMV(registers_.Acquire(), local);
       }
+      thunklist_.Spill(local);
       Emit((token == Token::TK_INC) ?
            OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT, dst_, local);
       if (code_->strict() && info.immutable()) {
