@@ -1007,7 +1007,8 @@ do {\
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         // opcode | dst | base | element
         const JSVal res =
-            operation_.IncrementElement<-1, 1>(REG(instr[2].value), REG(instr[3].value), strict, ERR);
+            operation_.IncrementElement<-1, 1>(
+                REG(instr[2].value), REG(instr[3].value), strict, ERR);
         REG(instr[1].value) = res;
         DISPATCH(DECREMENT_ELEMENT);
       }
@@ -1015,8 +1016,8 @@ do {\
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
         // opcode | dst | base | element
         const JSVal res =
-            operation_.IncrementElement<-1, 0>(REG(instr[2].value),
-                                               REG(instr[3].value), strict, ERR);
+            operation_.IncrementElement<-1, 0>(
+                REG(instr[2].value), REG(instr[3].value), strict, ERR);
         REG(instr[1].value) = res;
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
@@ -1163,7 +1164,8 @@ do {\
         const JSVal lhs = REG(instr[2].value);
         const JSVal rhs = REG(instr[3].value);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
+          REG(instr[1].value) =
+              JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryLShift(lhs, rhs, ERR);
           REG(instr[1].value) = res;
@@ -1176,7 +1178,8 @@ do {\
         const JSVal lhs = REG(instr[2].value);
         const JSVal rhs = REG(instr[3].value);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
+          REG(instr[1].value) =
+              JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShift(lhs, rhs, ERR);
           REG(instr[1].value) = res;
@@ -1190,7 +1193,8 @@ do {\
         const JSVal rhs = REG(instr[3].value);
         uint32_t left_result;
         if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
+          REG(instr[1].value) =
+              JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShiftLogical(lhs, rhs, ERR);
           REG(instr[1].value) = res;
@@ -1419,7 +1423,8 @@ do {\
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
         // opcode | jmp | dst | iterator
-        NameIterator* it = reinterpret_cast<NameIterator*>(REG(instr[3].value).cell());
+        NameIterator* it =
+            reinterpret_cast<NameIterator*>(REG(instr[3].value).cell());
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
@@ -1532,7 +1537,8 @@ do {\
         // opcode | dst | const
         REG(instr[1].value) = JSRegExp::New(
             ctx_,
-            static_cast<JSRegExp*>(frame->GetConstant(instr[2].value).object()));
+            static_cast<JSRegExp*>(
+                frame->GetConstant(instr[2].value).object()));
         DISPATCH(LOAD_REGEXP);
       }
 
