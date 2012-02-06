@@ -58,28 +58,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                      RegisterID, RegisterID, RegisterID> LevelEntry;
   typedef std::vector<LevelEntry> LevelStack;
 
-
-  struct UStringPieceHash {
-    std::size_t operator()(core::UStringPiece target) const {
-      return core::Hash::StringToHash(target);
-    }
-  };
-
-  struct UStringPieceEquals {
-    bool operator()(core::UStringPiece lhs, core::UStringPiece rhs) const {
-      return lhs == rhs;
-    }
-  };
-
   typedef std::unordered_map<
       double,
       uint32_t,
       std::hash<double>, JSDoubleEquals> JSDoubleToIndexMap;
 
-  typedef std::unordered_map<
-      core::UStringPiece,
-      uint32_t,
-      UStringPieceHash, UStringPieceEquals> JSStringToIndexMap;
+  typedef std::unordered_map<core::UString, uint32_t> JSStringToIndexMap;
 
   friend class ThunkList;
 

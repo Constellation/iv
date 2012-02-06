@@ -57,6 +57,12 @@ TEST(StringPieceCase, EqualTest) {
   EXPECT_NE(StringPiece("OKK"), StringPiece(string("OK")));
   EXPECT_NE(StringPiece(string("OKK")), StringPiece(string("OK")));
   EXPECT_NE(StringPiece("OKK"), StringPiece("OK"));
+
+  {
+    const iv::core::UString s1 = iv::core::ToUString('0');
+    const iv::core::UString s2 = iv::core::ToUString('+');
+    EXPECT_FALSE(iv::core::UStringPiece(s1) == iv::core::UStringPiece(s2));
+  }
 }
 
 TEST(StringPieceCase, LTTest) {

@@ -473,8 +473,8 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
 
 inline void Compiler::Visit(const StringLiteral* lit) {
   const DestGuard dest_guard(this);
-  const JSStringToIndexMap::const_iterator it =
-      jsstring_to_index_map_.find(lit->value());
+  const core::UString s = core::ToUString(lit->value());
+  const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   if (it != jsstring_to_index_map_.end()) {
@@ -491,7 +491,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
           lit->value().end(),
           core::character::IsASCII(lit->value().begin(),
                                    lit->value().end())));
-  jsstring_to_index_map_.insert(std::make_pair(lit->value(), index));
+  jsstring_to_index_map_.insert(std::make_pair(s, index));
   Emit<OP::LOAD_CONST>(dst_, index);
 }
 
