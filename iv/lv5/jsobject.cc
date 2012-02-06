@@ -247,20 +247,20 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
 }
 
 void JSObject::GetPropertyNames(Context* ctx,
-                                std::vector<Symbol>* vec,
+                                PropertyNamesCollector* collector,
                                 EnumerationMode mode) const {
-  GetOwnPropertyNames(ctx, vec, mode);
+  GetOwnPropertyNames(ctx, collector, mode);
   const JSObject* obj = prototype_;
   while (obj) {
-    obj->GetOwnPropertyNames(ctx, vec, mode);
+    obj->GetOwnPropertyNames(ctx, collector->LevelUp(), mode);
     obj = obj->prototype();
   }
 }
 
 void JSObject::GetOwnPropertyNames(Context* ctx,
-                                   std::vector<Symbol>* vec,
+                                   PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
-  map_->GetOwnPropertyNames(this, ctx, vec, mode);
+  map_->GetOwnPropertyNames(this, ctx, collector, mode);
 }
 
 JSVal JSObject::GetBySlotOffset(Context* ctx, std::size_t n, Error* e) {
@@ -347,15 +347,14 @@ void JSObject::MarkChildren(radio::Core* core) {
 
 void Map::GetOwnPropertyNames(const JSObject* obj,
                               Context* ctx,
-                              std::vector<Symbol>* vec,
+                              PropertyNamesCollector* collector,
                               JSObject::EnumerationMode mode) {
   if (AllocateTableIfNeeded()) {
     for (TargetTable::const_iterator it = table_->begin(),
          last = table_->end(); it != last; ++it) {
-      if ((mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
-           obj->GetSlot(it->second).IsEnumerable()) &&
-          (std::find(vec->begin(), vec->end(), it->first) == vec->end())) {
-        vec->push_back(it->first);
+      if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
+          obj->GetSlot(it->second).IsEnumerable()) {
+        collector->Add(it->first, it->second);
       }
     }
   }

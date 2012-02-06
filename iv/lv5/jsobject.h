@@ -4,6 +4,7 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/property_fwd.h>
+#include <iv/lv5/property_names_collector.h>
 #include <iv/lv5/hint.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/class.h>
@@ -59,11 +60,11 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                  bool th, Error* e);
 
   virtual void GetPropertyNames(Context* ctx,
-                                std::vector<Symbol>* vec,
+                                PropertyNamesCollector* collector,
                                 EnumerationMode mode) const;
 
   virtual void GetOwnPropertyNames(Context* ctx,
-                                   std::vector<Symbol>* vec,
+                                   PropertyNamesCollector* collector,
                                    EnumerationMode mode) const;
 
   JSVal GetBySlotOffset(Context* ctx, std::size_t n, Error* e);

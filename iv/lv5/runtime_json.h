@@ -44,17 +44,21 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
         }
       }
     } else {
-      std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it) {
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::EXCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it) {
+        const Symbol sym = it->symbol();
         const JSVal new_element =
-            JSONWalk(ctx, obj, *it, reviver, IV_LV5_ERROR(e));
+            JSONWalk(ctx, obj, sym, reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          obj->Delete(ctx, *it, false, IV_LV5_ERROR(e));
+          obj->Delete(ctx, sym, false, IV_LV5_ERROR(e));
         } else {
           obj->DefineOwnProperty(
-              ctx, *it,
+              ctx, sym,
               DataDescriptor(new_element, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }

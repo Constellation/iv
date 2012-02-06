@@ -43,26 +43,15 @@ class JSStringObject : public JSObject {
   }
 
   void GetOwnPropertyNames(Context* ctx,
-                           std::vector<Symbol>* vec,
+                           PropertyNamesCollector* collector,
                            EnumerationMode mode) const {
     if (mode == INCLUDE_NOT_ENUMERABLE) {
-      if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
-        vec->push_back(symbol::length());
-      }
+      collector->Add(symbol::length(), 0);
     }
-    if (vec->empty()) {
-      for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        vec->push_back(symbol::MakeSymbolFromIndex(i));
-      }
-    } else {
-      for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
-        const Symbol sym = symbol::MakeSymbolFromIndex(i);
-        if (std::find(vec->begin(), vec->end(), sym) == vec->end()) {
-          vec->push_back(sym);
-        }
-      }
+    for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
+      collector->Add(i);
     }
-    JSObject::GetOwnPropertyNames(ctx, vec, mode);
+    JSObject::GetOwnPropertyNames(ctx, collector, mode);
   }
 
   JSString* value() const {

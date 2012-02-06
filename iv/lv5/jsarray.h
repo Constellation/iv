@@ -196,35 +196,28 @@ class JSArray : public JSObject {
   }
 
   void GetOwnPropertyNames(Context* ctx,
-                           std::vector<Symbol>* vec,
+                           PropertyNamesCollector* collector,
                            EnumerationMode mode) const {
-    uint32_t index = 0;
     if (length_.IsEnumerable() || (mode == INCLUDE_NOT_ENUMERABLE)) {
-      if (std::find(vec->begin(), vec->end(), symbol::length()) == vec->end()) {
-        vec->push_back(symbol::length());
-      }
+      collector->Add(symbol::length(), 0);
     }
+
+    uint32_t index = 0;
     for (JSValVector::const_iterator it = vector_.begin(),
          last = vector_.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
-        const Symbol sym = symbol::MakeSymbolFromIndex(index);
-        if (std::find(vec->begin(), vec->end(), sym) == vec->end()) {
-          vec->push_back(sym);
-        }
+        collector->Add(index);
       }
     }
     if (map_) {
       for (SparseArray::const_iterator it = map_->begin(),
            last = map_->end(); it != last; ++it) {
         if (!it->second.IsEmpty()) {
-          const Symbol sym = symbol::MakeSymbolFromIndex(it->first);
-          if (std::find(vec->begin(), vec->end(), sym) == vec->end()) {
-            vec->push_back(sym);
-          }
+          collector->Add(it->first);
         }
       }
     }
-    JSObject::GetOwnPropertyNames(ctx, vec, mode);
+    JSObject::GetOwnPropertyNames(ctx, collector, mode);
   }
 
   void MarkChildren(radio::Core* core) {
@@ -489,14 +482,18 @@ class JSArray : public JSObject {
             }
           }
         } else {
-          std::vector<Symbol> keys;
-          JSObject::GetOwnPropertyNames(ctx, &keys,
+          PropertyNamesCollector collector;
+          JSObject::GetOwnPropertyNames(ctx, &collector,
                                         JSObject::INCLUDE_NOT_ENUMERABLE);
           std::set<uint32_t> ix;
-          for (std::vector<Symbol>::const_iterator it = keys.begin(),
-               last = keys.end(); it != last; ++it) {
-            if (symbol::IsArrayIndexSymbol(*it)) {
+          for (PropertyNamesCollector::Names::const_iterator
+               it = collector.names().begin(),
+               last = collector.names().end();
+               it != last; ++it) {
+            if (symbol::IsArrayIndexSymbol(it->symbol())) {
               ix.insert(symbol::GetIndexFromSymbol(*it));
+            } else {
+              break;
             }
           }
           for (std::set<uint32_t>::const_reverse_iterator it = ix.rbegin(),

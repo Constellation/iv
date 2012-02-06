@@ -77,8 +77,8 @@ class JSONStringifier : private core::Noncopyable<> {
   class SymbolToString {
    public:
     explicit SymbolToString(Context* ctx) : ctx_(ctx) { }
-    JSString* operator()(const Symbol& sym) {
-      return JSString::New(ctx_, sym);
+    JSString* operator()(const Symbol& key) {
+      return JSString::New(ctx_, key);
     }
    private:
     Context* ctx_;
@@ -90,10 +90,12 @@ class JSONStringifier : private core::Noncopyable<> {
     // TODO(Constellation) 8bit string optimization point
     if (str.Is8Bit()) {
       const Fiber8* fiber = str.Get8Bit();
-      core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
+      core::JSONQuote(fiber->begin(),
+                      fiber->end(), std::back_inserter(builder));
     } else {
       const Fiber16* fiber = str.Get16Bit();
-      core::JSONQuote(fiber->begin(), fiber->end(), std::back_inserter(builder));
+      core::JSONQuote(fiber->begin(),
+                      fiber->end(), std::back_inserter(builder));
     }
     builder.Append('"');
     return builder.Build(ctx_);
@@ -109,10 +111,11 @@ class JSONStringifier : private core::Noncopyable<> {
     if (property_list_) {
       k = property_list_;
     } else {
-      std::vector<Symbol> keys;
-      value->GetOwnPropertyNames(ctx_, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-      prop.resize(keys.size());
-      std::transform(keys.begin(), keys.end(),
+      PropertyNamesCollector collector;
+      value->GetOwnPropertyNames(ctx_, &collector,
+                                 JSObject::EXCLUDE_NOT_ENUMERABLE);
+      prop.resize(collector.names().size());
+      std::transform(collector.names().begin(), collector.names().end(),
                      prop.begin(), SymbolToString(ctx_));
       k = &prop;
     }

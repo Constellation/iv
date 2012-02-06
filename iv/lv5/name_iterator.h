@@ -12,9 +12,9 @@ class NameIterator : public radio::HeapObject<> {
   NameIterator(Context* ctx, JSObject* obj)
     : keys_(),
       iter_() {
-    std::vector<Symbol> keys;
-    obj->GetPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-    keys_.assign(keys.begin(), keys.end());
+    PropertyNamesCollector collector;
+    obj->GetPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
+    keys_.assign(collector.names().begin(), collector.names().end());
     iter_ = keys_.begin();
   }
 

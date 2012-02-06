@@ -223,7 +223,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   inline void GetOwnPropertyNames(const JSObject* obj,
                                   Context* ctx,
-                                  std::vector<Symbol>* vec,
+                                  PropertyNamesCollector* collector,
                                   JSObject::EnumerationMode mode);
 
   void Flatten() {

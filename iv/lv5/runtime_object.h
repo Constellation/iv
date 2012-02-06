@@ -127,13 +127,16 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
       JSArray* const ary = JSArray::New(args.ctx());
       Context* const ctx = args.ctx();
       uint32_t n = 0;
-      std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it, ++n) {
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it, ++n) {
         ary->DefineOwnProperty(
             args.ctx(), symbol::MakeSymbolFromIndex(n),
-            DataDescriptor(JSString::New(ctx, *it),
+            DataDescriptor(JSString::New(ctx, it->symbol()),
                            ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
@@ -150,15 +153,18 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
                                            JSObject* props, Error* e) {
   typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
   Descriptors descriptors;
-  std::vector<Symbol> keys;
-  props->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
-  for (std::vector<Symbol>::const_iterator it = keys.begin(),
-       last = keys.end(); it != last; ++it) {
-    const JSVal desc_obj = props->Get(ctx, *it,
+  PropertyNamesCollector collector;
+  props->GetOwnPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
+  for (PropertyNamesCollector::Names::const_iterator
+       it = collector.names().begin(),
+       last = collector.names().end();
+       it != last; ++it) {
+    const Symbol sym = it->symbol();
+    const JSVal desc_obj = props->Get(ctx, sym,
                                       IV_LV5_ERROR_VOID(e));
     const PropertyDescriptor desc =
         internal::ToPropertyDescriptor(ctx, desc_obj, IV_LV5_ERROR_VOID(e));
-    descriptors.push_back(std::make_pair(*it, desc));
+    descriptors.push_back(std::make_pair(sym, desc));
   }
   for (Descriptors::const_iterator it = descriptors.begin(),
        last = descriptors.end(); it != last; ++it) {
@@ -246,21 +252,24 @@ inline JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
 // section 15.2.3.8 Object.seal(O)
 inline JSVal ObjectSeal(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.seal", args, e);
+  Context* const ctx = args.ctx();
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      std::vector<Symbol> keys;
-      Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it) {
+        const Symbol sym = it->symbol();
+        PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
         if (desc.IsConfigurable()) {
           desc.set_configurable(false);
         }
-        obj->DefineOwnProperty(
-            ctx, *it, desc, true, IV_LV5_ERROR(e));
+        obj->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
       }
       obj->set_extensible(false);
       return obj;
@@ -274,24 +283,27 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
 // section 15.2.3.9 Object.freeze(O)
 inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.freeze", args, e);
+  Context* const ctx = args.ctx();
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      std::vector<Symbol> keys;
-      Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it) {
-        PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it) {
+        const Symbol sym = it->symbol();
+        PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
         if (desc.IsDataDescriptor()) {
           desc.AsDataDescriptor()->set_writable(false);
         }
         if (desc.IsConfigurable()) {
           desc.set_configurable(false);
         }
-        obj->DefineOwnProperty(
-            ctx, *it, desc, true, IV_LV5_ERROR(e));
+        obj->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
       }
       obj->set_extensible(false);
       return obj;
@@ -321,16 +333,19 @@ inline JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
 // section 15.2.3.11 Object.isSealed(O)
 inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isSealed", args, e);
+  Context* const ctx = args.ctx();
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      std::vector<Symbol> keys;
-      Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, it->symbol());
         if (desc.IsConfigurable()) {
           return JSFalse;
         }
@@ -346,16 +361,19 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
 // section 15.2.3.12 Object.isFrozen(O)
 inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isFrozen", args, e);
+  Context* const ctx = args.ctx();
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      std::vector<Symbol> keys;
-      Context* const ctx = args.ctx();
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it) {
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, it->symbol());
         if (desc.IsDataDescriptor()) {
           if (desc.AsDataDescriptor()->IsWritable()) {
             return JSFalse;
@@ -391,30 +409,33 @@ inline JSVal ObjectIsExtensible(const Arguments& args, Error* e) {
 // section 15.2.3.14 Object.keys(O)
 inline JSVal ObjectKeys(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.keys", args, e);
+  Context* const ctx = args.ctx();
   if (args.size() > 0) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      Context* const ctx = args.ctx();
-      std::vector<Symbol> keys;
-      obj->GetOwnPropertyNames(ctx, &keys, JSObject::EXCLUDE_NOT_ENUMERABLE);
+      PropertyNamesCollector collector;
+      obj->GetOwnPropertyNames(ctx, &collector,
+                               JSObject::EXCLUDE_NOT_ENUMERABLE);
       JSArray* const ary =
-          JSArray::New(args.ctx(), static_cast<uint32_t>(keys.size()));
+          JSArray::New(args.ctx(),
+                       static_cast<uint32_t>(collector.names().size()));
       uint32_t index = 0;
-      for (std::vector<Symbol>::const_iterator it = keys.begin(),
-           last = keys.end(); it != last; ++it, ++index) {
+      for (PropertyNamesCollector::Names::const_iterator
+           it = collector.names().begin(),
+           last = collector.names().end();
+           it != last; ++it, ++index) {
         ary->DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(index),
             DataDescriptor(
-                JSString::New(args.ctx(), *it),
+                JSString::New(args.ctx(), it->symbol()),
                 ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
       return ary;
     }
   }
-  e->Report(Error::Type,
-            "Object.keys requires Object argument");
+  e->Report(Error::Type, "Object.keys requires Object argument");
   return JSUndefined;
 }
 
