@@ -136,7 +136,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
            it != last; ++it, ++n) {
         ary->DefineOwnProperty(
             args.ctx(), symbol::MakeSymbolFromIndex(n),
-            DataDescriptor(JSString::New(ctx, it->symbol()),
+            DataDescriptor(JSString::New(ctx, *it),
                            ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }
@@ -159,7 +159,7 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
        it = collector.names().begin(),
        last = collector.names().end();
        it != last; ++it) {
-    const Symbol sym = it->symbol();
+    const Symbol sym = *it;
     const JSVal desc_obj = props->Get(ctx, sym,
                                       IV_LV5_ERROR_VOID(e));
     const PropertyDescriptor desc =
@@ -264,7 +264,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const Symbol sym = it->symbol();
+        const Symbol sym = *it;
         PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
         if (desc.IsConfigurable()) {
           desc.set_configurable(false);
@@ -295,7 +295,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const Symbol sym = it->symbol();
+        const Symbol sym = *it;
         PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
         if (desc.IsDataDescriptor()) {
           desc.AsDataDescriptor()->set_writable(false);
@@ -345,7 +345,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, it->symbol());
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsConfigurable()) {
           return JSFalse;
         }
@@ -373,7 +373,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, it->symbol());
+        const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
         if (desc.IsDataDescriptor()) {
           if (desc.AsDataDescriptor()->IsWritable()) {
             return JSFalse;
@@ -428,7 +428,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
         ary->DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(index),
             DataDescriptor(
-                JSString::New(args.ctx(), it->symbol()),
+                JSString::New(args.ctx(), *it),
                 ATTR::W | ATTR::E | ATTR::C),
             false, IV_LV5_ERROR(e));
       }

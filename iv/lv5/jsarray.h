@@ -490,7 +490,7 @@ class JSArray : public JSObject {
                it = collector.names().begin(),
                last = collector.names().end();
                it != last; ++it) {
-            if (symbol::IsArrayIndexSymbol(it->symbol())) {
+            if (symbol::IsArrayIndexSymbol(*it)) {
               ix.insert(symbol::GetIndexFromSymbol(*it));
             } else {
               break;

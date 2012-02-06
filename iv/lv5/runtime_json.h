@@ -51,7 +51,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const Symbol sym = it->symbol();
+        const Symbol sym = *it;
         const JSVal new_element =
             JSONWalk(ctx, obj, sym, reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {

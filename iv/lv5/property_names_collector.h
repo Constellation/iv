@@ -31,10 +31,6 @@ class PropertyNamesCollector {
     }
 
     operator Symbol() const {
-      return symbol();
-    }
-
-    Symbol symbol() const {
       return symbol_;
     }
    private:
@@ -54,7 +50,7 @@ class PropertyNamesCollector {
   void Add(Symbol symbol, uint32_t order) {
     for (Names::const_iterator it = names_.begin(),
          last = names_.end(); it != last; ++it) {
-      if (it->symbol() == symbol) {
+      if (*it == symbol) {
         return;
       }
     }
