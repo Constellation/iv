@@ -586,8 +586,7 @@ inline void Compiler::Visit(const ArrayLiteral* lit) {
   typedef ArrayLiteral::MaybeExpressions Items;
   const DestGuard dest_guard(this);
   const Items& items = lit->items();
-  RegisterID ary =
-      (!dst_ || dst_->IsLocal()) ? registers_.Acquire() : dst_;
+  RegisterID ary = registers_.Acquire();
   Emit<OP::LOAD_ARRAY>(ary, items.size());
   uint32_t current = 0;
   for (Items::const_iterator it = items.begin(),
@@ -610,8 +609,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   typedef ObjectLiteral::Properties Properties;
   const DestGuard dest_guard(this);
   const std::size_t arg_index = CurrentSize() + 2;
-  RegisterID obj =
-      (!dst_ || dst_->IsLocal()) ? registers_.Acquire() : dst_;
+  RegisterID obj = registers_.Acquire();
   Emit<OP::LOAD_OBJECT>(obj, 0u);
   std::unordered_map<Symbol, std::size_t> slots;
   const Properties& properties = lit->properties();
