@@ -105,15 +105,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return exception_table_;
   }
 
-  template<Handler::Type type>
-  void RegisterHandler(uint32_t begin,
-                       uint32_t end,
-                       uint32_t jmp,
-                       uint32_t ret,
-                       uint32_t flag,
-                       uint32_t dynamic_env_level) {
-    exception_table_.push_back(
-        Handler(type, begin, end, jmp, ret, flag, dynamic_env_level));
+  void RegisterHandler(const Handler& handler) {
+    exception_table_.push_back(handler);
   }
 
   bool strict() const { return strict_; }

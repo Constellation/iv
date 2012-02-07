@@ -507,13 +507,15 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     const Symbol catch_symbol = stmt->catch_name().Address()->symbol();
     {
       RegisterID error = registers_.Acquire();
-      code_->RegisterHandler<Handler::CATCH>(
-          try_start,
-          CurrentSize(),
-          0,
-          error->register_offset(),
-          0,
-          dynamic_env_level());
+      code_->RegisterHandler(
+          Handler(
+              Handler::CATCH,
+              try_start,
+              CurrentSize(),
+              0,
+              error->register_offset(),
+              0,
+              dynamic_env_level()));
       Emit<OP::TRY_CATCH_SETUP>(error, SymbolToNameIndex(catch_symbol));
     }
     PushLevelWith();
@@ -550,13 +552,15 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     } else {
       continuation_status_.Insert(stmt);
     }
-    code_->RegisterHandler<Handler::FINALLY>(
-        try_start,
-        finally_start,
-        jmp->register_offset(),
-        ret->register_offset(),
-        flag->register_offset(),
-        dynamic_env_level());
+    code_->RegisterHandler(
+        Handler(
+            Handler::FINALLY,
+            try_start,
+            finally_start,
+            jmp->register_offset(),
+            ret->register_offset(),
+            flag->register_offset(),
+            dynamic_env_level()));
     target.EmitJumps(finally_start);
 
     EmitStatement(block.Address());
