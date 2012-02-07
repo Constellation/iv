@@ -23,27 +23,59 @@ class LookupInfo {
     UNUSED
   };
 
-  LookupInfo(Type type,
-             uint32_t location = 0,
-             bool immutable = false,
-             uint32_t scope = 0)
-    : type_(type),
-      location_(location),
-      scope_(scope),
-      immutable_(immutable) {
+  static LookupInfo NewStack(int32_t register_location, bool immutable) {
+    return LookupInfo(STACK, register_location, 0, immutable, 0);
+  }
+
+  static LookupInfo NewUnused() {
+    return LookupInfo(UNUSED, 0, 0, false, 0);
+  }
+
+  static LookupInfo NewLookup() {
+    return LookupInfo(LOOKUP, 0, 0, false, 0);
+  }
+
+  static LookupInfo NewGlobal() {
+    return LookupInfo(GLOBAL, 0, 0, false, 0);
+  }
+
+  // TODO(Constellation): add register_location
+  static LookupInfo NewHeap(uint32_t heap_location,
+                            bool immutable,
+                            uint32_t scope_nest_count) {
+    return LookupInfo(LookupInfo::HEAP,
+                      0,
+                      heap_location,
+                      immutable,
+                      scope_nest_count);
   }
 
   Type type() const { return type_; }
 
-  uint32_t location() const { return location_; }
+  int32_t register_location() const { return register_location_; }
+
+  uint32_t heap_location() const { return heap_location_; }
 
   uint32_t scope() const { return scope_; }
 
   bool immutable() const { return immutable_; }
 
  private:
+  LookupInfo(Type type,
+             int32_t register_location,
+             uint32_t heap_location,
+             bool immutable,
+             uint32_t scope)
+    : type_(type),
+      register_location_(register_location),
+      heap_location_(heap_location),
+      scope_(scope),
+      immutable_(immutable) {
+  }
+
   Type type_;
-  uint32_t location_;
+  int32_t register_location_;
+  uint32_t heap_location_;
   uint32_t scope_;
   bool immutable_;
 };
@@ -94,7 +126,7 @@ class WithScope : public VariableScope {
   }
 
   LookupInfo Lookup(Symbol sym) {
-    return LookupInfo(LookupInfo::LOOKUP);
+    return LookupInfo::NewLookup();
   }
 
   bool UseExpressionReturn() const { return upper()->UseExpressionReturn(); }
@@ -110,7 +142,7 @@ class CatchScope : public VariableScope {
 
   LookupInfo Lookup(Symbol sym) {
     if (sym == target_) {
-      return LookupInfo(LookupInfo::LOOKUP);
+      return LookupInfo::NewLookup();
     } else {
       return upper()->Lookup(sym);
     }
@@ -139,7 +171,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   class Variable {
    public:
     Variable(Type type,
-             uint32_t register_location,
+             int32_t register_location,
              uint32_t heap_location, bool immutable)
       : type_(type),
         register_location_(register_location),
@@ -149,7 +181,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
     Type type() const { return type_; }
 
-    uint32_t register_location() const { return register_location_; }
+    int32_t register_location() const { return register_location_; }
 
     uint32_t heap_location() const { return heap_location_; }
 
@@ -233,22 +265,22 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     if (it != map_.end()) {
       switch (it->second.type()) {
         case HEAP:
-          return LookupInfo(LookupInfo::HEAP,
-                            it->second.heap_location(),
-                            it->second.immutable(),
-                            scope_nest_count());
+          return LookupInfo::NewHeap(
+              it->second.heap_location(),
+              it->second.immutable(),
+              scope_nest_count());
         case STACK:
-          return LookupInfo(LookupInfo::STACK,
-                            it->second.register_location(),
-                            it->second.immutable());
+          return LookupInfo::NewStack(
+              it->second.register_location(),
+              it->second.immutable());
         case UNUSED:
-          return LookupInfo(LookupInfo::UNUSED);
+          return LookupInfo::NewUnused();
       }
     } else {
       // not found in this scope
       if (scope_->direct_call_to_eval()) {
         // maybe new variable in this scope
-        return LookupInfo(LookupInfo::LOOKUP);
+        return LookupInfo::NewLookup();
       }
       return upper()->Lookup(sym);
     }
@@ -288,7 +320,7 @@ class CodeScope<Code::EVAL> : public VariableScope {
   bool UseExpressionReturn() const { return true; }
 
   LookupInfo Lookup(Symbol sym) {
-    return LookupInfo(LookupInfo::LOOKUP);
+    return LookupInfo::NewLookup();
   }
 };
 
@@ -306,7 +338,7 @@ class CodeScope<Code::GLOBAL> : public VariableScope {
   }
 
   LookupInfo Lookup(Symbol sym) {
-    return LookupInfo(LookupInfo::GLOBAL);
+    return LookupInfo::NewGlobal();
   }
 };
 

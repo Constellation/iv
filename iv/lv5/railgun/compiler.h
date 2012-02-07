@@ -631,7 +631,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     const OP::Type op = OP::STORE_NAME;
     switch (info.type()) {
       case LookupInfo::HEAP: {
-        Emit(OP::ToHeap(op), src, index, info.location(),
+        Emit(OP::ToHeap(op), src, index, info.heap_location(),
              current_variable_scope_->scope_nest_count() - info.scope());
         return;
       }
@@ -662,7 +662,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         thunklist_.Spill(dst);
         Emit(OP::ToHeap(op),
              dst,
-             index, info.location(),
+             index, info.heap_location(),
              current_variable_scope_->scope_nest_count() - info.scope());
         return dst;
       }
@@ -719,7 +719,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   RegisterID GetLocal(Symbol sym) {
     const LookupInfo info = Lookup(sym);
     if (info.type() == LookupInfo::STACK) {
-      return registers_.LocalID(info.location());
+      return registers_.LocalID(info.register_location());
     }
     return RegisterID();
   }
@@ -1032,10 +1032,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     switch (info.type()) {
       case LookupInfo::HEAP: {
         if (info.immutable()) {
-          Emit<OP::INITIALIZE_HEAP_IMMUTABLE>(src, info.location());
+          Emit<OP::INITIALIZE_HEAP_IMMUTABLE>(src, info.heap_location());
         } else {
           Emit<OP::STORE_HEAP>(
-              src, index, info.location(),
+              src, index, info.heap_location(),
               current_variable_scope_->scope_nest_count() - info.scope());
         }
         return;
@@ -1058,7 +1058,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void InstantiateLoadParam(uint32_t index, uint32_t param) {
     const LookupInfo info = Lookup(code_->names_[index]);
     if (info.type() == LookupInfo::STACK) {
-      Emit<OP::LOAD_PARAM>(info.location(), param);
+      Emit<OP::LOAD_PARAM>(info.register_location(), param);
     } else {
       RegisterID reg = registers_.Acquire();
       Emit<OP::LOAD_PARAM>(reg, param);
@@ -1069,7 +1069,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void InstantiateArguments() {
     const LookupInfo info = Lookup(symbol::arguments());
     if (info.type() == LookupInfo::STACK) {
-      Emit<OP::LOAD_ARGUMENTS>(info.location());
+      Emit<OP::LOAD_ARGUMENTS>(info.register_location());
     } else {
       RegisterID reg = registers_.Acquire();
       Emit<OP::LOAD_ARGUMENTS>(reg);
@@ -1080,7 +1080,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void InstantiateLoadCallee(uint32_t index) {
     const LookupInfo info = Lookup(code_->names_[index]);
     if (info.type() == LookupInfo::STACK) {
-      Emit<OP::LOAD_CALLEE>(info.location());
+      Emit<OP::LOAD_CALLEE>(info.register_location());
     } else {
       RegisterID reg = registers_.Acquire();
       Emit<OP::LOAD_CALLEE>(reg);
