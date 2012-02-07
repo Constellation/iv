@@ -90,9 +90,8 @@ class Stack : public lv5::Stack {
       frame->callee_ = callee;
       frame->argc_ = argc_with_this - 1;
       frame->dynamic_env_level_ = 0;
-      frame->registers_ = code->registers();
       std::fill_n<JSVal*, std::size_t, JSVal>(
-          frame->RegisterFile(), frame->registers_, JSUndefined);
+          frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = constructor_call;
       frame->r_ = (pc) ? pc[1].value : 0;
       current_ = frame;
@@ -118,9 +117,8 @@ class Stack : public lv5::Stack {
       frame->callee_ = JSUndefined;
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
-      frame->registers_ = code->registers();
       std::fill_n<JSVal*, std::size_t, JSVal>(
-          frame->RegisterFile(), frame->registers_, JSUndefined);
+          frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = false;
       frame->r_ = 0;
       current_ = frame;
@@ -201,7 +199,7 @@ class Stack : public lv5::Stack {
   Frame* GainFrame(JSVal* arg, int argc_with_this, Code* code) {
     const int diff =
         static_cast<int>(code->params().size()) - (argc_with_this - 1);
-    const std::size_t capacity = Frame::GetFrameSize(code->after_frame_size());
+    const std::size_t capacity = Frame::GetFrameSize(code->registers());
     JSVal* top = arg + argc_with_this;
     if (diff <= 0) {
       return reinterpret_cast<Frame*>(Gain(top, capacity));

@@ -11,6 +11,11 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+template<typename D = void>
+struct FrameConstant {
+  static const std::size_t kFrameSize;
+};
+
 //
 // Frame structure is following
 //
@@ -37,12 +42,10 @@ struct Frame {
   typedef std::size_t size_type;
 
   JSVal* GetFrameEnd() {
-    return GetFrameBase() + GetFrameSize(code_->after_frame_size());
+    return RegisterFile() + code_->registers();
   }
 
-  JSVal* RegisterFile() {
-    return GetFrameBase() + GetFrameSize(0);
-  }
+  JSVal* RegisterFile();
 
   JSVal* GetFrameBase() {
     return reinterpret_cast<JSVal*>(this);
@@ -162,10 +165,17 @@ struct Frame {
   JSVal callee_;
   uint32_t argc_;
   uint32_t dynamic_env_level_;
-  uint32_t registers_;
   int32_t r_;
   bool constructor_call_;
 };
+
+template<>
+const std::size_t FrameConstant<void>::kFrameSize =
+  (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
+
+inline JSVal* Frame::RegisterFile() {
+  return GetFrameBase() + FrameConstant<>::kFrameSize;
+}
 
 } } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_FRAME_H_

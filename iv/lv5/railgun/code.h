@@ -176,10 +176,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
     core->MarkCell(construct_map_);
   }
 
-  uint32_t after_frame_size() const {
-    return stack_size() + temporary_registers();
-  }
-
   uint32_t registers() const {
     return stack_size() + temporary_registers();
   }
