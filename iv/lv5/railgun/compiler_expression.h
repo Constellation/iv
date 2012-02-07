@@ -345,7 +345,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     case Token::TK_DEC: {
       if (!expr->IsValidLeftHandSide()) {
         dst_ = EmitExpression(expr, dst_);
-        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_->reg());
+        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
         return;
       }
       assert(expr->IsValidLeftHandSide());
@@ -417,7 +417,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
   const Token::Type token = postfix->op();
   if (!expr->IsValidLeftHandSide()) {
     dst_ = EmitExpression(expr, dst_);
-    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_->reg());
+    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
     return;
   }
   assert(expr->IsValidLeftHandSide());

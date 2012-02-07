@@ -511,7 +511,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
           try_start,
           CurrentSize(),
           0,
-          error->reg(),
+          error->register_offset(),
           0,
           dynamic_env_level());
       Emit<OP::TRY_CATCH_SETUP>(error, SymbolToNameIndex(catch_symbol));
@@ -553,9 +553,9 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     code_->RegisterHandler<Handler::FINALLY>(
         try_start,
         finally_start,
-        jmp->reg(),
-        ret->reg(),
-        flag->reg(),
+        jmp->register_offset(),
+        ret->register_offset(),
+        flag->register_offset(),
         dynamic_env_level());
     target.EmitJumps(finally_start);
 

@@ -60,10 +60,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   typedef std::unordered_map<
       double,
-      uint32_t,
+      int32_t,
       std::hash<double>, JSDoubleEquals> JSDoubleToIndexMap;
 
-  typedef std::unordered_map<core::UString, uint32_t> JSStringToIndexMap;
+  typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
 
   friend class ThunkList;
 

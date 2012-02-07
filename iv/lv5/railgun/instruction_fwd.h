@@ -15,8 +15,9 @@ namespace railgun {
 struct Instruction {
   Instruction(uint32_t arg) : value(arg) { }  // NOLINT
 
-  Instruction(RegisterID reg) : value(reg->reg()) {  // NOLINT
+  Instruction(RegisterID reg) {  // NOLINT
     assert(reg);
+    i32 = reg->register_offset();
   }
 
   union {

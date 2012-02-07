@@ -130,7 +130,7 @@ typedef CodeScope<Code::FUNCTION> FunctionScope;
 template<>
 class CodeScope<Code::FUNCTION> : public VariableScope {
  public:
-  // Variable is tuple<heap, location, immutable>
+  // Variable is tuple<type, location, immutable>
   enum Type {
     STACK  = 0,
     HEAP   = 1,
