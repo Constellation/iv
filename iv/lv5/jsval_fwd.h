@@ -497,10 +497,36 @@ class JSVal {
 
 typedef GCVector<JSVal>::type JSVals;
 
-struct JSValOrRedirect {
+class JSValOrRedirect {
+ public:
+  JSValOrRedirect(const JSVal& val) {
+    value_ = val.Layout();
+  }
+
+  JSValOrRedirect(JSVal* ptr) {
+    pointer_ = ptr;
+  }
+
+  JSVal value() const {
+    return value_;
+  }
+
+  void set_value(JSVal val) {
+    value_ = val.Layout();
+  }
+
+  JSVal* pointer() const {
+    return pointer_;
+  }
+
+  void set_pointer(JSVal* pointer) {
+    pointer_ = pointer;
+  }
+
+ private:
   union {
-    JSVal::value_type value;  // 64 or 128bit JSVal representation
-    JSVal* pointer;           // redirect link to register JSVal
+    JSVal::value_type value_;  // 64 or 128bit JSVal representation
+    JSVal* pointer_;           // redirect link to register JSVal
   };
 };
 

@@ -52,28 +52,59 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
   }
 
  private:
-
   JSEnv* outer_;
 };
 
 class JSDeclEnv : public JSEnv {
+ private:
+  class Entry {
+   public:
+    enum RecordType {
+      NONE = 0,
+      IM_INITIALIZED = 1,
+      IM_UNINITIALIZED = 2,
+      MUTABLE = 4,
+      DELETABLE = 8,
+      REDIRECT = 16
+    };
+
+    Entry()
+      : attribute_(NONE),
+        value_or_redirect_(JSEmpty) {
+    }
+
+    explicit Entry(int attr)
+      : attribute_(attr),
+        value_or_redirect_(JSUndefined) {
+    }
+
+    Entry(int attr, const JSVal& val)
+      : attribute_(attr),
+        value_or_redirect_(val) {
+    }
+
+    Entry(int attr, JSVal* val)
+      : attribute_(attr | REDIRECT),
+        value_or_redirect_(val) {
+    }
+
+    JSVal value() const {
+      return (attribute_ & REDIRECT) ?
+          *value_or_redirect_.pointer() : value_or_redirect_.value();
+    }
+
+    void set_value(JSVal value) {
+      value_or_redirect_.set_value(value);
+    }
+
+    int attribute() const { return attribute_; }
+
+   private:
+    int attribute_;
+    JSValOrRedirect value_or_redirect_;
+  };
+
  public:
-  enum RecordType {
-    IM_INITIALIZED = 1,
-    IM_UNINITIALIZED = 2,
-    MUTABLE = 4,
-    DELETABLE = 8
-  };
-
-  struct Entry {
-    Entry() : attribute(0), value(JSEmpty) { }
-    explicit Entry(int attr) : attribute(attr), value(JSUndefined) { }
-    Entry(int attr, const JSVal& val) : attribute(attr), value(val) { }
-
-    int attribute;
-    JSVal value;
-  };
-
   typedef GCVector<Entry>::type Record;
   typedef GCHashMap<Symbol, std::size_t>::type Offsets;
 
@@ -86,7 +117,7 @@ class JSDeclEnv : public JSEnv {
     if (it == offsets_.end()) {
       return true;
     }
-    if (record_[it->second].attribute & DELETABLE) {
+    if (record_[it->second].attribute() & Entry::DELETABLE) {
       record_[it->second] = Entry();
       offsets_.erase(it);
       return true;
@@ -97,9 +128,9 @@ class JSDeclEnv : public JSEnv {
 
   void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* e) {
     assert(offsets_.find(name) == offsets_.end());
-    int flag = MUTABLE;
+    int flag = Entry::MUTABLE;
     if (del) {
-      flag |= DELETABLE;
+      flag |= Entry::DELETABLE;
     }
     offsets_[name] = record_.size();
     record_.push_back(Entry(flag));
@@ -111,8 +142,8 @@ class JSDeclEnv : public JSEnv {
                          bool strict, Error* e) {
     const Offsets::const_iterator it = offsets_.find(name);
     assert(it != offsets_.end());
-    if (record_[it->second].attribute & MUTABLE) {
-      record_[it->second].value = val;
+    if (record_[it->second].attribute() & Entry::MUTABLE) {
+      record_[it->second].set_value(val);
     } else {
       if (strict) {
         e->Report(Error::Type, "mutating immutable binding not allowed");
@@ -124,22 +155,22 @@ class JSDeclEnv : public JSEnv {
                         Symbol name, bool strict, Error* e) const {
     const Offsets::const_iterator it = offsets_.find(name);
     assert(it != offsets_.end());
-    if (record_[it->second].attribute & IM_UNINITIALIZED) {
+    if (record_[it->second].attribute() & Entry::IM_UNINITIALIZED) {
       if (strict) {
         e->Report(Error::Reference,
                   "uninitialized value access not allowed in strict code");
       }
       return JSUndefined;
     } else {
-      return record_[it->second].value;
+      return record_[it->second].value();
     }
   }
 
   JSVal GetBindingValue(Symbol name) const {
     const Offsets::const_iterator it = offsets_.find(name);
     assert(it != offsets_.end());
-    assert(!(record_[it->second].attribute & IM_UNINITIALIZED));
-    return record_[it->second].value;
+    assert(!(record_[it->second].attribute() & Entry::IM_UNINITIALIZED));
+    return record_[it->second].value();
   }
 
   JSVal ImplicitThisValue() const {
@@ -149,13 +180,14 @@ class JSDeclEnv : public JSEnv {
   void CreateImmutableBinding(Symbol name) {
     assert(offsets_.find(name) == offsets_.end());
     offsets_[name] = record_.size();
-    record_.push_back(Entry(IM_UNINITIALIZED));
+    record_.push_back(Entry(Entry::IM_UNINITIALIZED));
   }
 
   void InitializeImmutableBinding(Symbol name, const JSVal& val) {
-    assert(offsets_.find(name) != offsets_.end() &&
-           (record_[offsets_.find(name)->second].attribute & IM_UNINITIALIZED));
-    record_[offsets_.find(name)->second] = Entry(IM_INITIALIZED, val);
+    assert(offsets_.find(name) != offsets_.end());
+    assert(record_[offsets_.find(name)->second].attribute() &
+           Entry::IM_UNINITIALIZED);
+    record_[offsets_.find(name)->second] = Entry(Entry::IM_INITIALIZED, val);
   }
 
   JSDeclEnv* AsJSDeclEnv() {
@@ -189,7 +221,7 @@ class JSDeclEnv : public JSEnv {
   // for VM optimization methods
   void InstantiateMutable(Symbol name, std::size_t offset) {
     offsets_[name] = offset;
-    record_[offset] = Entry(MUTABLE, JSUndefined);
+    record_[offset] = Entry(Entry::MUTABLE, JSUndefined);
   }
 
   void InstantiateImmutable(Symbol name, std::size_t offset) {
@@ -197,13 +229,13 @@ class JSDeclEnv : public JSEnv {
   }
 
   void InitializeImmutable(std::size_t offset, const JSVal& val) {
-    record_[offset] = Entry(IM_INITIALIZED, val);
+    record_[offset] = Entry(Entry::IM_INITIALIZED, val);
   }
 
   void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
     Entry& entry = record_[offset];
-    if (entry.attribute & MUTABLE) {
-      entry.value = value;
+    if (entry.attribute() & Entry::MUTABLE) {
+      entry.set_value(value);
     } else {
       if (strict) {
         e->Report(Error::Type, "mutating immutable binding not allowed");
@@ -213,21 +245,21 @@ class JSDeclEnv : public JSEnv {
 
   JSVal GetByOffset(uint32_t offset, bool strict, Error* e) const {
     const Entry& entry = record_[offset];
-    if (entry.attribute & IM_UNINITIALIZED) {
+    if (entry.attribute() & Entry::IM_UNINITIALIZED) {
       if (strict) {
         e->Report(Error::Reference,
                   "uninitialized value access not allowed in strict code");
       }
       return JSUndefined;
     }
-    return entry.value;
+    return entry.value();
   }
 
   void MarkChildren(radio::Core* core) {
     JSEnv::MarkChildren(core);
     for (Record::const_iterator it = record_.begin(),
          last = record_.end(); it != last; ++it) {
-      core->MarkValue(it->value);
+      core->MarkValue(it->value());
     }
   }
 
