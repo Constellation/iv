@@ -7,6 +7,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/code.h>
+#include <iv/lv5/railgun/instruction_fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -46,6 +47,14 @@ struct Frame {
   }
 
   JSVal* RegisterFile();
+
+  inline JSVal& REG(int32_t i) {
+    return *(RegisterFile() + i);
+  }
+
+  inline JSVal& REG(Instruction inst) {
+    return *(RegisterFile() + inst.i32);
+  }
 
   JSVal* GetFrameBase() {
     return reinterpret_cast<JSVal*>(this);
