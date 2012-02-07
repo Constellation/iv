@@ -497,5 +497,12 @@ class JSVal {
 
 typedef GCVector<JSVal>::type JSVals;
 
+struct JSValOrRedirect {
+  union {
+    JSVal::value_type value;  // 64 or 128bit JSVal representation
+    JSVal* pointer;           // redirect link to register JSVal
+  };
+};
+
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSVAL_FWD_H_
