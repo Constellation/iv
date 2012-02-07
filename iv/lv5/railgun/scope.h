@@ -39,7 +39,6 @@ class LookupInfo {
     return LookupInfo(GLOBAL, 0, 0, false, 0);
   }
 
-  // TODO(Constellation): add register_location
   static LookupInfo NewHeap(uint32_t heap_location,
                             bool immutable,
                             uint32_t scope_nest_count) {
@@ -186,6 +185,10 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     uint32_t heap_location() const { return heap_location_; }
 
     bool immutable() const { return immutable_; }
+
+    void DisplaceHeapRegister(int32_t stack_size) {
+      register_location_ = stack_size + heap_location();
+    }
    private:
     Type type_;
     uint32_t register_location_;
@@ -257,6 +260,11 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                 Variable(STACK, stack_size_++, 0, scope->strict()));
         map_.insert(item);
       }
+    }
+
+    for (HeapVariables::iterator it = heap_.begin(),
+         last = heap_.end(); it != last; ++it) {
+      it->second.DisplaceHeapRegister(stack_size());
     }
   }
 
