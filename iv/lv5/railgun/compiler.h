@@ -913,6 +913,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void EmitPatchingBindingInstantiation(const FunctionLiteral& lit, bool eval) {
+    // not create new environment
+    // simply use given it.
+    //   for example,
+    //     * direct call to eval in normal code
+    //     * global code
     assert(thunklist_.empty());
     registers_.Clear(0);
     if (current_variable_scope_->UseExpressionReturn()) {
