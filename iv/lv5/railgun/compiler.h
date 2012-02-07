@@ -872,7 +872,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                                         bool is_eval_decl) {
     FunctionScope* env =
         static_cast<FunctionScope*>(current_variable_scope_.get());
-    registers_.Clear(env->stack_size());
+    registers_.Clear(env->stack_size() + env->heap_size());
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
     }
