@@ -236,18 +236,23 @@ void JSVal::set_empty() {
 }
 
 bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
-  if (lhs.IsInt32() && rhs.IsInt32()) {
-    return lhs.int32() == rhs.int32();
-  }
-
-  if (lhs.IsNumber() && rhs.IsNumber()) {
+  if (lhs.IsInt32()) {
+    if (rhs.IsInt32()) {
+      return lhs.int32() == rhs.int32();
+    }
+    // because +0(int32_t) and -0(double) is not the same value
+    return false;
+  } else if (lhs.IsNumber()) {
+    if (rhs.IsInt32() || !rhs.IsNumber()) {
+      return false;
+    }
     const double lhsv = lhs.number();
     const double rhsv = rhs.number();
     if (lhsv == rhsv) {
-      return core::math::Signbit(lhsv) == core::math::Signbit(rhsv);
-    } else {
-      return core::math::IsNaN(lhsv) && core::math::IsNaN(rhsv);
+      // when control flow comes to here, lhs and rhs is -0 and -0
+      return true;
     }
+    return core::math::IsNaN(lhsv) && core::math::IsNaN(rhsv);
   }
 
   // if not cell, check bit pattern
