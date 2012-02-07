@@ -130,15 +130,40 @@ typedef CodeScope<Code::FUNCTION> FunctionScope;
 template<>
 class CodeScope<Code::FUNCTION> : public VariableScope {
  public:
-  // Variable is tuple<type, location, immutable>
   enum Type {
     STACK  = 0,
     HEAP   = 1,
     UNUSED = 2
   };
-  typedef std::tuple<Type, uint32_t, bool> Variable;
-  typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
+
+  class Variable {
+   public:
+    Variable(Type type,
+             uint32_t register_location,
+             uint32_t heap_location, bool immutable)
+      : type_(type),
+        register_location_(register_location),
+        heap_location_(heap_location),
+        immutable_(immutable) {
+    }
+
+    Type type() const { return type_; }
+
+    uint32_t register_location() const { return register_location_; }
+
+    uint32_t heap_location() const { return heap_location_; }
+
+    bool immutable() const { return immutable_; }
+   private:
+    Type type_;
+    uint32_t register_location_;
+    uint32_t heap_location_;
+    bool immutable_;
+  };
+
   typedef std::unordered_map<Symbol, Variable> VariableMap;
+
+  typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
 
   CodeScope(const std::shared_ptr<VariableScope>& up,
             const Scope* scope,
@@ -161,7 +186,10 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 assigned->symbol(),
-                std::make_tuple(HEAP, heap_.size(), assigned->immutable()));
+                Variable(HEAP,
+                         heap_.size(),
+                         heap_.size(),
+                         assigned->immutable()));
         heap_.push_back(item);
         map_.insert(item);
       } else {
@@ -169,13 +197,13 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
           const std::pair<Symbol, Variable> item =
               std::make_pair(
                   assigned->symbol(),
-                  std::make_tuple(STACK, stack_size_++, assigned->immutable()));
+                  Variable(STACK, stack_size_++, 0, assigned->immutable()));
           map_.insert(item);
         } else {
           const std::pair<Symbol, Variable> item =
               std::make_pair(
                   assigned->symbol(),
-                  std::make_tuple(UNUSED, 0, assigned->immutable()));
+                  Variable(UNUSED, 0, 0, assigned->immutable()));
           map_.insert(item);
         }
       }
@@ -187,14 +215,14 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                std::make_tuple(HEAP, heap_.size(), scope->strict()));
+                Variable(HEAP, heap_.size(), heap_.size(), scope->strict()));
         heap_.push_back(item);
         map_.insert(item);
       } else if (scope_->has_arguments()) {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                std::make_tuple(STACK, stack_size_++, scope->strict()));
+                Variable(STACK, stack_size_++, 0, scope->strict()));
         map_.insert(item);
       }
     }
@@ -203,16 +231,18 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   LookupInfo Lookup(Symbol sym) {
     const VariableMap::const_iterator it = map_.find(sym);
     if (it != map_.end()) {
-      const Type type = std::get<0>(it->second);
-      const uint32_t location = std::get<1>(it->second);
-      const bool immutable = std::get<2>(it->second);
-      if (type == HEAP) {
-        return LookupInfo(LookupInfo::HEAP, location,
-                          immutable, scope_nest_count());
-      } else if (type == STACK) {
-        return LookupInfo(LookupInfo::STACK, location, immutable);
-      } else {
-        return LookupInfo(LookupInfo::UNUSED);
+      switch (it->second.type()) {
+        case HEAP:
+          return LookupInfo(LookupInfo::HEAP,
+                            it->second.heap_location(),
+                            it->second.immutable(),
+                            scope_nest_count());
+        case STACK:
+          return LookupInfo(LookupInfo::STACK,
+                            it->second.register_location(),
+                            it->second.immutable());
+        case UNUSED:
+          return LookupInfo(LookupInfo::UNUSED);
       }
     } else {
       // not found in this scope

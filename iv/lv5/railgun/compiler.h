@@ -884,8 +884,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
            it != last; ++it) {
         Emit<OP::INSTANTIATE_HEAP_BINDING>(
             SymbolToNameIndex(it->first),
-            std::get<1>(it->second),
-            static_cast<uint32_t>(std::get<2>(it->second)));
+            it->second.heap_location(),
+            static_cast<uint32_t>(it->second.immutable()));
       }
     }
     if (!is_eval_decl) {
