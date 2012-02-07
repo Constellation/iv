@@ -398,7 +398,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         dst_ = EmitExpression(expr, dst_);
         Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
       }
-      break;
+      return;
     }
 
     default: {

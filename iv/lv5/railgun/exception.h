@@ -18,9 +18,9 @@ class Handler {
   Handler(Type type,
           uint32_t begin,
           uint32_t end, 
-          uint32_t jmp,
-          uint32_t ret,
-          uint32_t flag,
+          int32_t jmp,
+          int32_t ret,
+          int32_t flag,
           uint32_t dynamic_env_level)
     : type_(type),
       begin_(begin),
@@ -36,11 +36,11 @@ class Handler {
 
   uint32_t end() const { return end_; }
 
-  uint32_t jmp() const { return jmp_; }
+  int32_t jmp() const { return jmp_; }
 
-  uint32_t ret() const { return ret_; }
+  int32_t ret() const { return ret_; }
 
-  uint32_t flag() const { return flag_; }
+  int32_t flag() const { return flag_; }
 
   uint32_t dynamic_env_level() const { return dynamic_env_level_; }
 
@@ -48,9 +48,9 @@ class Handler {
   Type type_;
   uint32_t begin_;
   uint32_t end_;
-  uint32_t jmp_;
-  uint32_t ret_;
-  uint32_t flag_;
+  int32_t jmp_;
+  int32_t ret_;
+  int32_t flag_;
   uint32_t dynamic_env_level_;
 };
 

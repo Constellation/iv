@@ -218,7 +218,7 @@ do {\
 
       DEFINE_OPCODE(MV) {
         // opcode | dst | src
-        REG(instr[1].value) = REG(instr[2].value);
+        REG(instr[1].i32) = REG(instr[2].i32);
         DISPATCH(MV);
       }
 
@@ -239,7 +239,7 @@ do {\
         // this code is invoked by JS code
         // EVAL / CALL / CONSTRUCT
         instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
-        const uint32_t r = frame->r_;
+        const int32_t r = frame->r_;
         frame = stack_.Unwind(frame);
         reg = frame->RegisterFile();
         REG(r) = ret;
@@ -249,7 +249,7 @@ do {\
 
       DEFINE_OPCODE(LOAD_PARAM) {
         // opcode | dst | arg
-        REG(instr[1].value) = frame->GetArg(instr[2].value);
+        REG(instr[1].i32) = frame->GetArg(instr[2].i32);
         DISPATCH(LOAD_PARAM);
       }
 
@@ -330,7 +330,7 @@ do {\
 
       DEFINE_OPCODE(LOAD_CALLEE) {
         // opcode | dst
-        REG(instr[1].value) = frame->callee();
+        REG(instr[1].i32) = frame->callee();
         DISPATCH(LOAD_CALLEE);
       }
 
@@ -344,21 +344,21 @@ do {\
               frame->arguments_crend(),
               static_cast<JSDeclEnv*>(frame->variable_env()),
               ERR);
-          REG(instr[1].value) = obj;
+          REG(instr[1].i32) = obj;
         } else {
           JSObject* obj = JSStrictArguments::New(
               ctx_, frame->callee().object()->AsCallable(),
               frame->arguments_crbegin(),
               frame->arguments_crend(),
               ERR);
-          REG(instr[1].value) = obj;
+          REG(instr[1].i32) = obj;
         }
         DISPATCH(LOAD_ARGUMENTS);
       }
 
       DEFINE_OPCODE(LOAD_CONST) {
         // opcode | dst | offset
-        REG(instr[1].value) = frame->GetConstant(instr[2].value);
+        REG(instr[1].i32) = frame->GetConstant(instr[2].value);
         DISPATCH(LOAD_CONST);
       }
 
@@ -367,7 +367,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.LoadName(frame->lexical_env(), s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_NAME);
       }
 
@@ -377,7 +377,7 @@ do {\
         const JSVal res =
             operation_.LoadHeap(frame->lexical_env(),
                                 s, strict, instr[3].value, instr[4].value, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_HEAP);
       }
 
@@ -387,7 +387,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.LoadGlobal(global, instr, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_GLOBAL);
       }
 
@@ -396,7 +396,7 @@ do {\
         const JSVal res =
             operation_.LoadElement(REG(instr[2].value),
                                    REG(instr[3].value), strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_ELEMENT);
       }
 
@@ -410,13 +410,13 @@ do {\
               OP::LOAD_PROP_CHAIN,
               OP::LOAD_PROP_GENERIC>(instr,
                                      REG(instr[2].value), s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_PROP);
       }
 
       DEFINE_OPCODE(LOAD_PROP_OWN) {
         // opcode | dst | base | name | map | offset | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
@@ -424,7 +424,7 @@ do {\
           JSVal res;
           const Symbol s = frame->GetName(instr[3].value);
           if (operation_.GetPrimitiveOwnProperty(base, s, &res)) {
-            REG(instr[1].value) = res;
+            REG(instr[1].i32) = res;
             DISPATCH(LOAD_PROP_OWN);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -437,21 +437,21 @@ do {\
           // cache hit
           const JSVal res =
               obj->GetSlot(instr[5].value).Get(ctx_, base, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         } else {
           // uncache
           const Symbol s = frame->GetName(instr[3].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res =
               operation_.LoadProp(base, s, strict, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(LOAD_PROP_OWN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_PROTO) {
         // opcode | dst | base | name | map | map | offset | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
@@ -459,7 +459,7 @@ do {\
           JSVal res;
           const Symbol s = frame->GetName(instr[3].value);
           if (operation_.GetPrimitiveOwnProperty(base, s, &res)) {
-            REG(instr[1].value) = res;
+            REG(instr[1].i32) = res;
             DISPATCH(LOAD_PROP_PROTO);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -473,21 +473,21 @@ do {\
           // cache hit
           const JSVal res =
               proto->GetSlot(instr[6].value).Get(ctx_, base, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         } else {
           // uncache
           const Symbol s = frame->GetName(instr[3].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res =
               operation_.LoadProp(base, s, strict, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(LOAD_PROP_PROTO);
       }
 
       DEFINE_OPCODE(LOAD_PROP_CHAIN) {
         // opcode | dst | base | name | chain | map | offset | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
@@ -495,7 +495,7 @@ do {\
           JSVal res;
           const Symbol s = frame->GetName(instr[3].value);
           if (operation_.GetPrimitiveOwnProperty(base, s, &res)) {
-            REG(instr[1].value) = res;
+            REG(instr[1].i32) = res;
             DISPATCH(LOAD_PROP_CHAIN);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -507,30 +507,30 @@ do {\
           // cache hit
           const JSVal res =
               cached->GetSlot(instr[6].value).Get(ctx_, base, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         } else {
           // uncache
           const Symbol s = frame->GetName(instr[3].value);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(LOAD_PROP_CHAIN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_GENERIC) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         const JSVal res = operation_.LoadProp(base, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(LOAD_PROP_GENERIC);
       }
 
       DEFINE_OPCODE(STORE_NAME) {
         // opcode | src | name
         const Symbol s = frame->GetName(instr[2].value);
-        const JSVal v = REG(instr[1].value);
+        const JSVal v = REG(instr[1].i32);
         operation_.StoreName(frame->lexical_env(), s, v, strict, ERR);
         DISPATCH(STORE_NAME);
       }
@@ -538,7 +538,7 @@ do {\
       DEFINE_OPCODE(STORE_HEAP) {
         // opcode | src | name | offset | nest
         const Symbol s = frame->GetName(instr[2].value);
-        const JSVal v = REG(instr[1].value);
+        const JSVal v = REG(instr[1].i32);
         operation_.StoreHeap(frame->lexical_env(),
                              s, v, strict, instr[3].value, instr[4].value, ERR);
         DISPATCH(STORE_HEAP);
@@ -546,7 +546,7 @@ do {\
 
       DEFINE_OPCODE(STORE_GLOBAL) {
         // opcode | src | name | nop | nop
-        const JSVal v = REG(instr[1].value);
+        const JSVal v = REG(instr[1].i32);
         JSGlobal* global = ctx_->global_obj();
         if (instr[3].map == global->map()) {
           // map is cached, so use previous index code
@@ -568,18 +568,18 @@ do {\
 
       DEFINE_OPCODE(STORE_ELEMENT) {
         // opcode | base | index | src
-        const JSVal base = REG(instr[1].value);
-        const JSVal element = REG(instr[2].value);
-        const JSVal src = REG(instr[3].value);
+        const JSVal base = REG(instr[1].i32);
+        const JSVal element = REG(instr[2].i32);
+        const JSVal src = REG(instr[3].i32);
         operation_.StoreElement(base, element, src, strict, ERR);
         DISPATCH(STORE_ELEMENT);
       }
 
       DEFINE_OPCODE(STORE_PROP) {
         // opcode | base | index | src | nop | nop | nop | nop
-        const JSVal base = REG(instr[1].value);
+        const JSVal base = REG(instr[1].i32);
         const Symbol s = frame->GetName(instr[2].value);
-        const JSVal src = REG(instr[3].value);
+        const JSVal src = REG(instr[3].i32);
         operation_.StoreProp(
             base, instr, OP::STORE_PROP_GENERIC, s, src, strict, ERR);
         DISPATCH(STORE_PROP);
@@ -587,9 +587,9 @@ do {\
 
       DEFINE_OPCODE(STORE_PROP_GENERIC) {
         // opcode | base | index | src | nop | nop | nop | nop
-        const JSVal base = REG(instr[1].value);
+        const JSVal base = REG(instr[1].i32);
         const Symbol s = frame->GetName(instr[2].value);
-        const JSVal src = REG(instr[3].value);
+        const JSVal src = REG(instr[3].i32);
         operation_.StoreProp(base, s, src, strict, ERR);
         DISPATCH(STORE_PROP_GENERIC);
       }
@@ -598,17 +598,17 @@ do {\
         // opcode | dst | name
         const Symbol s = frame->GetName(instr[2].value);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), s)) {
-          REG(instr[1].value) = JSVal::Bool(current->DeleteBinding(ctx_, s));
+          REG(instr[1].i32) = JSVal::Bool(current->DeleteBinding(ctx_, s));
         } else {
           // not found -> unresolvable reference
-          REG(instr[1].value) = JSTrue;
+          REG(instr[1].i32) = JSTrue;
         }
         DISPATCH(DELETE_NAME);
       }
 
       DEFINE_OPCODE(DELETE_HEAP) {
         // opcode | dst | name | offset | nest
-        REG(instr[1].value) = JSFalse;
+        REG(instr[1].i32) = JSFalse;
         DISPATCH(DELETE_HEAP);
       }
 
@@ -617,53 +617,53 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         if (ctx_->global_env()->HasBinding(ctx_, s)) {
           const bool res = ctx_->global_env()->DeleteBinding(ctx_, s);
-          REG(instr[1].value) = JSVal::Bool(res);
+          REG(instr[1].i32) = JSVal::Bool(res);
         } else {
           // not found -> unresolvable reference
-          REG(instr[1].value) = JSTrue;
+          REG(instr[1].i32) = JSTrue;
         }
         DISPATCH(DELETE_GLOBAL);
       }
 
       DEFINE_OPCODE(DELETE_ELEMENT) {
         // opcode | dst | base | element
-        const JSVal base = REG(instr[2].value);
-        const JSVal element = REG(instr[3].value);
+        const JSVal base = REG(instr[2].i32);
+        const JSVal element = REG(instr[3].i32);
         base.CheckObjectCoercible(ERR);
         uint32_t index;
         if (element.GetUInt32(&index)) {
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          REG(instr[1].value) = obj;
+          REG(instr[1].i32) = obj;
           const bool result =
               obj->Delete(ctx_,
                           symbol::MakeSymbolFromIndex(index), strict, ERR);
-          REG(instr[1].value) = JSVal::Bool(result);
+          REG(instr[1].i32) = JSVal::Bool(result);
         } else {
           // const radio::Scope scope(ctx_);
           const Symbol s = element.ToSymbol(ctx_, ERR);
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          REG(instr[1].value) = obj;
+          REG(instr[1].i32) = obj;
           const bool result = obj->Delete(ctx_, s, strict, ERR);
-          REG(instr[1].value) = JSVal::Bool(result);
+          REG(instr[1].i32) = JSVal::Bool(result);
         }
         DISPATCH(DELETE_ELEMENT);
       }
 
       DEFINE_OPCODE(DELETE_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         base.CheckObjectCoercible(ERR);
         JSObject* const obj = base.ToObject(ctx_, ERR);
-        REG(instr[1].value) = obj;
+        REG(instr[1].i32) = obj;
         const bool res = obj->Delete(ctx_, s, strict, ERR);
-        REG(instr[1].value) = JSVal::Bool(res);
+        REG(instr[1].i32) = JSVal::Bool(res);
         DISPATCH(DELETE_PROP);
       }
 
       DEFINE_OPCODE(IF_FALSE) {
         // opcode | jmp | cond
-        const JSVal v = REG(instr[2].value);
+        const JSVal v = REG(instr[2].i32);
         const bool x = v.ToBoolean(ERR);
         if (!x) {
           JUMPBY(instr[1].diff);
@@ -674,7 +674,7 @@ do {\
 
       DEFINE_OPCODE(IF_TRUE) {
         // opcode | jmp | cond
-        const JSVal v = REG(instr[2].value);
+        const JSVal v = REG(instr[2].i32);
         const bool x = v.ToBoolean(ERR);
         if (x) {
           JUMPBY(instr[1].diff);
@@ -685,10 +685,10 @@ do {\
 
       DEFINE_OPCODE(JUMP_SUBROUTINE) {
         // opcode | jmp | addr | flag
-        REG(instr[2].value) =
+        REG(instr[2].i32) =
             ((std::distance(frame->data(), instr) +
               OPLength<OP::JUMP_SUBROUTINE>::value));
-        REG(instr[3].value) = JSVal::Int32(kJumpFromSubroutine);
+        REG(instr[3].i32) = JSVal::Int32(kJumpFromSubroutine);
         JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
       }
@@ -701,90 +701,90 @@ do {\
 
       DEFINE_OPCODE(LOAD_NULL) {
         // opcode | dst
-        REG(instr[1].value) = JSNull;
+        REG(instr[1].i32) = JSNull;
         DISPATCH(LOAD_NULL);
       }
 
       DEFINE_OPCODE(LOAD_TRUE) {
         // opcode | dst
-        REG(instr[1].value) = JSTrue;
+        REG(instr[1].i32) = JSTrue;
         DISPATCH(LOAD_TRUE);
       }
 
       DEFINE_OPCODE(LOAD_FALSE) {
         // opcode | dst
-        REG(instr[1].value) = JSFalse;
+        REG(instr[1].i32) = JSFalse;
         DISPATCH(LOAD_FALSE);
       }
 
       DEFINE_OPCODE(LOAD_UNDEFINED) {
         // opcode | dst
-        REG(instr[1].value) = JSUndefined;
+        REG(instr[1].i32) = JSUndefined;
         DISPATCH(LOAD_UNDEFINED);
       }
 
       DEFINE_OPCODE(LOAD_THIS) {
         // opcode | dst
-        REG(instr[1].value) = frame->GetThis();
+        REG(instr[1].i32) = frame->GetThis();
         DISPATCH(LOAD_THIS);
       }
 
       DEFINE_OPCODE(LOAD_UINT32) {
         // opcode | dst | val
-        REG(instr[1].value) = JSVal::UInt32(instr[2].value);
+        REG(instr[1].i32) = JSVal::UInt32(instr[2].value);
         DISPATCH(LOAD_UINT32);
       }
 
       DEFINE_OPCODE(LOAD_INT32) {
         // opcode | dst | val
-        REG(instr[1].value) = JSVal::Int32(instr[2].i32);
+        REG(instr[1].i32) = JSVal::Int32(instr[2].i32);
         DISPATCH(LOAD_INT32);
       }
 
       DEFINE_OPCODE(UNARY_POSITIVE) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         if (src.IsNumber()) {
-          REG(instr[1].value) = src;
+          REG(instr[1].i32) = src;
         } else {
           const double x = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = x;
+          REG(instr[1].i32) = x;
         }
         DISPATCH(UNARY_POSITIVE);
       }
 
       DEFINE_OPCODE(UNARY_NEGATIVE) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         const double x = src.ToNumber(ctx_, ERR);
-        REG(instr[1].value) = (-x);
+        REG(instr[1].i32) = (-x);
         DISPATCH(UNARY_NEGATIVE);
       }
 
       DEFINE_OPCODE(UNARY_NOT) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         const bool x = src.ToBoolean(ERR);
-        REG(instr[1].value) = JSVal::Bool(!x);
+        REG(instr[1].i32) = JSVal::Bool(!x);
         DISPATCH(UNARY_NOT);
       }
 
       DEFINE_OPCODE(UNARY_BIT_NOT) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         if (src.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(~src.int32());
+          REG(instr[1].i32) = JSVal::Int32(~src.int32());
         } else {
           const double value = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = JSVal::Int32(~core::DoubleToInt32(value));
+          REG(instr[1].i32) = JSVal::Int32(~core::DoubleToInt32(value));
         }
         DISPATCH(UNARY_BIT_NOT);
       }
 
       DEFINE_OPCODE(TYPEOF) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
-        REG(instr[1].value) = src.TypeOf(ctx_);
+        const JSVal src = REG(instr[2].i32);
+        REG(instr[1].i32) = src.TypeOf(ctx_);
         DISPATCH(TYPEOF);
       }
 
@@ -793,11 +793,11 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), s)) {
           const JSVal res = current->GetBindingValue(ctx_, s, strict, ERR);
-          REG(instr[1].value) = res;
-          REG(instr[1].value) = res.TypeOf(ctx_);
+          REG(instr[1].i32) = res;
+          REG(instr[1].i32) = res.TypeOf(ctx_);
         } else {
           // unresolvable reference
-          REG(instr[1].value) = ctx_->global_data()->string_undefined();
+          REG(instr[1].i32) = ctx_->global_data()->string_undefined();
         }
         DISPATCH(TYPEOF_NAME);
       }
@@ -808,8 +808,8 @@ do {\
             operation_.GetHeapEnv(frame->lexical_env(), instr[4].value);
         assert(decl);
         const JSVal res = decl->GetByOffset(instr[3].value, strict, ERR);
-        REG(instr[1].value) = res;
-        REG(instr[1].value) = res.TypeOf(ctx_);
+        REG(instr[1].i32) = res;
+        REG(instr[1].i32) = res.TypeOf(ctx_);
         DISPATCH(TYPEOF_HEAP);
       }
 
@@ -819,63 +819,63 @@ do {\
         if (ctx_->global_env()->HasBinding(ctx_, s)) {
           const JSVal res =
               ctx_->global_env()->GetBindingValue(ctx_, s, strict, ERR);
-          REG(instr[1].value) = res;
-          REG(instr[1].value) = res.TypeOf(ctx_);
+          REG(instr[1].i32) = res;
+          REG(instr[1].i32) = res.TypeOf(ctx_);
         } else {
           // unresolvable reference
-          REG(instr[1].value) = ctx_->global_data()->string_undefined();
+          REG(instr[1].i32) = ctx_->global_data()->string_undefined();
         }
         DISPATCH(TYPEOF_GLOBAL);
       }
 
       DEFINE_OPCODE(DECREMENT) {
         // opcode | src
-        const JSVal src = REG(instr[1].value);
+        const JSVal src = REG(instr[1].i32);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<-1>(src.int32())) {
-          REG(instr[1].value) = src.int32() - 1;
+          REG(instr[1].i32) = src.int32() - 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = res - 1;
+          REG(instr[1].i32) = res - 1;
         }
         DISPATCH(DECREMENT);
       }
 
       DEFINE_OPCODE(INCREMENT) {
         // opcode | src
-        const JSVal src = REG(instr[1].value);
+        const JSVal src = REG(instr[1].i32);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<+1>(src.int32())) {
-          REG(instr[1].value) = src.int32() + 1;
+          REG(instr[1].i32) = src.int32() + 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = res + 1;
+          REG(instr[1].i32) = res + 1;
         }
         DISPATCH(INCREMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<-1>(src.int32())) {
-          REG(instr[1].value) = src;
-          REG(instr[2].value) = src.int32() - 1;
+          REG(instr[1].i32) = src;
+          REG(instr[2].i32) = src.int32() - 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = res;
-          REG(instr[2].value) = res - 1;
+          REG(instr[1].i32) = res;
+          REG(instr[2].i32) = res - 1;
         }
         DISPATCH(POSTFIX_DECREMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT) {
         // opcode | dst | src
-        const JSVal src = REG(instr[2].value);
+        const JSVal src = REG(instr[2].i32);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<+1>(src.int32())) {
-          REG(instr[1].value) = src;
-          REG(instr[2].value) = src.int32() + 1;
+          REG(instr[1].i32) = src;
+          REG(instr[2].i32) = src.int32() + 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].value) = res;
-          REG(instr[2].value) = res + 1;
+          REG(instr[1].i32) = res;
+          REG(instr[2].i32) = res + 1;
         }
         DISPATCH(POSTFIX_INCREMENT);
       }
@@ -886,7 +886,7 @@ do {\
         const JSVal res =
             operation_.IncrementName<-1, 1>(frame->lexical_env(),
                                             s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_NAME);
       }
 
@@ -896,7 +896,7 @@ do {\
         const JSVal res =
             operation_.IncrementName<-1, 0>(frame->lexical_env(),
                                             s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_NAME);
       }
 
@@ -906,7 +906,7 @@ do {\
         const JSVal res =
             operation_.IncrementName<1, 1>(frame->lexical_env(),
                                            s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_NAME);
       }
 
@@ -916,7 +916,7 @@ do {\
         const JSVal res =
             operation_.IncrementName<1, 0>(frame->lexical_env(),
                                            s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_NAME);
       }
 
@@ -927,7 +927,7 @@ do {\
             operation_.IncrementHeap<-1, 1>(
                 frame->lexical_env(), s, strict,
                 instr[3].value, instr[4].value, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_HEAP);
       }
 
@@ -938,7 +938,7 @@ do {\
             operation_.IncrementHeap<-1, 0>(
                 frame->lexical_env(), s, strict,
                 instr[3].value, instr[4].value, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_HEAP);
       }
 
@@ -949,7 +949,7 @@ do {\
             operation_.IncrementHeap<1, 1>(
                 frame->lexical_env(), s, strict,
                 instr[3].value, instr[4].value, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_HEAP);
       }
 
@@ -960,7 +960,7 @@ do {\
             operation_.IncrementHeap<1, 0>(
                 frame->lexical_env(), s, strict,
                 instr[3].value, instr[4].value, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
 
@@ -970,7 +970,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.IncrementGlobal<-1, 1>(global, instr, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_GLOBAL);
       }
 
@@ -980,7 +980,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.IncrementGlobal<-1, 0>(global, instr, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_GLOBAL);
       }
 
@@ -990,7 +990,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.IncrementGlobal<1, 1>(global, instr, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_GLOBAL);
       }
 
@@ -1000,7 +1000,7 @@ do {\
         const Symbol s = frame->GetName(instr[2].value);
         const JSVal res =
             operation_.IncrementGlobal<1, 0>(global, instr, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_GLOBAL);
       }
 
@@ -1008,8 +1008,8 @@ do {\
         // opcode | dst | base | element
         const JSVal res =
             operation_.IncrementElement<-1, 1>(
-                REG(instr[2].value), REG(instr[3].value), strict, ERR);
-        REG(instr[1].value) = res;
+                REG(instr[2].i32), REG(instr[3].i32), strict, ERR);
+        REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_ELEMENT);
       }
 
@@ -1017,355 +1017,355 @@ do {\
         // opcode | dst | base | element
         const JSVal res =
             operation_.IncrementElement<-1, 0>(
-                REG(instr[2].value), REG(instr[3].value), strict, ERR);
-        REG(instr[1].value) = res;
+                REG(instr[2].i32), REG(instr[3].i32), strict, ERR);
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
         // opcode | dst | base | element
         const JSVal res =
-            operation_.IncrementElement<1, 1>(REG(instr[2].value),
-                                              REG(instr[3].value), strict, ERR);
-        REG(instr[1].value) = res;
+            operation_.IncrementElement<1, 1>(REG(instr[2].i32),
+                                              REG(instr[3].i32), strict, ERR);
+        REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
         // opcode | dst | base | element
         const JSVal res =
-            operation_.IncrementElement<1, 0>(REG(instr[2].value),
-                                              REG(instr[3].value), strict, ERR);
-        REG(instr[1].value) = res;
+            operation_.IncrementElement<1, 0>(REG(instr[2].i32),
+                                              REG(instr[3].i32), strict, ERR);
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(DECREMENT_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         const JSVal res = operation_.IncrementProp<-1, 1>(base, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_PROP);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         const JSVal res = operation_.IncrementProp<-1, 0>(base, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
 
       DEFINE_OPCODE(INCREMENT_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         const JSVal res = operation_.IncrementProp<1, 1>(base, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_PROP);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const Symbol s = frame->GetName(instr[3].value);
         const JSVal res = operation_.IncrementProp<1, 0>(base, s, strict, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }
 
       DEFINE_OPCODE(BINARY_ADD) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
           int32_t sum;
           if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {
-            REG(instr[1].value) = JSVal::Int32(sum);
+            REG(instr[1].i32) = JSVal::Int32(sum);
           } else {
-            REG(instr[1].value) =
+            REG(instr[1].i32) =
                 JSVal(static_cast<double>(lhs.int32()) +
                       static_cast<double>(rhs.int32()));
           }
         } else {
           const JSVal res = operation_.BinaryAdd(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_ADD);
       }
 
       DEFINE_OPCODE(BINARY_SUBTRACT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
           int32_t dif;
           if (!core::IsSubtractOverflow(lhs.int32(), rhs.int32(), &dif)) {
-            REG(instr[1].value) = JSVal::Int32(dif);
+            REG(instr[1].i32) = JSVal::Int32(dif);
           } else {
-            REG(instr[1].value) =
+            REG(instr[1].i32) =
                 JSVal(static_cast<double>(lhs.int32()) -
                       static_cast<double>(rhs.int32()));
           }
         } else {
           const JSVal res = operation_.BinarySub(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_SUBTRACT);
       }
 
       DEFINE_OPCODE(BINARY_MULTIPLY) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         // if 1 bit is not found in MSB to MSB - 17 bits,
         // this multiply is safe for overflow
         if (lhs.IsInt32() && rhs.IsInt32() &&
             !((lhs.int32() | rhs.int32()) >> 15)) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() * rhs.int32());
+          REG(instr[1].i32) = JSVal::Int32(lhs.int32() * rhs.int32());
         } else {
           const JSVal res = operation_.BinaryMultiply(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_MULTIPLY);
       }
 
       DEFINE_OPCODE(BINARY_DIVIDE) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         const JSVal res = operation_.BinaryDivide(lhs, rhs, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(BINARY_DIVIDE);
       }
 
       DEFINE_OPCODE(BINARY_MODULO) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         // check rhs is more than 0 (n % 0 == NaN)
         // lhs is >= 0 and rhs is > 0 because example like
         //   -1 % -1
         // should return -0.0, so this value is double
         if (lhs.IsInt32() && rhs.IsInt32() &&
             lhs.int32() >= 0 && rhs.int32() > 0) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() % rhs.int32());
+          REG(instr[1].i32) = JSVal::Int32(lhs.int32() % rhs.int32());
         } else {
           const JSVal res = operation_.BinaryModulo(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_MODULO);
       }
 
       DEFINE_OPCODE(BINARY_LSHIFT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) =
+          REG(instr[1].i32) =
               JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryLShift(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_LSHIFT);
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) =
+          REG(instr[1].i32) =
               JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShift(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_RSHIFT);
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT_LOGICAL) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         uint32_t left_result;
         if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
-          REG(instr[1].value) =
+          REG(instr[1].i32) =
               JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShiftLogical(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_RSHIFT_LOGICAL);
       }
 
       DEFINE_OPCODE(BINARY_LT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() < rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() < rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareLT(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_LT);
       }
 
       DEFINE_OPCODE(BINARY_LTE) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() <= rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() <= rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareLTE(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_LTE);
       }
 
       DEFINE_OPCODE(BINARY_GT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() > rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() > rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareGT(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_GT);
       }
 
       DEFINE_OPCODE(BINARY_GTE) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() >= rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() >= rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareGTE(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_GTE);
       }
 
       DEFINE_OPCODE(BINARY_INSTANCEOF) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         const JSVal res = operation_.BinaryInstanceof(lhs, rhs, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(BINARY_INSTANCEOF);
       }
 
       DEFINE_OPCODE(BINARY_IN) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         const JSVal res = operation_.BinaryIn(lhs, rhs, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(BINARY_IN);
       }
 
       DEFINE_OPCODE(BINARY_EQ) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() == rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() == rhs.int32());
         } else {
           const JSVal res = operation_.BinaryEqual(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_EQ);
       }
 
       DEFINE_OPCODE(BINARY_STRICT_EQ) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() == rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() == rhs.int32());
         } else {
           const JSVal res = operation_.BinaryStrictEqual(lhs, rhs);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_STRICT_EQ);
       }
 
       DEFINE_OPCODE(BINARY_NE) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() != rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() != rhs.int32());
         } else {
           const JSVal res = operation_.BinaryNotEqual(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_NE);
       }
 
       DEFINE_OPCODE(BINARY_STRICT_NE) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Bool(lhs.int32() != rhs.int32());
+          REG(instr[1].i32) = JSVal::Bool(lhs.int32() != rhs.int32());
         } else {
           const JSVal res = operation_.BinaryStrictNotEqual(lhs, rhs);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_STRICT_NE);
       }
 
       DEFINE_OPCODE(BINARY_BIT_AND) {  // &
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() & rhs.int32());
+          REG(instr[1].i32) = JSVal::Int32(lhs.int32() & rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitAnd(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_BIT_AND);
       }
 
       DEFINE_OPCODE(BINARY_BIT_XOR) {  // ^
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() ^ rhs.int32());
+          REG(instr[1].i32) = JSVal::Int32(lhs.int32() ^ rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitXor(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_BIT_XOR);
       }
 
       DEFINE_OPCODE(BINARY_BIT_OR) {  // |
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].value);
-        const JSVal rhs = REG(instr[3].value);
+        const JSVal lhs = REG(instr[2].i32);
+        const JSVal rhs = REG(instr[3].i32);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].value) = JSVal::Int32(lhs.int32() | rhs.int32());
+          REG(instr[1].i32) = JSVal::Int32(lhs.int32() | rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitOr(lhs, rhs, ERR);
-          REG(instr[1].value) = res;
+          REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_BIT_OR);
       }
 
       DEFINE_OPCODE(RETURN) {
         // opcode | src
-        const JSVal src = REG(instr[1].value);
+        const JSVal src = REG(instr[1].i32);
         const JSVal ret =
             (frame->constructor_call_ && !src.IsObject()) ?
             frame->GetThis() : src;
@@ -1377,7 +1377,7 @@ do {\
         // this code is invoked by JS code
         // EVAL / CALL / CONSTRUCT
         instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
-        const uint32_t r = frame->r_;
+        const int32_t r = frame->r_;
         frame = stack_.Unwind(frame);
         reg = frame->RegisterFile();
         REG(r) = ret;
@@ -1387,8 +1387,8 @@ do {\
 
       DEFINE_OPCODE(RETURN_SUBROUTINE) {
         // opcode | jmp | flag
-        const JSVal flag = REG(instr[2].value);
-        const JSVal v = REG(instr[1].value);
+        const JSVal flag = REG(instr[2].i32);
+        const JSVal v = REG(instr[1].i32);
         assert(flag.IsInt32());
         const int32_t f = flag.int32();
         if (f == kJumpFromSubroutine) {
@@ -1410,25 +1410,25 @@ do {\
       DEFINE_OPCODE(FORIN_SETUP) {
         // opcode | jmp | iterator | enumerable
         // TODO(Constellation): fix this for Exact GC
-        const JSVal v = REG(instr[3].value);
+        const JSVal v = REG(instr[3].i32);
         if (v.IsNullOrUndefined()) {
           JUMPBY(instr[1].diff);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }
         JSObject* const obj = v.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
-        REG(instr[2].value) = JSVal::Cell(it);
+        REG(instr[2].i32) = JSVal::Cell(it);
         PREDICT(FORIN_SETUP, FORIN_ENUMERATE);
       }
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
         // opcode | jmp | dst | iterator
         NameIterator* it =
-            reinterpret_cast<NameIterator*>(REG(instr[3].value).cell());
+            reinterpret_cast<NameIterator*>(REG(instr[3].i32).cell());
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
-          REG(instr[2].value) = JSString::New(ctx_, sym);
+          REG(instr[2].i32) = JSString::New(ctx_, sym);
         } else {
           JUMPBY(instr[1].diff);
           DISPATCH_WITH_NO_INCREMENT();
@@ -1438,7 +1438,7 @@ do {\
 
       DEFINE_OPCODE(THROW) {
         // opcode | src
-        e->Report(REG(instr[1].value));
+        e->Report(REG(instr[1].i32));
         DISPATCH_ERROR();
       }
 
@@ -1457,7 +1457,7 @@ do {\
 
       DEFINE_OPCODE(TO_NUMBER_AND_RAISE_REFERENCE) {
         // opcode | src
-        const JSVal val = REG(instr[1].value);
+        const JSVal val = REG(instr[1].i32);
         val.ToNumber(ctx_, ERR);
         operation_.RaiseReferenceError(e);
         DISPATCH_ERROR();
@@ -1471,7 +1471,7 @@ do {\
       DEFINE_OPCODE(WITH_SETUP) {
         // opcode | src
         // TODO(Constellation): fix this for Exact GC
-        const JSVal val = REG(instr[1].value);
+        const JSVal val = REG(instr[1].i32);
         JSObject* const obj = val.ToObject(ctx_, ERR);
         JSObjectEnv* const with_env =
             JSObjectEnv::New(ctx_, frame->lexical_env(), obj);
@@ -1491,7 +1491,7 @@ do {\
       DEFINE_OPCODE(TRY_CATCH_SETUP) {
         // opcode | error | name
         const Symbol s = frame->GetName(instr[2].value);
-        const JSVal error = REG(instr[1].value);
+        const JSVal error = REG(instr[1].i32);
         JSEnv* const catch_env =
             JSStaticEnv::New(ctx_, frame->lexical_env(), s, error);
         frame->set_lexical_env(catch_env);
@@ -1501,41 +1501,41 @@ do {\
 
       DEFINE_OPCODE(LOAD_ARRAY) {
         // opcode | dst | size
-        REG(instr[1].value) = JSArray::ReservedNew(ctx_, instr[2].value);
+        REG(instr[1].i32) = JSArray::ReservedNew(ctx_, instr[2].value);
         DISPATCH(LOAD_ARRAY);
       }
 
       DEFINE_OPCODE(INIT_VECTOR_ARRAY_ELEMENT) {
         // opcode | ary | item | index
-        JSArray* ary = static_cast<JSArray*>(REG(instr[1].value).object());
-        ary->SetToVector(instr[3].value, REG(instr[2].value));
+        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32).object());
+        ary->SetToVector(instr[3].value, REG(instr[2].i32));
         DISPATCH(INIT_VECTOR_ARRAY_ELEMENT);
       }
 
       DEFINE_OPCODE(INIT_SPARSE_ARRAY_ELEMENT) {
         // opcode | ary | item | index
-        JSArray* ary = static_cast<JSArray*>(REG(instr[1].value).object());
-        ary->SetToMap(instr[3].value, REG(instr[2].value));
+        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32).object());
+        ary->SetToMap(instr[3].value, REG(instr[2].i32));
         DISPATCH(INIT_SPARSE_ARRAY_ELEMENT);
       }
 
       DEFINE_OPCODE(LOAD_OBJECT) {
         // opcode | dst | map
-        REG(instr[1].value) = JSObject::New(ctx_, instr[2].map);
+        REG(instr[1].i32) = JSObject::New(ctx_, instr[2].map);
         DISPATCH(LOAD_OBJECT);
       }
 
       DEFINE_OPCODE(LOAD_FUNCTION) {
         // opcode | dst | code
         Code* target = frame->code()->codes()[instr[2].value];
-        REG(instr[1].value) =
+        REG(instr[1].i32) =
             JSVMFunction::New(ctx_, target, frame->lexical_env());
         DISPATCH(LOAD_FUNCTION);
       }
 
       DEFINE_OPCODE(LOAD_REGEXP) {
         // opcode | dst | const
-        REG(instr[1].value) = JSRegExp::New(
+        REG(instr[1].i32) = JSRegExp::New(
             ctx_,
             static_cast<JSRegExp*>(
                 frame->GetConstant(instr[2].value).object()));
@@ -1544,8 +1544,9 @@ do {\
 
       DEFINE_OPCODE(STORE_OBJECT_DATA) {
         // opcode | obj | item | offset | merged
-        JSObject* const obj = REG(instr[1].value).object();
-        const JSVal value = REG(instr[2].value);
+        assert(REG(instr[1].i32).IsObject());
+        JSObject* const obj = REG(instr[1].i32).object();
+        const JSVal value = REG(instr[2].i32);
         if (instr[4].value) {
           obj->GetSlot(instr[3].value) =
               PropertyDescriptor::Merge(
@@ -1561,8 +1562,8 @@ do {\
 
       DEFINE_OPCODE(STORE_OBJECT_GET) {
         // opcode | obj | item | offset | merged
-        JSObject* const obj = REG(instr[1].value).object();
-        const JSVal value = REG(instr[2].value);
+        JSObject* const obj = REG(instr[1].i32).object();
+        const JSVal value = REG(instr[2].i32);
         if (instr[4].value) {
           obj->GetSlot(instr[3].value) =
               PropertyDescriptor::Merge(
@@ -1580,8 +1581,8 @@ do {\
 
       DEFINE_OPCODE(STORE_OBJECT_SET) {
         // opcode | obj | item | offset | merged
-        JSObject* const obj = REG(instr[1].value).object();
-        const JSVal value = REG(instr[2].value);
+        JSObject* const obj = REG(instr[1].i32).object();
+        const JSVal value = REG(instr[2].i32);
         if (instr[4].value) {
           obj->GetSlot(instr[3].value) =
               PropertyDescriptor::Merge(
@@ -1599,8 +1600,8 @@ do {\
 
       DEFINE_OPCODE(CALL) {
         // opcode | dst | callee | offset | argc_with_this
-        const JSVal callee = REG(instr[2].value);
-        JSVal* offset = &REG(instr[3].value);
+        const JSVal callee = REG(instr[2].i32);
+        JSVal* offset = &REG(instr[3].i32);
         const int argc_with_this = static_cast<int>(instr[4].value);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
@@ -1612,7 +1613,7 @@ do {\
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
           if (code->empty()) {
-            REG(instr[1].value) = JSUndefined;
+            REG(instr[1].i32) = JSUndefined;
             DISPATCH(CALL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
@@ -1636,14 +1637,14 @@ do {\
         // Native Function, so use Invoke
         const JSVal res =
             operation_.Invoke(func, offset, argc_with_this, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(CALL);
       }
 
       DEFINE_OPCODE(CONSTRUCT) {
         // opcode | dst | callee | offset | argc_with_this
-        const JSVal callee = REG(instr[2].value);
-        JSVal* offset = &REG(instr[3].value);
+        const JSVal callee = REG(instr[2].i32);
+        JSVal* offset = &REG(instr[3].i32);
         const int argc_with_this = static_cast<int>(instr[4].value);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
@@ -1681,15 +1682,15 @@ do {\
         // Native Function, so use Invoke
         const JSVal res =
             operation_.Construct(func, offset, argc_with_this, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(CONSTRUCT);
       }
 
       DEFINE_OPCODE(EVAL) {
         // opcode | dst | callee | offset | argc_with_this
         // maybe direct call to eval
-        const JSVal callee = REG(instr[2].value);
-        JSVal* offset = &REG(instr[3].value);
+        const JSVal callee = REG(instr[2].i32);
+        JSVal* offset = &REG(instr[3].i32);
         const int argc_with_this = static_cast<int>(instr[4].value);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
@@ -1701,7 +1702,7 @@ do {\
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
           if (code->empty()) {
-            REG(instr[1].value) = JSUndefined;
+            REG(instr[1].i32) = JSUndefined;
             DISPATCH(EVAL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
@@ -1726,7 +1727,7 @@ do {\
         const JSVal res =
             operation_.InvokeMaybeEval(func,
                                        offset, argc_with_this, frame, ERR);
-        REG(instr[1].value) = res;
+        REG(instr[1].i32) = res;
         DISPATCH(EVAL);
       }
 
@@ -1735,8 +1736,8 @@ do {\
         const Symbol s = frame->GetName(instr[3].value);
         if (JSEnv* target_env = operation_.GetEnv(frame->lexical_env(), s)) {
           const JSVal res = target_env->GetBindingValue(ctx_, s, false, ERR);
-          REG(instr[1].value) = res;
-          REG(instr[2].value) = target_env->ImplicitThisValue();
+          REG(instr[1].i32) = res;
+          REG(instr[2].i32) = target_env->ImplicitThisValue();
         } else {
           operation_.RaiseReferenceError(s, e);
           DISPATCH_ERROR();

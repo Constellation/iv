@@ -163,7 +163,7 @@ struct Frame {
   uint32_t argc_;
   uint32_t dynamic_env_level_;
   uint32_t registers_;
-  uint32_t r_;
+  int32_t r_;
   bool constructor_call_;
 };
 
