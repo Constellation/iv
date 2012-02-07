@@ -170,10 +170,6 @@ class JSDeclEnv : public JSEnv {
     return NULL;
   }
 
-  const Record& record() const {
-    return record_;
-  }
-
   static JSDeclEnv* New(Context* ctx, JSEnv* outer) {
     return new JSDeclEnv(outer);
   }
