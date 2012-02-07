@@ -98,6 +98,8 @@ class JSDeclEnv : public JSEnv {
 
     int attribute() const { return attribute_; }
 
+    void set_attribute(int attr) { attribute_ = attr; }
+
    private:
     int attribute_;
     JSValOrRedirect value_or_redirect_;
@@ -205,22 +207,26 @@ class JSDeclEnv : public JSEnv {
     return new JSDeclEnv(outer);
   }
 
-  static JSDeclEnv* New(Context* ctx, JSEnv* outer, uint32_t reserved) {
-    return new JSDeclEnv(outer, reserved);
+  // for railgun::VM optimization methods
+
+  static JSDeclEnv* New(Context* ctx, JSEnv* outer, uint32_t size) {
+    return new JSDeclEnv(outer, size);
   }
 
-  // for VM optimization methods
-  void InstantiateMutable(Symbol name, std::size_t offset) {
+  void InstantiateMutable(Symbol name, JSVal* reg, std::size_t offset) {
     offsets_[name] = offset;
-    record_[offset] = Entry(Entry::MUTABLE, JSUndefined);
+    record_[offset] = Entry(Entry::MUTABLE, reg);
   }
 
-  void InstantiateImmutable(Symbol name, std::size_t offset) {
+  void InstantiateImmutable(Symbol name, JSVal* reg, std::size_t offset) {
     offsets_[name] = offset;
+    record_[offset] = Entry(Entry::MUTABLE, reg);
   }
 
   void InitializeImmutable(std::size_t offset, const JSVal& val) {
-    record_[offset] = Entry(Entry::IM_INITIALIZED, val);
+    Entry& entry = record_[offset];
+    entry.set_attribute(Entry::IM_INITIALIZED);
+    entry.set_value(val);
   }
 
   void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
@@ -262,11 +268,11 @@ class JSDeclEnv : public JSEnv {
   }
 
   // for VM optimization only
-  JSDeclEnv(JSEnv* outer, std::size_t reserved)
+  JSDeclEnv(JSEnv* outer, std::size_t size)
     : JSEnv(outer),
-      record_(reserved),
+      record_(size),
       offsets_() {
-    assert(record_.size() == reserved);
+    assert(record_.size() == size);
   }
 
   Record record_;

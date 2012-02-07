@@ -309,14 +309,15 @@ do {\
       }
 
       DEFINE_OPCODE(INSTANTIATE_HEAP_BINDING) {
-        // opcode | name | offset | immutable
-        const bool immutable = instr[3].value;
+        // opcode | name | offset | reg | immutable
+        // TODO(Constellation) fix bytecode layout
+        const bool immutable = instr[4].value;
         JSDeclEnv* const decl = static_cast<JSDeclEnv*>(frame->variable_env());
         const Symbol s = frame->GetName(instr[1].value);
         if (immutable) {
-          decl->InstantiateImmutable(s, instr[2].value);
+          decl->InstantiateImmutable(s, &REG(instr[3].i32), instr[2].value);
         } else {
-          decl->InstantiateMutable(s, instr[2].value);
+          decl->InstantiateMutable(s, &REG(instr[3].i32), instr[2].value);
         }
         DISPATCH(INSTANTIATE_HEAP_BINDING);
       }
