@@ -37,6 +37,11 @@ inline void ThunkList::Spill(RegisterID reg) {
   }
 }
 
+inline void ThunkList::SpillHeapThunk() {
+  // TODO(Constellation) implement it
+}
+
+
 inline void ThunkList::ForceSpill() {
   for (Thunks::const_iterator it = vec_.begin(),
        last = vec_.end(); it != last; ++it) {

@@ -498,7 +498,19 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         args_(argc_with_this()),
         start_(),
         registers_(registers) {
-      // spill all thunks
+      // spill heap thunks
+      //   for example,
+      //     function test() {
+      //       var i = 10;
+      //       function inner() {
+      //         i = 20;
+      //         return i;
+      //       }
+      //       return i + inner();
+      //     }
+      //
+      // and if LHS has found, spill all thunks
+      thunklist->SpillHeapThunk();
       if (Analyzer::ExpressionHasAssignment(&call)) {
         thunklist->ForceSpill();
       }

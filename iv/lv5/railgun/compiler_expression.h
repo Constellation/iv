@@ -279,8 +279,9 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
             thunklist_.Spill(dst_);
             Emit<OP::LOAD_FALSE>(dst_);
           } else {
-            dst_ = EmitOptimizedLookup(OP::DELETE_NAME,
-                                       SymbolToNameIndex(ident->symbol()), dst_);
+            dst_ = EmitOptimizedLookup(
+                OP::DELETE_NAME,
+                SymbolToNameIndex(ident->symbol()), dst_);
           }
         } else if (expr->AsPropertyAccess()) {
           if (const IdentifierAccess* ac = expr->AsIdentifierAccess()) {

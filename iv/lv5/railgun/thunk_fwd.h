@@ -22,6 +22,8 @@ class ThunkList : private core::Noncopyable<ThunkList> {
 
   void Spill(RegisterID reg);
 
+  void SpillHeapThunk();
+
   void ForceSpill();
 
   bool empty() const {
