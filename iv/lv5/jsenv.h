@@ -37,7 +37,6 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
   virtual JSDeclEnv* AsJSDeclEnv() = 0;
   virtual JSObjectEnv* AsJSObjectEnv() = 0;
   virtual JSStaticEnv* AsJSStaticEnv() = 0;
-  virtual bool IsLookupNeeded() const = 0;
   inline JSEnv* outer() const {
     return outer_;
   }
@@ -210,14 +209,6 @@ class JSDeclEnv : public JSEnv {
     return new JSDeclEnv(outer, reserved);
   }
 
-  bool IsLookupNeeded() const {
-    return mutated_;
-  }
-
-  void MarkMutated() {
-    mutated_ = true;
-  }
-
   // for VM optimization methods
   void InstantiateMutable(Symbol name, std::size_t offset) {
     offsets_[name] = offset;
@@ -267,22 +258,19 @@ class JSDeclEnv : public JSEnv {
   JSDeclEnv(JSEnv* outer)
     : JSEnv(outer),
       record_(),
-      offsets_(),
-      mutated_(false) {
+      offsets_() {
   }
 
   // for VM optimization only
   JSDeclEnv(JSEnv* outer, std::size_t reserved)
     : JSEnv(outer),
       record_(reserved),
-      offsets_(),
-      mutated_(false) {
+      offsets_() {
     assert(record_.size() == reserved);
   }
 
   Record record_;
   Offsets offsets_;
-  bool mutated_;
 };
 
 class JSObjectEnv : public JSEnv {
@@ -368,10 +356,6 @@ class JSObjectEnv : public JSEnv {
     return new JSObjectEnv(outer, rec);
   }
 
-  bool IsLookupNeeded() const {
-    return true;
-  }
-
   void MarkChildren(radio::Core* core) {
     JSEnv::MarkChildren(core);
     core->MarkCell(record_);
@@ -436,10 +420,6 @@ class JSStaticEnv : public JSEnv {
   static JSStaticEnv* New(Context* ctx, JSEnv* outer,
                           Symbol sym, const JSVal& value) {
     return new JSStaticEnv(outer, sym, value);
-  }
-
-  bool IsLookupNeeded() const {
-    return true;
   }
 
   void MarkChildren(radio::Core* core) {
