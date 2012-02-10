@@ -35,10 +35,10 @@ class Registers {
   friend class RegisterIDImpl;
   typedef core::IntrusivePtr<RegisterIDImpl> ID;
 
-  void Clear(int32_t variable_registers) {
+  void Clear(int32_t stack, int32_t heap) {
     lives_.clear();
     temporary_registers_.clear();
-    variable_registers_ = variable_registers;
+    variable_registers_ = stack + heap;
   }
 
   ID Acquire();

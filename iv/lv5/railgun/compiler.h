@@ -884,7 +884,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                                         bool is_eval_decl) {
     FunctionScope* env =
         static_cast<FunctionScope*>(current_variable_scope_.get());
-    registers_.Clear(env->stack_size() + env->heap_size());
+    registers_.Clear(env->heap_size(), env->stack_size());
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
     }
@@ -931,7 +931,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     //     * direct call to eval in normal code
     //     * global code
     assert(thunklist_.empty());
-    registers_.Clear(0);
+    registers_.Clear(0, 0);
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
     }
