@@ -710,11 +710,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return dst;
     }
 
-    if (cand1 && !cand1->IsLocal()) {
+    if (cand1 && cand1->IsTemporary()) {
       return cand1;
     }
 
-    if (cand2 && !cand2->IsLocal()) {
+    if (cand2 && cand2->IsTemporary()) {
       return cand2;
     }
     return registers_.Acquire();

@@ -417,7 +417,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
       if (const core::Maybe<const Expression> expr = (*it)->expr()) {
         // case
         RegisterID tmp = EmitExpression(expr.Address());
-        RegisterID ret = tmp->IsLocal() ? registers_.Acquire() : tmp;
+        RegisterID ret = tmp->IsTemporary() ? tmp : registers_.Acquire();
         Emit<OP::BINARY_STRICT_EQ>(ret, cond, tmp);
         *idx = CurrentSize();
         Emit<OP::IF_TRUE>(0, ret);

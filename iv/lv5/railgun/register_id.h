@@ -23,6 +23,8 @@ class Registers {
 
     bool IsLocal() const { return holder_->IsLocalID(reg_); }
 
+    bool IsTemporary() const { return holder_->IsTemporaryID(reg_); }
+
     int32_t register_offset() const { return reg_; }
    private:
 
@@ -55,6 +57,10 @@ class Registers {
 
   bool IsLocalID(int32_t reg) {
     return variable_registers_ > reg;
+  }
+
+  bool IsTemporaryID(int32_t reg) {
+    return variable_registers_ <= reg;
   }
 
   // for debug in Compiler::EmitCall
