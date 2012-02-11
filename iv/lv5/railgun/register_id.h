@@ -19,7 +19,8 @@ class Registers {
     enum Type {
       TEMPORARY = 0,
       STACK = 1,
-      HEAP = 2
+      HEAP = 2,
+      CONSTANT = 3
     };
 
     static const int kTypeMask = 3;
@@ -39,12 +40,12 @@ class Registers {
 
     bool IsTemporary() const { return (type_ & kTypeMask) == TEMPORARY; }
 
-    bool IsArgument() const { return false; }
-
-    bool IsThis() const { return false; }
-
     bool IsLocal() const { return IsStack() || IsHeap(); }
 
+    // these are defined in frame.h
+    bool IsArgument() const;
+
+    bool IsThis() const;
 
     int32_t register_offset() const { return reg_; }
    private:
@@ -79,6 +80,9 @@ class Registers {
 
   ID LocalID(int32_t id);
 
+  // these are defined in frame.h
+  ID This();
+
   int32_t AcquireCallBase(int size);
 
   void Reserve(int32_t reg);
@@ -104,8 +108,10 @@ class Registers {
       return RegisterIDImpl::HEAP;
     } else if (IsStackID(reg)) {
       return RegisterIDImpl::STACK;
-    } else {
+    } else if (IsTemporaryID(reg)) {
       return RegisterIDImpl::TEMPORARY;
+    } else {
+      return RegisterIDImpl::CONSTANT;
     }
   }
 

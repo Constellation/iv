@@ -632,7 +632,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                site.GetFirstPosition(),
                static_cast<uint32_t>(site.argc_with_this()));
     }
-    assert(registers_.IsLiveTop(site.base()->reg()));
+    assert(registers_.IsLiveTop(site.base()->register_offset()));
     return dst;
   }
 

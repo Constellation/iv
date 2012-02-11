@@ -325,7 +325,7 @@ do {\
       DEFINE_OPCODE(INITIALIZE_HEAP_IMMUTABLE) {
         // opcode | src | offset
         JSDeclEnv* const decl = static_cast<JSDeclEnv*>(frame->variable_env());
-        const JSVal src = REG(instr[1].value);
+        const JSVal src = REG(instr[1].i32);
         decl->InitializeImmutable(instr[2].value, src);
         DISPATCH(INITIALIZE_HEAP_IMMUTABLE);
       }
@@ -395,8 +395,8 @@ do {\
 
       DEFINE_OPCODE(LOAD_ELEMENT) {
         // opcode | dst | base | element
-        const JSVal base = REG(instr[2].value);
-        const JSVal element = REG(instr[3].value);
+        const JSVal base = REG(instr[2].i32);
+        const JSVal element = REG(instr[3].i32);
         const JSVal res =
             operation_.LoadElement(base, element, strict, ERR);
         REG(instr[1].i32) = res;
@@ -406,7 +406,7 @@ do {\
       DEFINE_OPCODE(LOAD_PROP) {
         // opcode | dst | base | name | nop | nop | nop | nop
         const Symbol name = frame->GetName(instr[3].value);
-        const JSVal base = REG(instr[2].value);
+        const JSVal base = REG(instr[2].i32);
         const JSVal res =
             operation_.LoadProp<
               OP::LOAD_PROP_OWN,

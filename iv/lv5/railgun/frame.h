@@ -14,7 +14,7 @@ namespace railgun {
 
 template<typename D = void>
 struct FrameConstant {
-  static const std::size_t kFrameSize;
+  static const int kFrameSize;
 };
 
 //
@@ -179,11 +179,24 @@ struct Frame {
 };
 
 template<>
-const std::size_t FrameConstant<void>::kFrameSize =
+const int FrameConstant<void>::kFrameSize =
   (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
 
 inline JSVal* Frame::RegisterFile() {
   return GetFrameBase() + FrameConstant<>::kFrameSize;
+}
+
+inline bool Registers::RegisterIDImpl::IsArgument() const {
+  return reg_ < ((-FrameConstant<>::kFrameSize) - 1);
+}
+
+inline bool Registers::RegisterIDImpl::IsThis() const {
+  return reg_ == ((-FrameConstant<>::kFrameSize) - 1);
+}
+
+inline RegisterID Registers::This() {
+  return RegisterID(
+      new RegisterIDImpl(((-FrameConstant<>::kFrameSize) - 1), this), false);
 }
 
 } } }  // namespace iv::lv5::railgun
