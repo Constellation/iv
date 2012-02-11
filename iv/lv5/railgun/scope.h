@@ -8,6 +8,7 @@
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/code.h>
+#include <iv/lv5/railgun/frame.h>
 #include <iv/lv5/railgun/direct_threading.h>
 namespace iv {
 namespace lv5 {
@@ -229,11 +230,18 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         map_.insert(item);
       } else {
         if (assigned->IsReferenced()) {
-          const std::pair<Symbol, Variable> item =
-              std::make_pair(
-                  assigned->symbol(),
-                  Variable(STACK, stack_size_++, 0, assigned->immutable()));
-          map_.insert(item);
+          if (assigned->IsParameter()) {
+            const std::pair<Symbol, Variable> item = std::make_pair(
+                assigned->symbol(),
+                Variable(STACK, FrameConstant<>::Arg(assigned->parameter()),
+                         0, assigned->immutable()));
+            map_.insert(item);
+          } else {
+            const std::pair<Symbol, Variable> item = std::make_pair(
+                assigned->symbol(),
+                Variable(STACK, stack_size_++, 0, assigned->immutable()));
+            map_.insert(item);
+          }
         } else {
           const std::pair<Symbol, Variable> item =
               std::make_pair(

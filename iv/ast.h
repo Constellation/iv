@@ -207,13 +207,15 @@ class Scope : public ScopeBase<Factory> {
     // parameters
     // if "arguments" is realized, move parameters to HEAP
     const bool parameters_are_in_heap = IsParametersInHeap();
+    int32_t param = 0;
     for (typename Assigneds::const_iterator it = params_->begin(),
-         last = params_->end(); it != last; ++it) {
+         last = params_->end(); it != last; ++it, ++param) {
       Assigned<Factory>* assigned(*it);
       const Symbol sym = assigned->symbol();
       if (already.find(sym) == already.end()) {
         already.insert(sym);
         assigned->set_type(parameters_are_in_heap);
+        assigned->set_parameter(param);
         assigneds_.push_back(assigned);
       }
     }
@@ -1185,7 +1187,8 @@ template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
   explicit Assigned(Symbol sym, bool immutable)
-    : sym_(sym), type_(false), referenced_(false), immutable_(immutable) { }
+    : sym_(sym), type_(false), referenced_(false),
+      immutable_(immutable), parameter_(-1) { }
   Symbol symbol() const { return sym_; }
   int type() const { return type_; }
   void set_type(bool type) {
@@ -1194,9 +1197,12 @@ class Assigned : public AssignedBase<Factory> {
   }
   bool immutable() const { return immutable_; }
   void set_immutable(bool val) { immutable_ = val; }
+  int32_t parameter() const { return parameter_; }
+  void set_parameter(int32_t val) { parameter_ = val; }
   bool IsReferenced() const { return referenced_; }
   bool IsHeap() const { return type_; }
   bool IsImmutable() const { return immutable_; }
+  bool IsParameter() const { return parameter_ >= 0; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
@@ -1204,6 +1210,7 @@ class Assigned : public AssignedBase<Factory> {
   bool type_;
   bool referenced_;
   bool immutable_;
+  int32_t parameter_;
 };
 
 // ThisLiteral

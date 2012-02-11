@@ -1074,9 +1074,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void InstantiateLoadParam(uint32_t index, uint32_t param) {
     const LookupInfo info = Lookup(code_->names_[index]);
-    if (info.type() == LookupInfo::STACK) {
-      Emit<OP::LOAD_PARAM>(info.register_location(), param);
-    } else {
+    if (info.type() != LookupInfo::STACK) {
       RegisterID reg = registers_.Acquire();
       Emit<OP::LOAD_PARAM>(reg, param);
       EmitInstantiate(index, info, reg);
