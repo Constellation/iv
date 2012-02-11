@@ -896,6 +896,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         Emit<OP::INSTANTIATE_HEAP_BINDING>(
             SymbolToNameIndex(it->first),
             it->second.heap_location(),
+            it->second.register_location(),
             static_cast<uint32_t>(it->second.immutable()));
       }
     }
