@@ -7,37 +7,69 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+// register layout
+//                                 0
+// ...[arg2][arg1][this][frame....][heap....][stack....][temp....]
 class Registers {
  public:
   typedef core::SortedVector<int32_t, std::greater<int32_t> > Pool;
 
   class RegisterIDImpl : public core::ThreadSafeRefCounted<RegisterIDImpl> {
    public:
+    enum Type {
+      TEMPORARY = 0,
+      STACK = 1,
+      HEAP = 2
+    };
+
+    static const int kTypeMask = 3;
+
     explicit RegisterIDImpl(int32_t reg, Registers* holder)
       : reg_(reg),
+        type_(holder->Type(reg_)),
         holder_(holder) { }
 
     ~RegisterIDImpl() {
       holder_->Release(register_offset());
     }
 
-    bool IsLocal() const { return holder_->IsLocalID(reg_); }
+    bool IsStack() const { return (type_ & kTypeMask) == STACK; }
 
-    bool IsTemporary() const { return holder_->IsTemporaryID(reg_); }
+    bool IsHeap() const { return (type_ & kTypeMask) == HEAP; }
+
+    bool IsTemporary() const { return (type_ & kTypeMask) == TEMPORARY; }
+
+    bool IsArgument() const { return false; }
+
+    bool IsThis() const { return false; }
+
+    bool IsLocal() const { return IsStack() || IsHeap(); }
+
 
     int32_t register_offset() const { return reg_; }
    private:
 
     int32_t reg_;
+    int type_;
     Registers* holder_;
   };
 
   friend class RegisterIDImpl;
   typedef core::IntrusivePtr<RegisterIDImpl> ID;
 
+  Registers()
+    : heap_(),
+      stack_(),
+      variable_registers_(),
+      temporary_registers_(),
+      lives_() {
+  }
+
   void Clear(int32_t stack, int32_t heap) {
     lives_.clear();
     temporary_registers_.clear();
+    heap_ = heap;
+    stack_ = stack;
     variable_registers_ = stack + heap;
   }
 
@@ -55,8 +87,26 @@ class Registers {
     return lives_.size();
   }
 
+  bool IsHeapID(int32_t reg) {
+    return reg >= 0 && reg < heap_;
+  }
+
+  bool IsStackID(int32_t reg) {
+    return heap_ <= reg && reg < variable_registers_;
+  }
+
   bool IsLocalID(int32_t reg) {
     return variable_registers_ > reg;
+  }
+
+  int Type(uint32_t reg) {
+    if (IsHeapID(reg)) {
+      return RegisterIDImpl::HEAP;
+    } else if (IsStackID(reg)) {
+      return RegisterIDImpl::STACK;
+    } else {
+      return RegisterIDImpl::TEMPORARY;
+    }
   }
 
   bool IsTemporaryID(int32_t reg) {
@@ -89,6 +139,8 @@ class Registers {
     }
   }
 
+  int32_t heap_;
+  int32_t stack_;
   int32_t variable_registers_;
   Pool temporary_registers_;
   std::vector<bool> lives_;

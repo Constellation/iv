@@ -510,7 +510,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       //     }
       //
       // and if LHS has found, spill all thunks
-      thunklist->SpillHeapThunk();
       if (Analyzer::ExpressionHasAssignment(&call)) {
         thunklist->ForceSpill();
       }

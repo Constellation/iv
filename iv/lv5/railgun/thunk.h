@@ -16,16 +16,14 @@ inline void ThunkList::Remove(Thunk* thunk) {
 }
 
 struct ThunkSpiller {
-  ThunkSpiller(ThunkList* list, RegisterID reg)
-    : list_(list),
-      reg_(reg) {
+  ThunkSpiller(RegisterID reg)
+    : reg_(reg) {
   }
 
   bool operator()(Thunk* thunk) {
-    return thunk->Spill(list_, reg_);
+    return thunk->Spill(reg_);
   }
 
-  ThunkList* list_;
   RegisterID reg_;
 };
 
@@ -33,19 +31,14 @@ inline void ThunkList::Spill(RegisterID reg) {
   if (reg->IsLocal()) {
     vec_.erase(
         std::remove_if(vec_.begin(),
-                       vec_.end(), ThunkSpiller(this, reg)), vec_.end());
+                       vec_.end(), ThunkSpiller(reg)), vec_.end());
   }
 }
-
-inline void ThunkList::SpillHeapThunk() {
-  // TODO(Constellation) implement it
-}
-
 
 inline void ThunkList::ForceSpill() {
   for (Thunks::const_iterator it = vec_.begin(),
        last = vec_.end(); it != last; ++it) {
-    (*it)->ForceSpill(this);
+    (*it)->ForceSpill();
   }
   vec_.clear();
 }
@@ -62,23 +55,26 @@ inline Thunk::Thunk(ThunkList* list, RegisterID reg)
   assert(list);
   assert(reg);
   if (reg->IsLocal()) {
-    list_->Push(this);
+    if (reg->IsHeap()) {
+      ForceSpill();
+    } else {
+      list_->Push(this);
+    }
   }
 }
 
-inline bool Thunk::Spill(ThunkList* list, RegisterID reg) {
-  if (reg_->IsLocal()) {
-    if (reg == reg_) {
-      // spill this register
-      reg_ = list_->EmitMV(reg_);
-      assert(!reg_->IsLocal());
-      return true;
-    }
+inline bool Thunk::Spill(RegisterID reg) {
+  assert(reg_->IsLocal());
+  if (reg == reg_) {
+    // spill this register
+    reg_ = list_->EmitMV(reg_);
+    assert(!reg_->IsLocal());
+    return true;
   }
   return false;
 }
 
-inline void Thunk::ForceSpill(ThunkList* list) {
+inline void Thunk::ForceSpill() {
   assert(reg_->IsLocal());
   reg_ = list_->EmitMV(reg_);
   assert(!reg_->IsLocal());

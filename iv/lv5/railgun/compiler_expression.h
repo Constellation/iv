@@ -549,6 +549,7 @@ inline void Compiler::Visit(const Identifier* lit) {
 
 inline void Compiler::Visit(const ThisLiteral* lit) {
   const DestGuard dest_guard(this);
+  // TODO fix it
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   Emit<OP::LOAD_THIS>(dst_);
