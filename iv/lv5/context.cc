@@ -361,7 +361,11 @@ void Context::InitArray(const ClassSlot& func_cls,
       // prototype
       .def(symbol::prototype(), proto, ATTR::NONE)
       // section 15.4.3.2 Array.isArray(arg)
-      .def<&runtime::ArrayIsArray, 1>("isArray");
+      .def<&runtime::ArrayIsArray, 1>("isArray")
+      // ES.next Array.from
+      .def<&runtime::ArrayFrom, 1>("from")
+      // ES.next Array.from
+      .def<&runtime::ArrayOf, 0>("of");
 
   bind::Object(this, proto)
       .cls(cls.cls)

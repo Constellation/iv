@@ -81,14 +81,53 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
 
 // section 15.4.3.2 Array.isArray(arg)
 inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.isArray", args, e);
   if (args.empty()) {
     return JSFalse;
   }
-  const JSVal& val = args[0];
+  const JSVal& val = args.front();
   if (!val.IsObject()) {
     return JSFalse;
   }
   return JSVal::Bool(val.object()->IsClass<Class::Array>());
+}
+
+// strawman / ES.next Array extras
+//
+//   Array.from(arg)
+//   Array.of()
+//
+// These functions are experimental.
+// They may be changed without any notice.
+//
+// http://wiki.ecmascript.org/doku.php?id=strawman:array_extras
+// https://gist.github.com/1074126
+
+// ES.next Array.from(arg)
+inline JSVal ArrayFrom(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.from", args, e);
+  const JSVal arg1 = args.At(0);
+  Context* ctx = args.ctx();
+  JSObject* target = arg1.ToObject(ctx, IV_LV5_ERROR(e));
+  const uint32_t len = internal::GetLength(ctx, target, IV_LV5_ERROR(e));
+  JSArray* ary = JSArray::New(ctx);
+  for (uint32_t k = 0; k < len; ++k) {
+    const Symbol sym = symbol::MakeSymbolFromIndex(k);
+    if (target->HasProperty(ctx, sym)) {
+      const JSVal value = target->Get(ctx, sym, IV_LV5_ERROR(e));
+      ary->DefineOwnProperty(
+          ctx, sym,
+          DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
+          false, IV_LV5_ERROR(e));
+    }
+  }
+  return ary;
+}
+
+// ES.next Array.of()
+inline JSVal ArrayOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
+  return JSArray::New(args.ctx(), args.begin(), args.end());
 }
 
 // section 15.4.4.2 Array.prototype.toString()
