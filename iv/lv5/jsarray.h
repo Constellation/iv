@@ -21,7 +21,7 @@
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
-namespace detail {
+namespace jsarray_detail {
 
 static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
   if (!desc.IsEnumerable() && !desc.IsEnumerableAbsent()) {
@@ -51,17 +51,24 @@ DescriptorToArrayLengthSlot(const PropertyDescriptor& desc) {
   return DescriptorSlot::Data<uint32_t>(res, desc.attrs());
 }
 
-}  // namespace iv::lv5::detail
+template<typename T = void>
+class JSArrayConstants {
+ public:
+  static const uint32_t kMaxVectorSize;
+};
+
+template<typename T>
+const uint32_t JSArrayConstants<T>::kMaxVectorSize = 10000;
+
+}  // namespace iv::lv5::jsarray_detail
 
 class Context;
 
-class JSArray : public JSObject {
+class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  public:
   friend class railgun::VM;
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
   typedef JSVals JSValVector;
-
-  static const uint32_t kMaxVectorSize = 10000;
 
   uint32_t GetLength() const {
     return length_.value();
@@ -78,6 +85,23 @@ class JSArray : public JSObject {
     JSArray* const ary = new JSArray(ctx, n);
     ary->set_cls(JSArray::GetClass());
     ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    return ary;
+  }
+
+  template<typename Iter>
+  static JSArray* New(Context* ctx, Iter it, Iter last) {
+    const uint32_t length = std::distance(it, last);
+    JSArray* ary = JSArray::New(ctx, length);
+    const uint32_t min = std::min(length, JSArray::kMaxVectorSize);
+    Iter mid = it + min;
+    std::copy(it, mid, ary->vector_.begin());
+    if (mid != last) {
+      uint32_t current = JSArray::kMaxVectorSize;
+      ary->ReserveMap(length);
+      for (; mid != last; ++mid, ++current) {
+        ary->SetToMap(current, *mid);
+      }
+    }
     return ary;
   }
 
@@ -297,7 +321,7 @@ class JSArray : public JSObject {
     Slot slot;
     const bool is_default_descriptor = desc.IsDefault();
     if ((is_default_descriptor ||
-         (index < old_len && detail::IsAbsentDescriptor(desc))) &&
+         (index < old_len && jsarray_detail::IsAbsentDescriptor(desc))) &&
          (dense_ || !JSObject::GetOwnPropertySlot(ctx, name, &slot))) {
       if (kMaxVectorSize > index) {
         if (vector_.size() > index) {
@@ -408,7 +432,7 @@ class JSArray : public JSObject {
         bool returned = false;
         if (IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e)) {
           length_ =
-              detail::DescriptorToArrayLengthSlot(
+              jsarray_detail::DescriptorToArrayLengthSlot(
                   PropertyDescriptor::Merge(desc, length_));
         }
         return returned;
@@ -428,7 +452,7 @@ class JSArray : public JSObject {
         if (IsDefineOwnPropertyAccepted(length_,
                                         new_len_desc, th, &returned, e)) {
           length_ =
-              detail::DescriptorToArrayLengthSlot(
+              jsarray_detail::DescriptorToArrayLengthSlot(
                   PropertyDescriptor::Merge(new_len_desc, length_));
         }
         return returned;
@@ -446,7 +470,7 @@ class JSArray : public JSObject {
       if (IsDefineOwnPropertyAccepted(length_,
                                       new_len_desc, th, &succeeded, e)) {
         length_ =
-            detail::DescriptorToArrayLengthSlot(
+            jsarray_detail::DescriptorToArrayLengthSlot(
                 PropertyDescriptor::Merge(new_len_desc, length_));
       }
       if (!succeeded) {
@@ -474,7 +498,7 @@ class JSArray : public JSObject {
                                               new_len_desc,
                                               false, &wasted, e)) {
                 length_ =
-                    detail::DescriptorToArrayLengthSlot(
+                    jsarray_detail::DescriptorToArrayLengthSlot(
                         PropertyDescriptor::Merge(new_len_desc, length_));
               }
               IV_LV5_ERROR_GUARD_WITH(e, false);
@@ -515,7 +539,7 @@ class JSArray : public JSObject {
                                               new_len_desc,
                                               false, &wasted, e)) {
                 length_ =
-                    detail::DescriptorToArrayLengthSlot(
+                    jsarray_detail::DescriptorToArrayLengthSlot(
                         PropertyDescriptor::Merge(new_len_desc, length_));
               }
               IV_LV5_ERROR_GUARD_WITH(e, false);
@@ -532,7 +556,7 @@ class JSArray : public JSObject {
         bool wasted = false;
         if (IsDefineOwnPropertyAccepted(length_, target, false, &wasted, e)) {
           length_ =
-              detail::DescriptorToArrayLengthSlot(
+              jsarray_detail::DescriptorToArrayLengthSlot(
                   PropertyDescriptor::Merge(target, length_));
         }
       }
