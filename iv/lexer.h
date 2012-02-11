@@ -798,7 +798,7 @@ class Lexer: private Noncopyable<> {
       }
 
       case '0' : {
-        uint16_t uc = 0;
+        uint16_t uc = OctalValue(c_);
         Advance();
         if (c_ >= 0 && character::IsDecimalDigit(c_)) {
           if (!character::IsOctalDigit(c_)) {
