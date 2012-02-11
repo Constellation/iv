@@ -884,9 +884,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     FunctionScope* env =
         static_cast<FunctionScope*>(current_variable_scope_.get());
     registers_.Clear(env->heap_size(), env->stack_size());
+
+    // save eval result or not
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
     }
+
     if (env->scope()->needs_heap_scope()) {
       Emit<OP::BUILD_ENV>(env->heap_size());
       assert(!env->heap().empty());
@@ -900,6 +903,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
             static_cast<uint32_t>(it->second.immutable()));
       }
     }
+
     if (!is_eval_decl) {
       std::size_t param_count = 0;
       typedef std::unordered_map<Symbol, std::size_t> Symbol2Count;
@@ -925,6 +929,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
             SymbolToNameIndex(lit.name().Address()->symbol()));
       }
     }
+
     code_->set_heap_size(env->heap_size());
     code_->set_stack_size(env->stack_size());
   }
@@ -937,9 +942,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     //     * global code
     assert(thunklist_.empty());
     registers_.Clear(0, 0);
+
+    // save eval result or not
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
     }
+
     std::unordered_set<Symbol> already_declared;
     const Scope& scope = lit.scope();
     typedef Scope::FunctionLiterals Functions;
@@ -1022,11 +1030,13 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       // only STOP_CODE
       code_->set_empty(true);
     }
+
+    // return eval result
     if (current_variable_scope_->UseExpressionReturn()) {
       Emit<OP::RETURN>(eval_result_);
-    } else {
-      Emit<OP::STOP_CODE>();
     }
+
+    Emit<OP::STOP_CODE>();
     CodeContextEpilogue(code);
 
     const std::shared_ptr<VariableScope> target = current_variable_scope_;
