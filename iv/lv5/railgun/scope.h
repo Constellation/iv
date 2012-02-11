@@ -41,10 +41,11 @@ class LookupInfo {
   }
 
   static LookupInfo NewHeap(uint32_t heap_location,
+                            int32_t register_location,
                             bool immutable,
                             uint32_t scope_nest_count) {
     return LookupInfo(LookupInfo::HEAP,
-                      0,
+                      register_location,
                       heap_location,
                       immutable,
                       scope_nest_count);
@@ -219,16 +220,30 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       assert(map_.find((*it)->symbol()) == map_.end());
       const Assigned* assigned = (*it);
       if (assigned->IsHeap() || scope_->upper_of_eval()) {
-        const std::pair<Symbol, Variable> item =
-            std::make_pair(
-                assigned->symbol(),
-                Variable(HEAP,
-                         heap_.size(),
-                         heap_.size(),
-                         assigned->immutable()));
-        heap_.push_back(item);
-        map_.insert(item);
+        // HEAP
+        if (assigned->IsParameter()) {
+          const std::pair<Symbol, Variable> item =
+              std::make_pair(
+                  assigned->symbol(),
+                  Variable(HEAP,
+                           FrameConstant<>::Arg(assigned->parameter()),
+                           heap_.size(),
+                           assigned->immutable()));
+          heap_.push_back(item);
+          map_.insert(item);
+        } else {
+          const std::pair<Symbol, Variable> item =
+              std::make_pair(
+                  assigned->symbol(),
+                  Variable(HEAP,
+                           heap_.size(),
+                           heap_.size(),
+                           assigned->immutable()));
+          heap_.push_back(item);
+          map_.insert(item);
+        }
       } else {
+        // STACK
         if (assigned->IsReferenced()) {
           if (assigned->IsParameter()) {
             const std::pair<Symbol, Variable> item = std::make_pair(
@@ -283,6 +298,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         case HEAP:
           return LookupInfo::NewHeap(
               it->second.heap_location(),
+              it->second.register_location(),
               it->second.immutable(),
               scope_nest_count());
         case STACK:

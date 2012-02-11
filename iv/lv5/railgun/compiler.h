@@ -910,7 +910,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       for (Symbol2Count::const_iterator it = sym2c.begin(),
            last = sym2c.end(); it != last; ++it) {
-        InstantiateLoadParam(SymbolToNameIndex(it->first), it->second);
+        const LookupInfo info = Lookup(it->first);
+        if (info.type() != LookupInfo::STACK) {
+          const uint32_t index = SymbolToNameIndex(it->first);
+          EmitInstantiate(index, info,
+                          registers_.LocalID(info.register_location()));
+        }
       }
       if (env->scope()->IsArgumentsRealized()) {
         InstantiateArguments();
@@ -1069,15 +1074,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       default: {
         // do nothing
       }
-    }
-  }
-
-  void InstantiateLoadParam(uint32_t index, uint32_t param) {
-    const LookupInfo info = Lookup(code_->names_[index]);
-    if (info.type() != LookupInfo::STACK) {
-      RegisterID reg = registers_.Acquire();
-      Emit<OP::LOAD_PARAM>(reg, param);
-      EmitInstantiate(index, info, reg);
     }
   }
 

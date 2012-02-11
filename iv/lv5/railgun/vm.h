@@ -247,12 +247,6 @@ do {\
         DISPATCH_WITH_NO_INCREMENT();
       }
 
-      DEFINE_OPCODE(LOAD_PARAM) {
-        // opcode | dst | arg
-        REG(instr[1].i32) = frame->GetArg(instr[2].i32);
-        DISPATCH(LOAD_PARAM);
-      }
-
       DEFINE_OPCODE(BUILD_ENV) {
         // opcode | size
         frame->variable_env_ = frame->lexical_env_ =
