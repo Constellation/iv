@@ -726,12 +726,6 @@ do {\
         DISPATCH(LOAD_UNDEFINED);
       }
 
-      DEFINE_OPCODE(LOAD_THIS) {
-        // opcode | dst
-        REG(instr[1].i32) = frame->GetThis();
-        DISPATCH(LOAD_THIS);
-      }
-
       DEFINE_OPCODE(LOAD_UINT32) {
         // opcode | dst | val
         REG(instr[1].i32) = JSVal::UInt32(instr[2].value);
