@@ -254,8 +254,9 @@ class DateParser : private core::Noncopyable<> {
       return min < 60;
     }
 
+    // accept leap second
     static bool IsSecExpecting(uint32_t sec) {
-      return sec < 60;
+      return sec <= 60;
     }
 
     static bool IsMSecExpecting(uint32_t msec) {
