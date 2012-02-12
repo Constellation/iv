@@ -93,14 +93,12 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     const uint32_t length = std::distance(it, last);
     JSArray* ary = JSArray::New(ctx, length);
     const uint32_t min = std::min(length, JSArray::kMaxVectorSize);
-    Iter mid = it + min;
-    std::copy(it, mid, ary->vector_.begin());
+    const Iter mid = it + min;
+    ary->SetToVector(0, it, mid);
     if (mid != last) {
       uint32_t current = JSArray::kMaxVectorSize;
       ary->ReserveMap(length);
-      for (; mid != last; ++mid, ++current) {
-        ary->SetToMap(current, *mid);
-      }
+      ary->SetToMap(current, mid, last);
     }
     return ary;
   }
@@ -616,15 +614,23 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
-  void SetToVector(uint32_t index, const JSVal& val) {
+  template<typename Iter>
+  void SetToVector(uint32_t index, Iter it, Iter last) {
     assert(kMaxVectorSize > index);
-    vector_[index] = val;
+    assert(vector_.size() >=
+           (index + static_cast<std::size_t>(std::distance(it, last))));
+    std::copy(it, last, vector_.begin() + index);
   }
 
-  void SetToMap(uint32_t index, const JSVal& val) {
+  template<typename Iter>
+  void SetToMap(uint32_t index, Iter it, Iter last) {
     assert(kMaxVectorSize <= index);
     assert(map_);
-    (*map_)[index] = val;
+    for (; it != last; ++it, ++index) {
+      if (!it->IsEmpty()) {
+        (*map_)[index] = *it;
+      }
+    }
   }
 
   bool FixUpLength(uint32_t old_len, uint32_t index) {

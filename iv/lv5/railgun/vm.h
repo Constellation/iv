@@ -114,7 +114,7 @@ std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
   // current frame values
   Frame* frame = start;
   Instruction* instr = frame->data();
-  JSVal* reg = frame->RegisterFile();
+  JSVal* register_offset = frame->RegisterFile();
   bool strict = frame->code()->strict();
 
 #define INCREMENT_NEXT(op) (instr += OPLength<OP::op>::value)
@@ -197,7 +197,7 @@ do {\
   frame->set_lexical_env(dynamic_env_target);\
   frame->dynamic_env_level_ = dynamic_env_level_shrink;\
 } while (0)
-#define REG(n) (reg[n])
+#define REG(n) (register_offset[n])
 
 #define GETITEM(target, i) ((*target)[(i)])
 
@@ -241,7 +241,7 @@ do {\
         instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
         const int32_t r = frame->r_;
         frame = stack_.Unwind(frame);
-        reg = frame->RegisterFile();
+        register_offset = frame->RegisterFile();
         REG(r) = ret;
         strict = frame->code()->strict();
         DISPATCH_WITH_NO_INCREMENT();
@@ -694,6 +694,12 @@ do {\
         // opcode | jmp
         JUMPBY(instr[1].diff);
         DISPATCH_WITH_NO_INCREMENT();
+      }
+
+      DEFINE_OPCODE(LOAD_EMPTY) {
+        // opcode | dst
+        REG(instr[1].i32) = JSEmpty;
+        DISPATCH(LOAD_EMPTY);
       }
 
       DEFINE_OPCODE(LOAD_NULL) {
@@ -1374,7 +1380,7 @@ do {\
         instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
         const int32_t r = frame->r_;
         frame = stack_.Unwind(frame);
-        reg = frame->RegisterFile();
+        register_offset = frame->RegisterFile();
         REG(r) = ret;
         strict = frame->code()->strict();
         DISPATCH_WITH_NO_INCREMENT();
@@ -1501,18 +1507,18 @@ do {\
       }
 
       DEFINE_OPCODE(INIT_VECTOR_ARRAY_ELEMENT) {
-        // opcode | ary | item | index
+        // opcode | ary | reg | index | size
         JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32).object());
-        const JSVal item = REG(instr[2].i32);
-        ary->SetToVector(instr[3].value, item);
+        const JSVal* reg = &REG(instr[2].i32);
+        ary->SetToVector(instr[3].value, reg, reg + instr[4].value);
         DISPATCH(INIT_VECTOR_ARRAY_ELEMENT);
       }
 
       DEFINE_OPCODE(INIT_SPARSE_ARRAY_ELEMENT) {
-        // opcode | ary | item | index
+        // opcode | ary | reg | index | size
         JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32).object());
-        const JSVal item = REG(instr[2].i32);
-        ary->SetToMap(instr[3].value, item);
+        const JSVal* reg = &REG(instr[2].i32);
+        ary->SetToMap(instr[3].value, reg, reg + instr[4].value);
         DISPATCH(INIT_SPARSE_ARRAY_ELEMENT);
       }
 
@@ -1626,7 +1632,7 @@ do {\
           }
           frame = new_frame;
           instr = frame->data();
-          reg = frame->RegisterFile();
+          register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
           InitThisBinding(ctx_, frame, ERR);
           DISPATCH_WITH_NO_INCREMENT();
@@ -1665,7 +1671,7 @@ do {\
           }
           frame = new_frame;
           instr = frame->data();
-          reg = frame->RegisterFile();
+          register_offset = frame->RegisterFile();
           strict = code->strict();
           JSObject* const obj = JSObject::New(ctx_, code->ConstructMap(ctx_));
           frame->set_this_binding(obj);
@@ -1715,7 +1721,7 @@ do {\
           }
           frame = new_frame;
           instr = frame->data();
-          reg = frame->RegisterFile();
+          register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
           InitThisBinding(ctx_, frame, ERR);
           DISPATCH_WITH_NO_INCREMENT();
@@ -1785,7 +1791,7 @@ do {\
         // unwind frame
         instr = frame->prev_pc_;
         frame = stack_.Unwind(frame);
-        reg = frame->RegisterFile();
+        register_offset = frame->RegisterFile();
         strict = frame->code()->strict();
       }
     }

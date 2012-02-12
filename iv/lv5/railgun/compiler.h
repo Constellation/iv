@@ -65,7 +65,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
 
+  class ArraySite;
+
   friend class ThunkList;
+  friend class ArraySite;
+  friend class CallSite;
 
   explicit Compiler(Context* ctx)
     : ctx_(ctx),
@@ -557,6 +561,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     int32_t start_;
     Registers* registers_;
   };
+
 
   template<OP::Type op, typename Call>
   RegisterID EmitCall(const Call& call, RegisterID dst) {

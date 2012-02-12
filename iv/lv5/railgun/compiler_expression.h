@@ -582,23 +582,72 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
       JSRegExp::New(ctx_, lit->value(), lit->regexp()));
 }
 
+class Compiler::ArraySite {
+ public:
+  static const int kOnce = 50;
+  explicit ArraySite(uint32_t size,
+                     ThunkList* thunklist,
+                     Registers* registers)
+    : size_(size),
+      start_(),
+      ary_(size, RegisterID()),
+      registers_(registers) {
+    thunklist->ForceSpill();
+    start_ = registers->AcquireCallBase(size_);
+  }
+
+  RegisterID Place(uint32_t i) {
+    if (!ary_[i]) {
+      ary_[i] = registers_->Acquire(start_ + i);
+    }
+    return ary_[i];
+  }
+
+  void Emit(Compiler* compiler, RegisterID ary,
+            uint32_t idx, uint32_t size) const {
+    assert(!ary_.empty());
+    if ((idx + size) > JSArray::kMaxVectorSize) {
+      compiler->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary, ary_.front(), idx, size);
+    } else {
+      compiler->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary, ary_.front(), idx, size);
+    }
+  }
+
+ private:
+  uint32_t size_;
+  int32_t start_;
+  std::vector<RegisterID> ary_;
+  Registers* registers_;
+};
+
 inline void Compiler::Visit(const ArrayLiteral* lit) {
   typedef ArrayLiteral::MaybeExpressions Items;
   const DestGuard dest_guard(this);
   const Items& items = lit->items();
   RegisterID ary = registers_.Acquire();
   Emit<OP::LOAD_ARRAY>(ary, items.size());
-  uint32_t current = 0;
-  for (Items::const_iterator it = items.begin(),
-       last = items.end(); it != last; ++it, ++current) {
-    const core::Maybe<const Expression>& expr = *it;
-    if (expr) {
-      RegisterID item = EmitExpression(expr.Address());
-      if (JSArray::kMaxVectorSize > current) {
-        Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary, item, current);
-      } else {
-        Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary, item, current);
+  {
+    Items::const_iterator it = items.begin();
+    const Items::const_iterator last = items.end();
+    const uint32_t size = items.size();
+    uint32_t rest = size;
+    uint32_t idx = 0;
+    while (it != last) {
+      const int32_t dis =
+          static_cast<int32_t>(std::min<uint32_t>(rest, ArraySite::kOnce));
+      ArraySite site(dis, &thunklist_, &registers_);
+      uint32_t i = 0;
+      for (Items::const_iterator c = it + dis; it != c; ++it, ++i) {
+        const core::Maybe<const Expression>& expr = *it;
+        if (expr) {
+          EmitExpression(expr.Address(), site.Place(i));
+        } else {
+          Emit<OP::LOAD_EMPTY>(site.Place(i));
+        }
       }
+      site.Emit(this, ary, idx, dis);
+      rest -= dis;
+      idx += dis;
     }
   }
   dst_ = EmitMV(dst_, ary);
