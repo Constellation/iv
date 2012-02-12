@@ -207,9 +207,9 @@ class Scope : public ScopeBase<Factory> {
     // parameters
     // if "arguments" is realized, move parameters to HEAP
     const bool parameters_are_in_heap = IsParametersInHeap();
-    int32_t param = 0;
-    for (typename Assigneds::const_iterator it = params_->begin(),
-         last = params_->end(); it != last; ++it, ++param) {
+    int32_t param = static_cast<int32_t>(params_->size());
+    for (typename Assigneds::const_reverse_iterator it = params_->rbegin(),
+         last = params_->rend(); it != last; ++it, --param) {
       Assigned<Factory>* assigned(*it);
       const Symbol sym = assigned->symbol();
       if (already.find(sym) == already.end()) {
