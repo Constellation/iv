@@ -308,6 +308,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         case UNUSED:
           return LookupInfo::NewUnused();
       }
+      UNREACHABLE();
+      return LookupInfo::NewUnused();  // makes compiler happy
     } else {
       // not found in this scope
       if (scope_->direct_call_to_eval()) {
