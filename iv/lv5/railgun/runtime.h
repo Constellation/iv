@@ -89,18 +89,24 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     }
   }
 
-  std::shared_ptr<EvalSource> const src(new EvalSource(*str));
-  AstFactory factory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(&factory, *src,
-                                              ctx->symbol_table());
-  parser.set_strict(strict);
-  const FunctionLiteral* const eval = parser.ParseProgram();
-  if (!eval) {
-    e->Report(Error::Syntax, parser.error());
-    return JSUndefined;
+  Code* code = ctx->direct_eval_map()->Lookup(str);
+
+  if (!code) {
+    std::shared_ptr<EvalSource> const src(new EvalSource(*str));
+    AstFactory factory(ctx);
+    core::Parser<AstFactory, EvalSource> parser(&factory, *src,
+                                                ctx->symbol_table());
+    parser.set_strict(strict);
+    const FunctionLiteral* const eval = parser.ParseProgram();
+    if (!eval) {
+      e->Report(Error::Syntax, parser.error());
+      return JSUndefined;
+    }
+    JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+    code = CompileEval(ctx, *eval, script);
+    ctx->direct_eval_map()->Insert(str, code);
   }
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  Code* code = CompileEval(ctx, *eval, script);
+
   VM* const vm = ctx->vm();
   return vm->RunEval(
       code,

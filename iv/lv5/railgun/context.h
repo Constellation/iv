@@ -10,7 +10,8 @@ namespace railgun {
 
 Context::Context()
   : lv5::Context(),
-    vm_() {
+    vm_(),
+    direct_eval_map_(10) {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
