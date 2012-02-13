@@ -18,24 +18,6 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-inline Code* CompileFunction(Context* ctx, const JSString* str, Error* e) {
-  std::shared_ptr<EvalSource> const src(new EvalSource(*str));
-  AstFactory factory(ctx);
-  core::Parser<AstFactory, EvalSource> parser(&factory, *src, ctx->symbol_table());
-  const FunctionLiteral* const eval = parser.ParseProgram();
-  if (!eval) {
-    e->Report(Error::Syntax, parser.error());
-    return NULL;
-  }
-  const FunctionLiteral* const func =
-      internal::IsOneFunctionExpression(*eval, e);
-  if (*e) {
-    return NULL;
-  }
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  return CompileFunction(ctx, *func, script);
-}
-
 inline void InitThisBinding(Context* ctx, Frame* frame, Error* e) {
   const JSVal this_value = frame->GetThis();
   if (!frame->code()->strict()) {

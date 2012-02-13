@@ -23,10 +23,12 @@ class AstFactory
       regexps_(DestReqs::allocator_type(this)) { }
 
   ~AstFactory() {
-    for (DestReqs::const_iterator it = regexps_.begin(),
-         last = regexps_.end(); it != last; ++it) {
-      (*it)->~RegExpLiteral();
-    }
+    DestroyRegExpLiteral();
+  }
+
+  void Clear() {
+    core::Space::Clear();
+    DestroyRegExpLiteral();
   }
 
   inline RegExpLiteral* NewRegExpLiteral(
@@ -45,6 +47,13 @@ class AstFactory
     }
   }
  private:
+  void DestroyRegExpLiteral() {
+    for (DestReqs::const_iterator it = regexps_.begin(),
+         last = regexps_.end(); it != last; ++it) {
+      (*it)->~RegExpLiteral();
+    }
+  }
+
   Context* ctx_;
   DestReqs regexps_;
 };
