@@ -3,6 +3,7 @@
 #include <gc/gc_cpp.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/lru_code_map.h>
+#include <iv/lv5/factory.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {

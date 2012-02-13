@@ -17,8 +17,22 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
-  Code* const code = CompileFunction(ctx, builder.Build(ctx), IV_LV5_ERROR(e));
-  return JSVMFunction::New(ctx, code, ctx->global_env());
+  const JSString* str = builder.Build(ctx);
+  std::shared_ptr<EvalSource> const src(new EvalSource(*str));
+  AstFactory factory(ctx);
+  core::Parser<AstFactory, EvalSource> parser(&factory,
+                                              *src, ctx->symbol_table());
+  const FunctionLiteral* const eval = parser.ParseProgram();
+  if (!eval) {
+    e->Report(Error::Syntax, parser.error());
+    return JSEmpty;
+  }
+  const FunctionLiteral* const func =
+      internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
+  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+  return JSVMFunction::New(ctx,
+                           CompileFunction(ctx, *func, script),
+                           ctx->global_env());
 }
 
 inline JSVal GlobalEval(const Arguments& args, Error* e) {
