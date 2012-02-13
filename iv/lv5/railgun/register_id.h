@@ -9,7 +9,7 @@ namespace railgun {
 
 // register layout
 //                                 0
-// ...[arg2][arg1][this][frame....][heap....][stack....][temp....]
+// ...[arg2][arg1][this][frame....][stack....][heap....][temp....]
 class Registers {
  public:
   typedef core::SortedVector<int32_t, std::greater<int32_t> > Pool;
@@ -92,11 +92,11 @@ class Registers {
   }
 
   bool IsHeapID(int32_t reg) {
-    return reg >= 0 && reg < heap_;
+    return stack_ <= reg && reg < variable_registers_;
   }
 
   bool IsStackID(int32_t reg) {
-    return heap_ <= reg && reg < variable_registers_;
+    return reg >= 0 && reg < stack_;
   }
 
   bool IsLocalID(int32_t reg) {

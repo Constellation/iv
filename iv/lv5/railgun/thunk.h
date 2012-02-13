@@ -55,11 +55,11 @@ inline Thunk::Thunk(ThunkList* list, RegisterID reg)
   assert(list);
   assert(reg);
   if (reg->IsLocal()) {
-    if (reg->IsHeap()) {
-      ForceSpill();
-    } else {
+//    if (reg->IsHeap()) {
+//      ForceSpill();
+//    } else {
       list_->Push(this);
-    }
+//    }
   }
 }
 
