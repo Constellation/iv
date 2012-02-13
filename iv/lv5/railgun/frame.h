@@ -22,7 +22,7 @@ struct FrameConstant {
 //
 // Frame structure is following
 //
-// ARG2 | ARG1 | THIS | FRAME | REGISTERS | STACK
+// ARG2 | ARG1 | THIS | FRAME | LOCAL REGISTERS | HEAP REGISTERS | TEMP ...
 //
 struct Frame {
   static const int kThisOffset = 1;

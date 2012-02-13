@@ -25,22 +25,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
     GLOBAL,
     EVAL
   };
-  enum DeclType {
-    PARAM,
-    PARAM_LOCAL,
-    FDECL,
-    ARGUMENTS,
-    ARGUMENTS_LOCAL,
-    VAR,
-    FEXPR,
-    FEXPR_LOCAL
-  };
   friend class Compiler;
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Code*>::type Codes;
-  // symbol, decl type, configurable, param point
-  typedef std::tuple<Symbol, DeclType, std::size_t, uint32_t> Decl;
 
   Code(Context* ctx,
        JSScript* script,
