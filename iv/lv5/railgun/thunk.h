@@ -54,12 +54,10 @@ inline Thunk::Thunk(ThunkList* list, RegisterID reg)
     released_(false) {
   assert(list);
   assert(reg);
-  if (reg->IsLocal()) {
-//    if (reg->IsHeap()) {
-//      ForceSpill();
-//    } else {
-      list_->Push(this);
-//    }
+  if (reg->IsHeap()) {
+    ForceSpill();
+  } else if (reg->IsStack()) {
+    list_->Push(this);
   }
 }
 
