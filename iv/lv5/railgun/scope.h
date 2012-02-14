@@ -24,31 +24,40 @@ class LookupInfo {
     UNUSED
   };
 
-  static LookupInfo NewStack(int32_t register_location, bool immutable) {
-    return LookupInfo(STACK, register_location, 0, immutable, 0);
+  static LookupInfo NewStack(int32_t register_location,
+                             bool immutable,
+                             const Assigned* assigned) {
+    return LookupInfo(STACK,
+                      register_location,
+                      0,
+                      immutable,
+                      0,
+                      assigned);
   }
 
   static LookupInfo NewUnused() {
-    return LookupInfo(UNUSED, 0, 0, false, 0);
+    return LookupInfo(UNUSED, 0, 0, false, 0, NULL);
   }
 
   static LookupInfo NewLookup() {
-    return LookupInfo(LOOKUP, 0, 0, false, 0);
+    return LookupInfo(LOOKUP, 0, 0, false, 0, NULL);
   }
 
   static LookupInfo NewGlobal() {
-    return LookupInfo(GLOBAL, 0, 0, false, 0);
+    return LookupInfo(GLOBAL, 0, 0, false, 0, NULL);
   }
 
   static LookupInfo NewHeap(uint32_t heap_location,
                             int32_t register_location,
                             bool immutable,
-                            uint32_t scope_nest_count) {
-    return LookupInfo(LookupInfo::HEAP,
+                            uint32_t scope_nest_count,
+                            const Assigned* assigned) {
+    return LookupInfo(HEAP,
                       register_location,
                       heap_location,
                       immutable,
-                      scope_nest_count);
+                      scope_nest_count,
+                      assigned);
   }
 
   Type type() const { return type_; }
@@ -61,17 +70,25 @@ class LookupInfo {
 
   bool immutable() const { return immutable_; }
 
+  const Assigned* assigned() const { return assigned_; }
+
+  void DisplaceHeapRegister(int32_t stack_size) {
+    register_location_ = stack_size + heap_location();
+  }
+
  private:
   LookupInfo(Type type,
              int32_t register_location,
              uint32_t heap_location,
              bool immutable,
-             uint32_t scope)
+             uint32_t scope,
+             const Assigned* assigned)
     : type_(type),
       register_location_(register_location),
       heap_location_(heap_location),
       scope_(scope),
-      immutable_(immutable) {
+      immutable_(immutable),
+      assigned_(assigned) {
   }
 
   Type type_;
@@ -79,6 +96,7 @@ class LookupInfo {
   uint32_t heap_location_;
   uint32_t scope_;
   bool immutable_;
+  const Assigned* assigned_;
 };
 
 class VariableScope : private core::Noncopyable<VariableScope> {
@@ -163,50 +181,10 @@ typedef CodeScope<Code::FUNCTION> FunctionScope;
 template<>
 class CodeScope<Code::FUNCTION> : public VariableScope {
  public:
-  enum Type {
-    STACK  = 0,
-    HEAP   = 1,
-    UNUSED = 2
-  };
 
-  class Variable {
-   public:
-    Variable(Type type,
-             int32_t register_location,
-             uint32_t heap_location,
-             bool immutable,
-             const Assigned* assigned)
-      : type_(type),
-        register_location_(register_location),
-        heap_location_(heap_location),
-        immutable_(immutable),
-        assigned_(assigned) {
-    }
+  typedef std::unordered_map<Symbol, LookupInfo> VariableMap;
 
-    Type type() const { return type_; }
-
-    int32_t register_location() const { return register_location_; }
-
-    uint32_t heap_location() const { return heap_location_; }
-
-    bool immutable() const { return immutable_; }
-
-    const Assigned* assigned() const { return assigned_; }
-
-    void DisplaceHeapRegister(int32_t stack_size) {
-      register_location_ = stack_size + heap_location();
-    }
-   private:
-    Type type_;
-    uint32_t register_location_;
-    uint32_t heap_location_;
-    bool immutable_;
-    const Assigned* assigned_;
-  };
-
-  typedef std::unordered_map<Symbol, Variable> VariableMap;
-
-  typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
+  typedef std::vector<std::pair<Symbol, LookupInfo> > HeapVariables;
 
   CodeScope(const FunctionLiteral* lit,
             const std::shared_ptr<VariableScope>& up,
@@ -230,25 +208,27 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       if (assigned->IsHeap() || scope_->upper_of_eval()) {
         // HEAP
         if (assigned->IsParameter()) {
-          const std::pair<Symbol, Variable> item =
+          const std::pair<Symbol, LookupInfo> item =
               std::make_pair(
                   assigned->symbol(),
-                  Variable(HEAP,
-                           FrameConstant<>::Arg(assigned->parameter()),
-                           heap_.size(),
-                           assigned->immutable(),
-                           assigned));
+                  LookupInfo::NewHeap(
+                      heap_.size(),
+                      FrameConstant<>::Arg(assigned->parameter()),
+                      assigned->immutable(),
+                      scope_nest_count(),
+                      assigned));
           heap_.push_back(item);
           map_.insert(item);
         } else {
-          const std::pair<Symbol, Variable> item =
+          const std::pair<Symbol, LookupInfo> item =
               std::make_pair(
                   assigned->symbol(),
-                  Variable(HEAP,
-                           heap_.size(),
-                           heap_.size(),
-                           assigned->immutable(),
-                           assigned));
+                  LookupInfo::NewHeap(
+                      heap_.size(),
+                      heap_.size(),
+                      assigned->immutable(),
+                      scope_nest_count(),
+                      assigned));
           heap_.push_back(item);
           map_.insert(item);
         }
@@ -256,33 +236,25 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         // STACK
         if (assigned->IsReferenced()) {
           if (assigned->IsParameter()) {
-            const std::pair<Symbol, Variable> item = std::make_pair(
+            const std::pair<Symbol, LookupInfo> item = std::make_pair(
                 assigned->symbol(),
-                Variable(STACK,
-                         FrameConstant<>::Arg(assigned->parameter()),
-                         0,
-                         assigned->immutable(),
-                         assigned));
+                LookupInfo::NewStack(
+                    FrameConstant<>::Arg(assigned->parameter()),
+                    assigned->immutable(),
+                    assigned));
             map_.insert(item);
           } else {
-            const std::pair<Symbol, Variable> item = std::make_pair(
+            const std::pair<Symbol, LookupInfo> item = std::make_pair(
                 assigned->symbol(),
-                Variable(STACK,
-                         stack_size_++,
-                         0,
-                         assigned->immutable(),
-                         assigned));
+                LookupInfo::NewStack(
+                    stack_size_++,
+                    assigned->immutable(),
+                    assigned));
             map_.insert(item);
           }
         } else {
-          const std::pair<Symbol, Variable> item =
-              std::make_pair(
-                  assigned->symbol(),
-                  Variable(UNUSED,
-                           0,
-                           0,
-                           assigned->immutable(),
-                           assigned));
+          const std::pair<Symbol, LookupInfo> item =
+              std::make_pair(assigned->symbol(), LookupInfo::NewUnused());
           map_.insert(item);
         }
       }
@@ -291,25 +263,21 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     if (!is_eval_decl && map_.find(symbol::arguments()) == map_.end()) {
       // not hidden
       if (scope_->arguments_is_heap() || scope_->direct_call_to_eval()) {
-        const std::pair<Symbol, Variable> item =
+        const std::pair<Symbol, LookupInfo> item =
             std::make_pair(
                 symbol::arguments(),
-                Variable(HEAP,
-                         heap_.size(),
-                         heap_.size(),
-                         scope->strict(),
-                         NULL));
+                LookupInfo::NewHeap(heap_.size(),
+                                    heap_.size(), 
+                                    scope->strict(),
+                                    scope_nest_count(),
+                                    NULL));
         heap_.push_back(item);
         map_.insert(item);
       } else if (scope_->has_arguments()) {
-        const std::pair<Symbol, Variable> item =
+        const std::pair<Symbol, LookupInfo> item =
             std::make_pair(
                 symbol::arguments(),
-                Variable(STACK,
-                         stack_size_++,
-                         0,
-                         scope->strict(),
-                         NULL));
+                LookupInfo::NewStack(stack_size_++, scope->strict(), NULL));
         map_.insert(item);
       }
     }
@@ -323,22 +291,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   LookupInfo Lookup(Symbol sym) {
     const VariableMap::const_iterator it = map_.find(sym);
     if (it != map_.end()) {
-      switch (it->second.type()) {
-        case HEAP:
-          return LookupInfo::NewHeap(
-              it->second.heap_location(),
-              it->second.register_location(),
-              it->second.immutable(),
-              scope_nest_count());
-        case STACK:
-          return LookupInfo::NewStack(
-              it->second.register_location(),
-              it->second.immutable());
-        case UNUSED:
-          return LookupInfo::NewUnused();
-      }
-      UNREACHABLE();
-      return LookupInfo::NewUnused();  // makes compiler happy
+      return it->second;
     } else {
       // not found in this scope
       if (scope_->direct_call_to_eval()) {
