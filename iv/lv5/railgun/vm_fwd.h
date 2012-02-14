@@ -44,7 +44,7 @@ class VM {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
     return GetLabel<op>() == inst.label;
 #else
-    return op == inst.value;
+    return op == inst.u32;
 #endif
   }
 
