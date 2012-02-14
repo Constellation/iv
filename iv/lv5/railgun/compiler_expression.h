@@ -64,7 +64,7 @@ inline void Compiler::Visit(const Assignment* assign) {
   const Expression* rhs = assign->right();
   if (!lhs->IsValidLeftHandSide()) {
     EmitExpression(lhs);
-    dst_ = EmitExpression(rhs, dst_);
+    dst_ = EmitExpressionToDest(rhs, dst_);
     Emit<OP::RAISE_REFERENCE>();
     return;
   }
@@ -78,12 +78,12 @@ inline void Compiler::Visit(const Assignment* assign) {
         if (info.immutable()) {
           local = dst_ ? dst_ : registers_.Acquire();
         }
-        dst_ = EmitMV(dst_, EmitExpression(rhs, local));
+        dst_ = EmitMV(dst_, EmitExpressionToDest(rhs, local));
         if (code_->strict() && info.immutable()) {
           Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
         }
       } else {
-        dst_ = EmitExpression(rhs, dst_);
+        dst_ = EmitExpressionToDest(rhs, dst_);
         EmitStore(ident->symbol(), dst_);
       }
       return;
@@ -92,7 +92,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
         // IdentifierAccess
         Thunk base(&thunklist_, EmitExpression(ac->target()));
-        dst_ = EmitExpression(rhs, dst_);
+        dst_ = EmitExpressionToDest(rhs, dst_);
         const uint32_t index = SymbolToNameIndex(ac->key());
         Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
         return;
@@ -104,20 +104,20 @@ inline void Compiler::Visit(const Assignment* assign) {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, str->value()));
-          dst_ = EmitExpression(rhs, dst_);
+          dst_ = EmitExpressionToDest(rhs, dst_);
           Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
           return;
         } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           const uint32_t index =
               SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          dst_ = EmitExpression(rhs, dst_);
+          dst_ = EmitExpressionToDest(rhs, dst_);
           Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
           return;
         } else {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           Thunk element(&thunklist_, EmitExpression(key));
-          dst_ = EmitExpression(rhs, dst_);
+          dst_ = EmitExpressionToDest(rhs, dst_);
           Emit<OP::STORE_ELEMENT>(base.Release(), element.Release(), dst_);
           return;
         }
@@ -126,7 +126,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       // FunctionCall
       // ConstructorCall
       EmitExpression(lhs);
-      dst_ = EmitExpression(rhs, dst_);
+      dst_ = EmitExpressionToDest(rhs, dst_);
       Emit<OP::RAISE_REFERENCE>();
       return;
     }
@@ -245,11 +245,11 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       dst_ = Dest(dst_);
       thunklist_.Spill(dst_);
       {
-        dst_ = EmitExpression(lhs, dst_);
+        dst_ = EmitExpressionToDest(lhs, dst_);
         label = CurrentSize();
         Emit<OP::IF_FALSE>(0, dst_);
       }
-      dst_ = EmitExpression(rhs, dst_);
+      dst_ = EmitExpressionToDest(rhs, dst_);
       EmitJump(CurrentSize(), label);
       break;
     }
@@ -259,18 +259,18 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       dst_ = Dest(dst_);
       thunklist_.Spill(dst_);
       {
-        dst_ = EmitExpression(lhs, dst_);
+        dst_ = EmitExpressionToDest(lhs, dst_);
         label = CurrentSize();
         Emit<OP::IF_TRUE>(0, dst_);
       }
-      dst_ = EmitExpression(rhs, dst_);
+      dst_ = EmitExpressionToDest(rhs, dst_);
       EmitJump(CurrentSize(), label);
       break;
     }
 
     case Token::TK_COMMA: {  // ,
       EmitExpression(lhs);
-      dst_ = EmitExpression(rhs, dst_);
+      dst_ = EmitExpressionToDest(rhs, dst_);
       break;
     }
 
@@ -294,11 +294,11 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
   }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
-  dst_ = EmitExpression(cond->left(), dst_);
+  dst_ = EmitExpressionToDest(cond->left(), dst_);
   const std::size_t second = CurrentSize();
   Emit<OP::JUMP_BY>(0);
   EmitJump(CurrentSize(), first);
-  dst_ = EmitExpression(cond->right(), dst_);
+  dst_ = EmitExpressionToDest(cond->right(), dst_);
   EmitJump(CurrentSize(), second);
 }
 
@@ -414,7 +414,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     case Token::TK_INC:
     case Token::TK_DEC: {
       if (!expr->IsValidLeftHandSide()) {
-        dst_ = EmitExpression(expr, dst_);
+        dst_ = EmitExpressionToDest(expr, dst_);
         Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
         return;
       }
@@ -465,7 +465,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
           }
         }
       } else {
-        dst_ = EmitExpression(expr, dst_);
+        dst_ = EmitExpressionToDest(expr, dst_);
         Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
       }
       return;
@@ -486,7 +486,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
   const Expression* expr = postfix->expr();
   const Token::Type token = postfix->op();
   if (!expr->IsValidLeftHandSide()) {
-    dst_ = EmitExpression(expr, dst_);
+    dst_ = EmitExpressionToDest(expr, dst_);
     Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
     return;
   }
@@ -537,7 +537,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       }
     }
   } else {
-    dst_ = EmitExpression(expr, dst_);
+    dst_ = EmitExpressionToDest(expr, dst_);
     Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
   }
 }
@@ -711,7 +711,7 @@ inline void Compiler::Visit(const ArrayLiteral* lit) {
       for (Items::const_iterator c = it + dis; it != c; ++it, ++i) {
         const core::Maybe<const Expression>& expr = *it;
         if (expr) {
-          EmitExpression(expr.Address(), site.Place(i));
+          EmitExpressionToDest(expr.Address(), site.Place(i));
         } else {
           Emit<OP::LOAD_EMPTY>(site.Place(i));
         }
@@ -851,7 +851,7 @@ class Compiler::CallSite {
       int i = 0;
       for (Expressions::const_iterator it = args.begin(),
            last = args.end(); it != last; ++it, ++i) {
-        compiler->EmitExpression(*it, Arg(i));
+        compiler->EmitExpressionToDest(*it, Arg(i));
       }
     }
   }
@@ -903,13 +903,13 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
     } else if (const PropertyAccess* prop = target->AsPropertyAccess()) {
       if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
         // IdentifierAccess
-        EmitExpression(prop->target(), site.base());
+        EmitExpressionToDest(prop->target(), site.base());
         const uint32_t index = SymbolToNameIndex(ac->key());
         Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0, 0);
       } else {
         // IndexAccess
         const IndexAccess* ai = prop->AsIndexAccess();
-        EmitExpression(ai->target(), site.base());
+        EmitExpressionToDest(ai->target(), site.base());
         const Expression* key = ai->key();
         if (const StringLiteral* str = key->AsStringLiteral()) {
           const uint32_t index =
@@ -920,16 +920,16 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
               SymbolToNameIndex(context::Intern(ctx_, num->value()));
           Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0, 0);
         } else {
-          EmitExpression(ai->key(), site.callee());
+          EmitExpressionToDest(ai->key(), site.callee());
           Emit<OP::LOAD_ELEMENT>(site.callee(), site.base(), site.callee());
         }
       }
     } else {
-      EmitExpression(target, site.callee());
+      EmitExpressionToDest(target, site.callee());
       Emit<OP::LOAD_UNDEFINED>(site.base());
     }
   } else {
-    EmitExpression(target, site.callee());
+    EmitExpressionToDest(target, site.callee());
     Emit<OP::LOAD_UNDEFINED>(site.base());
   }
 

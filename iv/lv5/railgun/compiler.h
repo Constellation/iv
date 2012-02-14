@@ -316,21 +316,21 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     bool ignore_result_;
   };
 
-  RegisterID EmitExpression(const Expression* expr,
-                            RegisterID dst,
-                            bool ignore_result) {
+  RegisterID EmitExpressionInternal(const Expression* expr,
+                                    RegisterID dst,
+                                    bool ignore_result) {
     EmitExpressionContext context(this, dst, ignore_result);
     expr->Accept(this);
     return dst_;
   }
 
   RegisterID EmitExpression(const Expression* expr) {
-    return EmitExpression(expr, RegisterID(), false);
+    return EmitExpressionInternal(expr, RegisterID(), false);
   }
 
   // force write
-  RegisterID EmitExpression(const Expression* expr, RegisterID dst) {
-    return EmitExpression(expr, dst, false);
+  RegisterID EmitExpressionToDest(const Expression* expr, RegisterID dst) {
+    return EmitExpressionInternal(expr, dst, false);
   }
 
   LookupInfo Lookup(const Symbol sym) {
@@ -686,7 +686,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         const uint32_t index = SymbolToNameIndex(sym);
         if (IsUsedReference(index)) {
           if (RegisterID local = GetLocal(sym)) {
-            EmitExpression(func, local);
+            EmitExpressionToDest(func, local);
           } else {
             RegisterID tmp = EmitExpression(func);
             EmitStore(sym, tmp);

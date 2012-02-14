@@ -58,7 +58,7 @@ inline void Compiler::Visit(const FunctionStatement* stmt) {
   const uint32_t index = SymbolToNameIndex(name);
   if (IsUsedReference(index)) {
     if (RegisterID local = GetLocal(name)) {
-      EmitExpression(func, local);
+      EmitExpressionToDest(func, local);
     } else {
       RegisterID tmp = EmitExpression(func);
       EmitStore(name, tmp);
@@ -75,7 +75,7 @@ inline void Compiler::Visit(const Declaration* decl) {
     const Expression* expr = maybe.Address();
     if (IsUsedReference(index) || !Condition::NoSideEffect(expr)) {
       if (RegisterID local = GetLocal(sym)) {
-        EmitExpression(expr, local);
+        EmitExpressionToDest(expr, local);
       } else {
         RegisterID tmp = EmitExpression(expr);
         EmitStore(sym, tmp);
@@ -500,7 +500,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
   std::size_t label = 0;
   std::vector<std::size_t> indexes(clauses.size());
   {
-    RegisterID cond = EmitExpression(stmt->expr(), registers_.Acquire());
+    RegisterID cond = EmitExpressionToDest(stmt->expr(), registers_.Acquire());
     std::vector<std::size_t>::iterator idx = indexes.begin();
     std::vector<std::size_t>::iterator default_it = indexes.end();
     for (CaseClauses::const_iterator it = clauses.begin(),
@@ -710,7 +710,7 @@ inline void Compiler::Visit(const DebuggerStatement* stmt) {
 
 inline void Compiler::Visit(const ExpressionStatement* stmt) {
   if (current_variable_scope_->UseExpressionReturn()) {
-    eval_result_ = EmitExpression(stmt->expr(), eval_result_);
+    eval_result_ = EmitExpressionToDest(stmt->expr(), eval_result_);
   } else {
     EmitExpression(stmt->expr());
   }
