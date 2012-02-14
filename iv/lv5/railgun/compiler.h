@@ -667,7 +667,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(
             new CodeScope<TYPE>(&lit, upper, &scope, is_eval_decl));
-    dst_.reset();
     {
       // binding instantiation
       if (TYPE == Code::FUNCTION) {
