@@ -13,7 +13,7 @@ OP::Type Instruction::GetOP() const {
   assert(VM::LabelTable().find(label) != VM::LabelTable().end());
   return VM::LabelTable().find(label)->second;
 #else
-  return static_cast<OP::Type>(value);
+  return static_cast<OP::Type>(u32);
 #endif
 }
 
