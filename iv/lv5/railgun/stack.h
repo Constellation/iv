@@ -93,7 +93,8 @@ class Stack : public lv5::Stack {
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = constructor_call;
-      frame->r_ = (pc) ? pc[1].value : 0;
+      // return register
+      frame->r_ = (pc) ? pc[1].i32: 0;
       current_ = frame;
       return frame;
     } else {

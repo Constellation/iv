@@ -13,7 +13,7 @@ class Chain;
 namespace railgun {
 
 struct Instruction {
-  Instruction(uint32_t arg) : value(arg) { }  // NOLINT
+  Instruction(uint32_t arg) : u32(arg) { }  // NOLINT
 
   Instruction(RegisterID reg) {  // NOLINT
     assert(reg);
@@ -22,7 +22,7 @@ struct Instruction {
 
   union {
     const void* label;  // use for direct threading
-    uint32_t value;
+    uint32_t u32;
     int32_t i32;
     ptrdiff_t diff;
     int16_t reg[2];

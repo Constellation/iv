@@ -187,7 +187,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     Code::Data* data = code->GetData();
     for (Code::Data::iterator it = data->begin(),
          last = data->end(); it != last;) {
-      const uint32_t opcode = it->value;
+      const uint32_t opcode = it->u32;
       it->label = table[opcode];
       std::advance(it, kOPLength[opcode]);
     }
