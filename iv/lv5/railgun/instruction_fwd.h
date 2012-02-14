@@ -25,6 +25,7 @@ struct Instruction {
     uint32_t value;
     int32_t i32;
     ptrdiff_t diff;
+    int16_t reg[2];
     Map* map;
     Chain* chain;
   };
