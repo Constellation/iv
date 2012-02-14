@@ -140,6 +140,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7021613914E9F6510005FA6C /* jsmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsmap.h; sourceTree = "<group>"; };
+		7021613A14E9F6510005FA6C /* jsset.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsset.h; sourceTree = "<group>"; };
+		7021613B14E9F6510005FA6C /* property_names_collector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = property_names_collector.h; sourceTree = "<group>"; };
+		7021613C14E9F6510005FA6C /* runtime_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime_map.h; sourceTree = "<group>"; };
+		7021613D14E9F6510005FA6C /* runtime_set.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime_set.h; sourceTree = "<group>"; };
+		7021613F14E9F6630005FA6C /* lru_code_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lru_code_map.h; sourceTree = "<group>"; };
 		70253BF3146015A600B6D41E /* lv5 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lv5; sourceTree = BUILT_PRODUCTS_DIR; };
 		70253C0B146017BA00B6D41E /* libv8_dtoa.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libv8_dtoa.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		70253C1A146017E400B6D41E /* libnetlib_dtoa.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnetlib_dtoa.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -805,6 +811,11 @@
 		70F46B97146015730026DD83 /* lv5 */ = {
 			isa = PBXGroup;
 			children = (
+				7021613914E9F6510005FA6C /* jsmap.h */,
+				7021613A14E9F6510005FA6C /* jsset.h */,
+				7021613B14E9F6510005FA6C /* property_names_collector.h */,
+				7021613C14E9F6510005FA6C /* runtime_map.h */,
+				7021613D14E9F6510005FA6C /* runtime_set.h */,
 				70ECA44B14D65A5E006301D5 /* lv5.h */,
 				70ECA44C14D65A5E006301D5 /* utility.h */,
 				70400BF4148DD707001EBDAE /* context_fwd.h */,
@@ -939,6 +950,7 @@
 		70F46BE9146015730026DD83 /* railgun */ = {
 			isa = PBXGroup;
 			children = (
+				7021613F14E9F6630005FA6C /* lru_code_map.h */,
 				70ECA45114D65A7C006301D5 /* analyzer.h */,
 				70ECA45214D65A7C006301D5 /* compiler_expression.h */,
 				70ECA45314D65A7C006301D5 /* compiler_statement.h */,
