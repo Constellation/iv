@@ -69,7 +69,8 @@ class Registers {
   void Clear(int32_t stack, int32_t heap) {
     lives_.clear();
     temporary_registers_.clear();
-    heap_ = heap;
+    heap_ = 0;  // currently not using heap
+    // heap_ = heap;
     stack_ = stack;
     variable_registers_ = stack + heap;
   }
