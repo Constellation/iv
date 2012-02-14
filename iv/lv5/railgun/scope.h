@@ -173,11 +173,14 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
    public:
     Variable(Type type,
              int32_t register_location,
-             uint32_t heap_location, bool immutable)
+             uint32_t heap_location,
+             bool immutable,
+             const Assigned* assigned)
       : type_(type),
         register_location_(register_location),
         heap_location_(heap_location),
-        immutable_(immutable) {
+        immutable_(immutable),
+        assigned_(assigned) {
     }
 
     Type type() const { return type_; }
@@ -188,6 +191,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
     bool immutable() const { return immutable_; }
 
+    const Assigned* assigned() const { return assigned_; }
+
     void DisplaceHeapRegister(int32_t stack_size) {
       register_location_ = stack_size + heap_location();
     }
@@ -196,19 +201,22 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     uint32_t register_location_;
     uint32_t heap_location_;
     bool immutable_;
+    const Assigned* assigned_;
   };
 
   typedef std::unordered_map<Symbol, Variable> VariableMap;
 
   typedef std::vector<std::pair<Symbol, Variable> > HeapVariables;
 
-  CodeScope(const std::shared_ptr<VariableScope>& up,
+  CodeScope(const FunctionLiteral* lit,
+            const std::shared_ptr<VariableScope>& up,
             const Scope* scope,
             bool is_eval_decl)
     : VariableScope(
         up,
         (up->scope_nest_count() + (scope->needs_heap_scope() ? 1 : 0))),
       scope_(scope),
+      literal_(lit),
       map_(),
       heap_(),
       stack_size_(0),
@@ -228,7 +236,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                   Variable(HEAP,
                            FrameConstant<>::Arg(assigned->parameter()),
                            heap_.size(),
-                           assigned->immutable()));
+                           assigned->immutable(),
+                           assigned));
           heap_.push_back(item);
           map_.insert(item);
         } else {
@@ -238,7 +247,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                   Variable(HEAP,
                            heap_.size(),
                            heap_.size(),
-                           assigned->immutable()));
+                           assigned->immutable(),
+                           assigned));
           heap_.push_back(item);
           map_.insert(item);
         }
@@ -248,20 +258,31 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
           if (assigned->IsParameter()) {
             const std::pair<Symbol, Variable> item = std::make_pair(
                 assigned->symbol(),
-                Variable(STACK, FrameConstant<>::Arg(assigned->parameter()),
-                         0, assigned->immutable()));
+                Variable(STACK,
+                         FrameConstant<>::Arg(assigned->parameter()),
+                         0,
+                         assigned->immutable(),
+                         assigned));
             map_.insert(item);
           } else {
             const std::pair<Symbol, Variable> item = std::make_pair(
                 assigned->symbol(),
-                Variable(STACK, stack_size_++, 0, assigned->immutable()));
+                Variable(STACK,
+                         stack_size_++,
+                         0,
+                         assigned->immutable(),
+                         assigned));
             map_.insert(item);
           }
         } else {
           const std::pair<Symbol, Variable> item =
               std::make_pair(
                   assigned->symbol(),
-                  Variable(UNUSED, 0, 0, assigned->immutable()));
+                  Variable(UNUSED,
+                           0,
+                           0,
+                           assigned->immutable(),
+                           assigned));
           map_.insert(item);
         }
       }
@@ -273,14 +294,22 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                Variable(HEAP, heap_.size(), heap_.size(), scope->strict()));
+                Variable(HEAP,
+                         heap_.size(),
+                         heap_.size(),
+                         scope->strict(),
+                         NULL));
         heap_.push_back(item);
         map_.insert(item);
       } else if (scope_->has_arguments()) {
         const std::pair<Symbol, Variable> item =
             std::make_pair(
                 symbol::arguments(),
-                Variable(STACK, stack_size_++, 0, scope->strict()));
+                Variable(STACK,
+                         stack_size_++,
+                         0,
+                         scope->strict(),
+                         NULL));
         map_.insert(item);
       }
     }
@@ -322,6 +351,20 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
   bool UseExpressionReturn() const { return is_eval_decl_; }
 
+  bool LoadCalleeNeeded() const {
+    if (literal_->IsFunctionNameExposed()) {
+      const Symbol name = literal_->name().Address()->symbol();
+      const VariableMap::const_iterator it = map_.find(name);
+      assert(it != map_.end());
+      if (const Assigned* assigned = it->second.assigned()) {
+        if (assigned->function_name()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   const HeapVariables& heap() const { return heap_; }
 
   uint32_t stack_size() const { return stack_size_; }
@@ -332,6 +375,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
  private:
   const Scope* scope_;
+  const FunctionLiteral* literal_;
   VariableMap map_;
   HeapVariables heap_;
   uint32_t stack_size_;
@@ -345,7 +389,8 @@ class CodeScope<Code::EVAL> : public VariableScope {
  public:
   CodeScope() : VariableScope() { }
 
-  CodeScope(std::shared_ptr<VariableScope> upper,
+  CodeScope(const FunctionLiteral* literal,
+            std::shared_ptr<VariableScope> upper,
             const Scope* scope,
             bool is_eval_decl)
     : VariableScope() {
@@ -365,7 +410,8 @@ class CodeScope<Code::GLOBAL> : public VariableScope {
  public:
   CodeScope() : VariableScope() { }
 
-  CodeScope(std::shared_ptr<VariableScope> upper,
+  CodeScope(const FunctionLiteral* lit,
+            std::shared_ptr<VariableScope> upper,
             const Scope* scope,
             bool is_eval_decl)
     : VariableScope() {

@@ -248,6 +248,7 @@ class Scope : public ScopeBase<Factory> {
 
     if (expression) {
       if (already.find(expression->symbol()) == already.end()) {
+        expression->set_function_name(true);
         assigneds_.push_back(expression);
       }
     }
@@ -1187,8 +1188,12 @@ template<typename Factory>
 class Assigned : public AssignedBase<Factory> {
  public:
   explicit Assigned(Symbol sym, bool immutable)
-    : sym_(sym), type_(false), referenced_(false),
-      immutable_(immutable), parameter_(-1) { }
+    : sym_(sym),
+      type_(false),
+      referenced_(false),
+      immutable_(immutable),
+      function_name_(false),
+      parameter_(-1) { }
   Symbol symbol() const { return sym_; }
   int type() const { return type_; }
   void set_type(bool type) {
@@ -1199,6 +1204,8 @@ class Assigned : public AssignedBase<Factory> {
   void set_immutable(bool val) { immutable_ = val; }
   int32_t parameter() const { return parameter_; }
   void set_parameter(int32_t val) { parameter_ = val; }
+  bool function_name() const { return function_name_; }
+  void set_function_name(bool val) { function_name_ = val; }
   bool IsReferenced() const { return referenced_; }
   bool IsHeap() const { return type_; }
   bool IsImmutable() const { return immutable_; }
@@ -1210,6 +1217,7 @@ class Assigned : public AssignedBase<Factory> {
   bool type_;
   bool referenced_;
   bool immutable_;
+  bool function_name_;
   int32_t parameter_;
 };
 

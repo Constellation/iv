@@ -602,7 +602,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       if (env->scope()->IsArgumentsRealized()) {
         InstantiateArguments();
       }
-      if (lit.IsFunctionNameExposed()) {
+
+      if (env->LoadCalleeNeeded()) {
         InstantiateLoadCallee(
             SymbolToNameIndex(lit.name().Address()->symbol()));
       }
@@ -665,7 +666,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     const Scope& scope = lit.scope();
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(
-            new CodeScope<TYPE>(upper, &scope, is_eval_decl));
+            new CodeScope<TYPE>(&lit, upper, &scope, is_eval_decl));
     dst_.reset();
     {
       // binding instantiation
