@@ -13,7 +13,7 @@ class ThunkList : private core::Noncopyable<ThunkList> {
  public:
   typedef std::vector<Thunk*> Thunks;
 
-  ThunkList(Compiler* compiler)
+  explicit ThunkList(Compiler* compiler)
     : vec_(), compiler_(compiler) { }
 
   void Push(Thunk* thunk);

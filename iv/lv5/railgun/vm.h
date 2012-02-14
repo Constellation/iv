@@ -537,7 +537,8 @@ do {\
         const Symbol name = frame->GetName(instr[2].u32);
         const JSVal src = REG(instr[1].i32);
         operation_.StoreHeap(frame->lexical_env(),
-                             name, src, strict, instr[3].u32, instr[4].u32, ERR);
+                             name, src, strict,
+                             instr[3].u32, instr[4].u32, ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -1045,7 +1046,8 @@ do {\
         // opcode | dst | base | name | nop | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
-        const JSVal res = operation_.IncrementProp<-1, 1>(base, name, strict, ERR);
+        const JSVal res =
+            operation_.IncrementProp<-1, 1>(base, name, strict, ERR);
         REG(instr[1].i32) = res;
         DISPATCH(DECREMENT_PROP);
       }
@@ -1054,7 +1056,8 @@ do {\
         // opcode | dst | base | name | nop | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
-        const JSVal res = operation_.IncrementProp<-1, 0>(base, name, strict, ERR);
+        const JSVal res =
+            operation_.IncrementProp<-1, 0>(base, name, strict, ERR);
         REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
@@ -1063,7 +1066,8 @@ do {\
         // opcode | dst | base | name | nop | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
-        const JSVal res = operation_.IncrementProp<1, 1>(base, name, strict, ERR);
+        const JSVal res =
+            operation_.IncrementProp<1, 1>(base, name, strict, ERR);
         REG(instr[1].i32) = res;
         DISPATCH(INCREMENT_PROP);
       }
@@ -1072,7 +1076,8 @@ do {\
         // opcode | dst | base | name | nop | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
-        const JSVal res = operation_.IncrementProp<1, 0>(base, name, strict, ERR);
+        const JSVal res =
+            operation_.IncrementProp<1, 0>(base, name, strict, ERR);
         REG(instr[1].i32) = res;
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }

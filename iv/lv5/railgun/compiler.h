@@ -217,7 +217,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Statement
   // implementation is in compiler_statement.h
-  
+
   class BreakTarget;
   class ContinueTarget;
   class TryTarget;

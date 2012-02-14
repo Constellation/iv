@@ -303,7 +303,8 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
 }
 
 template<OP::Type PropOP, OP::Type ElementOP>
-inline RegisterID Compiler::EmitElement(const IndexAccess* prop, RegisterID dst) {
+inline RegisterID Compiler::EmitElement(const IndexAccess* prop,
+                                        RegisterID dst) {
   Thunk base(&thunklist_, EmitExpression(prop->target()));
   const Expression* key = prop->key();
   if (const StringLiteral* str = key->AsStringLiteral()) {
@@ -675,9 +676,11 @@ class Compiler::ArraySite {
             uint32_t idx, uint32_t size) const {
     assert(!ary_.empty());
     if ((idx + size) > JSArray::kMaxVectorSize) {
-      compiler->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary, ary_.front(), idx, size);
+      compiler->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary, ary_.front(),
+                                                    idx, size);
     } else {
-      compiler->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary, ary_.front(), idx, size);
+      compiler->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary, ary_.front(),
+                                                    idx, size);
     }
   }
 

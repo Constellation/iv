@@ -27,7 +27,7 @@ static const std::string kInteractiveOrigin = "(shell)";
 
 class Interactive {
  public:
-  Interactive(bool disassemble)
+  explicit Interactive(bool disassemble)
     : ctx_(),
       disassemble_(disassemble) {
     ctx_.DefineFunction<&Print, 1>("print");

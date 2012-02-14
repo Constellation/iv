@@ -16,7 +16,7 @@ inline void ThunkList::Remove(Thunk* thunk) {
 }
 
 struct ThunkSpiller {
-  ThunkSpiller(RegisterID reg)
+  explicit ThunkSpiller(RegisterID reg)
     : reg_(reg) {
   }
 

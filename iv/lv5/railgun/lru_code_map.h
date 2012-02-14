@@ -35,7 +35,7 @@ class LRUCodeMap {
       Entry,
       JSStringHasher, JSStringEqualer>::type CodeMap;
 
-  LRUCodeMap(std::size_t max)
+  explicit LRUCodeMap(std::size_t max)
     : max_(max),
       list_(),
       map_() {

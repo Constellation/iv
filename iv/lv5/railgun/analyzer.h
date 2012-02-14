@@ -11,7 +11,8 @@ class Analyzer {
   class AssignmentVisitor : public ExpressionVisitor {
    public:
     AssignmentVisitor() : found_(false) { }
-    ~AssignmentVisitor() { };
+
+    ~AssignmentVisitor() { }
 
     void Visit(const Assignment* assign) {
       if (assign->left()->AsIdentifier()) {
@@ -31,7 +32,6 @@ class Analyzer {
         return;
       }
       binary->right()->AcceptExpressionVisitor(this);
-
     }
 
     void Visit(const ConditionalExpression* cond) {
@@ -81,8 +81,10 @@ class Analyzer {
     }
 
     void Visit(const ObjectLiteral* literal) {
-      for (ObjectLiteral::Properties::const_iterator it = literal->properties().begin(),
-           last = literal->properties().end(); it != last; ++it) {
+      for (ObjectLiteral::Properties::const_iterator
+           it = literal->properties().begin(),
+           last = literal->properties().end();
+           it != last; ++it) {
         std::get<2>(*it)->AcceptExpressionVisitor(this);
         if (found()) {
           return;

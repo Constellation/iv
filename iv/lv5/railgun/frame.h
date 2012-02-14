@@ -195,6 +195,10 @@ struct Frame {
   bool constructor_call_;
 };
 
+#if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
+  IV_STATIC_ASSERT(std::is_pod<Frame>::value);
+#endif
+
 template<>
 const int FrameConstant<void>::kFrameSize =
   (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));

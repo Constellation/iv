@@ -17,7 +17,7 @@ class Handler {
 
   Handler(Type type,
           uint32_t begin,
-          uint32_t end, 
+          uint32_t end,
           int32_t jmp,
           int32_t ret,
           int32_t flag,
