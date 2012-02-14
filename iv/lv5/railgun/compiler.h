@@ -94,6 +94,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       temporary_() {
   }
 
+  // entry points
+
+  // Global Code
   Code* Compile(const FunctionLiteral& global, JSScript* script) {
     Code* code = NULL;
     {
@@ -109,6 +112,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return code;
   }
 
+  // Function Code
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
     Code* code = NULL;
     {
@@ -126,6 +130,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return code;
   }
 
+  // Direct call to eval Code
   Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
     {
@@ -149,6 +154,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return code;
   }
 
+  // Indirect call to eval Code
   Code* CompileIndirectEval(const FunctionLiteral& eval, JSScript* script) {
     Code* code = NULL;
     {
@@ -173,105 +179,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
  private:
-  class BreakTarget : private core::Noncopyable<> {
-   public:
-    BreakTarget(Compiler* compiler,
-                const BreakableStatement* stmt)
-      : compiler_(compiler),
-        stmt_(stmt),
-        breaks_() {
-      compiler_->RegisterJumpTarget(stmt, &breaks_);
-    }
-
-    ~BreakTarget() {
-      compiler_->UnRegisterJumpTarget(stmt_);
-    }
-
-    void EmitJumps(std::size_t break_target) {
-      for (std::vector<std::size_t>::const_iterator it = breaks_.begin(),
-           last = breaks_.end(); it != last; ++it) {
-        compiler_->EmitJump(break_target, *it);
-      }
-    }
-
-   protected:
-    explicit BreakTarget(Compiler* compiler)
-      : compiler_(compiler),
-        breaks_() {
-    }
-
-    Compiler* compiler_;
-    const BreakableStatement* stmt_;
-    std::vector<std::size_t> breaks_;
-  };
-
-  class ContinueTarget : protected BreakTarget {
-   public:
-    ContinueTarget(Compiler* compiler,
-                   const IterationStatement* stmt)
-      : BreakTarget(compiler),
-        continues_() {
-      stmt_ = stmt;
-      compiler_->RegisterJumpTarget(stmt, &breaks_, &continues_);
-    }
-
-    void EmitJumps(std::size_t break_target,
-                   std::size_t continue_target) {
-      BreakTarget::EmitJumps(break_target);
-      for (std::vector<std::size_t>::const_iterator it = continues_.begin(),
-           last = continues_.end(); it != last; ++it) {
-        compiler_->EmitJump(continue_target, *it);
-      }
-    }
-
-   private:
-    std::vector<std::size_t> continues_;
-  };
-
-  class TryTarget : private core::Noncopyable<> {
-   public:
-    TryTarget(Compiler* compiler, bool has_finally)
-      : compiler_(compiler),
-        has_finally_(has_finally),
-        vec_() {
-      if (has_finally_) {
-        compiler_->PushLevelFinally(&vec_);
-      }
-    }
-
-    void EmitJumps(std::size_t finally_target) {
-      assert(has_finally_);
-      const LevelStack& stack = compiler_->level_stack();
-      const LevelEntry& entry = stack.back();
-      assert(std::get<0>(entry) == FINALLY);
-      assert(std::get<1>(entry) == &vec_);
-      const std::vector<std::size_t>* vec = std::get<1>(entry);
-      for (std::vector<std::size_t>::const_iterator it = vec->begin(),
-           last = vec->end(); it != last; ++it) {
-        compiler_->EmitJump(finally_target, *it);
-      }
-      compiler_->PopLevel();
-    }
-
-   private:
-    Compiler* compiler_;
-    bool has_finally_;
-    std::vector<std::size_t> vec_;
-  };
-
-  class DynamicEnvLevelCounter : private core::Noncopyable<> {
-   public:
-    explicit DynamicEnvLevelCounter(Compiler* compiler)
-      : compiler_(compiler) {
-      compiler_->DynamicEnvLevelUp();
-    }
-    ~DynamicEnvLevelCounter() {
-      compiler_->DynamicEnvLevelDown();
-    }
-   private:
-    Compiler* compiler_;
-  };
-
   void CompileEpilogue(Code* code) {
     // optimiazation or direct threading
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
@@ -309,30 +216,19 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   // Statement
+  // implementation is in compiler_statement.h
+  
+  class BreakTarget;
+  class ContinueTarget;
+  class TryTarget;
+  class DynamicEnvLevelCounter;
 
   void EmitStatement(const Statement* stmt) {
     stmt->Accept(this);
   }
 
-  RegisterID EmitLevel(uint16_t from, uint16_t to,
-                       RegisterID dst = RegisterID()) {
-    for (; from > to; --from) {
-      const LevelEntry& entry = level_stack_[from - 1];
-      const LevelType type = std::get<0>(entry);
-      if (type == FINALLY) {
-        if (dst) {
-          dst = EmitMV(std::get<3>(entry), dst);
-        }
-        const std::size_t finally_jump = CurrentSize();
-        Emit<OP::JUMP_SUBROUTINE>(0, std::get<2>(entry), std::get<4>(entry));
-        std::get<1>(entry)->push_back(finally_jump);
-      } else {  // type == WITH
-        assert(type == WITH);
-        Emit<OP::POP_ENV>();
-      }
-    }
-    return dst;
-  }
+  RegisterID EmitUnrollingLevel(uint16_t from, uint16_t to,
+                                RegisterID dst = RegisterID());
 
   void Visit(const Block* block);
   void Visit(const FunctionStatement* stmt);
@@ -359,6 +255,19 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Expression
   // implementation is in compiler_expression.h
+
+  class DestGuard;
+
+  template<OP::Type PropOP, OP::Type ElementOP>
+  RegisterID EmitElement(const IndexAccess* prop, RegisterID dst);
+
+  template<typename Call>
+  class CallSite;
+
+  template<OP::Type op, typename Call>
+  RegisterID EmitCall(const Call& call, RegisterID dst);
+
+  RegisterID EmitOptimizedLookup(OP::Type op, uint32_t index, RegisterID dst);
 
   void Visit(const Assignment* assign);
   void Visit(const BinaryOperation* binary);
@@ -407,18 +316,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     bool ignore_result_;
   };
 
-  class DestGuard {
-   public:
-    explicit DestGuard(Compiler* compiler)
-      : compiler_(compiler) {
-    }
-    ~DestGuard() {
-      assert(compiler_->dst());
-    }
-   private:
-    Compiler* compiler_;
-  };
-
   RegisterID EmitExpression(const Expression* expr,
                             RegisterID dst,
                             bool ignore_result) {
@@ -459,37 +356,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return Lookup(code_->names_[index]).type() != LookupInfo::UNUSED;
   }
 
-  template<OP::Type PropOP, OP::Type ElementOP>
-  RegisterID EmitElement(const IndexAccess* prop, RegisterID dst) {
-    Thunk base(&thunklist_, EmitExpression(prop->target()));
-    const Expression* key = prop->key();
-    if (const StringLiteral* str = key->AsStringLiteral()) {
-      const uint32_t index =
-          SymbolToNameIndex(context::Intern(ctx_, str->value()));
-      dst = Dest(dst, base.Release());
-      thunklist_.Spill(dst);
-      Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
-    } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-      const uint32_t index =
-          SymbolToNameIndex(context::Intern(ctx_, num->value()));
-      dst = Dest(dst, base.Release());
-      thunklist_.Spill(dst);
-      Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
-    } else {
-      RegisterID element = EmitExpression(prop->key());
-      dst = Dest(dst, base.Release(), element);
-      thunklist_.Spill(dst);
-      Emit<ElementOP>(dst, base.reg(), element);
-    }
-    return dst;
-  }
-
-  template<typename Call>
-  class CallSite;
-
-  template<OP::Type op, typename Call>
-  RegisterID EmitCall(const Call& call, RegisterID dst);
-
   void EmitStore(Symbol sym, RegisterID src) {
     const uint32_t index = SymbolToNameIndex(sym);
     const LookupInfo info = Lookup(sym);
@@ -518,42 +384,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
-  RegisterID EmitOptimizedLookup(OP::Type op, uint32_t index, RegisterID dst) {
-    dst = Dest(dst);
-    const LookupInfo info = Lookup(code_->names_[index]);
-    assert(info.type() != LookupInfo::STACK);
-    switch (info.type()) {
-      case LookupInfo::HEAP: {
-        thunklist_.Spill(dst);
-        Emit(OP::ToHeap(op),
-             dst,
-             index, info.heap_location(),
-             current_variable_scope_->scope_nest_count() - info.scope());
-        return dst;
-      }
-      case LookupInfo::GLOBAL: {
-        // last 2 zeros are placeholders for PIC
-        thunklist_.Spill(dst);
-        Emit(OP::ToGlobal(op), dst, index, 0u, 0u);
-        return dst;
-      }
-      case LookupInfo::LOOKUP: {
-        thunklist_.Spill(dst);
-        Emit(op, dst, index);
-        return dst;
-      }
-      case LookupInfo::UNUSED: {
-        assert(op == OP::STORE_NAME);
-        // do nothing
-        return dst;
-      }
-      default: {
-        UNREACHABLE();
-      }
-    }
-    return dst;
-  }
-
   // determine which register is used
   // if dst is not ignored, use dst.
   RegisterID Dest(RegisterID dst,
@@ -571,14 +401,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return cand2;
     }
     return registers_.Acquire();
-  }
-
-  template<typename CallSite>
-  RegisterID DestCallSite(RegisterID dst, CallSite* site) {
-    if (dst) {
-      return dst;
-    }
-    return site->callee();
   }
 
   RegisterID GetLocal(Symbol sym) {
@@ -732,6 +554,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void EmitJump(std::size_t to, std::size_t from) {
     EmitArgAt(Instruction::Diff(to, from), from + 1);
   }
+
+  // enter code functions
 
   void EmitFunctionBindingInstantiation(const FunctionLiteral& lit,
                                         bool is_eval_decl) {
@@ -962,6 +786,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       EmitInstantiate(index, info, reg);
     }
   }
+
+  // accessors
 
   void set_code(Code* code) { code_ = code; }
 

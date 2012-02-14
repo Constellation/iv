@@ -5,6 +5,38 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+class Compiler::BreakTarget : private core::Noncopyable<> {
+ public:
+  BreakTarget(Compiler* compiler,
+              const BreakableStatement* stmt)
+    : compiler_(compiler),
+      stmt_(stmt),
+      breaks_() {
+    compiler_->RegisterJumpTarget(stmt, &breaks_);
+  }
+
+  ~BreakTarget() {
+    compiler_->UnRegisterJumpTarget(stmt_);
+  }
+
+  void EmitJumps(std::size_t break_target) {
+    for (std::vector<std::size_t>::const_iterator it = breaks_.begin(),
+         last = breaks_.end(); it != last; ++it) {
+      compiler_->EmitJump(break_target, *it);
+    }
+  }
+
+ protected:
+  explicit BreakTarget(Compiler* compiler)
+    : compiler_(compiler),
+      breaks_() {
+  }
+
+  Compiler* compiler_;
+  const BreakableStatement* stmt_;
+  std::vector<std::size_t> breaks_;
+};
+
 inline void Compiler::Visit(const Block* block) {
   BreakTarget jump(this, block);
   const Statements& stmts = block->body();
@@ -60,7 +92,9 @@ inline void Compiler::Visit(const VariableStatement* var) {
   }
 }
 
-inline void Compiler::Visit(const EmptyStatement* stmt) { }
+inline void Compiler::Visit(const EmptyStatement* stmt) {
+  // do nothing
+}
 
 inline void Compiler::Visit(const IfStatement* stmt) {
   const Condition::Type cond = Condition::Analyze(stmt->cond());
@@ -117,6 +151,29 @@ inline void Compiler::Visit(const IfStatement* stmt) {
     }
   }
 }
+
+class Compiler::ContinueTarget : protected BreakTarget {
+ public:
+  ContinueTarget(Compiler* compiler,
+                 const IterationStatement* stmt)
+    : BreakTarget(compiler),
+      continues_() {
+    stmt_ = stmt;
+    compiler_->RegisterJumpTarget(stmt, &breaks_, &continues_);
+  }
+
+  void EmitJumps(std::size_t break_target,
+                 std::size_t continue_target) {
+    BreakTarget::EmitJumps(break_target);
+    for (std::vector<std::size_t>::const_iterator it = continues_.begin(),
+         last = continues_.end(); it != last; ++it) {
+      compiler_->EmitJump(continue_target, *it);
+    }
+  }
+
+ private:
+  std::vector<std::size_t> continues_;
+};
 
 inline void Compiler::Visit(const DoWhileStatement* stmt) {
   ContinueTarget jump(this, stmt);
@@ -337,9 +394,30 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
   }
 }
 
+inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
+                                               uint16_t to,
+                                               RegisterID dst) {
+  for (; from > to; --from) {
+    const LevelEntry& entry = level_stack_[from - 1];
+    const LevelType type = std::get<0>(entry);
+    if (type == FINALLY) {
+      if (dst) {
+        dst = EmitMV(std::get<3>(entry), dst);
+      }
+      const std::size_t finally_jump = CurrentSize();
+      Emit<OP::JUMP_SUBROUTINE>(0, std::get<2>(entry), std::get<4>(entry));
+      std::get<1>(entry)->push_back(finally_jump);
+    } else {  // type == WITH
+      assert(type == WITH);
+      Emit<OP::POP_ENV>();
+    }
+  }
+  return dst;
+}
+
 inline void Compiler::Visit(const ContinueStatement* stmt) {
   const JumpEntry& entry = jump_table_[stmt->target()];
-  EmitLevel(CurrentLevel(), std::get<0>(entry));
+  EmitUnrollingLevel(CurrentLevel(), std::get<0>(entry));
   const std::size_t arg_index = CurrentSize();
   Emit<OP::JUMP_BY>(0);
   std::get<2>(entry)->push_back(arg_index);
@@ -351,7 +429,7 @@ inline void Compiler::Visit(const BreakStatement* stmt) {
     // through
   } else {
     const JumpEntry& entry = jump_table_[stmt->target()];
-    EmitLevel(CurrentLevel(), std::get<0>(entry));
+    EmitUnrollingLevel(CurrentLevel(), std::get<0>(entry));
     const std::size_t arg_index = CurrentSize();
     Emit<OP::JUMP_BY>(0);  // dummy
     std::get<1>(entry)->push_back(arg_index);
@@ -373,11 +451,24 @@ inline void Compiler::Visit(const ReturnStatement* stmt) {
   } else {
     // nested finally has found
     // set finally jump targets
-    dst = EmitLevel(CurrentLevel(), 0, dst);
+    dst = EmitUnrollingLevel(CurrentLevel(), 0, dst);
     Emit<OP::RETURN>(dst);
   }
   continuation_status_.Kill();
 }
+
+class Compiler::DynamicEnvLevelCounter : private core::Noncopyable<> {
+ public:
+  explicit DynamicEnvLevelCounter(Compiler* compiler)
+    : compiler_(compiler) {
+    compiler_->DynamicEnvLevelUp();
+  }
+  ~DynamicEnvLevelCounter() {
+    compiler_->DynamicEnvLevelDown();
+  }
+ private:
+  Compiler* compiler_;
+};
 
 inline void Compiler::Visit(const WithStatement* stmt) {
   {
@@ -471,6 +562,37 @@ inline void Compiler::Visit(const ThrowStatement* stmt) {
   Emit<OP::THROW>(dst);
   continuation_status_.Kill();
 }
+
+class Compiler::TryTarget : private core::Noncopyable<> {
+ public:
+  TryTarget(Compiler* compiler, bool has_finally)
+    : compiler_(compiler),
+      has_finally_(has_finally),
+      vec_() {
+    if (has_finally_) {
+      compiler_->PushLevelFinally(&vec_);
+    }
+  }
+
+  void EmitJumps(std::size_t finally_target) {
+    assert(has_finally_);
+    const LevelStack& stack = compiler_->level_stack();
+    const LevelEntry& entry = stack.back();
+    assert(std::get<0>(entry) == FINALLY);
+    assert(std::get<1>(entry) == &vec_);
+    const std::vector<std::size_t>* vec = std::get<1>(entry);
+    for (std::vector<std::size_t>::const_iterator it = vec->begin(),
+         last = vec->end(); it != last; ++it) {
+      compiler_->EmitJump(finally_target, *it);
+    }
+    compiler_->PopLevel();
+  }
+
+ private:
+  Compiler* compiler_;
+  bool has_finally_;
+  std::vector<std::size_t> vec_;
+};
 
 inline void Compiler::Visit(const TryStatement* stmt) {
   const std::size_t try_start = CurrentSize();

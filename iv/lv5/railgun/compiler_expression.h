@@ -5,20 +5,72 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+class Compiler::DestGuard {
+ public:
+  explicit DestGuard(Compiler* compiler)
+    : compiler_(compiler) {
+  }
+  ~DestGuard() {
+    assert(compiler_->dst());
+  }
+ private:
+  Compiler* compiler_;
+};
+
+inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
+                                                uint32_t index,
+                                                RegisterID dst) {
+  dst = Dest(dst);
+  const LookupInfo info = Lookup(code_->names_[index]);
+  assert(info.type() != LookupInfo::STACK);
+  switch (info.type()) {
+    case LookupInfo::HEAP: {
+      thunklist_.Spill(dst);
+      Emit(OP::ToHeap(op),
+           dst,
+           index, info.heap_location(),
+           current_variable_scope_->scope_nest_count() - info.scope());
+      return dst;
+    }
+    case LookupInfo::GLOBAL: {
+      // last 2 zeros are placeholders for PIC
+      thunklist_.Spill(dst);
+      Emit(OP::ToGlobal(op), dst, index, 0u, 0u);
+      return dst;
+    }
+    case LookupInfo::LOOKUP: {
+      thunklist_.Spill(dst);
+      Emit(op, dst, index);
+      return dst;
+    }
+    case LookupInfo::UNUSED: {
+      assert(op == OP::STORE_NAME);
+      // do nothing
+      return dst;
+    }
+    default: {
+      UNREACHABLE();
+    }
+  }
+  return dst;
+}
+
 inline void Compiler::Visit(const Assignment* assign) {
   using core::Token;
   const DestGuard dest_guard(this);
   const Token::Type token = assign->op();
+
+  const Expression* lhs = assign->left();
+  const Expression* rhs = assign->right();
+  if (!lhs->IsValidLeftHandSide()) {
+    EmitExpression(lhs);
+    dst_ = EmitExpression(rhs, dst_);
+    Emit<OP::RAISE_REFERENCE>();
+    return;
+  }
+  assert(lhs->IsValidLeftHandSide());
+
   if (token == Token::TK_ASSIGN) {
-    const Expression* lhs = assign->left();
-    const Expression* rhs = assign->right();
-    if (!lhs->IsValidLeftHandSide()) {
-      EmitExpression(lhs);
-      dst_ = EmitExpression(rhs, dst_);
-      Emit<OP::RAISE_REFERENCE>();
-      return;
-    }
-    assert(lhs->IsValidLeftHandSide());
     if (const Identifier* ident = lhs->AsIdentifier()) {
       // Identifier
       if (RegisterID local = GetLocal(ident->symbol())) {
@@ -79,15 +131,6 @@ inline void Compiler::Visit(const Assignment* assign) {
       return;
     }
   } else {
-    const Expression* lhs = assign->left();
-    const Expression* rhs = assign->right();
-    if (!lhs->IsValidLeftHandSide()) {
-      EmitExpression(lhs);
-      dst_ = EmitExpression(rhs, dst_);
-      Emit<OP::RAISE_REFERENCE>();
-      return;
-    }
-    assert(lhs->IsValidLeftHandSide());
     if (const Identifier* ident = lhs->AsIdentifier()) {
       // Identifier
       const LookupInfo info = Lookup(ident->symbol());
@@ -257,6 +300,31 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
   EmitJump(CurrentSize(), first);
   dst_ = EmitExpression(cond->right(), dst_);
   EmitJump(CurrentSize(), second);
+}
+
+template<OP::Type PropOP, OP::Type ElementOP>
+inline RegisterID Compiler::EmitElement(const IndexAccess* prop, RegisterID dst) {
+  Thunk base(&thunklist_, EmitExpression(prop->target()));
+  const Expression* key = prop->key();
+  if (const StringLiteral* str = key->AsStringLiteral()) {
+    const uint32_t index =
+        SymbolToNameIndex(context::Intern(ctx_, str->value()));
+    dst = Dest(dst, base.Release());
+    thunklist_.Spill(dst);
+    Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
+  } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
+    const uint32_t index =
+        SymbolToNameIndex(context::Intern(ctx_, num->value()));
+    dst = Dest(dst, base.Release());
+    thunklist_.Spill(dst);
+    Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
+  } else {
+    RegisterID element = EmitExpression(prop->key());
+    dst = Dest(dst, base.Release(), element);
+    thunklist_.Spill(dst);
+    Emit<ElementOP>(dst, base.reg(), element);
+  }
+  return dst;
 }
 
 inline void Compiler::Visit(const UnaryOperation* unary) {
@@ -864,7 +932,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
 
   site.EmitArguments(this);
 
-  dst = DestCallSite(dst, &site);
+  dst = Dest(dst, site.callee());
   thunklist_.Spill(dst);
   if (direct_call_to_eval) {
     Emit<OP::EVAL>(dst, site.callee(),
