@@ -61,7 +61,7 @@ JSVal VM::RunEval(Code* code,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  InitThisBinding(ctx_, frame, e);
+  frame->InitThisBinding(ctx_, e);
   if (*e) {
     stack_.Unwind(frame);
     return JSEmpty;
@@ -84,7 +84,7 @@ std::pair<JSVal, VM::State> VM::Execute(Arguments* args,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return std::make_pair(JSEmpty, STATE_THROW);
   }
-  InitThisBinding(ctx_, frame, e);
+  frame->InitThisBinding(ctx_, e);
   if (*e) {
     stack_.Unwind(frame);
     return std::make_pair(JSEmpty, STATE_THROW);
@@ -1634,7 +1634,7 @@ do {\
           instr = frame->data();
           register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
-          InitThisBinding(ctx_, frame, ERR);
+          frame->InitThisBinding(ctx_, ERR);
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -1679,7 +1679,7 @@ do {\
           if (proto.IsObject()) {
             obj->set_prototype(proto.object());
           }
-          InitThisBinding(ctx_, frame, ERR);
+          frame->InitThisBinding(ctx_, ERR);
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -1723,7 +1723,7 @@ do {\
           instr = frame->data();
           register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
-          InitThisBinding(ctx_, frame, ERR);
+          frame->InitThisBinding(ctx_, ERR);
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke

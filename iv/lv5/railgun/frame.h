@@ -44,6 +44,21 @@ struct Frame {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
+  void InitThisBinding(Context* ctx, Error* e) {
+    const JSVal this_value = GetThis();
+    if (!code()->strict()) {
+      if (this_value.IsNullOrUndefined()) {
+        set_this_binding(ctx->global_obj());
+        return;
+      } else if (!this_value.IsObject()) {
+        JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
+        set_this_binding(obj);
+        return;
+      }
+    }
+    set_this_binding(this_value);
+  }
+
   JSVal* GetFrameEnd() {
     return RegisterFile() + code_->registers();
   }

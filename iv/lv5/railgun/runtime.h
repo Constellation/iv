@@ -7,7 +7,6 @@
 #include <iv/lv5/json.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/frame.h>
-#include <iv/lv5/railgun/utility.h>
 #include <iv/lv5/railgun/jsfunction.h>
 namespace iv {
 namespace lv5 {
