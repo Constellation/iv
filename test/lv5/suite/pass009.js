@@ -3,4 +3,4 @@ var i = function test() {
   return test;
 };
 
-print(i() !== 20);
+i() !== 20;
