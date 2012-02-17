@@ -1,3 +1,8 @@
 # iv / lv5 / railgun
 
 railgun is ECMAScript Register VM
+
+# design
+
+VM design is based on Lua VM.
+And PIC (Polymorphic Inline Cache) operations.
