@@ -19,6 +19,13 @@ class DisAssembler : private core::Noncopyable<> {
  public:
   explicit DisAssembler(Context* ctx) { }
 
+  void DisAssembleGlobal(const Code& code) {
+    std::ostringstream ss;
+    ss << "total code size: " << code.GetData()->size();
+    OutputLine(ss.str());
+    DisAssemble(code, true);
+  }
+
   void DisAssemble(const Code& code, bool all = true) {
     {
       // code description

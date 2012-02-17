@@ -137,6 +137,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   bool empty() const { return empty_; }
 
+  const Data* GetData() const {
+    return core_->data();
+  }
+
   Data* GetData() {
     return core_->data();
   }

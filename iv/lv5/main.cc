@@ -71,7 +71,7 @@ int DisAssemble(const iv::core::StringPiece& data,
     return EXIT_FAILURE;
   }
   iv::lv5::railgun::OutputDisAssembler dis(&ctx, stdout);
-  dis.DisAssemble(*code);
+  dis.DisAssembleGlobal(*code);
   return EXIT_SUCCESS;
 }
 
