@@ -770,7 +770,10 @@ inline bool IsNonASCIIIdentifierStart(uint16_t c) {
 }
 
 inline bool IsNonASCIIIdentifierPart(uint16_t c) {
-  return (1 << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo | Mn | Mc | Nd | Pc | Nl);
+  return
+      ((1 << GetCategory(c)) &
+       (Lu | Ll | Lt | Lm | Lo | Mn | Mc | Nd | Pc | Nl)) ||
+      c == code::ZWNJ || c == code::ZWJ;
 }
 
 inline bool IsSeparatorSpace(uint16_t c) {
