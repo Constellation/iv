@@ -146,7 +146,7 @@ IV_AERO_OPCODES(V)
   }
 
  private:
-  AssocVector<std::size_t, uintptr_t> targets_;
+  core::AssocVector<std::size_t, uintptr_t> targets_;
 };
 
 } }  // namespace iv::aero

@@ -133,8 +133,8 @@ def Build():
   else:
     env.Append(CCFLAGS="-pedantic")
 
-  if env["CC"] == "gcc":
-    env.Append(CCFLAGS="-fno-operator-names")
+  # XCode 4.3 clang allow this option
+  env.Append(CCFLAGS="-fno-operator-names")
 
   env.Append(
     CCFLAGS=[
