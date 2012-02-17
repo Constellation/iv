@@ -774,7 +774,7 @@ class Compiler::CallSite {
     //     }
     //
     // and if LHS has found, spill all thunks
-    if (Analyzer::ExpressionHasAssignment(&call)) {
+    if (call.SideEffect()) {
       thunklist->ForceSpill();
     }
     callee_ = registers->Acquire();

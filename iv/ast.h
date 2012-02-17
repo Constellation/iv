@@ -386,6 +386,9 @@ class Expression : public ExpressionBase<Factory> {
       typename ExpressionVisitor<Factory>::type* visitor) = 0;
   virtual void AcceptExpressionVisitor(
       typename ExpressionVisitor<Factory>::const_type* visitor) const = 0;
+
+  virtual bool SideEffect() const = 0;
+
   DECLARE_NODE_TYPE(Expression)
 };
 
@@ -1004,17 +1007,21 @@ class Assignment : public AssignmentBase<Factory> {
              Expression<Factory>* left, Expression<Factory>* right)
     : op_(op),
       left_(left),
-      right_(right) {
+      right_(right),
+      side_effect_(left->AsIdentifier() ||
+                   left->SideEffect() || right->SideEffect()) {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(Assignment)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* left_;
   Expression<Factory>* right_;
+  bool side_effect_;
 };
 
 // BinaryOperation
@@ -1031,17 +1038,20 @@ class BinaryOperation : public BinaryOperationBase<Factory> {
                   Expression<Factory>* left, Expression<Factory>* right)
     : op_(op),
       left_(left),
-      right_(right) {
+      right_(right),
+      side_effect_(left->SideEffect() || right->SideEffect()) {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(BinaryOperation)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* left_;
   Expression<Factory>* right_;
+  bool side_effect_;
 };
 
 // ConditionalExpression
@@ -1057,17 +1067,22 @@ class ConditionalExpression : public ConditionalExpressionBase<Factory> {
   ConditionalExpression(Expression<Factory>* cond,
                         Expression<Factory>* left,
                         Expression<Factory>* right)
-    : cond_(cond), left_(left), right_(right) {
+    : cond_(cond), left_(left), right_(right),
+      side_effect_(cond->SideEffect() ||
+                   left->SideEffect() ||
+                   right->SideEffect()) {
   }
   inline Expression<Factory>* cond() const { return cond_; }
   inline Expression<Factory>* left() const { return left_; }
   inline Expression<Factory>* right() const { return right_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(ConditionalExpression)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* cond_;
   Expression<Factory>* left_;
   Expression<Factory>* right_;
+  bool side_effect_;
 };
 
 // UnaryOperation
@@ -1082,15 +1097,18 @@ class UnaryOperation : public UnaryOperationBase<Factory> {
  public:
   UnaryOperation(Token::Type op, Expression<Factory>* expr)
     : op_(op),
-      expr_(expr) {
+      expr_(expr),
+      side_effect_(expr->SideEffect()) {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(UnaryOperation)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
+  bool side_effect_;
 };
 
 // PostfixExpression
@@ -1105,15 +1123,18 @@ class PostfixExpression : public PostfixExpressionBase<Factory> {
  public:
   PostfixExpression(Token::Type op, Expression<Factory>* expr)
     : op_(op),
-      expr_(expr) {
+      expr_(expr),
+      side_effect_(expr->AsIdentifier() || expr->SideEffect()) {
   }
   inline Token::Type op() const { return op_; }
   inline Expression<Factory>* expr() const { return expr_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(PostfixExpression)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Token::Type op_;
   Expression<Factory>* expr_;
+  bool side_effect_;
 };
 
 // StringLiteral
@@ -1133,6 +1154,7 @@ class StringLiteral : public StringLiteralBase<Factory> {
   inline const value_type& value() const {
     return *value_;
   }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
@@ -1153,6 +1175,7 @@ class NumberLiteral : public NumberLiteralBase<Factory> {
     : value_(val) {
   }
   inline double value() const { return value_; }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(NumberLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
@@ -1172,6 +1195,7 @@ class Identifier : public IdentifierBase<Factory> {
   explicit Identifier(Symbol sym) : sym_(sym) { }
   Symbol symbol() const { return sym_; }
   inline bool IsValidLeftHandSide() const { return true; }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
   ACCEPT_EXPRESSION_VISITOR
  protected:
@@ -1210,6 +1234,7 @@ class Assigned : public AssignedBase<Factory> {
   bool IsHeap() const { return type_; }
   bool IsImmutable() const { return immutable_; }
   bool IsParameter() const { return parameter_ >= 0; }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(Assigned)
   ACCEPT_EXPRESSION_VISITOR
  protected:
@@ -1231,6 +1256,7 @@ INHERIT(ThisLiteral);
 template<typename Factory>
 class ThisLiteral : public ThisLiteralBase<Factory> {
  public:
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(ThisLiteral)
   ACCEPT_EXPRESSION_VISITOR
 };
@@ -1245,6 +1271,7 @@ INHERIT(NullLiteral);
 template<typename Factory>
 class NullLiteral : public NullLiteralBase<Factory> {
  public:
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(NullLiteral)
   ACCEPT_EXPRESSION_VISITOR
 };
@@ -1259,6 +1286,7 @@ INHERIT(TrueLiteral);
 template<typename Factory>
 class TrueLiteral : public TrueLiteralBase<Factory> {
  public:
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(TrueLiteral)
   ACCEPT_EXPRESSION_VISITOR
 };
@@ -1273,6 +1301,7 @@ INHERIT(FalseLiteral);
 template<typename Factory>
 class FalseLiteral : public FalseLiteralBase<Factory> {
  public:
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(FalseLiteral)
   ACCEPT_EXPRESSION_VISITOR
 };
@@ -1293,6 +1322,7 @@ class RegExpLiteral : public RegExpLiteralBase<Factory> {
       flags_(flags) { }
   inline const value_type& value() const { return *value_; }
   inline const value_type& flags() const { return *flags_; }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(RegExpLiteral)
   ACCEPT_EXPRESSION_VISITOR
  protected:
@@ -1314,16 +1344,32 @@ class ArrayLiteral : public ArrayLiteralBase<Factory> {
  public:
   typedef typename AstNode<Factory>::MaybeExpressions MaybeExpressions;
 
+  struct SideEffectFinder {
+    template<typename T>
+    bool operator()(const T& maybe) {
+      if (maybe) {
+        return maybe.Address()->SideEffect();
+      }
+      return false;
+    }
+  };
+
   explicit ArrayLiteral(MaybeExpressions* items)
-    : items_(items) {
+    : items_(items),
+      side_effect_(
+        std::find_if(items->begin(),
+                     items->end(),
+                     SideEffectFinder()) != items->end())  {
   }
   inline const MaybeExpressions& items() const {
     return *items_;
   }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
   MaybeExpressions* items_;
+  bool side_effect_;
 };
 
 // ObjectLiteral
@@ -1345,8 +1391,20 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
                      SymbolHolder,
                      Expression<Factory>*> Property;
   typedef typename SpaceVector<Factory, Property>::type Properties;
+
+  struct SideEffectFinder {
+    template<typename T>
+    bool operator()(const T& prop) {
+      return std::get<2>(prop)->SideEffect();
+    }
+  };
+
   explicit ObjectLiteral(Properties* properties)
-    : properties_(properties) {
+    : properties_(properties),
+      side_effect_(
+          std::find_if(properties->begin(),
+                       properties->end(),
+                       SideEffectFinder()) != properties->end()) {
   }
 
   static inline void AddDataProperty(Properties* prop,
@@ -1365,11 +1423,14 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
   inline const Properties& properties() const {
     return *properties_;
   }
+
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(ObjectLiteral)
   ACCEPT_EXPRESSION_VISITOR
 
  private:
   Properties* properties_;
+  bool side_effect_;
 };
 
 // FunctionLiteral
@@ -1431,6 +1492,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline std::size_t block_end_position() const {
     return block_end_position_;
   }
+  bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(FunctionLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
@@ -1476,14 +1538,17 @@ template<typename Factory>
 class IdentifierAccess : public IdentifierAccessBase<Factory> {
  public:
   IdentifierAccess(Expression<Factory>* obj, const SymbolHolder& key)
-    : key_(key) {
+    : key_(key),
+      side_effect_(obj->SideEffect()) {
     PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
   inline const SymbolHolder& key() const { return key_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(IdentifierAccess)
   ACCEPT_EXPRESSION_VISITOR
  private:
   SymbolHolder key_;
+  bool side_effect_;
 };
 
 // IndexAccess
@@ -1498,14 +1563,17 @@ class IndexAccess : public IndexAccessBase<Factory> {
  public:
   IndexAccess(Expression<Factory>* obj,
               Expression<Factory>* key)
-    : key_(key) {
+    : key_(key),
+      side_effect_(obj->SideEffect() || key->SideEffect()) {
     PropertyAccess<Factory>::InitializePropertyAccess(obj);
   }
   inline Expression<Factory>* key() const { return key_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(IndexAccess)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* key_;
+  bool side_effect_;
 };
 
 // Call
@@ -1533,18 +1601,32 @@ template<typename Factory>
 class FunctionCall : public FunctionCallBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Expressions Expressions;
+
+  struct SideEffectFinder {
+    template<typename T>
+    bool operator()(const T& expr) {
+      return expr->SideEffect();
+    }
+  };
+
   FunctionCall(Expression<Factory>* target,
                Expressions* args)
     : target_(target),
-      args_(args) {
+      args_(args),
+      side_effect_(target->SideEffect() ||
+                   std::find_if(args->begin(),
+                                args->end(),
+                                SideEffectFinder()) != args->end()) {
   }
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return *args_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(FunctionCall)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* target_;
   Expressions* args_;
+  bool side_effect_;
 };
 
 // ConstructorCall
@@ -1558,18 +1640,33 @@ template<typename Factory>
 class ConstructorCall : public ConstructorCallBase<Factory> {
  public:
   typedef typename AstNode<Factory>::Expressions Expressions;
+
+  struct SideEffectFinder {
+    template<typename T>
+    bool operator()(const T& expr) {
+      return expr->SideEffect();
+    }
+  };
+
   ConstructorCall(Expression<Factory>* target,
                   Expressions* args)
     : target_(target),
-      args_(args) {
+      args_(args),
+      side_effect_(target->SideEffect() ||
+                   std::find_if(args->begin(),
+                                args->end(),
+                                SideEffectFinder()) != args->end()) {
   }
+
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return *args_; }
+  bool SideEffect() const { return side_effect_; }
   DECLARE_DERIVED_NODE_TYPE(ConstructorCall)
   ACCEPT_EXPRESSION_VISITOR
  private:
   Expression<Factory>* target_;
   Expressions* args_;
+  bool side_effect_;
 };
 
 } } }  // namespace iv::core::ast
