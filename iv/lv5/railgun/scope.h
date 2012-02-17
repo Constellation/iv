@@ -184,7 +184,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
   typedef std::unordered_map<Symbol, LookupInfo> VariableMap;
 
-  typedef std::vector<std::pair<Symbol, LookupInfo> > HeapVariables;
+  typedef std::vector<Symbol> HeapVariables;
 
   CodeScope(const FunctionLiteral* lit,
             const std::shared_ptr<VariableScope>& up,
@@ -217,7 +217,9 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                       assigned->immutable(),
                       scope_nest_count(),
                       assigned));
-          heap_.push_back(item);
+          // TODO(Constellation) in the future, remove this heap_.push_back
+          // because it is parameter.
+          heap_.push_back(item.first);
           map_.insert(item);
         } else {
           const std::pair<Symbol, LookupInfo> item =
@@ -229,7 +231,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                       assigned->immutable(),
                       scope_nest_count(),
                       assigned));
-          heap_.push_back(item);
+          heap_.push_back(item.first);
           map_.insert(item);
         }
       } else {
@@ -271,7 +273,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
                                     scope->strict(),
                                     scope_nest_count(),
                                     NULL));
-        heap_.push_back(item);
+        heap_.push_back(item.first);
         map_.insert(item);
       } else if (scope_->has_arguments()) {
         const std::pair<Symbol, LookupInfo> item =
@@ -282,10 +284,12 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       }
     }
 
-    for (HeapVariables::iterator it = heap_.begin(),
-         last = heap_.end(); it != last; ++it) {
-      it->second.DisplaceHeapRegister(stack_size());
-    }
+    // Displace Heaps
+//    for (HeapVariables::iterator it = heap_.begin(),
+//         last = heap_.end(); it != last; ++it) {
+//      assert(map_.find(*it) != map_.end());
+//      map_.find(*it)->second.DisplaceHeapRegister(stack_size());
+//    }
   }
 
   LookupInfo Lookup(Symbol sym) {

@@ -593,11 +593,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       for (FunctionScope::HeapVariables::const_iterator
            it = env->heap().begin(), last = env->heap().end();
            it != last; ++it) {
+        const LookupInfo info = Lookup(*it);
         Emit<OP::INSTANTIATE_HEAP_BINDING>(
-            SymbolToNameIndex(it->first),
-            it->second.heap_location(),
-            it->second.register_location(),
-            static_cast<uint32_t>(it->second.immutable()));
+            SymbolToNameIndex(*it),
+            info.heap_location(),
+            info.register_location(),
+            static_cast<uint32_t>(info.immutable()));
       }
     }
 
