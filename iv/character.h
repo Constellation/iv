@@ -766,11 +766,11 @@ inline bool IsASCIIAlphanumeric(uint16_t c) {
 }
 
 inline bool IsNonASCIIIdentifierStart(uint16_t c) {
-  return (1 << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo);
+  return (1 << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo | Nl);
 }
 
 inline bool IsNonASCIIIdentifierPart(uint16_t c) {
-  return (1 << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo | Mn | Mc | Nd | Pc);
+  return (1 << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo | Mn | Mc | Nd | Pc | Nl);
 }
 
 inline bool IsSeparatorSpace(uint16_t c) {
