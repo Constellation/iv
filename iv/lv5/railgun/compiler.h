@@ -580,6 +580,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         static_cast<FunctionScope*>(current_variable_scope_.get());
     registers_.Clear(env->stack_size(), env->heap_size());
 
+    assert(code_->names_.empty());
+
     // save eval result or not
     if (current_variable_scope_->UseExpressionReturn()) {
       eval_result_ = registers_.Acquire();
