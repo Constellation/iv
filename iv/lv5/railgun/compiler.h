@@ -722,16 +722,21 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
 
     if (IsCodeEmpty()) {
-      // only STOP_CODE
       code_->set_empty(true);
     }
 
     // return eval result
     if (current_variable_scope_->UseExpressionReturn()) {
       Emit<OP::RETURN>(eval_result_);
+    } else {
+      if (!continuation_status_.IsDeadStatement()) {
+        // insert return undefined
+        RegisterID tmp = registers_.Acquire();
+        Emit<OP::LOAD_UNDEFINED>(tmp);
+        Emit<OP::RETURN>(tmp);
+      }
     }
 
-    Emit<OP::STOP_CODE>();
     CodeContextEpilogue(code);
 
     const std::shared_ptr<VariableScope> target = current_variable_scope_;

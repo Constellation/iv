@@ -20,13 +20,9 @@ class JSVMFunction : public JSFunction {
  public:
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
-    const std::pair<JSVal, VM::State> ret =
-        static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
-    if (ret.second == VM::STATE_NORMAL) {
-      return JSUndefined;
-    } else {
-      return ret.first;
-    }
+    return static_cast<Context*>(args->ctx())->vm()->Execute(args,
+                                                             this,
+                                                             e).first;
   }
 
   JSVal Construct(Arguments* args, Error* e) {

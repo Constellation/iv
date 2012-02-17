@@ -222,19 +222,19 @@ do {\
         DISPATCH(MV);
       }
 
-      DEFINE_OPCODE(STOP_CODE) {
-        // opcode
+      DEFINE_OPCODE(RETURN) {
+        // opcode | src
+        const JSVal src = REG(instr[1].i32);
         const JSVal ret =
-            (frame->constructor_call_) ? frame->GetThis() : JSUndefined;
+            (frame->constructor_call_ && !src.IsObject()) ?
+            frame->GetThis() : src;
 
         // no return at last
         // return undefined
         // if previous code is not native code, unwind frame and jump
         if (frame->prev_pc_ == NULL) {
           // this code is invoked by native function
-          return std::make_pair(
-              ret,
-              (frame->constructor_call_) ? STATE_CONSTRUCT : STATE_NORMAL);
+          return std::make_pair(ret, STATE_RETURN);
         }
         // this code is invoked by JS code
         // EVAL / CALL / CONSTRUCT
@@ -1355,28 +1355,6 @@ do {\
           REG(instr[1].i32) = res;
         }
         DISPATCH(BINARY_BIT_OR);
-      }
-
-      DEFINE_OPCODE(RETURN) {
-        // opcode | src
-        const JSVal src = REG(instr[1].i32);
-        const JSVal ret =
-            (frame->constructor_call_ && !src.IsObject()) ?
-            frame->GetThis() : src;
-        // if previous code is not native code, unwind frame and jump
-        if (frame->prev_pc_ == NULL) {
-          // this code is invoked by native function
-          return std::make_pair(ret, STATE_RETURN);
-        }
-        // this code is invoked by JS code
-        // EVAL / CALL / CONSTRUCT
-        instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
-        const int32_t r = frame->r_;
-        frame = stack_.Unwind(frame);
-        register_offset = frame->RegisterFile();
-        REG(r) = ret;
-        strict = frame->code()->strict();
-        DISPATCH_WITH_NO_INCREMENT();
       }
 
       DEFINE_OPCODE(RETURN_SUBROUTINE) {

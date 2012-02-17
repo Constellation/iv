@@ -16,7 +16,6 @@ namespace railgun {
 
 // opcode name and length
 #define IV_LV5_RAILGUN_OP_LIST(V)\
-V(STOP_CODE, 1)\
 V(NOP, 1)\
 V(MV, 3)\
 \
