@@ -398,7 +398,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal base = REG(instr[2].i32);
         const JSVal res =
@@ -412,7 +412,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP_OWN) {
-        // opcode | dst | base | name | map | offset | nop | nop
+        // opcode | dst | base | name | map | offset | nop
         const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
@@ -447,7 +447,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP_PROTO) {
-        // opcode | dst | base | name | map | map | offset | nop
+        // opcode | dst | base | name | map | map | offset
         const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
@@ -483,7 +483,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP_CHAIN) {
-        // opcode | dst | base | name | chain | map | offset | nop
+        // opcode | dst | base | name | chain | map | offset
         const JSVal base = REG(instr[2].i32);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
@@ -516,7 +516,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP_GENERIC) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal res = operation_.LoadProp(base, name, strict, ERR);
@@ -574,7 +574,7 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_PROP) {
-        // opcode | base | index | src | nop | nop | nop | nop
+        // opcode | base | index | src | nop | nop
         const JSVal base = REG(instr[1].i32);
         const Symbol name= frame->GetName(instr[2].u32);
         const JSVal src = REG(instr[3].i32);
@@ -584,7 +584,7 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_PROP_GENERIC) {
-        // opcode | base | index | src | nop | nop | nop | nop
+        // opcode | base | index | src | nop | nop
         const JSVal base = REG(instr[1].i32);
         const Symbol name = frame->GetName(instr[2].u32);
         const JSVal src = REG(instr[3].i32);
@@ -648,7 +648,7 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         base.CheckObjectCoercible(ERR);
@@ -1043,7 +1043,7 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal res =
@@ -1053,7 +1053,7 @@ do {\
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal res =
@@ -1063,7 +1063,7 @@ do {\
       }
 
       DEFINE_OPCODE(INCREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal res =
@@ -1073,7 +1073,7 @@ do {\
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop | nop
+        // opcode | dst | base | name | nop | nop | nop
         const JSVal base = REG(instr[2].i32);
         const Symbol name = frame->GetName(instr[3].u32);
         const JSVal res =

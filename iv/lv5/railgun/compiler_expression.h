@@ -86,7 +86,6 @@ inline void Compiler::Visit(const Assignment* assign) {
         dst_ = EmitExpressionToDest(rhs, dst_);
         EmitStore(ident->symbol(), dst_);
       }
-      return;
     } else if (lhs->AsPropertyAccess()) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
@@ -94,32 +93,21 @@ inline void Compiler::Visit(const Assignment* assign) {
         Thunk base(&thunklist_, EmitExpression(ac->target()));
         dst_ = EmitExpressionToDest(rhs, dst_);
         const uint32_t index = SymbolToNameIndex(ac->key());
-        Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
-        return;
+        Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
       } else {
         // IndexAccess
         const IndexAccess* idx = lhs->AsIndexAccess();
-        const Expression* key = idx->key();
-        if (const StringLiteral* str = key->AsStringLiteral()) {
+        const Symbol sym = PropertyName(idx->key());
+        if (sym != symbol::kDummySymbol) {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, str->value()));
+          const uint32_t index = SymbolToNameIndex(sym);
           dst_ = EmitExpressionToDest(rhs, dst_);
-          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
-          return;
-        } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          dst_ = EmitExpressionToDest(rhs, dst_);
-          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
-          return;
+          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
         } else {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
-          Thunk element(&thunklist_, EmitExpression(key));
+          Thunk element(&thunklist_, EmitExpression(idx->key()));
           dst_ = EmitExpressionToDest(rhs, dst_);
           Emit<OP::STORE_ELEMENT>(base.Release(), element.Release(), dst_);
-          return;
         }
       }
     } else {
@@ -128,7 +116,6 @@ inline void Compiler::Visit(const Assignment* assign) {
       EmitExpression(lhs);
       dst_ = EmitExpressionToDest(rhs, dst_);
       Emit<OP::RAISE_REFERENCE>();
-      return;
     }
   } else {
     if (const Identifier* ident = lhs->AsIdentifier()) {
@@ -164,46 +151,31 @@ inline void Compiler::Visit(const Assignment* assign) {
         const uint32_t index = SymbolToNameIndex(ac->key());
         {
           RegisterID prop = registers_.Acquire();
-          Emit<OP::LOAD_PROP>(prop, base.reg(), index, 0, 0, 0, 0);
+          Emit<OP::LOAD_PROP>(prop, base.reg(), index, 0, 0, 0);
           RegisterID tmp = EmitExpression(rhs);
           dst_ = Dest(dst_, tmp, prop);
           thunklist_.Spill(dst_);
           Emit(OP::BinaryOP(token), dst_, prop, tmp);
         }
-        Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
+        Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
         return;
       } else {
         // IndexAccess
         const IndexAccess* idx = lhs->AsIndexAccess();
         const Expression* key = idx->key();
-        if (const StringLiteral* str = key->AsStringLiteral()) {
+        const Symbol sym = PropertyName(key);
+        if (sym != symbol::kDummySymbol) {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, str->value()));
+          const uint32_t index = SymbolToNameIndex(sym);
           {
             RegisterID prop = registers_.Acquire();
-            Emit<OP::LOAD_PROP>(prop, base.reg(), index, 0, 0, 0, 0);
+            Emit<OP::LOAD_PROP>(prop, base.reg(), index, 0, 0, 0);
             RegisterID tmp = EmitExpression(rhs);
             dst_ = Dest(dst_, tmp, prop);
             thunklist_.Spill(dst_);
             Emit(OP::BinaryOP(token), dst_, prop, tmp);
           }
-          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
-          return;
-        } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          {
-            RegisterID prop = registers_.Acquire();
-            Emit<OP::LOAD_PROP>(prop, base.reg(), index, 0, 0, 0, 0);
-            RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_, tmp, prop);
-            thunklist_.Spill(dst_);
-            Emit(OP::BinaryOP(token), dst_, prop, tmp);
-          }
-          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0, 0, 0);
-          return;
+          Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
         } else {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           Thunk element(&thunklist_, EmitExpression(key));
@@ -307,20 +279,14 @@ inline RegisterID Compiler::EmitElement(const IndexAccess* prop,
                                         RegisterID dst) {
   Thunk base(&thunklist_, EmitExpression(prop->target()));
   const Expression* key = prop->key();
-  if (const StringLiteral* str = key->AsStringLiteral()) {
-    const uint32_t index =
-        SymbolToNameIndex(context::Intern(ctx_, str->value()));
+  const Symbol sym = PropertyName(key);
+  if (sym != symbol::kDummySymbol) {
+    const uint32_t index = SymbolToNameIndex(sym);
     dst = Dest(dst, base.Release());
     thunklist_.Spill(dst);
-    Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
-  } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-    const uint32_t index =
-        SymbolToNameIndex(context::Intern(ctx_, num->value()));
-    dst = Dest(dst, base.Release());
-    thunklist_.Spill(dst);
-    Emit<PropOP>(dst, base.reg(), index, 0, 0, 0, 0);
+    Emit<PropOP>(dst, base.reg(), index, 0, 0, 0);
   } else {
-    RegisterID element = EmitExpression(prop->key());
+    RegisterID element = EmitExpression(key);
     dst = Dest(dst, base.Release(), element);
     thunklist_.Spill(dst);
     Emit<ElementOP>(dst, base.reg(), element);
@@ -359,7 +325,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
             const uint32_t index = SymbolToNameIndex(ac->key());
             dst_ = Dest(dst_);
             thunklist_.Spill(dst_);
-            Emit<OP::DELETE_PROP>(dst_, base, index, 0, 0, 0, 0);
+            Emit<OP::DELETE_PROP>(dst_, base, index, 0, 0, 0);
           } else {
             // IndexAccess
             dst_ = EmitElement<
@@ -447,9 +413,9 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
           dst_ = Dest(dst_);
           thunklist_.Spill(dst_);
           if (token == Token::TK_INC) {
-            Emit<OP::INCREMENT_PROP>(dst_, base, index, 0, 0, 0, 0);
+            Emit<OP::INCREMENT_PROP>(dst_, base, index, 0, 0, 0);
           } else {
-            Emit<OP::DECREMENT_PROP>(dst_, base, index, 0, 0, 0, 0);
+            Emit<OP::DECREMENT_PROP>(dst_, base, index, 0, 0, 0);
           }
         } else {
           // IndexAccess
@@ -519,9 +485,9 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       dst_ = Dest(dst_);
       thunklist_.Spill(dst_);
       if (token == Token::TK_INC) {
-        Emit<OP::POSTFIX_INCREMENT_PROP>(dst_, base, index, 0, 0, 0, 0);
+        Emit<OP::POSTFIX_INCREMENT_PROP>(dst_, base, index, 0, 0, 0);
       } else {
-        Emit<OP::POSTFIX_DECREMENT_PROP>(dst_, base, index, 0, 0, 0, 0);
+        Emit<OP::POSTFIX_DECREMENT_PROP>(dst_, base, index, 0, 0, 0);
       }
     } else {
       // IndexAccess
@@ -786,7 +752,7 @@ inline void Compiler::Visit(const IdentifierAccess* prop) {
   const uint32_t index = SymbolToNameIndex(prop->key());
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
-  Emit<OP::LOAD_PROP>(dst_, base, index, 0, 0, 0, 0);
+  Emit<OP::LOAD_PROP>(dst_, base, index, 0, 0, 0);
 }
 
 inline void Compiler::Visit(const IndexAccess* prop) {
@@ -905,20 +871,15 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
         // IdentifierAccess
         EmitExpressionToDest(prop->target(), site.base());
         const uint32_t index = SymbolToNameIndex(ac->key());
-        Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0, 0);
+        Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0);
       } else {
         // IndexAccess
         const IndexAccess* ai = prop->AsIndexAccess();
         EmitExpressionToDest(ai->target(), site.base());
-        const Expression* key = ai->key();
-        if (const StringLiteral* str = key->AsStringLiteral()) {
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, str->value()));
-          Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0, 0);
-        } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-          const uint32_t index =
-              SymbolToNameIndex(context::Intern(ctx_, num->value()));
-          Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0, 0);
+        const Symbol sym = PropertyName(ai->key());
+        if (sym != symbol::kDummySymbol) {
+          const uint32_t index = SymbolToNameIndex(sym);
+          Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0);
         } else {
           EmitExpressionToDest(ai->key(), site.callee());
           Emit<OP::LOAD_ELEMENT>(site.callee(), site.base(), site.callee());

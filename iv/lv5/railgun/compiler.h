@@ -337,6 +337,17 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return current_variable_scope_->Lookup(sym);
   }
 
+  // may return dummy symbol (symbol::kDummySymbol)
+  Symbol PropertyName(const Expression* key) const {
+    if (const StringLiteral* str = key->AsStringLiteral()) {
+      return context::Intern(ctx_, str->value());
+    } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
+      return context::Intern(ctx_, num->value());
+    } else {
+      return symbol::kDummySymbol;
+    }
+  }
+
   uint32_t SymbolToNameIndex(const Symbol& sym) {
     const std::unordered_map<Symbol, uint32_t>::const_iterator it =
         symbol_to_index_map_.find(sym);
@@ -394,6 +405,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
 
     if (cand1 && cand1->IsTemporary()) {
+      if (cand2 && cand2->IsTemporary()) {
+        if (cand1->register_offset() > cand2->register_offset()) {
+          // cand2 is smaller number than cand1
+          return cand2;
+        }
+      }
       return cand1;
     }
 

@@ -135,7 +135,7 @@ class Operation {
   template<OP::Type own, OP::Type proto, OP::Type chain, OP::Type generic>
   JSVal LoadProp(Instruction* instr,
                  const JSVal& base, Symbol s, bool strict, Error* e) {
-    // opcode | dst | base | name | nop | nop | nop | nop
+    // opcode | dst | base | name | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
@@ -292,7 +292,7 @@ class Operation {
                  Instruction* instr,
                  OP::Type generic,
                  Symbol s, const JSVal& stored, bool strict, Error* e) {
-    // opcode | base | index | src | nop | nop | nop | nop
+    // opcode | base | index | src | nop | nop
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
       StorePropPrimitive(base, s, stored, strict, e);
@@ -330,7 +330,6 @@ class Operation {
       StorePropPrimitive(base, s, stored, strict, e);
     } else {
       base.object()->Put(ctx_, s, stored, strict, e);
-      return;
     }
   }
 
@@ -341,7 +340,6 @@ class Operation {
     if (!o->CanPut(ctx_, s)) {
       if (strict) {
         e->Report(Error::Type, "cannot put value to object");
-        return;
       }
       return;
     }
@@ -350,7 +348,6 @@ class Operation {
       if (strict) {
         e->Report(Error::Type,
                   "value to symbol defined and not data descriptor");
-        return;
       }
       return;
     }
@@ -365,7 +362,6 @@ class Operation {
     } else {
       if (strict) {
         e->Report(Error::Type, "value to symbol in transient object");
-        return;
       }
     }
   }
