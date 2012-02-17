@@ -628,8 +628,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
     }
 
-    code_->set_heap_size(env->heap_size());
-    code_->set_stack_size(env->stack_size());
+    code_->set_heap_size(registers_.heap_size());
+    code_->set_stack_size(registers_.stack_size());
   }
 
   void EmitPatchingBindingInstantiation(const FunctionLiteral& lit, bool eval) {

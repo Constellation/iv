@@ -132,6 +132,10 @@ class Registers {
     return false;
   }
 
+  int32_t stack_size() const { return stack_; }
+
+  int32_t heap_size() const { return heap_; }
+
  private:
   void Release(int32_t reg) {
     if (!IsLocalID(reg)) {
