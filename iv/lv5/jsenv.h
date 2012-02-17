@@ -95,6 +95,12 @@ class JSDeclEnv : public JSEnv {
       assert(&escaped_ == redirect_);
     }
 
+    // close this upvalue to self referenced
+    void Close() {
+      escaped_ = *redirect_;
+      redirect_ = &escaped_;
+    }
+
     JSVal value() const {
       assert(&escaped_ == redirect_);
       return *redirect_;
