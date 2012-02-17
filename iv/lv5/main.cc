@@ -3,6 +3,10 @@
 #include <locale>
 #include <string>
 #include <vector>
+#include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
+#include <iv/about.h>
+#include <iv/cmdline.h>
 #include <iv/lv5/lv5.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>

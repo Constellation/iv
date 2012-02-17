@@ -1,12 +1,7 @@
 #ifndef IV_LV5_LV5_H_
 #define IV_LV5_LV5_H_
 #include <gc/gc.h>
-#include <iv/detail/array.h>
-#include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
-#include <iv/about.h>
 #include <iv/utils.h>
-#include <iv/cmdline.h>
 #include <iv/ast.h>
 #include <iv/ast_serializer.h>
 #include <iv/parser.h>
