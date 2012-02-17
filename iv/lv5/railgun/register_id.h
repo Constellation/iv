@@ -72,7 +72,7 @@ class Registers {
     heap_ = 0;  // currently not using heap
     // heap_ = heap;
     stack_ = stack;
-    variable_registers_ = stack + heap;
+    variable_registers_ = stack_ + heap_;
   }
 
   ID Acquire();
