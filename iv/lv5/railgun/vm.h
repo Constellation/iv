@@ -66,13 +66,12 @@ JSVal VM::RunEval(Code* code,
     stack_.Unwind(frame);
     return JSEmpty;
   }
-  const std::pair<JSVal, State> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
-  return res.first;
+  return res;
 }
 
-std::pair<JSVal, VM::State> VM::Execute(Arguments* args,
-                                        JSVMFunction* func, Error* e) {
+JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
   Frame* frame = stack_.NewCodeFrame(
       ctx_,
       args->ExtractBase(),
@@ -82,19 +81,19 @@ std::pair<JSVal, VM::State> VM::Execute(Arguments* args,
       NULL, args->size() + 1, args->IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
-    return std::make_pair(JSEmpty, STATE_THROW);
+    return JSEmpty;
   }
   frame->InitThisBinding(ctx_, e);
   if (*e) {
     stack_.Unwind(frame);
-    return std::make_pair(JSEmpty, STATE_THROW);
+    return JSEmpty;
   }
-  const std::pair<JSVal, State> res = Execute(frame, e);
+  const JSVal res = Execute(frame, e);
   stack_.Unwind(frame);
   return res;
 }
 
-std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
+JSVal VM::Execute(Frame* start, Error* e) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
   if (!start) {
     // if start frame is NULL, this pass is getting labels table for
@@ -106,7 +105,7 @@ std::pair<JSVal, VM::State> VM::Execute(Frame* start, Error* e) {
     } };
     // get direct threading dispatch table
     direct_threading_dispatch_table_ = &kDispatchTable;
-    return std::make_pair(JSEmpty, STATE_NORMAL);
+    return JSEmpty;
 #undef V
   }
 #endif
@@ -234,7 +233,7 @@ do {\
         // if previous code is not native code, unwind frame and jump
         if (frame->prev_pc_ == NULL) {
           // this code is invoked by native function
-          return std::make_pair(ret, STATE_RETURN);
+          return ret;
         }
         // this code is invoked by JS code
         // EVAL / CALL / CONSTRUCT
@@ -1769,7 +1768,7 @@ do {\
     break;
   }  // for main loop
   assert(*e);
-  return std::make_pair(JSEmpty, STATE_THROW);
+  return JSEmpty;
 #undef INCREMENT_NEXT
 #undef DISPATCH_ERROR
 #undef DISPATCH

@@ -20,9 +20,7 @@ class JSVMFunction : public JSFunction {
  public:
   JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
-    return static_cast<Context*>(args->ctx())->vm()->Execute(args,
-                                                             this,
-                                                             e).first;
+    return static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
   }
 
   JSVal Construct(Arguments* args, Error* e) {
