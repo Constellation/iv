@@ -74,7 +74,6 @@
 		70ECA3F814D658ED006301D5 /* pass002.js in Sources */ = {isa = PBXBuildFile; fileRef = 70ECA3F214D658ED006301D5 /* pass002.js */; };
 		70ECA3F914D658ED006301D5 /* pass003.js in Sources */ = {isa = PBXBuildFile; fileRef = 70ECA3F314D658ED006301D5 /* pass003.js */; };
 		70ECA3FA14D658ED006301D5 /* pass004.js in Sources */ = {isa = PBXBuildFile; fileRef = 70ECA3F414D658ED006301D5 /* pass004.js */; };
-		70ECA3FB14D658ED006301D5 /* test_breaker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70ECA3F514D658ED006301D5 /* test_breaker.cc */; };
 		70ECA3FC14D658ED006301D5 /* test_suite.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70ECA3F614D658ED006301D5 /* test_suite.cc */; };
 /* End PBXBuildFile section */
 
@@ -216,7 +215,6 @@
 		70ECA3F214D658ED006301D5 /* pass002.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pass002.js; sourceTree = "<group>"; };
 		70ECA3F314D658ED006301D5 /* pass003.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pass003.js; sourceTree = "<group>"; };
 		70ECA3F414D658ED006301D5 /* pass004.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pass004.js; sourceTree = "<group>"; };
-		70ECA3F514D658ED006301D5 /* test_breaker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_breaker.cc; sourceTree = "<group>"; };
 		70ECA3F614D658ED006301D5 /* test_suite.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_suite.cc; sourceTree = "<group>"; };
 		70ECA41814D659C1006301D5 /* environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = environment.h; sourceTree = "<group>"; };
 		70ECA41914D659C1006301D5 /* if.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = if.h; sourceTree = "<group>"; };
@@ -623,7 +621,6 @@
 			isa = PBXGroup;
 			children = (
 				70ECA3F014D658ED006301D5 /* suite */,
-				70ECA3F514D658ED006301D5 /* test_breaker.cc */,
 				70ECA3F614D658ED006301D5 /* test_suite.cc */,
 				70253C571463D48A00B6D41E /* main.cc */,
 				70253C591463D48A00B6D41E /* test_fpu.cc */,
@@ -1386,7 +1383,6 @@
 				70ECA3F814D658ED006301D5 /* pass002.js in Sources */,
 				70ECA3F914D658ED006301D5 /* pass003.js in Sources */,
 				70ECA3FA14D658ED006301D5 /* pass004.js in Sources */,
-				70ECA3FB14D658ED006301D5 /* test_breaker.cc in Sources */,
 				70ECA3FC14D658ED006301D5 /* test_suite.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
