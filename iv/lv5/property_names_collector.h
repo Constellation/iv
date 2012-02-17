@@ -1,6 +1,7 @@
 #ifndef IV_LV5_PROPERTY_NAMES_COLLECTOR_H_
 #define IV_LV5_PROPERTY_NAMES_COLLECTOR_H_
 #include <vector>
+#include <iv/detail/unordered_set.h>
 #include <iv/lv5/symbol.h>
 #include <iv/sorted_vector.h>
 namespace iv {
@@ -39,6 +40,7 @@ class PropertyNamesCollector {
   };
 
   typedef core::SortedVector<SymbolKey> Names;
+  typedef std::unordered_set<Symbol> Unique;
 
   PropertyNamesCollector()
     : names_(),
@@ -48,13 +50,11 @@ class PropertyNamesCollector {
   const Names& names() const { return names_; }
 
   void Add(Symbol symbol, uint32_t order) {
-    for (Names::const_iterator it = names_.begin(),
-         last = names_.end(); it != last; ++it) {
-      if (*it == symbol) {
-        return;
-      }
+    if (unique_.find(symbol) != unique_.end()) {
+      return;
     }
     names_.push_back(SymbolKey(symbol, order, level_));
+    unique_.insert(symbol);
   }
 
   void Add(uint32_t index) {
@@ -68,6 +68,7 @@ class PropertyNamesCollector {
 
  private:
   Names names_;
+  Unique unique_;
   uint32_t level_;
 };
 
