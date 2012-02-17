@@ -727,18 +727,6 @@ do {\
         DISPATCH(LOAD_UNDEFINED);
       }
 
-      DEFINE_OPCODE(LOAD_UINT32) {
-        // opcode | dst | val
-        REG(instr[1].i32) = JSVal::UInt32(instr[2].u32);
-        DISPATCH(LOAD_UINT32);
-      }
-
-      DEFINE_OPCODE(LOAD_INT32) {
-        // opcode | dst | val
-        REG(instr[1].i32) = JSVal::Int32(instr[2].i32);
-        DISPATCH(LOAD_INT32);
-      }
-
       DEFINE_OPCODE(UNARY_POSITIVE) {
         // opcode | dst | src
         const JSVal src = REG(instr[2].i32);

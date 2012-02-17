@@ -537,22 +537,6 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   const double val = lit->value();
-  const int32_t i32 = static_cast<int32_t>(val);
-  if (val == i32 && (i32 || !core::math::Signbit(val))) {
-    // boxing int32_t
-    Instruction inst(0u);
-    inst.i32 = i32;
-    Emit<OP::LOAD_INT32>(dst_, inst);
-    return;
-  }
-
-  const uint32_t ui32 = static_cast<uint32_t>(val);
-  if (val == ui32 && (ui32 || !core::math::Signbit(val))) {
-    // boxing uint32_t
-    Emit<OP::LOAD_UINT32>(dst_, ui32);
-    return;
-  }
-
   const JSDoubleToIndexMap::const_iterator it =
       double_to_index_map_.find(val);
   if (it != double_to_index_map_.end()) {
