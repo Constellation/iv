@@ -72,8 +72,10 @@ class LookupInfo {
 
   const Assigned* assigned() const { return assigned_; }
 
-  void DisplaceHeapRegister(int32_t stack_size) {
-    register_location_ = stack_size + heap_location();
+  void Displace(int32_t heap, int32_t register_location) {
+    assert(type_ == HEAP);
+    heap_location_ = heap;
+    // register_location_ = register_location;
   }
 
  private:
@@ -200,6 +202,11 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       stack_size_(0),
       is_eval_decl_(is_eval_decl) {
     assert(upper());
+
+    // accumulate heaps for better heap numbers
+    std::vector<Symbol> immutable_heaps;
+    std::vector<Symbol> mutable_heaps;
+
     for (Scope::Assigneds::const_iterator it = scope->assigneds().begin(),
          last = scope->assigneds().end(); it != last; ++it) {
       // already unique
@@ -208,56 +215,57 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       if (assigned->IsHeap() || scope_->upper_of_eval()) {
         // HEAP
         if (assigned->IsParameter()) {
-          const std::pair<Symbol, LookupInfo> item =
-              std::make_pair(
-                  assigned->symbol(),
-                  LookupInfo::NewHeap(
-                      heap_.size(),
-                      FrameConstant<>::Arg(assigned->parameter()),
-                      assigned->immutable(),
-                      scope_nest_count(),
-                      assigned));
+          const Symbol name = assigned->symbol();
+          const LookupInfo info = LookupInfo::NewHeap(
+              heap_.size(),
+              FrameConstant<>::Arg(assigned->parameter()),
+              assigned->immutable(),
+              scope_nest_count(),
+              assigned);
           // TODO(Constellation) in the future, remove this heap_.push_back
           // because it is parameter.
-          heap_.push_back(item.first);
-          map_.insert(item);
+          if (info.immutable()) {
+            immutable_heaps.push_back(name);
+          } else {
+            mutable_heaps.push_back(name);
+          }
+          heap_.push_back(name);
+          map_.insert(std::make_pair(name, info));
         } else {
-          const std::pair<Symbol, LookupInfo> item =
-              std::make_pair(
-                  assigned->symbol(),
-                  LookupInfo::NewHeap(
-                      heap_.size(),
-                      heap_.size(),
-                      assigned->immutable(),
-                      scope_nest_count(),
-                      assigned));
-          heap_.push_back(item.first);
-          map_.insert(item);
+          const Symbol name = assigned->symbol();
+          const LookupInfo info = LookupInfo::NewHeap(
+              heap_.size(),
+              heap_.size(),
+              assigned->immutable(),
+              scope_nest_count(),
+              assigned);
+          if (info.immutable()) {
+            immutable_heaps.push_back(name);
+          } else {
+            mutable_heaps.push_back(name);
+          }
+          heap_.push_back(name);
+          map_.insert(std::make_pair(name, info));
         }
       } else {
         // STACK
         if (assigned->IsReferenced()) {
           if (assigned->IsParameter()) {
-            const std::pair<Symbol, LookupInfo> item = std::make_pair(
-                assigned->symbol(),
-                LookupInfo::NewStack(
-                    FrameConstant<>::Arg(assigned->parameter()),
-                    assigned->immutable(),
-                    assigned));
-            map_.insert(item);
+            const LookupInfo info = LookupInfo::NewStack(
+                FrameConstant<>::Arg(assigned->parameter()),
+                assigned->immutable(),
+                assigned);
+            map_.insert(std::make_pair(assigned->symbol(), info));
           } else {
-            const std::pair<Symbol, LookupInfo> item = std::make_pair(
-                assigned->symbol(),
-                LookupInfo::NewStack(
-                    stack_size_++,
-                    assigned->immutable(),
-                    assigned));
-            map_.insert(item);
+            const LookupInfo info = LookupInfo::NewStack(
+                stack_size_++,
+                assigned->immutable(),
+                assigned);
+            map_.insert(std::make_pair(assigned->symbol(), info));
           }
         } else {
-          const std::pair<Symbol, LookupInfo> item =
-              std::make_pair(assigned->symbol(), LookupInfo::NewUnused());
-          map_.insert(item);
+          map_.insert(
+              std::make_pair(assigned->symbol(), LookupInfo::NewUnused()));
         }
       }
     }
@@ -265,31 +273,39 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     if (!is_eval_decl && map_.find(symbol::arguments()) == map_.end()) {
       // not hidden
       if (scope_->arguments_is_heap() || scope_->direct_call_to_eval()) {
-        const std::pair<Symbol, LookupInfo> item =
-            std::make_pair(
-                symbol::arguments(),
-                LookupInfo::NewHeap(heap_.size(),
-                                    heap_.size(), 
-                                    scope->strict(),
-                                    scope_nest_count(),
-                                    NULL));
-        heap_.push_back(item.first);
-        map_.insert(item);
+        const Symbol name = symbol::arguments();
+        const LookupInfo info = LookupInfo::NewHeap(
+            heap_.size(),
+            heap_.size(),
+            scope->strict(),
+            scope_nest_count(),
+            NULL);
+        if (info.immutable()) {
+          immutable_heaps.push_back(name);
+        } else {
+          mutable_heaps.push_back(name);
+        }
+        heap_.push_back(name);
+        map_.insert(std::make_pair(name, info));
       } else if (scope_->has_arguments()) {
-        const std::pair<Symbol, LookupInfo> item =
-            std::make_pair(
-                symbol::arguments(),
-                LookupInfo::NewStack(stack_size_++, scope->strict(), NULL));
-        map_.insert(item);
+        const LookupInfo info =
+            LookupInfo::NewStack(stack_size_++, scope->strict(), NULL);
+        map_.insert(std::make_pair(symbol::arguments(), info));
       }
     }
 
-    // Displace Heaps
-//    for (HeapVariables::iterator it = heap_.begin(),
-//         last = heap_.end(); it != last; ++it) {
-//      assert(map_.find(*it) != map_.end());
-//      map_.find(*it)->second.DisplaceHeapRegister(stack_size());
-//    }
+    {
+      // Displace Heaps
+      int32_t i = 0;
+      for (std::vector<Symbol>::const_iterator it = immutable_heaps.begin(),
+           last = immutable_heaps.end(); it != last; ++it, ++i) {
+        map_.find(*it)->second.Displace(i, stack_size() + i);
+      }
+      for (std::vector<Symbol>::const_iterator it = mutable_heaps.begin(),
+           last = mutable_heaps.end(); it != last; ++it, ++i) {
+        map_.find(*it)->second.Displace(i, stack_size() + i);
+      }
+    }
   }
 
   LookupInfo Lookup(Symbol sym) {

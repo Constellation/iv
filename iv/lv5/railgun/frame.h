@@ -199,16 +199,16 @@ struct Frame {
   IV_STATIC_ASSERT(std::is_pod<Frame>::value);
 #endif
 
-template<>
-const int FrameConstant<void>::kFrameSize =
+template<typename T>
+const int FrameConstant<T>::kFrameSize =
   (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
 
-template<>
-const int FrameConstant<void>::kThisOffset =
+template<typename T>
+const int FrameConstant<T>::kThisOffset =
   (-FrameConstant<>::kFrameSize - 1);
 
-template<>
-int FrameConstant<void>::Arg(int i) {
+template<typename T>
+int FrameConstant<T>::Arg(int i) {
   return kThisOffset - (i + 1);
 }
 
