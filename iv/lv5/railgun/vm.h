@@ -248,19 +248,13 @@ do {\
 
       DEFINE_OPCODE(BUILD_ENV) {
         // opcode | size | mutable_start
-        JSDeclEnv* env =
-            JSDeclEnv::New(ctx_, frame->lexical_env(), instr[1].u32);
-        frame->variable_env_ = frame->lexical_env_ = env;
-        for (uint32_t i = 0,
-             last = instr[2].u32; i < last; ++i) {
-          const Symbol name = frame->GetName(i);
-          env->InstantiateImmutable(name, NULL, i);
-        }
-        for (uint32_t i = instr[2].u32,
-             last = instr[1].u32; i < last; ++i) {
-          const Symbol name = frame->GetName(i);
-          env->InstantiateMutable(name, NULL, i);
-        }
+        frame->variable_env_ = frame->lexical_env_ =
+            JSDeclEnv::New(ctx_,
+                           frame->lexical_env(),
+                           instr[1].u32,
+                           frame->code()->names().begin(),
+                           frame->code()->names().end(),
+                           instr[2].u32);
         DISPATCH(BUILD_ENV);
       }
 

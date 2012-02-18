@@ -245,26 +245,17 @@ class JSDeclEnv : public JSEnv {
 
   // for railgun::VM optimization methods
 
-  static JSDeclEnv* New(Context* ctx, JSEnv* outer, uint32_t size) {
-    return new JSDeclEnv(outer, size);
-  }
-
-  void InstantiateMutable(Symbol name, JSVal* reg, std::size_t offset) {
-    offsets_[name] = offset;
-    record_[offset] = UpValue(UpValue::MUTABLE, JSUndefined);
-    // record_[offset] = UpValue(UpValue::MUTABLE, reg);
-  }
-
-  void InstantiateImmutable(Symbol name, JSVal* reg, std::size_t offset) {
-    offsets_[name] = offset;
-    // record_[offset] = UpValue(UpValue::MUTABLE, reg);
+  template<typename NamesIter>
+  static JSDeclEnv* New(Context* ctx,
+                        JSEnv* outer,
+                        uint32_t size,
+                        NamesIter it, NamesIter last,
+                        uint32_t mutable_start) {
+    return new JSDeclEnv(outer, size, it, last, mutable_start);
   }
 
   void InitializeImmutable(std::size_t offset, const JSVal& val) {
     record_[offset] = UpValue(UpValue::IM_INITIALIZED, val);
-//    UpValue& upval = record_[offset];
-//    upval.set_attribute(UpValue::IM_INITIALIZED);
-//    upval.set_value(val);
   }
 
   void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
@@ -308,11 +299,23 @@ class JSDeclEnv : public JSEnv {
   }
 
   // for VM optimization only
-  JSDeclEnv(JSEnv* outer, std::size_t size)
+  template<typename NamesIter>
+  JSDeclEnv(JSEnv* outer,
+            uint32_t size,
+            NamesIter it, NamesIter last, uint32_t mutable_start)
     : JSEnv(outer),
       record_(size),
       offsets_() {
     assert(record_.size() == size);
+    uint32_t i = 0;
+    for (; i < mutable_start; ++i, ++it) {
+      record_[i] = UpValue(UpValue::IM_UNINITIALIZED, JSUndefined);
+      offsets_[*it] = i;
+    }
+    for (; i < size; ++i, ++it) {
+      record_[i] = UpValue(UpValue::MUTABLE, JSUndefined);
+      offsets_[*it] = i;
+    }
   }
 
   Record record_;

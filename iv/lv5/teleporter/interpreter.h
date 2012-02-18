@@ -79,7 +79,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   const Scope& scope = code->code()->scope();
 
   // step 1
-  JSDeclEnv* const env = JSDeclEnv::New(ctx_, code->scope(), 0);
+  JSDeclEnv* const env = JSDeclEnv::New(ctx_, code->scope());
   const ContextSwitcher switcher(ctx_, env, env, this_value,
                                  code->IsStrict());
 
