@@ -88,6 +88,12 @@ class JSDeclEnv : public JSEnv {
       assert(&escaped_ == redirect_);
     }
 
+    UpValue(int attr, JSVal* reg)
+      : attribute_(attr),
+        escaped_(JSEmpty),
+        redirect_(reg) {
+    }
+
     UpValue(int attr, JSVal val)
       : attribute_(attr),
         escaped_(val),
@@ -101,15 +107,11 @@ class JSDeclEnv : public JSEnv {
       redirect_ = &escaped_;
     }
 
-    JSVal value() const {
-      assert(&escaped_ == redirect_);
-      return *redirect_;
-    }
+    bool IsRedirected() const { return redirect_ != &escaped_ }
 
-    void set_value(JSVal value) {
-      assert(&escaped_ == redirect_);
-      *redirect_ = value;
-    }
+    JSVal value() const { return *redirect_; }
+
+    void set_value(JSVal value) { *redirect_ = value; }
 
     int attribute() const { return attribute_; }
 
