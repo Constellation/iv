@@ -615,7 +615,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         const LookupInfo info = Lookup(it->first);
         if (info.type() != LookupInfo::STACK) {
           const uint32_t index = SymbolToNameIndex(it->first);
-          assert(info.register_location() < 0);
+          assert(info.register_location() < 0 && "only arguments");
           EmitInstantiate(index, info,
                           registers_.LocalID(info.register_location()));
         }
