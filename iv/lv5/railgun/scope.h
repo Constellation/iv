@@ -206,7 +206,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
     // accumulate heaps for better heap numbers
     std::vector<Symbol> immutable_heaps;
     std::vector<Symbol> mutable_heaps;
-
+    int32_t heap_size = 0;
     for (Scope::Assigneds::const_iterator it = scope->assigneds().begin(),
          last = scope->assigneds().end(); it != last; ++it) {
       // already unique
@@ -217,34 +217,32 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         if (assigned->IsParameter()) {
           const Symbol name = assigned->symbol();
           const LookupInfo info = LookupInfo::NewHeap(
-              heap_.size(),
+              heap_size,
               FrameConstant<>::Arg(assigned->parameter()),
               assigned->immutable(),
               scope_nest_count(),
               assigned);
-          // TODO(Constellation) in the future, remove this heap_.push_back
-          // because it is parameter.
+          ++heap_size;
           if (info.immutable()) {
             immutable_heaps.push_back(name);
           } else {
             mutable_heaps.push_back(name);
           }
-          heap_.push_back(name);
           map_.insert(std::make_pair(name, info));
         } else {
           const Symbol name = assigned->symbol();
           const LookupInfo info = LookupInfo::NewHeap(
-              heap_.size(),
-              heap_.size(),
+              heap_size,
+              heap_size,
               assigned->immutable(),
               scope_nest_count(),
               assigned);
+          ++heap_size;
           if (info.immutable()) {
             immutable_heaps.push_back(name);
           } else {
             mutable_heaps.push_back(name);
           }
-          heap_.push_back(name);
           map_.insert(std::make_pair(name, info));
         }
       } else {
@@ -275,17 +273,17 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       if (scope_->arguments_is_heap() || scope_->direct_call_to_eval()) {
         const Symbol name = symbol::arguments();
         const LookupInfo info = LookupInfo::NewHeap(
-            heap_.size(),
-            heap_.size(),
+            heap_size,
+            heap_size,
             scope->strict(),
             scope_nest_count(),
             NULL);
+        ++heap_size;
         if (info.immutable()) {
           immutable_heaps.push_back(name);
         } else {
           mutable_heaps.push_back(name);
         }
-        heap_.push_back(name);
         map_.insert(std::make_pair(name, info));
       } else if (scope_->has_arguments()) {
         const LookupInfo info =
@@ -299,10 +297,13 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
       int32_t i = 0;
       for (std::vector<Symbol>::const_iterator it = immutable_heaps.begin(),
            last = immutable_heaps.end(); it != last; ++it, ++i) {
+        heap_.push_back(*it);
         map_.find(*it)->second.Displace(i, stack_size() + i);
       }
+      mutable_start_ = i;
       for (std::vector<Symbol>::const_iterator it = mutable_heaps.begin(),
            last = mutable_heaps.end(); it != last; ++it, ++i) {
+        heap_.push_back(*it);
         map_.find(*it)->second.Displace(i, stack_size() + i);
       }
     }
@@ -344,6 +345,8 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
 
   uint32_t heap_size() const { return heap_.size(); }
 
+  int32_t mutable_start() const { return mutable_start_; }
+
   const Scope* scope() const { return scope_; }
 
  private:
@@ -353,6 +356,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
   HeapVariables heap_;
   uint32_t stack_size_;
   bool is_eval_decl_;
+  int32_t mutable_start_;
 };
 
 typedef CodeScope<Code::EVAL> EvalScope;

@@ -107,7 +107,7 @@ class JSDeclEnv : public JSEnv {
       redirect_ = &escaped_;
     }
 
-    bool IsRedirected() const { return redirect_ != &escaped_ }
+    bool IsRedirected() const { return redirect_ != &escaped_; }
 
     JSVal value() const { return *redirect_; }
 

@@ -588,17 +588,17 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
 
     if (env->scope()->needs_heap_scope()) {
-      Emit<OP::BUILD_ENV>(env->heap_size());
       assert(!env->heap().empty());
+      assert(code_->names_.empty());
+      Emit<OP::BUILD_ENV>(env->heap_size(), env->mutable_start());
       for (FunctionScope::HeapVariables::const_iterator
            it = env->heap().begin(), last = env->heap().end();
            it != last; ++it) {
-        const LookupInfo info = Lookup(*it);
-        Emit<OP::INSTANTIATE_HEAP_BINDING>(
-            SymbolToNameIndex(*it),
-            info.heap_location(),
-            info.register_location(),
-            static_cast<uint32_t>(info.immutable()));
+        // set symbols
+        const Symbol sym = *it;
+        const uint32_t index = code_->names_.size();
+        symbol_to_index_map_[sym] = index;
+        code_->names_.push_back(sym);
       }
     }
 

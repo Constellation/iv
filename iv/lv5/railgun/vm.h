@@ -247,9 +247,20 @@ do {\
       }
 
       DEFINE_OPCODE(BUILD_ENV) {
-        // opcode | size
-        frame->variable_env_ = frame->lexical_env_ =
+        // opcode | size | mutable_start
+        JSDeclEnv* env =
             JSDeclEnv::New(ctx_, frame->lexical_env(), instr[1].u32);
+        frame->variable_env_ = frame->lexical_env_ = env;
+        for (uint32_t i = 0,
+             last = instr[2].u32; i < last; ++i) {
+          const Symbol name = frame->GetName(i);
+          env->InstantiateImmutable(name, NULL, i);
+        }
+        for (uint32_t i = instr[2].u32,
+             last = instr[1].u32; i < last; ++i) {
+          const Symbol name = frame->GetName(i);
+          env->InstantiateMutable(name, NULL, i);
+        }
         DISPATCH(BUILD_ENV);
       }
 
@@ -299,20 +310,6 @@ do {\
           env->SetMutableBinding(ctx_, name, JSUndefined, strict, ERR);
         }
         DISPATCH(INSTANTIATE_VARIABLE_BINDING);
-      }
-
-      DEFINE_OPCODE(INSTANTIATE_HEAP_BINDING) {
-        // opcode | name | offset | reg | immutable
-        // TODO(Constellation) fix bytecode layout
-        const bool immutable = instr[4].u32;
-        JSDeclEnv* const decl = static_cast<JSDeclEnv*>(frame->variable_env());
-        const Symbol name = frame->GetName(instr[1].u32);
-        if (immutable) {
-          decl->InstantiateImmutable(name, &REG(instr[3].i32), instr[2].u32);
-        } else {
-          decl->InstantiateMutable(name, &REG(instr[3].i32), instr[2].u32);
-        }
-        DISPATCH(INSTANTIATE_HEAP_BINDING);
       }
 
       DEFINE_OPCODE(INITIALIZE_HEAP_IMMUTABLE) {
