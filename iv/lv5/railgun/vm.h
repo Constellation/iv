@@ -216,8 +216,8 @@ do {\
       }
 
       DEFINE_OPCODE(MV) {
-        // opcode | dst | src
-        REG(instr[1].i32) = REG(instr[2].i32);
+        // opcode | (dst | src)
+        REG(instr[1].i16[0]) = REG(instr[1].i16[1]);
         DISPATCH(MV);
       }
 

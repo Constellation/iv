@@ -434,14 +434,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
     if (to != from) {
       thunklist_.Spill(to);
-      Emit<OP::MV>(to, from);
+      Emit<OP::MV>(Instruction::Reg2(to, from));
     }
     return to;
   }
 
   RegisterID SpillRegister(RegisterID from) {
     RegisterID to = registers_.Acquire();
-    Emit<OP::MV>(to, from);
+    Emit<OP::MV>(Instruction::Reg2(to, from));
     return to;
   }
 
@@ -806,7 +806,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     const LookupInfo info = Lookup(code_->names_[index]);
     assert(registers_.Callee()->IsConstant());
     if (info.type() == LookupInfo::STACK) {
-      Emit<OP::MV>(info.register_location(), registers_.Callee());
+      EmitMV(info.register_location(), registers_.Callee());
     } else {
       EmitInstantiate(index, info, registers_.Callee());
     }

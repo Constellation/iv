@@ -836,7 +836,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   if (target->IsValidLeftHandSide()) {
     if (const Identifier* ident = target->AsIdentifier()) {
       if (RegisterID local = GetLocal(ident->symbol())) {
-        Emit<OP::MV>(site.callee(), local);
+        EmitMV(site.callee(), local);
         Emit<OP::LOAD_UNDEFINED>(site.base());
       } else {
         // lookup dynamic call or not
