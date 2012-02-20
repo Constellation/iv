@@ -948,23 +948,15 @@ CompareResult JSVal::Compare(Context* ctx,
   JSVal px;
   JSVal py;
   if (LeftFirst) {
-    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
-    if (*e) {
-      return CMP_UNDEFINED;
-    }
-    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
-    if (*e) {
-      return CMP_UNDEFINED;
-    }
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER,
+                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER,
+                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
   } else {
-    py = rhs.ToPrimitive(ctx, Hint::NUMBER, e);
-    if (*e) {
-      return CMP_UNDEFINED;
-    }
-    px = lhs.ToPrimitive(ctx, Hint::NUMBER, e);
-    if (*e) {
-      return CMP_UNDEFINED;
-    }
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER,
+                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER,
+                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
   }
 
   // fast case
@@ -974,10 +966,7 @@ CompareResult JSVal::Compare(Context* ctx,
     // step 4
     return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
   } else {
-    const double nx = px.ToNumber(ctx, e);
-    if (*e) {
-      return CMP_UNDEFINED;
-    }
+    const double nx = px.ToNumber(ctx, IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
     return NumberCompare(nx, py.ToNumber(ctx, e));
   }
 }
