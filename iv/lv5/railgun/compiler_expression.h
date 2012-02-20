@@ -605,78 +605,84 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
 class Compiler::ArraySite {
  public:
   static const int kOnce = 50;
-  explicit ArraySite(uint32_t size,
+  explicit ArraySite(const ArrayLiteral* literal,
+                     Compiler* compiler,
                      ThunkList* thunklist,
                      Registers* registers)
-    : size_(size),
-      start_(),
-      ary_(size, RegisterID()),
+    : literal_(literal),
+      ary_(registers->Acquire()),
+      elements_(),
+      compiler_(compiler),
       registers_(registers) {
-    start_ = registers->AcquireCallBase(size_);
-  }
-
-  RegisterID Place(uint32_t i) {
-    if (!ary_[i]) {
-      ary_[i] = registers_->Acquire(start_ + i);
-    }
-    return ary_[i];
-  }
-
-  void Emit(Compiler* compiler, RegisterID ary,
-            uint32_t idx, uint32_t size) const {
-    assert(!ary_.empty());
-    if ((idx + size) > JSArray::kMaxVectorSize) {
-      compiler->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary, ary_.front(),
-                                                    idx, size);
-    } else {
-      compiler->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary, ary_.front(),
-                                                    idx, size);
+    if (literal->SideEffect()) {
+      thunklist->ForceSpill();
     }
   }
 
- private:
-  uint32_t size_;
-  int32_t start_;
-  std::vector<RegisterID> ary_;
-  Registers* registers_;
-};
+  RegisterID ary() const { return ary_; }
 
-inline void Compiler::Visit(const ArrayLiteral* lit) {
-  typedef ArrayLiteral::MaybeExpressions Items;
-  const DestGuard dest_guard(this);
-  const Items& items = lit->items();
-  RegisterID ary = registers_.Acquire();
-  Emit<OP::LOAD_ARRAY>(ary, items.size());
-
-  if (lit->SideEffect()) {
-    thunklist_.ForceSpill();
+  RegisterID Place(int32_t register_start, uint32_t i) {
+    if (!elements_[i]) {
+      elements_[i] = registers_->Acquire(register_start + i);
+    }
+    return elements_[i];
   }
 
-  {
-    Items::const_iterator it = items.begin();
-    const Items::const_iterator last = items.end();
-    const uint32_t size = items.size();
+  void Emit() {
+    typedef ArrayLiteral::MaybeExpressions Items;
+    compiler_->Emit<OP::LOAD_ARRAY>(ary_, literal_->items().size());
+    Items::const_iterator it = literal_->items().begin();
+    const Items::const_iterator last = literal_->items().end();
+    const uint32_t size = literal_->items().size();
     uint32_t rest = size;
     uint32_t idx = 0;
+
     while (it != last) {
       const int32_t dis =
           static_cast<int32_t>(std::min<uint32_t>(rest, ArraySite::kOnce));
-      ArraySite site(dis, &thunklist_, &registers_);
+      int32_t register_start = registers_->AcquireCallBase(dis);
+      elements_.resize(dis, RegisterID());
       uint32_t i = 0;
       for (Items::const_iterator c = it + dis; it != c; ++it, ++i) {
         const core::Maybe<const Expression>& expr = *it;
         if (expr) {
-          EmitExpressionToDest(expr.Address(), site.Place(i));
+          compiler_->EmitExpressionToDest(
+              expr.Address(),
+              Place(register_start, i));
         } else {
-          Emit<OP::LOAD_EMPTY>(site.Place(i));
+          compiler_->Emit<OP::LOAD_EMPTY>(Place(register_start, i));
         }
       }
-      site.Emit(this, ary, idx, dis);
+      EmitElement(idx, dis);
       rest -= dis;
       idx += dis;
+      elements_.clear();
     }
   }
-  dst_ = EmitMV(dst_, ary);
+
+ private:
+  void EmitElement(uint32_t idx, uint32_t size) const {
+    assert(!elements_.empty());
+    if ((idx + size) > JSArray::kMaxVectorSize) {
+      compiler_->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary_, elements_.front(),
+                                                     idx, size);
+    } else {
+      compiler_->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary_, elements_.front(),
+                                                     idx, size);
+    }
+  }
+  const ArrayLiteral* literal_;
+  RegisterID ary_;
+  std::vector<RegisterID> elements_;
+  Compiler* compiler_;
+  Registers* registers_;
+};
+
+inline void Compiler::Visit(const ArrayLiteral* lit) {
+  const DestGuard dest_guard(this);
+  ArraySite site(lit, this, &thunklist_, &registers_);
+  site.Emit();
+  dst_ = EmitMV(dst_, site.ary());
 }
 
 inline void Compiler::Visit(const ObjectLiteral* lit) {
