@@ -285,10 +285,16 @@ class JSLayout {
     return lhs.swap(rhs);
   }
 
+  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
+
+  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
+
   value_type value_;
 };
 
-// IV_STATIC_ASSERT(std::is_pod<JSLayout>::value);
+#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)
+IV_STATIC_ASSERT(std::is_pod<JSLayout>::value);
+#endif
 
 class JSVal : public JSLayout {
  public:
@@ -455,10 +461,6 @@ class JSVal : public JSLayout {
   static inline JSVal Cell(radio::Cell* cell) {
     return JSVal(cell, detail::OtherCellTag());
   }
-
-  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
-
-  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
 
   static inline bool AbstractEqual(Context* ctx,
                                    this_type lhs,

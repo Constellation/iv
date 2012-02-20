@@ -197,7 +197,7 @@ struct Frame {
   bool constructor_call_;
 };
 
-#if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
+#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)
 IV_STATIC_ASSERT(std::is_pod<Frame>::value);
 #endif
 

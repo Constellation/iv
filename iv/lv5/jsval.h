@@ -235,7 +235,7 @@ void JSLayout::set_empty() {
   value_.bytes_ = detail::jsval64::kEmpty;
 }
 
-bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
   if (lhs.IsInt32()) {
     if (rhs.IsInt32()) {
       return lhs.int32() == rhs.int32();
@@ -267,7 +267,7 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
-bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
   if (lhs.IsInt32() && rhs.IsInt32()) {
     return lhs.int32() == rhs.int32();
   }
@@ -519,7 +519,7 @@ void JSLayout::set_empty() {
   value_.struct_.tag_ = detail::jsval32::kEmptyTag;
 }
 
-bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
@@ -548,7 +548,7 @@ bool JSVal::SameValue(const this_type& lhs, const this_type& rhs) {
   return false;
 }
 
-bool JSVal::StrictEqual(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
