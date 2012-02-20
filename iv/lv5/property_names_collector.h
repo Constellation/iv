@@ -8,6 +8,7 @@ namespace lv5 {
 
 class PropertyNamesCollector {
  public:
+  static const std::size_t kReservedSize = 20;
   class SymbolKey {
    public:
     SymbolKey(Symbol sym, uint32_t order, uint32_t level)
@@ -43,6 +44,7 @@ class PropertyNamesCollector {
   PropertyNamesCollector()
     : names_(),
       level_(0) {
+    names_.reserve(kReservedSize);
   }
 
   const Names& names() const { return names_; }
