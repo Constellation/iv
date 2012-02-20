@@ -59,102 +59,102 @@ static const uint64_t kNaN =
 
 } }  // namespace detail::jsval64
 
-bool JSVal::IsEmpty() const {
+bool JSLayout::IsEmpty() const {
   return value_.bytes_ == detail::jsval64::kEmpty;
 }
 
-bool JSVal::IsUndefined() const {
+bool JSLayout::IsUndefined() const {
   return value_.bytes_ == detail::jsval64::kUndefined;
 }
 
-bool JSVal::IsNull() const {
+bool JSLayout::IsNull() const {
   return value_.bytes_ == detail::jsval64::kNull;
 }
 
-bool JSVal::IsNullOrUndefined() const {
+bool JSLayout::IsNullOrUndefined() const {
   // (1000)2 = 8
   // Null is (0010)2 and Undefined is (1010)2
   return (value_.bytes_ & ~8) == detail::jsval64::kNull;
 }
 
-bool JSVal::IsBoolean() const {
+bool JSLayout::IsBoolean() const {
   // rm LSB (true or false) and check other bit pattern is Boolean
   return (value_.bytes_ & ~1) == detail::jsval64::kFalse;
 }
 
-bool JSVal::IsInt32() const {
+bool JSLayout::IsInt32() const {
   return (value_.bytes_ & detail::jsval64::kNumberMask)
       == detail::jsval64::kNumberMask;
 }
 
-bool JSVal::IsNumber() const {
+bool JSLayout::IsNumber() const {
   return value_.bytes_ & detail::jsval64::kNumberMask;
 }
 
-bool JSVal::IsCell() const {
+bool JSLayout::IsCell() const {
   return !(value_.bytes_ & detail::jsval64::kValueMask) && !IsEmpty();
 }
 
-radio::Cell* JSVal::cell() const {
+radio::Cell* JSLayout::cell() const {
   assert(IsCell());
   return value_.cell_;
 }
 
-bool JSVal::IsString() const {
+bool JSLayout::IsString() const {
   return IsCell() && cell()->tag() == radio::STRING;
 }
 
-bool JSVal::IsObject() const {
+bool JSLayout::IsObject() const {
   return IsCell() && cell()->tag() == radio::OBJECT;
 }
 
-bool JSVal::IsReference() const {
+bool JSLayout::IsReference() const {
   return IsCell() && cell()->tag() == radio::REFERENCE;
 }
 
-bool JSVal::IsEnvironment() const {
+bool JSLayout::IsEnvironment() const {
   return IsCell() && cell()->tag() == radio::ENVIRONMENT;
 }
 
-bool JSVal::IsOtherCell() const {
+bool JSLayout::IsOtherCell() const {
   return IsCell() && cell()->tag() == radio::POINTER;
 }
 
-bool JSVal::IsPrimitive() const {
+bool JSLayout::IsPrimitive() const {
   return IsNumber() || IsString() || IsBoolean();
 }
 
-JSReference* JSVal::reference() const {
+JSReference* JSLayout::reference() const {
   assert(IsReference());
   return static_cast<JSReference*>(value_.cell_);
 }
 
-JSEnv* JSVal::environment() const {
+JSEnv* JSLayout::environment() const {
   assert(IsEnvironment());
   return static_cast<JSEnv*>(value_.cell_);
 }
 
-JSString* JSVal::string() const {
+JSString* JSLayout::string() const {
   assert(IsString());
   return static_cast<JSString*>(value_.cell_);
 }
 
-JSObject* JSVal::object() const {
+JSObject* JSLayout::object() const {
   assert(IsObject());
   return static_cast<JSObject*>(value_.cell_);
 }
 
-bool JSVal::boolean() const {
+bool JSLayout::boolean() const {
   assert(IsBoolean());
   return value_.bytes_ & 0x1;
 }
 
-int32_t JSVal::int32() const {
+int32_t JSLayout::int32() const {
   assert(IsInt32());
   return static_cast<int32_t>(value_.bytes_);
 }
 
-double JSVal::number() const {
+double JSLayout::number() const {
   assert(IsNumber());
   if (IsInt32()) {
     return int32();
@@ -164,12 +164,12 @@ double JSVal::number() const {
   }
 }
 
-void JSVal::set_value_int32(int32_t val) {
+void JSLayout::set_value_int32(int32_t val) {
   // NUMBERMASK | 32bit pattern of int32_t
   value_.bytes_ = detail::jsval64::kNumberMask | static_cast<uint32_t>(val);
 }
 
-void JSVal::set_value_uint32(uint32_t val) {
+void JSLayout::set_value_uint32(uint32_t val) {
   if (static_cast<int32_t>(val) < 0) {  // LSB is 1
     value_.bytes_ =
         core::BitCast<uint64_t>(
@@ -179,7 +179,7 @@ void JSVal::set_value_uint32(uint32_t val) {
   }
 }
 
-void JSVal::set_value(double val) {
+void JSLayout::set_value(double val) {
   const int32_t i = static_cast<int32_t>(val);
   if (val != i || (!i && core::math::Signbit(val))) {
     // this value is not represented by int32_t
@@ -191,47 +191,47 @@ void JSVal::set_value(double val) {
   }
 }
 
-void JSVal::set_value_cell(radio::Cell* val) {
+void JSLayout::set_value_cell(radio::Cell* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(JSObject* val) {
+void JSLayout::set_value(JSObject* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(JSString* val) {
+void JSLayout::set_value(JSString* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(JSReference* val) {
+void JSLayout::set_value(JSReference* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(JSEnv* val) {
+void JSLayout::set_value(JSEnv* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
-void JSVal::set_value(detail::JSTrueType val) {
+void JSLayout::set_value(detail::JSTrueType val) {
   value_.bytes_ = detail::jsval64::kTrue;
 }
 
-void JSVal::set_value(detail::JSFalseType val) {
+void JSLayout::set_value(detail::JSFalseType val) {
   value_.bytes_ = detail::jsval64::kFalse;
 }
 
-void JSVal::set_value(detail::JSNaNType val) {
+void JSLayout::set_value(detail::JSNaNType val) {
   value_.bytes_ = detail::jsval64::kNaN;
 }
 
-void JSVal::set_null() {
+void JSLayout::set_null() {
   value_.bytes_ = detail::jsval64::kNull;
 }
 
-void JSVal::set_undefined() {
+void JSLayout::set_undefined() {
   value_.bytes_ = detail::jsval64::kUndefined;
 }
 
-void JSVal::set_empty() {
+void JSLayout::set_empty() {
   value_.bytes_ = detail::jsval64::kEmpty;
 }
 
@@ -339,104 +339,104 @@ inline bool InPtrRange(uint32_t tag) {
   return kObjectTag <= tag;
 }
 
-inline uint32_t GetType(const JSVal& val) {
+inline uint32_t GetType(const JSLayout& val) {
   return val.IsNumber() ? kNumberTag : val.Layout().struct_.tag_;
 }
 
 } }  // namespace detail::jsval32
 
-bool JSVal::IsEmpty() const {
+bool JSLayout::IsEmpty() const {
   return value_.struct_.tag_ == detail::jsval32::kEmptyTag;
 }
 
-bool JSVal::IsUndefined() const {
+bool JSLayout::IsUndefined() const {
   return value_.struct_.tag_ == detail::jsval32::kUndefinedTag;
 }
 
-bool JSVal::IsNull() const {
+bool JSLayout::IsNull() const {
   return value_.struct_.tag_ == detail::jsval32::kNullTag;
 }
 
-bool JSVal::IsNullOrUndefined() const {
+bool JSLayout::IsNullOrUndefined() const {
   return IsNull() || IsUndefined();
 }
 
-bool JSVal::IsBoolean() const {
+bool JSLayout::IsBoolean() const {
   return value_.struct_.tag_ == detail::jsval32::kBoolTag;
 }
 
-bool JSVal::IsString() const {
+bool JSLayout::IsString() const {
   return value_.struct_.tag_ == detail::jsval32::kStringTag;
 }
 
-bool JSVal::IsObject() const {
+bool JSLayout::IsObject() const {
   return value_.struct_.tag_ == detail::jsval32::kObjectTag;
 }
 
-bool JSVal::IsInt32() const {
+bool JSLayout::IsInt32() const {
   return value_.struct_.tag_ == detail::jsval32::kInt32Tag;
 }
 
-bool JSVal::IsNumber() const {
+bool JSLayout::IsNumber() const {
   return value_.struct_.tag_ < detail::jsval32::kNumberTag;
 }
 
-bool JSVal::IsReference() const {
+bool JSLayout::IsReference() const {
   return value_.struct_.tag_ == detail::jsval32::kReferenceTag;
 }
 
-bool JSVal::IsEnvironment() const {
+bool JSLayout::IsEnvironment() const {
   return value_.struct_.tag_ == detail::jsval32::kEnvironmentTag;
 }
 
-bool JSVal::IsOtherCell() const {
+bool JSLayout::IsOtherCell() const {
   return value_.struct_.tag_ == detail::jsval32::kOtherCellTag;
 }
 
-bool JSVal::IsCell() const {
+bool JSLayout::IsCell() const {
   return detail::jsval32::InPtrRange(value_.struct_.tag_);
 }
 
-bool JSVal::IsPrimitive() const {
+bool JSLayout::IsPrimitive() const {
   return IsNumber() || IsString() || IsBoolean();
 }
 
-JSReference* JSVal::reference() const {
+JSReference* JSLayout::reference() const {
   assert(IsReference());
   return value_.struct_.payload_.reference_;
 }
 
-JSEnv* JSVal::environment() const {
+JSEnv* JSLayout::environment() const {
   assert(IsEnvironment());
   return value_.struct_.payload_.environment_;
 }
 
-JSString* JSVal::string() const {
+JSString* JSLayout::string() const {
   assert(IsString());
   return value_.struct_.payload_.string_;
 }
 
-JSObject* JSVal::object() const {
+JSObject* JSLayout::object() const {
   assert(IsObject());
   return value_.struct_.payload_.object_;
 }
 
-radio::Cell* JSVal::cell() const {
+radio::Cell* JSLayout::cell() const {
   assert(IsCell());
   return value_.struct_.payload_.cell_;
 }
 
-bool JSVal::boolean() const {
+bool JSLayout::boolean() const {
   assert(IsBoolean());
   return value_.struct_.payload_.boolean_;
 }
 
-int32_t JSVal::int32() const {
+int32_t JSLayout::int32() const {
   assert(IsInt32());
   return value_.struct_.payload_.int32_;
 }
 
-double JSVal::number() const {
+double JSLayout::number() const {
   assert(IsNumber());
   if (IsInt32()) {
     return int32();
@@ -445,17 +445,17 @@ double JSVal::number() const {
   }
 }
 
-void JSVal::set_value_cell(radio::Cell* ptr) {
+void JSLayout::set_value_cell(radio::Cell* ptr) {
   value_.struct_.payload_.cell_ = ptr;
   value_.struct_.tag_ = detail::jsval32::kOtherCellTag;
 }
 
-void JSVal::set_value_int32(int32_t val) {
+void JSLayout::set_value_int32(int32_t val) {
   value_.struct_.payload_.int32_ = val;
   value_.struct_.tag_ = detail::jsval32::kInt32Tag;
 }
 
-void JSVal::set_value_uint32(uint32_t val) {
+void JSLayout::set_value_uint32(uint32_t val) {
   if (static_cast<int32_t>(val) < 0) {  // LSB is 1
     value_.number_.as_ = val;
   } else {
@@ -463,7 +463,7 @@ void JSVal::set_value_uint32(uint32_t val) {
   }
 }
 
-void JSVal::set_value(double val) {
+void JSLayout::set_value(double val) {
   const int32_t i = static_cast<int32_t>(val);
   if (val != i || (!i && core::math::Signbit(val))) {
     // this value is not represented by int32_t
@@ -473,49 +473,49 @@ void JSVal::set_value(double val) {
   }
 }
 
-void JSVal::set_value(JSObject* val) {
+void JSLayout::set_value(JSObject* val) {
   value_.struct_.payload_.object_ = val;
   value_.struct_.tag_ = detail::jsval32::kObjectTag;
 }
 
-void JSVal::set_value(JSString* val) {
+void JSLayout::set_value(JSString* val) {
   value_.struct_.payload_.string_ = val;
   value_.struct_.tag_ = detail::jsval32::kStringTag;
 }
 
-void JSVal::set_value(JSReference* ref) {
+void JSLayout::set_value(JSReference* ref) {
   value_.struct_.payload_.reference_ = ref;
   value_.struct_.tag_ = detail::jsval32::kReferenceTag;
 }
 
-void JSVal::set_value(JSEnv* ref) {
+void JSLayout::set_value(JSEnv* ref) {
   value_.struct_.payload_.environment_ = ref;
   value_.struct_.tag_ = detail::jsval32::kEnvironmentTag;
 }
 
-void JSVal::set_value(detail::JSTrueType val) {
+void JSLayout::set_value(detail::JSTrueType val) {
   value_.struct_.payload_.boolean_ = true;
   value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
-void JSVal::set_value(detail::JSFalseType val) {
+void JSLayout::set_value(detail::JSFalseType val) {
   value_.struct_.payload_.boolean_ = false;
   value_.struct_.tag_ = detail::jsval32::kBoolTag;
 }
 
-void JSVal::set_value(detail::JSNaNType val) {
+void JSLayout::set_value(detail::JSNaNType val) {
   value_.number_.as_ = core::kNaN;
 }
 
-void JSVal::set_null() {
+void JSLayout::set_null() {
   value_.struct_.tag_ = detail::jsval32::kNullTag;
 }
 
-void JSVal::set_undefined() {
+void JSLayout::set_undefined() {
   value_.struct_.tag_ = detail::jsval32::kUndefinedTag;
 }
 
-void JSVal::set_empty() {
+void JSLayout::set_empty() {
   value_.struct_.tag_ = detail::jsval32::kEmptyTag;
 }
 
@@ -604,9 +604,9 @@ inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
   return std::hash<uint32_t>()(detail::jsval32::GetType(val));
 }
 
-#endif  // 32 or 64 bit JSVal ifdef
+#endif  // 32 or 64 bit JSLayout ifdef
 
-JSString* JSVal::TypeOf(Context* ctx) const {
+JSString* JSLayout::TypeOf(Context* ctx) const {
   if (IsObject()) {
     if (object()->IsCallable()) {
       return JSString::NewAsciiString(ctx, "function");
@@ -627,7 +627,7 @@ JSString* JSVal::TypeOf(Context* ctx) const {
   }
 }
 
-JSObject* JSVal::GetPrimitiveProto(Context* ctx) const {
+JSObject* JSLayout::GetPrimitiveProto(Context* ctx) const {
   assert(IsPrimitive());
   if (IsString()) {
     return context::GetClassSlot(ctx, Class::String).prototype;
@@ -638,7 +638,7 @@ JSObject* JSVal::GetPrimitiveProto(Context* ctx) const {
   }
 }
 
-JSObject* JSVal::ToObject(Context* ctx, Error* e) const {
+JSObject* JSLayout::ToObject(Context* ctx, Error* e) const {
   if (IsObject()) {
     return object();
   } else if (IsNumber()) {
@@ -657,7 +657,7 @@ JSObject* JSVal::ToObject(Context* ctx, Error* e) const {
   }
 }
 
-JSString* JSVal::ToString(Context* ctx, Error* e) const {
+JSString* JSLayout::ToString(Context* ctx, Error* e) const {
   if (IsString()) {
     return string();
   } else if (IsInt32()) {
@@ -678,13 +678,13 @@ JSString* JSVal::ToString(Context* ctx, Error* e) const {
     return ctx->global_data()->string_undefined();
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::STRING,
+    JSLayout prim = object()->DefaultValue(ctx, Hint::STRING,
                                         IV_LV5_ERROR_WITH(e, NULL));
     return prim.ToString(ctx, e);
   }
 }
 
-Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
+Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
   uint32_t index;
   if (GetUInt32(&index)) {
     return symbol::MakeSymbolFromIndex(index);
@@ -714,7 +714,7 @@ Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
       return context::Intern(ctx, "undefined");
     } else {
       assert(IsObject());
-      const JSVal prim =
+      const JSLayout prim =
           object()->DefaultValue(
               ctx, Hint::STRING,
               IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
@@ -723,7 +723,7 @@ Symbol JSVal::ToSymbol(Context* ctx, Error* e) const {
   }
 }
 
-core::UString JSVal::ToUString(Context* ctx, Error* e) const {
+core::UString JSLayout::ToUString(Context* ctx, Error* e) const {
   if (IsString()) {
     JSString* str = string();
     return core::UString(str->begin(), str->end());
@@ -750,7 +750,7 @@ core::UString JSVal::ToUString(Context* ctx, Error* e) const {
     return core::UString(str, str + std::strlen(str));
   } else {
     assert(IsObject());
-    const JSVal prim =
+    const JSLayout prim =
         object()->DefaultValue(
             ctx, Hint::STRING,
             IV_LV5_ERROR_WITH(e, core::UString()));
@@ -758,7 +758,7 @@ core::UString JSVal::ToUString(Context* ctx, Error* e) const {
   }
 }
 
-double JSVal::ToNumber(Context* ctx, Error* e) const {
+double JSLayout::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
@@ -776,12 +776,11 @@ double JSVal::ToNumber(Context* ctx, Error* e) const {
     return core::kNaN;
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,
+    JSLayout prim = object()->DefaultValue(ctx, Hint::NUMBER,
                                         IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
   }
 }
-
 
 JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   if (IsNumber()) {
@@ -807,7 +806,7 @@ JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   }
 }
 
-bool JSVal::ToBoolean(Error* e) const {
+bool JSLayout::ToBoolean(Error* e) const {
   if (IsNumber()) {
     const double num = number();
     return num != 0 && !core::math::IsNaN(num);
@@ -832,7 +831,7 @@ JSVal JSVal::ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const {
   }
 }
 
-int32_t JSVal::ToInt32(Context* ctx, Error* e) const {
+int32_t JSLayout::ToInt32(Context* ctx, Error* e) const {
   if (IsInt32()) {
     return int32();
   } else {
@@ -840,7 +839,7 @@ int32_t JSVal::ToInt32(Context* ctx, Error* e) const {
   }
 }
 
-uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
+uint32_t JSLayout::ToUInt32(Context* ctx, Error* e) const {
   if (IsInt32() && int32() >= 0) {
     return static_cast<uint32_t>(int32());
   } else {
@@ -848,14 +847,14 @@ uint32_t JSVal::ToUInt32(Context* ctx, Error* e) const {
   }
 }
 
-uint32_t JSVal::GetUInt32() const {
+uint32_t JSLayout::GetUInt32() const {
   assert(IsNumber());
   uint32_t val = 0;  // make gcc happy
   GetUInt32(&val);
   return val;
 }
 
-bool JSVal::GetUInt32(uint32_t* result) const {
+bool JSLayout::GetUInt32(uint32_t* result) const {
   if (IsInt32() && int32() >= 0) {
     *result = static_cast<uint32_t>(int32());
     return true;
@@ -868,11 +867,11 @@ bool JSVal::GetUInt32(uint32_t* result) const {
   return false;
 }
 
-bool JSVal::IsCallable() const {
+bool JSLayout::IsCallable() const {
   return IsObject() && object()->IsCallable();
 }
 
-void JSVal::CheckObjectCoercible(Error* e) const {
+void JSLayout::CheckObjectCoercible(Error* e) const {
   assert(!IsEnvironment() && !IsReference() && !IsEmpty());
   if (IsNull()) {
     e->Report(Error::Type, "null has no properties");

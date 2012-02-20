@@ -164,134 +164,12 @@ enum CompareResult {
   CMP_UNDEFINED = 2
 };
 
-class JSVal {
+class JSLayout {
  public:
-  typedef JSVal this_type;
+  typedef JSLayout this_type;
   typedef detail::Layout<
       core::Size::kPointerSize,
       core::kLittleEndian> value_type;
-
-  // JSVal Hasher is used by SameValue algorithm
-  struct Hasher {
-    std::size_t operator()(const JSVal& val) const;
-  };
-
-  friend struct Hasher;
-
-  struct SameValueEqualer {
-    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
-      return JSVal::SameValue(lhs, rhs);
-    }
-  };
-
-  struct StrictEqualer {
-    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
-      return JSVal::StrictEqual(lhs, rhs);
-    }
-  };
-
-#if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
-  IV_STATIC_ASSERT(std::is_pod<value_type>::value);
-#endif
-
-  JSVal() {
-    set_undefined();
-  }
-
-  JSVal(double val)  // NOLINT
-    : value_() {
-    set_value(val);
-    assert(IsNumber());
-  }
-
-  JSVal(JSObject* val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(JSString* val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(JSReference* val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(JSEnv* val)  // NOLINT
-    : value_() {
-    set_value(val);
-  }
-
-  JSVal(detail::JSTrueType val)  // NOLINT
-    : value_() {
-    set_value(val);
-    assert(IsBoolean());
-  }
-
-  JSVal(detail::JSFalseType val)  // NOLINT
-    : value_() {
-    set_value(val);
-    assert(IsBoolean());
-  }
-
-  JSVal(detail::JSNullType val)  // NOLINT
-    : value_() {
-    set_null();
-    assert(IsNull());
-  }
-
-  JSVal(detail::JSUndefinedType val)  // NOLINT
-    : value_() {
-    set_undefined();
-    assert(IsUndefined());
-  }
-
-  JSVal(detail::JSEmptyType val)  // NOLINT
-    : value_() {
-    set_empty();
-    assert(IsEmpty());
-  }
-
-  JSVal(detail::JSNaNType val)  // NOLINT
-    : value_() {
-    set_value(val);
-    assert(IsNumber());
-  }
-
-  JSVal(const value_type& val) : value_(val) {  }  // NOLINT
-
-  // prohibit like this,
-  //
-  //   JSVal val = true;
-  //
-  // if you want Boolean value, use JSTrue / JSFalse,
-  //
-  //   JSVal val = JSTrue;
-  //
-  // if bool constructor provided, following code doesn't raise compile error
-  // (and any warning in GCC)
-  //
-  //   class A {
-  //    public:
-  //     A() { }
-  //     explicit A(bool v) { }
-  //     explicit A(A* v) { }
-  //   };
-  //
-  //   int main() {
-  //     const A a;
-  //     const A b(&a);  // not compile error...
-  //     return 0;
-  //   }
-  //
-  //  so not provide implicit constructor with bool.
-  template<typename T>
-  JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
-    typedef std::is_same<bool, T> cond;
-    IV_STATIC_ASSERT(!(cond::value));
-  }
 
   inline JSString* TypeOf(Context* ctx) const;
 
@@ -307,8 +185,6 @@ class JSVal {
 
   inline double ToNumber(Context* ctx, Error* e) const;
 
-  inline JSVal ToNumberValue(Context* ctx, Error* e) const;
-
   inline int32_t ToInt32(Context* ctx, Error* e) const;
 
   inline uint32_t ToUInt32(Context* ctx, Error* e) const;
@@ -316,8 +192,6 @@ class JSVal {
   inline uint32_t GetUInt32() const;
 
   inline bool GetUInt32(uint32_t* result) const;
-
-  inline JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
 
   inline bool IsCallable() const;
 
@@ -398,28 +272,155 @@ class JSVal {
 
   inline void set_empty();
 
-  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
-
-  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
-
-  static inline bool AbstractEqual(Context* ctx,
-                                   this_type lhs,
-                                   this_type rhs, Error* e);
-
-  static inline CompareResult NumberCompare(double lhs, double rhs) {
-    if (core::math::IsNaN(lhs) || core::math::IsNaN(rhs)) {
-      return CMP_UNDEFINED;
-    }
-    if (lhs == rhs) {
-      return CMP_FALSE;
-    }
-    return (lhs < rhs) ? CMP_TRUE : CMP_FALSE;
+  inline const value_type& Layout() const {
+    return value_;
   }
 
-  template<bool LeftFirst>
-  static inline CompareResult Compare(Context* ctx,
-                                      const this_type& lhs,
-                                      const this_type& rhs, Error* e);
+  inline void swap(this_type& rhs) {
+    using std::swap;
+    swap(value_, rhs.value_);
+  }
+
+  inline friend void swap(this_type& lhs, this_type& rhs) {
+    return lhs.swap(rhs);
+  }
+
+  value_type value_;
+};
+
+// IV_STATIC_ASSERT(std::is_pod<JSLayout>::value);
+
+class JSVal : public JSLayout {
+ public:
+  typedef JSVal this_type;
+  // JSVal Hasher is used by SameValue algorithm
+  struct Hasher {
+    std::size_t operator()(const JSVal& val) const;
+  };
+
+  friend struct Hasher;
+
+  struct SameValueEqualer {
+    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+      return JSVal::SameValue(lhs, rhs);
+    }
+  };
+
+  struct StrictEqualer {
+    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+      return JSVal::StrictEqual(lhs, rhs);
+    }
+  };
+
+  JSVal() {
+    set_undefined();
+  }
+
+  JSVal(double val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+    assert(IsNumber());
+  }
+
+  JSVal(JSObject* val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+  }
+
+  JSVal(JSString* val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+  }
+
+  JSVal(JSReference* val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+  }
+
+  JSVal(JSEnv* val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+  }
+
+  JSVal(detail::JSTrueType val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+    assert(IsBoolean());
+  }
+
+  JSVal(detail::JSFalseType val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+    assert(IsBoolean());
+  }
+
+  JSVal(detail::JSNullType val)  // NOLINT
+    : JSLayout() {
+    set_null();
+    assert(IsNull());
+  }
+
+  JSVal(detail::JSUndefinedType val)  // NOLINT
+    : JSLayout() {
+    set_undefined();
+    assert(IsUndefined());
+  }
+
+  JSVal(detail::JSEmptyType val)  // NOLINT
+    : JSLayout() {
+    set_empty();
+    assert(IsEmpty());
+  }
+
+  JSVal(detail::JSNaNType val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+    assert(IsNumber());
+  }
+
+  JSVal(const value_type& val)  // NOLINT
+    : JSLayout() {
+    value_ = val;
+  }
+
+  JSVal(const JSLayout& layout)  // NOLINT
+    : JSLayout(layout) {
+  }
+
+  // prohibit like this,
+  //
+  //   JSVal val = true;
+  //
+  // if you want Boolean value, use JSTrue / JSFalse,
+  //
+  //   JSVal val = JSTrue;
+  //
+  // if bool constructor provided, following code doesn't raise compile error
+  // (and any warning in GCC)
+  //
+  //   class A {
+  //    public:
+  //     A() { }
+  //     explicit A(bool v) { }
+  //     explicit A(A* v) { }
+  //   };
+  //
+  //   int main() {
+  //     const A a;
+  //     const A b(&a);  // not compile error...
+  //     return 0;
+  //   }
+  //
+  //  so not provide implicit constructor with bool.
+  template<typename T>
+  JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
+    typedef std::is_same<bool, T> cond;
+    IV_STATIC_ASSERT(!(cond::value));
+  }
+
+  inline JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
+
+  inline JSVal ToNumberValue(Context* ctx, Error* e) const;
 
   // type specified factory functions
   static inline JSVal Bool(bool val) {
@@ -455,80 +456,55 @@ class JSVal {
     return JSVal(cell, detail::OtherCellTag());
   }
 
-  inline const value_type& Layout() const {
-    return value_;
+  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
+
+  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
+
+  static inline bool AbstractEqual(Context* ctx,
+                                   this_type lhs,
+                                   this_type rhs, Error* e);
+
+  static inline CompareResult NumberCompare(double lhs, double rhs) {
+    if (core::math::IsNaN(lhs) || core::math::IsNaN(rhs)) {
+      return CMP_UNDEFINED;
+    }
+    if (lhs == rhs) {
+      return CMP_FALSE;
+    }
+    return (lhs < rhs) ? CMP_TRUE : CMP_FALSE;
   }
 
-  inline void swap(this_type& rhs) {
-    using std::swap;
-    swap(value_, rhs.value_);
-  }
-
-  inline friend void swap(this_type& lhs, this_type& rhs) {
-    return lhs.swap(rhs);
-  }
+  template<bool LeftFirst>
+  static inline CompareResult Compare(Context* ctx,
+                                      const this_type& lhs,
+                                      const this_type& rhs, Error* e);
 
  private:
   JSVal(uint32_t val, detail::UInt32Tag dummy)
-    : value_() {
+    : JSLayout() {
     set_value_uint32(val);
     assert(IsNumber());
   }
 
   JSVal(uint16_t val, detail::UInt16Tag dummy)
-    : value_() {
+    : JSLayout() {
     set_value_int32(val);
     assert(IsInt32());
   }
 
   JSVal(int32_t val, detail::Int32Tag dummy)
-    : value_() {
+    : JSLayout() {
     set_value_int32(val);
     assert(IsInt32());
   }
 
   JSVal(radio::Cell* val, detail::OtherCellTag dummy)
-    : value_() {
+    : JSLayout() {
     set_value_cell(val);
   }
-
-  value_type value_;
 };
 
 typedef GCVector<JSVal>::type JSVals;
-
-class JSValOrRedirect {
- public:
-  JSValOrRedirect(const JSVal& val) {
-    value_ = val.Layout();
-  }
-
-  JSValOrRedirect(JSVal* ptr) {
-    pointer_ = ptr;
-  }
-
-  JSVal value() const {
-    return value_;
-  }
-
-  void set_value(JSVal val) {
-    value_ = val.Layout();
-  }
-
-  JSVal* pointer() const {
-    return pointer_;
-  }
-
-  void set_pointer(JSVal* pointer) {
-    pointer_ = pointer;
-  }
-
- private:
-  union {
-    JSVal::value_type value_;  // 64 or 128bit JSVal representation
-    JSVal* pointer_;           // redirect link to register JSVal
-  };
-};
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSVAL_FWD_H_

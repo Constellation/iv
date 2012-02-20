@@ -185,7 +185,7 @@ struct Frame {
 
   JSVal callee() const { return callee_; }
 
-  JSVal::value_type callee_;  // for POD
+  JSLayout callee_;  // for POD
   Code* code_;
   Instruction* prev_pc_;
   JSEnv* variable_env_;
