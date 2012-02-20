@@ -2,6 +2,7 @@
 #define IV_LV5_RAILGUN_FRAME_H_
 #include <cstddef>
 #include <iterator>
+#include <iv/detail/type_traits.h>
 #include <iv/utils.h>
 #include <iv/static_assert.h>
 #include <iv/lv5/jsval.h>
@@ -16,6 +17,7 @@ template<typename D = void>
 struct FrameConstant {
   static const int kFrameSize;
   static const int kThisOffset;
+  static const int kCalleeOffset;
   static int Arg(int i);
 };
 
@@ -183,12 +185,12 @@ struct Frame {
 
   JSVal callee() const { return callee_; }
 
+  JSVal::value_type callee_;  // for POD
   Code* code_;
   Instruction* prev_pc_;
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;
-  JSVal callee_;
   uint32_t argc_;
   uint32_t dynamic_env_level_;
   int32_t r_;
@@ -196,7 +198,7 @@ struct Frame {
 };
 
 #if defined(__GNUC__) && (__GNUC_VERSION__ > 40300)
-  IV_STATIC_ASSERT(std::is_pod<Frame>::value);
+IV_STATIC_ASSERT(std::is_pod<Frame>::value);
 #endif
 
 template<typename T>
@@ -204,8 +206,12 @@ const int FrameConstant<T>::kFrameSize =
   (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
 
 template<typename T>
-const int FrameConstant<T>::kThisOffset =
-  (-FrameConstant<>::kFrameSize - 1);
+const int FrameConstant<T>::kThisOffset = (-FrameConstant<>::kFrameSize - 1);
+
+template<typename T>
+const int FrameConstant<T>::kCalleeOffset =
+  -FrameConstant<>::kFrameSize +
+  static_cast<int>((offsetof(Frame, callee_) / sizeof(JSVal)));
 
 template<typename T>
 int FrameConstant<T>::Arg(int i) {
@@ -215,6 +221,9 @@ int FrameConstant<T>::Arg(int i) {
 inline JSVal* Frame::RegisterFile() {
   return GetFrameBase() + FrameConstant<>::kFrameSize;
 }
+
+
+// Registers implementation
 
 inline bool Registers::RegisterIDImpl::IsArgument() const {
   return reg_ < FrameConstant<>::kThisOffset;
@@ -227,6 +236,11 @@ inline bool Registers::RegisterIDImpl::IsThis() const {
 inline RegisterID Registers::This() {
   return RegisterID(
       new RegisterIDImpl(FrameConstant<>::kThisOffset, this), false);
+}
+
+inline RegisterID Registers::Callee() {
+  return RegisterID(
+      new RegisterIDImpl(FrameConstant<>::kCalleeOffset, this), false);
 }
 
 } } }  // namespace iv::lv5::railgun

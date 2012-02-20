@@ -42,6 +42,8 @@ class Registers {
 
     bool IsLocal() const { return IsStack() || IsHeap(); }
 
+    bool IsConstant() const { return (type_ & kTypeMask) == CONSTANT; }
+
     // these are defined in frame.h
     bool IsArgument() const;
 
@@ -83,6 +85,8 @@ class Registers {
 
   // these are defined in frame.h
   ID This();
+
+  ID Callee();
 
   int32_t AcquireCallBase(int size);
 

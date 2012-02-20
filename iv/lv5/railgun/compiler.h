@@ -804,12 +804,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void InstantiateLoadCallee(uint32_t index) {
     const LookupInfo info = Lookup(code_->names_[index]);
+    assert(registers_.Callee()->IsConstant());
     if (info.type() == LookupInfo::STACK) {
-      Emit<OP::LOAD_CALLEE>(info.register_location());
+      Emit<OP::MV>(info.register_location(), registers_.Callee());
     } else {
-      RegisterID reg = registers_.Acquire();
-      Emit<OP::LOAD_CALLEE>(reg);
-      EmitInstantiate(index, info, reg);
+      EmitInstantiate(index, info, registers_.Callee());
     }
   }
 

@@ -314,12 +314,6 @@ do {\
         DISPATCH(INITIALIZE_HEAP_IMMUTABLE);
       }
 
-      DEFINE_OPCODE(LOAD_CALLEE) {
-        // opcode | dst
-        REG(instr[1].i32) = frame->callee();
-        DISPATCH(LOAD_CALLEE);
-      }
-
       DEFINE_OPCODE(LOAD_ARGUMENTS) {
         // opcode | dst
         if (!strict) {

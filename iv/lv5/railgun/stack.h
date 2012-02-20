@@ -87,7 +87,7 @@ class Stack : public lv5::Stack {
       frame->prev_pc_ = pc;
       frame->variable_env_ = frame->lexical_env_ = env;
       frame->prev_ = current_;
-      frame->callee_ = callee;
+      frame->callee_ = callee.Layout();
       frame->argc_ = argc_with_this - 1;
       frame->dynamic_env_level_ = 0;
       std::fill_n<JSVal*, std::size_t, JSVal>(
@@ -115,7 +115,7 @@ class Stack : public lv5::Stack {
       frame->variable_env_ = variable_env;
       frame->lexical_env_ = lexical_env;
       frame->prev_ = current_;
-      frame->callee_ = JSUndefined;
+      frame->callee_ = JSVal(JSUndefined).Layout();
       frame->argc_ = 0;
       frame->dynamic_env_level_ = 0;
       std::fill_n<JSVal*, std::size_t, JSVal>(
@@ -169,8 +169,9 @@ class Stack : public lv5::Stack {
     entry = GC_MARK_AND_PUSH(frame->variable_env_,
                              entry, mark_sp_limit,
                              reinterpret_cast<void**>(&frame));
-    if (frame->callee_.IsCell()) {
-      radio::Cell* ptr = frame->callee_.cell();
+    const JSVal callee = frame->callee_;
+    if (callee.IsCell()) {
+      radio::Cell* ptr = callee.cell();
       entry = GC_MARK_AND_PUSH(ptr,
                                entry, mark_sp_limit,
                                reinterpret_cast<void**>(&frame));

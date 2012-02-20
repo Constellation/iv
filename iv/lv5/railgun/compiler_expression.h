@@ -568,6 +568,7 @@ inline void Compiler::Visit(const Identifier* lit) {
 
 inline void Compiler::Visit(const ThisLiteral* lit) {
   const DestGuard dest_guard(this);
+  assert(registers_.This()->IsConstant());
   dst_ = EmitMV(dst_, registers_.This());
 }
 
