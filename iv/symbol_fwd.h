@@ -129,22 +129,6 @@ typedef detail::Symbol Symbol;
 IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
 #endif
 
-struct SymbolHolderHasher
-  : public std::unary_function<const iv::core::UString*, std::size_t> {
-  inline result_type operator()(const argument_type& x) const {
-    return std::hash<iv::core::UString>()(*x);
-  }
-};
-
-struct SymbolHolderEqualTo
-  : public std::binary_function<const iv::core::UString*,
-                                const iv::core::UString*, bool> {
-  inline result_type operator()(const first_argument_type& x,
-                                const second_argument_type& y) const {
-    return *x == *y;
-  }
-};
-
 namespace symbol {
 
 inline bool IsIndexSymbol(Symbol sym) {

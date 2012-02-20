@@ -2154,7 +2154,8 @@ class Parser : private Noncopyable<> {
             "octal escape sequence not allowed in strict code",
             ast::SymbolHolder());
       }
-      const Symbol name = table_->Lookup(lexer_.Buffer());
+      const Symbol name = table_->Lookup(
+          UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
       Next();
       return ast::SymbolHolder(
           name,
@@ -2166,7 +2167,8 @@ class Parser : private Noncopyable<> {
   }
 
   ast::SymbolHolder ParseSymbol() {
-    const Symbol sym = table_->Lookup(lexer_.Buffer());
+    const Symbol sym = table_->Lookup(
+        UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
     Next();
     return ast::SymbolHolder(
         sym,
@@ -2176,7 +2178,8 @@ class Parser : private Noncopyable<> {
 
   Identifier* ParseIdentifier() {
     assert(token_ == Token::TK_IDENTIFIER);
-    const Symbol symbol = table_->Lookup(lexer_.Buffer());
+    const Symbol symbol = table_->Lookup(
+        UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
     Identifier* const ident = factory_->NewIdentifier(
         Token::TK_IDENTIFIER,
         symbol,
