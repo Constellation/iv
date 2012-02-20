@@ -249,9 +249,9 @@ class JSDeclEnv : public JSEnv {
   static JSDeclEnv* New(Context* ctx,
                         JSEnv* outer,
                         uint32_t size,
-                        NamesIter it, NamesIter last,
+                        NamesIter it,
                         uint32_t mutable_start) {
-    return new JSDeclEnv(outer, size, it, last, mutable_start);
+    return new JSDeclEnv(outer, size, it, mutable_start);
   }
 
   void InitializeImmutable(std::size_t offset, const JSVal& val) {
@@ -302,7 +302,7 @@ class JSDeclEnv : public JSEnv {
   template<typename NamesIter>
   JSDeclEnv(JSEnv* outer,
             uint32_t size,
-            NamesIter it, NamesIter last, uint32_t mutable_start)
+            NamesIter it, uint32_t mutable_start)
     : JSEnv(outer),
       record_(size),
       offsets_() {

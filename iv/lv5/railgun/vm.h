@@ -253,7 +253,6 @@ do {\
                            frame->lexical_env(),
                            instr[1].u32,
                            frame->code()->names().begin(),
-                           frame->code()->names().end(),
                            instr[2].u32);
         DISPATCH(BUILD_ENV);
       }
