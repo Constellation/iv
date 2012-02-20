@@ -901,17 +901,19 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   const uint32_t arg_count = args.size();
 
-  for (uint32_t k = len; k > 0; --k) {
-    const uint32_t from = k - 1;
-    const uint32_t to = k + arg_count - 1;
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
-      const JSVal from_value =
-          obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
-      obj->Put(ctx,
-               symbol::MakeSymbolFromIndex(to),
-               from_value, true, IV_LV5_ERROR(e));
-    } else {
-      obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
+  if (len && arg_count) {
+    for (uint32_t k = len; k > 0; --k) {
+      const uint32_t from = k - 1;
+      const uint32_t to = k + arg_count - 1;
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+        const JSVal from_value =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+        obj->Put(ctx,
+                 symbol::MakeSymbolFromIndex(to),
+                 from_value, true, IV_LV5_ERROR(e));
+      } else {
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
+      }
     }
   }
 
