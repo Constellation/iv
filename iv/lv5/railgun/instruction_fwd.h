@@ -14,13 +14,6 @@ class Chain;
 namespace railgun {
 
 struct Instruction {
-  union Value16 {
-    uint16_t u16;
-    int16_t i16;
-  };
-
-  IV_STATIC_ASSERT(sizeof(Value16) == sizeof(int16_t));
-
   Instruction(uint32_t arg) : u32(arg) { }  // NOLINT
 
   Instruction(RegisterID reg) {  // NOLINT
@@ -33,7 +26,7 @@ struct Instruction {
     uint32_t u32;
     int32_t i32;
     ptrdiff_t diff;
-    Value16 v16[2];
+    int16_t i16[2];
     Map* map;
     Chain* chain;
   };
@@ -46,8 +39,8 @@ struct Instruction {
 
   static Instruction Reg2(RegisterID a, RegisterID b) {
     Instruction instr(0u);
-    instr.v16[0] = static_cast<int16_t>(a->register_offset());
-    instr.v16[1] = static_cast<int16_t>(b->register_offset());
+    instr.i16[0] = static_cast<int16_t>(a->register_offset());
+    instr.i16[1] = static_cast<int16_t>(b->register_offset());
     return instr;
   }
 

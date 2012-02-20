@@ -612,7 +612,6 @@ class Compiler::ArraySite {
       start_(),
       ary_(size, RegisterID()),
       registers_(registers) {
-    thunklist->ForceSpill();
     start_ = registers->AcquireCallBase(size_);
   }
 
@@ -648,6 +647,11 @@ inline void Compiler::Visit(const ArrayLiteral* lit) {
   const Items& items = lit->items();
   RegisterID ary = registers_.Acquire();
   Emit<OP::LOAD_ARRAY>(ary, items.size());
+
+  if (lit->SideEffect()) {
+    thunklist_.ForceSpill();
+  }
+
   {
     Items::const_iterator it = items.begin();
     const Items::const_iterator last = items.end();
