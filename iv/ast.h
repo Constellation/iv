@@ -1148,17 +1148,20 @@ template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  explicit StringLiteral(const value_type* val)
-    : value_(val) {
+  explicit StringLiteral(const value_type* val, bool directive)
+    : value_(val),
+      directive_(directive) {
   }
   inline const value_type& value() const {
     return *value_;
   }
+  bool IsDirective() const { return directive_; }
   bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(StringLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
   const value_type* value_;
+  bool directive_;
 };
 
 // NumberLiteral

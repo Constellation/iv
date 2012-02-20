@@ -274,36 +274,38 @@ class Parser : private Noncopyable<> {
           StringLiteral* const literal =
               stmt->AsExpressionStatement()->expr()->AsStringLiteral();
 
-          if (!strict_switcher.IsStrict() &&
-              state == lexer_type::NONE && IsStrictDirective(literal)) {
-            strict_switcher.SwitchStrictMode();
+          if (literal->IsDirective()) {
+            if (!strict_switcher.IsStrict() &&
+                state == lexer_type::NONE && IsStrictDirective(literal)) {
+              strict_switcher.SwitchStrictMode();
 
-            // if such a script is evaluated,
-            // function target() {
-            //   "octal \02";
-            //   "use strict";
-            // }
-            // found octal string literal and raise error.
-            if (octal_escaped_directive_found) {
-              RAISE_WITH_NUMBER(
-                  "octal escape sequence not allowed in strict code",
-                  line);
-            }
+              // if such a script is evaluated,
+              // function target() {
+              //   "octal \02";
+              //   "use strict";
+              // }
+              // found octal string literal and raise error.
+              if (octal_escaped_directive_found) {
+                RAISE_WITH_NUMBER(
+                    "octal escape sequence not allowed in strict code",
+                    line);
+              }
 
-            // and one token lexed is not in strict
-            // so rescan
-            if (token_ == Token::TK_IDENTIFIER) {
-              token_ =
-                  Keyword<IdentifyReservedWords>::Detect(lexer_.Buffer(), true);
-              break;
+              // and one token lexed is not in strict
+              // so rescan
+              if (token_ == Token::TK_IDENTIFIER) {
+                token_ =
+                    Keyword<IdentifyReservedWords>::Detect(lexer_.Buffer(), true);
+                break;
+              }
+            } else {
+              // other directive
             }
-          } else {
-            // other directive
+            continue;  // next directive
           }
-        } else {
-          // not directive
-          break;
         }
+        // not directive
+        break;
       }
     }
 
@@ -1345,8 +1347,8 @@ class Parser : private Noncopyable<> {
                                     Expression* left,
                                     Expression* right,
                                     typename enable_if_c<Reduce>::type* = 0) {
-    if (left->AsNumberLiteral() &&
-        right->AsNumberLiteral()) {
+    assert(left && right);
+    if (left->AsNumberLiteral() && right->AsNumberLiteral()) {
       const double l_val = left->AsNumberLiteral()->value();
       const double r_val = right->AsNumberLiteral()->value();
       Expression* res;
@@ -1410,8 +1412,11 @@ class Parser : private Noncopyable<> {
           break;
       }
       return res;
+    } else if (op == Token::TK_ADD &&
+               left->AsStringLiteral() && right->AsStringLiteral()) {
+      return factory_->NewReducedStringLiteral(left->AsStringLiteral(),
+                                               right->AsStringLiteral());
     } else {
-      assert(left && right);
       return factory_->NewBinaryOperation(op, left, right);
     }
   }

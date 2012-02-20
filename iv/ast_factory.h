@@ -63,8 +63,15 @@ class BasicAstFactory {
   StringLiteral* NewStringLiteral(const std::vector<uint16_t>& buffer,
                                   std::size_t begin, std::size_t end) {
     return Location(
-        new(static_cast<Factory*>(this)) StringLiteral(NewString(buffer)),
+        new(static_cast<Factory*>(this)) StringLiteral(NewString(buffer), true),
         begin, end);
+  }
+
+  StringLiteral* NewReducedStringLiteral(StringLiteral* lhs,
+                                         StringLiteral* rhs) {
+    return Location(
+        new(static_cast<Factory*>(this))
+          StringLiteral(NewString(lhs, rhs), false), 0, 0);
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uint16_t>& content,
@@ -134,6 +141,20 @@ class BasicAstFactory {
             range.begin(),
             range.end(),
             typename SpaceUString::allocator_type(static_cast<Factory*>(this)));
+  }
+
+  const SpaceUString* NewString(StringLiteral* lhs, StringLiteral* rhs) {
+    SpaceUString* str =
+        new(static_cast<Factory*>(this)->New(sizeof(SpaceUString)))
+          SpaceUString(
+            lhs->value().size() + rhs->value().size(),
+            'C',
+            typename SpaceUString::allocator_type(static_cast<Factory*>(this)));
+    std::copy(
+        rhs->value().begin(),
+        rhs->value().end(),
+        std::copy(lhs->value().begin(), lhs->value().end(), str->begin()));
+    return str;
   }
 
   Scope* NewScope(typename FunctionLiteral::DeclType type, Assigneds* params) {
