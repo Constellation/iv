@@ -803,10 +803,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void InstantiateLoadCallee(uint32_t index) {
-    const LookupInfo info = Lookup(code_->names_[index]);
+    const Symbol sym = code_->names_[index];
+    const LookupInfo info = Lookup(sym);
     assert(registers_.Callee()->IsConstant());
     if (info.type() == LookupInfo::STACK) {
-      EmitMV(info.register_location(), registers_.Callee());
+      Emit<OP::MV>(Instruction::Reg2(GetLocal(sym), registers_.Callee()));
     } else {
       EmitInstantiate(index, info, registers_.Callee());
     }
