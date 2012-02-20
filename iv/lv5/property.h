@@ -46,7 +46,7 @@ AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
   attrs_ &= ~(ATTR::ACCESSOR | ATTR::UNDEF_VALUE);
   attrs_ |= ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER;
-  value_.data_ = value.Layout();
+  value_.data_ = value;
 }
 
 void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {

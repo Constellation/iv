@@ -21,7 +21,7 @@ class PropertyDescriptor {
       JSObject* getter_;
       JSObject* setter_;
     } accessor_;
-    JSVal::value_type data_;
+    JSLayout data_;
   };
 
   enum DataDescriptorTag { DATA_DESCRIPTOR };
@@ -151,7 +151,7 @@ class PropertyDescriptor {
                      const JSVal& val, int attrs)
     : attrs_(attrs | ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER),
       value_() {
-    value_.data_ = val.Layout();
+    value_.data_ = val;
   }
 
   PropertyDescriptor(AccessorDescriptorTag tag,
@@ -229,7 +229,7 @@ class DataDescriptor: public PropertyDescriptor {
     return value_.data_;
   }
   void set_value(const JSVal& val) {
-    value_.data_ = val.Layout();
+    value_.data_ = val;
   }
 
   inline bool IsValueAbsent() const {
