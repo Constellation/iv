@@ -26,8 +26,8 @@ struct Instruction {
     uint32_t u32;
     int32_t i32;
     ptrdiff_t diff;
-    int16_t i16[2];
-    uint16_t u16[2];
+    int16_t i16[4];
+    uint16_t u16[4];
     Map* map;
     Chain* chain;
   };
@@ -53,6 +53,8 @@ struct Instruction {
     return kOPLength[GetOP()];
   }
 };
+
+IV_STATIC_ASSERT(sizeof(Instruction) == 8); // always 64bit
 
 } } }  // namespace iv::lv5::railgun
 

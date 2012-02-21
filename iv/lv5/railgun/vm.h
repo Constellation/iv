@@ -269,7 +269,8 @@ do {\
 #undef DISPATCH_ERROR
 #define DISPATCH_ERROR() goto VM_ERROR
  MAIN_LOOP_START:
-    // fast path
+    // 5 top opcode fast pathes
+    // see detail https://github.com/Constellation/iv/issues/63
     if (instr->u32 == OP::LOAD_CONST) {
       FAST_PATH_LOAD_CONST();
     } else if (instr->u32 == OP::IF_FALSE) {
