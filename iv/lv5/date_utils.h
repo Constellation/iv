@@ -85,7 +85,7 @@ inline int IsLeapYear(double t) {
 }
 
 inline int DayWithinYear(double t) {
-  return core::DoubleToInt32(Day(t) - DaysFromYear(YearFromTime(t)));
+  return static_cast<int>(Day(t) - DaysFromYear(YearFromTime(t)));
 }
 
 static const std::array<std::array<int, 12>, 2> kDaysMap = { {
@@ -144,7 +144,7 @@ static const std::array<const char*, 7> kWeekDays = { {
 } };
 
 inline int WeekDay(double t) {
-  const int res = core::DoubleToInt32(core::math::Modulo((Day(t) + 4), 7));
+  const int res = static_cast<int>(core::math::Modulo((Day(t) + 4), 7));
   if (res < 0) {
     return res + 7;
   }
@@ -227,7 +227,7 @@ inline double UTC(double t) {
 }
 
 inline int HourFromTime(double t) {
-  const int res = core::DoubleToInt32(
+  const int res = static_cast<int>(
       core::math::Modulo(std::floor(t / kMsPerHour), kHoursPerDay));
   if (res < 0) {
     return res + kHoursPerDay;
@@ -236,7 +236,7 @@ inline int HourFromTime(double t) {
 }
 
 inline int MinFromTime(double t) {
-  const int res = core::DoubleToInt32(
+  const int res = static_cast<int>(
       core::math::Modulo(std::floor(t / kMsPerMinute), kMinutesPerHour));
   if (res < 0) {
     return res + kMinutesPerHour;
@@ -245,7 +245,7 @@ inline int MinFromTime(double t) {
 }
 
 inline int SecFromTime(double t) {
-  const int res = core::DoubleToInt32(
+  const int res = static_cast<int>(
       core::math::Modulo(std::floor(t / kMsPerSecond), kSecondsPerMinute));
   if (res < 0) {
     return res + kSecondsPerMinute;
@@ -254,7 +254,7 @@ inline int SecFromTime(double t) {
 }
 
 inline int MsFromTime(double t) {
-  const int res = core::DoubleToInt32(core::math::Modulo(t, kMsPerSecond));
+  const int res = static_cast<int>(core::math::Modulo(t, kMsPerSecond));
   if (res < 0) {
     return res + kMsPerSecond;
   }
@@ -294,9 +294,9 @@ inline double MakeDay(double year, double month, double date) {
       !core::math::IsFinite(date)) {
     return core::kNaN;
   } else {
-    const int y = core::DoubleToInt32(year);
-    const int m = core::DoubleToInt32(month);
-    const int dt = core::DoubleToInt32(date);
+    const int y = static_cast<int>(year);
+    const int m = static_cast<int>(month);
+    const int dt = static_cast<int>(date);
     const int ym = y + m / 12;
     const int mn = m % 12;
     return DateToDays(ym, mn, dt);
