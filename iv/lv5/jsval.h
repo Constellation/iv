@@ -235,7 +235,7 @@ void JSLayout::set_empty() {
   value_.bytes_ = detail::jsval64::kEmpty;
 }
 
-bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::SameValue(this_type lhs, this_type rhs) {
   if (lhs.IsInt32()) {
     if (rhs.IsInt32()) {
       return lhs.int32() == rhs.int32();
@@ -267,7 +267,7 @@ bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
-bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
   if (lhs.IsInt32() && rhs.IsInt32()) {
     return lhs.int32() == rhs.int32();
   }
@@ -288,7 +288,7 @@ bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
-inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
+inline std::size_t JSVal::Hasher::operator()(JSVal val) const {
   if (val.IsInt32()) {
     return std::hash<int32_t>()(val.int32());
   }
@@ -519,7 +519,7 @@ void JSLayout::set_empty() {
   value_.struct_.tag_ = detail::jsval32::kEmptyTag;
 }
 
-bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::SameValue(this_type lhs, this_type rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
@@ -548,7 +548,7 @@ bool JSLayout::SameValue(const this_type& lhs, const this_type& rhs) {
   return false;
 }
 
-bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
+bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
@@ -571,7 +571,7 @@ bool JSLayout::StrictEqual(const this_type& lhs, const this_type& rhs) {
   return false;
 }
 
-inline std::size_t JSVal::Hasher::operator()(const JSVal& val) const {
+inline std::size_t JSVal::Hasher::operator()(JSVal val) const {
   if (val.IsInt32()) {
     return std::hash<int32_t>()(val.int32());
   }
@@ -939,8 +939,8 @@ bool JSVal::AbstractEqual(Context* ctx,
 // section 11.8.5
 template<bool LeftFirst>
 CompareResult JSVal::Compare(Context* ctx,
-                             const this_type& lhs,
-                             const this_type& rhs, Error* e) {
+                             this_type lhs,
+                             this_type rhs, Error* e) {
   if (lhs.IsNumber() && rhs.IsNumber()) {
     return NumberCompare(lhs.number(), rhs.number());
   }

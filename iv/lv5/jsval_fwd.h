@@ -285,9 +285,9 @@ class JSLayout {
     return lhs.swap(rhs);
   }
 
-  static inline bool SameValue(const this_type& lhs, const this_type& rhs);
+  static inline bool SameValue(this_type lhs, this_type rhs);
 
-  static inline bool StrictEqual(const this_type& lhs, const this_type& rhs);
+  static inline bool StrictEqual(this_type lhs, this_type rhs);
 
   value_type value_;
 };
@@ -301,19 +301,19 @@ class JSVal : public JSLayout {
   typedef JSVal this_type;
   // JSVal Hasher is used by SameValue algorithm
   struct Hasher {
-    std::size_t operator()(const JSVal& val) const;
+    std::size_t operator()(JSVal val) const;
   };
 
   friend struct Hasher;
 
   struct SameValueEqualer {
-    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+    bool operator()(JSVal lhs, JSVal rhs) const {
       return JSVal::SameValue(lhs, rhs);
     }
   };
 
   struct StrictEqualer {
-    bool operator()(const JSVal& lhs, const JSVal& rhs) const {
+    bool operator()(JSVal lhs, JSVal rhs) const {
       return JSVal::StrictEqual(lhs, rhs);
     }
   };
@@ -384,12 +384,12 @@ class JSVal : public JSLayout {
     assert(IsNumber());
   }
 
-  JSVal(const value_type& val)  // NOLINT
+  JSVal(value_type val)  // NOLINT
     : JSLayout() {
     value_ = val;
   }
 
-  JSVal(const JSLayout& layout)  // NOLINT
+  JSVal(JSLayout layout)  // NOLINT
     : JSLayout(layout) {
   }
 
@@ -478,8 +478,8 @@ class JSVal : public JSLayout {
 
   template<bool LeftFirst>
   static inline CompareResult Compare(Context* ctx,
-                                      const this_type& lhs,
-                                      const this_type& rhs, Error* e);
+                                      this_type lhs,
+                                      this_type rhs, Error* e);
 
  private:
   JSVal(uint32_t val, detail::UInt32Tag dummy)
