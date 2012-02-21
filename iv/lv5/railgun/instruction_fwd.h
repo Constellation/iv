@@ -45,6 +45,14 @@ struct Instruction {
     return instr;
   }
 
+  static Instruction Reg3(RegisterID a, RegisterID b, RegisterID c) {
+    Instruction instr(0u);
+    instr.i16[0] = static_cast<int16_t>(a->register_offset());
+    instr.i16[1] = static_cast<int16_t>(b->register_offset());
+    instr.i16[2] = static_cast<int16_t>(c->register_offset());
+    return instr;
+  }
+
   inline OP::Type GetOP() const;
 
   static inline Instruction GetOPInstruction(OP::Type op);

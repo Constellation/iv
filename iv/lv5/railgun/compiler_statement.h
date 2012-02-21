@@ -506,7 +506,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
         // case
         RegisterID tmp = EmitExpression(expr.Address());
         RegisterID ret = tmp->IsTemporary() ? tmp : registers_.Acquire();
-        Emit<OP::BINARY_STRICT_EQ>(ret, cond, tmp);
+        Emit<OP::BINARY_STRICT_EQ>(Instruction::Reg3(ret, cond, tmp));
         *idx = CurrentSize();
         Emit<OP::IF_TRUE>(0, ret);
       } else {

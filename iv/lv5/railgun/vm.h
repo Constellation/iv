@@ -229,31 +229,31 @@ do {\
   DISPATCH(IF_FALSE);
 
 #define FAST_PATH_BINARY_LT()\
-  const JSVal lhs = REG(instr[2].i32);\
-  const JSVal rhs = REG(instr[3].i32);\
+  const JSVal lhs = REG(instr[1].i16[1]);\
+  const JSVal rhs = REG(instr[1].i16[2]);\
   if (lhs.IsInt32() && rhs.IsInt32()) {\
-    REG(instr[1].i32) = JSVal::Bool(lhs.int32() < rhs.int32());\
+    REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() < rhs.int32());\
   } else {\
     const JSVal res = operation_.BinaryCompareLT(lhs, rhs, ERR);\
-    REG(instr[1].i32) = res;\
+    REG(instr[1].i16[0]) = res;\
   }\
   DISPATCH(BINARY_LT);\
 
 #define FAST_PATH_BINARY_ADD()\
-  const JSVal lhs = REG(instr[2].i32);\
-  const JSVal rhs = REG(instr[3].i32);\
+  const JSVal lhs = REG(instr[1].i16[1]);\
+  const JSVal rhs = REG(instr[1].i16[2]);\
   if (lhs.IsInt32() && rhs.IsInt32()) {\
     int32_t sum;\
     if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {\
-      REG(instr[1].i32) = JSVal::Int32(sum);\
+      REG(instr[1].i16[0]) = JSVal::Int32(sum);\
     } else {\
-      REG(instr[1].i32) =\
+      REG(instr[1].i16[0]) =\
           JSVal(static_cast<double>(lhs.int32()) +\
                 static_cast<double>(rhs.int32()));\
     }\
   } else {\
     const JSVal res = operation_.BinaryAdd(lhs, rhs, ERR);\
-    REG(instr[1].i32) = res;\
+    REG(instr[1].i16[0]) = res;\
   }\
   DISPATCH(BINARY_ADD);
 
@@ -1124,265 +1124,265 @@ do {\
       }
 
       DEFINE_OPCODE(BINARY_ADD) {
-        // opcode | dst | lhs | rhs
+        // opcode | (dst | lhs | rhs)
         FAST_PATH_BINARY_ADD();
       }
 
       DEFINE_OPCODE(BINARY_SUBTRACT) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
           int32_t dif;
           if (!core::IsSubtractOverflow(lhs.int32(), rhs.int32(), &dif)) {
-            REG(instr[1].i32) = JSVal::Int32(dif);
+            REG(instr[1].i16[0]) = JSVal::Int32(dif);
           } else {
-            REG(instr[1].i32) =
+            REG(instr[1].i16[0]) =
                 JSVal(static_cast<double>(lhs.int32()) -
                       static_cast<double>(rhs.int32()));
           }
         } else {
           const JSVal res = operation_.BinarySub(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_SUBTRACT);
       }
 
       DEFINE_OPCODE(BINARY_MULTIPLY) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         // if 1 bit is not found in MSB to MSB - 17 bits,
         // this multiply is safe for overflow
         if (lhs.IsInt32() && rhs.IsInt32() &&
             !((lhs.int32() | rhs.int32()) >> 15)) {
-          REG(instr[1].i32) = JSVal::Int32(lhs.int32() * rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(lhs.int32() * rhs.int32());
         } else {
           const JSVal res = operation_.BinaryMultiply(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_MULTIPLY);
       }
 
       DEFINE_OPCODE(BINARY_DIVIDE) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         const JSVal res = operation_.BinaryDivide(lhs, rhs, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(BINARY_DIVIDE);
       }
 
       DEFINE_OPCODE(BINARY_MODULO) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         // check rhs is more than 0 (n % 0 == NaN)
         // lhs is >= 0 and rhs is > 0 because example like
         //   -1 % -1
         // should return -0.0, so this value is double
         if (lhs.IsInt32() && rhs.IsInt32() &&
             lhs.int32() >= 0 && rhs.int32() > 0) {
-          REG(instr[1].i32) = JSVal::Int32(lhs.int32() % rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(lhs.int32() % rhs.int32());
         } else {
           const JSVal res = operation_.BinaryModulo(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_MODULO);
       }
 
       DEFINE_OPCODE(BINARY_LSHIFT) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) =
+          REG(instr[1].i16[0]) =
               JSVal::Int32(lhs.int32() << (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryLShift(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_LSHIFT);
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) =
+          REG(instr[1].i16[0]) =
               JSVal::Int32(lhs.int32() >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShift(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_RSHIFT);
       }
 
       DEFINE_OPCODE(BINARY_RSHIFT_LOGICAL) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         uint32_t left_result;
         if (lhs.GetUInt32(&left_result) && rhs.IsInt32()) {
-          REG(instr[1].i32) =
+          REG(instr[1].i16[0]) =
               JSVal::UInt32(left_result >> (rhs.int32() & 0x1f));
         } else {
           const JSVal res = operation_.BinaryRShiftLogical(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_RSHIFT_LOGICAL);
       }
 
       DEFINE_OPCODE(BINARY_LT) {
-        // opcode | dst | lhs | rhs
+        // opcode | (dst | lhs | rhs)
         FAST_PATH_BINARY_LT();
       }
 
       DEFINE_OPCODE(BINARY_LTE) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() <= rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() <= rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareLTE(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_LTE);
       }
 
       DEFINE_OPCODE(BINARY_GT) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() > rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() > rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareGT(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_GT);
       }
 
       DEFINE_OPCODE(BINARY_GTE) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() >= rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() >= rhs.int32());
         } else {
           const JSVal res = operation_.BinaryCompareGTE(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_GTE);
       }
 
       DEFINE_OPCODE(BINARY_INSTANCEOF) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         const JSVal res = operation_.BinaryInstanceof(lhs, rhs, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(BINARY_INSTANCEOF);
       }
 
       DEFINE_OPCODE(BINARY_IN) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         const JSVal res = operation_.BinaryIn(lhs, rhs, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(BINARY_IN);
       }
 
       DEFINE_OPCODE(BINARY_EQ) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() == rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() == rhs.int32());
         } else {
           const JSVal res = operation_.BinaryEqual(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_EQ);
       }
 
       DEFINE_OPCODE(BINARY_STRICT_EQ) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() == rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() == rhs.int32());
         } else {
           const JSVal res = operation_.BinaryStrictEqual(lhs, rhs);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_STRICT_EQ);
       }
 
       DEFINE_OPCODE(BINARY_NE) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() != rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() != rhs.int32());
         } else {
           const JSVal res = operation_.BinaryNotEqual(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_NE);
       }
 
       DEFINE_OPCODE(BINARY_STRICT_NE) {
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() != rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Bool(lhs.int32() != rhs.int32());
         } else {
           const JSVal res = operation_.BinaryStrictNotEqual(lhs, rhs);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_STRICT_NE);
       }
 
       DEFINE_OPCODE(BINARY_BIT_AND) {  // &
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Int32(lhs.int32() & rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(lhs.int32() & rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitAnd(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_BIT_AND);
       }
 
       DEFINE_OPCODE(BINARY_BIT_XOR) {  // ^
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Int32(lhs.int32() ^ rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(lhs.int32() ^ rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitXor(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_BIT_XOR);
       }
 
       DEFINE_OPCODE(BINARY_BIT_OR) {  // |
-        // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
+        // opcode | (dst | lhs | rhs)
+        const JSVal lhs = REG(instr[1].i16[1]);
+        const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Int32(lhs.int32() | rhs.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(lhs.int32() | rhs.int32());
         } else {
           const JSVal res = operation_.BinaryBitOr(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
+          REG(instr[1].i16[0]) = res;
         }
         DISPATCH(BINARY_BIT_OR);
       }
