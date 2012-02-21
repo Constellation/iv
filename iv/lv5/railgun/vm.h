@@ -212,12 +212,77 @@ do {\
 
 #define GETITEM(target, i) ((*target)[(i)])
 
+
+// fast opcode macros
+
+#define FAST_PATH_LOAD_CONST()\
+  REG(instr[1].i32) = frame->GetConstant(instr[2].u32);\
+  DISPATCH(LOAD_CONST);
+
+#define FAST_PATH_IF_FALSE()\
+  const JSVal v = REG(instr[2].i32);\
+  const bool x = v.ToBoolean(ERR);\
+  if (!x) {\
+    JUMPBY(instr[1].diff);\
+    DISPATCH_WITH_NO_INCREMENT();\
+  }\
+  DISPATCH(IF_FALSE);
+
+#define FAST_PATH_BINARY_LT()\
+  const JSVal lhs = REG(instr[2].i32);\
+  const JSVal rhs = REG(instr[3].i32);\
+  if (lhs.IsInt32() && rhs.IsInt32()) {\
+    REG(instr[1].i32) = JSVal::Bool(lhs.int32() < rhs.int32());\
+  } else {\
+    const JSVal res = operation_.BinaryCompareLT(lhs, rhs, ERR);\
+    REG(instr[1].i32) = res;\
+  }\
+  DISPATCH(BINARY_LT);\
+
+#define FAST_PATH_BINARY_ADD()\
+  const JSVal lhs = REG(instr[2].i32);\
+  const JSVal rhs = REG(instr[3].i32);\
+  if (lhs.IsInt32() && rhs.IsInt32()) {\
+    int32_t sum;\
+    if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {\
+      REG(instr[1].i32) = JSVal::Int32(sum);\
+    } else {\
+      REG(instr[1].i32) =\
+          JSVal(static_cast<double>(lhs.int32()) +\
+                static_cast<double>(rhs.int32()));\
+    }\
+  } else {\
+    const JSVal res = operation_.BinaryAdd(lhs, rhs, ERR);\
+    REG(instr[1].i32) = res;\
+  }\
+  DISPATCH(BINARY_ADD);
+
+#define FAST_PATH_JUMP_BY()\
+  JUMPBY(instr[1].diff);\
+  DISPATCH_WITH_NO_INCREMENT();
+
   // main loop
   for (;;) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
     DISPATCH_WITH_NO_INCREMENT();
 #else
+#undef DISPATCH_ERROR
+#define DISPATCH_ERROR() goto VM_ERROR
  MAIN_LOOP_START:
+    // fast path
+    if (instr->u32 == OP::LOAD_CONST) {
+      FAST_PATH_LOAD_CONST();
+    } else if (instr->u32 == OP::IF_FALSE) {
+      FAST_PATH_IF_FALSE();
+    } else if (instr->u32 == OP::BINARY_LT) {
+      FAST_PATH_BINARY_LT();
+    } else if (instr->u32 == OP::BINARY_ADD) {
+      FAST_PATH_BINARY_ADD();
+    } else if (instr->u32 == OP::JUMP_BY) {
+      FAST_PATH_JUMP_BY();
+    }
+#undef DISPATCH_ERROR
+#define DISPATCH_ERROR() break
 #endif
     // if ok, use DISPATCH.
     // if error, use DISPATCH_ERROR.
@@ -349,8 +414,7 @@ do {\
 
       DEFINE_OPCODE(LOAD_CONST) {
         // opcode | dst | offset
-        REG(instr[1].i32) = frame->GetConstant(instr[2].u32);
-        DISPATCH(LOAD_CONST);
+        FAST_PATH_LOAD_CONST();
       }
 
       DEFINE_OPCODE(LOAD_NAME) {
@@ -656,13 +720,7 @@ do {\
 
       DEFINE_OPCODE(IF_FALSE) {
         // opcode | jmp | cond
-        const JSVal v = REG(instr[2].i32);
-        const bool x = v.ToBoolean(ERR);
-        if (!x) {
-          JUMPBY(instr[1].diff);
-          DISPATCH_WITH_NO_INCREMENT();
-        }
-        DISPATCH(IF_FALSE);
+        FAST_PATH_IF_FALSE();
       }
 
       DEFINE_OPCODE(IF_TRUE) {
@@ -688,8 +746,7 @@ do {\
 
       DEFINE_OPCODE(JUMP_BY) {
         // opcode | jmp
-        JUMPBY(instr[1].diff);
-        DISPATCH_WITH_NO_INCREMENT();
+        FAST_PATH_JUMP_BY();
       }
 
       DEFINE_OPCODE(LOAD_EMPTY) {
@@ -1067,22 +1124,7 @@ do {\
 
       DEFINE_OPCODE(BINARY_ADD) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
-        if (lhs.IsInt32() && rhs.IsInt32()) {
-          int32_t sum;
-          if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {
-            REG(instr[1].i32) = JSVal::Int32(sum);
-          } else {
-            REG(instr[1].i32) =
-                JSVal(static_cast<double>(lhs.int32()) +
-                      static_cast<double>(rhs.int32()));
-          }
-        } else {
-          const JSVal res = operation_.BinaryAdd(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
-        }
-        DISPATCH(BINARY_ADD);
+        FAST_PATH_BINARY_ADD();
       }
 
       DEFINE_OPCODE(BINARY_SUBTRACT) {
@@ -1193,15 +1235,7 @@ do {\
 
       DEFINE_OPCODE(BINARY_LT) {
         // opcode | dst | lhs | rhs
-        const JSVal lhs = REG(instr[2].i32);
-        const JSVal rhs = REG(instr[3].i32);
-        if (lhs.IsInt32() && rhs.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Bool(lhs.int32() < rhs.int32());
-        } else {
-          const JSVal res = operation_.BinaryCompareLT(lhs, rhs, ERR);
-          REG(instr[1].i32) = res;
-        }
-        DISPATCH(BINARY_LT);
+        FAST_PATH_BINARY_LT();
       }
 
       DEFINE_OPCODE(BINARY_LTE) {
@@ -1720,6 +1754,9 @@ do {\
       }
     }  // switch
 
+#if !defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+ VM_ERROR:
+#endif
     // search exception handler or finally handler.
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
