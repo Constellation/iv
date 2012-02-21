@@ -363,7 +363,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         if (RegisterID local = GetLocal(ident->symbol())) {
           dst_ = Dest(dst_);
           thunklist_.Spill(dst_);
-          Emit<OP::TYPEOF>(dst_, local);
+          Emit<OP::TYPEOF>(Instruction::Reg2(dst_, local));
         } else {
           const uint32_t index = SymbolToNameIndex(ident->symbol());
           dst_ = EmitOptimizedLookup(OP::TYPEOF_NAME, index, dst_);
@@ -372,7 +372,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         RegisterID src = EmitExpression(expr);
         dst_ = Dest(dst_, src);
         thunklist_.Spill(dst_);
-        Emit<OP::TYPEOF>(dst_, src);
+        Emit<OP::TYPEOF>(Instruction::Reg2(dst_, src));
       }
       break;
     }
@@ -441,7 +441,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       RegisterID src = EmitExpression(expr);
       dst_ = Dest(dst_, src);
       thunklist_.Spill(dst_);
-      EmitUnsafe(OP::UnaryOP(token), dst_, src);
+      EmitUnsafe(OP::UnaryOP(token), Instruction::Reg2(dst_, src));
     }
   }
 }

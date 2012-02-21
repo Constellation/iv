@@ -781,49 +781,49 @@ do {\
       }
 
       DEFINE_OPCODE(UNARY_POSITIVE) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         if (src.IsNumber()) {
-          REG(instr[1].i32) = src;
+          REG(instr[1].i16[0]) = src;
         } else {
           const double x = src.ToNumber(ctx_, ERR);
-          REG(instr[1].i32) = x;
+          REG(instr[1].i16[0]) = x;
         }
         DISPATCH(UNARY_POSITIVE);
       }
 
       DEFINE_OPCODE(UNARY_NEGATIVE) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         const double x = src.ToNumber(ctx_, ERR);
-        REG(instr[1].i32) = (-x);
+        REG(instr[1].i16[0]) = (-x);
         DISPATCH(UNARY_NEGATIVE);
       }
 
       DEFINE_OPCODE(UNARY_NOT) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         const bool x = src.ToBoolean(ERR);
-        REG(instr[1].i32) = JSVal::Bool(!x);
+        REG(instr[1].i16[0]) = JSVal::Bool(!x);
         DISPATCH(UNARY_NOT);
       }
 
       DEFINE_OPCODE(UNARY_BIT_NOT) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         if (src.IsInt32()) {
-          REG(instr[1].i32) = JSVal::Int32(~src.int32());
+          REG(instr[1].i16[0]) = JSVal::Int32(~src.int32());
         } else {
           const double value = src.ToNumber(ctx_, ERR);
-          REG(instr[1].i32) = JSVal::Int32(~core::DoubleToInt32(value));
+          REG(instr[1].i16[0]) = JSVal::Int32(~core::DoubleToInt32(value));
         }
         DISPATCH(UNARY_BIT_NOT);
       }
 
       DEFINE_OPCODE(TYPEOF) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
-        REG(instr[1].i32) = src.TypeOf(ctx_);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
+        REG(instr[1].i16[0]) = src.TypeOf(ctx_);
         DISPATCH(TYPEOF);
       }
 
@@ -1388,9 +1388,9 @@ do {\
       }
 
       DEFINE_OPCODE(RETURN_SUBROUTINE) {
-        // opcode | jmp | flag
-        const JSVal flag = REG(instr[2].i32);
-        const JSVal v = REG(instr[1].i32);
+        // opcode | (jmp | flag)
+        const JSVal v = REG(instr[1].i16[0]);
+        const JSVal flag = REG(instr[1].i16[1]);
         assert(flag.IsInt32());
         const int32_t f = flag.int32();
         if (f == kJumpFromSubroutine) {

@@ -684,7 +684,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     target.EmitJumps(finally_start);
 
     EmitStatement(block.Address());
-    Emit<OP::RETURN_SUBROUTINE>(jmp, flag);
+    Emit<OP::RETURN_SUBROUTINE>(Instruction::Reg2(jmp, flag));
 
     if (continuation_status_.Has(stmt)) {
       continuation_status_.Erase(stmt);
