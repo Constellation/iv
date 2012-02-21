@@ -156,13 +156,6 @@ V(INSTANTIATE_VARIABLE_BINDING, 3)\
 V(INITIALIZE_HEAP_IMMUTABLE, 3)\
 V(LOAD_ARGUMENTS, 2)
 
-struct ERR {
-  enum Type {
-    NOT_REFERENCE = 0,
-    NUM_OF_ERR
-  };
-};
-
 struct OP {
 #define IV_LV5_RAILGUN_DEFINE_ENUM(V, N) V,
   enum Type {

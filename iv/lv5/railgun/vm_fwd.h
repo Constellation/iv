@@ -7,6 +7,7 @@
 #include <iv/lv5/railgun/operation.h>
 #include <iv/lv5/railgun/stack.h>
 #include <iv/lv5/railgun/direct_threading.h>
+#include <iv/lv5/railgun/statistics.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -29,7 +30,8 @@ class VM {
     : ctx_(ctx),
       operation_(ctx),
       stack_(),
-      direct_threading_dispatch_table_(NULL) {
+      direct_threading_dispatch_table_(NULL),
+      statistics_() {
   }
 
   template<OP::Type op>
@@ -47,6 +49,10 @@ class VM {
 
   const Stack* stack() const {
     return &stack_;
+  }
+
+  void DumpStatistics() const {
+    statistics_.Dump();
   }
 
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
@@ -99,6 +105,7 @@ class VM {
   Operation operation_;
   Stack stack_;
   const DirectThreadingDispatchTable* direct_threading_dispatch_table_;
+  Statistics statistics_;
 };
 
 } } }  // namespace iv::lv5::railgun

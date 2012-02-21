@@ -31,7 +31,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 }
 
 int Execute(const iv::core::StringPiece& data,
-            const std::string& filename) {
+            const std::string& filename, bool statistics) {
   iv::lv5::Error e;
   iv::lv5::railgun::Context ctx;
   iv::core::FileSource src(data, filename);
@@ -53,13 +53,13 @@ int Execute(const iv::core::StringPiece& data,
     const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
     if (!e) {
       std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
-      return EXIT_FAILURE;
-    } else {
-      return EXIT_FAILURE;
     }
-  } else {
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
   }
+  if (statistics) {
+    ctx.vm()->DumpStatistics();
+  }
+  return EXIT_SUCCESS;
 }
 
 int DisAssemble(const iv::core::StringPiece& data,
@@ -162,6 +162,9 @@ int main(int argc, char **argv) {
   cmd.Add("dis",
           "dis",
           0, "print bytecode");
+  cmd.Add("statistics",
+          "statistics",
+          0, "print statistics");
   cmd.Add("copyright",
           "copyright",
           0,   "print the copyright");
@@ -220,7 +223,7 @@ int main(int argc, char **argv) {
     } else if (cmd.Exist("interp")) {
       return Interpret(src, filename);
     } else {
-      return Execute(src, filename);
+      return Execute(src, filename, cmd.Exist("statistics"));
     }
   } else {
     // Interactive Shell Mode

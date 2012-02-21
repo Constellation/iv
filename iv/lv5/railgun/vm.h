@@ -121,9 +121,16 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #ifdef IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE
 // direct threading mode
 
+#ifdef DEBUG
+#define DEFINE_OPCODE(op)\
+  case OP::op:\
+  op:\
+    statistics_.Increment(OP::op);
+#else
 #define DEFINE_OPCODE(op)\
   case OP::op:\
   op:
+#endif  // ifdef DEBUG
 
 #define DISPATCH_ERROR() break
 
@@ -149,9 +156,14 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
 #else
 // not direct threading mode
-
+#ifdef DEBUG
+#define DEFINE_OPCODE(op)\
+  case OP::op:\
+    statistics_.Increment(OP::op);
+#else
 #define DEFINE_OPCODE(op)\
   case OP::op:
+#endif  // ifdef DEBUG
 
 #define DISPATCH_ERROR() break
 

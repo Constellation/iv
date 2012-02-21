@@ -575,7 +575,7 @@ class Compiler::TryTarget : private core::Noncopyable<> {
     assert(has_finally_);
     const Level::Stack& stack = compiler_->level_stack();
     const Level& entry = stack.back();
-    assert(entry.type() == FINALLY);
+    assert(entry.type() == Level::FINALLY);
     assert(entry.holes() == &vec_);
     const Jump::Targets* vec = entry.holes();
     for (Jump::Targets::const_iterator it = vec->begin(),
