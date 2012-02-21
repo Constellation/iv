@@ -26,21 +26,21 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
   switch (info.type()) {
     case LookupInfo::HEAP: {
       thunklist_.Spill(dst);
-      Emit(OP::ToHeap(op),
-           dst,
-           index, info.heap_location(),
-           current_variable_scope_->scope_nest_count() - info.scope());
+      EmitUnsafe(OP::ToHeap(op),
+                 dst,
+                 index, info.heap_location(),
+                 current_variable_scope_->scope_nest_count() - info.scope());
       return dst;
     }
     case LookupInfo::GLOBAL: {
       // last 2 zeros are placeholders for PIC
       thunklist_.Spill(dst);
-      Emit(OP::ToGlobal(op), dst, index, 0u, 0u);
+      EmitUnsafe(OP::ToGlobal(op), dst, index, 0u, 0u);
       return dst;
     }
     case LookupInfo::LOOKUP: {
       thunklist_.Spill(dst);
-      Emit(op, dst, index);
+      EmitUnsafe(op, dst, index);
       return dst;
     }
     case LookupInfo::UNUSED: {
@@ -129,7 +129,7 @@ inline void Compiler::Visit(const Assignment* assign) {
         }
         lv.Release();
         thunklist_.Spill(local);
-        Emit(OP::BinaryOP(token), local, lv.reg(), rv);
+        EmitUnsafe(OP::BinaryOP(token), local, lv.reg(), rv);
         dst_ = EmitMV(dst_, local);
         if (code_->strict() && info.immutable()) {
           Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
@@ -140,7 +140,7 @@ inline void Compiler::Visit(const Assignment* assign) {
         lv.Release();
         dst_ = Dest(dst_, lv.reg(), rv);
         thunklist_.Spill(dst_);
-        Emit(OP::BinaryOP(token), dst_, lv.reg(), rv);
+        EmitUnsafe(OP::BinaryOP(token), dst_, lv.reg(), rv);
         EmitStore(ident->symbol(), dst_);
       }
     } else if (lhs->AsPropertyAccess()) {
@@ -155,7 +155,7 @@ inline void Compiler::Visit(const Assignment* assign) {
           RegisterID tmp = EmitExpression(rhs);
           dst_ = Dest(dst_, tmp, prop);
           thunklist_.Spill(dst_);
-          Emit(OP::BinaryOP(token), dst_, prop, tmp);
+          EmitUnsafe(OP::BinaryOP(token), dst_, prop, tmp);
         }
         Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
         return;
@@ -173,7 +173,7 @@ inline void Compiler::Visit(const Assignment* assign) {
             RegisterID tmp = EmitExpression(rhs);
             dst_ = Dest(dst_, tmp, prop);
             thunklist_.Spill(dst_);
-            Emit(OP::BinaryOP(token), dst_, prop, tmp);
+            EmitUnsafe(OP::BinaryOP(token), dst_, prop, tmp);
           }
           Emit<OP::STORE_PROP>(base.Release(), index, dst_, 0, 0);
         } else {
@@ -185,7 +185,7 @@ inline void Compiler::Visit(const Assignment* assign) {
             RegisterID tmp = EmitExpression(rhs);
             dst_ = Dest(dst_, tmp, prop);
             thunklist_.Spill(dst_);
-            Emit(OP::BinaryOP(token), dst_, prop, tmp);
+            EmitUnsafe(OP::BinaryOP(token), dst_, prop, tmp);
           }
           Emit<OP::STORE_ELEMENT>(base.Release(), element.Release(), dst_);
         }
@@ -198,7 +198,7 @@ inline void Compiler::Visit(const Assignment* assign) {
         RegisterID tmp = EmitExpression(rhs);
         dst_ = Dest(dst_, src.Release(), tmp);
         thunklist_.Spill(dst_);
-        Emit(OP::BinaryOP(token), dst_, src.reg(), tmp);
+        EmitUnsafe(OP::BinaryOP(token), dst_, src.reg(), tmp);
       }
       Emit<OP::RAISE_REFERENCE>();
     }
@@ -251,7 +251,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       RegisterID rv = EmitExpression(rhs);
       dst_ = Dest(dst_, lv.Release(), rv);
       thunklist_.Spill(dst_);
-      Emit(OP::BinaryOP(token), dst_, lv.reg(), rv);
+      EmitUnsafe(OP::BinaryOP(token), dst_, lv.reg(), rv);
     }
   }
 }
@@ -393,8 +393,8 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
             local = EmitMV(dst_ ? dst_ : registers_.Acquire(), local);
           }
           thunklist_.Spill(local);
-          Emit((token == Token::TK_INC) ?
-               OP::INCREMENT : OP::DECREMENT, local);
+          EmitUnsafe((token == Token::TK_INC) ?
+                     OP::INCREMENT : OP::DECREMENT, local);
           dst_ = EmitMV(dst_, local);
           if (code_->strict() && info.immutable()) {
             Emit<OP::RAISE_IMMUTABLE>(index);
@@ -441,7 +441,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       RegisterID src = EmitExpression(expr);
       dst_ = Dest(dst_, src);
       thunklist_.Spill(dst_);
-      Emit(OP::UnaryOP(token), dst_, src);
+      EmitUnsafe(OP::UnaryOP(token), dst_, src);
     }
   }
 }
@@ -467,8 +467,8 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
         local = EmitMV(registers_.Acquire(), local);
       }
       thunklist_.Spill(local);
-      Emit((token == Token::TK_INC) ?
-           OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT, dst_, local);
+      EmitUnsafe((token == Token::TK_INC) ?
+                 OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT, dst_, local);
       if (code_->strict() && info.immutable()) {
         Emit<OP::RAISE_IMMUTABLE>(index);
       }

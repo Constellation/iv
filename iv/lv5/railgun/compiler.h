@@ -420,20 +420,20 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void EmitStore(Symbol sym, RegisterID src) {
     const uint32_t index = SymbolToNameIndex(sym);
     const LookupInfo info = Lookup(sym);
-    const OP::Type op = OP::STORE_NAME;
     switch (info.type()) {
       case LookupInfo::HEAP: {
-        Emit(OP::ToHeap(op), src, index, info.heap_location(),
-             current_variable_scope_->scope_nest_count() - info.scope());
+        Emit<OP::STORE_HEAP>(
+            src, index, info.heap_location(),
+            current_variable_scope_->scope_nest_count() - info.scope());
         return;
       }
       case LookupInfo::GLOBAL: {
         // last 2 zeros are placeholders for PIC
-        Emit(OP::ToGlobal(op), src, index, 0u, 0u);
+        Emit<OP::STORE_GLOBAL>(src, index, 0u, 0u);
         return;
       }
       case LookupInfo::LOOKUP: {
-        Emit(op, src, index);
+        Emit<OP::STORE_NAME>(src, index);
         return;
       }
       case LookupInfo::UNUSED: {
@@ -578,31 +578,32 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     data_->push_back(arg7);
   }
 
-  void Emit(OP::Type op) {
+  void EmitUnsafe(OP::Type op) {
     data_->push_back(op);
   }
 
-  void Emit(OP::Type op, Instruction arg) {
+  void EmitUnsafe(OP::Type op, Instruction arg) {
     data_->push_back(op);
     data_->push_back(arg);
   }
 
-  void Emit(OP::Type op, Instruction arg1, Instruction arg2) {
+  void EmitUnsafe(OP::Type op, Instruction arg1, Instruction arg2) {
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
   }
 
-  void Emit(OP::Type op, Instruction arg1, Instruction arg2, Instruction arg3) {
+  void EmitUnsafe(OP::Type op, Instruction arg1,
+                  Instruction arg2, Instruction arg3) {
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
     data_->push_back(arg3);
   }
 
-  void Emit(OP::Type op,
-            Instruction arg1, Instruction arg2,
-            Instruction arg3, Instruction arg4) {
+  void EmitUnsafe(OP::Type op,
+                  Instruction arg1, Instruction arg2,
+                  Instruction arg3, Instruction arg4) {
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
