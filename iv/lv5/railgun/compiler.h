@@ -48,15 +48,50 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                      std::shared_ptr<VariableScope> > CodeInfo;
   typedef std::vector<CodeInfo> CodeInfoStack;
 
-  enum LevelType {
-    WITH,
-    FINALLY
-  };
+  class Level {
+   public:
+    enum Type {
+      WITH,
+      FINALLY,
+      ITERATOR
+    };
 
-  typedef std::tuple<LevelType,
-                     std::vector<std::size_t>*,
-                     RegisterID, RegisterID, RegisterID> LevelEntry;
-  typedef std::vector<LevelEntry> LevelStack;
+    typedef std::vector<Level> Stack;
+
+    Level(Type type, std::vector<std::size_t>* holes)
+      : type_(type),
+        holes_(holes),
+        jmp_(),
+        ret_(),
+        flag_() {
+    }
+
+    Type type() const { return type_; }
+
+    std::vector<std::size_t>* holes() const { return holes_; }
+
+    RegisterID jmp() const { return jmp_; }
+    void set_jmp(RegisterID jmp) {
+      jmp_ = jmp;
+    }
+
+    RegisterID ret() const { return ret_; }
+    void set_ret(RegisterID ret) {
+      ret_ = ret;
+    }
+
+    RegisterID flag() const { return flag_; }
+    void set_flag(RegisterID flag) {
+      flag_ = flag;
+    }
+
+   private:
+    Type type_;
+    std::vector<std::size_t>* holes_;
+    RegisterID jmp_;
+    RegisterID ret_;
+    RegisterID flag_;
+  };
 
   typedef std::unordered_map<
       double,
@@ -825,7 +860,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   bool IsCodeEmpty() const { return data_->size() == code_->start(); }
 
-  const LevelStack& level_stack() const { return level_stack_; }
+  const Level::Stack& level_stack() const { return level_stack_; }
 
   // try - catch - finally nest level
   // use for break / continue exile by executing finally block
@@ -871,16 +906,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void PushLevelFinally(std::vector<std::size_t>* vec) {
-    level_stack_.push_back(
-        std::make_tuple(FINALLY, vec,
-                        RegisterID(), RegisterID(), RegisterID()));
+    level_stack_.push_back(Level(Level::FINALLY, vec));
   }
 
   void PushLevelWith() {
-    level_stack_.push_back(
-        std::make_tuple(WITH,
-                        static_cast<std::vector<std::size_t>*>(NULL),
-                        RegisterID(), RegisterID(), RegisterID()));
+    level_stack_.push_back(Level(Level::WITH, NULL));
   }
 
   void PopLevel() { level_stack_.pop_back(); }
@@ -901,7 +931,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   JSScript* script_;
   CodeInfoStack code_info_stack_;
   JumpTable jump_table_;
-  LevelStack level_stack_;
+  Level::Stack level_stack_;
   Registers registers_;
   ThunkList thunklist_;
   bool ignore_result_;

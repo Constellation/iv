@@ -393,17 +393,15 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
                                                uint16_t to,
                                                RegisterID dst) {
   for (; from > to; --from) {
-    const LevelEntry& entry = level_stack_[from - 1];
-    const LevelType type = std::get<0>(entry);
-    if (type == FINALLY) {
+    const Level& entry = level_stack_[from - 1];
+    if (entry.type() == Level::FINALLY) {
       if (dst) {
-        dst = EmitMV(std::get<3>(entry), dst);
+        dst = EmitMV(entry.ret(), dst);
       }
       const std::size_t finally_jump = CurrentSize();
-      Emit<OP::JUMP_SUBROUTINE>(0, std::get<2>(entry), std::get<4>(entry));
-      std::get<1>(entry)->push_back(finally_jump);
-    } else {  // type == WITH
-      assert(type == WITH);
+      Emit<OP::JUMP_SUBROUTINE>(0, entry.jmp(), entry.flag());
+      entry.holes()->push_back(finally_jump);
+    } else if (entry.type() == Level::WITH) {
       Emit<OP::POP_ENV>();
     }
   }
@@ -571,11 +569,11 @@ class Compiler::TryTarget : private core::Noncopyable<> {
 
   void EmitJumps(std::size_t finally_target) {
     assert(has_finally_);
-    const LevelStack& stack = compiler_->level_stack();
-    const LevelEntry& entry = stack.back();
-    assert(std::get<0>(entry) == FINALLY);
-    assert(std::get<1>(entry) == &vec_);
-    const std::vector<std::size_t>* vec = std::get<1>(entry);
+    const Level::Stack& stack = compiler_->level_stack();
+    const Level& entry = stack.back();
+    assert(entry.type() == FINALLY);
+    assert(entry.holes() == &vec_);
+    const std::vector<std::size_t>* vec = entry.holes();
     for (std::vector<std::size_t>::const_iterator it = vec->begin(),
          last = vec->end(); it != last; ++it) {
       compiler_->EmitJump(finally_target, *it);
@@ -601,15 +599,16 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     jmp = registers_.Acquire();
     ret = registers_.Acquire();
     flag = registers_.Acquire();
-    std::get<2>(level_stack_.back()) = jmp;
-    std::get<3>(level_stack_.back()) = ret;
-    std::get<4>(level_stack_.back()) = flag;
+    Level& level = level_stack_.back();
+    level.set_jmp(jmp);
+    level.set_ret(ret);
+    level.set_flag(flag);
   }
   EmitStatement(stmt->body());
   if (has_finally) {
     const std::size_t finally_jump = CurrentSize();
     Emit<OP::JUMP_SUBROUTINE>(0, jmp, flag);
-    std::get<1>(level_stack_.back())->push_back(finally_jump);
+    level_stack_.back().holes()->push_back(finally_jump);
   }
   const std::size_t label = CurrentSize();
   Emit<OP::JUMP_BY>(0);
@@ -649,7 +648,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     if (has_finally) {
       const std::size_t finally_jump = CurrentSize();
       Emit<OP::JUMP_SUBROUTINE>(0, jmp, flag);
-      std::get<1>(level_stack_.back())->push_back(finally_jump);
+      level_stack_.back().holes()->push_back(finally_jump);
     }
     catch_return_label_index = CurrentSize();
     Emit<OP::JUMP_BY>(0);
