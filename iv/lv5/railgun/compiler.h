@@ -39,10 +39,25 @@ namespace railgun {
 
 class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
  public:
-  typedef std::tuple<uint16_t,
-                     std::vector<std::size_t>*,
-                     std::vector<std::size_t>*> JumpEntry;
-  typedef std::unordered_map<const BreakableStatement*, JumpEntry> JumpTable;
+
+  class Jump {
+   public:
+    typedef std::unordered_map<const BreakableStatement*, Jump> Table;
+    typedef std::vector<std::size_t> Targets;
+    Jump(uint32_t level, Targets* breaks, Targets* continues)
+      : level_(level),
+        breaks_(breaks),
+        continues_(continues) {
+    }
+    uint32_t level() const { return level_; }
+    Targets* breaks() const { return breaks_; }
+    Targets* continues() const { return continues_; }
+   private:
+    uint32_t level_;
+    Targets* breaks_;
+    Targets* continues_;
+  };
+
   typedef std::tuple<Code*,
                      const FunctionLiteral*,
                      std::shared_ptr<VariableScope> > CodeInfo;
@@ -58,7 +73,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     typedef std::vector<Level> Stack;
 
-    Level(Type type, std::vector<std::size_t>* holes)
+    Level(Type type, Jump::Targets* holes)
       : type_(type),
         holes_(holes),
         jmp_(),
@@ -68,7 +83,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     Type type() const { return type_; }
 
-    std::vector<std::size_t>* holes() const { return holes_; }
+    Jump::Targets* holes() const { return holes_; }
 
     RegisterID jmp() const { return jmp_; }
     void set_jmp(RegisterID jmp) {
@@ -87,7 +102,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
    private:
     Type type_;
-    std::vector<std::size_t>* holes_;
+    Jump::Targets* holes_;
     RegisterID jmp_;
     RegisterID ret_;
     RegisterID flag_;
@@ -879,33 +894,23 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void RegisterJumpTarget(const BreakableStatement* stmt,
-                          std::vector<std::size_t>* breaks) {
+                          Jump::Targets* breaks) {
     jump_table_.insert(
-        std::make_pair(
-            stmt,
-            std::make_tuple(
-                CurrentLevel(),
-                breaks,
-                static_cast<std::vector<std::size_t>*>(NULL))));
+        std::make_pair(stmt, Jump(CurrentLevel(), breaks, NULL)));
   }
 
   void RegisterJumpTarget(const IterationStatement* stmt,
-                          std::vector<std::size_t>* breaks,
-                          std::vector<std::size_t>* continues) {
+                          Jump::Targets* breaks,
+                          Jump::Targets* continues) {
     jump_table_.insert(
-        std::make_pair(
-            stmt,
-            std::make_tuple(
-                CurrentLevel(),
-                breaks,
-                continues)));
+        std::make_pair(stmt, Jump(CurrentLevel(), breaks, continues)));
   }
 
   void UnRegisterJumpTarget(const BreakableStatement* stmt) {
     jump_table_.erase(stmt);
   }
 
-  void PushLevelFinally(std::vector<std::size_t>* vec) {
+  void PushLevelFinally(Jump::Targets* vec) {
     level_stack_.push_back(Level(Level::FINALLY, vec));
   }
 
@@ -930,7 +935,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   Code::Data* data_;
   JSScript* script_;
   CodeInfoStack code_info_stack_;
-  JumpTable jump_table_;
+  Jump::Table jump_table_;
   Level::Stack level_stack_;
   Registers registers_;
   ThunkList thunklist_;

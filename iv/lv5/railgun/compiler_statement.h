@@ -20,7 +20,7 @@ class Compiler::BreakTarget : private core::Noncopyable<> {
   }
 
   void EmitJumps(std::size_t break_target) {
-    for (std::vector<std::size_t>::const_iterator it = breaks_.begin(),
+    for (Jump::Targets::const_iterator it = breaks_.begin(),
          last = breaks_.end(); it != last; ++it) {
       compiler_->EmitJump(break_target, *it);
     }
@@ -34,7 +34,7 @@ class Compiler::BreakTarget : private core::Noncopyable<> {
 
   Compiler* compiler_;
   const BreakableStatement* stmt_;
-  std::vector<std::size_t> breaks_;
+  Jump::Targets breaks_;
 };
 
 inline void Compiler::Visit(const Block* block) {
@@ -165,14 +165,14 @@ class Compiler::ContinueTarget : protected BreakTarget {
   void EmitJumps(std::size_t break_target,
                  std::size_t continue_target) {
     BreakTarget::EmitJumps(break_target);
-    for (std::vector<std::size_t>::const_iterator it = continues_.begin(),
+    for (Jump::Targets::const_iterator it = continues_.begin(),
          last = continues_.end(); it != last; ++it) {
       compiler_->EmitJump(continue_target, *it);
     }
   }
 
  private:
-  std::vector<std::size_t> continues_;
+  Jump::Targets continues_;
 };
 
 inline void Compiler::Visit(const DoWhileStatement* stmt) {
@@ -409,11 +409,13 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
 }
 
 inline void Compiler::Visit(const ContinueStatement* stmt) {
-  const JumpEntry& entry = jump_table_[stmt->target()];
-  EmitUnrollingLevel(CurrentLevel(), std::get<0>(entry));
+  const Jump::Table::const_iterator it = jump_table_.find(stmt->target());
+  assert(it != jump_table_.end());
+  const Jump& entry = it->second;
+  EmitUnrollingLevel(CurrentLevel(), entry.level());
   const std::size_t arg_index = CurrentSize();
   Emit<OP::JUMP_BY>(0);
-  std::get<2>(entry)->push_back(arg_index);
+  entry.continues()->push_back(arg_index);
   continuation_status_.JumpTo(stmt->target());
 }
 
@@ -421,11 +423,13 @@ inline void Compiler::Visit(const BreakStatement* stmt) {
   if (!stmt->target() && !stmt->label().IsDummy()) {
     // through
   } else {
-    const JumpEntry& entry = jump_table_[stmt->target()];
-    EmitUnrollingLevel(CurrentLevel(), std::get<0>(entry));
+    const Jump::Table::const_iterator it = jump_table_.find(stmt->target());
+    assert(it != jump_table_.end());
+    const Jump& entry = it->second;
+    EmitUnrollingLevel(CurrentLevel(), entry.level());
     const std::size_t arg_index = CurrentSize();
     Emit<OP::JUMP_BY>(0);  // dummy
-    std::get<1>(entry)->push_back(arg_index);
+    entry.breaks()->push_back(arg_index);
   }
   continuation_status_.JumpTo(stmt->target());
 }
@@ -573,8 +577,8 @@ class Compiler::TryTarget : private core::Noncopyable<> {
     const Level& entry = stack.back();
     assert(entry.type() == FINALLY);
     assert(entry.holes() == &vec_);
-    const std::vector<std::size_t>* vec = entry.holes();
-    for (std::vector<std::size_t>::const_iterator it = vec->begin(),
+    const Jump::Targets* vec = entry.holes();
+    for (Jump::Targets::const_iterator it = vec->begin(),
          last = vec->end(); it != last; ++it) {
       compiler_->EmitJump(finally_target, *it);
     }
@@ -584,7 +588,7 @@ class Compiler::TryTarget : private core::Noncopyable<> {
  private:
   Compiler* compiler_;
   bool has_finally_;
-  std::vector<std::size_t> vec_;
+  Jump::Targets vec_;
 };
 
 inline void Compiler::Visit(const TryStatement* stmt) {
