@@ -892,29 +892,29 @@ do {\
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<-1>(src.int32())) {
-          REG(instr[1].i32) = src;
-          REG(instr[2].i32) = src.int32() - 1;
+          REG(instr[1].i16[0]) = src;
+          REG(instr[1].i16[1]) = src.int32() - 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].i32) = res;
-          REG(instr[2].i32) = res - 1;
+          REG(instr[1].i16[0]) = res;
+          REG(instr[1].i16[1]) = res - 1;
         }
         DISPATCH(POSTFIX_DECREMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT) {
-        // opcode | dst | src
-        const JSVal src = REG(instr[2].i32);
+        // opcode | (dst | src)
+        const JSVal src = REG(instr[1].i16[1]);
         if (src.IsInt32() && detail::IsIncrementOverflowSafe<+1>(src.int32())) {
-          REG(instr[1].i32) = src;
-          REG(instr[2].i32) = src.int32() + 1;
+          REG(instr[1].i16[0]) = src;
+          REG(instr[1].i16[1]) = src.int32() + 1;
         } else {
           const double res = src.ToNumber(ctx_, ERR);
-          REG(instr[1].i32) = res;
-          REG(instr[2].i32) = res + 1;
+          REG(instr[1].i16[0]) = res;
+          REG(instr[1].i16[1]) = res + 1;
         }
         DISPATCH(POSTFIX_INCREMENT);
       }

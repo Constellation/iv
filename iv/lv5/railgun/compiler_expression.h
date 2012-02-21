@@ -468,7 +468,8 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       }
       thunklist_.Spill(local);
       EmitUnsafe((token == Token::TK_INC) ?
-                 OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT, dst_, local);
+                 OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
+                 Instruction::Reg2(dst_, local));
       if (code_->strict() && info.immutable()) {
         Emit<OP::RAISE_IMMUTABLE>(index);
       }
