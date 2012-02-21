@@ -28,6 +28,13 @@ struct Instruction {
     ptrdiff_t diff;
     int16_t i16[4];
     uint16_t u16[4];
+    struct {
+      union {
+        uint16_t u16[2];
+        int16_t i16[2];
+      } v16;
+      uint32_t u32;
+    } ssw;
     Map* map;
     Chain* chain;
   };
