@@ -29,10 +29,7 @@ struct Instruction {
     int16_t i16[4];
     uint16_t u16[4];
     struct {
-      union {
-        uint16_t u16;
-        int16_t i16;
-      } v16[2];
+      int16_t i16[2];
       uint32_t u32;
     } ssw;
     Map* map;
@@ -69,15 +66,15 @@ struct Instruction {
 
   static Instruction SW(RegisterID a, uint32_t u32) {
     Instruction instr(0u);
-    instr.ssw.v16[0].i16 = static_cast<int16_t>(a->register_offset());
+    instr.ssw.i16[0] = static_cast<int16_t>(a->register_offset());
     instr.ssw.u32 = u32;
     return instr;
   }
 
   static Instruction SSW(RegisterID a, RegisterID b, uint32_t u32) {
     Instruction instr(0u);
-    instr.ssw.v16[0].i16 = static_cast<int16_t>(a->register_offset());
-    instr.ssw.v16[1].i16 = static_cast<int16_t>(b->register_offset());
+    instr.ssw.i16[0] = static_cast<int16_t>(a->register_offset());
+    instr.ssw.i16[1] = static_cast<int16_t>(b->register_offset());
     instr.ssw.u32 = u32;
     return instr;
   }
