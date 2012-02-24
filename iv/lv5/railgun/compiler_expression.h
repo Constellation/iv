@@ -27,9 +27,10 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
     case LookupInfo::HEAP: {
       thunklist_.Spill(dst);
       EmitUnsafe(OP::ToHeap(op),
-                 dst,
-                 index, info.heap_location(),
-                 current_variable_scope_->scope_nest_count() - info.scope());
+                 Instruction::SW(dst, index),
+                 Instruction::UInt32(
+                     info.heap_location(),
+                     current_variable_scope_->scope_nest_count() - info.scope()));
       return dst;
     }
     case LookupInfo::GLOBAL: {

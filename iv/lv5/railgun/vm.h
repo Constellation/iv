@@ -431,12 +431,12 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_HEAP) {
-        // opcode | dst | index | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | index) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.LoadHeap(frame->lexical_env(),
-                                name, strict, instr[3].u32[0], instr[4].u32[0], ERR);
-        REG(instr[1].i32[0]) = res;
+                                name, strict, instr[2].u32[0], instr[2].u32[1], ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(LOAD_HEAP);
       }
 
@@ -596,12 +596,12 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_HEAP) {
-        // opcode | src | name | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
-        const JSVal src = REG(instr[1].i32[0]);
+        // opcode | (src | name) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
+        const JSVal src = REG(instr[1].ssw.v16[0].i16);
         operation_.StoreHeap(frame->lexical_env(),
                              name, src, strict,
-                             instr[3].u32[0], instr[4].u32[0], ERR);
+                             instr[2].u32[0], instr[2].u32[1], ERR);
         DISPATCH(STORE_HEAP);
       }
 
@@ -668,8 +668,8 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_HEAP) {
-        // opcode | dst | name | offset | nest
-        REG(instr[1].i32[0]) = JSFalse;
+        // opcode | (dst | name) | (offset | nest)
+        REG(instr[1].ssw.v16[0].i16) = JSFalse;
         DISPATCH(DELETE_HEAP);
       }
 
@@ -845,13 +845,13 @@ do {\
       }
 
       DEFINE_OPCODE(TYPEOF_HEAP) {
-        // opcode | dst | name | offset | nest
+        // opcode | (dst | name) | (offset | nest)
         JSDeclEnv* decl =
-            operation_.GetHeapEnv(frame->lexical_env(), instr[4].u32[0]);
+            operation_.GetHeapEnv(frame->lexical_env(), instr[2].u32[1]);
         assert(decl);
-        const JSVal res = decl->GetByOffset(instr[3].u32[0], strict, ERR);
-        REG(instr[1].i32[0]) = res;
-        REG(instr[1].i32[0]) = res.TypeOf(ctx_);
+        const JSVal res = decl->GetByOffset(instr[2].u32[0], strict, ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
+        REG(instr[1].ssw.v16[0].i16) = res.TypeOf(ctx_);
         DISPATCH(TYPEOF_HEAP);
       }
 
@@ -963,46 +963,46 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_HEAP) {
-        // opcode | dst | name | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementHeap<-1, 1>(
                 frame->lexical_env(), name, strict,
-                instr[3].u32[0], instr[4].u32[0], ERR);
-        REG(instr[1].i32[0]) = res;
+                instr[2].u32[0], instr[2].u32[1], ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(DECREMENT_HEAP);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
-        // opcode | dst | name | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementHeap<-1, 0>(
                 frame->lexical_env(), name, strict,
-                instr[3].u32[0], instr[4].u32[0], ERR);
-        REG(instr[1].i32[0]) = res;
+                instr[2].u32[0], instr[2].u32[1], ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_DECREMENT_HEAP);
       }
 
       DEFINE_OPCODE(INCREMENT_HEAP) {
-        // opcode | dst | name | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementHeap<1, 1>(
                 frame->lexical_env(), name, strict,
-                instr[3].u32[0], instr[4].u32[0], ERR);
-        REG(instr[1].i32[0]) = res;
+                instr[2].u32[0], instr[2].u32[1], ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(INCREMENT_HEAP);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
-        // opcode | dst | name | offset | nest
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | (offset | nest)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementHeap<1, 0>(
                 frame->lexical_env(), name, strict,
-                instr[3].u32[0], instr[4].u32[0], ERR);
-        REG(instr[1].i32[0]) = res;
+                instr[2].u32[0], instr[2].u32[1], ERR);
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
 
