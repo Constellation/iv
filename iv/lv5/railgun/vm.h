@@ -1550,17 +1550,17 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_OBJECT_DATA) {
-        // opcode | obj | item | offset | merged
-        assert(REG(instr[1].i32[0]).IsObject());
-        JSObject* const obj = REG(instr[1].i32[0]).object();
-        const JSVal value = REG(instr[2].i32[0]);
-        if (instr[4].u32[0]) {
-          obj->GetSlot(instr[3].u32[0]) =
+        // opcode | (obj | item) | (offset | merged)
+        assert(REG(instr[1].i16[0]).IsObject());
+        JSObject* const obj = REG(instr[1].i16[0]).object();
+        const JSVal value = REG(instr[1].i16[1]);
+        if (instr[2].u32[1]) {
+          obj->GetSlot(instr[2].u32[0]) =
               PropertyDescriptor::Merge(
                   DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
-              obj->GetSlot(instr[3].u32[0]));
+              obj->GetSlot(instr[2].u32[0]));
         } else {
-          obj->GetSlot(instr[3].u32[0]) =
+          obj->GetSlot(instr[2].u32[0]) =
               DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C);
         }
         assert(!*e);
@@ -1568,17 +1568,17 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_OBJECT_GET) {
-        // opcode | obj | item | offset | merged
-        JSObject* const obj = REG(instr[1].i32[0]).object();
-        const JSVal value = REG(instr[2].i32[0]);
-        if (instr[4].u32[0]) {
-          obj->GetSlot(instr[3].u32[0]) =
+        // opcode | (obj | item) | (offset | merged)
+        JSObject* const obj = REG(instr[1].i16[0]).object();
+        const JSVal value = REG(instr[1].i16[1]);
+        if (instr[2].u32[1]) {
+          obj->GetSlot(instr[2].u32[0]) =
               PropertyDescriptor::Merge(
                   AccessorDescriptor(value.object(), NULL,
                                      ATTR::E | ATTR::C | ATTR::UNDEF_SETTER),
-              obj->GetSlot(instr[3].u32[0]));
+              obj->GetSlot(instr[2].u32[0]));
         } else {
-          obj->GetSlot(instr[3].u32[0]) =
+          obj->GetSlot(instr[2].u32[0]) =
               AccessorDescriptor(value.object(), NULL,
                                  ATTR::E | ATTR::C | ATTR::UNDEF_SETTER);
         }
@@ -1587,17 +1587,17 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_OBJECT_SET) {
-        // opcode | obj | item | offset | merged
-        JSObject* const obj = REG(instr[1].i32[0]).object();
-        const JSVal value = REG(instr[2].i32[0]);
-        if (instr[4].u32[0]) {
-          obj->GetSlot(instr[3].u32[0]) =
+        // opcode | (obj | item) | (offset | merged)
+        JSObject* const obj = REG(instr[1].i16[0]).object();
+        const JSVal value = REG(instr[1].i16[1]);
+        if (instr[2].u32[1]) {
+          obj->GetSlot(instr[2].u32[0]) =
               PropertyDescriptor::Merge(
                   AccessorDescriptor(NULL, value.object(),
                                      ATTR::E | ATTR::C | ATTR::UNDEF_GETTER),
-              obj->GetSlot(instr[3].u32[0]));
+              obj->GetSlot(instr[2].u32[0]));
         } else {
-          obj->GetSlot(instr[3].u32[0]) =
+          obj->GetSlot(instr[2].u32[0]) =
               AccessorDescriptor(NULL, value.object(),
                                  ATTR::E | ATTR::C | ATTR::UNDEF_GETTER);
         }

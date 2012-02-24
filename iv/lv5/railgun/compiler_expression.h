@@ -717,11 +717,11 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
 
     RegisterID item = EmitExpression(get<2>(prop));
     if (type == ObjectLiteral::DATA) {
-      Emit<OP::STORE_OBJECT_DATA>(obj, item, position, merged);
+      Emit<OP::STORE_OBJECT_DATA>(Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
     } else if (type == ObjectLiteral::GET) {
-      Emit<OP::STORE_OBJECT_GET>(obj, item, position, merged);
+      Emit<OP::STORE_OBJECT_GET>(Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
     } else {
-      Emit<OP::STORE_OBJECT_SET>(obj, item, position, merged);
+      Emit<OP::STORE_OBJECT_SET>(Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
     }
   }
   Map* map = Map::NewObjectLiteralMap(ctx_, slots.begin(), slots.end());
