@@ -1495,8 +1495,8 @@ do {\
 
       DEFINE_OPCODE(TRY_CATCH_SETUP) {
         // opcode | (error | name)
-        const Symbol name = frame->GetName(instr[1].ssw.v16[0].i16);
-        const JSVal error = REG(instr[1].ssw.u32);
+        const JSVal error = REG(instr[1].ssw.v16[0].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         JSEnv* const catch_env =
             JSStaticEnv::New(ctx_, frame->lexical_env(), name, error);
         frame->set_lexical_env(catch_env);
