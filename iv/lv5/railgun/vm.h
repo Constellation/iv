@@ -1538,11 +1538,11 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_REGEXP) {
-        // opcode | dst | const
-        REG(instr[1].i32) = JSRegExp::New(
+        // opcode | (dst | const)
+        REG(instr[1].ssw.v16[0].i16) = JSRegExp::New(
             ctx_,
             static_cast<JSRegExp*>(
-                frame->GetConstant(instr[2].u32).object()));
+                frame->GetConstant(instr[1].ssw.u32).object()));
         DISPATCH(LOAD_REGEXP);
       }
 

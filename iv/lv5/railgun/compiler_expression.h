@@ -598,7 +598,7 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
   const DestGuard dest_guard(this);
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
-  Emit<OP::LOAD_REGEXP>(dst_, code_->constants_.size());
+  Emit<OP::LOAD_REGEXP>(Instruction::SSW(dst_, RegisterID(), code_->constants_.size()));
   code_->constants_.push_back(
       JSRegExp::New(ctx_, lit->value(), lit->regexp()));
 }
