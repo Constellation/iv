@@ -78,7 +78,9 @@ JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
       func->code(),
       func->scope(),
       func,
-      NULL, args->size() + 1, args->IsConstructorCalled());
+      NULL,
+      0,
+      args->size() + 1, args->IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
@@ -1604,10 +1606,10 @@ do {\
       }
 
       DEFINE_OPCODE(CALL) {
-        // opcode | dst | callee | offset | argc_with_this
-        const JSVal callee = REG(instr[2].i32);
-        JSVal* offset = &REG(instr[3].i32);
-        const int argc_with_this = static_cast<int>(instr[4].u32);
+        // opcode | (dst | callee | offset) | argc_with_this
+        const JSVal callee = REG(instr[1].i16[1]);
+        JSVal* offset = &REG(instr[1].i16[2]);
+        const int argc_with_this = static_cast<int>(instr[2].u32);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
@@ -1618,7 +1620,7 @@ do {\
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
           if (code->empty()) {
-            REG(instr[1].i32) = JSUndefined;
+            REG(instr[1].i16[0]) = JSUndefined;
             DISPATCH(CALL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
@@ -1627,7 +1629,9 @@ do {\
               code,
               vm_func->scope(),
               func,
-              instr, argc_with_this, false);
+              instr,
+              instr[1].i16[0],
+              argc_with_this, false);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
             DISPATCH_ERROR();
@@ -1642,15 +1646,15 @@ do {\
         // Native Function, so use Invoke
         const JSVal res =
             operation_.Invoke(func, offset, argc_with_this, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(CALL);
       }
 
       DEFINE_OPCODE(CONSTRUCT) {
-        // opcode | dst | callee | offset | argc_with_this
-        const JSVal callee = REG(instr[2].i32);
-        JSVal* offset = &REG(instr[3].i32);
-        const int argc_with_this = static_cast<int>(instr[4].u32);
+        // opcode | (dst | callee | offset) | argc_with_this
+        const JSVal callee = REG(instr[1].i16[1]);
+        JSVal* offset = &REG(instr[1].i16[2]);
+        const int argc_with_this = static_cast<int>(instr[2].u32);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
@@ -1666,7 +1670,9 @@ do {\
               code,
               vm_func->scope(),
               func,
-              instr, argc_with_this, true);
+              instr,
+              instr[1].i16[0],
+              argc_with_this, true);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
             DISPATCH_ERROR();
@@ -1687,16 +1693,16 @@ do {\
         // Native Function, so use Invoke
         const JSVal res =
             operation_.Construct(func, offset, argc_with_this, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(CONSTRUCT);
       }
 
       DEFINE_OPCODE(EVAL) {
-        // opcode | dst | callee | offset | argc_with_this
+        // opcode | (dst | callee | offset) | argc_with_this
         // maybe direct call to eval
-        const JSVal callee = REG(instr[2].i32);
-        JSVal* offset = &REG(instr[3].i32);
-        const int argc_with_this = static_cast<int>(instr[4].u32);
+        const JSVal callee = REG(instr[1].i16[1]);
+        JSVal* offset = &REG(instr[1].i16[2]);
+        const int argc_with_this = static_cast<int>(instr[2].u32);
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
@@ -1707,7 +1713,7 @@ do {\
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
           if (code->empty()) {
-            REG(instr[1].i32) = JSUndefined;
+            REG(instr[1].i16[0]) = JSUndefined;
             DISPATCH(EVAL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
@@ -1716,7 +1722,9 @@ do {\
               code,
               vm_func->scope(),
               func,
-              instr, argc_with_this, false);
+              instr,
+              instr[1].i16[0],
+              argc_with_this, false);
           if (!new_frame) {
             e->Report(Error::Range, "maximum call stack size exceeded");
             DISPATCH_ERROR();
@@ -1732,17 +1740,17 @@ do {\
         const JSVal res =
             operation_.InvokeMaybeEval(func,
                                        offset, argc_with_this, frame, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(EVAL);
       }
 
       DEFINE_OPCODE(PREPARE_DYNAMIC_CALL) {
         // opcode | (dst | basedst | name)
-        const Symbol name = frame->GetName(instr[3].u32);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (JSEnv* target_env = operation_.GetEnv(frame->lexical_env(), name)) {
           const JSVal res = target_env->GetBindingValue(ctx_, name, false, ERR);
-          REG(instr[1].i32) = res;
-          REG(instr[2].i32) = target_env->ImplicitThisValue();
+          REG(instr[1].ssw.v16[0].i16) = res;
+          REG(instr[1].ssw.v16[1].i16) = target_env->ImplicitThisValue();
         } else {
           operation_.RaiseReferenceError(name, e);
           DISPATCH_ERROR();

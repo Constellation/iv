@@ -895,12 +895,10 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   dst = Dest(dst, site.callee());
   thunklist_.Spill(dst);
   if (direct_call_to_eval) {
-    Emit<OP::EVAL>(dst, site.callee(),
-                   site.GetFirstPosition(),
+    Emit<OP::EVAL>(Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
                    static_cast<uint32_t>(site.argc_with_this()));
   } else {
-    Emit<op>(dst, site.callee(),
-             site.GetFirstPosition(),
+    Emit<op>(Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
              static_cast<uint32_t>(site.argc_with_this()));
   }
   assert(registers_.IsLiveTop(site.base()->register_offset()));
