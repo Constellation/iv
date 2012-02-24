@@ -1505,24 +1505,24 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_ARRAY) {
-        // opcode | dst | size
-        REG(instr[1].i32[0]) = JSArray::ReservedNew(ctx_, instr[2].u32[0]);
+        // opcode | (dst | size)
+        REG(instr[1].ssw.v16[0].i16) = JSArray::ReservedNew(ctx_, instr[1].ssw.u32);
         DISPATCH(LOAD_ARRAY);
       }
 
       DEFINE_OPCODE(INIT_VECTOR_ARRAY_ELEMENT) {
-        // opcode | ary | reg | index | size
-        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32[0]).object());
-        const JSVal* reg = &REG(instr[2].i32[0]);
-        ary->SetToVector(instr[3].u32[0], reg, reg + instr[4].u32[0]);
+        // opcode | (ary | reg) | (index | size)
+        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i16[0]).object());
+        const JSVal* reg = &REG(instr[1].i16[1]);
+        ary->SetToVector(instr[2].u32[0], reg, reg + instr[2].u32[1]);
         DISPATCH(INIT_VECTOR_ARRAY_ELEMENT);
       }
 
       DEFINE_OPCODE(INIT_SPARSE_ARRAY_ELEMENT) {
-        // opcode | ary | reg | index | size
-        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i32[0]).object());
-        const JSVal* reg = &REG(instr[2].i32[0]);
-        ary->SetToMap(instr[3].u32[0], reg, reg + instr[4].u32[0]);
+        // opcode | (ary | reg) | (index | size)
+        JSArray* ary = static_cast<JSArray*>(REG(instr[1].i16[0]).object());
+        const JSVal* reg = &REG(instr[1].i16[0]);
+        ary->SetToMap(instr[2].u32[0], reg, reg + instr[2].u32[1]);
         DISPATCH(INIT_SPARSE_ARRAY_ELEMENT);
       }
 

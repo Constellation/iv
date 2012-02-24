@@ -631,7 +631,7 @@ class Compiler::ArraySite {
 
   void Emit() {
     typedef ArrayLiteral::MaybeExpressions Items;
-    compiler_->Emit<OP::LOAD_ARRAY>(ary_, literal_->items().size());
+    compiler_->Emit<OP::LOAD_ARRAY>(Instruction::SW(ary_, literal_->items().size()));
     Items::const_iterator it = literal_->items().begin();
     const Items::const_iterator last = literal_->items().end();
     const uint32_t size = literal_->items().size();
@@ -665,11 +665,13 @@ class Compiler::ArraySite {
   void EmitElement(uint32_t idx, uint32_t size) const {
     assert(!elements_.empty());
     if ((idx + size) > JSArray::kMaxVectorSize) {
-      compiler_->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(ary_, elements_.front(),
-                                                     idx, size);
+      compiler_->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(
+          Instruction::Reg2(ary_, elements_.front()),
+          Instruction::UInt32(idx, size));
     } else {
-      compiler_->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(ary_, elements_.front(),
-                                                     idx, size);
+      compiler_->Emit<OP::INIT_VECTOR_ARRAY_ELEMENT>(
+          Instruction::Reg2(ary_, elements_.front()),
+          Instruction::UInt32(idx, size));
     }
   }
   const ArrayLiteral* literal_;
