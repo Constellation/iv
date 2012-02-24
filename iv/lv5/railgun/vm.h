@@ -434,8 +434,9 @@ do {\
         // opcode | (dst | index) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
-            operation_.LoadHeap(frame->lexical_env(),
-                                name, strict, instr[2].u32[0], instr[2].u32[1], ERR);
+            operation_.LoadHeap(
+                frame->lexical_env(),
+                name, strict, instr[2].u32[0], instr[2].u32[1], ERR);
         REG(instr[1].ssw.i16[0]) = res;
         DISPATCH(LOAD_HEAP);
       }
@@ -659,7 +660,8 @@ do {\
         // opcode | (dst | name)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), name)) {
-          REG(instr[1].ssw.i16[0]) = JSVal::Bool(current->DeleteBinding(ctx_, name));
+          REG(instr[1].ssw.i16[0]) =
+              JSVal::Bool(current->DeleteBinding(ctx_, name));
         } else {
           // not found -> unresolvable reference
           REG(instr[1].ssw.i16[0]) = JSTrue;
