@@ -40,7 +40,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
     }
     case LookupInfo::LOOKUP: {
       thunklist_.Spill(dst);
-      EmitUnsafe(op, dst, index);
+      EmitUnsafe(op, Instruction::SW(dst, index));
       return dst;
     }
     case LookupInfo::UNUSED: {

@@ -422,11 +422,11 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_NAME) {
-        // opcode | dst | index
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | index)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.LoadName(frame->lexical_env(), name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(LOAD_NAME);
       }
 
@@ -588,9 +588,9 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_NAME) {
-        // opcode | src | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
-        const JSVal src = REG(instr[1].i32[0]);
+        // opcode | (src | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
+        const JSVal src = REG(instr[1].ssw.v16[0].i16);
         operation_.StoreName(frame->lexical_env(), name, src, strict, ERR);
         DISPATCH(STORE_NAME);
       }
@@ -656,13 +656,13 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), name)) {
-          REG(instr[1].i32[0]) = JSVal::Bool(current->DeleteBinding(ctx_, name));
+          REG(instr[1].ssw.v16[0].i16) = JSVal::Bool(current->DeleteBinding(ctx_, name));
         } else {
           // not found -> unresolvable reference
-          REG(instr[1].i32[0]) = JSTrue;
+          REG(instr[1].ssw.v16[0].i16) = JSTrue;
         }
         DISPATCH(DELETE_NAME);
       }
@@ -831,15 +831,15 @@ do {\
       }
 
       DEFINE_OPCODE(TYPEOF_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (JSEnv* current = operation_.GetEnv(frame->lexical_env(), name)) {
           const JSVal res = current->GetBindingValue(ctx_, name, strict, ERR);
-          REG(instr[1].i32[0]) = res;
-          REG(instr[1].i32[0]) = res.TypeOf(ctx_);
+          REG(instr[1].ssw.v16[0].i16) = res;
+          REG(instr[1].ssw.v16[0].i16) = res.TypeOf(ctx_);
         } else {
           // unresolvable reference
-          REG(instr[1].i32[0]) = ctx_->global_data()->string_undefined();
+          REG(instr[1].ssw.v16[0].i16) = ctx_->global_data()->string_undefined();
         }
         DISPATCH(TYPEOF_NAME);
       }
@@ -923,42 +923,42 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementName<-1, 1>(frame->lexical_env(),
                                             name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(DECREMENT_NAME);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementName<-1, 0>(frame->lexical_env(),
                                             name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_DECREMENT_NAME);
       }
 
       DEFINE_OPCODE(INCREMENT_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementName<1, 1>(frame->lexical_env(),
                                            name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(INCREMENT_NAME);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_NAME) {
-        // opcode | dst | name
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name)
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementName<1, 0>(frame->lexical_env(),
                                            name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_INCREMENT_NAME);
       }
 

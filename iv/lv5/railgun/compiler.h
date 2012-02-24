@@ -433,7 +433,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         return;
       }
       case LookupInfo::LOOKUP: {
-        Emit<OP::STORE_NAME>(src, index);
+        Emit<OP::STORE_NAME>(Instruction::SW(src, index));
         return;
       }
       case LookupInfo::UNUSED: {
@@ -833,7 +833,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         return;
       }
       case LookupInfo::LOOKUP: {
-        Emit<OP::STORE_NAME>(src, index);
+        Emit<OP::STORE_NAME>(Instruction::SW(src, index));
         return;
       }
       default: {
