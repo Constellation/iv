@@ -647,7 +647,7 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_PROP_GENERIC) {
-        // opcode | base | src | index | nop | nop
+        // opcode | (base | src | index) | nop | nop
         const JSVal base = REG(instr[1].ssw.v16[0].i16);
         const Symbol name= frame->GetName(instr[1].ssw.u32);
         const JSVal src = REG(instr[1].ssw.v16[1].i16);
