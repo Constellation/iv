@@ -37,30 +37,30 @@ inline GC_ms_entry* CoreData::MarkChildren(GC_word* top,
               (*data_)[n + 2].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::STORE_PROP>(instr)) {
-          // opcode | base | index | src | nop | nop | nop | nop
+          // opcode | (base | src | index) | nop | nop
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 4].map,
+              (*data_)[n + 2].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr)) {
-          // opcode | dst | base | name | map | offset | nop | nop
+          // opcode | (dst | base | name) | map | offset | nop
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 4].map,
+              (*data_)[n + 2].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr)) {
-          // opcode | dst | base | name | map | map | offset | nop
+          // opcode | (dst | base | name) | map | map | offset
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 4].map,
+              (*data_)[n + 2].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 5].map,
+              (*data_)[n + 3].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr)) {
-          // opcode | dst | base | name | chain | map | offset | nop
+          // opcode | (dst | base | name) | chain | map | offset
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 4].chain,
+              (*data_)[n + 2].chain,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 5].map,
+              (*data_)[n + 3].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         }
         n += instr.GetLength();
@@ -89,19 +89,19 @@ inline void CoreData::MarkChildren(radio::Core* core) {
         // opcode | index | map
         core->MarkCell((*data_)[n + 2].map);
       } else if (VM::IsOP<OP::STORE_PROP>(instr)) {
-        // opcode | base | index | src | nop | nop | nop | nop
-        core->MarkCell((*data_)[n + 4].map);
+        // opcode | (base | src | index) | nop | nop
+        core->MarkCell((*data_)[n + 2].map);
       } else if (VM::IsOP<OP::LOAD_PROP_OWN>(instr)) {
-        // opcode | dst | base | name | map | offset | nop | nop
-        core->MarkCell((*data_)[n + 4].map);
+        // opcode | (dst | base | name) | map | offset | nop
+        core->MarkCell((*data_)[n + 2].map);
       } else if (VM::IsOP<OP::LOAD_PROP_PROTO>(instr)) {
-        // opcode | dst | base | name | map | map | offset | nop
-        core->MarkCell((*data_)[n + 4].map);
-        core->MarkCell((*data_)[n + 5].map);
+        // opcode | (dst | base | name) | map | map | offset
+        core->MarkCell((*data_)[n + 2].map);
+        core->MarkCell((*data_)[n + 3].map);
       } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr)) {
-        // opcode | dst | base | name | chain | map | offset | nop
-        // core->MarkCell((*data_)[n + 4].chain);
-        core->MarkCell((*data_)[n + 5].map);
+        // opcode | (dst | base | name) | chain | map | offset
+        // core->MarkCell((*data_)[n + 2].chain);
+        core->MarkCell((*data_)[n + 3].map);
       }
       n += instr.GetLength();
     }

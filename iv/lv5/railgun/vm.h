@@ -461,30 +461,30 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const Symbol name = frame->GetName(instr[3].u32[0]);
-        const JSVal base = REG(instr[2].i32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
         const JSVal res =
             operation_.LoadProp<
               OP::LOAD_PROP_OWN,
               OP::LOAD_PROP_PROTO,
               OP::LOAD_PROP_CHAIN,
               OP::LOAD_PROP_GENERIC>(instr, base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(LOAD_PROP);
       }
 
       DEFINE_OPCODE(LOAD_PROP_OWN) {
-        // opcode | dst | base | name | map | offset | nop
-        const JSVal base = REG(instr[2].i32[0]);
+        // opcode | (dst | base | name) | map | offset | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           if (operation_.GetPrimitiveOwnProperty(base, name, &res)) {
-            REG(instr[1].i32[0]) = res;
+            REG(instr[1].ssw.v16[0].i16) = res;
             DISPATCH(LOAD_PROP_OWN);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -493,33 +493,33 @@ do {\
           obj = base.object();
         }
         assert(obj);
-        if (instr[4].map == obj->map()) {
+        if (instr[2].map == obj->map()) {
           // cache hit
           const JSVal res =
-              obj->GetSlot(instr[5].u32[0]).Get(ctx_, base, ERR);
-          REG(instr[1].i32[0]) = res;
+              obj->GetSlot(instr[3].u32[0]).Get(ctx_, base, ERR);
+          REG(instr[1].ssw.v16[0].i16) = res;
         } else {
           // uncache
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res =
               operation_.LoadProp(base, name, strict, ERR);
-          REG(instr[1].i32[0]) = res;
+          REG(instr[1].ssw.v16[0].i16) = res;
         }
         DISPATCH(LOAD_PROP_OWN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_PROTO) {
-        // opcode | dst | base | name | map | map | offset
-        const JSVal base = REG(instr[2].i32[0]);
+        // opcode | (dst | base | name) | map | map | offset
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           if (operation_.GetPrimitiveOwnProperty(base, name, &res)) {
-            REG(instr[1].i32[0]) = res;
+            REG(instr[1].ssw.v16[0].i16) = res;
             DISPATCH(LOAD_PROP_PROTO);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -528,34 +528,34 @@ do {\
           obj = base.object();
         }
         JSObject* proto = obj->prototype();
-        if (instr[4].map == obj->map() &&
-            proto && instr[5].map == proto->map()) {
+        if (instr[2].map == obj->map() &&
+            proto && instr[3].map == proto->map()) {
           // cache hit
           const JSVal res =
-              proto->GetSlot(instr[6].u32[0]).Get(ctx_, base, ERR);
-          REG(instr[1].i32[0]) = res;
+              proto->GetSlot(instr[4].u32[0]).Get(ctx_, base, ERR);
+          REG(instr[1].ssw.v16[0].i16) = res;
         } else {
           // uncache
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res =
               operation_.LoadProp(base, name, strict, ERR);
-          REG(instr[1].i32[0]) = res;
+          REG(instr[1].ssw.v16[0].i16) = res;
         }
         DISPATCH(LOAD_PROP_PROTO);
       }
 
       DEFINE_OPCODE(LOAD_PROP_CHAIN) {
-        // opcode | dst | base | name | chain | map | offset
-        const JSVal base = REG(instr[2].i32[0]);
+        // opcode | (dst | base | name) | chain | map | offset
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
         base.CheckObjectCoercible(ERR);
         JSObject* obj = NULL;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           if (operation_.GetPrimitiveOwnProperty(base, name, &res)) {
-            REG(instr[1].i32[0]) = res;
+            REG(instr[1].ssw.v16[0].i16) = res;
             DISPATCH(LOAD_PROP_CHAIN);
           } else {
             obj = base.GetPrimitiveProto(ctx_);
@@ -563,27 +563,27 @@ do {\
         } else {
           obj = base.object();
         }
-        if (JSObject* cached = instr[4].chain->Validate(obj, instr[5].map)) {
+        if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
           // cache hit
           const JSVal res =
-              cached->GetSlot(instr[6].u32[0]).Get(ctx_, base, ERR);
-          REG(instr[1].i32[0]) = res;
+              cached->GetSlot(instr[4].u32[0]).Get(ctx_, base, ERR);
+          REG(instr[1].ssw.v16[0].i16) = res;
         } else {
           // uncache
-          const Symbol name = frame->GetName(instr[3].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
           const JSVal res = operation_.LoadProp(base, name, strict, ERR);
-          REG(instr[1].i32[0]) = res;
+          REG(instr[1].ssw.v16[0].i16) = res;
         }
         DISPATCH(LOAD_PROP_CHAIN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_GENERIC) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res = operation_.LoadProp(base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(LOAD_PROP_GENERIC);
       }
 
@@ -637,20 +637,20 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_PROP) {
-        // opcode | base | index | src | nop | nop
-        const JSVal base = REG(instr[1].i32[0]);
-        const Symbol name= frame->GetName(instr[2].u32[0]);
-        const JSVal src = REG(instr[3].i32[0]);
+        // opcode | (base | src | index) | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[0].i16);
+        const Symbol name= frame->GetName(instr[1].ssw.u32);
+        const JSVal src = REG(instr[1].ssw.v16[1].i16);
         operation_.StoreProp(
             base, instr, OP::STORE_PROP_GENERIC, name, src, strict, ERR);
         DISPATCH(STORE_PROP);
       }
 
       DEFINE_OPCODE(STORE_PROP_GENERIC) {
-        // opcode | base | index | src | nop | nop
-        const JSVal base = REG(instr[1].i32[0]);
-        const Symbol name = frame->GetName(instr[2].u32[0]);
-        const JSVal src = REG(instr[3].i32[0]);
+        // opcode | base | src | index | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[0].i16);
+        const Symbol name= frame->GetName(instr[1].ssw.u32);
+        const JSVal src = REG(instr[1].ssw.v16[1].i16);
         operation_.StoreProp(base, name, src, strict, ERR);
         DISPATCH(STORE_PROP_GENERIC);
       }
@@ -711,14 +711,14 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         base.CheckObjectCoercible(ERR);
         JSObject* const obj = base.ToObject(ctx_, ERR);
-        REG(instr[1].i32[0]) = obj;
+        REG(instr[1].ssw.v16[0].i16) = obj;
         const bool res = obj->Delete(ctx_, name, strict, ERR);
-        REG(instr[1].i32[0]) = JSVal::Bool(res);
+        REG(instr[1].ssw.v16[0].i16) = JSVal::Bool(res);
         DISPATCH(DELETE_PROP);
       }
 
@@ -1087,42 +1087,42 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementProp<-1, 1>(base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(DECREMENT_PROP);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementProp<-1, 0>(base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_DECREMENT_PROP);
       }
 
       DEFINE_OPCODE(INCREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementProp<1, 1>(base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(INCREMENT_PROP);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_PROP) {
-        // opcode | dst | base | name | nop | nop | nop
-        const JSVal base = REG(instr[2].i32[0]);
-        const Symbol name = frame->GetName(instr[3].u32[0]);
+        // opcode | (dst | base | name) | nop | nop | nop
+        const JSVal base = REG(instr[1].ssw.v16[1].i16);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementProp<1, 0>(base, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_INCREMENT_PROP);
       }
 

@@ -347,7 +347,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             // IdentifierAccess
             RegisterID base = EmitExpression(ac->target());
             const uint32_t index = SymbolToNameIndex(ac->key());
-            Emit<OP::STORE_PROP>(base, index, tmp, 0, 0);
+            Emit<OP::STORE_PROP>(Instruction::SSW(base, tmp, index), 0, 0);
           } else {
             // IndexAccess
             const IndexAccess* idx = lhs->AsIndexAccess();
@@ -356,7 +356,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             if (sym != symbol::kDummySymbol) {
               RegisterID base = EmitExpression(idx->target());
               const uint32_t index = SymbolToNameIndex(sym);
-              Emit<OP::STORE_PROP>(base, index, tmp, 0, 0);
+              Emit<OP::STORE_PROP>(Instruction::SSW(base, tmp, index), 0, 0);
             } else {
               Thunk base(&thunklist_, EmitExpression(idx->target()));
               RegisterID element = EmitExpression(idx->key());

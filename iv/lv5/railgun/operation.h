@@ -135,7 +135,7 @@ class Operation {
   template<OP::Type own, OP::Type proto, OP::Type chain, OP::Type generic>
   JSVal LoadProp(Instruction* instr,
                  const JSVal& base, Symbol s, bool strict, Error* e) {
-    // opcode | dst | base | name | nop | nop | nop
+    // opcode | (dst | base | name) | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
@@ -154,6 +154,7 @@ class Operation {
     if (obj->GetPropertySlot(ctx_, s, &slot)) {
       // property found
       if (!slot.IsCacheable()) {
+        // bailout to generic
         instr[0] = Instruction::GetOPInstruction(generic);
         return slot.Get(ctx_, base, e);
       }
@@ -163,8 +164,8 @@ class Operation {
       if (slot.base() == obj) {
         // own property
         instr[0] = Instruction::GetOPInstruction(own);
-        instr[4].map = obj->map();
-        instr[5].u32[0] = slot.offset();
+        instr[2].map = obj->map();
+        instr[3].u32[0] = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
@@ -172,17 +173,17 @@ class Operation {
         // proto property
         obj->FlattenMap();
         instr[0] = Instruction::GetOPInstruction(proto);
-        instr[4].map = obj->map();
-        instr[5].map = slot.base()->map();
-        instr[6].u32[0] = slot.offset();
+        instr[2].map = obj->map();
+        instr[3].map = slot.base()->map();
+        instr[4].u32[0] = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
       // chain property
       instr[0] = Instruction::GetOPInstruction(chain);
-      instr[4].chain = Chain::New(obj, slot.base());
-      instr[5].map = slot.base()->map();
-      instr[6].u32[0] = slot.offset();
+      instr[2].chain = Chain::New(obj, slot.base());
+      instr[3].map = slot.base()->map();
+      instr[4].u32[0] = slot.offset();
       return slot.Get(ctx_, base, e);
     } else {
       return JSUndefined;
@@ -292,23 +293,23 @@ class Operation {
                  Instruction* instr,
                  OP::Type generic,
                  Symbol s, const JSVal& stored, bool strict, Error* e) {
-    // opcode | base | index | src | nop | nop
+    // opcode | (base | src | index) | nop | nop
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
       StorePropPrimitive(base, s, stored, strict, e);
     } else {
       // cache patten
       JSObject* obj = base.object();
-      if (instr[4].map == obj->map()) {
+      if (instr[2].map == obj->map()) {
         // map is cached, so use previous index code
-        return obj->PutToSlotOffset(ctx_, instr[5].u32[0], stored, strict, e);
+        return obj->PutToSlotOffset(ctx_, instr[3].u32[0], stored, strict, e);
       } else {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
           if (slot.IsCacheable()) {
-            instr[4].map = obj->map();
-            instr[5].u32[0] = slot.offset();
-            obj->PutToSlotOffset(ctx_, instr[5].u32[0], stored, strict, e);
+            instr[2].map = obj->map();
+            instr[3].u32[0] = slot.offset();
+            obj->PutToSlotOffset(ctx_, instr[3].u32[0], stored, strict, e);
           } else {
             // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
@@ -316,7 +317,7 @@ class Operation {
           }
           return;
         } else {
-          instr[4].map = NULL;
+          instr[2].map = NULL;
           obj->Put(ctx_, s, stored, strict, e);
           return;
         }
