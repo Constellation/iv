@@ -632,20 +632,20 @@ class Operation {
   JSVal IncrementGlobal(JSGlobal* global,
                         Instruction* instr,
                         Symbol s, bool strict, Error* e) {
-    // opcode | dst | name | nop | nop
-    if (instr[3].map == global->map()) {
+    // opcode | (dst | name) | nop | nop
+    if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
       return IncrementGlobal<Target, Returned>(global,
-                                               instr[4].u32[0], strict, e);
+                                               instr[3].u32[0], strict, e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        instr[3].map = global->map();
-        instr[4].u32[0] = slot.offset();
+        instr[2].map = global->map();
+        instr[3].u32[0] = slot.offset();
         return IncrementGlobal<Target, Returned>(global,
-                                                 instr[4].u32[0], strict, e);
+                                                 instr[3].u32[0], strict, e);
       } else {
-        instr[3].map = NULL;
+        instr[2].map = NULL;
         return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
       }
     }
@@ -653,20 +653,20 @@ class Operation {
 
   JSVal LoadGlobal(JSGlobal* global,
                    Instruction* instr, const Symbol& s, bool strict, Error* e) {
-    // opcode | dst | index | nop | nop
-    if (instr[3].map == global->map()) {
+    // opcode | (dst | index) | nop | nop
+    if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
-      return global->GetBySlotOffset(ctx_, instr[4].u32[0], e);
+      return global->GetBySlotOffset(ctx_, instr[3].u32[0], e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         // now Own Property Pattern only implemented
         assert(slot.IsCacheable());
-        instr[3].map = global->map();
-        instr[4].u32[0] = slot.offset();
+        instr[2].map = global->map();
+        instr[3].u32[0] = slot.offset();
         return slot.Get(ctx_, global, e);
       } else {
-        instr[3].map = NULL;
+        instr[2].map = NULL;
         return LoadName(ctx_->global_env(), s, strict, e);
       }
     }

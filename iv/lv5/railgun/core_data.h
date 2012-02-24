@@ -27,9 +27,9 @@ inline GC_ms_entry* CoreData::MarkChildren(GC_word* top,
             VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
             VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
-          // opcode | dst | index | map | offset
+          // opcode | (dst | index) | map | offset
           entry = GC_MARK_AND_PUSH(
-              (*data_)[n + 3].map,
+              (*data_)[n + 2].map,
               entry, mark_sp_limit, reinterpret_cast<void**>(this));
         } else if (VM::IsOP<OP::LOAD_OBJECT>(instr)) {
           // opcode | index | map
@@ -83,8 +83,8 @@ inline void CoreData::MarkChildren(radio::Core* core) {
           VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
           VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
           VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
-        // opcode | dst | index | map | offset
-        core->MarkCell((*data_)[n + 3].map);
+        // opcode | (dst | index) | map | offset
+        core->MarkCell((*data_)[n + 2].map);
       } else if (VM::IsOP<OP::LOAD_OBJECT>(instr)) {
         // opcode | index | map
         core->MarkCell((*data_)[n + 2].map);

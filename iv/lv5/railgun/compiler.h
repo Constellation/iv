@@ -431,7 +431,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       case LookupInfo::GLOBAL: {
         // last 2 zeros are placeholders for PIC
-        Emit<OP::STORE_GLOBAL>(src, index, 0u, 0u);
+        Emit<OP::STORE_GLOBAL>(Instruction::SW(src, index), 0u, 0u);
         return;
       }
       case LookupInfo::LOOKUP: {
@@ -833,7 +833,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       case LookupInfo::GLOBAL: {
         // last 2 zeros are placeholders for PIC
-        Emit<OP::STORE_GLOBAL>(src, index, 0u, 0u);
+        Emit<OP::STORE_GLOBAL>(Instruction::SW(src, index), 0u, 0u);
         return;
       }
       case LookupInfo::LOOKUP: {

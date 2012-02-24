@@ -36,7 +36,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
     case LookupInfo::GLOBAL: {
       // last 2 zeros are placeholders for PIC
       thunklist_.Spill(dst);
-      EmitUnsafe(OP::ToGlobal(op), dst, index, 0u, 0u);
+      EmitUnsafe(OP::ToGlobal(op), Instruction::SW(dst, index), 0u, 0u);
       return dst;
     }
     case LookupInfo::LOOKUP: {

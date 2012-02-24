@@ -441,12 +441,12 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_GLOBAL) {
-        // opcode | dst | index | nop | nop
+        // opcode | (dst | index) | nop | nop
         JSGlobal* global = ctx_->global_obj();
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.LoadGlobal(global, instr, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(LOAD_GLOBAL);
       }
 
@@ -606,21 +606,21 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_GLOBAL) {
-        // opcode | src | name | nop | nop
-        const JSVal src = REG(instr[1].i32[0]);
+        // opcode | (src | name) | nop | nop
+        const JSVal src = REG(instr[1].ssw.v16[0].i16);
         JSGlobal* global = ctx_->global_obj();
-        if (instr[3].map == global->map()) {
+        if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          global->PutToSlotOffset(ctx_, instr[4].u32[0], src, strict, ERR);
+          global->PutToSlotOffset(ctx_, instr[3].u32[0], src, strict, ERR);
         } else {
-          const Symbol name = frame->GetName(instr[2].u32[0]);
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           Slot slot;
           if (global->GetOwnPropertySlot(ctx_, name, &slot)) {
-            instr[3].map = global->map();
-            instr[4].u32[0] = slot.offset();
-            global->PutToSlotOffset(ctx_, instr[4].u32[0], src, strict, ERR);
+            instr[2].map = global->map();
+            instr[3].u32[0] = slot.offset();
+            global->PutToSlotOffset(ctx_, instr[3].u32[0], src, strict, ERR);
           } else {
-            instr[3].map = NULL;
+            instr[2].map = NULL;
             operation_.StoreName(ctx_->global_env(), name, src, strict, ERR);
           }
         }
@@ -674,14 +674,14 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_GLOBAL) {
-        // opcode | dst | name | nop | nop
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | nop | nop
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (ctx_->global_env()->HasBinding(ctx_, name)) {
           const bool res = ctx_->global_env()->DeleteBinding(ctx_, name);
-          REG(instr[1].i32[0]) = JSVal::Bool(res);
+          REG(instr[1].ssw.v16[0].i16) = JSVal::Bool(res);
         } else {
           // not found -> unresolvable reference
-          REG(instr[1].i32[0]) = JSTrue;
+          REG(instr[1].ssw.v16[0].i16) = JSTrue;
         }
         DISPATCH(DELETE_GLOBAL);
       }
@@ -856,16 +856,16 @@ do {\
       }
 
       DEFINE_OPCODE(TYPEOF_GLOBAL) {
-        // opcode | dst | name | nop | nop
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        // opcode | (dst | name) | nop | nop
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         if (ctx_->global_env()->HasBinding(ctx_, name)) {
           const JSVal res =
               ctx_->global_env()->GetBindingValue(ctx_, name, strict, ERR);
-          REG(instr[1].i32[0]) = res;
-          REG(instr[1].i32[0]) = res.TypeOf(ctx_);
+          REG(instr[1].ssw.v16[0].i16) = res;
+          REG(instr[1].ssw.v16[0].i16) = res.TypeOf(ctx_);
         } else {
           // unresolvable reference
-          REG(instr[1].i32[0]) = ctx_->global_data()->string_undefined();
+          REG(instr[1].ssw.v16[0].i16) = ctx_->global_data()->string_undefined();
         }
         DISPATCH(TYPEOF_GLOBAL);
       }
@@ -1007,42 +1007,42 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
-        // opcode | dst | name | nop | nop
+        // opcode | (dst | name) | nop | nop
         JSGlobal* global = ctx_->global_obj();
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementGlobal<-1, 1>(global, instr, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
-        // opcode | dst | name | nop | nop
+        // opcode | (dst | name) | nop | nop
         JSGlobal* global = ctx_->global_obj();
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementGlobal<-1, 0>(global, instr, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_DECREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(INCREMENT_GLOBAL) {
-        // opcode | dst | name | nop | nop
+        // opcode | (dst | name) | nop | nop
         JSGlobal* global = ctx_->global_obj();
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementGlobal<1, 1>(global, instr, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(INCREMENT_GLOBAL);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
-        // opcode | dst | name | nop | nop
+        // opcode | (dst | name) | nop | nop
         JSGlobal* global = ctx_->global_obj();
-        const Symbol name = frame->GetName(instr[2].u32[0]);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             operation_.IncrementGlobal<1, 0>(global, instr, name, strict, ERR);
-        REG(instr[1].i32[0]) = res;
+        REG(instr[1].ssw.v16[0].i16) = res;
         DISPATCH(POSTFIX_INCREMENT_GLOBAL);
       }
 
