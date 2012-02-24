@@ -1533,9 +1533,9 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_FUNCTION) {
-        // opcode | dst | code
-        Code* target = frame->code()->codes()[instr[2].u32[0]];
-        REG(instr[1].i32[0]) =
+        // opcode | (dst | code)
+        Code* target = frame->code()->codes()[instr[1].ssw.u32];
+        REG(instr[1].ssw.v16[0].i16) =
             JSVMFunction::New(ctx_, target, frame->lexical_env());
         DISPATCH(LOAD_FUNCTION);
       }

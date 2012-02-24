@@ -739,7 +739,7 @@ inline void Compiler::Visit(const FunctionLiteral* lit) {
       std::make_tuple(code, lit, current_variable_scope_));
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
-  Emit<OP::LOAD_FUNCTION>(dst_, index);
+  Emit<OP::LOAD_FUNCTION>(Instruction::SW(dst_, index));
 }
 
 inline void Compiler::Visit(const IdentifierAccess* prop) {
