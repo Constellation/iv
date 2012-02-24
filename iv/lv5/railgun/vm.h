@@ -339,10 +339,10 @@ do {\
       }
 
       DEFINE_OPCODE(INSTANTIATE_DECLARATION_BINDING) {
-        // opcode | name | configurable
+        // opcode | (name | configurable)
         JSEnv* const env = frame->variable_env();
         const Symbol name = frame->GetName(instr[1].u32[0]);
-        const bool configurable = instr[2].u32[0];
+        const bool configurable = instr[1].u32[1];
         if (!env->HasBinding(ctx_, name)) {
           env->CreateMutableBinding(ctx_, name, configurable, ERR);
         } else if (env == ctx_->global_env()) {
@@ -375,10 +375,10 @@ do {\
       }
 
       DEFINE_OPCODE(INSTANTIATE_VARIABLE_BINDING) {
-        // opcode | name | configurable
+        // opcode | (name | configurable)
         JSEnv* const env = frame->variable_env();
         const Symbol name = frame->GetName(instr[1].u32[0]);
-        const bool configurable = instr[2].u32[0];
+        const bool configurable = instr[1].u32[1];
         if (!env->HasBinding(ctx_, name)) {
           env->CreateMutableBinding(ctx_, name, configurable, ERR);
           env->SetMutableBinding(ctx_, name, JSUndefined, strict, ERR);
@@ -387,10 +387,10 @@ do {\
       }
 
       DEFINE_OPCODE(INITIALIZE_HEAP_IMMUTABLE) {
-        // opcode | src | offset
+        // opcode | (src | offset)
         JSDeclEnv* const decl = static_cast<JSDeclEnv*>(frame->variable_env());
-        const JSVal src = REG(instr[1].i32[0]);
-        decl->InitializeImmutable(instr[2].u32[0], src);
+        const JSVal src = REG(instr[1].ssw.v16[0].i16);
+        decl->InitializeImmutable(instr[1].ssw.u32, src);
         DISPATCH(INITIALIZE_HEAP_IMMUTABLE);
       }
 

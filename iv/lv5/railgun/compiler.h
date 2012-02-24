@@ -710,7 +710,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       if (already_declared.find(name) == already_declared.end()) {
         already_declared.insert(name);
         const uint32_t index = SymbolToNameIndex(name);
-        Emit<OP::INSTANTIATE_DECLARATION_BINDING>(index, flag);
+        Emit<OP::INSTANTIATE_DECLARATION_BINDING>(Instruction::UInt32(index, flag));
       }
     }
     // variables
@@ -722,7 +722,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       if (already_declared.find(name) == already_declared.end()) {
         already_declared.insert(name);
         const uint32_t index = SymbolToNameIndex(name);
-        Emit<OP::INSTANTIATE_VARIABLE_BINDING>(index, flag);
+        Emit<OP::INSTANTIATE_VARIABLE_BINDING>(Instruction::UInt32(index, flag));
       }
     }
   }
@@ -819,7 +819,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     switch (info.type()) {
       case LookupInfo::HEAP: {
         if (info.immutable()) {
-          Emit<OP::INITIALIZE_HEAP_IMMUTABLE>(src, info.heap_location());
+          Emit<OP::INITIALIZE_HEAP_IMMUTABLE>(Instruction::SW(src, info.heap_location()));
         } else {
           Emit<OP::STORE_HEAP>(
               src, index, info.heap_location(),
