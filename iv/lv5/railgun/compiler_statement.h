@@ -102,7 +102,7 @@ inline void Compiler::Visit(const IfStatement* stmt) {
   if (cond == Condition::COND_INDETERMINATE) {
     RegisterID cond = EmitExpression(stmt->cond());
     label = CurrentSize();
-    Emit<OP::IF_FALSE>(0, cond);
+    Emit<OP::IF_FALSE>(Instruction::Jump(0, cond));
   }
 
   if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
@@ -119,7 +119,7 @@ inline void Compiler::Visit(const IfStatement* stmt) {
 
     const std::size_t second = CurrentSize();
     if (cond == Condition::COND_INDETERMINATE) {
-      Emit<OP::JUMP_BY>(0);  // dummy index
+      Emit<OP::JUMP_BY>(Instruction::Jump(0));  // dummy index
       EmitJump(CurrentSize(), label);
     }
 
@@ -185,7 +185,7 @@ inline void Compiler::Visit(const DoWhileStatement* stmt) {
 
   {
     RegisterID cond = EmitExpression(stmt->cond());
-    Emit<OP::IF_TRUE>(Instruction::Diff(start_index, CurrentSize()), cond);
+    Emit<OP::IF_TRUE>(Instruction::Jump(start_index - CurrentSize(), cond));
   }
 
   jump.EmitJumps(CurrentSize(), cond_index);
@@ -216,28 +216,28 @@ inline void Compiler::Visit(const WhileStatement* stmt) {
   if (stmt->body()->IsEffectiveStatement()) {
     if (cond == Condition::COND_INDETERMINATE) {
       const std::size_t label = CurrentSize();
-      Emit<OP::IF_FALSE>(0, dst);
+      Emit<OP::IF_FALSE>(Instruction::Jump(0, dst));
       dst.reset();
 
       EmitStatement(stmt->body());
 
-      Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
       EmitJump(CurrentSize(), label);
     } else {
       assert(cond == Condition::COND_TRUE);
 
       EmitStatement(stmt->body());
 
-      Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
     }
     jump.EmitJumps(CurrentSize(), start_index);
     continuation_status_.ResolveJump(stmt);
   } else {
     if (cond == Condition::COND_INDETERMINATE) {
-      Emit<OP::IF_TRUE>(Instruction::Diff(start_index, CurrentSize()), dst);
+      Emit<OP::IF_TRUE>(Instruction::Jump(start_index - CurrentSize(), dst));
     } else {
       assert(cond == Condition::COND_TRUE);
-      Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
     }
   }
 
@@ -268,7 +268,7 @@ inline void Compiler::Visit(const ForStatement* stmt) {
   if (cond) {
     RegisterID dst = EmitExpression(cond.Address());
     label = CurrentSize();
-    Emit<OP::IF_FALSE>(0, dst);
+    Emit<OP::IF_FALSE>(Instruction::Jump(0, dst));
   }
 
   EmitStatement(stmt->body());
@@ -278,7 +278,7 @@ inline void Compiler::Visit(const ForStatement* stmt) {
     EmitExpression(next.Address());
   }
 
-  Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+  Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
 
   if (cond) {
     EmitJump(CurrentSize(), label);
@@ -313,7 +313,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
     {
       RegisterID enumerable = EmitExpression(stmt->enumerable());
       for_in_setup_jump = CurrentSize();
-      Emit<OP::FORIN_SETUP>(0, iterator, enumerable);
+      Emit<OP::FORIN_SETUP>(Instruction::Jump(0, iterator, enumerable));
     }
 
     const std::size_t start_index = CurrentSize();
@@ -329,18 +329,18 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             local = registers_.Acquire();
           }
           thunklist_.Spill(local);
-          Emit<OP::FORIN_ENUMERATE>(0, local, iterator);
+          Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, local, iterator));
           if (code_->strict() && info.immutable()) {
             Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(for_decl));
           }
         } else {
           RegisterID tmp = registers_.Acquire();
-          Emit<OP::FORIN_ENUMERATE>(0, tmp, iterator);
+          Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, tmp, iterator));
           EmitStore(for_decl, tmp);
         }
       } else {
         RegisterID tmp = registers_.Acquire();
-        Emit<OP::FORIN_ENUMERATE>(0, tmp, iterator);
+        Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, tmp, iterator));
         if (lhs->AsPropertyAccess()) {
           // PropertyAccess
           if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
@@ -375,7 +375,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
 
     EmitStatement(stmt->body());
 
-    Emit<OP::JUMP_BY>(Instruction::Diff(start_index, CurrentSize()));
+    Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
 
     const std::size_t end_index = CurrentSize();
     EmitJump(end_index, start_index);
@@ -399,7 +399,7 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
         dst = EmitMV(entry.ret(), dst);
       }
       const std::size_t finally_jump = CurrentSize();
-      Emit<OP::JUMP_SUBROUTINE>(0, entry.jmp(), entry.flag());
+      Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, entry.jmp(), entry.flag()));
       entry.holes()->push_back(finally_jump);
     } else if (entry.type() == Level::WITH) {
       Emit<OP::POP_ENV>();
@@ -414,7 +414,7 @@ inline void Compiler::Visit(const ContinueStatement* stmt) {
   const Jump& entry = it->second;
   EmitUnrollingLevel(CurrentLevel(), entry.level());
   const std::size_t arg_index = CurrentSize();
-  Emit<OP::JUMP_BY>(0);
+  Emit<OP::JUMP_BY>(Instruction::Jump(0));
   entry.continues()->push_back(arg_index);
   continuation_status_.JumpTo(stmt->target());
 }
@@ -428,7 +428,7 @@ inline void Compiler::Visit(const BreakStatement* stmt) {
     const Jump& entry = it->second;
     EmitUnrollingLevel(CurrentLevel(), entry.level());
     const std::size_t arg_index = CurrentSize();
-    Emit<OP::JUMP_BY>(0);  // dummy
+    Emit<OP::JUMP_BY>(Instruction::Jump(0));  // dummy
     entry.breaks()->push_back(arg_index);
   }
   continuation_status_.JumpTo(stmt->target());
@@ -508,7 +508,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
         RegisterID ret = tmp->IsTemporary() ? tmp : registers_.Acquire();
         Emit<OP::BINARY_STRICT_EQ>(Instruction::Reg3(ret, cond, tmp));
         *idx = CurrentSize();
-        Emit<OP::IF_TRUE>(0, ret);
+        Emit<OP::IF_TRUE>(Instruction::Jump(0, ret));
       } else {
         // default
         default_it = idx;
@@ -521,7 +521,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
       // all cases are not equal and no default case
       label = CurrentSize();
     }
-    Emit<OP::JUMP_BY>(0);
+    Emit<OP::JUMP_BY>(Instruction::Jump(0));
   }
   {
     std::vector<std::size_t>::const_iterator idx = indexes.begin();
@@ -611,11 +611,11 @@ inline void Compiler::Visit(const TryStatement* stmt) {
   EmitStatement(stmt->body());
   if (has_finally) {
     const std::size_t finally_jump = CurrentSize();
-    Emit<OP::JUMP_SUBROUTINE>(0, jmp, flag);
+    Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, jmp, flag));
     level_stack_.back().holes()->push_back(finally_jump);
   }
   const std::size_t label = CurrentSize();
-  Emit<OP::JUMP_BY>(0);
+  Emit<OP::JUMP_BY>(Instruction::Jump(0));
 
   std::size_t catch_return_label_index = 0;
   if (const core::Maybe<const Block> block = stmt->catch_block()) {
@@ -651,11 +651,11 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     Emit<OP::POP_ENV>();
     if (has_finally) {
       const std::size_t finally_jump = CurrentSize();
-      Emit<OP::JUMP_SUBROUTINE>(0, jmp, flag);
+      Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, jmp, flag));
       level_stack_.back().holes()->push_back(finally_jump);
     }
     catch_return_label_index = CurrentSize();
-    Emit<OP::JUMP_BY>(0);
+    Emit<OP::JUMP_BY>(Instruction::Jump(0));
 
     if (continuation_status_.Has(stmt)) {
       continuation_status_.Erase(stmt);

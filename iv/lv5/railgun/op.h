@@ -95,13 +95,15 @@ V(POSTFIX_DECREMENT_PROP, 5)\
 \
 V(LOAD_CONST, 2)\
 \
+/* jump opcodes. first arg layout is always JUMP-SSW and W is jump width*/\
 V(JUMP_BY, 2)\
-V(JUMP_SUBROUTINE, 4)\
-V(IF_FALSE, 3)\
-V(IF_TRUE, 3)\
+V(JUMP_SUBROUTINE, 2)\
+V(IF_FALSE, 2)\
+V(IF_TRUE, 2)\
+V(FORIN_SETUP, 2)\
+V(FORIN_ENUMERATE, 2)\
 \
-V(FORIN_SETUP, 4)\
-V(FORIN_ENUMERATE, 4)\
+\
 V(TRY_CATCH_SETUP, 2)\
 \
 /* name lookup opcodes */\

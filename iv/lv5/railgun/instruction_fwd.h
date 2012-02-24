@@ -32,15 +32,13 @@ struct Instruction {
       int16_t i16[2];
       uint32_t u32;
     } ssw;
+    struct {
+      int16_t i16[2];
+      int32_t to;
+    } jump;
     Map* map;
     Chain* chain;
   };
-
-  static Instruction Diff(ptrdiff_t to, ptrdiff_t from) {
-    Instruction instr(0u);
-    instr.diff = to - from;
-    return instr;
-  }
 
   static Instruction Reg2(RegisterID a, RegisterID b) {
     Instruction instr(0u);
@@ -76,6 +74,19 @@ struct Instruction {
     instr.ssw.i16[0] = static_cast<int16_t>(a->register_offset());
     instr.ssw.i16[1] = static_cast<int16_t>(b->register_offset());
     instr.ssw.u32 = u32;
+    return instr;
+  }
+
+  static Instruction Jump(int32_t i32,
+                          RegisterID a = RegisterID(), RegisterID b = RegisterID()) {
+    Instruction instr(0u);
+    if (a) {
+      instr.jump.i16[0] = static_cast<int16_t>(a->register_offset());
+    }
+    if (b) {
+      instr.jump.i16[1] = static_cast<int16_t>(b->register_offset());
+    }
+    instr.jump.to = i32;
     return instr;
   }
 

@@ -223,10 +223,10 @@ do {\
   DISPATCH(LOAD_CONST);
 
 #define FAST_PATH_IF_FALSE()\
-  const JSVal v = REG(instr[2].i32[0]);\
+  const JSVal v = REG(instr[1].jump.i16[0]);\
   const bool x = v.ToBoolean(ERR);\
   if (!x) {\
-    JUMPBY(instr[1].diff);\
+    JUMPBY(instr[1].jump.to);\
     DISPATCH_WITH_NO_INCREMENT();\
   }\
   DISPATCH(IF_FALSE);
@@ -261,7 +261,7 @@ do {\
   DISPATCH(BINARY_ADD);
 
 #define FAST_PATH_JUMP_BY()\
-  JUMPBY(instr[1].diff);\
+  JUMPBY(instr[1].jump.to);\
   DISPATCH_WITH_NO_INCREMENT();
 
   // main loop
@@ -728,23 +728,23 @@ do {\
       }
 
       DEFINE_OPCODE(IF_TRUE) {
-        // opcode | jmp | cond
-        const JSVal v = REG(instr[2].i32[0]);
+        // opcode | (jmp | cond)
+        const JSVal v = REG(instr[1].jump.i16[0]);
         const bool x = v.ToBoolean(ERR);
         if (x) {
-          JUMPBY(instr[1].diff);
+          JUMPBY(instr[1].jump.to);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(IF_TRUE);
       }
 
       DEFINE_OPCODE(JUMP_SUBROUTINE) {
-        // opcode | jmp | addr | flag
-        REG(instr[2].i32[0]) =
+        // opcode | (jmp : addr | flag)
+        REG(instr[1].jump.i16[0]) =
             ((std::distance(frame->data(), instr) +
               OPLength<OP::JUMP_SUBROUTINE>::value));
-        REG(instr[3].i32[0]) = JSVal::Int32(kJumpFromSubroutine);
-        JUMPBY(instr[1].diff);
+        REG(instr[1].jump.i16[1]) = JSVal::Int32(kJumpFromSubroutine);
+        JUMPBY(instr[1].jump.to);
         DISPATCH_WITH_NO_INCREMENT();
       }
 
@@ -1413,29 +1413,29 @@ do {\
       }
 
       DEFINE_OPCODE(FORIN_SETUP) {
-        // opcode | jmp | iterator | enumerable
+        // opcode | (jmp : iterator | enumerable)
         // TODO(Constellation): fix this for Exact GC
-        const JSVal enumerable = REG(instr[3].i32[0]);
+        const JSVal enumerable = REG(instr[1].jump.i16[1]);
         if (enumerable.IsNullOrUndefined()) {
-          JUMPBY(instr[1].diff);  // skip for-in stmt
+          JUMPBY(instr[1].jump.to);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }
         JSObject* const obj = enumerable.ToObject(ctx_, ERR);
         NameIterator* it = NameIterator::New(ctx_, obj);
-        REG(instr[2].i32[0]) = JSVal::Cell(it);
+        REG(instr[1].jump.i16[0]) = JSVal::Cell(it);
         PREDICT(FORIN_SETUP, FORIN_ENUMERATE);
       }
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
-        // opcode | jmp | dst | iterator
+        // opcode | (jmp : dst | iterator)
         NameIterator* it =
-            reinterpret_cast<NameIterator*>(REG(instr[3].i32[0]).cell());
+            reinterpret_cast<NameIterator*>(REG(instr[1].jump.i16[1]).cell());
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
-          REG(instr[2].i32[0]) = JSString::New(ctx_, sym);
+          REG(instr[1].jump.i16[0]) = JSString::New(ctx_, sym);
         } else {
-          JUMPBY(instr[1].diff);
+          JUMPBY(instr[1].jump.to);
           DISPATCH_WITH_NO_INCREMENT();
         }
         DISPATCH(FORIN_ENUMERATE);

@@ -220,7 +220,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       {
         dst_ = EmitExpressionToDest(lhs, dst_);
         label = CurrentSize();
-        Emit<OP::IF_FALSE>(0, dst_);
+        Emit<OP::IF_FALSE>(Instruction::Jump(0, dst_));
       }
       dst_ = EmitExpressionToDest(rhs, dst_);
       EmitJump(CurrentSize(), label);
@@ -234,7 +234,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       {
         dst_ = EmitExpressionToDest(lhs, dst_);
         label = CurrentSize();
-        Emit<OP::IF_TRUE>(0, dst_);
+        Emit<OP::IF_TRUE>(Instruction::Jump(0, dst_));
       }
       dst_ = EmitExpressionToDest(rhs, dst_);
       EmitJump(CurrentSize(), label);
@@ -263,13 +263,13 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
   {
     RegisterID ret = EmitExpression(cond->cond());
     first = CurrentSize();
-    Emit<OP::IF_FALSE>(0, ret);
+    Emit<OP::IF_FALSE>(Instruction::Jump(0, ret));
   }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   dst_ = EmitExpressionToDest(cond->left(), dst_);
   const std::size_t second = CurrentSize();
-  Emit<OP::JUMP_BY>(0);
+  Emit<OP::JUMP_BY>(Instruction::Jump(0));
   EmitJump(CurrentSize(), first);
   dst_ = EmitExpressionToDest(cond->right(), dst_);
   EmitJump(CurrentSize(), second);

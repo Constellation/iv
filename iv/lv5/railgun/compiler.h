@@ -622,7 +622,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void EmitJump(std::size_t to, std::size_t from) {
-    EmitArgAt(Instruction::Diff(to, from), from + 1);
+    (*data_)[code_->start() + from + 1].jump.to = to - from;
   }
 
   // enter code functions
