@@ -60,14 +60,17 @@ struct Instruction {
     return instr;
   }
 
+  static Instruction SW(RegisterID a, uint32_t u32) {
+    Instruction instr(0u);
+    instr.ssw.v16[0].i16 = static_cast<int16_t>(a->register_offset());
+    instr.ssw.u32 = u32;
+    return instr;
+  }
+
   static Instruction SSW(RegisterID a, RegisterID b, uint32_t u32) {
     Instruction instr(0u);
-    if (a) {
-      instr.ssw.v16[0].i16 = static_cast<int16_t>(a->register_offset());
-    }
-    if (b) {
-      instr.ssw.v16[1].i16 = static_cast<int16_t>(a->register_offset());
-    }
+    instr.ssw.v16[0].i16 = static_cast<int16_t>(a->register_offset());
+    instr.ssw.v16[1].i16 = static_cast<int16_t>(a->register_offset());
     instr.ssw.u32 = u32;
     return instr;
   }

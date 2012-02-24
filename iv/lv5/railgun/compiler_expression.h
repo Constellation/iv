@@ -517,7 +517,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
   thunklist_.Spill(dst_);
   if (it != jsstring_to_index_map_.end()) {
     // duplicate constant
-    Emit<OP::LOAD_CONST>(dst_, it->second);
+    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
     return;
   }
   // new constant value
@@ -530,7 +530,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
           core::character::IsASCII(lit->value().begin(),
                                    lit->value().end())));
   jsstring_to_index_map_.insert(std::make_pair(s, index));
-  Emit<OP::LOAD_CONST>(dst_, index);
+  Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
 }
 
 inline void Compiler::Visit(const NumberLiteral* lit) {
@@ -542,7 +542,7 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
       double_to_index_map_.find(val);
   if (it != double_to_index_map_.end()) {
     // duplicate constant pool
-    Emit<OP::LOAD_CONST>(dst_, it->second);
+    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
     return;
   }
 
@@ -550,7 +550,7 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
   const uint32_t index = code_->constants_.size();
   code_->constants_.push_back(val);
   double_to_index_map_.insert(std::make_pair(val, index));
-  Emit<OP::LOAD_CONST>(dst_, index);
+  Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
 }
 
 inline void Compiler::Visit(const Assigned* lit) {
@@ -598,7 +598,7 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
   const DestGuard dest_guard(this);
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
-  Emit<OP::LOAD_REGEXP>(Instruction::SSW(dst_, RegisterID(), code_->constants_.size()));
+  Emit<OP::LOAD_REGEXP>(Instruction::SW(dst_, code_->constants_.size()));
   code_->constants_.push_back(
       JSRegExp::New(ctx_, lit->value(), lit->regexp()));
 }

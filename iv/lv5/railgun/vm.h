@@ -216,7 +216,8 @@ do {\
 // fast opcode macros
 
 #define FAST_PATH_LOAD_CONST()\
-  REG(instr[1].i32) = frame->GetConstant(instr[2].u32);\
+  /* opcode | (dst | offset) */\
+  REG(instr[1].ssw.v16[0].i16) = frame->GetConstant(instr[1].ssw.u32);\
   DISPATCH(LOAD_CONST);
 
 #define FAST_PATH_IF_FALSE()\
@@ -414,7 +415,7 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_CONST) {
-        // opcode | dst | offset
+        // opcode | (dst | offset)
         FAST_PATH_LOAD_CONST();
       }
 
