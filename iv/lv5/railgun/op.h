@@ -102,7 +102,7 @@ V(IF_TRUE, 3)\
 \
 V(FORIN_SETUP, 4)\
 V(FORIN_ENUMERATE, 4)\
-V(TRY_CATCH_SETUP, 3)\
+V(TRY_CATCH_SETUP, 2)\
 \
 /* name lookup opcodes */\
 V(LOAD_NAME, 3)\

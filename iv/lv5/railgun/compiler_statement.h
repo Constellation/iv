@@ -636,7 +636,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
               error->register_offset(),
               0,
               dynamic_env_level()));
-      Emit<OP::TRY_CATCH_SETUP>(error, SymbolToNameIndex(catch_symbol));
+      Emit<OP::TRY_CATCH_SETUP>(Instruction::SW(error, SymbolToNameIndex(catch_symbol)));
     }
     PushLevelWith();
     {
