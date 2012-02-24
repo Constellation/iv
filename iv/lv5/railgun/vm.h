@@ -1737,7 +1737,7 @@ do {\
       }
 
       DEFINE_OPCODE(PREPARE_DYNAMIC_CALL) {
-        // opcode | dst | basedst | name
+        // opcode | (dst | basedst | name)
         const Symbol name = frame->GetName(instr[3].u32);
         if (JSEnv* target_env = operation_.GetEnv(frame->lexical_env(), name)) {
           const JSVal res = target_env->GetBindingValue(ctx_, name, false, ERR);

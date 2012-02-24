@@ -852,7 +852,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
           const uint32_t index = SymbolToNameIndex(ident->symbol());
           assert(info.type() != LookupInfo::STACK);
           if (info.type() == LookupInfo::LOOKUP) {
-            Emit<OP::PREPARE_DYNAMIC_CALL>(site.callee(), site.base(), index);
+            Emit<OP::PREPARE_DYNAMIC_CALL>(Instruction::SSW(site.callee(), site.base(), index));
           } else {
             EmitOptimizedLookup(OP::LOAD_NAME, index, site.callee());
             Emit<OP::LOAD_UNDEFINED>(site.base());
