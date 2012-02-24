@@ -14,17 +14,17 @@ class Chain;
 namespace railgun {
 
 struct Instruction {
-  Instruction(uint32_t arg) : u32(arg) { }  // NOLINT
+  Instruction(uint32_t arg) { u32[0] = arg; }  // NOLINT
 
   Instruction(RegisterID reg) {  // NOLINT
     assert(reg);
-    i32 = reg->register_offset();
+    i32[0] = reg->register_offset();
   }
 
   union {
     const void* label;  // use for direct threading
-    uint32_t u32;
-    int32_t i32;
+    uint32_t u32[2];
+    int32_t i32[2];
     ptrdiff_t diff;
     int16_t i16[4];
     uint16_t u16[4];
@@ -57,6 +57,13 @@ struct Instruction {
     instr.i16[0] = static_cast<int16_t>(a->register_offset());
     instr.i16[1] = static_cast<int16_t>(b->register_offset());
     instr.i16[2] = static_cast<int16_t>(c->register_offset());
+    return instr;
+  }
+
+  static Instruction UInt32(uint32_t a, uint32_t b) {
+    Instruction instr(0u);
+    instr.u32[0] = a;
+    instr.u32[1] = b;
     return instr;
   }
 

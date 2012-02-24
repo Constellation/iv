@@ -67,12 +67,8 @@ struct Frame {
 
   JSVal* RegisterFile();
 
-  inline JSVal& REG(int32_t i) {
+  inline JSVal& REG(int16_t i) {
     return *(RegisterFile() + i);
-  }
-
-  inline JSVal& REG(Instruction inst) {
-    return *(RegisterFile() + inst.i32);
   }
 
   JSVal* GetFrameBase() {

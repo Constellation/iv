@@ -164,7 +164,7 @@ class Operation {
         // own property
         instr[0] = Instruction::GetOPInstruction(own);
         instr[4].map = obj->map();
-        instr[5].u32 = slot.offset();
+        instr[5].u32[0] = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
@@ -174,7 +174,7 @@ class Operation {
         instr[0] = Instruction::GetOPInstruction(proto);
         instr[4].map = obj->map();
         instr[5].map = slot.base()->map();
-        instr[6].u32 = slot.offset();
+        instr[6].u32[0] = slot.offset();
         return slot.Get(ctx_, base, e);
       }
 
@@ -182,7 +182,7 @@ class Operation {
       instr[0] = Instruction::GetOPInstruction(chain);
       instr[4].chain = Chain::New(obj, slot.base());
       instr[5].map = slot.base()->map();
-      instr[6].u32 = slot.offset();
+      instr[6].u32[0] = slot.offset();
       return slot.Get(ctx_, base, e);
     } else {
       return JSUndefined;
@@ -301,14 +301,14 @@ class Operation {
       JSObject* obj = base.object();
       if (instr[4].map == obj->map()) {
         // map is cached, so use previous index code
-        return obj->PutToSlotOffset(ctx_, instr[5].u32, stored, strict, e);
+        return obj->PutToSlotOffset(ctx_, instr[5].u32[0], stored, strict, e);
       } else {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
           if (slot.IsCacheable()) {
             instr[4].map = obj->map();
-            instr[5].u32 = slot.offset();
-            obj->PutToSlotOffset(ctx_, instr[5].u32, stored, strict, e);
+            instr[5].u32[0] = slot.offset();
+            obj->PutToSlotOffset(ctx_, instr[5].u32[0], stored, strict, e);
           } else {
             // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
@@ -635,18 +635,17 @@ class Operation {
     if (instr[3].map == global->map()) {
       // map is cached, so use previous index code
       return IncrementGlobal<Target, Returned>(global,
-                                               instr[4].u32, strict, e);
+                                               instr[4].u32[0], strict, e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         instr[3].map = global->map();
-        instr[4].u32 = slot.offset();
+        instr[4].u32[0] = slot.offset();
         return IncrementGlobal<Target, Returned>(global,
-                                                 instr[4].u32, strict, e);
+                                                 instr[4].u32[0], strict, e);
       } else {
         instr[3].map = NULL;
-        return IncrementName<Target, Returned>(ctx_->global_env(),
-                                               s, strict, e);
+        return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
       }
     }
   }
@@ -656,14 +655,14 @@ class Operation {
     // opcode | dst | index | nop | nop
     if (instr[3].map == global->map()) {
       // map is cached, so use previous index code
-      return global->GetBySlotOffset(ctx_, instr[4].u32, e);
+      return global->GetBySlotOffset(ctx_, instr[4].u32[0], e);
     } else {
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         // now Own Property Pattern only implemented
         assert(slot.IsCacheable());
         instr[3].map = global->map();
-        instr[4].u32 = slot.offset();
+        instr[4].u32[0] = slot.offset();
         return slot.Get(ctx_, global, e);
       } else {
         instr[3].map = NULL;

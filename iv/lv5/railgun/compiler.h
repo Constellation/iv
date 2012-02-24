@@ -237,7 +237,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     Code::Data* data = code->GetData();
     for (Code::Data::iterator it = data->begin(),
          last = data->end(); it != last;) {
-      const uint32_t opcode = it->u32;
+      const uint32_t opcode = it->u32[0];
       it->label = table[opcode];
       std::advance(it, kOPLength[opcode]);
     }
@@ -641,7 +641,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     if (env->scope()->needs_heap_scope()) {
       assert(!env->heap().empty());
       assert(code_->names_.empty());
-      Emit<OP::BUILD_ENV>(env->heap_size(), env->mutable_start());
+      Emit<OP::BUILD_ENV>(Instruction::UInt32(env->heap_size(), env->mutable_start()));
       for (FunctionScope::HeapVariables::const_iterator
            it = env->heap().begin(), last = env->heap().end();
            it != last; ++it) {
