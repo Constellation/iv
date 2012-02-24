@@ -360,7 +360,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             } else {
               Thunk base(&thunklist_, EmitExpression(idx->target()));
               RegisterID element = EmitExpression(idx->key());
-              Emit<OP::STORE_ELEMENT>(base.Release(), element, tmp);
+              Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element, tmp));
             }
           }
         } else {

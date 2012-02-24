@@ -448,12 +448,12 @@ do {\
       }
 
       DEFINE_OPCODE(LOAD_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         const JSVal res =
             operation_.LoadElement(base, element, strict, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(LOAD_ELEMENT);
       }
 
@@ -625,10 +625,10 @@ do {\
       }
 
       DEFINE_OPCODE(STORE_ELEMENT) {
-        // opcode | base | element | src
-        const JSVal base = REG(instr[1].i32);
-        const JSVal element = REG(instr[2].i32);
-        const JSVal src = REG(instr[3].i32);
+        // opcode | (base | element | src)
+        const JSVal base = REG(instr[1].i16[0]);
+        const JSVal element = REG(instr[1].i16[1]);
+        const JSVal src = REG(instr[1].i16[2]);
         operation_.StoreElement(base, element, src, strict, ERR);
         DISPATCH(STORE_ELEMENT);
       }
@@ -684,25 +684,25 @@ do {\
       }
 
       DEFINE_OPCODE(DELETE_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         base.CheckObjectCoercible(ERR);
         uint32_t index;
         if (element.GetUInt32(&index)) {
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          REG(instr[1].i32) = obj;
+          REG(instr[1].i16[0]) = obj;
           const bool result =
               obj->Delete(ctx_,
                           symbol::MakeSymbolFromIndex(index), strict, ERR);
-          REG(instr[1].i32) = JSVal::Bool(result);
+          REG(instr[1].i16[0]) = JSVal::Bool(result);
         } else {
           // const radio::Scope scope(ctx_);
           const Symbol name = element.ToSymbol(ctx_, ERR);
           JSObject* const obj = base.ToObject(ctx_, ERR);
-          REG(instr[1].i32) = obj;
+          REG(instr[1].i16[0]) = obj;
           const bool result = obj->Delete(ctx_, name, strict, ERR);
-          REG(instr[1].i32) = JSVal::Bool(result);
+          REG(instr[1].i16[0]) = JSVal::Bool(result);
         }
         DISPATCH(DELETE_ELEMENT);
       }
@@ -1044,42 +1044,42 @@ do {\
       }
 
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         const JSVal res =
             operation_.IncrementElement<-1, 1>(base, element, strict, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(DECREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         const JSVal res =
             operation_.IncrementElement<-1, 0>(base, element, strict, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(POSTFIX_DECREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(INCREMENT_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         const JSVal res =
             operation_.IncrementElement<1, 1>(base, element, strict, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(INCREMENT_ELEMENT);
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_ELEMENT) {
-        // opcode | dst | base | element
-        const JSVal base = REG(instr[2].i32);
-        const JSVal element = REG(instr[3].i32);
+        // opcode | (dst | base | element)
+        const JSVal base = REG(instr[1].i16[1]);
+        const JSVal element = REG(instr[1].i16[2]);
         const JSVal res =
             operation_.IncrementElement<1, 0>(base, element, strict, ERR);
-        REG(instr[1].i32) = res;
+        REG(instr[1].i16[0]) = res;
         DISPATCH(POSTFIX_INCREMENT_ELEMENT);
       }
 

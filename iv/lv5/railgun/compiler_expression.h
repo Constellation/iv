@@ -107,7 +107,7 @@ inline void Compiler::Visit(const Assignment* assign) {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           Thunk element(&thunklist_, EmitExpression(idx->key()));
           dst_ = EmitExpressionToDest(rhs, dst_);
-          Emit<OP::STORE_ELEMENT>(base.Release(), element.Release(), dst_);
+          Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
         }
       }
     } else {
@@ -181,13 +181,13 @@ inline void Compiler::Visit(const Assignment* assign) {
           Thunk element(&thunklist_, EmitExpression(key));
           {
             RegisterID prop = registers_.Acquire();
-            Emit<OP::LOAD_ELEMENT>(prop, base.reg(), element.reg());
+            Emit<OP::LOAD_ELEMENT>(Instruction::Reg3(prop, base.reg(), element.reg()));
             RegisterID tmp = EmitExpression(rhs);
             dst_ = Dest(dst_, tmp, prop);
             thunklist_.Spill(dst_);
             EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, tmp));
           }
-          Emit<OP::STORE_ELEMENT>(base.Release(), element.Release(), dst_);
+          Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
         }
       }
     } else {
@@ -289,7 +289,7 @@ inline RegisterID Compiler::EmitElement(const IndexAccess* prop,
     RegisterID element = EmitExpression(key);
     dst = Dest(dst, base.Release(), element);
     thunklist_.Spill(dst);
-    Emit<ElementOP>(dst, base.reg(), element);
+    Emit<ElementOP>(Instruction::Reg3(dst, base.reg(), element));
   }
   return dst;
 }
@@ -878,7 +878,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
           Emit<OP::LOAD_PROP>(site.callee(), site.base(), index, 0, 0, 0);
         } else {
           EmitExpressionToDest(ai->key(), site.callee());
-          Emit<OP::LOAD_ELEMENT>(site.callee(), site.base(), site.callee());
+          Emit<OP::LOAD_ELEMENT>(Instruction::Reg3(site.callee(), site.base(), site.callee()));
         }
       }
     } else {
