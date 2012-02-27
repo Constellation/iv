@@ -371,6 +371,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                                     bool ignore_result) {
     EmitExpressionContext context(this, dst, ignore_result);
     expr->Accept(this);
+    assert(!dst || dst == dst_);
     return dst_;
   }
 

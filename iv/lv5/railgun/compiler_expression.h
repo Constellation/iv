@@ -11,7 +11,7 @@ class Compiler::DestGuard {
     : compiler_(compiler) {
   }
   ~DestGuard() {
-    assert(compiler_->dst());
+    assert(compiler_->ignore_result() || compiler_->dst());
   }
  private:
   Compiler* compiler_;
