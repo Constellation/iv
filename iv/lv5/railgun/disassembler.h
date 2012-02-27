@@ -61,6 +61,8 @@ class DisAssembler : private core::Noncopyable<> {
     }
   }
 
+  // DisAssemble main function
+  // dispatch by instruction layout
   void DisAssemble(const Code& code,
                    const Instruction* instr,
                    uint32_t opcode,
@@ -69,24 +71,51 @@ class DisAssembler : private core::Noncopyable<> {
     const char* op = OP::String(opcode);
     char buf[80];
     int len = 0;
-    switch (opcode) {
+    switch (static_cast<OP::Type>(opcode)) {
+      case OP::POP_ENV:
+      case OP::DEBUGGER:
+      case OP::RAISE_REFERENCE:
       case OP::NOP: {
         len = snprintf(buf, sizeof(buf) - 1, "%s", op);
         break;
       }
+      case OP::RETURN_SUBROUTINE:
+      case OP::POSTFIX_INCREMENT:
+      case OP::POSTFIX_DECREMENT:
+      case OP::TYPEOF:
+      case OP::UNARY_BIT_NOT:
+      case OP::UNARY_NOT:
+      case OP::UNARY_NEGATIVE:
+      case OP::UNARY_POSITIVE:
       case OP::MV: {
         const int r0 = instr[1].i16[0], r1 = instr[1].i16[1];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d", op, r0, r1);
         break;
       }
+      case OP::WITH_SETUP:
+      case OP::INCREMENT:
+      case OP::DECREMENT:
+      case OP::LOAD_UNDEFINED:
+      case OP::LOAD_FALSE:
+      case OP::LOAD_TRUE:
+      case OP::LOAD_NULL:
+      case OP::LOAD_EMPTY:
+      case OP::LOAD_ARGUMENTS:
+      case OP::THROW:
       case OP::RETURN: {
         const int r0 = instr[1].i32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d", op, r0);
         break;
       }
+      case OP::TO_NUMBER_AND_RAISE_REFERENCE:
+      case OP::RAISE_IMMUTABLE: {
+        const unsigned int name = instr[1].u32[0];
+        len = snprintf(buf, sizeof(buf) - 1, "%s %u", op, name);
+        break;
+      }
       case OP::BUILD_ENV: {
-        const unsigned int size = instr[1].u32[0], mutable_start = instr[1].u32[1];
-        len = snprintf(buf, sizeof(buf) - 1, "%s %u %u", op, size, mutable_start);
+        const unsigned int size = instr[1].u32[0], mu = instr[1].u32[1];
+        len = snprintf(buf, sizeof(buf) - 1, "%s %u %u", op, size, mu);
         break;
       }
       case OP::INSTANTIATE_VARIABLE_BINDING:
@@ -96,8 +125,18 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s %u %s", op, name, boolean);
         break;
       }
+      case OP::LOAD_REGEXP:
+      case OP::LOAD_FUNCTION:
+      case OP::LOAD_ARRAY:
+      case OP::TRY_CATCH_SETUP:
+      case OP::INCREMENT_NAME:
+      case OP::DECREMENT_NAME:
+      case OP::POSTFIX_INCREMENT_NAME:
+      case OP::POSTFIX_DECREMENT_NAME:
+      case OP::TYPEOF_NAME:
       case OP::DELETE_NAME:
       case OP::STORE_NAME:
+      case OP::LOAD_NAME:
       case OP::LOAD_CONST:
       case OP::INITIALIZE_HEAP_IMMUTABLE: {
         const int r0 = instr[1].ssw.i16[0];
@@ -105,11 +144,11 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u", op, r0, offset);
         break;
       }
-      case OP::LOAD_ARGUMENTS: {
-        const int r0 = instr[1].i32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d", op, r0);
-        break;
-      }
+      case OP::POSTFIX_INCREMENT_HEAP:
+      case OP::POSTFIX_DECREMENT_HEAP:
+      case OP::INCREMENT_HEAP:
+      case OP::DECREMENT_HEAP:
+      case OP::TYPEOF_HEAP:
       case OP::DELETE_HEAP:
       case OP::STORE_HEAP:
       case OP::LOAD_HEAP: {
@@ -117,9 +156,15 @@ class DisAssembler : private core::Noncopyable<> {
         const unsigned int name = instr[1].ssw.u32;
         const unsigned int offset = instr[2].u32[0];
         const unsigned int nest = instr[2].u32[1];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %u %u", op, r0, name, offset, nest);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %u %u",
+                       op, r0, name, offset, nest);
         break;
       }
+      case OP::POSTFIX_INCREMENT_GLOBAL:
+      case OP::POSTFIX_DECREMENT_GLOBAL:
+      case OP::INCREMENT_GLOBAL:
+      case OP::DECREMENT_GLOBAL:
+      case OP::TYPEOF_GLOBAL:
       case OP::DELETE_GLOBAL:
       case OP::STORE_GLOBAL:
       case OP::LOAD_GLOBAL: {
@@ -127,16 +172,59 @@ class DisAssembler : private core::Noncopyable<> {
         const unsigned int name = instr[1].ssw.u32;
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %p %u", op, r0, name, map, offset);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %p %u",
+                       op, r0, name, map, offset);
         break;
       }
+      case OP::BINARY_BIT_OR:
+      case OP::BINARY_BIT_XOR:
+      case OP::BINARY_BIT_AND:
+      case OP::BINARY_STRICT_NE:
+      case OP::BINARY_NE:
+      case OP::BINARY_STRICT_EQ:
+      case OP::BINARY_EQ:
+      case OP::BINARY_IN:
+      case OP::BINARY_INSTANCEOF:
+      case OP::BINARY_GTE:
+      case OP::BINARY_LTE:
+      case OP::BINARY_GT:
+      case OP::BINARY_LT:
+      case OP::BINARY_RSHIFT_LOGICAL:
+      case OP::BINARY_RSHIFT:
+      case OP::BINARY_LSHIFT:
+      case OP::BINARY_MODULO:
+      case OP::BINARY_DIVIDE:
+      case OP::BINARY_MULTIPLY:
+      case OP::BINARY_SUBTRACT:
+      case OP::BINARY_ADD:
+      case OP::POSTFIX_INCREMENT_ELEMENT:
+      case OP::POSTFIX_DECREMENT_ELEMENT:
+      case OP::INCREMENT_ELEMENT:
+      case OP::DECREMENT_ELEMENT:
       case OP::DELETE_ELEMENT:
       case OP::STORE_ELEMENT:
       case OP::LOAD_ELEMENT: {
-        const int r0 = instr[1].i16[0], r1 = instr[1].i16[1], r2 = instr[1].i16[2];
+        const int r0 = instr[1].i16[0],
+              r1 = instr[1].i16[1], r2 = instr[1].i16[2];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d r%d", op, r0, r1, r2);
         break;
       }
+      case OP::STORE_OBJECT_SET:
+      case OP::STORE_OBJECT_GET:
+      case OP::STORE_OBJECT_DATA:
+      case OP::INIT_VECTOR_ARRAY_ELEMENT:
+      case OP::INIT_SPARSE_ARRAY_ELEMENT: {
+        const int r0 = instr[1].i16[0], r1 = instr[1].i16[1];
+        const unsigned int index = instr[2].u32[0], size = instr[2].u32[1];
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %u",
+                       op, r0, r1, index, size);
+        break;
+      }
+      case OP::PREPARE_DYNAMIC_CALL:
+      case OP::POSTFIX_INCREMENT_PROP:
+      case OP::POSTFIX_DECREMENT_PROP:
+      case OP::INCREMENT_PROP:
+      case OP::DECREMENT_PROP:
       case OP::DELETE_PROP:
       case OP::STORE_PROP_GENERIC:
       case OP::LOAD_PROP_GENERIC:
@@ -146,13 +234,20 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u", op, r0, r1, name);
         break;
       }
+      case OP::LOAD_OBJECT: {
+        const int r0 = instr[1].i32[0];
+        const Map* map = instr[2].map;
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %p", op, r0, map);
+        break;
+      }
       case OP::STORE_PROP:
       case OP::LOAD_PROP_OWN: {
         const int r0 = instr[1].ssw.i16[0], r1 = instr[1].ssw.i16[1];
         const unsigned int name = instr[1].ssw.u32;
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %u", op, r0, r1, name, map, offset);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %u",
+                       op, r0, r1, name, map, offset);
         break;
       }
       case OP::LOAD_PROP_PROTO: {
@@ -161,7 +256,8 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map1 = instr[2].map;
         const Map* map2 = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u", op, r0, r1, name, map1, map2, offset);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
+                       op, r0, r1, name, map1, map2, offset);
         break;
       }
       case OP::LOAD_PROP_CHAIN: {
@@ -170,10 +266,41 @@ class DisAssembler : private core::Noncopyable<> {
         const Chain* chain = instr[2].chain;
         const Map* map = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u", op, r0, r1, name, chain, map, offset);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
+                       op, r0, r1, name, chain, map, offset);
         break;
       }
-      default: {
+      case OP::IF_TRUE:
+      case OP::IF_FALSE: {
+        const int r0 = instr[1].jump.i16[0], jump = instr[1].jump.to;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d", op, jump, r0);
+        break;
+      }
+      case OP::FORIN_ENUMERATE:
+      case OP::FORIN_SETUP:
+      case OP::JUMP_SUBROUTINE: {
+        const int r0 = instr[1].jump.i16[0],
+              r1 = instr[1].jump.i16[1], jump = instr[1].jump.to;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d r%d", op, jump, r0, r1);
+        break;
+      }
+      case OP::JUMP_BY: {
+        const int jump = instr[1].jump.to;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d", op, jump);
+        break;
+      }
+      case OP::CALL:
+      case OP::EVAL:
+      case OP::CONSTRUCT: {
+        const int r0 = instr[1].i16[0], r1 = instr[1].i16[1],
+              r2 = instr[1].i16[2], arg_with_this = instr[2].i32[0];
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d r%d %d",
+                       op, r0, r1, r2, arg_with_this);
+        break;
+      }
+      case OP::NUM_OF_OP: {
+        UNREACHABLE();
+        break;
       }
     }
     line->insert(line->end(), buf, buf + len);
