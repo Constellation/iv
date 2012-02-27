@@ -143,7 +143,6 @@ def Build():
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
     CPPPATH=root_dir,
     CPPDEFINES=[
-      "_GNU_SOURCE",
       "__STDC_LIMIT_MACROS",
       "__STDC_CONSTANT_MACROS"],
     LIBPATH=["/usr/lib"])
