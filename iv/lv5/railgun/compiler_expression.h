@@ -390,15 +390,27 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         const uint32_t index = SymbolToNameIndex(ident->symbol());
         if (RegisterID local = GetLocal(ident->symbol())) {
           const LookupInfo info = Lookup(ident->symbol());
-          if (info.immutable()) {
-            local = EmitMV(dst_ ? dst_ : registers_.Acquire(), local);
-          }
-          thunklist_.Spill(local);
-          EmitUnsafe((token == Token::TK_INC) ?
-                     OP::INCREMENT : OP::DECREMENT, local);
-          dst_ = EmitMV(dst_, local);
-          if (code_->strict() && info.immutable()) {
-            Emit<OP::RAISE_IMMUTABLE>(index);
+          if (ignore_result()) {
+            if (info.immutable()) {
+              if (code_->strict()) {
+                Emit<OP::RAISE_IMMUTABLE>(index);
+              }
+            } else {
+              thunklist_.Spill(local);
+              EmitUnsafe((token == Token::TK_INC) ?
+                         OP::INCREMENT : OP::DECREMENT, local);
+            }
+          } else {
+            if (info.immutable()) {
+              local = EmitMV(dst_ ? dst_ : registers_.Acquire(), local);
+            }
+            thunklist_.Spill(local);
+            EmitUnsafe((token == Token::TK_INC) ?
+                       OP::INCREMENT : OP::DECREMENT, local);
+            dst_ = EmitMV(dst_, local);
+            if (code_->strict() && info.immutable()) {
+              Emit<OP::RAISE_IMMUTABLE>(index);
+            }
           }
         } else {
           dst_ = EmitOptimizedLookup(
@@ -462,17 +474,29 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
     const uint32_t index = SymbolToNameIndex(ident->symbol());
     if (RegisterID local = GetLocal(ident->symbol())) {
       const LookupInfo info = Lookup(ident->symbol());
-      dst_ = Dest(dst_);
-      thunklist_.Spill(dst_);
-      if (info.immutable() || dst_ == local) {
-        local = EmitMV(registers_.Acquire(), local);
-      }
-      thunklist_.Spill(local);
-      EmitUnsafe((token == Token::TK_INC) ?
-                 OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
-                 Instruction::Reg2(dst_, local));
-      if (code_->strict() && info.immutable()) {
-        Emit<OP::RAISE_IMMUTABLE>(index);
+      if (ignore_result()) {
+        if (info.immutable()) {
+          if (code_->strict()) {
+            Emit<OP::RAISE_IMMUTABLE>(index);
+          }
+        } else {
+          thunklist_.Spill(local);
+          EmitUnsafe((token == Token::TK_INC) ?
+                     OP::INCREMENT : OP::DECREMENT, local);
+        }
+      } else {
+        dst_ = Dest(dst_);
+        thunklist_.Spill(dst_);
+        if (info.immutable() || dst_ == local) {
+          local = EmitMV(registers_.Acquire(), local);
+        }
+        thunklist_.Spill(local);
+        EmitUnsafe((token == Token::TK_INC) ?
+                   OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
+                   Instruction::Reg2(dst_, local));
+        if (code_->strict() && info.immutable()) {
+          Emit<OP::RAISE_IMMUTABLE>(index);
+        }
       }
     } else {
       dst_ = EmitOptimizedLookup(
