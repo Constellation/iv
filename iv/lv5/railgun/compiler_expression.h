@@ -63,13 +63,6 @@ inline void Compiler::Visit(const Assignment* assign) {
 
   const Expression* lhs = assign->left();
   const Expression* rhs = assign->right();
-  if (!lhs->IsValidLeftHandSide()) {
-    EmitExpressionIgnoreResult(lhs);
-    dst_ = EmitExpressionToDest(rhs, dst_);
-    Emit<OP::RAISE_REFERENCE>();
-    return;
-  }
-  assert(lhs->IsValidLeftHandSide());
 
   if (token == Token::TK_ASSIGN) {
     if (const Identifier* ident = lhs->AsIdentifier()) {
@@ -115,7 +108,8 @@ inline void Compiler::Visit(const Assignment* assign) {
       // FunctionCall
       // ConstructorCall
       EmitExpressionIgnoreResult(lhs);
-      dst_ = EmitExpressionToDest(rhs, dst_);
+      EmitExpressionIgnoreResult(rhs);
+      dst_ = Dest(dst_);
       Emit<OP::RAISE_REFERENCE>();
     }
   } else {
@@ -197,10 +191,10 @@ inline void Compiler::Visit(const Assignment* assign) {
       Thunk src(&thunklist_, EmitExpression(lhs));
       {
         RegisterID tmp = EmitExpression(rhs);
-        dst_ = Dest(dst_, src.Release(), tmp);
-        thunklist_.Spill(dst_);
-        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, src.reg(), tmp));
+        RegisterID c = registers_.Acquire();
+        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(c, src.reg(), tmp));
       }
+      dst_ = Dest(dst_);
       Emit<OP::RAISE_REFERENCE>();
     }
   }
