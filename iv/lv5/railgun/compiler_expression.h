@@ -277,7 +277,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
     }
 
     case Token::TK_LOGICAL_OR: {  // ||
-      EmitLogicalPath<Token::TK_LOGICAL_AND>(binary);
+      EmitLogicalPath<Token::TK_LOGICAL_OR>(binary);
       break;
     }
 
