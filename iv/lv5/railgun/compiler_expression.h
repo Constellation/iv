@@ -536,6 +536,10 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
 
 inline void Compiler::Visit(const StringLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and StringLiteral doesn't have side effect
+    return;
+  }
   const core::UString s = core::ToUString(lit->value());
   const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
   dst_ = Dest(dst_);
@@ -560,6 +564,10 @@ inline void Compiler::Visit(const StringLiteral* lit) {
 
 inline void Compiler::Visit(const NumberLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and NumberLiteral doesn't have side effect
+    return;
+  }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   const double val = lit->value();
@@ -594,12 +602,20 @@ inline void Compiler::Visit(const Identifier* lit) {
 
 inline void Compiler::Visit(const ThisLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and ThisLiteral doesn't have side effect
+    return;
+  }
   assert(registers_.This()->IsConstant());
   dst_ = EmitMV(dst_, registers_.This());
 }
 
 inline void Compiler::Visit(const NullLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and NullLiteral doesn't have side effect
+    return;
+  }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   Emit<OP::LOAD_NULL>(dst_);
@@ -607,6 +623,10 @@ inline void Compiler::Visit(const NullLiteral* lit) {
 
 inline void Compiler::Visit(const TrueLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and TrueLiteral doesn't have side effect
+    return;
+  }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   Emit<OP::LOAD_TRUE>(dst_);
@@ -614,6 +634,10 @@ inline void Compiler::Visit(const TrueLiteral* lit) {
 
 inline void Compiler::Visit(const FalseLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and FalseLiteral doesn't have side effect
+    return;
+  }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   Emit<OP::LOAD_FALSE>(dst_);
@@ -621,6 +645,10 @@ inline void Compiler::Visit(const FalseLiteral* lit) {
 
 inline void Compiler::Visit(const RegExpLiteral* lit) {
   const DestGuard dest_guard(this);
+  if (ignore_result()) {
+    // this value is not used and RegExpLiteral doesn't have side effect
+    return;
+  }
   dst_ = Dest(dst_);
   thunklist_.Spill(dst_);
   Emit<OP::LOAD_REGEXP>(Instruction::SW(dst_, code_->constants_.size()));
