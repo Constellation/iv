@@ -35,7 +35,7 @@ function test3() {
 function test4() {
   var i = 0, obj;
   try {
-    (obj = {
+    i = (obj = {
       flag: false,
       valueOf: function() {
         obj.flag = true;
@@ -46,4 +46,20 @@ function test4() {
     return i === 0 && obj.flag;
   }
 }
-test1() && test2() && test3() && test4();
+
+function test5() {
+  var i = 0, obj;
+  try {
+    i = (obj = {
+      flag: false,
+      valueOf: function() {
+        this.flag = true;
+        throw new Error;
+      }
+    }) += 10;
+  } catch (e) {
+    return i === 0 && obj.flag;
+  }
+}
+
+test1() && test2() && test3() && test4() && test5();
