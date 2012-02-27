@@ -59,10 +59,16 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
 inline void Compiler::EmitIdentifierAccessAssign(const Assignment* assign,
                                                  const Expression* target,
                                                  Symbol sym) {
-    Thunk base(&thunklist_, EmitExpression(ac->target()));
-    dst_ = EmitExpressionToDest(rhs, dst_);
-    const uint32_t index = SymbolToNameIndex(ac->key());
-    Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+    Thunk base(&thunklist_, EmitExpression(target));
+    const uint32_t index = SymbolToNameIndex(sym);
+    if (Compiler::NotOrdered(dst_)) {
+      dst_ = EmitExpressionToDest(assign->right(), dst_);
+      Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+    } else {
+      RegisterID ret = EmitExpression(assign->right());
+      Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), ret, index), 0, 0);
+      dst_ = EmitMV(dst_, ret);
+    }
 }
 
 inline void Compiler::EmitIdentifierAccessBinaryAssign(const Assignment* assign,
@@ -123,24 +129,24 @@ inline void Compiler::Visit(const Assignment* assign) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
         // IdentifierAccess
-        Thunk base(&thunklist_, EmitExpression(ac->target()));
-        dst_ = EmitExpressionToDest(rhs, dst_);
-        const uint32_t index = SymbolToNameIndex(ac->key());
-        Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+        EmitIdentifierAccessAssign(assign, ac->target(), ac->key());
       } else {
         // IndexAccess
         const IndexAccess* idx = lhs->AsIndexAccess();
         const Symbol sym = PropertyName(idx->key());
         if (sym != symbol::kDummySymbol) {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index = SymbolToNameIndex(sym);
-          dst_ = EmitExpressionToDest(rhs, dst_);
-          Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+          EmitIdentifierAccessAssign(assign, idx->target(), sym);
         } else {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           Thunk element(&thunklist_, EmitExpression(idx->key()));
-          dst_ = EmitExpressionToDest(rhs, dst_);
-          Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
+          if (Compiler::NotOrdered(dst_)) {
+            dst_ = EmitExpressionToDest(rhs, dst_);
+            Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
+          } else {
+            RegisterID ret = EmitExpression(rhs);
+            Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), ret));
+            dst_ = EmitMV(dst_, ret);
+          }
         }
       }
     } else {
@@ -157,24 +163,36 @@ inline void Compiler::Visit(const Assignment* assign) {
       if (RegisterID local = GetLocal(ident->symbol())) {
         Thunk lv(&thunklist_, EmitExpression(lhs));
         RegisterID rv = EmitExpression(rhs);
-        if (info.immutable()) {
-          local = dst_ ? dst_ : registers_.Acquire();
-        }
         lv.Release();
-        thunklist_.Spill(local);
-        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(local, lv.reg(), rv));
-        dst_ = EmitMV(dst_, local);
-        if (code_->strict() && info.immutable()) {
-          Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+        if (info.immutable()) {
+          dst_ = Dest(dst_);
+          if (code_->strict()) {
+            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(Temporary(), lv.reg(), rv));
+            Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+          } else {
+            thunklist_.Spill(dst_);
+            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+          }
+        } else {
+          thunklist_.Spill(local);
+          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(local, lv.reg(), rv));
+          dst_ = EmitMV(dst_, local);
         }
       } else {
         Thunk lv(&thunklist_, EmitExpression(lhs));
         RegisterID rv = EmitExpression(rhs);
         lv.Release();
-        dst_ = Dest(dst_, lv.reg(), rv);
-        thunklist_.Spill(dst_);
-        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
-        EmitStore(ident->symbol(), dst_);
+        if (Compiler::NotOrdered(dst_)) {
+          dst_ = Dest(dst_, lv.reg(), rv);
+          thunklist_.Spill(dst_);
+          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+          EmitStore(ident->symbol(), dst_);
+        } else {
+          RegisterID ret = Temporary(lv.reg(), rv);
+          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, lv.reg(), rv));
+          EmitStore(ident->symbol(), ret);
+          dst_ = EmitMV(dst_, ret);
+        }
       }
     } else if (lhs->AsPropertyAccess()) {
       // PropertyAccess
