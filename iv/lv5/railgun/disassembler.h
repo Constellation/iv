@@ -173,7 +173,8 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %p %u",
-                       op, r0, name, map, offset);
+                       op, r0, name,
+                       reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::BINARY_BIT_OR:
@@ -237,7 +238,8 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::LOAD_OBJECT: {
         const int r0 = instr[1].i32[0];
         const Map* map = instr[2].map;
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %p", op, r0, map);
+        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %p",
+                       op, r0, reinterpret_cast<const void*>(map));
         break;
       }
       case OP::STORE_PROP:
@@ -247,7 +249,8 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %u",
-                       op, r0, r1, name, map, offset);
+                       op, r0, r1, name,
+                       reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::LOAD_PROP_PROTO: {
@@ -257,7 +260,9 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map2 = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
-                       op, r0, r1, name, map1, map2, offset);
+                       op, r0, r1, name,
+                       reinterpret_cast<const void*>(map1),
+                       reinterpret_cast<const void*>(map2), offset);
         break;
       }
       case OP::LOAD_PROP_CHAIN: {
@@ -267,7 +272,9 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
-                       op, r0, r1, name, chain, map, offset);
+                       op, r0, r1, name,
+                       reinterpret_cast<const void*>(chain),
+                       reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::IF_TRUE:
