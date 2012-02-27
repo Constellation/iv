@@ -281,7 +281,7 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::IF_TRUE:
       case OP::IF_FALSE: {
         const int r0 = instr[1].jump.i16[0], jump = instr[1].jump.to;
-        const int to = index + length + jump;
+        const int to = index + jump;
         len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d ; => %d",
                        op, jump, r0, to);
         break;
@@ -291,14 +291,14 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::JUMP_SUBROUTINE: {
         const int r0 = instr[1].jump.i16[0],
               r1 = instr[1].jump.i16[1], jump = instr[1].jump.to;
-        const int to = index + length + jump;
+        const int to = index + jump;
         len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d r%d ; => %d",
                        op, jump, r0, r1, to);
         break;
       }
       case OP::JUMP_BY: {
         const int jump = instr[1].jump.to;
-        const int to = index + length + jump;
+        const int to = index + jump;
         len = snprintf(buf, sizeof(buf) - 1, "%s %d ; => %d", op, jump, to);
         break;
       }
