@@ -56,8 +56,37 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
   return dst;
 }
 
+inline void Compiler::EmitIdentifierAccessAssign(const Assignment* assign,
+                                                 const Expression* target,
+                                                 Symbol sym) {
+    Thunk base(&thunklist_, EmitExpression(ac->target()));
+    dst_ = EmitExpressionToDest(rhs, dst_);
+    const uint32_t index = SymbolToNameIndex(ac->key());
+    Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+}
+
+inline void Compiler::EmitIdentifierAccessBinaryAssign(const Assignment* assign,
+                                                       const Expression* target,
+                                                       Symbol sym) {
+    Thunk base(&thunklist_, EmitExpression(target));
+    const uint32_t index = SymbolToNameIndex(sym);
+    RegisterID prop = Temporary();
+    Emit<OP::LOAD_PROP>(Instruction::SSW(prop, base.reg(), index), 0, 0, 0);
+    RegisterID val = EmitExpression(assign->right());
+    if (Compiler::NotOrdered(dst_)) {
+      dst_ = Dest(dst_, val, prop);
+      thunklist_.Spill(dst_);
+      EmitUnsafe(OP::BinaryOP(assign->op()), Instruction::Reg3(dst_, prop, val));
+      Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+    } else {
+      RegisterID ret = Temporary(val, prop);
+      EmitUnsafe(OP::BinaryOP(assign->op()), Instruction::Reg3(ret, prop, val));
+      Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), ret, index), 0, 0);
+      dst_ = EmitMV(dst_, ret);
+    }
+}
+
 inline void Compiler::Visit(const Assignment* assign) {
-  using core::Token;
   const DestGuard dest_guard(this);
   const Token::Type token = assign->op();
 
@@ -81,9 +110,14 @@ inline void Compiler::Visit(const Assignment* assign) {
           dst_ = EmitMV(dst_, EmitExpressionToDest(rhs, local));
         }
       } else {
-        RegisterID r = EmitExpression(rhs);
-        EmitStore(ident->symbol(), r);
-        dst_ = EmitMV(dst_, r);
+        if (Compiler::NotOrdered(dst_)) {
+          dst_ = EmitExpressionToDest(rhs, dst_);
+          EmitStore(ident->symbol(), dst_);
+        } else {
+          RegisterID r = EmitExpression(rhs);
+          EmitStore(ident->symbol(), r);
+          dst_ = EmitMV(dst_, r);
+        }
       }
     } else if (lhs->AsPropertyAccess()) {
       // PropertyAccess
@@ -110,8 +144,7 @@ inline void Compiler::Visit(const Assignment* assign) {
         }
       }
     } else {
-      // FunctionCall
-      // ConstructorCall
+      // not valid LHS
       EmitExpressionIgnoreResult(lhs);
       EmitExpressionIgnoreResult(rhs);
       dst_ = Dest(dst_);
@@ -147,57 +180,40 @@ inline void Compiler::Visit(const Assignment* assign) {
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
         // IdentifierAccess
-        Thunk base(&thunklist_, EmitExpression(ac->target()));
-        const uint32_t index = SymbolToNameIndex(ac->key());
-        {
-          RegisterID prop = registers_.Acquire();
-          Emit<OP::LOAD_PROP>(Instruction::SSW(prop, base.reg(), index), 0, 0, 0);
-          RegisterID tmp = EmitExpression(rhs);
-          dst_ = Dest(dst_, tmp, prop);
-          thunklist_.Spill(dst_);
-          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, tmp));
-        }
-        Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
-        return;
+        EmitIdentifierAccessBinaryAssign(assign, ac->target(), ac->key());
       } else {
         // IndexAccess
         const IndexAccess* idx = lhs->AsIndexAccess();
         const Expression* key = idx->key();
         const Symbol sym = PropertyName(key);
         if (sym != symbol::kDummySymbol) {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          const uint32_t index = SymbolToNameIndex(sym);
-          {
-            RegisterID prop = registers_.Acquire();
-            Emit<OP::LOAD_PROP>(Instruction::SSW(prop, base.reg(), index), 0, 0, 0);
-            RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_, tmp, prop);
-            thunklist_.Spill(dst_);
-            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, tmp));
-          }
-          Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
+          EmitIdentifierAccessBinaryAssign(assign, idx->target(), sym);
         } else {
           Thunk base(&thunklist_, EmitExpression(idx->target()));
           Thunk element(&thunklist_, EmitExpression(key));
-          {
-            RegisterID prop = registers_.Acquire();
-            Emit<OP::LOAD_ELEMENT>(Instruction::Reg3(prop, base.reg(), element.reg()));
-            RegisterID tmp = EmitExpression(rhs);
-            dst_ = Dest(dst_, tmp, prop);
+          RegisterID prop = Temporary();
+          Emit<OP::LOAD_ELEMENT>(Instruction::Reg3(prop, base.reg(), element.reg()));
+          RegisterID val = EmitExpression(rhs);
+          if (Compiler::NotOrdered(dst_)) {
+            dst_ = Dest(dst_, val, prop);
             thunklist_.Spill(dst_);
-            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, tmp));
+            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, val));
+            Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
+          } else {
+            RegisterID ret = Temporary(val, prop);
+            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, prop, val));
+            Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), ret));
+            dst_ = EmitMV(dst_, ret);
           }
-          Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element.Release(), dst_));
         }
       }
     } else {
-      // FunctionCall
-      // ConstructorCall
-      Thunk src(&thunklist_, EmitExpression(lhs));
+      // not valid LHS
       {
-        RegisterID tmp = EmitExpression(rhs);
-        RegisterID c = registers_.Acquire();
-        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(c, src.reg(), tmp));
+        Thunk src(&thunklist_, EmitExpression(lhs));
+        RegisterID val = EmitExpression(rhs);
+        RegisterID ret = Temporary(val, src.Release());
+        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, src.Release(), val));
       }
       dst_ = Dest(dst_);
       Emit<OP::RAISE_REFERENCE>();
@@ -205,56 +221,73 @@ inline void Compiler::Visit(const Assignment* assign) {
   }
 }
 
+template<core::Token::Type token>
+void Compiler::FastPathLogical(const BinaryOperation* binary) {
+  IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
+                   token == Token::TK_LOGICAL_OR);
+  std::size_t label;
+  dst_ = Dest(dst_);
+  {
+    dst_ = EmitExpressionToDest(binary->left(), dst_);
+    label = CurrentSize();
+    Emit<Token::TK_LOGICAL_AND == token ?
+         OP::IF_FALSE : OP::IF_TRUE>(Instruction::Jump(0, dst_));
+  }
+  dst_ = EmitExpressionToDest(binary->right(), dst_);
+  EmitJump(CurrentSize(), label);
+}
+
+template<core::Token::Type token>
+void Compiler::SlowPathLogical(const BinaryOperation* binary) {
+  IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
+                   token == Token::TK_LOGICAL_OR);
+  std::size_t first;
+  {
+    RegisterID cond = EmitExpression(binary->left());
+    first = CurrentSize();
+    Emit<Token::TK_LOGICAL_AND == token ?
+         OP::IF_TRUE : OP::IF_FALSE>(Instruction::Jump(0, cond));
+    dst_ = Dest(dst_, cond);
+    dst_ = EmitMV(dst_, cond);
+  }
+  const std::size_t second = CurrentSize();
+  Emit<OP::JUMP_BY>(Instruction::Jump(0));
+  EmitJump(CurrentSize(), first);
+  dst_ = EmitExpressionToDest(binary->right(), dst_);
+  EmitJump(CurrentSize(), second);
+}
+
 inline void Compiler::Visit(const BinaryOperation* binary) {
-  using core::Token;
   const DestGuard dest_guard(this);
   const Token::Type token = binary->op();
-  const Expression* lhs = binary->left();
-  const Expression* rhs = binary->right();
   switch (token) {
     case Token::TK_LOGICAL_AND: {  // &&
-      std::size_t first;
-      {
-        RegisterID cond = EmitExpression(lhs);
-        first = CurrentSize();
-        Emit<OP::IF_TRUE>(Instruction::Jump(0, cond));
-        dst_ = Dest(dst_, cond);
-        dst_ = EmitMV(dst_, cond);
+      if (Compiler::NotOrdered(dst_)) {
+        FastPathLogical<Token::TK_LOGICAL_AND>(binary);
+      } else {
+        SlowPathLogical<Token::TK_LOGICAL_AND>(binary);
       }
-      const std::size_t second = CurrentSize();
-      Emit<OP::JUMP_BY>(Instruction::Jump(0));
-      EmitJump(CurrentSize(), first);
-      dst_ = EmitExpressionToDest(rhs, dst_);
-      EmitJump(CurrentSize(), second);
       break;
     }
 
     case Token::TK_LOGICAL_OR: {  // ||
-      std::size_t first;
-      {
-        RegisterID cond = EmitExpression(lhs);
-        first = CurrentSize();
-        Emit<OP::IF_FALSE>(Instruction::Jump(0, cond));
-        dst_ = Dest(dst_, cond);
-        dst_ = EmitMV(dst_, cond);
+      if (Compiler::NotOrdered(dst_)) {
+        FastPathLogical<Token::TK_LOGICAL_OR>(binary);
+      } else {
+        SlowPathLogical<Token::TK_LOGICAL_OR>(binary);
       }
-      const std::size_t second = CurrentSize();
-      Emit<OP::JUMP_BY>(Instruction::Jump(0));
-      EmitJump(CurrentSize(), first);
-      dst_ = EmitExpressionToDest(rhs, dst_);
-      EmitJump(CurrentSize(), second);
       break;
     }
 
     case Token::TK_COMMA: {  // ,
-      EmitExpressionIgnoreResult(lhs);
-      dst_ = EmitExpressionToDest(rhs, dst_);
+      EmitExpressionIgnoreResult(binary->left());
+      dst_ = EmitExpressionToDest(binary->right(), dst_);
       break;
     }
 
     default: {
-      Thunk lv(&thunklist_, EmitExpression(lhs));
-      RegisterID rv = EmitExpression(rhs);
+      Thunk lv(&thunklist_, EmitExpression(binary->left()));
+      RegisterID rv = EmitExpression(binary->right());
       dst_ = Dest(dst_, lv.Release(), rv);
       thunklist_.Spill(dst_);
       EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
@@ -302,7 +335,6 @@ inline RegisterID Compiler::EmitElement(const IndexAccess* prop,
 }
 
 inline void Compiler::Visit(const UnaryOperation* unary) {
-  using core::Token;
   const DestGuard dest_guard(this);
   const Token::Type token = unary->op();
   const Expression* expr = unary->expr();
@@ -467,7 +499,6 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
 }
 
 inline void Compiler::Visit(const PostfixExpression* postfix) {
-  using core::Token;
   const DestGuard dest_guard(this);
   const Expression* expr = postfix->expr();
   const Token::Type token = postfix->op();
@@ -750,7 +781,6 @@ inline void Compiler::Visit(const ArrayLiteral* lit) {
 }
 
 inline void Compiler::Visit(const ObjectLiteral* lit) {
-  using std::get;
   typedef ObjectLiteral::Properties Properties;
   const DestGuard dest_guard(this);
   const std::size_t arg_index = CurrentSize() + 2;
@@ -761,8 +791,8 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   for (Properties::const_iterator it = properties.begin(),
        last = properties.end(); it != last; ++it) {
     const ObjectLiteral::Property& prop = *it;
-    const ObjectLiteral::PropertyDescriptorType type(get<0>(prop));
-    const Symbol name = get<1>(prop);
+    const ObjectLiteral::PropertyDescriptorType type(std::get<0>(prop));
+    const Symbol name = std::get<1>(prop);
 
     uint32_t merged = 0;
     uint32_t position = 0;
@@ -776,7 +806,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
       position = it2->second;
     }
 
-    RegisterID item = EmitExpression(get<2>(prop));
+    RegisterID item = EmitExpression(std::get<2>(prop));
     if (type == ObjectLiteral::DATA) {
       Emit<OP::STORE_OBJECT_DATA>(Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
     } else if (type == ObjectLiteral::GET) {

@@ -39,6 +39,7 @@ namespace railgun {
 
 class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
  public:
+  typedef core::Token Token;
 
   class Jump {
    public:
@@ -319,6 +320,20 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   RegisterID EmitOptimizedLookup(OP::Type op, uint32_t index, RegisterID dst);
 
+  void EmitIdentifierAccessAssign(const Assignment* assign,
+                                  const Expression* target,
+                                  Symbol symbol);
+
+  void EmitIdentifierAccessBinaryAssign(const Assignment* assign,
+                                        const Expression* target,
+                                        Symbol sym);
+
+  template<Token::Type token>
+  void FastPathLogical(const BinaryOperation* binary);
+
+  template<Token::Type token>
+  void SlowPathLogical(const BinaryOperation* binary);
+
   void Visit(const Assignment* assign);
   void Visit(const BinaryOperation* binary);
   void Visit(const ConditionalExpression* cond);
@@ -452,11 +467,27 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
   
-  RegisterID Temporary(RegisterID target) {
-    if (target->IsTemporary()) {
-      return target;
+  RegisterID Temporary(RegisterID a = RegisterID(),
+                       RegisterID b = RegisterID(),
+                       RegisterID c = RegisterID(),
+                       RegisterID d = RegisterID()) {
+    if (a && a->IsTemporary()) {
+      return a;
     }
-    return EmitMV(registers_.Acquire(), target);
+    if (b && b->IsTemporary()) {
+      return b;
+    }
+    if (c && c->IsTemporary()) {
+      return c;
+    }
+    if (d && d->IsTemporary()) {
+      return d;
+    }
+    return registers_.Acquire();
+  }
+  
+  static bool NotOrdered(RegisterID target) {
+    return !target || target->IsTemporary();
   }
 
   // determine which register is used
