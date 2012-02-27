@@ -17,11 +17,11 @@ inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     bool res = false;
     if (!args.empty()) {
-      res = args[0].ToBoolean(IV_LV5_ERROR(e));
+      res = args[0].ToBoolean();
     }
     return JSBooleanObject::New(args.ctx(), res);
   } else {
-    return JSVal::Bool(!args.empty() && args.front().ToBoolean(e));
+    return JSVal::Bool(!args.empty() && args.front().ToBoolean());
   }
 }
 

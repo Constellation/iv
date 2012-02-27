@@ -76,7 +76,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     const Symbol sym = context::Intern(ctx, "enumerable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
-      const bool enumerable = r.ToBoolean(IV_LV5_ERROR(e));
+      const bool enumerable = r.ToBoolean();
       if (enumerable) {
         attr = (attr & ~ATTR::UNDEF_ENUMERABLE) | ATTR::ENUMERABLE;
       } else {
@@ -89,7 +89,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     const Symbol sym = context::Intern(ctx, "configurable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
-      const bool configurable = r.ToBoolean(IV_LV5_ERROR(e));
+      const bool configurable = r.ToBoolean();
       if (configurable) {
         attr = (attr & ~ATTR::UNDEF_CONFIGURABLE) | ATTR::CONFIGURABLE;
       } else {
@@ -111,7 +111,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     const Symbol sym = context::Intern(ctx, "writable");
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
-      const bool writable = r.ToBoolean(IV_LV5_ERROR(e));
+      const bool writable = r.ToBoolean();
       attr |= ATTR::DATA;
       attr &= ~ATTR::UNDEF_WRITABLE;
       if (writable) {

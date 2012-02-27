@@ -806,7 +806,7 @@ JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   }
 }
 
-bool JSLayout::ToBoolean(Error* e) const {
+bool JSLayout::ToBoolean() const {
   if (IsNumber()) {
     const double num = number();
     return num != 0 && !core::math::IsNaN(num);

@@ -1068,7 +1068,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
       arg_list[2] = obj;
       const JSVal test_result =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = test_result.ToBoolean(IV_LV5_ERROR(e));
+      const bool result = test_result.ToBoolean();
       if (!result) {
         return JSFalse;
       }
@@ -1103,7 +1103,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
       arg_list[2] = obj;
       const JSVal test_result =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = test_result.ToBoolean(IV_LV5_ERROR(e));
+      const bool result = test_result.ToBoolean();
       if (result) {
         return JSTrue;
       }
@@ -1209,7 +1209,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
       arg_list[2] = obj;
       const JSVal selected =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = selected.ToBoolean(IV_LV5_ERROR(e));
+      const bool result = selected.ToBoolean();
       if (result) {
         ary->DefineOwnProperty(
             ctx,

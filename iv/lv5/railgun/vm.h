@@ -224,7 +224,7 @@ do {\
 
 #define FAST_PATH_IF_FALSE()\
   const JSVal v = REG(instr[1].jump.i16[0]);\
-  const bool x = v.ToBoolean(ERR);\
+  const bool x = v.ToBoolean();\
   if (!x) {\
     JUMPBY(instr[1].jump.to);\
     DISPATCH_WITH_NO_INCREMENT();\
@@ -732,7 +732,7 @@ do {\
       DEFINE_OPCODE(IF_TRUE) {
         // opcode | (jmp | cond)
         const JSVal v = REG(instr[1].jump.i16[0]);
-        const bool x = v.ToBoolean(ERR);
+        const bool x = v.ToBoolean();
         if (x) {
           JUMPBY(instr[1].jump.to);
           DISPATCH_WITH_NO_INCREMENT();
@@ -808,7 +808,7 @@ do {\
       DEFINE_OPCODE(UNARY_NOT) {
         // opcode | (dst | src)
         const JSVal src = REG(instr[1].i16[1]);
-        const bool x = src.ToBoolean(ERR);
+        const bool x = src.ToBoolean();
         REG(instr[1].i16[0]) = JSVal::Bool(!x);
         DISPATCH(UNARY_NOT);
       }

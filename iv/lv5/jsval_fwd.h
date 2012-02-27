@@ -197,7 +197,7 @@ class JSLayout {
 
   inline void CheckObjectCoercible(Error* e) const;
 
-  inline bool ToBoolean(Error* e) const;
+  inline bool ToBoolean() const;
 
   // 32 / 64bit system separately
   inline bool IsEmpty() const;

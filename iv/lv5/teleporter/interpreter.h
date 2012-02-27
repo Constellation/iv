@@ -348,7 +348,7 @@ void Interpreter::Visit(const EmptyStatement* empty) {
 void Interpreter::Visit(const IfStatement* stmt) {
   EVAL_IN_STMT(stmt->cond());
   const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
-  const bool val = expr.ToBoolean(CHECK_IN_STMT);
+  const bool val = expr.ToBoolean();
   if (val) {
     EVAL_IN_STMT(stmt->then_statement());
     // through then statement's result
@@ -383,7 +383,7 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
     }
     EVAL_IN_STMT(stmt->cond());
     const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
-    const bool val = expr.ToBoolean(CHECK_IN_STMT);
+    const bool val = expr.ToBoolean();
     iterating = val;
   }
   RETURN_STMT(Context::NORMAL, value, NULL);
@@ -395,7 +395,7 @@ void Interpreter::Visit(const WhileStatement* stmt) {
   while (true) {
     EVAL_IN_STMT(stmt->cond());
     const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
-    const bool val = expr.ToBoolean(CHECK_IN_STMT);
+    const bool val = expr.ToBoolean();
     if (val) {
       EVAL_IN_STMT(stmt->body());
       if (!ctx_->ret().IsEmpty()) {
@@ -428,7 +428,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
     if (const core::Maybe<const Expression> cond = stmt->cond()) {
       EVAL_IN_STMT(cond.Address());
       const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
-      const bool val = expr.ToBoolean(CHECK_IN_STMT);
+      const bool val = expr.ToBoolean();
       if (!val) {
         RETURN_STMT(Context::NORMAL, value, NULL);
       }
@@ -823,7 +823,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
   {
     switch (token) {
       case Token::TK_LOGICAL_AND: {  // &&
-        const bool cond = lhs.ToBoolean(CHECK);
+        const bool cond = lhs.ToBoolean();
         if (!cond) {
           ctx_->Return(lhs);
           return;
@@ -835,7 +835,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
       }
 
       case Token::TK_LOGICAL_OR: {  // ||
-        const bool cond = lhs.ToBoolean(CHECK);
+        const bool cond = lhs.ToBoolean();
         if (cond) {
           ctx_->Return(lhs);
           return;
@@ -1062,7 +1062,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
 void Interpreter::Visit(const ConditionalExpression* cond) {
   EVAL(cond->cond());
   const JSVal expr = GetValue(ctx_->ret(), CHECK);
-  const bool condition = expr.ToBoolean(CHECK);
+  const bool condition = expr.ToBoolean();
   if (condition) {
     EVAL(cond->left());
     ctx_->ret() = GetValue(ctx_->ret(), CHECK);
@@ -1185,7 +1185,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
     case Token::TK_NOT: {
       EVAL(unary->expr());
       const JSVal expr = GetValue(ctx_->ret(), CHECK);
-      const bool value = expr.ToBoolean(CHECK);
+      const bool value = expr.ToBoolean();
       if (!value) {
         ctx_->Return(JSTrue);
       } else {

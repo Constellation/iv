@@ -320,6 +320,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   RegisterID EmitOptimizedLookup(OP::Type op, uint32_t index, RegisterID dst);
 
+  template<core::Token::Type token>
+  void EmitLogicalPath(const BinaryOperation* binary);
+
   void EmitIdentifierAccessAssign(const Assignment* assign,
                                   const Expression* target,
                                   Symbol symbol);
@@ -327,12 +330,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void EmitIdentifierAccessBinaryAssign(const Assignment* assign,
                                         const Expression* target,
                                         Symbol sym);
-
-  template<Token::Type token>
-  void FastPathLogical(const BinaryOperation* binary);
-
-  template<Token::Type token>
-  void SlowPathLogical(const BinaryOperation* binary);
 
   void Visit(const Assignment* assign);
   void Visit(const BinaryOperation* binary);

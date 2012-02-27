@@ -252,7 +252,7 @@ inline void Compiler::Visit(const Assignment* assign) {
 }
 
 template<core::Token::Type token>
-void Compiler::FastPathLogical(const BinaryOperation* binary) {
+void Compiler::EmitLogicalPath(const BinaryOperation* binary) {
   IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
                    token == Token::TK_LOGICAL_OR);
   std::size_t label;
@@ -267,45 +267,17 @@ void Compiler::FastPathLogical(const BinaryOperation* binary) {
   EmitJump(CurrentSize(), label);
 }
 
-template<core::Token::Type token>
-void Compiler::SlowPathLogical(const BinaryOperation* binary) {
-  IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
-                   token == Token::TK_LOGICAL_OR);
-  std::size_t first;
-  {
-    RegisterID cond = EmitExpression(binary->left());
-    first = CurrentSize();
-    Emit<Token::TK_LOGICAL_AND == token ? OP::IF_TRUE : OP::IF_FALSE>(
-        Instruction::Jump(0, cond));
-    dst_ = Dest(dst_, cond);
-    dst_ = EmitMV(dst_, cond);
-  }
-  const std::size_t second = CurrentSize();
-  Emit<OP::JUMP_BY>(Instruction::Jump(0));
-  EmitJump(CurrentSize(), first);
-  dst_ = EmitExpressionToDest(binary->right(), dst_);
-  EmitJump(CurrentSize(), second);
-}
-
 inline void Compiler::Visit(const BinaryOperation* binary) {
   const DestGuard dest_guard(this);
   const Token::Type token = binary->op();
   switch (token) {
     case Token::TK_LOGICAL_AND: {  // &&
-      if (Compiler::NotOrdered(dst_)) {
-        FastPathLogical<Token::TK_LOGICAL_AND>(binary);
-      } else {
-        SlowPathLogical<Token::TK_LOGICAL_AND>(binary);
-      }
+      EmitLogicalPath<Token::TK_LOGICAL_AND>(binary);
       break;
     }
 
     case Token::TK_LOGICAL_OR: {  // ||
-      if (Compiler::NotOrdered(dst_)) {
-        FastPathLogical<Token::TK_LOGICAL_OR>(binary);
-      } else {
-        SlowPathLogical<Token::TK_LOGICAL_OR>(binary);
-      }
+      EmitLogicalPath<Token::TK_LOGICAL_AND>(binary);
       break;
     }
 
