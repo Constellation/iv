@@ -47,7 +47,7 @@ class DisAssembler : private core::Noncopyable<> {
       const int len = snprintf(buf, sizeof(buf) - 1, "%06d: ", index);
       assert(len >= 0);  // %05d, so always pass
       line.insert(line.end(), buf, buf + len);
-      DisAssemble(code, it, opcode, length, &line);
+      DisAssemble(code, it, index, opcode, length, &line);
       OutputLine(core::StringPiece(line.data(), line.size()));
       line.clear();
       std::advance(it, length);
@@ -65,6 +65,7 @@ class DisAssembler : private core::Noncopyable<> {
   // dispatch by instruction layout
   void DisAssemble(const Code& code,
                    const Instruction* instr,
+                   int index,
                    uint32_t opcode,
                    uint32_t length,
                    std::vector<char>* line) {
@@ -280,7 +281,9 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::IF_TRUE:
       case OP::IF_FALSE: {
         const int r0 = instr[1].jump.i16[0], jump = instr[1].jump.to;
-        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d", op, jump, r0);
+        const int to = index + length + jump;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d ; => %d",
+                       op, jump, r0, to);
         break;
       }
       case OP::FORIN_ENUMERATE:
@@ -288,12 +291,15 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::JUMP_SUBROUTINE: {
         const int r0 = instr[1].jump.i16[0],
               r1 = instr[1].jump.i16[1], jump = instr[1].jump.to;
-        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d r%d", op, jump, r0, r1);
+        const int to = index + length + jump;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d r%d ; => %d",
+                       op, jump, r0, r1, to);
         break;
       }
       case OP::JUMP_BY: {
         const int jump = instr[1].jump.to;
-        len = snprintf(buf, sizeof(buf) - 1, "%s %d", op, jump);
+        const int to = index + length + jump;
+        len = snprintf(buf, sizeof(buf) - 1, "%s %d ; => %d", op, jump, to);
         break;
       }
       case OP::CALL:
