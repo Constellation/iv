@@ -360,7 +360,8 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             } else {
               Thunk base(&thunklist_, EmitExpression(idx->target()));
               RegisterID element = EmitExpression(idx->key());
-              Emit<OP::STORE_ELEMENT>(Instruction::Reg3(base.Release(), element, tmp));
+              Emit<OP::STORE_ELEMENT>(
+                  Instruction::Reg3(base.Release(), element, tmp));
             }
           }
         } else {
@@ -399,7 +400,8 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
         dst = EmitMV(entry.ret(), dst);
       }
       const std::size_t finally_jump = CurrentSize();
-      Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, entry.jmp(), entry.flag()));
+      Emit<OP::JUMP_SUBROUTINE>(
+          Instruction::Jump(0, entry.jmp(), entry.flag()));
       entry.holes()->push_back(finally_jump);
     } else if (entry.type() == Level::WITH) {
       Emit<OP::POP_ENV>();
@@ -636,7 +638,8 @@ inline void Compiler::Visit(const TryStatement* stmt) {
               error->register_offset(),
               0,
               dynamic_env_level()));
-      Emit<OP::TRY_CATCH_SETUP>(Instruction::SW(error, SymbolToNameIndex(catch_symbol)));
+      Emit<OP::TRY_CATCH_SETUP>(
+          Instruction::SW(error, SymbolToNameIndex(catch_symbol)));
     }
     PushLevelWith();
     {

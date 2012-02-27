@@ -398,7 +398,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   RegisterID EmitExpressionToDest(const Expression* expr, RegisterID dst) {
     return EmitExpressionInternal(expr, dst, false);
   }
-  
+
   void EmitExpressionIgnoreResult(const Expression* expr) {
     EmitExpressionInternal(expr, RegisterID(), true);
   }
@@ -466,7 +466,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
     }
   }
-  
+
   RegisterID Temporary(RegisterID a = RegisterID(),
                        RegisterID b = RegisterID(),
                        RegisterID c = RegisterID(),
@@ -485,7 +485,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
     return registers_.Acquire();
   }
-  
+
   static bool NotOrdered(RegisterID target) {
     return !target || target->IsTemporary();
   }
