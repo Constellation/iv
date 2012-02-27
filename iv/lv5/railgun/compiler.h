@@ -382,6 +382,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   RegisterID EmitExpressionToDest(const Expression* expr, RegisterID dst) {
     return EmitExpressionInternal(expr, dst, false);
   }
+  
+  void EmitExpressionIgnoreResult(const Expression* expr) {
+    EmitExpressionInternal(expr, RegisterID(), true);
+  }
 
   LookupInfo Lookup(const Symbol sym) {
     return current_variable_scope_->Lookup(sym);

@@ -257,7 +257,7 @@ inline void Compiler::Visit(const ForStatement* stmt) {
       assert(init->AsExpressionStatement());
       // not evaluate as ExpressionStatement
       // because ExpressionStatement returns statement value
-      EmitExpression(init->AsExpressionStatement()->expr());
+      EmitExpressionIgnoreResult(init->AsExpressionStatement()->expr());
     }
   }
 
@@ -275,7 +275,7 @@ inline void Compiler::Visit(const ForStatement* stmt) {
 
   const std::size_t prev_next = CurrentSize();
   if (const core::Maybe<const Expression> next = stmt->next()) {
-    EmitExpression(next.Address());
+    EmitExpressionIgnoreResult(next.Address());
   }
 
   Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
@@ -367,7 +367,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
           // FunctionCall
           // ConstructorCall
           tmp.reset();
-          EmitExpression(lhs);
+          EmitExpressionIgnoreResult(lhs);
           Emit<OP::RAISE_REFERENCE>();
         }
       }
@@ -710,7 +710,7 @@ inline void Compiler::Visit(const ExpressionStatement* stmt) {
   if (current_variable_scope_->UseExpressionReturn()) {
     eval_result_ = EmitExpressionToDest(stmt->expr(), eval_result_);
   } else {
-    EmitExpression(stmt->expr());
+    EmitExpressionIgnoreResult(stmt->expr());
   }
 }
 

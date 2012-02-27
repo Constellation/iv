@@ -64,7 +64,7 @@ inline void Compiler::Visit(const Assignment* assign) {
   const Expression* lhs = assign->left();
   const Expression* rhs = assign->right();
   if (!lhs->IsValidLeftHandSide()) {
-    EmitExpression(lhs);
+    EmitExpressionIgnoreResult(lhs);
     dst_ = EmitExpressionToDest(rhs, dst_);
     Emit<OP::RAISE_REFERENCE>();
     return;
@@ -114,7 +114,7 @@ inline void Compiler::Visit(const Assignment* assign) {
     } else {
       // FunctionCall
       // ConstructorCall
-      EmitExpression(lhs);
+      EmitExpressionIgnoreResult(lhs);
       dst_ = EmitExpressionToDest(rhs, dst_);
       Emit<OP::RAISE_REFERENCE>();
     }
@@ -242,7 +242,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
     }
 
     case Token::TK_COMMA: {  // ,
-      EmitExpression(lhs);
+      EmitExpressionIgnoreResult(lhs);
       dst_ = EmitExpressionToDest(rhs, dst_);
       break;
     }
@@ -334,7 +334,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
                  OP::DELETE_ELEMENT>(expr->AsIndexAccess(), dst_);
           }
         } else {
-          EmitExpression(expr);
+          EmitExpressionIgnoreResult(expr);
           dst_ = Dest(dst_);
           thunklist_.Spill(dst_);
           Emit<OP::LOAD_TRUE>(dst_);
@@ -342,7 +342,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       } else {
         // other case is no effect
         // but accept expr
-        EmitExpression(expr);
+        EmitExpressionIgnoreResult(expr);
         dst_ = Dest(dst_);
         thunklist_.Spill(dst_);
         Emit<OP::LOAD_TRUE>(dst_);
@@ -351,7 +351,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     }
 
     case Token::TK_VOID: {
-      EmitExpression(expr);
+      EmitExpressionIgnoreResult(expr);
       dst_ = Dest(dst_);
       thunklist_.Spill(dst_);
       Emit<OP::LOAD_UNDEFINED>(dst_);
