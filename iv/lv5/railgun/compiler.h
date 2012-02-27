@@ -583,46 +583,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     data_->push_back(arg4);
   }
 
-  template<OP::Type op>
-  void Emit(Instruction arg1, Instruction arg2,
-            Instruction arg3, Instruction arg4, Instruction arg5) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 6);
-    data_->push_back(op);
-    data_->push_back(arg1);
-    data_->push_back(arg2);
-    data_->push_back(arg3);
-    data_->push_back(arg4);
-    data_->push_back(arg5);
-  }
-
-  template<OP::Type op>
-  void Emit(Instruction arg1, Instruction arg2, Instruction arg3,
-            Instruction arg4, Instruction arg5, Instruction arg6) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 7);
-    data_->push_back(op);
-    data_->push_back(arg1);
-    data_->push_back(arg2);
-    data_->push_back(arg3);
-    data_->push_back(arg4);
-    data_->push_back(arg5);
-    data_->push_back(arg6);
-  }
-
-  template<OP::Type op>
-  void Emit(Instruction arg1, Instruction arg2, Instruction arg3,
-            Instruction arg4, Instruction arg5, Instruction arg6,
-            Instruction arg7) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 8);
-    data_->push_back(op);
-    data_->push_back(arg1);
-    data_->push_back(arg2);
-    data_->push_back(arg3);
-    data_->push_back(arg4);
-    data_->push_back(arg5);
-    data_->push_back(arg6);
-    data_->push_back(arg7);
-  }
-
   void EmitUnsafe(OP::Type op) {
     data_->push_back(op);
   }
