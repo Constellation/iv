@@ -146,9 +146,9 @@ int main(int argc, char **argv) {
       "file",
       "file",
       'f', "script file to load");
-  cmd.Add("warning",
+  cmd.Add("signal",
           "",
-          'W', "set warning level 0 - 2", false, 0, iv::cmdline::range(0, 2));
+          's', "install signal handlers");
   cmd.Add<std::string>(
       "execute",
       "execute",
@@ -190,6 +190,15 @@ int main(int argc, char **argv) {
   if (cmd.Exist("copyright")) {
     std::printf("lv5 - Copyright (C) 2010 %s\n", IV_DEVELOPER);
     return EXIT_SUCCESS;
+  }
+  
+  if (cmd.Exist("signal")) {
+#if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
+    signal(SIGILL, _exit);
+    signal(SIGFPE, _exit);
+    signal(SIGBUS, _exit);
+    signal(SIGSEGV, _exit);
+#endif
   }
 
   const std::vector<std::string>& rest = cmd.rest();
