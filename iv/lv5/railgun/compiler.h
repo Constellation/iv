@@ -451,6 +451,13 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
     }
   }
+  
+  RegisterID Temporary(RegisterID target) {
+    if (target->IsTemporary()) {
+      return target;
+    }
+    return EmitMV(registers_.Acquire(), target);
+  }
 
   // determine which register is used
   // if dst is not ignored, use dst.

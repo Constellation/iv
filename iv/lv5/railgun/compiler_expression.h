@@ -70,15 +70,20 @@ inline void Compiler::Visit(const Assignment* assign) {
       if (RegisterID local = GetLocal(ident->symbol())) {
         const LookupInfo info = Lookup(ident->symbol());
         if (info.immutable()) {
-          local = dst_ ? dst_ : registers_.Acquire();
-        }
-        dst_ = EmitMV(dst_, EmitExpressionToDest(rhs, local));
-        if (code_->strict() && info.immutable()) {
-          Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+          if (code_->strict()) {
+            EmitExpressionIgnoreResult(rhs);
+            dst_ = Dest(dst_);
+            Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+          } else {
+            dst_ = EmitExpressionToDest(rhs, Dest(dst_));
+          }
+        } else {
+          dst_ = EmitMV(dst_, EmitExpressionToDest(rhs, local));
         }
       } else {
-        dst_ = EmitExpressionToDest(rhs, dst_);
-        EmitStore(ident->symbol(), dst_);
+        RegisterID r = EmitExpression(rhs);
+        EmitStore(ident->symbol(), r);
+        dst_ = EmitMV(dst_, r);
       }
     } else if (lhs->AsPropertyAccess()) {
       // PropertyAccess
@@ -208,30 +213,36 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
   const Expression* rhs = binary->right();
   switch (token) {
     case Token::TK_LOGICAL_AND: {  // &&
-      std::size_t label;
-      dst_ = Dest(dst_);
-      thunklist_.Spill(dst_);
+      std::size_t first;
       {
-        dst_ = EmitExpressionToDest(lhs, dst_);
-        label = CurrentSize();
-        Emit<OP::IF_FALSE>(Instruction::Jump(0, dst_));
+        RegisterID cond = EmitExpression(lhs);
+        first = CurrentSize();
+        Emit<OP::IF_TRUE>(Instruction::Jump(0, cond));
+        dst_ = Dest(dst_, cond);
+        dst_ = EmitMV(dst_, cond);
       }
+      const std::size_t second = CurrentSize();
+      Emit<OP::JUMP_BY>(Instruction::Jump(0));
+      EmitJump(CurrentSize(), first);
       dst_ = EmitExpressionToDest(rhs, dst_);
-      EmitJump(CurrentSize(), label);
+      EmitJump(CurrentSize(), second);
       break;
     }
 
     case Token::TK_LOGICAL_OR: {  // ||
-      std::size_t label;
-      dst_ = Dest(dst_);
-      thunklist_.Spill(dst_);
+      std::size_t first;
       {
-        dst_ = EmitExpressionToDest(lhs, dst_);
-        label = CurrentSize();
-        Emit<OP::IF_TRUE>(Instruction::Jump(0, dst_));
+        RegisterID cond = EmitExpression(lhs);
+        first = CurrentSize();
+        Emit<OP::IF_FALSE>(Instruction::Jump(0, cond));
+        dst_ = Dest(dst_, cond);
+        dst_ = EmitMV(dst_, cond);
       }
+      const std::size_t second = CurrentSize();
+      Emit<OP::JUMP_BY>(Instruction::Jump(0));
+      EmitJump(CurrentSize(), first);
       dst_ = EmitExpressionToDest(rhs, dst_);
-      EmitJump(CurrentSize(), label);
+      EmitJump(CurrentSize(), second);
       break;
     }
 
@@ -247,6 +258,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       dst_ = Dest(dst_, lv.Release(), rv);
       thunklist_.Spill(dst_);
       EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+      break;
     }
   }
 }
@@ -375,8 +387,9 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     case Token::TK_INC:
     case Token::TK_DEC: {
       if (!expr->IsValidLeftHandSide()) {
-        dst_ = EmitExpressionToDest(expr, dst_);
-        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
+        RegisterID tmp = EmitExpression(expr);
+        dst_ = Dest(dst_, tmp);
+        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(tmp);
         return;
       }
       assert(expr->IsValidLeftHandSide());
@@ -523,8 +536,9 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       }
     }
   } else {
-    dst_ = EmitExpressionToDest(expr, dst_);
-    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
+    RegisterID tmp = EmitExpression(expr);
+    dst_ = Dest(dst_, tmp);
+    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(tmp);
   }
 }
 
