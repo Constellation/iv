@@ -262,16 +262,29 @@ template<core::Token::Type token>
 void Compiler::EmitLogicalPath(const BinaryOperation* binary) {
   IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
                    token == Token::TK_LOGICAL_OR);
-  std::size_t label;
-  dst_ = Dest(dst_);
-  {
-    dst_ = EmitExpressionToDest(binary->left(), dst_);
-    label = CurrentSize();
-    Emit<Token::TK_LOGICAL_AND == token ? OP::IF_FALSE : OP::IF_TRUE>(
-        Instruction::Jump(0, dst_));
+  const OP::Type kOp = token == Token::TK_LOGICAL_AND ? OP::IF_FALSE : OP::IF_TRUE;
+  if (ignore_result()) {
+    // like
+    // opt || (opt = { });
+    std::size_t label;
+    {
+      RegisterID cond = EmitExpression(binary->left());
+      label = CurrentSize();
+      Emit<kOp>(Instruction::Jump(0, cond));
+    }
+    EmitExpressionIgnoreResult(binary->right());
+    EmitJump(CurrentSize(), label);
+  } else {
+    std::size_t label;
+    dst_ = Dest(dst_);
+    {
+      dst_ = EmitExpressionToDest(binary->left(), dst_);
+      label = CurrentSize();
+      Emit<kOp>(Instruction::Jump(0, dst_));
+    }
+    dst_ = EmitExpressionToDest(binary->right(), dst_);
+    EmitJump(CurrentSize(), label);
   }
-  dst_ = EmitExpressionToDest(binary->right(), dst_);
-  EmitJump(CurrentSize(), label);
 }
 
 inline void Compiler::Visit(const BinaryOperation* binary) {
