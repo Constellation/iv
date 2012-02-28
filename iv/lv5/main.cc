@@ -11,6 +11,9 @@
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
 #include <iv/lv5/teleporter/interactive.h>
+#if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
+#include <signal.h>
+#endif
 
 namespace {
 
