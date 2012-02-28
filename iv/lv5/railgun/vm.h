@@ -1461,13 +1461,12 @@ do {\
         operation_.RaiseReferenceError(e);
         DISPATCH_ERROR();
       }
-
-      DEFINE_OPCODE(TO_NUMBER_AND_RAISE_REFERENCE) {
+      
+      DEFINE_OPCODE(TO_NUMBER) {
         // opcode | src
         const JSVal src = REG(instr[1].i32[0]);
         src.ToNumber(ctx_, ERR);
-        operation_.RaiseReferenceError(e);
-        DISPATCH_ERROR();
+        DISPATCH(TO_NUMBER);
       }
 
       DEFINE_OPCODE(DEBUGGER) {

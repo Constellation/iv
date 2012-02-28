@@ -100,7 +100,30 @@ inline void Compiler::Visit(const Assignment* assign) {
 
   const Expression* lhs = assign->left();
   const Expression* rhs = assign->right();
+  
+  if (!lhs->IsValidLeftHandSide()) {
+    // not valid LHS
+    if (token == Token::TK_ASSIGN) {
+      EmitExpressionIgnoreResult(lhs);
+      EmitExpressionIgnoreResult(rhs);
+      dst_ = Dest(dst_);
+      Emit<OP::RAISE_REFERENCE>();
+    } else {
+      // not valid LHS
+      {
+        Thunk src(&thunklist_, EmitExpression(lhs));
+        RegisterID val = EmitExpression(rhs);
+        RegisterID ret = Temporary(val, src.Release());
+        EmitUnsafe(OP::BinaryOP(token),
+                   Instruction::Reg3(ret, src.Release(), val));
+      }
+      dst_ = Dest(dst_);
+      Emit<OP::RAISE_REFERENCE>();
+    }
+    return;
+  }
 
+  assert(lhs->IsValidLeftHandSide());
   if (token == Token::TK_ASSIGN) {
     if (const Identifier* ident = lhs->AsIdentifier()) {
       // Identifier
@@ -127,7 +150,8 @@ inline void Compiler::Visit(const Assignment* assign) {
           dst_ = EmitMV(dst_, r);
         }
       }
-    } else if (lhs->AsPropertyAccess()) {
+    } else {
+      assert(lhs->AsPropertyAccess());
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
         // IdentifierAccess
@@ -153,12 +177,6 @@ inline void Compiler::Visit(const Assignment* assign) {
           }
         }
       }
-    } else {
-      // not valid LHS
-      EmitExpressionIgnoreResult(lhs);
-      EmitExpressionIgnoreResult(rhs);
-      dst_ = Dest(dst_);
-      Emit<OP::RAISE_REFERENCE>();
     }
   } else {
     if (const Identifier* ident = lhs->AsIdentifier()) {
@@ -202,7 +220,8 @@ inline void Compiler::Visit(const Assignment* assign) {
           dst_ = EmitMV(dst_, ret);
         }
       }
-    } else if (lhs->AsPropertyAccess()) {
+    } else {
+      assert(lhs->AsPropertyAccess());
       // PropertyAccess
       if (const IdentifierAccess* ac = lhs->AsIdentifierAccess()) {
         // IdentifierAccess
@@ -236,17 +255,6 @@ inline void Compiler::Visit(const Assignment* assign) {
           }
         }
       }
-    } else {
-      // not valid LHS
-      {
-        Thunk src(&thunklist_, EmitExpression(lhs));
-        RegisterID val = EmitExpression(rhs);
-        RegisterID ret = Temporary(val, src.Release());
-        EmitUnsafe(OP::BinaryOP(token),
-                   Instruction::Reg3(ret, src.Release(), val));
-      }
-      dst_ = Dest(dst_);
-      Emit<OP::RAISE_REFERENCE>();
     }
   }
 }
@@ -342,42 +350,31 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
   const Expression* expr = unary->expr();
   switch (token) {
     case Token::TK_DELETE: {
-      if (expr->IsValidLeftHandSide()) {
-        // Identifier
-        // PropertyAccess
-        // FunctionCall
-        // ConstructorCall
-        if (const Identifier* ident = expr->AsIdentifier()) {
-          // DELETE_NAME_STRICT is already rejected in parser
-          assert(!code_->strict());
-          if (RegisterID local = GetLocal(ident->symbol())) {
-            dst_ = Dest(dst_);
-            thunklist_.Spill(dst_);
-            Emit<OP::LOAD_FALSE>(dst_);
-          } else {
-            dst_ = EmitOptimizedLookup(
-                OP::DELETE_NAME,
-                SymbolToNameIndex(ident->symbol()), dst_);
-          }
-        } else if (expr->AsPropertyAccess()) {
-          if (const IdentifierAccess* ac = expr->AsIdentifierAccess()) {
-            // IdentifierAccess
-            RegisterID base = EmitExpression(ac->target());
-            const uint32_t index = SymbolToNameIndex(ac->key());
-            dst_ = Dest(dst_);
-            thunklist_.Spill(dst_);
-            Emit<OP::DELETE_PROP>(Instruction::SSW(dst_, base, index), 0, 0, 0);
-          } else {
-            // IndexAccess
-            dst_ = EmitElement<
-                 OP::DELETE_PROP,
-                 OP::DELETE_ELEMENT>(expr->AsIndexAccess(), dst_);
-          }
-        } else {
-          EmitExpressionIgnoreResult(expr);
+      if (const Identifier* ident = expr->AsIdentifier()) {
+        // DELETE_NAME_STRICT is already rejected in parser
+        assert(!code_->strict());
+        if (RegisterID local = GetLocal(ident->symbol())) {
           dst_ = Dest(dst_);
           thunklist_.Spill(dst_);
-          Emit<OP::LOAD_TRUE>(dst_);
+          Emit<OP::LOAD_FALSE>(dst_);
+        } else {
+          dst_ = EmitOptimizedLookup(
+              OP::DELETE_NAME,
+              SymbolToNameIndex(ident->symbol()), dst_);
+        }
+      } else if (expr->AsPropertyAccess()) {
+        if (const IdentifierAccess* ac = expr->AsIdentifierAccess()) {
+          // IdentifierAccess
+          RegisterID base = EmitExpression(ac->target());
+          const uint32_t index = SymbolToNameIndex(ac->key());
+          dst_ = Dest(dst_);
+          thunklist_.Spill(dst_);
+          Emit<OP::DELETE_PROP>(Instruction::SSW(dst_, base, index), 0, 0, 0);
+        } else {
+          // IndexAccess
+          dst_ = EmitElement<
+               OP::DELETE_PROP,
+               OP::DELETE_ELEMENT>(expr->AsIndexAccess(), dst_);
         }
       } else {
         // other case is no effect
@@ -387,7 +384,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         thunklist_.Spill(dst_);
         Emit<OP::LOAD_TRUE>(dst_);
       }
-      break;
+      return;
     }
 
     case Token::TK_VOID: {
@@ -395,7 +392,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       dst_ = Dest(dst_);
       thunklist_.Spill(dst_);
       Emit<OP::LOAD_UNDEFINED>(dst_);
-      break;
+      return;
     }
 
     case Token::TK_TYPEOF: {
@@ -415,7 +412,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         thunklist_.Spill(dst_);
         Emit<OP::TYPEOF>(Instruction::Reg2(dst_, src));
       }
-      break;
+      return;
     }
 
     case Token::TK_INC:
@@ -423,7 +420,8 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       if (!expr->IsValidLeftHandSide()) {
         RegisterID tmp = EmitExpression(expr);
         dst_ = Dest(dst_, tmp);
-        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(tmp);
+        Emit<OP::TO_NUMBER>(tmp);
+        Emit<OP::RAISE_REFERENCE>();
         return;
       }
       assert(expr->IsValidLeftHandSide());
@@ -433,6 +431,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
           const LookupInfo info = Lookup(ident->symbol());
           if (ignore_result()) {
             if (info.immutable()) {
+              Emit<OP::TO_NUMBER>(local);
               if (code_->strict()) {
                 Emit<OP::RAISE_IMMUTABLE>(index);
               }
@@ -443,14 +442,22 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
             }
           } else {
             if (info.immutable()) {
-              local = EmitMV(dst_ ? dst_ : registers_.Acquire(), local);
-            }
-            thunklist_.Spill(local);
-            EmitUnsafe((token == Token::TK_INC) ?
-                       OP::INCREMENT : OP::DECREMENT, local);
-            dst_ = EmitMV(dst_, local);
-            if (code_->strict() && info.immutable()) {
-              Emit<OP::RAISE_IMMUTABLE>(index);
+              if (code_->strict()) {
+                dst_ = Dest(dst_);
+                Emit<OP::TO_NUMBER>(local);
+                Emit<OP::RAISE_IMMUTABLE>(index);
+              } else {
+                RegisterID tmp = Temporary(dst_);
+                EmitMV(tmp, local);
+                EmitUnsafe((token == Token::TK_INC) ?
+                           OP::INCREMENT : OP::DECREMENT, tmp);
+                dst_ = EmitMV(dst_, tmp);
+              }
+            } else {
+              thunklist_.Spill(local);
+              EmitUnsafe((token == Token::TK_INC) ?
+                         OP::INCREMENT : OP::DECREMENT, local);
+              dst_ = EmitMV(dst_, local);
             }
           }
         } else {
@@ -458,8 +465,8 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
               (token == Token::TK_INC) ?
               OP::INCREMENT_NAME : OP::DECREMENT_NAME, index, dst_);
         }
-        return;
-      } else if (expr->AsPropertyAccess()) {
+      } else {
+        assert(expr->AsPropertyAccess());
         if (const IdentifierAccess* ac = expr->AsIdentifierAccess()) {
           // IdentifierAccess
           RegisterID base = EmitExpression(ac->target());
@@ -486,9 +493,6 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
                 OP::DECREMENT_ELEMENT>(idxac, dst_);
           }
         }
-      } else {
-        dst_ = EmitExpressionToDest(expr, dst_);
-        Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
       }
       return;
     }
@@ -498,6 +502,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       dst_ = Dest(dst_, src);
       thunklist_.Spill(dst_);
       EmitUnsafe(OP::UnaryOP(token), Instruction::Reg2(dst_, src));
+      return;
     }
   }
 }
@@ -507,8 +512,10 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
   const Expression* expr = postfix->expr();
   const Token::Type token = postfix->op();
   if (!expr->IsValidLeftHandSide()) {
-    dst_ = EmitExpressionToDest(expr, dst_);
-    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(dst_);
+    RegisterID tmp = EmitExpression(expr);
+    dst_ = Dest(dst_, tmp);
+    Emit<OP::TO_NUMBER>(tmp);
+    Emit<OP::RAISE_REFERENCE>();
     return;
   }
   assert(expr->IsValidLeftHandSide());
@@ -517,7 +524,9 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
     if (RegisterID local = GetLocal(ident->symbol())) {
       const LookupInfo info = Lookup(ident->symbol());
       if (ignore_result()) {
+        // ignore result path. not return dst
         if (info.immutable()) {
+          Emit<OP::TO_NUMBER>(local);
           if (code_->strict()) {
             Emit<OP::RAISE_IMMUTABLE>(index);
           }
@@ -527,17 +536,24 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
                      OP::INCREMENT : OP::DECREMENT, local);
         }
       } else {
-        dst_ = Dest(dst_);
-        thunklist_.Spill(dst_);
-        if (info.immutable() || dst_ == local) {
-          local = EmitMV(registers_.Acquire(), local);
-        }
-        thunklist_.Spill(local);
-        EmitUnsafe((token == Token::TK_INC) ?
-                   OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
-                   Instruction::Reg2(dst_, local));
-        if (code_->strict() && info.immutable()) {
-          Emit<OP::RAISE_IMMUTABLE>(index);
+        if (info.immutable()) {
+          if (code_->strict()) {
+            dst_ = Dest(dst_);
+            Emit<OP::TO_NUMBER>(local);
+            Emit<OP::RAISE_IMMUTABLE>(index);
+          } else {
+            RegisterID tmp = Temporary(dst_);
+            EmitMV(tmp, local);
+            Emit<OP::TO_NUMBER>(tmp);
+            dst_ = EmitMV(dst_, tmp);
+          }
+        } else {
+          dst_ = Dest(dst_);
+          thunklist_.Spill(dst_);
+          thunklist_.Spill(local);
+          EmitUnsafe((token == Token::TK_INC) ?
+                     OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
+                     Instruction::Reg2(dst_, local));
         }
       }
     } else {
@@ -545,7 +561,8 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
           (token == Token::TK_INC) ?
           OP::POSTFIX_INCREMENT_NAME : OP::POSTFIX_DECREMENT_NAME, index, dst_);
     }
-  } else if (expr->AsPropertyAccess()) {
+  } else {
+    assert(expr->AsPropertyAccess());
     if (const IdentifierAccess* ac = expr->AsIdentifierAccess()) {
       // IdentifierAccess
       RegisterID base = EmitExpression(ac->target());
@@ -572,10 +589,6 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
             OP::POSTFIX_DECREMENT_ELEMENT>(idxac, dst_);
       }
     }
-  } else {
-    RegisterID tmp = EmitExpression(expr);
-    dst_ = Dest(dst_, tmp);
-    Emit<OP::TO_NUMBER_AND_RAISE_REFERENCE>(tmp);
   }
 }
 
@@ -709,7 +722,7 @@ class Compiler::ArraySite {
                      ThunkList* thunklist,
                      Registers* registers)
     : literal_(literal),
-      ary_(registers->Acquire()),
+      ary_(compiler->Temporary(compiler->dst())),
       elements_(),
       compiler_(compiler),
       registers_(registers) {
@@ -791,7 +804,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   typedef ObjectLiteral::Properties Properties;
   const DestGuard dest_guard(this);
   const std::size_t arg_index = CurrentSize() + 2;
-  RegisterID obj = registers_.Acquire();
+  RegisterID obj = Temporary(dst_);
   Emit<OP::LOAD_OBJECT>(obj, 0u);
   std::unordered_map<Symbol, std::size_t> slots;
   const Properties& properties = lit->properties();
@@ -966,16 +979,17 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
       if (op == OP::CALL && ident->symbol() == symbol::eval()) {
         direct_call_to_eval = true;
       }
-    } else if (const PropertyAccess* prop = target->AsPropertyAccess()) {
-      if (const IdentifierAccess* ac = prop->AsIdentifierAccess()) {
+    } else {
+      assert(target->AsPropertyAccess());
+      if (const IdentifierAccess* ac = target->AsIdentifierAccess()) {
         // IdentifierAccess
-        EmitExpressionToDest(prop->target(), site.base());
+        EmitExpressionToDest(ac->target(), site.base());
         const uint32_t index = SymbolToNameIndex(ac->key());
         Emit<OP::LOAD_PROP>(
             Instruction::SSW(site.callee(), site.base(), index), 0, 0, 0);
       } else {
         // IndexAccess
-        const IndexAccess* ai = prop->AsIndexAccess();
+        const IndexAccess* ai = target->AsIndexAccess();
         EmitExpressionToDest(ai->target(), site.base());
         const Symbol sym = PropertyName(ai->key());
         if (sym != symbol::kDummySymbol) {
@@ -988,9 +1002,6 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
               Instruction::Reg3(site.callee(), site.base(), site.callee()));
         }
       }
-    } else {
-      EmitExpressionToDest(target, site.callee());
-      Emit<OP::LOAD_UNDEFINED>(site.base());
     }
   } else {
     EmitExpressionToDest(target, site.callee());

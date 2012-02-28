@@ -93,6 +93,7 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d", op, r0, r1);
         break;
       }
+      case OP::TO_NUMBER:
       case OP::WITH_SETUP:
       case OP::INCREMENT:
       case OP::DECREMENT:
@@ -108,7 +109,6 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d", op, r0);
         break;
       }
-      case OP::TO_NUMBER_AND_RAISE_REFERENCE:
       case OP::RAISE_IMMUTABLE: {
         const unsigned int name = instr[1].u32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s %u", op, name);

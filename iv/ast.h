@@ -1589,7 +1589,7 @@ INHERIT(Call);
 template<typename Factory>
 class Call : public CallBase<Factory> {
  public:
-  inline bool IsValidLeftHandSide() const { return true; }
+  // Call is valid, but in this implementation, not return reference
   DECLARE_NODE_TYPE(Call)
 };
 
