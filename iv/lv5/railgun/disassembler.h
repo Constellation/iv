@@ -97,6 +97,7 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::WITH_SETUP:
       case OP::INCREMENT:
       case OP::DECREMENT:
+      case OP::FORIN_LEAVE:
       case OP::LOAD_UNDEFINED:
       case OP::LOAD_FALSE:
       case OP::LOAD_TRUE:

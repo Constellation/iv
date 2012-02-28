@@ -1443,6 +1443,11 @@ do {\
         DISPATCH(FORIN_ENUMERATE);
       }
 
+      DEFINE_OPCODE(FORIN_LEAVE) {
+        // opcode | iterator
+        DISPATCH(FORIN_LEAVE);
+      }
+
       DEFINE_OPCODE(THROW) {
         // opcode | src
         e->Report(REG(instr[1].i32[0]));
