@@ -17,7 +17,7 @@
 #include <iv/lv5/internal.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/chain.h>
-#include <iv/lv5/name_iterator.h>
+#include <iv/lv5/railgun/name_iterator.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/op.h>

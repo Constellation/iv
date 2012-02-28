@@ -1,11 +1,12 @@
-#ifndef IV_LV5_NAME_ITERATOR_H_
-#define IV_LV5_NAME_ITERATOR_H_
+#ifndef IV_LV5_RAILGUN_NAME_ITERATOR_H_
+#define IV_LV5_RAILGUN_NAME_ITERATOR_H_
 #include <gc/gc_cpp.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
+namespace railgun {
 
 class NameIterator : public radio::HeapObject<> {
  public:
@@ -41,5 +42,5 @@ class NameIterator : public radio::HeapObject<> {
   GCVector<Symbol>::type::const_iterator iter_;
 };
 
-} }  // namespace iv::lv5
-#endif  // IV_LV5_NAME_ITERATOR_H_
+} } }  // namespace iv::lv5::railgun
+#endif  // IV_LV5_RAILGUN_NAME_ITERATOR_H_
