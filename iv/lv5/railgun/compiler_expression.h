@@ -935,7 +935,6 @@ class Compiler::CallSite {
     if (call.SideEffect()) {
       thunklist->ForceSpill();
     }
-    callee_ = registers->Acquire();
     start_ = registers->AcquireCallBase(argc_with_this());
   }
 

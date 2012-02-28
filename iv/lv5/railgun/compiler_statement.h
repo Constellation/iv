@@ -308,7 +308,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
   }
 
   {
-    RegisterID iterator = registers_.Acquire();
+    RegisterID iterator = Temporary();
     std::size_t for_in_setup_jump;
     {
       RegisterID enumerable = EmitExpression(stmt->enumerable());
@@ -326,7 +326,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
         if (RegisterID local = GetLocal(for_decl)) {
           const LookupInfo info = Lookup(for_decl);
           if (info.immutable()) {
-            local = registers_.Acquire();
+            local = Temporary();
           }
           thunklist_.Spill(local);
           Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, local, iterator));
@@ -334,12 +334,12 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(for_decl));
           }
         } else {
-          RegisterID tmp = registers_.Acquire();
+          RegisterID tmp = Temporary();
           Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, tmp, iterator));
           EmitStore(for_decl, tmp);
         }
       } else {
-        RegisterID tmp = registers_.Acquire();
+        RegisterID tmp = Temporary();
         Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, tmp, iterator));
         if (lhs->AsPropertyAccess()) {
           // PropertyAccess
@@ -441,7 +441,7 @@ inline void Compiler::Visit(const ReturnStatement* stmt) {
   if (const core::Maybe<const Expression> expr = stmt->expr()) {
     dst = EmitExpression(expr.Address());
   } else {
-    dst = registers_.Acquire();
+    dst = Temporary();
     Emit<OP::LOAD_UNDEFINED>(dst);
   }
 
@@ -499,7 +499,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
   std::size_t label = 0;
   std::vector<std::size_t> indexes(clauses.size());
   {
-    RegisterID cond = EmitExpressionToDest(stmt->expr(), registers_.Acquire());
+    RegisterID cond = EmitExpressionToDest(stmt->expr(), Temporary());
     std::vector<std::size_t>::iterator idx = indexes.begin();
     std::vector<std::size_t>::iterator default_it = indexes.end();
     for (CaseClauses::const_iterator it = clauses.begin(),
@@ -507,7 +507,7 @@ inline void Compiler::Visit(const SwitchStatement* stmt) {
       if (const core::Maybe<const Expression> expr = (*it)->expr()) {
         // case
         RegisterID tmp = EmitExpression(expr.Address());
-        RegisterID ret = tmp->IsTemporary() ? tmp : registers_.Acquire();
+        RegisterID ret = Temporary(tmp);
         Emit<OP::BINARY_STRICT_EQ>(Instruction::Reg3(ret, cond, tmp));
         *idx = CurrentSize();
         Emit<OP::IF_TRUE>(Instruction::Jump(0, ret));
@@ -602,9 +602,9 @@ inline void Compiler::Visit(const TryStatement* stmt) {
   RegisterID ret;
   RegisterID flag;
   if (has_finally) {
-    jmp = registers_.Acquire();
-    ret = registers_.Acquire();
-    flag = registers_.Acquire();
+    jmp = Temporary();
+    ret = Temporary();
+    flag = Temporary();
     Level& level = level_stack_.back();
     level.set_jmp(jmp);
     level.set_ret(ret);
@@ -628,7 +628,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     }
     const Symbol catch_symbol = stmt->catch_name().Address()->symbol();
     {
-      RegisterID error = registers_.Acquire();
+      RegisterID error = Temporary();
       code_->RegisterHandler(
           Handler(
               Handler::CATCH,

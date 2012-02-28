@@ -532,7 +532,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   RegisterID SpillRegister(RegisterID from) {
-    RegisterID to = registers_.Acquire();
+    RegisterID to = Temporary();
     Emit<OP::MV>(Instruction::Reg2(to, from));
     return to;
   }
@@ -637,7 +637,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     // save eval result or not
     if (current_variable_scope_->UseExpressionReturn()) {
-      eval_result_ = registers_.Acquire();
+      eval_result_ = Temporary();
     }
 
     if (env->scope()->needs_heap_scope()) {
@@ -699,7 +699,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     // save eval result or not
     if (current_variable_scope_->UseExpressionReturn()) {
-      eval_result_ = registers_.Acquire();
+      eval_result_ = Temporary();
     }
 
     std::unordered_set<Symbol> already_declared;
@@ -791,7 +791,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     } else {
       if (!continuation_status_.IsDeadStatement()) {
         // insert return undefined
-        RegisterID tmp = registers_.Acquire();
+        RegisterID tmp = Temporary();
         Emit<OP::LOAD_UNDEFINED>(tmp);
         Emit<OP::RETURN>(tmp);
       }
@@ -855,7 +855,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     if (info.type() == LookupInfo::STACK) {
       Emit<OP::LOAD_ARGUMENTS>(info.register_location());
     } else {
-      RegisterID reg = registers_.Acquire();
+      RegisterID reg = Temporary();
       Emit<OP::LOAD_ARGUMENTS>(reg);
       EmitInstantiate(SymbolToNameIndex(symbol::arguments()), info, reg);
     }
