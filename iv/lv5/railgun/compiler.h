@@ -927,6 +927,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     level_stack_.push_back(Level(Level::WITH, NULL));
   }
 
+  void PushLevelIterator() {
+    level_stack_.push_back(Level(Level::ITERATOR, NULL));
+  }
+
   void PopLevel() { level_stack_.pop_back(); }
 
   bool ignore_result() const { return ignore_result_; }

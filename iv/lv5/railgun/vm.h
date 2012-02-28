@@ -1461,7 +1461,7 @@ do {\
         operation_.RaiseReferenceError(e);
         DISPATCH_ERROR();
       }
-      
+
       DEFINE_OPCODE(TO_NUMBER) {
         // opcode | src
         const JSVal src = REG(instr[1].i32[0]);
@@ -1782,17 +1782,21 @@ do {\
           break;  // not found in this exception table
         } else if (offset < handler.end()) {
           assert(handler.begin() <= offset);
-          const JSVal error = JSError::Detail(ctx_, e);
-          e->Clear();
-          UNWIND_DYNAMIC_ENV(handler.dynamic_env_level());
-          if (handler.type() == Handler::FINALLY) {
-            REG(handler.flag()) = kJumpFromFinally;
-            REG(handler.jmp()) = error;
+          if (handler.type() == Handler::ITERATOR) {
+            // control iterator lifetime
           } else {
-            REG(handler.ret()) = error;
+            const JSVal error = JSError::Detail(ctx_, e);
+            e->Clear();
+            UNWIND_DYNAMIC_ENV(handler.dynamic_env_level());
+            if (handler.type() == Handler::FINALLY) {
+              REG(handler.flag()) = kJumpFromFinally;
+              REG(handler.jmp()) = error;
+            } else {
+              REG(handler.ret()) = error;
+            }
+            JUMPTO(handler.end());
+            GO_MAIN_LOOP();
           }
-          JUMPTO(handler.end());
-          GO_MAIN_LOOP();
         }
       }
       // handler not in this frame

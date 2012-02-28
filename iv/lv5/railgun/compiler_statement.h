@@ -374,7 +374,9 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
       }
     }
 
+    PushLevelIterator();
     EmitStatement(stmt->body());
+    PopLevel();
 
     Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
 
@@ -405,6 +407,8 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
       entry.holes()->push_back(finally_jump);
     } else if (entry.type() == Level::WITH) {
       Emit<OP::POP_ENV>();
+    } else if (entry.type() == Level::ITERATOR) {
+      // currently do nothing
     }
   }
   return dst;

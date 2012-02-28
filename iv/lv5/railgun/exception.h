@@ -12,22 +12,22 @@ class Handler {
   enum Type {
     CATCH,
     FINALLY,
-    ITER
+    ITERATOR
   };
 
   Handler(Type type,
           uint32_t begin,
           uint32_t end,
-          int32_t jmp,
-          int32_t ret,
-          int32_t flag,
+          int16_t jmp,
+          int16_t ret,
+          int16_t flag,
           uint32_t dynamic_env_level)
     : type_(type),
-      begin_(begin),
-      end_(end),
       jmp_(jmp),
       ret_(ret),
       flag_(flag),
+      begin_(begin),
+      end_(end),
       dynamic_env_level_(dynamic_env_level) { }
 
   Type type() const { return type_; }
@@ -36,21 +36,21 @@ class Handler {
 
   uint32_t end() const { return end_; }
 
-  int32_t jmp() const { return jmp_; }
+  int16_t jmp() const { return jmp_; }
 
-  int32_t ret() const { return ret_; }
+  int16_t ret() const { return ret_; }
 
-  int32_t flag() const { return flag_; }
+  int16_t flag() const { return flag_; }
 
   uint32_t dynamic_env_level() const { return dynamic_env_level_; }
 
  private:
   Type type_;
+  int16_t jmp_;
+  int16_t ret_;
+  int16_t flag_;
   uint32_t begin_;
   uint32_t end_;
-  int32_t jmp_;
-  int32_t ret_;
-  int32_t flag_;
   uint32_t dynamic_env_level_;
 };
 
