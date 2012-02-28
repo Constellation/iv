@@ -320,20 +320,37 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
 
 inline void Compiler::Visit(const ConditionalExpression* cond) {
   const DestGuard dest_guard(this);
-  std::size_t first;
-  {
-    RegisterID ret = EmitExpression(cond->cond());
-    first = CurrentSize();
-    Emit<OP::IF_FALSE>(Instruction::Jump(0, ret));
+  if (ignore_result()) {
+    // like
+    // (cond) ? then_exec() : else_exec();
+    std::size_t first;
+    {
+      RegisterID ret = EmitExpression(cond->cond());
+      first = CurrentSize();
+      Emit<OP::IF_FALSE>(Instruction::Jump(0, ret));
+    }
+    EmitExpressionIgnoreResult(cond->left());
+    const std::size_t second = CurrentSize();
+    Emit<OP::JUMP_BY>(Instruction::Jump(0));
+    EmitJump(CurrentSize(), first);
+    EmitExpressionIgnoreResult(cond->right());
+    EmitJump(CurrentSize(), second);
+  } else {
+    std::size_t first;
+    {
+      RegisterID ret = EmitExpression(cond->cond());
+      first = CurrentSize();
+      Emit<OP::IF_FALSE>(Instruction::Jump(0, ret));
+    }
+    dst_ = Dest(dst_);
+    thunklist_.Spill(dst_);
+    dst_ = EmitExpressionToDest(cond->left(), dst_);
+    const std::size_t second = CurrentSize();
+    Emit<OP::JUMP_BY>(Instruction::Jump(0));
+    EmitJump(CurrentSize(), first);
+    dst_ = EmitExpressionToDest(cond->right(), dst_);
+    EmitJump(CurrentSize(), second);
   }
-  dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
-  dst_ = EmitExpressionToDest(cond->left(), dst_);
-  const std::size_t second = CurrentSize();
-  Emit<OP::JUMP_BY>(Instruction::Jump(0));
-  EmitJump(CurrentSize(), first);
-  dst_ = EmitExpressionToDest(cond->right(), dst_);
-  EmitJump(CurrentSize(), second);
 }
 
 template<OP::Type PropOP, OP::Type ElementOP>
