@@ -335,7 +335,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   inline this_type* Repeat(Context* ctx, uint32_t count) {
     if (count == 0 || empty()) {
-      return JSString::NewEmptyString(ctx);
+      return this_type::NewEmptyString(ctx);
     }
     if (count == 1) {
       return this;
@@ -345,10 +345,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
       // single character
       if (Is8Bit()) {
         const std::vector<char> vec(count, At(0));
-        return new (PointerFreeGC) this_type(vec.begin(), count, true);
+        return this_type::New(ctx, vec.begin(), count, true);
       } else {
         const std::vector<uint16_t> vec(count, At(0));
-        return new (PointerFreeGC) this_type(vec.begin(), count, false);
+        return this_type::New(ctx, vec.begin(), count, false);
       }
     }
     return new (PointerFreeGC) this_type(this, count);
@@ -360,11 +360,11 @@ class JSString: public radio::HeapObject<radio::STRING> {
   inline JSArray* Split(Context* ctx, JSArray* ary,
                         uint16_t ch, uint32_t limit, Error* e) const;
 
-  inline JSString* Substring(Context* ctx, uint32_t from, uint32_t to) const;
+  inline this_type* Substring(Context* ctx, uint32_t from, uint32_t to) const;
 
-  inline size_type find(const JSString& target, size_type index) const;
+  inline size_type find(const this_type& target, size_type index) const;
 
-  inline size_type rfind(const JSString& target, size_type index) const;
+  inline size_type rfind(const this_type& target, size_type index) const;
 
   int compare(const this_type& x) const {
     return Flatten()->compare(*x.Flatten());
@@ -576,7 +576,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
-  JSString(JSString* lhs, JSString* rhs)
+  JSString(this_type* lhs, this_type* rhs)
     : size_(lhs->size() + rhs->size()),
       is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
       fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
@@ -600,7 +600,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
-  JSString(JSString* target, uint32_t repeat)
+  JSString(this_type* target, uint32_t repeat)
     : size_(target->size() * repeat),
       is_8bit_(target->Is8Bit()),
       fiber_count_(target->fiber_count() * repeat),

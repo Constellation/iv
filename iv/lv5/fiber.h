@@ -287,9 +287,7 @@ class Fiber : public FiberBase {
 
   template<typename String>
   static this_type* New(const String& piece) {
-    void* mem = std::malloc(GetControlSize() +
-                            piece.size() * sizeof(char_type));
-    return new (mem) Fiber(piece);
+    return New(piece.begin(), piece.size());
   }
 
   static this_type* NewWithSize(std::size_t n) {
