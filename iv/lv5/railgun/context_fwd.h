@@ -10,7 +10,7 @@ namespace railgun {
 
 class Context : public lv5::Context {
  public:
-  static const int kNativeIteratorCacheMax = 20;
+  static const std::size_t kNativeIteratorCacheMax = 20;
 
   explicit Context();
   ~Context();
