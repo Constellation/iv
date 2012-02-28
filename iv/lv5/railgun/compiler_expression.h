@@ -109,7 +109,6 @@ inline void Compiler::Visit(const Assignment* assign) {
       dst_ = Dest(dst_);
       Emit<OP::RAISE_REFERENCE>();
     } else {
-      // not valid LHS
       {
         Thunk src(&thunklist_, EmitExpression(lhs));
         RegisterID val = EmitExpression(rhs);
