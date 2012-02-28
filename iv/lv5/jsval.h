@@ -679,7 +679,7 @@ JSString* JSLayout::ToString(Context* ctx, Error* e) const {
   } else {
     assert(IsObject());
     JSLayout prim = object()->DefaultValue(ctx, Hint::STRING,
-                                        IV_LV5_ERROR_WITH(e, NULL));
+                                           IV_LV5_ERROR_WITH(e, NULL));
     return prim.ToString(ctx, e);
   }
 }
@@ -777,7 +777,7 @@ double JSLayout::ToNumber(Context* ctx, Error* e) const {
   } else {
     assert(IsObject());
     JSLayout prim = object()->DefaultValue(ctx, Hint::NUMBER,
-                                        IV_LV5_ERROR_WITH(e, 0.0));
+                                           IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
   }
 }
