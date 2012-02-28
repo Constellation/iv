@@ -50,8 +50,7 @@
     "package": IDENT, "private": IDENT,
     "debugger": IDENT, "continue": IDENT, "function": IDENT,
     "interface": IDENT, "protected": IDENT,
-    "instanceof": IDENT, "implements": IDENT,
-    "is": IDENT, "isnt": IDENT
+    "instanceof": IDENT, "implements": IDENT
   };
   var OPLIST = [
     "EOS", "ILLEGAL", "NOTFOUND",
@@ -86,7 +85,6 @@
     "delete", "typeof", "void", "break", "case", "catch", "continue", "debugger",
     "default", "do", "else", "finaly", "for", "function", "if", "in", "new",
     "return", "switch", "this", "throw", "try", "var", "while", "with",
-    "is", "isnt",
 
     "abstract", "boolean", "byte", "char", "class", "const",
     "double","enum", "export", "extends", "final", "float",
@@ -826,7 +824,8 @@
            this.token === OP["=="] ||
            this.token === OP["!="] ||
            (!this.lexer.hasLineTerminatorBeforeNext &&
-            (this.token === OP["is"] || this.token === OP["isnt"]))) {
+            this.token === OP["IDENTIFIER"] &&
+            (this.lexer.value === "is" || this.lexer.value === "isnt"))) {
       var op = Lexer.opToString(this.token);
       this.next();
       var right = this.parseBinaryExpression(containsIn, 3);
