@@ -9,48 +9,59 @@ namespace railgun {
 class Compiler;
 class Thunk;
 
-class ThunkList : private core::Noncopyable<ThunkList> {
+class ThunkPool : private core::Noncopyable<ThunkPool> {
  public:
-  typedef std::vector<Thunk*> Thunks;
+  friend class Thunk;
+  typedef std::unordered_map<int32_t, Thunk*> ThunkMap;
 
-  explicit ThunkList(Compiler* compiler)
-    : vec_(), compiler_(compiler) { }
-
-  void Push(Thunk* thunk);
-
-  void Remove(Thunk* thunk);
+  explicit ThunkPool(Compiler* compiler)
+    : map_(), compiler_(compiler) { }
 
   void Spill(RegisterID reg);
 
   void ForceSpill();
 
   bool empty() const {
-    return vec_.empty();
+    return map_.empty();
   }
+
+ private:
+  void Push(Thunk* thunk);
+
+  void Remove(Thunk* thunk);
 
   RegisterID EmitMV(RegisterID local);
 
- private:
-  Thunks vec_;
+  ThunkMap map_;
   Compiler* compiler_;
 };
 
 class Thunk : private core::Noncopyable<Thunk> {
  public:
-  Thunk(ThunkList* list, RegisterID reg);
-
-  bool Spill(RegisterID reg);
-
-  void ForceSpill();
-
+  friend class ThunkPool;
+  Thunk(ThunkPool* pool, RegisterID reg);
+ 
   RegisterID Release();
 
   RegisterID reg() const { return reg_; }
 
   ~Thunk();
+
  private:
+  bool IsChained() const {
+    return next_ != this;
+  }
+
+  void Spill();
+
+  int32_t register_offset() const { return reg_->register_offset(); }
+
+  void RemoveSelfFromChain();
+
   RegisterID reg_;
-  ThunkList* list_;
+  ThunkPool* pool_;
+  Thunk* prev_;
+  Thunk* next_;
   bool released_;
 };
 

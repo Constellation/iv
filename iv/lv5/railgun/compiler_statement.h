@@ -328,7 +328,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
           if (info.immutable()) {
             local = Temporary();
           }
-          thunklist_.Spill(local);
+          thunkpool_.Spill(local);
           Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, local, iterator));
           if (code_->strict() && info.immutable()) {
             Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(for_decl));
@@ -358,7 +358,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
               const uint32_t index = SymbolToNameIndex(sym);
               Emit<OP::STORE_PROP>(Instruction::SSW(base, tmp, index), 0, 0);
             } else {
-              Thunk base(&thunklist_, EmitExpression(idx->target()));
+              Thunk base(&thunkpool_, EmitExpression(idx->target()));
               RegisterID element = EmitExpression(idx->key());
               Emit<OP::STORE_ELEMENT>(
                   Instruction::Reg3(base.Release(), element, tmp));

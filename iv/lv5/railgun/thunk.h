@@ -7,82 +7,94 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
-inline void ThunkList::Push(Thunk* thunk) {
-  vec_.push_back(thunk);
+inline void ThunkPool::Push(Thunk* thunk) {
+  const ThunkMap::const_iterator it = map_.find(thunk->register_offset());
+  if (it != map_.end()) {
+    thunk->next_ = it->second;
+    it->second->prev_->next_ = thunk;
+    thunk->prev_ = it->second->prev_;
+    it->second->prev_ = thunk;
+  } else {
+    map_.insert(it, std::make_pair(thunk->register_offset(), thunk));
+  }
 }
 
-inline void ThunkList::Remove(Thunk* thunk) {
-  vec_.erase(std::find(vec_.begin(), vec_.end(), thunk));
+inline void ThunkPool::Remove(Thunk* thunk) {
+  if (!thunk->IsChained()) {
+    assert(map_.find(thunk->register_offset()) != map_.end());
+    map_.erase(thunk->register_offset());
+  } else {
+    thunk->RemoveSelfFromChain();
+  }
 }
 
-struct ThunkSpiller {
-  explicit ThunkSpiller(RegisterID reg)
-    : reg_(reg) {
-  }
-
-  bool operator()(Thunk* thunk) {
-    return thunk->Spill(reg_);
-  }
-
-  RegisterID reg_;
-};
-
-inline void ThunkList::Spill(RegisterID reg) {
+inline void ThunkPool::Spill(RegisterID reg) {
   if (reg->IsLocal()) {
-    vec_.erase(
-        std::remove_if(vec_.begin(),
-                       vec_.end(), ThunkSpiller(reg)), vec_.end());
+    const ThunkMap::iterator it = map_.find(reg->register_offset());
+    if (it != map_.end()) {
+      Thunk* start = it->second;
+      Thunk* current = start;
+      do {
+        current->Spill();
+        current = current->next_;
+      } while (start != current);
+      map_.erase(it);
+    }
   }
 }
 
-inline void ThunkList::ForceSpill() {
-  for (Thunks::const_iterator it = vec_.begin(),
-       last = vec_.end(); it != last; ++it) {
-    (*it)->ForceSpill();
+inline void ThunkPool::ForceSpill() {
+  for (ThunkMap::const_iterator it = map_.begin(),
+       last = map_.end(); it != last; ++it) {
+    Thunk* start = it->second;
+    Thunk* current = start;
+    do {
+      current->Spill();
+      current = current->next_;
+    } while (start != current);
   }
-  vec_.clear();
+  map_.clear();
 }
 
-inline RegisterID ThunkList::EmitMV(RegisterID local) {
+inline RegisterID ThunkPool::EmitMV(RegisterID local) {
   assert(local->IsLocal());
   return compiler_->SpillRegister(local);
 }
 
-inline Thunk::Thunk(ThunkList* list, RegisterID reg)
+inline Thunk::Thunk(ThunkPool* pool, RegisterID reg)
   : reg_(reg),
-    list_(list),
+    pool_(pool),
+    prev_(this),
+    next_(this),
     released_(false) {
-  assert(list);
+  assert(pool);
   assert(reg);
   if (reg->IsHeap()) {
-    ForceSpill();
+    Spill();
   } else if (reg->IsStack()) {
-    list_->Push(this);
+    pool_->Push(this);
   }
 }
 
-inline bool Thunk::Spill(RegisterID reg) {
+inline void Thunk::Spill() {
+  // spill this register
   assert(reg_->IsLocal());
-  if (reg == reg_) {
-    // spill this register
-    reg_ = list_->EmitMV(reg_);
-    assert(!reg_->IsLocal());
-    return true;
-  }
-  return false;
-}
-
-inline void Thunk::ForceSpill() {
-  assert(reg_->IsLocal());
-  reg_ = list_->EmitMV(reg_);
+  reg_ = pool_->EmitMV(reg_);
   assert(!reg_->IsLocal());
+}
+
+inline void Thunk::RemoveSelfFromChain() {
+  assert(IsChained());
+  prev_->next_ = next_;
+  next_->prev_ = prev_;
+  next_ = prev_ = this;
 }
 
 inline RegisterID Thunk::Release() {
   assert(reg_);
   if (!released_ && reg_->IsLocal()) {
     released_ = true;
-    list_->Remove(this);
+    pool_->Remove(this);
   }
   return reg_;
 }

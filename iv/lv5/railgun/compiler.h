@@ -118,7 +118,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   class ArraySite;
 
-  friend class ThunkList;
+  friend class ThunkPool;
   friend class ArraySite;
   friend class CallSite;
 
@@ -132,7 +132,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       jump_table_(),
       level_stack_(),
       registers_(),
-      thunklist_(this),
+      thunkpool_(this),
       ignore_result_(false),
       dst_(),
       eval_result_(),
@@ -525,7 +525,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return from;
     }
     if (to != from) {
-      thunklist_.Spill(to);
+      thunkpool_.Spill(to);
       Emit<OP::MV>(Instruction::Reg2(to, from));
     }
     return to;
@@ -694,7 +694,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     //   for example,
     //     * direct call to eval in normal code
     //     * global code
-    assert(thunklist_.empty());
+    assert(thunkpool_.empty());
     registers_.Clear(0, 0);
 
     // save eval result or not
@@ -947,7 +947,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   Jump::Table jump_table_;
   Level::Stack level_stack_;
   Registers registers_;
-  ThunkList thunklist_;
+  ThunkPool thunkpool_;
   bool ignore_result_;
   RegisterID dst_;
   RegisterID eval_result_;

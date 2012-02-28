@@ -25,7 +25,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
   assert(info.type() != LookupInfo::STACK);
   switch (info.type()) {
     case LookupInfo::HEAP: {
-      thunklist_.Spill(dst);
+      thunkpool_.Spill(dst);
       EmitUnsafe(
           OP::ToHeap(op),
           Instruction::SW(dst, index),
@@ -36,12 +36,12 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
     }
     case LookupInfo::GLOBAL: {
       // last 2 zeros are placeholders for PIC
-      thunklist_.Spill(dst);
+      thunkpool_.Spill(dst);
       EmitUnsafe(OP::ToGlobal(op), Instruction::SW(dst, index), 0u, 0u);
       return dst;
     }
     case LookupInfo::LOOKUP: {
-      thunklist_.Spill(dst);
+      thunkpool_.Spill(dst);
       EmitUnsafe(op, Instruction::SW(dst, index));
       return dst;
     }
@@ -60,7 +60,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
 inline void Compiler::EmitIdentifierAccessAssign(const Assignment* assign,
                                                  const Expression* target,
                                                  Symbol sym) {
-    Thunk base(&thunklist_, EmitExpression(target));
+    Thunk base(&thunkpool_, EmitExpression(target));
     const uint32_t index = SymbolToNameIndex(sym);
     if (Compiler::NotOrdered(dst_)) {
       dst_ = EmitExpressionToDest(assign->right(), dst_);
@@ -75,14 +75,14 @@ inline void Compiler::EmitIdentifierAccessAssign(const Assignment* assign,
 inline void Compiler::EmitIdentifierAccessBinaryAssign(const Assignment* assign,
                                                        const Expression* target,
                                                        Symbol sym) {
-    Thunk base(&thunklist_, EmitExpression(target));
+    Thunk base(&thunkpool_, EmitExpression(target));
     const uint32_t index = SymbolToNameIndex(sym);
     RegisterID prop = Temporary();
     Emit<OP::LOAD_PROP>(Instruction::SSW(prop, base.reg(), index), 0, 0, 0);
     RegisterID val = EmitExpression(assign->right());
     if (Compiler::NotOrdered(dst_)) {
       dst_ = Dest(dst_, val, prop);
-      thunklist_.Spill(dst_);
+      thunkpool_.Spill(dst_);
       EmitUnsafe(OP::BinaryOP(assign->op()),
                  Instruction::Reg3(dst_, prop, val));
       Emit<OP::STORE_PROP>(Instruction::SSW(base.Release(), dst_, index), 0, 0);
@@ -110,7 +110,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       Emit<OP::RAISE_REFERENCE>();
     } else {
       {
-        Thunk src(&thunklist_, EmitExpression(lhs));
+        Thunk src(&thunkpool_, EmitExpression(lhs));
         RegisterID val = EmitExpression(rhs);
         RegisterID ret = Temporary(val, src.Release());
         EmitUnsafe(OP::BinaryOP(token),
@@ -162,8 +162,8 @@ inline void Compiler::Visit(const Assignment* assign) {
         if (sym != symbol::kDummySymbol) {
           EmitIdentifierAccessAssign(assign, idx->target(), sym);
         } else {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          Thunk element(&thunklist_, EmitExpression(idx->key()));
+          Thunk base(&thunkpool_, EmitExpression(idx->target()));
+          Thunk element(&thunkpool_, EmitExpression(idx->key()));
           if (Compiler::NotOrdered(dst_)) {
             dst_ = EmitExpressionToDest(rhs, dst_);
             Emit<OP::STORE_ELEMENT>(
@@ -182,7 +182,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       // Identifier
       const LookupInfo info = Lookup(ident->symbol());
       if (RegisterID local = GetLocal(ident->symbol())) {
-        Thunk lv(&thunklist_, EmitExpression(lhs));
+        Thunk lv(&thunkpool_, EmitExpression(lhs));
         RegisterID rv = EmitExpression(rhs);
         lv.Release();
         if (info.immutable()) {
@@ -192,23 +192,23 @@ inline void Compiler::Visit(const Assignment* assign) {
                        Instruction::Reg3(Temporary(), lv.reg(), rv));
             Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
           } else {
-            thunklist_.Spill(dst_);
+            thunkpool_.Spill(dst_);
             EmitUnsafe(OP::BinaryOP(token),
                        Instruction::Reg3(dst_, lv.reg(), rv));
           }
         } else {
-          thunklist_.Spill(local);
+          thunkpool_.Spill(local);
           EmitUnsafe(OP::BinaryOP(token),
                      Instruction::Reg3(local, lv.reg(), rv));
           dst_ = EmitMV(dst_, local);
         }
       } else {
-        Thunk lv(&thunklist_, EmitExpression(lhs));
+        Thunk lv(&thunkpool_, EmitExpression(lhs));
         RegisterID rv = EmitExpression(rhs);
         lv.Release();
         if (Compiler::NotOrdered(dst_)) {
           dst_ = Dest(dst_, lv.reg(), rv);
-          thunklist_.Spill(dst_);
+          thunkpool_.Spill(dst_);
           EmitUnsafe(OP::BinaryOP(token),
                      Instruction::Reg3(dst_, lv.reg(), rv));
           EmitStore(ident->symbol(), dst_);
@@ -233,15 +233,15 @@ inline void Compiler::Visit(const Assignment* assign) {
         if (sym != symbol::kDummySymbol) {
           EmitIdentifierAccessBinaryAssign(assign, idx->target(), sym);
         } else {
-          Thunk base(&thunklist_, EmitExpression(idx->target()));
-          Thunk element(&thunklist_, EmitExpression(key));
+          Thunk base(&thunkpool_, EmitExpression(idx->target()));
+          Thunk element(&thunkpool_, EmitExpression(key));
           RegisterID prop = Temporary();
           Emit<OP::LOAD_ELEMENT>(
               Instruction::Reg3(prop, base.reg(), element.reg()));
           RegisterID val = EmitExpression(rhs);
           if (Compiler::NotOrdered(dst_)) {
             dst_ = Dest(dst_, val, prop);
-            thunklist_.Spill(dst_);
+            thunkpool_.Spill(dst_);
             EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, prop, val));
             Emit<OP::STORE_ELEMENT>(
                 Instruction::Reg3(base.Release(), element.Release(), dst_));
@@ -308,10 +308,10 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
     }
 
     default: {
-      Thunk lv(&thunklist_, EmitExpression(binary->left()));
+      Thunk lv(&thunkpool_, EmitExpression(binary->left()));
       RegisterID rv = EmitExpression(binary->right());
       dst_ = Dest(dst_, lv.Release(), rv);
-      thunklist_.Spill(dst_);
+      thunkpool_.Spill(dst_);
       EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
       break;
     }
@@ -343,7 +343,7 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
       Emit<OP::IF_FALSE>(Instruction::Jump(0, ret));
     }
     dst_ = Dest(dst_);
-    thunklist_.Spill(dst_);
+    thunkpool_.Spill(dst_);
     dst_ = EmitExpressionToDest(cond->left(), dst_);
     const std::size_t second = CurrentSize();
     Emit<OP::JUMP_BY>(Instruction::Jump(0));
@@ -356,18 +356,18 @@ inline void Compiler::Visit(const ConditionalExpression* cond) {
 template<OP::Type PropOP, OP::Type ElementOP>
 inline RegisterID Compiler::EmitElement(const IndexAccess* prop,
                                         RegisterID dst) {
-  Thunk base(&thunklist_, EmitExpression(prop->target()));
+  Thunk base(&thunkpool_, EmitExpression(prop->target()));
   const Expression* key = prop->key();
   const Symbol sym = PropertyName(key);
   if (sym != symbol::kDummySymbol) {
     const uint32_t index = SymbolToNameIndex(sym);
     dst = Dest(dst, base.Release());
-    thunklist_.Spill(dst);
+    thunkpool_.Spill(dst);
     Emit<PropOP>(Instruction::SSW(dst, base.reg(), index), 0, 0, 0);
   } else {
     RegisterID element = EmitExpression(key);
     dst = Dest(dst, base.Release(), element);
-    thunklist_.Spill(dst);
+    thunkpool_.Spill(dst);
     Emit<ElementOP>(Instruction::Reg3(dst, base.reg(), element));
   }
   return dst;
@@ -384,7 +384,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         assert(!code_->strict());
         if (RegisterID local = GetLocal(ident->symbol())) {
           dst_ = Dest(dst_);
-          thunklist_.Spill(dst_);
+          thunkpool_.Spill(dst_);
           Emit<OP::LOAD_FALSE>(dst_);
         } else {
           dst_ = EmitOptimizedLookup(
@@ -397,7 +397,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
           RegisterID base = EmitExpression(ac->target());
           const uint32_t index = SymbolToNameIndex(ac->key());
           dst_ = Dest(dst_);
-          thunklist_.Spill(dst_);
+          thunkpool_.Spill(dst_);
           Emit<OP::DELETE_PROP>(Instruction::SSW(dst_, base, index), 0, 0, 0);
         } else {
           // IndexAccess
@@ -410,7 +410,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         // but accept expr
         EmitExpressionIgnoreResult(expr);
         dst_ = Dest(dst_);
-        thunklist_.Spill(dst_);
+        thunkpool_.Spill(dst_);
         Emit<OP::LOAD_TRUE>(dst_);
       }
       return;
@@ -419,7 +419,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     case Token::TK_VOID: {
       EmitExpressionIgnoreResult(expr);
       dst_ = Dest(dst_);
-      thunklist_.Spill(dst_);
+      thunkpool_.Spill(dst_);
       Emit<OP::LOAD_UNDEFINED>(dst_);
       return;
     }
@@ -429,7 +429,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         // maybe Global Reference
         if (RegisterID local = GetLocal(ident->symbol())) {
           dst_ = Dest(dst_);
-          thunklist_.Spill(dst_);
+          thunkpool_.Spill(dst_);
           Emit<OP::TYPEOF>(Instruction::Reg2(dst_, local));
         } else {
           const uint32_t index = SymbolToNameIndex(ident->symbol());
@@ -438,7 +438,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
       } else {
         RegisterID src = EmitExpression(expr);
         dst_ = Dest(dst_, src);
-        thunklist_.Spill(dst_);
+        thunkpool_.Spill(dst_);
         Emit<OP::TYPEOF>(Instruction::Reg2(dst_, src));
       }
       return;
@@ -465,7 +465,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
                 Emit<OP::RAISE_IMMUTABLE>(index);
               }
             } else {
-              thunklist_.Spill(local);
+              thunkpool_.Spill(local);
               EmitUnsafe((token == Token::TK_INC) ?
                          OP::INCREMENT : OP::DECREMENT, local);
             }
@@ -483,7 +483,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
                 dst_ = EmitMV(dst_, tmp);
               }
             } else {
-              thunklist_.Spill(local);
+              thunkpool_.Spill(local);
               EmitUnsafe((token == Token::TK_INC) ?
                          OP::INCREMENT : OP::DECREMENT, local);
               dst_ = EmitMV(dst_, local);
@@ -501,7 +501,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
           RegisterID base = EmitExpression(ac->target());
           const uint32_t index = SymbolToNameIndex(ac->key());
           dst_ = Dest(dst_);
-          thunklist_.Spill(dst_);
+          thunkpool_.Spill(dst_);
           if (token == Token::TK_INC) {
             Emit<OP::INCREMENT_PROP>(
                 Instruction::SSW(dst_, base, index), 0, 0, 0);
@@ -529,7 +529,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
     default: {
       RegisterID src = EmitExpression(expr);
       dst_ = Dest(dst_, src);
-      thunklist_.Spill(dst_);
+      thunkpool_.Spill(dst_);
       EmitUnsafe(OP::UnaryOP(token), Instruction::Reg2(dst_, src));
       return;
     }
@@ -560,7 +560,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
             Emit<OP::RAISE_IMMUTABLE>(index);
           }
         } else {
-          thunklist_.Spill(local);
+          thunkpool_.Spill(local);
           EmitUnsafe((token == Token::TK_INC) ?
                      OP::INCREMENT : OP::DECREMENT, local);
         }
@@ -578,8 +578,8 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
           }
         } else {
           dst_ = Dest(dst_);
-          thunklist_.Spill(dst_);
-          thunklist_.Spill(local);
+          thunkpool_.Spill(dst_);
+          thunkpool_.Spill(local);
           EmitUnsafe((token == Token::TK_INC) ?
                      OP::POSTFIX_INCREMENT : OP::POSTFIX_DECREMENT,
                      Instruction::Reg2(dst_, local));
@@ -597,7 +597,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
       RegisterID base = EmitExpression(ac->target());
       const uint32_t index = SymbolToNameIndex(ac->key());
       dst_ = Dest(dst_);
-      thunklist_.Spill(dst_);
+      thunkpool_.Spill(dst_);
       if (token == Token::TK_INC) {
         Emit<OP::POSTFIX_INCREMENT_PROP>(
             Instruction::SSW(dst_, base, index), 0, 0, 0);
@@ -630,7 +630,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
   const core::UString s = core::ToUString(lit->value());
   const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   if (it != jsstring_to_index_map_.end()) {
     // duplicate constant
     Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
@@ -656,7 +656,7 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
     return;
   }
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   const double val = lit->value();
   const JSDoubleToIndexMap::const_iterator it =
       double_to_index_map_.find(val);
@@ -704,7 +704,7 @@ inline void Compiler::Visit(const NullLiteral* lit) {
     return;
   }
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_NULL>(dst_);
 }
 
@@ -715,7 +715,7 @@ inline void Compiler::Visit(const TrueLiteral* lit) {
     return;
   }
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_TRUE>(dst_);
 }
 
@@ -726,7 +726,7 @@ inline void Compiler::Visit(const FalseLiteral* lit) {
     return;
   }
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_FALSE>(dst_);
 }
 
@@ -737,7 +737,7 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
     return;
   }
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_REGEXP>(Instruction::SW(dst_, code_->constants_.size()));
   code_->constants_.push_back(
       JSRegExp::New(ctx_, lit->value(), lit->regexp()));
@@ -748,7 +748,7 @@ class Compiler::ArraySite {
   static const int kOnce = 50;
   explicit ArraySite(const ArrayLiteral* literal,
                      Compiler* compiler,
-                     ThunkList* thunklist,
+                     ThunkPool* thunkpool,
                      Registers* registers)
     : literal_(literal),
       ary_(compiler->Temporary(compiler->dst())),
@@ -756,7 +756,7 @@ class Compiler::ArraySite {
       compiler_(compiler),
       registers_(registers) {
     if (literal->SideEffect()) {
-      thunklist->ForceSpill();
+      thunkpool->ForceSpill();
     }
   }
 
@@ -824,7 +824,7 @@ class Compiler::ArraySite {
 
 inline void Compiler::Visit(const ArrayLiteral* lit) {
   const DestGuard dest_guard(this);
-  ArraySite site(lit, this, &thunklist_, &registers_);
+  ArraySite site(lit, this, &thunkpool_, &registers_);
   site.Emit();
   dst_ = EmitMV(dst_, site.ary());
 }
@@ -883,7 +883,7 @@ inline void Compiler::Visit(const FunctionLiteral* lit) {
   code_info_stack_.push_back(
       std::make_tuple(code, lit, current_variable_scope_));
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_FUNCTION>(Instruction::SW(dst_, index));
 }
 
@@ -892,7 +892,7 @@ inline void Compiler::Visit(const IdentifierAccess* prop) {
   RegisterID base = EmitExpression(prop->target());
   const uint32_t index = SymbolToNameIndex(prop->key());
   dst_ = Dest(dst_);
-  thunklist_.Spill(dst_);
+  thunkpool_.Spill(dst_);
   Emit<OP::LOAD_PROP>(Instruction::SSW(dst_, base, index), 0, 0, 0);
 }
 
@@ -913,7 +913,7 @@ class Compiler::CallSite {
  public:
   explicit CallSite(const Call& call,
                     Compiler* compiler,
-                    ThunkList* thunklist,
+                    ThunkPool* thunkpool,
                     Registers* registers)
     : call_(call),
       callee_(compiler->Temporary(compiler->dst())),
@@ -933,7 +933,7 @@ class Compiler::CallSite {
     //
     // and if LHS has found, spill all thunks
     if (call.SideEffect()) {
-      thunklist->ForceSpill();
+      thunkpool->ForceSpill();
     }
     start_ = registers->AcquireCallBase(argc_with_this());
   }
@@ -983,7 +983,7 @@ template<OP::Type op, typename Call>
 inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   bool direct_call_to_eval = false;
   const Expression* target = call.target();
-  CallSite<Call> site(call, this, &thunklist_, &registers_);
+  CallSite<Call> site(call, this, &thunkpool_, &registers_);
 
   if (target->IsValidLeftHandSide()) {
     if (const Identifier* ident = target->AsIdentifier()) {
@@ -1040,7 +1040,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   site.EmitArguments(this);
 
   dst = Dest(dst, site.callee());
-  thunklist_.Spill(dst);
+  thunkpool_.Spill(dst);
   if (direct_call_to_eval) {
     Emit<OP::EVAL>(
         Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
