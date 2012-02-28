@@ -16,7 +16,8 @@ enum CellTag {
   REFERENCE = 2,
   ENVIRONMENT = 3,
   POINTER = 4,
-  POINTER_CLEANUP = 5
+  POINTER_CLEANUP = 5,
+  NATIVE_ITERATOR = 6
 };
 
 
@@ -63,6 +64,13 @@ class HeapObject
     public Cell {
  public:
   HeapObject() : gc(), Cell(TAG) { }
+};
+
+template<>
+class HeapObject<NATIVE_ITERATOR>
+  : public Cell {
+ public:
+  HeapObject() : Cell(NATIVE_ITERATOR) { }
 };
 
 template<>

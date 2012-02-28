@@ -20,6 +20,7 @@ class CatchScope;
 
 class Compiler;
 class Context;
+class NativeIterator;
 
 template<typename Derived>
 class DisAssembler;

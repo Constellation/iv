@@ -314,6 +314,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
       RegisterID enumerable = EmitExpression(stmt->enumerable());
       for_in_setup_jump = CurrentSize();
       Emit<OP::FORIN_SETUP>(Instruction::Jump(0, iterator, enumerable));
+      PushLevelIterator(iterator);
     }
 
     const std::size_t start_index = CurrentSize();
@@ -374,17 +375,27 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
       }
     }
 
-    PushLevelIterator();
     EmitStatement(stmt->body());
+    if (!continuation_status_.IsDeadStatement()) {
+      Emit<OP::JUMP_BY>(
+          Instruction::Jump(start_index - CurrentSize()));  // loop jump
+    }
     PopLevel();
 
-    Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
-
+    EmitJump(CurrentSize(), start_index);  // enumeration end jump
+    Emit<OP::FORIN_LEAVE>(iterator);
+    code_->RegisterHandler(
+        Handler(
+            Handler::ITERATOR,
+            start_index,
+            CurrentSize(),
+            0,
+            iterator->register_offset(),
+            0,
+            dynamic_env_level()));
     const std::size_t end_index = CurrentSize();
-    EmitJump(end_index, start_index);
-    EmitJump(end_index, for_in_setup_jump);
-
     jump.EmitJumps(end_index, start_index);
+    EmitJump(end_index, for_in_setup_jump);
   }
   continuation_status_.ResolveJump(stmt);
   if (continuation_status_.IsDeadStatement()) {
@@ -394,6 +405,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
 
 inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
                                                uint16_t to,
+                                               bool cont,
                                                RegisterID dst) {
   for (; from > to; --from) {
     const Level& entry = level_stack_[from - 1];
@@ -408,7 +420,13 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
     } else if (entry.type() == Level::WITH) {
       Emit<OP::POP_ENV>();
     } else if (entry.type() == Level::ITERATOR) {
-      // currently do nothing
+      // jump is continue and target for-in
+      // for (var i in []) {
+      //   continue;
+      // }
+      if (!(cont && from == (to + 1))) {
+        Emit<OP::FORIN_LEAVE>(entry.ret());
+      }
     }
   }
   return dst;
@@ -418,7 +436,7 @@ inline void Compiler::Visit(const ContinueStatement* stmt) {
   const Jump::Table::const_iterator it = jump_table_.find(stmt->target());
   assert(it != jump_table_.end());
   const Jump& entry = it->second;
-  EmitUnrollingLevel(CurrentLevel(), entry.level());
+  EmitUnrollingLevel(CurrentLevel(), entry.level(), true);
   const std::size_t arg_index = CurrentSize();
   Emit<OP::JUMP_BY>(Instruction::Jump(0));
   entry.continues()->push_back(arg_index);
@@ -432,7 +450,7 @@ inline void Compiler::Visit(const BreakStatement* stmt) {
     const Jump::Table::const_iterator it = jump_table_.find(stmt->target());
     assert(it != jump_table_.end());
     const Jump& entry = it->second;
-    EmitUnrollingLevel(CurrentLevel(), entry.level());
+    EmitUnrollingLevel(CurrentLevel(), entry.level(), false);
     const std::size_t arg_index = CurrentSize();
     Emit<OP::JUMP_BY>(Instruction::Jump(0));  // dummy
     entry.breaks()->push_back(arg_index);
@@ -454,7 +472,7 @@ inline void Compiler::Visit(const ReturnStatement* stmt) {
   } else {
     // nested finally has found
     // set finally jump targets
-    dst = EmitUnrollingLevel(CurrentLevel(), 0, dst);
+    dst = EmitUnrollingLevel(CurrentLevel(), 0, false, dst);
     Emit<OP::RETURN>(dst);
   }
   continuation_status_.Kill();
@@ -615,7 +633,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
     level.set_flag(flag);
   }
   EmitStatement(stmt->body());
-  if (has_finally) {
+  if (has_finally && !continuation_status_.IsDeadStatement()) {
     const std::size_t finally_jump = CurrentSize();
     Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, jmp, flag));
     level_stack_.back().holes()->push_back(finally_jump);

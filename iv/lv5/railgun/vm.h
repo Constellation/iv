@@ -17,7 +17,7 @@
 #include <iv/lv5/internal.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/chain.h>
-#include <iv/lv5/railgun/name_iterator.h>
+#include <iv/lv5/railgun/native_iterator.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/op.h>
@@ -1422,16 +1422,21 @@ do {\
           JUMPBY(instr[1].jump.to);  // skip for-in stmt
           DISPATCH_WITH_NO_INCREMENT();
         }
-        JSObject* const obj = enumerable.ToObject(ctx_, ERR);
-        NameIterator* it = NameIterator::New(ctx_, obj);
+        NativeIterator* it;
+        if (enumerable.IsString()) {
+          it = ctx_->GainNativeIterator(enumerable.string());
+        } else {
+          JSObject* const obj = enumerable.ToObject(ctx_, ERR);
+          it = ctx_->GainNativeIterator(obj);
+        }
         REG(instr[1].jump.i16[0]) = JSVal::Cell(it);
         PREDICT(FORIN_SETUP, FORIN_ENUMERATE);
       }
 
       DEFINE_OPCODE(FORIN_ENUMERATE) {
         // opcode | (jmp : dst | iterator)
-        NameIterator* it =
-            reinterpret_cast<NameIterator*>(REG(instr[1].jump.i16[1]).cell());
+        NativeIterator* it =
+            static_cast<NativeIterator*>(REG(instr[1].jump.i16[1]).cell());
         if (it->Has()) {
           const Symbol sym = it->Get();
           it->Next();
@@ -1445,6 +1450,9 @@ do {\
 
       DEFINE_OPCODE(FORIN_LEAVE) {
         // opcode | iterator
+        NativeIterator* it =
+            static_cast<NativeIterator*>(REG(instr[1].i32[0]).cell());
+        ctx_->ReleaseNativeIterator(it);
         DISPATCH(FORIN_LEAVE);
       }
 
@@ -1789,6 +1797,9 @@ do {\
           assert(handler.begin() <= offset);
           if (handler.type() == Handler::ITERATOR) {
             // control iterator lifetime
+            NativeIterator* it =
+                static_cast<NativeIterator*>(REG(handler.ret()).cell());
+            ctx_->ReleaseNativeIterator(it);
           } else {
             const JSVal error = JSError::Detail(ctx_, e);
             e->Clear();

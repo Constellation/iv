@@ -279,6 +279,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   RegisterID EmitUnrollingLevel(uint16_t from, uint16_t to,
+                                bool cont,
                                 RegisterID dst = RegisterID());
 
   void Visit(const Block* block);
@@ -927,8 +928,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     level_stack_.push_back(Level(Level::WITH, NULL));
   }
 
-  void PushLevelIterator() {
-    level_stack_.push_back(Level(Level::ITERATOR, NULL));
+  void PushLevelIterator(RegisterID iterator) {
+    Level level(Level::ITERATOR, NULL);
+    level.set_ret(iterator);
+    level_stack_.push_back(level);
   }
 
   void PopLevel() { level_stack_.pop_back(); }
