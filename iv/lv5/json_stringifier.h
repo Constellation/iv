@@ -111,7 +111,7 @@ class JSONStringifier : private core::Noncopyable<> {
     if (property_list_) {
       k = property_list_;
     } else {
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       value->GetOwnPropertyNames(ctx_, &collector,
                                  JSObject::EXCLUDE_NOT_ENUMERABLE);
       prop.resize(collector.names().size());

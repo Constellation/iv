@@ -12,7 +12,7 @@ class NameIterator : public radio::HeapObject<> {
   NameIterator(Context* ctx, JSObject* obj)
     : keys_(),
       iter_() {
-    PropertyNamesCollector collector;
+    BufferedPropertyNamesCollector collector;
     obj->GetPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
     keys_.assign(collector.names().begin(), collector.names().end());
     iter_ = keys_.begin();

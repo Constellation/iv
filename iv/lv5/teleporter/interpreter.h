@@ -483,7 +483,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value = JSEmpty;
-  PropertyNamesCollector collector;
+  BufferedPropertyNamesCollector collector;
   obj->GetPropertyNames(ctx_, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
   for (PropertyNamesCollector::Names::const_iterator
        it = collector.names().begin(),

@@ -41,22 +41,22 @@ class PropertyNamesCollector {
 
   typedef core::SortedVector<SymbolKey> Names;
 
-  PropertyNamesCollector()
-    : names_(),
+  PropertyNamesCollector(Names* names)
+    : names_(names),
       level_(0) {
-    names_.reserve(kReservedSize);
+    names_->reserve(kReservedSize);
   }
 
-  const Names& names() const { return names_; }
+  const Names& names() const { return *names_; }
 
   void Add(Symbol symbol, uint32_t order) {
-    for (Names::const_iterator it = names_.begin(),
-         last = names_.end(); it != last; ++it) {
+    for (Names::const_iterator it = names_->begin(),
+         last = names_->end(); it != last; ++it) {
       if (*it == symbol) {
         return;
       }
     }
-    names_.push_back(SymbolKey(symbol, order, level_));
+    names_->push_back(SymbolKey(symbol, order, level_));
   }
 
   void Add(uint32_t index) {
@@ -69,8 +69,19 @@ class PropertyNamesCollector {
   }
 
  private:
-  Names names_;
+  Names* names_;
   uint32_t level_;
+};
+
+class BufferedPropertyNamesCollector : public PropertyNamesCollector {
+ public:
+  BufferedPropertyNamesCollector()
+    : PropertyNamesCollector(&buffer_),
+      buffer_() {
+  }
+
+ private:
+  Names buffer_;
 };
 
 } }  // namespace iv::lv5

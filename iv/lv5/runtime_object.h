@@ -127,7 +127,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
       JSArray* const ary = JSArray::New(args.ctx());
       Context* const ctx = args.ctx();
       uint32_t n = 0;
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
@@ -153,7 +153,7 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
                                            JSObject* props, Error* e) {
   typedef std::vector<std::pair<Symbol, PropertyDescriptor> > Descriptors;
   Descriptors descriptors;
-  PropertyNamesCollector collector;
+  BufferedPropertyNamesCollector collector;
   props->GetOwnPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
   for (PropertyNamesCollector::Names::const_iterator
        it = collector.names().begin(),
@@ -257,7 +257,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
@@ -288,7 +288,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
@@ -338,7 +338,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
@@ -366,7 +366,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
@@ -414,7 +414,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
+      BufferedPropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::EXCLUDE_NOT_ENUMERABLE);
       JSArray* const ary =
