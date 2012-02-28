@@ -640,7 +640,7 @@ inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   } else {
     const Fiber16* fiber = str.Get16Bit();
     core::unicode::UTF16ToUTF8(fiber->begin(),
-                               fiber->end(),std::ostream_iterator<char>(os));
+                               fiber->end(), std::ostream_iterator<char>(os));
   }
   return os;
 }

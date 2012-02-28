@@ -193,11 +193,15 @@ class FiberBase : public FiberSlot {
 
   const_iterator cend() const { return end(); }
 
-  const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
+  }
 
   const_reverse_iterator crbegin() const { return rbegin(); }
 
-  const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
 
   const_reverse_iterator crend() const { return rend(); }
 
