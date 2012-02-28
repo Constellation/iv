@@ -14,26 +14,10 @@ class LRUCodeMap {
   typedef std::list<JSString*> HistoryList;
   typedef std::pair<Code*, HistoryList::iterator> Entry;
 
-  struct JSStringHasher {
-    std::size_t operator()(JSString* str) const {
-      if (str->Is8Bit()) {
-        return core::Hash::StringToHash(*str->Get8Bit());
-      } else {
-        return core::Hash::StringToHash(*str->Get16Bit());
-      }
-    }
-  };
-
-  struct JSStringEqualer {
-    bool operator()(JSString* lhs, JSString* rhs) const {
-      return *lhs == *rhs;
-    }
-  };
-
   typedef GCHashMap<
       JSString*,
       Entry,
-      JSStringHasher, JSStringEqualer>::type CodeMap;
+      JSString::Hasher, JSString::Equaler>::type CodeMap;
 
   explicit LRUCodeMap(std::size_t max)
     : max_(max),

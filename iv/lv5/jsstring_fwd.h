@@ -51,6 +51,22 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
 
+  struct Hasher {
+    std::size_t operator()(this_type* str) const {
+      if (str->Is8Bit()) {
+        return core::Hash::StringToHash(*str->Get8Bit());
+      } else {
+        return core::Hash::StringToHash(*str->Get16Bit());
+      }
+    }
+  };
+
+  struct Equaler {
+    bool operator()(this_type* lhs, this_type* rhs) const {
+      return *lhs == *rhs;
+    }
+  };
+
  private:
   struct Retainer {
     FiberSlot* operator()(FiberSlot* slot) {
