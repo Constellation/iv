@@ -62,6 +62,13 @@ struct Instruction {
     return instr;
   }
 
+  static Instruction Int32(int32_t a, int32_t b) {
+    Instruction instr(0u);
+    instr.i32[0] = a;
+    instr.i32[1] = b;
+    return instr;
+  }
+
   static Instruction SW(RegisterID a, uint32_t u32) {
     Instruction instr(0u);
     instr.ssw.i16[0] = static_cast<int16_t>(a->register_offset());

@@ -1610,7 +1610,7 @@ do {\
         // opcode | (dst | callee | offset) | argc_with_this
         const JSVal callee = REG(instr[1].i16[1]);
         JSVal* offset = &REG(instr[1].i16[2]);
-        const int argc_with_this = static_cast<int>(instr[2].u32[0]);
+        const int32_t argc_with_this = instr[2].i32[0];
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
@@ -1655,7 +1655,7 @@ do {\
         // opcode | (dst | callee | offset) | argc_with_this
         const JSVal callee = REG(instr[1].i16[1]);
         JSVal* offset = &REG(instr[1].i16[2]);
-        const int argc_with_this = static_cast<int>(instr[2].u32[0]);
+        const int32_t argc_with_this = instr[2].i32[0];
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
@@ -1703,7 +1703,7 @@ do {\
         // maybe direct call to eval
         const JSVal callee = REG(instr[1].i16[1]);
         JSVal* offset = &REG(instr[1].i16[2]);
-        const int argc_with_this = static_cast<int>(instr[2].u32[0]);
+        const int32_t argc_with_this = instr[2].i32[0];
         if (!callee.IsCallable()) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();

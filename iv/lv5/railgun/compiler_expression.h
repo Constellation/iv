@@ -882,10 +882,11 @@ template<typename Call>
 class Compiler::CallSite {
  public:
   explicit CallSite(const Call& call,
+                    Compiler* compiler,
                     ThunkList* thunklist,
                     Registers* registers)
     : call_(call),
-      callee_(),
+      callee_(compiler->Temporary(compiler->dst())),
       args_(argc_with_this()),
       start_(),
       registers_(registers) {
@@ -953,7 +954,7 @@ template<OP::Type op, typename Call>
 inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   bool direct_call_to_eval = false;
   const Expression* target = call.target();
-  CallSite<Call> site(call, &thunklist_, &registers_);
+  CallSite<Call> site(call, this, &thunklist_, &registers_);
 
   if (target->IsValidLeftHandSide()) {
     if (const Identifier* ident = target->AsIdentifier()) {
@@ -1014,11 +1015,11 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   if (direct_call_to_eval) {
     Emit<OP::EVAL>(
         Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
-        static_cast<uint32_t>(site.argc_with_this()));
+        Instruction::Int32(site.argc_with_this(), 0));
   } else {
     Emit<op>(
         Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
-        static_cast<uint32_t>(site.argc_with_this()));
+        Instruction::Int32(site.argc_with_this(), 0));
   }
   assert(registers_.IsLiveTop(site.base()->register_offset()));
   return dst;
