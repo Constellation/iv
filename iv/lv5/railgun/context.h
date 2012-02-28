@@ -18,6 +18,9 @@ inline Context::Context()
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
+#ifdef DEBUG
+  iterator_live_count_ = 0;
+#endif
 }
 
 inline NativeIterator* Context::GainNativeIterator(JSObject* obj) {
@@ -38,16 +41,29 @@ inline NativeIterator* Context::GainNativeIterator() {
     iterator_cache_.pop_back();
     return iterator;
   } else {
+#ifdef DEBUG
+    ++iterator_live_count_;
+#endif
     return new NativeIterator();
   }
 }
 
 inline void Context::ReleaseNativeIterator(NativeIterator* iterator) {
+#ifdef DEBUG
+  assert(iterator_live_count_ > 0);
+  --iterator_live_count_;
+  delete iterator;
+#else
   if (iterator_cache_.size() < kNativeIteratorCacheMax) {
     iterator_cache_.push_back(iterator);
   } else {
     delete iterator;
   }
+#endif
+}
+
+inline void Context::Validate() {
+  assert(iterator_live_count_ == 0);
 }
 
 inline Context::~Context() {

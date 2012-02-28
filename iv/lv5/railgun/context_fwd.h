@@ -11,6 +11,7 @@ namespace railgun {
 class Context : public lv5::Context {
  public:
   static const int kNativeIteratorCacheMax = 20;
+
   explicit Context();
   ~Context();
 
@@ -26,11 +27,17 @@ class Context : public lv5::Context {
   NativeIterator* GainNativeIterator(JSString* str);
   void ReleaseNativeIterator(NativeIterator* iterator);
 
+  void Validate();  // for debug only
+
  private:
   NativeIterator* GainNativeIterator();
   VM* vm_;
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
+
+#ifdef DEBUG
+  int iterator_live_count_;
+#endif
 };
 
 } } }  // namespace iv::lv5::railgun

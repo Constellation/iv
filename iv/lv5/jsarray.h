@@ -504,7 +504,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
             }
           }
         } else {
-          BufferedPropertyNamesCollector collector;
+          PropertyNamesCollector collector;
           JSObject::GetOwnPropertyNames(ctx, &collector,
                                         JSObject::INCLUDE_NOT_ENUMERABLE);
           std::set<uint32_t> ix;

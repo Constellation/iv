@@ -10,10 +10,12 @@ namespace lv5 {
 namespace railgun {
 
 // NativeIterator is not GC managed object
-class NativeIterator : public radio::HeapObject<radio::NATIVE_ITERATOR> {
+class NativeIterator
+  : public radio::HeapObject<radio::NATIVE_ITERATOR>,
+    public PropertyNamesCollector {
  public:
   NativeIterator()
-    : keys_(),
+    : PropertyNamesCollector(),
       iter_() {
   }
 
@@ -22,7 +24,7 @@ class NativeIterator : public radio::HeapObject<radio::NATIVE_ITERATOR> {
   }
 
   bool Has() const {
-    return iter_ != keys_.end();
+    return iter_ != names().end();
   }
 
   void Next() {
@@ -30,25 +32,22 @@ class NativeIterator : public radio::HeapObject<radio::NATIVE_ITERATOR> {
   }
 
   void Fill(Context* ctx, JSObject* obj) {
-    keys_.clear();
-    PropertyNamesCollector collector(&keys_);
-    obj->GetPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
-    iter_ = keys_.begin();
+    Clear();
+    obj->GetPropertyNames(ctx, this, JSObject::EXCLUDE_NOT_ENUMERABLE);
+    iter_ = names().begin();
   }
 
   // string fast path
   void Fill(Context* ctx, JSString* str) {
-    keys_.clear();
-    PropertyNamesCollector collector(&keys_);
+    Clear();
     for (uint32_t i = 0, len = str->size(); i < len; ++i) {
-      collector.Add(i);
+      Add(i);
     }
     JSObject* proto = context::GetClassSlot(ctx, Class::String).prototype;
-    proto->GetPropertyNames(ctx, collector.LevelUp(),
+    proto->GetPropertyNames(ctx, LevelUp(),
                             JSObject::EXCLUDE_NOT_ENUMERABLE);
   }
  private:
-  PropertyNamesCollector::Names keys_;
   PropertyNamesCollector::Names::const_iterator iter_;
 };
 

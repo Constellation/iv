@@ -62,6 +62,7 @@ int Execute(const iv::core::StringPiece& data,
   if (statistics) {
     ctx.vm()->DumpStatistics();
   }
+  ctx.Validate();
   return EXIT_SUCCESS;
 }
 
