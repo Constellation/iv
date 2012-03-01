@@ -14,6 +14,8 @@ namespace std { using namespace tr1; }
 
 #else
 
+// G++ 4.6 workaround. including <list> before using namespace tr1
+#include <list>
 #include <tr1/random>
 namespace std { using namespace tr1; }
 
