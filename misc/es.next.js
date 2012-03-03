@@ -1446,9 +1446,30 @@
         } else {
           throw new Error("ILLEGAL");
         }
+      } else if (this.token === OP['*']) {
+        // Generator method
+        // * PropertyName ( FormalParameterList ) { FunctionBody }
+        this.next();
+        if (this.token !== OP["IDENTIFIER"] &&
+            this.token !== OP["STRING"] &&
+            this.token !== OP["NUMBER"]) {
+          throw new Error("ILLEGAL");
+        }
+        var key = this.lexer.value;
+        this.next();
+        if (this.token !== OP['(']) {
+          throw new Error("ILLEGAL");
+        }
+        var val = this.parseFunctionLiteral(EXP, 0);
+        val.type = 'GeneratorExpression';
+        literal.values.push({
+          key: key,
+          val: val
+        });
       } else {
         throw new Error("ILLEGAL");
       }
+
       if (this.token !== OP["}"]) {
         if (this.token !== OP[","]) {
           throw new Error("ILLEGAL");
