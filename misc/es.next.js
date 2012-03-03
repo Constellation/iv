@@ -410,8 +410,7 @@
         }
         var decl = {
           type: "Declaration",
-          key: binding,
-          val: { type: "Undefined" }
+          key: binding
         };
       }
       res.body.push(decl);
@@ -508,10 +507,16 @@
       if (this.token === OP["var"] || this.token === OP["const"] || this.token === OP['let']) {
         var token = Lexer.opToString(this.token);
         var init = getDecl(token);
-        this.parseDeclarations(init, token, false);
+        // ForDecl allow non-initialized const declaration
+        this.parseDeclarations(init, 'let', false);
         if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
           var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
           if (init.body.length !== 1) {
+            throw new Error("ILLEGAL");
+          }
+          // reject
+          // for (let i = 20 in []);
+          if (token !== 'var' && init.body[0].val) {
             throw new Error("ILLEGAL");
           }
           this.next();
@@ -532,6 +537,13 @@
           type: "ExpressionStatement",
           expr: initExpr
         };
+        // currently, using No in expression in for-of statement
+        //
+        // because,
+        //
+        //   for (expr in [] of []);
+        //
+        // is ambiguous
         if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
           var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
           if (isBindingParseRequired(initExpr)) {
@@ -619,7 +631,7 @@
         this.token !== EOS) {
       stmt.expr = this.parseExpression(true);
     } else {
-      stmt.expr = { type: "Undefined" };
+      stmt.expr = null;
     }
     this.expectSemicolon();
     return stmt;
@@ -1258,7 +1270,7 @@
   Parser.prototype.parseArrayLiteral = function(literal) {
     while (this.token !== OP["]"]) {
       if (this.token === OP[","]) {
-        literal.items.push({ type: "Undefined" });
+        literal.items.push(null);
       } else if (this.token === OP["..."]) {
         this.next();
         literal.items.push({
@@ -1326,7 +1338,7 @@
       return this.parseArrayLiteral({
         type: "Array",
         sealed: sealed,
-        items: [ ]
+        items: []
       });
     }
 
