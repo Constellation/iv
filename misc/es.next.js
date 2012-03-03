@@ -467,17 +467,17 @@
     switch (token) {
       case 'let':
         return {
-          type: 'LetDeclaration
+          type: 'LetDeclaration',
           body: []
         };
       case 'const':
         return {
-          type: 'ConstDeclaration
+          type: 'ConstDeclaration',
           body: []
         };
       case 'var':
         return {
-          type: 'VariableStatement'
+          type: 'VariableStatement',
           body: []
         };
     }
