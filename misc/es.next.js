@@ -1228,8 +1228,27 @@
         return this.parseObjectLiteral(false);
 
       case OP["("]:
+        // ( Expression ) or GeneratorComprehension
         this.next();
         var result = this.parseExpression(true);
+        if (this.token === OP['for']) {
+          // parsing GeneratorComprehension
+          var comprehensionForList = this.parseComprehensionForList();
+
+          var filter = null;
+          if (this.token === OP['if']) {
+            this.next();
+            this.expect(OP['(']);
+            filter = this.parseExpression(true);
+            this.expect(OP[')']);
+          }
+          result = {
+            type: 'GeneratorComprehension',
+            expression: result,
+            comprehensions: comprehensionForList,
+            filter: filter
+          };
+        }
         this.expect(OP[")"]);
         return result;
 
