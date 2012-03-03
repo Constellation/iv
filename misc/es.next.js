@@ -217,6 +217,7 @@
     this.lexer = new Lexer(source);
     this.next();
   }
+
   Parser.prototype.parse = function() {
     var global = {
       type : "global",
@@ -225,14 +226,17 @@
     this.parseSourceElements(EOS, global);
     return global;
   };
+
   Parser.prototype.next = function(type) {
     return this.token = this.lexer.next(type || IdentifyReservedWords);
   };
+
   Parser.prototype.parseSourceElements = function(end, func) {
     while (this.token !== end) {
       func.body.push(this.parseStatementAndDeclaration());
     }
   };
+
   Parser.prototype.parseStatementAndDeclaration = function() {
     switch (this.token) {
       case OP["function"]:
@@ -248,6 +252,7 @@
         return this.parseStatement();
     }
   };
+
   Parser.prototype.parseStatement = function() {
     if (this.token === ILLEGAL) {
       throw new Error("ILLEGAL");
@@ -310,6 +315,7 @@
     }
     return null;
   };
+
   Parser.prototype.expectSemicolon = function() {
     if (this.lexer.hasLineTerminatorBeforeNext) {
       return true;
@@ -323,12 +329,14 @@
     }
     throw new Error("ILLEGAL");
   };
+
   Parser.prototype.expect = function(ex) {
     if (this.token !== ex) {
       throw new Error("ILLEGAL");
     }
     this.next();
   };
+
   Parser.prototype.parseFunctionDeclaration = function() {
     this.next();
     if (this.token === OP["IDENTIFIER"]) {
@@ -340,6 +348,7 @@
       throw new Error("ILLEGAL");
     }
   };
+
   Parser.prototype.parseConstDeclaration = function() {
     var res = {
       type: "ConstDeclaration",
@@ -349,6 +358,7 @@
     this.expectSemicolon();
     return res;
   };
+
   Parser.prototype.parseLetDeclaration = function() {
     var res = {
       type: "LetDeclaration",
@@ -358,6 +368,7 @@
     this.expectSemicolon();
     return res;
   };
+
   Parser.prototype.parseBlock = function() {
     this.next();
     var block = {
@@ -370,6 +381,7 @@
     this.next();
     return block;
   };
+
   Parser.prototype.parseVariableStatement = function() {
     var res = {
       type: "VariableStatement",
@@ -379,6 +391,7 @@
     this.expectSemicolon();
     return res;
   };
+
   Parser.prototype.parseDeclarations = function(res, token, accept_in) {
     do {
       this.next();
@@ -404,6 +417,7 @@
       res.body.push(decl);
     } while (this.token === OP[","]);
   };
+
   Parser.prototype.parseContinueStatement = function() {
     this.next();
     var stmt = {
@@ -421,6 +435,7 @@
     this.expectSemicolon();
     return stmt;
   };
+
   Parser.prototype.parseIfStatement = function() {
     this.next();
     this.expect(OP["("]);
@@ -438,6 +453,7 @@
     }
     return res;
   };
+
   Parser.prototype.parseDoWhileStatement = function() {
     this.next();
     var stmt = this.parseStatement();
@@ -590,6 +606,7 @@
     this.expectSemicolon();
     return stmt;
   };
+
   Parser.prototype.parseReturnStatement = function() {
     var stmt = {
       type: "ReturnStatement",
@@ -607,6 +624,7 @@
     this.expectSemicolon();
     return stmt;
   };
+
   Parser.prototype.parseWithStatement = function() {
     this.next();
     this.expect(OP["("]);
@@ -618,6 +636,7 @@
       expr: expr
     };
   };
+
   Parser.prototype.parseSwitchStatement = function() {
     this.next();
     this.expect(OP["("]);
@@ -637,6 +656,7 @@
     this.next();
     return res;
   };
+
   Parser.prototype.parseCaseClause = function() {
     var clause = {
       type: "Caluse",
@@ -662,6 +682,7 @@
     }
     return clause;
   };
+
   Parser.prototype.parseThrowStatement = function() {
     this.next();
     if (this.lexer.hasLineTerminatorBeforeNext) {
@@ -671,6 +692,7 @@
     this.expectSemicolon();
     return {type:"ThrowStatement", expr: expr};
   };
+
   Parser.prototype.parseTryStatement = function() {
     var hasCatchOrFinally = false;
     this.next();
@@ -718,6 +740,7 @@
 
     return res;
   };
+
   Parser.prototype.parseExpressionOrLabelledStatement = function() {
     if (this.token === OP["IDENTIFIER"]) {
       var expr = this.parseExpression(true);
@@ -739,6 +762,7 @@
       expr: expr
     };
   };
+
   Parser.prototype.parseExpression = function(containsIn) {
     var result = this.parseAssignmentExpression(containsIn);
     while (this.token === OP[","]) {
@@ -753,6 +777,7 @@
     }
     return result;
   };
+
   Parser.prototype.parseAssignmentExpression = function(containsIn) {
     var save = this.save();
     var result = this.parseConditionalExpression(containsIn);
@@ -778,6 +803,7 @@
       right: right
     };
   };
+
   Parser.prototype.parseConditionalExpression = function(containsIn) {
     var result = this.parseBinaryExpression(containsIn, 9);
     if (this.token === OP["?"]) {
@@ -794,6 +820,7 @@
     }
     return result;
   };
+
   Parser.prototype.parseBinaryExpression = function(containsIn, prec) {
     var left = this.parseUnaryExpression();
     while (this.token === OP["*"] ||
@@ -907,6 +934,7 @@
     }
     return left;
   };
+
   Parser.prototype.parseUnaryExpression = function() {
     var op = Lexer.opToString(this.token);
     switch (this.token) {
@@ -925,21 +953,13 @@
       case OP["--"]:
         this.next();
         var expr = this.parseMemberExpression();
-        if (this.token === OP['='] && isBindingParseRequired(expr)) {
-          var save2 = this.save();
-          this.restore(save);
-          try {
-            result = this.parseAssignmentPattern();
-          } catch (e) {
-            this.restore(save2);
-          }
-        }
         return {type: "UnaryExpression", op: op, expr: expr};
 
       default:
         return this.parsePostfixExpression();
     }
   };
+
   Parser.prototype.parsePostfixExpression = function() {
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
@@ -953,6 +973,7 @@
     }
     return expr;
   };
+
   Parser.prototype.parseMemberExpression = function(allowCall) {
     var expr = null;
     if (this.token === OP["new"]) {
@@ -1016,9 +1037,9 @@
 
         case OP['<|']: {
           this.next();
-          var proto = this.parseProtoLiteral();
+          var proto = this.parseTriangleLiteral();
           expr = {
-            type: "ProtoLiteral",
+            type: "TriangleLiteral",
             target: expr,
             proto: proto
           };
@@ -1030,6 +1051,7 @@
       }
     }
   };
+
   Parser.prototype.parseSuper = function() {
     this.next();
     if (this.token === OP["["]) {
@@ -1068,7 +1090,8 @@
     }
     throw new Error("ILLEGAL");
   };
-  Parser.prototype.parseProtoLiteral = function() {
+
+  Parser.prototype.parseTriangleLiteral = function() {
     switch (this.token) {
       case OP["function"]:
         this.next();
@@ -1099,7 +1122,7 @@
       case OP["#"]: {  // Sealed Literal
         this.next();
         if (this.token == OP["["]) {
-          return this.parseArrayLiteral(true);
+          return this.parseArrayLiteralOrComprehension(true);
         } else if (this.token == OP["{"]) {
           return this.parseObjectLiteral(true);
         }
@@ -1107,7 +1130,7 @@
       }
 
       case OP["["]:
-        return this.parseArrayLiteral(false);
+        return this.parseArrayLiteralOrComprehension(false);
 
       case OP["{"]:
         return this.parseObjectLiteral(false);
@@ -1117,6 +1140,7 @@
 
     }
   };
+
   Parser.prototype.parsePrimaryExpression = function() {
     switch (this.token) {
       case OP["function"]:
@@ -1172,7 +1196,7 @@
       case OP["#"]: {  // Sealed Literal
         this.next();
         if (this.token == OP["["]) {
-          return this.parseArrayLiteral(true);
+          return this.parseArrayLiteralOrComprehension(true);
         } else if (this.token == OP["{"]) {
           return this.parseObjectLiteral(true);
         }
@@ -1180,7 +1204,7 @@
       }
 
       case OP["["]:
-        return this.parseArrayLiteral(false);
+        return this.parseArrayLiteralOrComprehension(false);
 
       case OP["{"]:
         return this.parseObjectLiteral(false);
@@ -1195,6 +1219,7 @@
         throw new Error("ILLEGAL");
     }
   };
+
   Parser.prototype.parseArguments = function(func) {
     this.next();
     while (this.token !== OP[")"]) {
@@ -1215,6 +1240,7 @@
     this.next();
     return func;
   };
+
   Parser.prototype.parseRegExpLiteral = function(containsEq) {
     if (this.lexer.scanRegExpLiteral(containsEq)) {
       var expr = {
@@ -1228,13 +1254,8 @@
       throw new Error("ILLEGAL");
     }
   };
-  Parser.prototype.parseArrayLiteral = function(sealed) {
-    this.next();
-    var literal = {
-      type: "Array",
-      sealed: sealed,
-      items: []
-    };
+
+  Parser.prototype.parseArrayLiteral = function(literal) {
     while (this.token !== OP["]"]) {
       if (this.token === OP[","]) {
         literal.items.push({ type: "Undefined" });
@@ -1258,6 +1279,78 @@
     this.next();
     return literal;
   };
+
+  Parser.prototype.parseComprehensionForList = function() {
+    var result = [];
+    while (this.token === OP['for']) {
+      this.next();
+      this.expect(OP['(']);
+      var expr = this.parseExpression(true);
+      var init = {
+        type: "ExpressionStatement",
+        expr: expr
+      };
+      if (this.token !== OP['IDENTIFIER'] || this.lexer.value !== 'of') {
+          throw new Error("ILLEGAL");
+      }
+      this.next();
+      var enumerable = this.parseExpression(true);
+      this.expect(OP[")"]);
+      result.push({
+        type: type,
+        init: init,
+        enumerable: enumerable,
+        body: body
+      });
+    }
+    return result;
+  };
+
+  Parser.prototype.parseArrayLiteralOrComprehension = function(sealed) {
+    this.next();
+
+    // First Expression
+    if (this.token === OP[']'] || this.token === OP[','] || this.token === OP['...']) {
+      return this.parseArrayLiteral({
+        type: "Array",
+        sealed: sealed,
+        items: []
+      });
+    }
+
+    var save = this.save();
+    var first = this.parseExpression(true);
+
+    if (this.token !== OP['for']) {
+      // ArrayLiteral path
+      this.restore(save);
+      return this.parseArrayLiteral({
+        type: "Array",
+        sealed: sealed,
+        items: [ ]
+      });
+    }
+
+    // parsing ArrayComprehension
+    var comprehensionForList = this.parseComprehensionForList();
+
+    var filter = null;
+    if (this.token === OP['if']) {
+      this.next();
+      this.expect(OP['(']);
+      filter = this.parseExpression(true);
+      this.expect(OP[')']);
+    }
+
+    this.expect(OP[']']);
+    return {
+      type: 'ArrayComprehension',
+      expression: first,
+      comprehensions: comprehensionForList,
+      filter: filter
+    };
+  };
+
   Parser.prototype.parseObjectLiteral = function(sealed) {
     var literal = {
       type: "Object",
@@ -1330,6 +1423,7 @@
     this.next();
     return literal;
   };
+
   Parser.prototype.parseFunctionLiteral = function(kind, getterOrSetter) {
     var literal = {
       type: "Function",
@@ -1386,6 +1480,7 @@
     this.next();
     return literal;
   };
+
   Parser.prototype.parseBindingPattern = function() {
     if (this.token === OP["{"]) {
       // ObjectBindingPattern
@@ -1484,6 +1579,7 @@
       throw new Error("ILLEGAL");
     }
   };
+
   Parser.prototype.parseBinding = function() {
     if (this.token === OP["IDENTIFIER"]) {
       var val = this.lexer.value;
@@ -1496,6 +1592,7 @@
       return this.parseBindingPattern();
     }
   };
+
   Parser.prototype.parseBindingElement = function() {
     if (this.token === OP["IDENTIFIER"]) {
       var val = this.lexer.value;
@@ -1517,6 +1614,7 @@
       return this.parseBindingPattern();
     }
   };
+
   Parser.prototype.parseAssignmentPattern = function() {
     if (this.token === OP["{"]) {
       // ObjectAssignmentPattern
@@ -1640,6 +1738,7 @@
       throw new Error("ILLEGAL");
     }
   };
+
   Parser.prototype.save = function() {
     return {
       token: this.token,
@@ -1650,6 +1749,7 @@
       hasLineTerminatorBeforeNext: this.lexer.hasLineTerminatorBeforeNext
     };
   };
+
   Parser.prototype.restore = function(obj) {
     this.token = obj.token;
     this.lexer.current = obj.current;
