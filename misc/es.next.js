@@ -1157,6 +1157,12 @@
     switch (this.token) {
       case OP["function"]:
         this.next();
+        if (this.token === OP['*']) {
+          this.next();
+          var ret = this.parseFunctionLiteral(EXP, 0);
+          ret.type = 'GeneratorExpression';
+          return ret;
+        }
         return this.parseFunctionLiteral(EXP, 0);
 
       case OP["this"]:
