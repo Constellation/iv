@@ -206,9 +206,11 @@
     return false;
   };
 
-  function isValidLHS(expr) {
-    var type = expr.type;
-    return type === "Identifier" || type === "PropertyAccess" || type == "AssignmentPattern";
+  function isBindingParseRequired(expr) {
+    if (expr.type === 'Object' || expr.type === 'Array') {
+      return !expr.sealed;
+    }
+    return false;
   }
 
   function Parser(source) {
@@ -516,11 +518,13 @@
         };
         if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
           var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
-          if (!isValidLHS(initExpr)) {
+          if (isBindingParseRequired(initExpr)) {
+            var save2 = this.save();
             this.restore(save);
-            var tmp = this.parseAssignmentPattern();
-            if (isValidLHS(tmp)) {
-              initExpr = tmp;
+            try {
+              init.initExpr = this.parseAssignmentPattern();
+            } catch (e) {
+              this.restore(save2);
             }
           }
           this.next();
@@ -755,11 +759,13 @@
     if (!isAssignOp(this.token)) {
       return result;
     }
-    if (!isValidLHS(result)) {
+    if (this.token === OP['='] && isBindingParseRequired(result)) {
+      var save2 = this.save();
       this.restore(save);
-      var tmp = this.parseAssignmentPattern();
-      if (isValidLHS(tmp)) {
-        result = tmp;
+      try {
+        result = this.parseAssignmentPattern();
+      } catch (e) {
+        this.restore(save2);
       }
     }
     var op = Lexer.opToString(this.token);
@@ -918,13 +924,14 @@
       case OP["++"]:
       case OP["--"]:
         this.next();
-        var save = this.save();
         var expr = this.parseMemberExpression();
-        if (!isValidLHS(expr)) {
+        if (this.token === OP['='] && isBindingParseRequired(expr)) {
+          var save2 = this.save();
           this.restore(save);
-          var tmp = this.parseAssignmentPattern();
-          if (isValidLHS(tmp)) {
-            expr = tmp;
+          try {
+            result = this.parseAssignmentPattern();
+          } catch (e) {
+            this.restore(save2);
           }
         }
         return {type: "UnaryExpression", op: op, expr: expr};
@@ -934,17 +941,9 @@
     }
   };
   Parser.prototype.parsePostfixExpression = function() {
-    var save = this.save();
     var expr = this.parseMemberExpression(true);
     if (!this.lexer.hasLineTerminatorBeforeNext &&
         (this.token === OP["++"] || this.token === OP["--"])) {
-      if (!isValidLHS(expr)) {
-        this.restore(save);
-        var tmp = this.parseAssignmentPattern();
-        if (isValidLHS(tmp)) {
-          expr = tmp;
-        }
-      }
       expr = {
         type:"PostfixExpression",
         op: Lexer.opToString(this.token),
@@ -1556,11 +1555,13 @@
           this.next();
           var save = this.save();
           var target = this.parseMemberExpression();
-          if (!isValidLHS(target)) {
+          if (isBindingParseRequired(target)) {
+            var save2 = this.save2();
             this.restore(save);
-            var tmp = this.parseAssignmentPattern();
-            if (isValidLHS(tmp)) {
-              target = tmp;
+            try {
+              target = this.parseAssignmentPattern();
+            } catch (e) {
+              this.restore(save2);
             }
           }
           pattern.pattern.patterns.push({
@@ -1597,11 +1598,13 @@
           this.next();
           var save = this.save();
           var target = this.parseMemberExpression();
-          if (!isValidLHS(target)) {
+          if (isBindingParseRequired(target)) {
+            var save2 = this.save2();
             this.restore(save);
-            var tmp = this.parseAssignmentPattern();
-            if (isValidLHS(tmp)) {
-              target = tmp;
+            try {
+              target = this.parseAssignmentPattern();
+            } catch (e) {
+              this.restore(save2);
             }
           }
           pattern.pattern.patterns.push({
@@ -1616,11 +1619,13 @@
         } else {
           var save = this.save();
           var target = this.parseMemberExpression();
-          if (!isValidLHS(target)) {
+          if (isBindingParseRequired(target)) {
+            var save2 = this.save2();
             this.restore(save);
-            tmp = this.parseAssignmentPattern();
-            if (isValidLHS(target)) {
-              target = tmp;
+            try {
+              target = this.parseAssignmentPattern();
+            } catch (e) {
+              this.restore(save2);
             }
           }
           pattern.pattern.patterns.push(target);
