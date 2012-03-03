@@ -343,17 +343,7 @@
       type: "ConstDeclaration",
       body: []
     };
-    do {
-      this.next();
-      var binding = this.parseBinding();
-      this.expect(OP["="]);
-      var expr = this.parseAssignmentExpression(true);
-      res.body.push({
-        type: "Declaration",
-        key: binding,
-        val: expr
-      });
-    } while (this.token === OP[","]);
+    this.parseDeclarations(res, 'const', true);
     this.expectSemicolon();
     return res;
   };
@@ -362,7 +352,7 @@
       type: "LetDeclaration",
       body: []
     };
-    this.parseDeclarations(res, true);
+    this.parseDeclarations(res, 'let', true);
     this.expectSemicolon();
     return res;
   };
@@ -383,11 +373,11 @@
       type: "VariableStatement",
       body: []
     };
-    this.parseDeclarations(res, true);
+    this.parseDeclarations(res, 'var', true);
     this.expectSemicolon();
     return res;
   };
-  Parser.prototype.parseDeclarations = function(res, accept_in) {
+  Parser.prototype.parseDeclarations = function(res, token, accept_in) {
     do {
       this.next();
       var binding = this.parseBinding();
@@ -400,6 +390,9 @@
           val: expr
         };
       } else {
+        if (token === 'const') {
+          throw new Error('ILLEGAL');
+        }
         var decl = {
           type: "Declaration",
           key: binding,
@@ -457,6 +450,7 @@
       cond: expr
     };
   };
+
   Parser.prototype.parseWhileStatement = function() {
     this.next();
     this.expect(OP["("]);
@@ -468,18 +462,37 @@
       body: this.parseStatement()
     };
   };
+
+  function getDecl(token) {
+    switch (token) {
+      case 'let':
+        return {
+          type: 'LetDeclaration
+          body: []
+        };
+      case 'const':
+        return {
+          type: 'ConstDeclaration
+          body: []
+        };
+      case 'var':
+        return {
+          type: 'VariableStatement'
+          body: []
+        };
+    }
+  }
+
   Parser.prototype.parseForStatement = function() {
     this.next();
     this.expect(OP["("]);
     if (this.token !== OP[";"]) {
-      if (this.token === OP["var"] || this.token === OP["const"]) {
-        var init = {
-          type: "VariableStatement",
-          decl: Lexer.opToString(this.token),
-          body: []
-        };
-        this.parseDeclarations(init, false);
-        if (this.token === OP["in"]) {
+      if (this.token === OP["var"] || this.token === OP["const"] || this.token === OP['let']) {
+        var token = Lexer.opToString(this.token);
+        var init = getDecl(token);
+        this.parseDeclarations(init, token, false);
+        if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
+          var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
           if (init.body.length !== 1) {
             throw new Error("ILLEGAL");
           }
@@ -488,7 +501,7 @@
           this.expect(OP[")"]);
           var body = this.parseStatement();
           return {
-            type: "ForInStatement",
+            type: type,
             init: init,
             enumerable: enumerable,
             body: body
@@ -501,12 +514,13 @@
           type: "ExpressionStatement",
           expr: initExpr
         };
-        if (this.token === OP["in"]) {
+        if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
+          var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
           if (!isValidLHS(initExpr)) {
             this.restore(save);
-            initExpr = this.parseAssignmentPattern();
-            if (!isValidLHS(initExpr)) {
-              throw new Error("ILLEGAL");
+            var tmp = this.parseAssignmentPattern();
+            if (isValidLHS(tmp)) {
+              initExpr = tmp;
             }
           }
           this.next();
@@ -514,7 +528,7 @@
           this.expect(OP[")"]);
           var body = this.parseStatement();
           return {
-            type: "ForInStatement",
+            type: type,
             init: init,
             enumerable: enumerable,
             body: body
@@ -522,6 +536,7 @@
         }
       }
     }
+
     this.expect(OP[";"]);
 
     var cond = null;
@@ -553,6 +568,7 @@
       body: body
     };
   };
+
   Parser.prototype.parseBreakStatement = function() {
     this.next();
     var stmt = {
@@ -741,9 +757,9 @@
     }
     if (!isValidLHS(result)) {
       this.restore(save);
-      result = this.parseAssignmentPattern();
-      if (!isValidLHS(result)) {
-        throw new Error("ILLEGAL");
+      var tmp = this.parseAssignmentPattern();
+      if (isValidLHS(tmp)) {
+        result = tmp;
       }
     }
     var op = Lexer.opToString(this.token);
@@ -906,9 +922,9 @@
         var expr = this.parseMemberExpression();
         if (!isValidLHS(expr)) {
           this.restore(save);
-          expr = this.parseAssignmentPattern();
-          if (!isValidLHS(expr)) {
-            throw new Error("ILLEGAL");
+          var tmp = this.parseAssignmentPattern();
+          if (isValidLHS(tmp)) {
+            expr = tmp;
           }
         }
         return {type: "UnaryExpression", op: op, expr: expr};
@@ -924,9 +940,9 @@
         (this.token === OP["++"] || this.token === OP["--"])) {
       if (!isValidLHS(expr)) {
         this.restore(save);
-        expr = this.parseAssignmentPattern();
-        if (!isValidLHS(expr)) {
-          throw new Error("ILLEGAL");
+        var tmp = this.parseAssignmentPattern();
+        if (isValidLHS(tmp)) {
+          expr = tmp;
         }
       }
       expr = {
@@ -1542,9 +1558,9 @@
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
             this.restore(save);
-            target = this.parseAssignmentPattern();
-            if (!isValidLHS(target)) {
-              throw new Error("ILLEGAL");
+            var tmp = this.parseAssignmentPattern();
+            if (isValidLHS(tmp)) {
+              target = tmp;
             }
           }
           pattern.pattern.patterns.push({
@@ -1583,9 +1599,9 @@
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
             this.restore(save);
-            target = this.parseAssignmentPattern();
-            if (!isValidLHS(target)) {
-              throw new Error("ILLEGAL");
+            var tmp = this.parseAssignmentPattern();
+            if (isValidLHS(tmp)) {
+              target = tmp;
             }
           }
           pattern.pattern.patterns.push({
@@ -1602,9 +1618,9 @@
           var target = this.parseMemberExpression();
           if (!isValidLHS(target)) {
             this.restore(save);
-            target = this.parseAssignmentPattern();
-            if (!isValidLHS(target)) {
-              throw new Error("ILLEGAL");
+            tmp = this.parseAssignmentPattern();
+            if (isValidLHS(target)) {
+              target = tmp;
             }
           }
           pattern.pattern.patterns.push(target);
