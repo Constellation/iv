@@ -91,7 +91,7 @@
     "goto", "implements", "import", "int", "interface", "long",
     "native", "package", "private", "protected", "public",
     "short", "static", "super", "synchronized", "throws",
-    "transient", "volatile",
+    "transient", "volatile", "let",
 
     "get", "set",
 
