@@ -1297,10 +1297,9 @@
       var enumerable = this.parseExpression(true);
       this.expect(OP[")"]);
       result.push({
-        type: type,
-        init: init,
-        enumerable: enumerable,
-        body: body
+        type: 'ComprehensionBlock',
+        left: init,
+        right: enumerable,
       });
     }
     return result;
