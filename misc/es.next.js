@@ -415,7 +415,8 @@
         }
         var decl = {
           type: "Declaration",
-          key: binding
+          key: binding,
+          val: null
         };
       }
       res.body.push(decl);
@@ -516,21 +517,18 @@
         // first, try to parse allow in expression
         this.next();
         var binding = this.parseBinding();
-        var save = this.save();
+        var save = null;
+        var expr = null;
         if (token === 'var' && this.token === OP["="]) {
           this.next();
-          var expr = this.parseAssignmentExpression(true);
-          var decl = {
-            type: "Declaration",
-            key: binding,
-            val: expr
-          };
-        } else {
-          var decl = {
-            type: "Declaration",
-            key: binding
-          };
+          save = this.save();
+          expr = this.parseAssignmentExpression(true);
         }
+        var decl = {
+          type: "Declaration",
+          key: binding,
+          val: expr
+        };
 
         if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
           // ForOfStatement
@@ -549,20 +547,11 @@
 
         // ForStatement or ForInStatement
         // so restore position and parse no in expression
-        if (token === 'var') {
+        if (save) {
           this.restore(save);
-          if (this.token === OP["="]) {
-            this.next();
-            var expr = this.parseAssignmentExpression(false);
-            init.body.push({
-              type: "Declaration",
-              key: binding,
-              val: expr
-            });
-          }
-        } else {
-          init.body.push(decl);
+          decl.expr = this.parseAssignmentExpression(false);
         }
+        init.body.push(decl);
 
         if (this.token === OP["in"]) {
           // ForInStatement
