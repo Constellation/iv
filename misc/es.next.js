@@ -825,7 +825,7 @@
   };
 
   Parser.prototype.reinterpretAsBinding = function(expr, save) {
-      if (!isBindingParseRequired(result)) {
+      if (!isBindingParseRequired(expr)) {
         return expr;
       }
       var save2 = this.save();
@@ -1835,4 +1835,4 @@
   exp.Lexer = Lexer;
 })(this);
 
-// print(JSON.stringify(new Parser("for (let i of [1, 2, 3]);").parse()));
+print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
