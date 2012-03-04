@@ -507,10 +507,12 @@
       if (this.token === OP["var"] || this.token === OP["const"] || this.token === OP['let']) {
         var token = Lexer.opToString(this.token);
         var init = getDecl(token);
-        // ForDecl allow non-initialized const declaration
-        this.parseDeclarations(init, 'let', false);
-        if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
-          var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
+        var save = this.save();
+
+        // first, try to parse allow in expression
+        this.parseDeclarations(init, 'let', true);
+        if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
+          // ForOfStatement
           if (init.body.length !== 1) {
             throw new Error("ILLEGAL");
           }
@@ -524,7 +526,34 @@
           this.expect(OP[")"]);
           var body = this.parseStatement();
           return {
-            type: type,
+            type: 'ForOfStatement',
+            init: init,
+            enumerable: enumerable,
+            body: body
+          };
+        }
+
+        // ForStatement or ForInStatement
+        // so restore position and parse no in expression
+        this.restore(save);
+        var init = getDecl(token);
+        this.parseDeclarations(init, 'let', false);
+        if (this.token === OP["in"]) {
+          // ForOfStatement
+          if (init.body.length !== 1) {
+            throw new Error("ILLEGAL");
+          }
+          // reject
+          // for (let i = 20 in []);
+          if (token !== 'var' && init.body[0].val) {
+            throw new Error("ILLEGAL");
+          }
+          this.next();
+          var enumerable = this.parseExpression(true);
+          this.expect(OP[")"]);
+          var body = this.parseStatement();
+          return {
+            type: 'ForInStatement',
             init: init,
             enumerable: enumerable,
             body: body
@@ -532,35 +561,40 @@
         }
       } else {
         var save = this.save();
-        var initExpr = this.parseExpression(false);
         var init = {
-          type: "ExpressionStatement",
-          expr: initExpr
+          type: 'ExpressionStatement',
+          expr: null
         };
-        // currently, using No in expression in for-of statement
-        //
-        // because,
-        //
-        //   for (expr in [] of []);
-        //
-        // is ambiguous
-        if (this.token === OP["in"] || (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of')) {
-          var type = (this.token === OP['in']) ? 'ForInStatement' : 'ForOfStatement';
-          if (isBindingParseRequired(initExpr)) {
-            var save2 = this.save();
-            this.restore(save);
-            try {
-              init.initExpr = this.parseAssignmentPattern();
-            } catch (e) {
-              this.restore(save2);
-            }
-          }
+
+        // first, try to parse allow in expression
+        init.expr = this.parseExpression(true);
+        if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
+          // ForOfStatement
+          init.expr = this.reinterpretAsBinding(init.expr, save);
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
           var body = this.parseStatement();
           return {
-            type: type,
+            type: 'ForOfStatement',
+            init: init,
+            enumerable: enumerable,
+            body: body
+          };
+        }
+
+        // ForStatement or ForInStatement
+        // so restore position and parse no in expression
+        this.restore(save);
+        init.expr = this.parseExpression(false);
+        if (this.token === OP["in"]) {
+          init.expr = this.reinterpretAsBinding(init.expr, save);
+          this.next();
+          var enumerable = this.parseExpression(true);
+          this.expect(OP[")"]);
+          var body = this.parseStatement();
+          return {
+            type: 'ForInStatement',
             init: init,
             enumerable: enumerable,
             body: body
@@ -790,20 +824,28 @@
     return result;
   };
 
+  Parser.prototype.reinterpretAsBinding = function(expr, save) {
+      if (!isBindingParseRequired(result)) {
+        return expr;
+      }
+      var save2 = this.save();
+      this.restore(save);
+      try {
+        return this.parseAssignmentPattern();
+      } catch (e) {
+        this.restore(save2);
+        return expr;
+      }
+  }
+
   Parser.prototype.parseAssignmentExpression = function(containsIn) {
     var save = this.save();
     var result = this.parseConditionalExpression(containsIn);
     if (!isAssignOp(this.token)) {
       return result;
     }
-    if (this.token === OP['='] && isBindingParseRequired(result)) {
-      var save2 = this.save();
-      this.restore(save);
-      try {
-        result = this.parseAssignmentPattern();
-      } catch (e) {
-        this.restore(save2);
-      }
+    if (this.token === OP['=']) {
+      result = this.reinterpretAsBinding(result, save);
     }
     var op = Lexer.opToString(this.token);
     this.next();
@@ -1709,16 +1751,7 @@
         if (this.token === OP[":"]) {
           this.next();
           var save = this.save();
-          var target = this.parseMemberExpression();
-          if (isBindingParseRequired(target)) {
-            var save2 = this.save2();
-            this.restore(save);
-            try {
-              target = this.parseAssignmentPattern();
-            } catch (e) {
-              this.restore(save2);
-            }
-          }
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
           pattern.pattern.patterns.push({
             type: "AssignmentProperty",
             key: ident,
@@ -1752,16 +1785,7 @@
         } else if (this.token === OP["..."]) {
           this.next();
           var save = this.save();
-          var target = this.parseMemberExpression();
-          if (isBindingParseRequired(target)) {
-            var save2 = this.save2();
-            this.restore(save);
-            try {
-              target = this.parseAssignmentPattern();
-            } catch (e) {
-              this.restore(save2);
-            }
-          }
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
           pattern.pattern.patterns.push({
             type: "AssignmentRestElement",
             expr: target
@@ -1773,16 +1797,7 @@
           break;
         } else {
           var save = this.save();
-          var target = this.parseMemberExpression();
-          if (isBindingParseRequired(target)) {
-            var save2 = this.save2();
-            this.restore(save);
-            try {
-              target = this.parseAssignmentPattern();
-            } catch (e) {
-              this.restore(save2);
-            }
-          }
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
           pattern.pattern.patterns.push(target);
         }
         if (this.token !== OP["]"]) {
@@ -1820,4 +1835,4 @@
   exp.Lexer = Lexer;
 })(this);
 
-// print(JSON.stringify(new Parser("if(a||!a);").parse()));
+// print(JSON.stringify(new Parser("for (let i of [1, 2, 3]);").parse()));
