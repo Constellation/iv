@@ -1828,4 +1828,3 @@
 })(this);
 
 // print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
-print(JSON.stringify(new Parser("for (i, i2; i < 100; ++i);").parse()));
