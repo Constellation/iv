@@ -575,7 +575,7 @@
 
         var save = this.save();
         init.expr = this.parseMemberExpression(true);
-        if (isLeftHandSide(init.expr) && (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
+        if ((this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
           // ForOfStatement or ForInStatement
           var type = (this.token === OP["in"]) ? 'ForInStatement' : 'ForOfStatement';
           init.expr = this.reinterpretAsBinding(init.expr, save);
@@ -1828,3 +1828,4 @@
 })(this);
 
 // print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
+print(JSON.stringify(new Parser("for (i, i2; i < 100; ++i);").parse()));
