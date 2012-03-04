@@ -382,6 +382,7 @@ template<typename Factory>
 class Expression : public ExpressionBase<Factory> {
  public:
   inline virtual bool IsValidLeftHandSide() const { return false; }
+  inline virtual bool IsLeftHandSide() const { return false; }
   virtual void AcceptExpressionVisitor(
       typename ExpressionVisitor<Factory>::type* visitor) = 0;
   virtual void AcceptExpressionVisitor(
@@ -402,6 +403,7 @@ INHERIT(Literal);
 template<typename Factory>
 class Literal : public LiteralBase<Factory> {
  public:
+  inline bool IsLeftHandSide() const { return true; }
   DECLARE_NODE_TYPE(Literal)
 };
 
@@ -1148,7 +1150,7 @@ template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
   typedef typename SpaceUString<Factory>::type value_type;
-  explicit StringLiteral(const value_type* val, bool directive)
+  StringLiteral(const value_type* val, bool directive)
     : value_(val),
       directive_(directive) {
   }
@@ -1162,6 +1164,17 @@ class StringLiteral : public StringLiteralBase<Factory> {
  private:
   const value_type* value_;
   bool directive_;
+};
+
+// ReducedStringLiteral
+template<typename Factory>
+class ReducedStringLiteral : public StringLiteral<Factory> {
+  public:
+  typedef typename StringLiteral<Factory>::value_type value_type;
+  ReducedStringLiteral(const value_type* val, bool directive)
+    : StringLiteral<Factory>(val, directive) {
+  }
+  inline bool IsLeftHandSide() const { return false; }
 };
 
 // NumberLiteral
@@ -1185,6 +1198,18 @@ class NumberLiteral : public NumberLiteralBase<Factory> {
   double value_;
 };
 
+// ReducedNumberLiteral
+template<typename Factory>
+class ReducedNumberLiteral : public NumberLiteral<Factory> {
+ public:
+  explicit ReducedNumberLiteral(const double & val)
+    : NumberLiteral<Factory>(val) {
+  }
+  inline bool IsLeftHandSide() const { return false; }
+ private:
+  double value_;
+};
+
 // Identifier
 template<typename Factory>
 class Inherit<Factory, kIdentifier>
@@ -1198,6 +1223,7 @@ class Identifier : public IdentifierBase<Factory> {
   explicit Identifier(Symbol sym) : sym_(sym) { }
   Symbol symbol() const { return sym_; }
   inline bool IsValidLeftHandSide() const { return true; }
+  inline bool IsLeftHandSide() const { return true; }
   bool SideEffect() const { return false; }
   DECLARE_DERIVED_NODE_TYPE(Identifier)
   ACCEPT_EXPRESSION_VISITOR
@@ -1520,6 +1546,7 @@ template<typename Factory>
 class PropertyAccess : public PropertyAccessBase<Factory> {
  public:
   inline bool IsValidLeftHandSide() const { return true; }
+  inline bool IsLeftHandSide() const { return true; }
   inline Expression<Factory>* target() const { return target_; }
   DECLARE_NODE_TYPE(PropertyAccess)
  protected:
@@ -1591,6 +1618,7 @@ class Call : public CallBase<Factory> {
  public:
   // Call is valid, but in this implementation, not return reference
   DECLARE_NODE_TYPE(Call)
+  inline bool IsLeftHandSide() const { return true; }
 };
 
 // FunctionCall

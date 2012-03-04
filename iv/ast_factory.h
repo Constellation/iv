@@ -49,7 +49,7 @@ class BasicAstFactory {
 
   NumberLiteral* NewReducedNumberLiteral(const double& val) {
     return Location(
-        new(static_cast<Factory*>(this)) NumberLiteral(val), 0, 0);
+        new(static_cast<Factory*>(this)) ReducedNumberLiteral(val), 0, 0);
   }
 
   NumberLiteral* NewNumberLiteral(const double& val,
@@ -71,7 +71,7 @@ class BasicAstFactory {
                                          StringLiteral* rhs) {
     return Location(
         new(static_cast<Factory*>(this))
-          StringLiteral(NewString(lhs, rhs), false), 0, 0);
+          ReducedStringLiteral(NewString(lhs, rhs), false), 0, 0);
   }
 
   RegExpLiteral* NewRegExpLiteral(const std::vector<uint16_t>& content,

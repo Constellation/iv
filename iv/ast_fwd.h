@@ -38,7 +38,9 @@ IV_STATEMENT_DERIVED_NODE_LIST(V)
 #define IV_LITERAL_NODE_LIST(V)\
 V(Literal)\
 V(Identifier)\
+V(ReducedNumberLiteral)\
 V(NumberLiteral)\
+V(ReducedStringLiteral)\
 V(StringLiteral)\
 V(RegExpLiteral)\
 V(FunctionLiteral)\

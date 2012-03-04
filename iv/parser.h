@@ -209,7 +209,8 @@ class Parser : private Noncopyable<> {
       environment_(NULL),
       target_(NULL),
       labels_(NULL),
-      table_(table) {
+      table_(table),
+      last_parenthesized_(NULL) {
   }
 
 // Program
@@ -709,7 +710,8 @@ class Parser : private Noncopyable<> {
           assert(init_expr);
           init = factory_->NewExpressionStatement(
               init_expr, lexer_.previous_end_position());
-          if (!init_expr->IsValidLeftHandSide()) {
+          // LHS Guard
+          if (init_expr != last_parenthesized_ && !init_expr->IsLeftHandSide()) {
             RAISE("invalid for-in left-hand-side");
           }
           Next();
@@ -1148,6 +1150,12 @@ class Parser : private Noncopyable<> {
     if (!Token::IsAssignOp(token_)) {
       return result;
     }
+
+    // LHS Guard
+    if (result != last_parenthesized_ && !result->IsLeftHandSide()) {
+      RAISE("assign to invalid left-hand-side");
+    }
+
     // section 11.13.1 throwing SyntaxError
     if (strict_ && result->AsIdentifier()) {
       const Symbol sym = result->AsIdentifier()->symbol();
@@ -1719,7 +1727,7 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_LPAREN:
         Next();
-        result = ParseExpression(true, CHECK);
+        last_parenthesized_ = result = ParseExpression(true, CHECK);
         EXPECT(Token::TK_RPAREN);
         break;
 
@@ -2434,6 +2442,7 @@ class Parser : private Noncopyable<> {
   Target* target_;
   SymbolSet* labels_;
   SymbolTable* table_;
+  Expression* last_parenthesized_;
 };
 #undef IS
 #undef EXPECT
