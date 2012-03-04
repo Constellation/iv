@@ -567,7 +567,7 @@
         };
 
         // first, try to parse allow in expression
-        init.expr = this.parseExpression(true);
+        init.expr = this.parseMemberExpression(true);
         if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
           // ForOfStatement
           init.expr = this.reinterpretAsBinding(init.expr, save);
@@ -586,7 +586,7 @@
         // ForStatement or ForInStatement
         // so restore position and parse no in expression
         this.restore(save);
-        init.expr = this.parseExpression(false);
+        init.expr = this.parseMemberExpression(false);
         if (this.token === OP["in"]) {
           init.expr = this.reinterpretAsBinding(init.expr, save);
           this.next();
