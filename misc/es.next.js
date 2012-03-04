@@ -396,6 +396,7 @@
     do {
       this.next();
       var binding = this.parseBinding();
+
       if (this.token === OP["="]) {
         this.next();
         var expr = this.parseAssignmentExpression(accept_in);
@@ -405,6 +406,10 @@
           val: expr
         };
       } else {
+        if (binding.type !== 'Identifier') {
+          // BindingPattern always requires initializer
+          throw new Error('ILLEGAL');
+        }
         if (token === 'const') {
           throw new Error('ILLEGAL');
         }
@@ -507,20 +512,29 @@
       if (this.token === OP["var"] || this.token === OP["const"] || this.token === OP['let']) {
         var token = Lexer.opToString(this.token);
         var init = getDecl(token);
-        var save = this.save();
 
         // first, try to parse allow in expression
-        this.parseDeclarations(init, 'let', true);
+        this.next();
+        var binding = this.parseBinding();
+        var save = this.save();
+        if (token === 'var' && this.token === OP["="]) {
+          this.next();
+          var expr = this.parseAssignmentExpression(true);
+          var decl = {
+            type: "Declaration",
+            key: binding,
+            val: expr
+          };
+        } else {
+          var decl = {
+            type: "Declaration",
+            key: binding
+          };
+        }
+
         if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
           // ForOfStatement
-          if (init.body.length !== 1) {
-            throw new Error("ILLEGAL");
-          }
-          // reject
-          // for (let i = 20 in []);
-          if (token !== 'var' && init.body[0].val) {
-            throw new Error("ILLEGAL");
-          }
+          init.body.push(decl);
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
@@ -535,19 +549,23 @@
 
         // ForStatement or ForInStatement
         // so restore position and parse no in expression
-        this.restore(save);
-        var init = getDecl(token);
-        this.parseDeclarations(init, 'let', false);
+        if (token === 'var') {
+          this.restore(save);
+          if (this.token === OP["="]) {
+            this.next();
+            var expr = this.parseAssignmentExpression(false);
+            init.body.push({
+              type: "Declaration",
+              key: binding,
+              val: expr
+            });
+          }
+        } else {
+          init.body.push(decl);
+        }
+
         if (this.token === OP["in"]) {
-          // ForOfStatement
-          if (init.body.length !== 1) {
-            throw new Error("ILLEGAL");
-          }
-          // reject
-          // for (let i = 20 in []);
-          if (token !== 'var' && init.body[0].val) {
-            throw new Error("ILLEGAL");
-          }
+          // ForInStatement
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
@@ -566,35 +584,17 @@
           expr: null
         };
 
-        // first, try to parse allow in expression
         init.expr = this.parseMemberExpression(true);
-        if (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') {
-          // ForOfStatement
+        if ((this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
+          // ForOfStatement or ForInStatement
+          var type = (this.token === OP["in"]) ? 'ForInStatement' : 'ForOfStatement';
           init.expr = this.reinterpretAsBinding(init.expr, save);
           this.next();
           var enumerable = this.parseExpression(true);
           this.expect(OP[")"]);
           var body = this.parseStatement();
           return {
-            type: 'ForOfStatement',
-            init: init,
-            enumerable: enumerable,
-            body: body
-          };
-        }
-
-        // ForStatement or ForInStatement
-        // so restore position and parse no in expression
-        this.restore(save);
-        init.expr = this.parseMemberExpression(false);
-        if (this.token === OP["in"]) {
-          init.expr = this.reinterpretAsBinding(init.expr, save);
-          this.next();
-          var enumerable = this.parseExpression(true);
-          this.expect(OP[")"]);
-          var body = this.parseStatement();
-          return {
-            type: 'ForInStatement',
+            type: type,
             init: init,
             enumerable: enumerable,
             body: body
