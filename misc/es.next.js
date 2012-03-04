@@ -213,8 +213,22 @@
     return false;
   }
 
+  function isLeftHandSide(expr) {
+    // not lhs expressions
+    switch (expr.type) {
+      case 'Assignment':
+      case 'ConditionalExpression':
+      case 'BinaryExpression':
+      case 'UnaryExpression':
+      case 'PostfixExpression':
+        return false;
+    }
+    return true;
+  }
+
   function Parser(source) {
     this.lexer = new Lexer(source);
+    this.lastParenthesized = null;
     this.next();
   }
 
@@ -567,16 +581,16 @@
           };
         }
       } else {
-        var save = this.save();
         var init = {
           type: 'ExpressionStatement',
           expr: null
         };
-
-        var save = this.save();
-        init.expr = this.parseMemberExpression(true);
+        init.expr = this.parseExpression(false);
         if ((this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
           // ForOfStatement or ForInStatement
+          if (this.lastParenthesized !== init.expr && !isLeftHandSide(init.expr)) {
+            throw new Error('ILLEGAL');
+          }
           var type = (this.token === OP["in"]) ? 'ForInStatement' : 'ForOfStatement';
           init.expr = this.reinterpretAsBinding(init.expr, save);
           this.next();
@@ -590,8 +604,6 @@
             body: body
           };
         }
-        this.restore(save);
-        init.expr = this.parseExpression(false);
       }
     }
 
@@ -837,6 +849,9 @@
       return result;
     }
     if (this.token === OP['=']) {
+      if (this.lastParenthesized !== result && !isLeftHandSide(result)) {
+        throw new Error('ILLEGAL');
+      }
       result = this.reinterpretAsBinding(result, save);
     }
     var op = Lexer.opToString(this.token);
@@ -991,14 +1006,10 @@
       case OP["+"]:
       case OP["-"]:
       case OP["delete"]:
-        this.next();
-        var expr = this.parseUnaryExpression();
-        return {type: "UnaryExpression", op: op, expr: expr};
-
       case OP["++"]:
       case OP["--"]:
         this.next();
-        var expr = this.parseMemberExpression(true);
+        var expr = this.parseUnaryExpression();
         return {type: "UnaryExpression", op: op, expr: expr};
 
       default:
@@ -1282,6 +1293,8 @@
             comprehensions: comprehensionForList,
             filter: filter
           };
+        } else {
+          this.lastParenthesized = result;
         }
         this.expect(OP[")"]);
         return result;
@@ -1356,7 +1369,7 @@
     while (this.token === OP['for']) {
       this.next();
       this.expect(OP['(']);
-      var expr = this.parseExpression(true);
+      var expr = this.parseMemberExpression(true);
       var init = {
         type: "ExpressionStatement",
         expr: expr
@@ -1806,6 +1819,7 @@
   Parser.prototype.save = function() {
     return {
       token: this.token,
+      lastParenthesized: this.lastParenthesized,
       current: this.lexer.current,
       value: this.lexer.value,
       pos: this.lexer.pos,
@@ -1816,6 +1830,7 @@
 
   Parser.prototype.restore = function(obj) {
     this.token = obj.token;
+    this.lastParenthesized = obj.lastParenthesized;
     this.lexer.current = obj.current;
     this.lexer.value = obj.value;
     this.lexer.pos = obj.pos;
@@ -1828,3 +1843,4 @@
 })(this);
 
 // print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
+// print(JSON.stringify(new Parser("10 + 10 = 20").parse()));
