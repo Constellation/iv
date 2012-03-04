@@ -573,8 +573,9 @@
           expr: null
         };
 
+        var save = this.save();
         init.expr = this.parseMemberExpression(true);
-        if ((this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
+        if (isLeftHandSide(init.expr) && (this.token === OP['IDENTIFIER'] && this.lexer.value === 'of') || this.token === OP["in"]) {
           // ForOfStatement or ForInStatement
           var type = (this.token === OP["in"]) ? 'ForInStatement' : 'ForOfStatement';
           init.expr = this.reinterpretAsBinding(init.expr, save);
@@ -589,6 +590,8 @@
             body: body
           };
         }
+        this.restore(save);
+        init.expr = this.parseExpression(false);
       }
     }
 
@@ -995,7 +998,7 @@
       case OP["++"]:
       case OP["--"]:
         this.next();
-        var expr = this.parseMemberExpression();
+        var expr = this.parseMemberExpression(true);
         return {type: "UnaryExpression", op: op, expr: expr};
 
       default:
@@ -1740,7 +1743,7 @@
         if (this.token === OP[":"]) {
           this.next();
           var save = this.save();
-          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(true), save);
           pattern.pattern.patterns.push({
             type: "AssignmentProperty",
             key: ident,
@@ -1774,7 +1777,7 @@
         } else if (this.token === OP["..."]) {
           this.next();
           var save = this.save();
-          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(true), save);
           pattern.pattern.patterns.push({
             type: "AssignmentRestElement",
             expr: target
@@ -1786,7 +1789,7 @@
           break;
         } else {
           var save = this.save();
-          var target = this.reinterpretAsBinding(this.parseMemberExpression(), save);
+          var target = this.reinterpretAsBinding(this.parseMemberExpression(true), save);
           pattern.pattern.patterns.push(target);
         }
         if (this.token !== OP["]"]) {
