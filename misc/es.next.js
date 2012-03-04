@@ -1835,4 +1835,4 @@
   exp.Lexer = Lexer;
 })(this);
 
-print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
+// print(JSON.stringify(new Parser("for (i in [] of [1, 2, 3]);").parse()));
