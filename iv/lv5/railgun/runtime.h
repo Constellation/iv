@@ -74,8 +74,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
       code,
       ctx->global_env(),
       ctx->global_env(),
-      (code->strict()) ?
-      vm->stack()->current()->GetThis() : ctx->global_obj(), e);
+      ctx->global_obj(), e);
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
