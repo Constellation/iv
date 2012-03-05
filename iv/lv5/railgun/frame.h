@@ -167,7 +167,9 @@ struct Frame {
     return n + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
-  const Code* code() const { return code(); }
+  const Code* code() const { return code_; }
+
+  Code* code() { return code_; }
 
   Instruction* data() { return code()->data(); }
 
