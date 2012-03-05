@@ -62,7 +62,7 @@ struct Frame {
   }
 
   JSVal* GetFrameEnd() {
-    return RegisterFile() + code_->registers();
+    return RegisterFile() + code()->registers();
   }
 
   JSVal* RegisterFile();
@@ -167,11 +167,11 @@ struct Frame {
     return n + (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
   }
 
-  const Code* code() const { return code_; }
+  const Code* code() const { return code(); }
 
-  Instruction* data() { return code_->data(); }
+  Instruction* data() { return code()->data(); }
 
-  const Instruction* data() const { return code_->data(); }
+  const Instruction* data() const { return code()->data(); }
 
   JSEnv* lexical_env() { return lexical_env_; }
 
