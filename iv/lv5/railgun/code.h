@@ -39,6 +39,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       strict_(func.strict()),
       empty_(false),
       has_name_(func.name()),
+      needs_declarative_environment_(false),
       heap_size_(0),
       stack_size_(0),
       temporary_registers_(0),
@@ -165,6 +166,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return stack_size() + heap_size() + temporary_registers();
   }
 
+  bool needs_declarative_environment() const {
+    return needs_declarative_environment_;
+  }
+
  private:
 
   void set_start(std::size_t start) { start_ = start; }
@@ -179,10 +184,15 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void set_empty(bool val) { empty_ = val; }
 
+  void set_needs_declarative_environment(bool val) {
+    needs_declarative_environment_ = val;
+  }
+
   CodeType code_type_;
   bool strict_;
   bool empty_;
   bool has_name_;
+  bool needs_declarative_environment_;
   uint32_t heap_size_;   // heaps
   uint32_t stack_size_;  // locals
   uint32_t temporary_registers_;  // number of temporary registers

@@ -67,6 +67,13 @@ JSVal VM::RunEval(Code* code,
     return JSEmpty;
   }
   const JSVal res = Execute(frame, e);
+#ifdef DEBUG
+  if (code->needs_declarative_environment()) {
+    assert(frame->lexical_env()->outer() == lexical_env);
+  } else {
+    assert(frame->lexical_env() == lexical_env);
+  }
+#endif
   stack_.Unwind(frame);
   return res;
 }
@@ -91,6 +98,13 @@ JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
     return JSEmpty;
   }
   const JSVal res = Execute(frame, e);
+#ifdef DEBUG
+  if (func->code()->needs_declarative_environment()) {
+    assert(frame->lexical_env()->outer() == func->scope());
+  } else {
+    assert(frame->lexical_env() == func->scope());
+  }
+#endif
   stack_.Unwind(frame);
   return res;
 }
@@ -308,6 +322,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // EVAL / CALL / CONSTRUCT
         instr = frame->prev_pc_ + OPLength<OP::CALL>::value;
         const int32_t r = frame->r_;
+        // because of Frame is code frame,
+        // first lexical_env is variable_env.
+        // (if Eval / Global, this is not valid)
+        assert(frame->lexical_env() == frame->variable_env());
         frame = stack_.Unwind(frame);
         register_offset = frame->RegisterFile();
         REG(r) = ret;
@@ -1506,6 +1524,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
       DEFINE_OPCODE(POP_ENV) {
         // opcode
+#ifdef DEBUG
+              VerifyDynamicEnvironment(frame);
+#endif
         frame->set_lexical_env(frame->lexical_env()->outer());
         DISPATCH(POP_ENV);
       }
@@ -1810,6 +1831,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
             case Handler::ENV: {
               // roll up environment
+#ifdef DEBUG
+              VerifyDynamicEnvironment(frame);
+#endif
               frame->set_lexical_env(frame->lexical_env()->outer());
               continue;
             }
@@ -1839,6 +1863,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
       } else {
         // unwind frame
         instr = frame->prev_pc_;
+        // because of Frame is code frame,
+        // first lexical_env is variable_env.
+        // (if Eval / Global, this is not valid)
+        assert(frame->lexical_env() == frame->variable_env());
         frame = stack_.Unwind(frame);
         register_offset = frame->RegisterFile();
         strict = frame->code()->strict();

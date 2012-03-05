@@ -101,6 +101,16 @@ class VM {
   // VM main routine
   inline JSVal Execute(Frame* frame, Error* e);
 
+  static void VerifyDynamicEnvironment(Frame* frame) {
+    JSEnv* env = frame->lexical_env()->outer();
+    for (; env; env = env->outer()) {
+      if (frame->variable_env() == env) {
+        break;
+      }
+    }
+    assert(env == frame->variable_env());
+  }
+
   Context* ctx_;
   Operation operation_;
   Stack stack_;

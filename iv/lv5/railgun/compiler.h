@@ -646,6 +646,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       assert(code_->names_.empty());
       Emit<OP::BUILD_ENV>(
           Instruction::UInt32(env->heap_size(), env->mutable_start()));
+      code_->set_needs_declarative_environment(true);
       for (FunctionScope::HeapVariables::const_iterator
            it = env->heap().begin(), last = env->heap().end();
            it != last; ++it) {
