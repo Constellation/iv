@@ -57,6 +57,44 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 
 }  // namespace detail
 
+
+inline JSString::JSString(JSVal* src, uint32_t count)
+  : size_(0),
+    is_8bit_(true),
+    fiber_count_(0),
+    fibers_() {
+  for (uint32_t i = 0; i < count; ++i) {
+    this_type* str = src[i].string();
+    size_ += str->size();
+    fiber_count_ += str->fiber_count();
+    if (!str->Is8Bit()) {
+      is_8bit_ = false;
+    }
+  }
+  if (fiber_count() > kMaxFibers) {
+    Cons* cons = Cons::NewWithSize(size(), Is8Bit(), fiber_count());
+    fiber_count_ = 1;
+    Cons::iterator it = cons->begin();
+    for (uint32_t i = 0; i < count; ++i) {
+      this_type* target = src[count - 1 - i].string();
+      it = std::transform(
+          target->fibers().begin(),
+          target->fibers().begin() + target->fiber_count(),
+          it, Retainer());
+    }
+    fibers_[0] = cons;
+  } else {
+    FiberSlots::iterator it = fibers_.begin();
+    for (uint32_t i = 0; i < count; ++i) {
+      this_type* target = src[count - 1 - i].string();
+      it = std::transform(
+          target->fibers().begin(),
+          target->fibers().begin() + target->fiber_count(),
+          it, Retainer());
+    }
+  }
+}
+
 // "STRING".split("") => ['S', 'T', 'R', 'I', 'N', 'G']
 JSArray* JSString::Split(Context* ctx, JSArray* ary,
                          uint32_t limit, Error* e) const {

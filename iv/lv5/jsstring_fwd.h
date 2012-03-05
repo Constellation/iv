@@ -464,6 +464,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
+  static this_type* New(Context* ctx, JSVal* src, uint32_t count) {
+    return new (PointerFreeGC) this_type(src, count);
+  }
+
   // destructor
 
   ~JSString() {
@@ -642,6 +646,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
       }
     }
   }
+
+  JSString(JSVal* src, uint32_t count);
 
   std::size_t size_;
   bool is_8bit_;

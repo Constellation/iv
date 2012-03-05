@@ -93,6 +93,7 @@ class DisAssembler : private core::Noncopyable<> {
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d", op, r0, r1);
         break;
       }
+      case OP::TO_PRIMITIVE_AND_TO_STRING:
       case OP::TO_NUMBER:
       case OP::WITH_SETUP:
       case OP::INCREMENT:
@@ -223,6 +224,7 @@ class DisAssembler : private core::Noncopyable<> {
                        op, r0, r1, index, size);
         break;
       }
+      case OP::CONCAT:
       case OP::PREPARE_DYNAMIC_CALL:
       case OP::POSTFIX_INCREMENT_PROP:
       case OP::POSTFIX_DECREMENT_PROP:

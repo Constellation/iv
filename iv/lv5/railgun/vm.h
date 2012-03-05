@@ -1482,6 +1482,23 @@ do {\
         DISPATCH(TO_NUMBER);
       }
 
+      DEFINE_OPCODE(TO_PRIMITIVE_AND_TO_STRING) {
+        // opcode | src
+        const JSVal src = REG(instr[1].i32[0]);
+        const JSVal primitive = src.ToPrimitive(ctx_, Hint::NONE, ERR);
+        JSString* str = primitive.ToString(ctx_, ERR);
+        REG(instr[1].i32[0]) = str;
+        DISPATCH(TO_PRIMITIVE_AND_TO_STRING);
+      }
+
+      DEFINE_OPCODE(CONCAT) {
+        // opcode | (dst | start | count)
+        JSVal* src = &REG(instr[1].ssw.i16[1]);
+        JSString* str = JSString::New(ctx_, src, instr[1].ssw.u32);
+        REG(instr[1].ssw.i16[0]) = str;
+        DISPATCH(CONCAT);
+      }
+
       DEFINE_OPCODE(DEBUGGER) {
         // opcode
         DISPATCH(DEBUGGER);

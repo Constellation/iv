@@ -332,6 +332,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                                         const Expression* target,
                                         Symbol sym);
 
+  RegisterID EmitConcat(const BinaryOperation* start,
+                        const Expression* lhs, RegisterID dst);
+
   void Visit(const Assignment* assign);
   void Visit(const BinaryOperation* binary);
   void Visit(const ConditionalExpression* cond);

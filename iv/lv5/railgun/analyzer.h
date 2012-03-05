@@ -8,6 +8,7 @@ namespace railgun {
 
 class Analyzer {
  public:
+  // Assignment
   class AssignmentVisitor : public ExpressionVisitor {
    public:
     AssignmentVisitor() : found_(false) { }
@@ -143,6 +144,230 @@ class Analyzer {
     AssignmentVisitor visitor;
     expr->AcceptExpressionVisitor(&visitor);
     return visitor.found();
+  }
+
+  // TODO(Constellation) calculate it in parser phase
+  // IsString
+  class IsStringVisitor : public ExpressionVisitor {
+   public:
+    typedef core::Token Token;
+    enum Type {
+      TYPE_STRING,
+      TYPE_NUMBER,
+      TYPE_NULL,
+      TYPE_UNDEFINED,
+      TYPE_BOOL,
+      TYPE_OTHER
+    };
+
+    Type Evaluate(const Expression* expr) {
+      expr->AcceptExpressionVisitor(this);
+      return type_;
+    }
+
+    IsStringVisitor() : type_() { }
+
+    void Visit(const Assignment* assign) {
+      // LHS type
+      if (assign->op() == Token::TK_ASSIGN) {
+        type_ = Evaluate(assign->right());
+      } else {
+        type_ = BinaryEvaluate(assign);
+      }
+    }
+
+    template<typename T>
+    Type BinaryEvaluate(const T* binary) {
+      switch (binary->op()) {
+        case Token::TK_ASSIGN_ADD:
+        case Token::TK_ADD: {
+          const Type type1 = Evaluate(binary->left());
+          const Type type2 = Evaluate(binary->left());
+          if (type1 == TYPE_STRING || type2 == TYPE_STRING) {
+            type_ = TYPE_STRING;
+          } else if (type1 == TYPE_NUMBER || type2 == TYPE_NUMBER) {
+            type_ = TYPE_NUMBER;
+          } else {
+            type_ = TYPE_OTHER;  // String or Number anyway
+          }
+          break;
+        }
+
+        case Token::TK_ASSIGN_SUB:
+        case Token::TK_SUB:
+        case Token::TK_ASSIGN_SHR:
+        case Token::TK_SHR:
+        case Token::TK_ASSIGN_SAR:
+        case Token::TK_SAR:
+        case Token::TK_ASSIGN_SHL:
+        case Token::TK_SHL:
+        case Token::TK_ASSIGN_MUL:
+        case Token::TK_MUL:
+        case Token::TK_ASSIGN_DIV:
+        case Token::TK_DIV:
+        case Token::TK_ASSIGN_MOD:
+        case Token::TK_MOD:
+        case Token::TK_ASSIGN_BIT_AND:
+        case Token::TK_BIT_AND:
+        case Token::TK_ASSIGN_BIT_XOR:
+        case Token::TK_BIT_XOR:
+        case Token::TK_ASSIGN_BIT_OR:
+        case Token::TK_BIT_OR:
+          type_ = TYPE_NUMBER;
+          break;
+
+        case Token::TK_LT:
+        case Token::TK_LTE:
+        case Token::TK_GT:
+        case Token::TK_GTE:
+        case Token::TK_INSTANCEOF:
+        case Token::TK_IN:
+        case Token::TK_EQ:
+        case Token::TK_NE:
+        case Token::TK_EQ_STRICT:
+        case Token::TK_NE_STRICT:
+          type_ = TYPE_BOOL;
+          break;
+
+        case Token::TK_COMMA:
+          type_ = Evaluate(binary->right());
+          break;
+
+        case Token::TK_LOGICAL_AND:
+        case Token::TK_LOGICAL_OR: {
+          const Type type1 = Evaluate(binary->left());
+          const Type type2 = Evaluate(binary->right());
+          if (type1 == type2) {
+            type_ = type1;
+          } else {
+            // TODO(Constellation) we can calculate falsy or truly
+            type_ = TYPE_OTHER;
+          }
+          break;
+        }
+
+        default:
+        UNREACHABLE();
+      }
+      return type_;
+    }
+
+    void Visit(const BinaryOperation* binary) {
+      type_ = BinaryEvaluate(binary);
+    }
+
+    void Visit(const ConditionalExpression* cond) {
+      const Type type1 = Evaluate(cond->left());
+      const Type type2 = Evaluate(cond->right());
+      if (type1 == type2) {
+        type_ = type1;
+      } else {
+        type_ = TYPE_OTHER;
+      }
+    }
+
+    void Visit(const UnaryOperation* unary) {
+      switch (unary->op()) {
+        case Token::TK_ADD:
+        case Token::TK_SUB:
+        case Token::TK_INC:
+        case Token::TK_DEC:
+        case Token::TK_BIT_NOT:
+          type_ = TYPE_NUMBER;
+          break;
+        case Token::TK_NOT:
+        case Token::TK_DELETE:
+          type_ = TYPE_BOOL;
+          break;
+        case Token::TK_VOID:
+          type_ = TYPE_UNDEFINED;
+          break;
+        case Token::TK_TYPEOF:
+          type_ = TYPE_STRING;
+          break;
+        default:
+          UNREACHABLE();
+      }
+    }
+
+    void Visit(const PostfixExpression* postfix) {
+      type_ = TYPE_NUMBER;
+    }
+
+    void Visit(const Assigned* assigned) {
+      UNREACHABLE();
+    }
+
+    void Visit(const StringLiteral* literal) {
+      type_ = TYPE_STRING;
+    }
+
+    void Visit(const NumberLiteral* literal) {
+      type_ = TYPE_NUMBER;
+    }
+
+    void Visit(const Identifier* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const ThisLiteral* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const NullLiteral* literal) {
+      type_ = TYPE_NULL;
+    }
+
+    void Visit(const TrueLiteral* literal) {
+      type_ = TYPE_BOOL;
+    }
+
+    void Visit(const FalseLiteral* literal) {
+      type_ = TYPE_BOOL;
+    }
+
+    void Visit(const RegExpLiteral* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const ArrayLiteral* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const ObjectLiteral* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const FunctionLiteral* literal) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const IdentifierAccess* prop) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const IndexAccess* prop) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const FunctionCall* call) {
+      type_ = TYPE_OTHER;
+    }
+
+    void Visit(const ConstructorCall* call) {
+      type_ = TYPE_OTHER;
+    }
+
+    bool IsString() const { return type_ == TYPE_STRING; }
+
+   private:
+    Type type_;
+  };
+
+  static bool IsString(const Expression* expr) {
+    IsStringVisitor visitor;
+    expr->AcceptExpressionVisitor(&visitor);
+    return visitor.IsString();
   }
 };
 

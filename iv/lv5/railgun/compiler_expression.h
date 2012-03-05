@@ -100,7 +100,7 @@ inline void Compiler::Visit(const Assignment* assign) {
 
   const Expression* lhs = assign->left();
   const Expression* rhs = assign->right();
-  
+
   if (!lhs->IsValidLeftHandSide()) {
     // not valid LHS
     if (token == Token::TK_ASSIGN) {
@@ -182,41 +182,66 @@ inline void Compiler::Visit(const Assignment* assign) {
       // Identifier
       const LookupInfo info = Lookup(ident->symbol());
       if (RegisterID local = GetLocal(ident->symbol())) {
-        Thunk lv(&thunkpool_, EmitExpression(lhs));
-        RegisterID rv = EmitExpression(rhs);
-        lv.Release();
-        if (info.immutable()) {
-          dst_ = Dest(dst_);
-          if (code_->strict()) {
-            EmitUnsafe(OP::BinaryOP(token),
-                       Instruction::Reg3(Temporary(), lv.reg(), rv));
-            Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+        if (token == Token::TK_ASSIGN_ADD &&
+            rhs->AsBinaryOperation() &&
+            rhs->AsBinaryOperation()->op() == Token::TK_ADD &&
+            Analyzer::IsString(rhs) && !info.immutable()) {
+          // concat path
+          EmitConcat(rhs->AsBinaryOperation(), lhs, local);
+          dst_ = EmitMV(dst_, local);
+        } else {
+          Thunk lv(&thunkpool_, EmitExpression(lhs));
+          RegisterID rv = EmitExpression(rhs);
+          lv.Release();
+          if (info.immutable()) {
+            dst_ = Dest(dst_);
+            if (code_->strict()) {
+              EmitUnsafe(OP::BinaryOP(token),
+                         Instruction::Reg3(Temporary(), lv.reg(), rv));
+              Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+            } else {
+              thunkpool_.Spill(dst_);
+              EmitUnsafe(OP::BinaryOP(token),
+                         Instruction::Reg3(dst_, lv.reg(), rv));
+            }
           } else {
+            thunkpool_.Spill(local);
+            EmitUnsafe(OP::BinaryOP(token),
+                       Instruction::Reg3(local, lv.reg(), rv));
+            dst_ = EmitMV(dst_, local);
+          }
+        }
+      } else {
+        if (token == Token::TK_ASSIGN_ADD &&
+            rhs->AsBinaryOperation() &&
+            rhs->AsBinaryOperation()->op() == Token::TK_ADD &&
+            Analyzer::IsString(rhs)) {
+          // concat path
+          if (Compiler::NotOrdered(dst_)) {
+            dst_ = EmitConcat(rhs->AsBinaryOperation(), lhs, dst_);
+            EmitStore(ident->symbol(), dst_);
+          } else {
+            RegisterID ret = Temporary();
+            EmitConcat(rhs->AsBinaryOperation(), lhs, ret);
+            EmitStore(ident->symbol(), ret);
+            dst_ = EmitMV(dst_, ret);
+          }
+        } else {
+          Thunk lv(&thunkpool_, EmitExpression(lhs));
+          RegisterID rv = EmitExpression(rhs);
+          lv.Release();
+          if (Compiler::NotOrdered(dst_)) {
+            dst_ = Dest(dst_, lv.reg(), rv);
             thunkpool_.Spill(dst_);
             EmitUnsafe(OP::BinaryOP(token),
                        Instruction::Reg3(dst_, lv.reg(), rv));
+            EmitStore(ident->symbol(), dst_);
+          } else {
+            RegisterID ret = Temporary(lv.reg(), rv);
+            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, lv.reg(), rv));
+            EmitStore(ident->symbol(), ret);
+            dst_ = EmitMV(dst_, ret);
           }
-        } else {
-          thunkpool_.Spill(local);
-          EmitUnsafe(OP::BinaryOP(token),
-                     Instruction::Reg3(local, lv.reg(), rv));
-          dst_ = EmitMV(dst_, local);
-        }
-      } else {
-        Thunk lv(&thunkpool_, EmitExpression(lhs));
-        RegisterID rv = EmitExpression(rhs);
-        lv.Release();
-        if (Compiler::NotOrdered(dst_)) {
-          dst_ = Dest(dst_, lv.reg(), rv);
-          thunkpool_.Spill(dst_);
-          EmitUnsafe(OP::BinaryOP(token),
-                     Instruction::Reg3(dst_, lv.reg(), rv));
-          EmitStore(ident->symbol(), dst_);
-        } else {
-          RegisterID ret = Temporary(lv.reg(), rv);
-          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, lv.reg(), rv));
-          EmitStore(ident->symbol(), ret);
-          dst_ = EmitMV(dst_, ret);
         }
       }
     } else {
@@ -262,7 +287,8 @@ template<core::Token::Type token>
 void Compiler::EmitLogicalPath(const BinaryOperation* binary) {
   IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
                    token == Token::TK_LOGICAL_OR);
-  const OP::Type kOp = token == Token::TK_LOGICAL_AND ? OP::IF_FALSE : OP::IF_TRUE;
+  const OP::Type kOp =
+      token == Token::TK_LOGICAL_AND ? OP::IF_FALSE : OP::IF_TRUE;
   if (ignore_result()) {
     // like
     // opt || (opt = { });
@@ -287,6 +313,69 @@ void Compiler::EmitLogicalPath(const BinaryOperation* binary) {
   }
 }
 
+// Emit String concat operation
+//
+//   ((("STR" + a) + b) + c)
+// to
+//   concat "STR", a, b, c
+//
+//  if style is
+//    dst += 'str' + a + b;
+//  argument dst is not null
+inline RegisterID Compiler::EmitConcat(const BinaryOperation* start,
+                                       const Expression* lhs,
+                                       RegisterID dst) {
+  typedef std::vector<const Expression*> Expressions;
+  Expressions expressions;
+  expressions.reserve(16);
+  expressions.push_back(start->right());
+
+  const Expression* first = start->left();
+  while (first->AsBinaryOperation() &&
+         first->AsBinaryOperation()->op() == Token::TK_ADD &&
+         Analyzer::IsString(first)) {
+    const BinaryOperation* binary = first->AsBinaryOperation();
+    expressions.push_back(binary->right());
+    first = binary->left();
+  }
+
+  if (start->SideEffect()) {
+    thunkpool_.ForceSpill();
+  }
+
+  expressions.push_back(first);
+  std::vector<RegisterID> pool(expressions.size() + ((lhs) ? 1 : 0));
+  assert(!pool.empty());
+  const int16_t base = registers_.AcquireCallBase(pool.size());
+
+  int n = 0;
+  if (lhs) {
+    pool[n] = registers_.Acquire(base + n);
+    EmitExpressionToDest(lhs, pool[n]);
+    ++n;
+  }
+
+  for (Expressions::const_reverse_iterator it = expressions.rbegin(),
+       last = expressions.rend(); it != last; ++it, ++n) {
+    pool[n] = registers_.Acquire(base + n);
+    EmitExpressionToDest(*it, pool[n]);
+    if (!Analyzer::IsString(*it)) {
+      // not string
+      Emit<OP::TO_PRIMITIVE_AND_TO_STRING>(pool[n]);
+    }
+  }
+
+  // adding phase
+  if (lhs) {
+    Emit<OP::TO_PRIMITIVE_AND_TO_STRING>(pool[0]);
+  }
+
+  dst = Dest(dst, pool[0]);
+  thunkpool_.Spill(dst);
+  Emit<OP::CONCAT>(Instruction::SSW(dst, pool[0], pool.size()));
+  return dst;
+}
+
 inline void Compiler::Visit(const BinaryOperation* binary) {
   const DestGuard dest_guard(this);
   const Token::Type token = binary->op();
@@ -308,11 +397,15 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
     }
 
     default: {
-      Thunk lv(&thunkpool_, EmitExpression(binary->left()));
-      RegisterID rv = EmitExpression(binary->right());
-      dst_ = Dest(dst_, lv.Release(), rv);
-      thunkpool_.Spill(dst_);
-      EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+      if (token == Token::TK_ADD && Analyzer::IsString(binary)) {
+        dst_ = EmitConcat(binary, NULL, dst_);
+      } else {
+        Thunk lv(&thunkpool_, EmitExpression(binary->left()));
+        RegisterID rv = EmitExpression(binary->right());
+        dst_ = Dest(dst_, lv.Release(), rv);
+        thunkpool_.Spill(dst_);
+        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+      }
       break;
     }
   }
