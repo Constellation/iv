@@ -4,6 +4,18 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <iv/platform.h>
+
+#if defined(IV_OS_MACOSX) && !defined(MAP_ANON)
+#error you should define _DARWIN_C_SOURCE or remove _POSIX_C_SOURCE
+#endif
+
+#if defined(MAP_ANONYMOUS)
+#define IV_MAP_ANON MAP_ANONYMOUS
+#else
+#define IV_MAP_ANON MAP_ANON
+#endif
+
 namespace iv {
 namespace core {
 
@@ -11,7 +23,7 @@ inline void* OSAllocator::Allocate(std::size_t bytes) {
   int fd = -1;
   void* mem = NULL;
   mem = mmap(mem, bytes,
-             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, fd, 0);
+             PROT_READ | PROT_WRITE, MAP_PRIVATE | IV_MAP_ANON, fd, 0);
   if (mem == MAP_FAILED) {
     std::abort();
   }

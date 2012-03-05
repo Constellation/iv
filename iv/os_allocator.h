@@ -15,8 +15,6 @@ class OSAllocator {
 } }  // namespace iv::core
 #if defined(IV_OS_WIN)
 #include <iv/os_allocator_win.h>
-#elif defined(IV_OS_MACOSX)
-#include <iv/os_allocator_mac.h>
 #else
 #include <iv/os_allocator_posix.h>
 #endif  // IV_OS_WIN
