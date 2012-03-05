@@ -391,8 +391,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
             CurrentSize(),
             0,
             iterator->register_offset(),
-            0,
-            dynamic_env_level()));
+            0));
     const std::size_t end_index = CurrentSize();
     jump.EmitJumps(end_index, start_index);
     EmitJump(end_index, for_in_setup_jump);
@@ -417,7 +416,7 @@ inline RegisterID Compiler::EmitUnrollingLevel(uint16_t from,
       Emit<OP::JUMP_SUBROUTINE>(
           Instruction::Jump(0, entry.jmp(), entry.flag()));
       entry.holes()->push_back(finally_jump);
-    } else if (entry.type() == Level::WITH) {
+    } else if (entry.type() == Level::ENV) {
       Emit<OP::POP_ENV>();
     } else if (entry.type() == Level::ITERATOR) {
       // jump is continue and target for-in
@@ -478,34 +477,29 @@ inline void Compiler::Visit(const ReturnStatement* stmt) {
   continuation_status_.Kill();
 }
 
-class Compiler::DynamicEnvLevelCounter : private core::Noncopyable<> {
- public:
-  explicit DynamicEnvLevelCounter(Compiler* compiler)
-    : compiler_(compiler) {
-    compiler_->DynamicEnvLevelUp();
-  }
-  ~DynamicEnvLevelCounter() {
-    compiler_->DynamicEnvLevelDown();
-  }
- private:
-  Compiler* compiler_;
-};
-
 inline void Compiler::Visit(const WithStatement* stmt) {
   {
     RegisterID dst = EmitExpression(stmt->context());
     Emit<OP::WITH_SETUP>(dst);
   }
-  PushLevelWith();
   {
-    DynamicEnvLevelCounter counter(this);
+    PushLevelEnv();
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(
             new WithScope(current_variable_scope_));
+    const std::size_t with_start = CurrentSize();
     EmitStatement(stmt->body());
     current_variable_scope_ = current_variable_scope_->upper();
+    code_->RegisterHandler(
+        Handler(
+            Handler::ENV,
+            with_start,
+            CurrentSize(),
+            0,
+            0,
+            0));
+    PopLevel();
   }
-  PopLevel();
   Emit<OP::POP_ENV>();
 }
 
@@ -658,22 +652,31 @@ inline void Compiler::Visit(const TryStatement* stmt) {
               CurrentSize(),
               0,
               error->register_offset(),
-              0,
-              dynamic_env_level()));
+              0));
       Emit<OP::TRY_CATCH_SETUP>(
           Instruction::SW(error, SymbolToNameIndex(catch_symbol)));
     }
-    PushLevelWith();
+
     {
-      DynamicEnvLevelCounter counter(this);
+      PushLevelEnv();
       current_variable_scope_ =
           std::shared_ptr<VariableScope>(
               new CatchScope(current_variable_scope_, catch_symbol));
+      std::size_t catch_start = CurrentSize();
       EmitStatement(block.Address());
       current_variable_scope_ = current_variable_scope_->upper();
+      PopLevel();
+      code_->RegisterHandler(
+          Handler(
+              Handler::ENV,
+              catch_start,
+              CurrentSize(),
+              0,
+              0,
+              0));
+      Emit<OP::POP_ENV>();
     }
-    PopLevel();
-    Emit<OP::POP_ENV>();
+
     if (has_finally) {
       const std::size_t finally_jump = CurrentSize();
       Emit<OP::JUMP_SUBROUTINE>(Instruction::Jump(0, jmp, flag));
@@ -704,8 +707,7 @@ inline void Compiler::Visit(const TryStatement* stmt) {
             finally_start,
             jmp->register_offset(),
             ret->register_offset(),
-            flag->register_offset(),
-            dynamic_env_level()));
+            flag->register_offset()));
     target.EmitJumps(finally_start);
 
     EmitStatement(block.Address());

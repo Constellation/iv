@@ -12,7 +12,8 @@ class Handler {
   enum Type {
     CATCH,
     FINALLY,
-    ITERATOR
+    ITERATOR,
+    ENV
   };
 
   Handler(Type type,
@@ -20,15 +21,13 @@ class Handler {
           uint32_t end,
           int16_t jmp,
           int16_t ret,
-          int16_t flag,
-          uint32_t dynamic_env_level)
+          int16_t flag)
     : type_(type),
       jmp_(jmp),
       ret_(ret),
       flag_(flag),
       begin_(begin),
-      end_(end),
-      dynamic_env_level_(dynamic_env_level) { }
+      end_(end) { }
 
   Type type() const { return type_; }
 
@@ -42,8 +41,6 @@ class Handler {
 
   int16_t flag() const { return flag_; }
 
-  uint32_t dynamic_env_level() const { return dynamic_env_level_; }
-
  private:
   Type type_;
   int16_t jmp_;
@@ -51,7 +48,6 @@ class Handler {
   int16_t flag_;
   uint32_t begin_;
   uint32_t end_;
-  uint32_t dynamic_env_level_;
 };
 
 typedef GCVector<Handler>::type ExceptionTable;

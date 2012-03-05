@@ -90,7 +90,6 @@ class Stack : public lv5::Stack {
       frame->prev_ = current_;
       frame->callee_ = callee;
       frame->argc_ = argc_with_this - 1;
-      frame->dynamic_env_level_ = 0;
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = constructor_call;
@@ -118,7 +117,6 @@ class Stack : public lv5::Stack {
       frame->prev_ = current_;
       frame->callee_ = JSVal(JSUndefined);
       frame->argc_ = 0;
-      frame->dynamic_env_level_ = 0;
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = false;

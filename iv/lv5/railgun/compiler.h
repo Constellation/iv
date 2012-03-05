@@ -67,9 +67,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   class Level {
    public:
     enum Type {
-      WITH,
       FINALLY,
-      ITERATOR
+      ITERATOR,
+      ENV
     };
 
     typedef std::vector<Level> Stack;
@@ -139,7 +139,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       symbol_to_index_map_(),
       jsstring_to_index_map_(),
       double_to_index_map_(),
-      dynamic_env_level_(),
       continuation_status_(),
       current_variable_scope_(),
       temporary_() {
@@ -249,7 +248,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void CodeContextPrologue(Code* code) {
     set_code(code);
-    set_dynamic_env_level(0);
     jump_table_.clear();
     level_stack_.clear();
     dst_.reset();
@@ -272,7 +270,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   class BreakTarget;
   class ContinueTarget;
   class TryTarget;
-  class DynamicEnvLevelCounter;
 
   void EmitStatement(const Statement* stmt) {
     stmt->Accept(this);
@@ -894,18 +891,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   // use for break / continue exile by executing finally block
   std::size_t CurrentLevel() const { return level_stack_.size(); }
 
-  void DynamicEnvLevelUp() { ++dynamic_env_level_; }
-
-  void DynamicEnvLevelDown() { --dynamic_env_level_; }
-
-  uint16_t dynamic_env_level() const {
-    return dynamic_env_level_;
-  }
-
-  void set_dynamic_env_level(uint16_t dynamic_env_level) {
-    dynamic_env_level_ = dynamic_env_level;
-  }
-
   void RegisterJumpTarget(const BreakableStatement* stmt,
                           Jump::Targets* breaks) {
     jump_table_.insert(
@@ -927,8 +912,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     level_stack_.push_back(Level(Level::FINALLY, vec));
   }
 
-  void PushLevelWith() {
-    level_stack_.push_back(Level(Level::WITH, NULL));
+  void PushLevelEnv() {
+    level_stack_.push_back(Level(Level::ENV, NULL));
   }
 
   void PushLevelIterator(RegisterID iterator) {
@@ -964,7 +949,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
   JSStringToIndexMap jsstring_to_index_map_;
   JSDoubleToIndexMap double_to_index_map_;
-  uint16_t dynamic_env_level_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
   trace::Vector<Map*>::type temporary_;

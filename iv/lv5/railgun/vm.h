@@ -198,18 +198,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #define JUMPTO(x) (instr = frame->data() + (x))
 #define JUMPBY(x) (instr += (x))
 
-#define UNWIND_DYNAMIC_ENV(n)\
-do {\
-  const uint16_t dynamic_env_level_shrink = (n);\
-  JSEnv* dynamic_env_target = frame->lexical_env();\
-  assert(frame->dynamic_env_level_ >= dynamic_env_level_shrink);\
-  for (uint16_t i = dynamic_env_level_shrink, \
-       len = frame->dynamic_env_level_; i < len; ++i) {\
-    dynamic_env_target = dynamic_env_target->outer();\
-  }\
-  frame->set_lexical_env(dynamic_env_target);\
-  frame->dynamic_env_level_ = dynamic_env_level_shrink;\
-} while (0)
 #define REG(n) (register_offset[n])
 
 #define GETITEM(target, i) ((*target)[(i)])
@@ -1513,14 +1501,12 @@ do {\
             JSObjectEnv::New(ctx_, frame->lexical_env(), obj);
         with_env->set_provide_this(true);
         frame->set_lexical_env(with_env);
-        frame->dynamic_env_level_ += 1;
         DISPATCH(WITH_SETUP);
       }
 
       DEFINE_OPCODE(POP_ENV) {
         // opcode
         frame->set_lexical_env(frame->lexical_env()->outer());
-        frame->dynamic_env_level_ -= 1;
         DISPATCH(POP_ENV);
       }
 
@@ -1531,7 +1517,6 @@ do {\
         JSEnv* const catch_env =
             JSStaticEnv::New(ctx_, frame->lexical_env(), name, error);
         frame->set_lexical_env(catch_env);
-        frame->dynamic_env_level_ += 1;
         DISPATCH(TRY_CATCH_SETUP);
       }
 
@@ -1803,32 +1788,45 @@ do {\
     // should rethrow exception.
     assert(*e);
     while (true) {
+      bool in_range = false;
       const ExceptionTable& table = frame->code()->exception_table();
       for (ExceptionTable::const_iterator it = table.begin(),
            last = table.end(); it != last; ++it) {
         const Handler& handler = *it;
         const uint32_t offset = static_cast<uint32_t>(instr - frame->data());
-        if (offset < handler.begin()) {
-          break;  // not found in this exception table
-        } else if (offset < handler.end()) {
-          assert(handler.begin() <= offset);
-          if (handler.type() == Handler::ITERATOR) {
-            // control iterator lifetime
-            NativeIterator* it =
-                static_cast<NativeIterator*>(REG(handler.ret()).cell());
-            ctx_->ReleaseNativeIterator(it);
-          } else {
-            const JSVal error = JSError::Detail(ctx_, e);
-            e->Clear();
-            UNWIND_DYNAMIC_ENV(handler.dynamic_env_level());
-            if (handler.type() == Handler::FINALLY) {
-              REG(handler.flag()) = kJumpFromFinally;
-              REG(handler.jmp()) = error;
-            } else {
-              REG(handler.ret()) = error;
+        if (in_range && handler.begin() > offset) {
+          break;  // handler not found
+        }
+        if (handler.begin() <= offset && offset < handler.end()) {
+          in_range = true;
+          switch (handler.type()) {
+            case Handler::ITERATOR: {
+              // control iterator lifetime
+              NativeIterator* it =
+                  static_cast<NativeIterator*>(REG(handler.ret()).cell());
+              ctx_->ReleaseNativeIterator(it);
+              continue;
             }
-            JUMPTO(handler.end());
-            GO_MAIN_LOOP();
+
+            case Handler::ENV: {
+              // roll up environment
+              frame->set_lexical_env(frame->lexical_env()->outer());
+              continue;
+            }
+
+            default: {
+              // catch or finally
+              const JSVal error = JSError::Detail(ctx_, e);
+              e->Clear();
+              if (handler.type() == Handler::FINALLY) {
+                REG(handler.flag()) = kJumpFromFinally;
+                REG(handler.jmp()) = error;
+              } else {
+                REG(handler.ret()) = error;
+              }
+              JUMPTO(handler.end());
+              GO_MAIN_LOOP();
+            }
           }
         }
       }
@@ -1858,7 +1856,6 @@ do {\
 #undef DEFINE_OPCODE
 #undef JUMPTO
 #undef JUMPBY
-#undef UNWIND_DYNAMIC_ENV
 #undef GETITEM
 #undef REG
 }  // NOLINT
