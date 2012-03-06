@@ -1428,6 +1428,7 @@
     this.expect(OP[']']);
     return {
       type: 'ArrayComprehension',
+      sealed: sealed,
       expression: first,
       comprehensions: comprehensionForList,
       filter: filter
