@@ -1952,7 +1952,6 @@ class Parser : private Noncopyable<> {
       bool *res) {
     // IDENTIFIER
     // IDENTIFIER_opt
-    SymbolSet param_set;
     std::size_t throw_error_if_strict_code_line = 0;
     const std::size_t begin_position = lexer_.begin_position();
     enum {
@@ -2032,6 +2031,7 @@ class Parser : private Noncopyable<> {
       EXPECT(Token::TK_RPAREN);
     } else {
       if (token_ != Token::TK_RPAREN) {
+        SymbolSet param_set;
         do {
           const Token::Type current = token_;
           if (current != Token::TK_IDENTIFIER &&
