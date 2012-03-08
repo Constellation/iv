@@ -1284,6 +1284,7 @@ class DToA {
       begin[0] = '.';
       exponent_part = begin + precision_;
     }
+    *exponent_part++ = 'e';
     // limit 9999
     int result = 0;
     if (exponent_ < 0) {
