@@ -936,7 +936,12 @@
            (!this.lexer.hasLineTerminatorBeforeNext &&
             this.token === OP["IDENTIFIER"] &&
             (this.lexer.value === "is" || this.lexer.value === "isnt"))) {
-      var op = Lexer.opToString(this.token);
+      var op = null;
+      if (this.token === OP['IDENTIFIER']) {
+        op = this.lexer.value;
+      } else {
+        op = Lexer.opToString(this.token);
+      }
       this.next();
       var right = this.parseBinaryExpression(containsIn, 3);
       left = { type: "BinaryExpression",
