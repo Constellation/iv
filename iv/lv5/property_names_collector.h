@@ -16,51 +16,76 @@ class PropertyNamesCollector {
         order_((static_cast<uint64_t>(level) << 32) | order) {
     }
 
-    friend bool operator<(const SymbolKey& lhs, const SymbolKey& rhs) {
-      if (symbol::IsIndexSymbol(lhs.symbol_)) {
-        if (symbol::IsIndexSymbol(rhs.symbol_)) {
-          const uint32_t li = symbol::GetIndexFromSymbol(lhs.symbol_);
-          const uint32_t ri = symbol::GetIndexFromSymbol(rhs.symbol_);
-          return li < ri;
-        }
-        return true;
-      }
-      if (symbol::IsIndexSymbol(rhs.symbol_)) {
-        return false;
-      }
-      return lhs.order_ < rhs.order_;
+    explicit SymbolKey(uint32_t index)
+      : symbol_(symbol::MakeSymbolFromIndex(index)),
+        order_(0) {
     }
 
     operator Symbol() const {
       return symbol_;
+    }
+
+    uint32_t index() const {
+      assert(symbol::IsIndexSymbol(symbol_));
+      return symbol::GetIndexFromSymbol(symbol_);
+    }
+
+    uint64_t order() const {
+      return order_;
     }
    private:
     Symbol symbol_;
     uint64_t order_;
   };
 
-  typedef core::SortedVector<SymbolKey> Names;
+  struct IndexCompare {
+    bool operator()(const SymbolKey& lhs, const SymbolKey& rhs) const {
+      return lhs.index() < rhs.index();
+    }
+  };
+
+  struct SymbolCompare {
+    bool operator()(const SymbolKey& lhs, const SymbolKey& rhs) const {
+      return lhs.order() < rhs.order();
+    }
+  };
+
+  typedef std::vector<SymbolKey> Names;
 
   PropertyNamesCollector()
     : names_(),
-      level_(0) {
+      level_(0),
+      index_position_(0) {
     names_.reserve(kReservedSize);
   }
 
   const Names& names() const { return names_; }
 
   void Add(Symbol symbol, uint32_t order) {
-    for (Names::const_iterator it = names_.begin(),
-         last = names_.end(); it != last; ++it) {
-      if (*it == symbol) {
-        return;
+    if (symbol::IsIndexSymbol(symbol)) {
+      Add(symbol::GetIndexFromSymbol(symbol));
+    } else {
+      const SymbolKey key(symbol, order, level_);
+      const Names::iterator last = names_.end();
+      const Names::iterator it =
+          std::lower_bound(names_.begin() + index_position_,
+                           last, key, SymbolCompare());
+      if (it == last || *it != symbol) {
+        names_.insert(it, key);
       }
     }
-    names_.push_back(SymbolKey(symbol, order, level_));
   }
 
   void Add(uint32_t index) {
-    Add(symbol::MakeSymbolFromIndex(index), 0);
+    const SymbolKey key(index);
+    const Names::iterator last = names_.begin() + index_position_;
+    const Names::iterator it =
+        std::lower_bound(names_.begin(), last, key, IndexCompare());
+    if (it == last || it->index() != index) {
+      // insert new entry
+      names_.insert(it, key);
+      index_position_ += 1;
+    }
   }
 
   PropertyNamesCollector* LevelUp() {
@@ -69,13 +94,15 @@ class PropertyNamesCollector {
   }
 
   void Clear() {
-    level_ = 0;
     names_.clear();
+    level_ = 0;
+    index_position_ = 0;
   }
 
  private:
   Names names_;
   uint32_t level_;
+  uint32_t index_position_;
 };
 
 } }  // namespace iv::lv5
