@@ -273,18 +273,20 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
       fd = core::DoubleToInteger(fd);
     }
   }
-  if (!fractionDigits.IsUndefined() &&
-      (fd < 0 || fd > 20)) {
+  if (!fractionDigits.IsUndefined() && (fd < 0 || fd > 20)) {
     e->Report(Error::Range,
               "fractionDigits is in range between 0 to 20");
     return JSEmpty;
   }
-  const int f = core::DoubleToInt32(fd);
 
+  int f = core::DoubleToInt32(fd);
   JSStringDToA builder(ctx);
   if (fractionDigits.IsUndefined()) {
     return builder.BuildStandardExponential(x);
   } else {
+    if (x == 0) {
+      f = 0;
+    }
     return builder.BuildExponential(x, f, 1);
   }
 }
