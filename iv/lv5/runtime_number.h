@@ -284,9 +284,13 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
   if (fractionDigits.IsUndefined()) {
     return builder.BuildStandardExponential(x);
   } else {
-    if (x == 0) {
-      f = 0;
-    }
+    // In ECMA262 5.1th on 2012/03/10, below step is defined,
+    // but probably, this is bug, so we remove this specialization.
+    // see https://mail.mozilla.org/pipermail/es-discuss/2012-March/021085.html
+    //
+    // if (x == 0) {
+    //   f = 0;
+    // }
     return builder.BuildExponential(x, f, 1);
   }
 }
