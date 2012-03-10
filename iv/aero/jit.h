@@ -68,6 +68,26 @@ class JIT : private Xbyak::CodeGenerator {
   }
 
  private:
+  void LoadVM(const Xbyak::Reg64& dst) {
+    mov(dst, ptr[rbp - 8]);
+  }
+
+  void LoadStack(const Xbyak::Reg64& dst) {
+    LoadVM(dst);
+    mov(dst, ptr[dst]);
+  }
+
+  static int StaticPrint(int ch) {
+    printf("PUT: %d\n", ch);
+    return 0;
+  }
+
+  void Put(const Xbyak::Reg64& reg) {
+    mov(rdi, reg);
+    mov(rax, core::BitCast<uintptr_t>(&StaticPrint));
+    call(rax);
+  }
+
   void ScanJumpReference() {
     // scan jump referenced opcode, and record it to jump table
     Code::Data::const_pointer instr = first_instr_;
@@ -103,15 +123,6 @@ class JIT : private Xbyak::CodeGenerator {
       std::advance(instr, length);
     }
     tracked_.resize(backtracks_.size(), 0);
-  }
-
-  void LoadVM(const Xbyak::Reg64& dst) {
-    mov(dst, ptr[rbp - 8]);
-  }
-
-  void LoadStack(const Xbyak::Reg64& dst) {
-    LoadVM(dst);
-    mov(dst, ptr[dst]);
   }
 
   void Main() {
@@ -195,8 +206,7 @@ IV_AERO_OPCODES(V)
     // copy to captures
     mov(r10, captures_);
     mov(r11, size);
-    LoadVM(rax);
-    mov(rax, ptr[rax]);
+    LoadStack(rax);
     add(rax, sp_);
 
     L(".LOOP_START");
@@ -205,12 +215,12 @@ IV_AERO_OPCODES(V)
     dec(r11);
     mov(rdi, dword[rax]);
     mov(dword[r10], edi);
-    add(r10, sizeof(int));
-    add(rax, sizeof(int));
+    add(r10, sizeof(int));  // NOLINT
+    add(rax, sizeof(int));  // NOLINT
     jmp(".LOOP_START");
     L(".LOOP_END");
-    mov(cp_, dword[captures_ + sizeof(int)]);
-    mov(rdi, dword[captures_ + sizeof(int) * (size - 1)]);
+    mov(cp_, dword[captures_ + sizeof(int)]);  // NOLINT
+    mov(rdi, dword[captures_ + sizeof(int) * (size - 1)]);  // NOLINT
     mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
     mov(rax, ptr[rax + rdi * sizeof(uintptr_t)]);
     jmp(rax);
@@ -229,12 +239,6 @@ IV_AERO_OPCODES(V)
   void Return(const Xbyak::Reg64& reg) {
     mov(rax, reg);
     jmp(jit_detail::kReturnLabel, T_NEAR);
-  }
-
-  template<typename T>
-  void Call(const T* func) {
-    mov(rax, core::BitCast<uintptr_t>(func));
-    call(rax);
   }
 
   void EmitSizeGuard() {
@@ -315,14 +319,89 @@ IV_AERO_OPCODES(V)
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void EmitASSERTION_WORD_BOUNDARY(const uint8_t* instr, uint32_t len) {
-    // TODO(Constellation)
+  void InlineIsWord(const Xbyak::Reg64& reg, const char* ok) {
     inLocalLabel();
+    cmp(reg, '0');
+    jl(".UNDERSCORE");
+    cmp(reg, '9');
+    jle(ok);
+    L(".UNDERSCORE");
+    cmp(reg, '_');
+    je(ok);
+    L(".ASCIIAlpha");
+    or(reg, 0x20);
+    cmp(reg, 'a');
+    jl(".NG");
+    cmp(reg, 'z');
+    jle(ok);
+    L(".NG");
+    outLocalLabel();
+  }
+
+  void EmitASSERTION_WORD_BOUNDARY(const uint8_t* instr, uint32_t len) {
+    inLocalLabel();
+    test(cpd_, cpd_);
+    jz(".FIRST_FALSE");
+    cmp(cp_, size_);
+    jg(".FIRST_FALSE");
+    mov(r10, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
+    InlineIsWord(r10, ".FIRST_TRUE");
+    jmp(".FIRST_FALSE");
+    L(".FIRST_TRUE");
+    mov(r10, 1);
+    jmp(".SECOND");
+    L(".FIRST_FALSE");
+    mov(r10, 0);
+
+    L(".SECOND");
+    cmp(cp_, size_);
+    jge(".SECOND_FALSE");
+    mov(r11, dword[subject_ + cp_ * sizeof(CharT)]);
+    InlineIsWord(r11, ".SECOND_TRUE");
+    jmp(".SECOND_FALSE");
+    L(".SECOND_TRUE");
+    mov(r11, 1);
+    jmp(".CHECK");
+    L(".SECOND_FALSE");
+    mov(r11, 0);
+
+    L(".CHECK");
+    cmp(r10, r11);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
 
   void EmitASSERTION_WORD_BOUNDARY_INVERTED(const uint8_t* instr, uint32_t len) {  // NOLINT
-    // TODO(Constellation)
+    inLocalLabel();
+    test(cpd_, cpd_);
+    jz(".FIRST_FALSE");
+    cmp(cp_, size_);
+    jg(".FIRST_FALSE");
+    mov(r10, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
+    InlineIsWord(r10, ".FIRST_TRUE");
+    jmp(".FIRST_FALSE");
+    L(".FIRST_TRUE");
+    mov(r10, 1);
+    jmp(".SECOND");
+    L(".FIRST_FALSE");
+    mov(r10, 0);
+
+    L(".SECOND");
+    cmp(cp_, size_);
+    jge(".SECOND_FALSE");
+    mov(r11, dword[subject_ + cp_ * sizeof(CharT)]);
+    InlineIsWord(r11, ".SECOND_TRUE");
+    jmp(".SECOND_FALSE");
+    L(".SECOND_TRUE");
+    mov(r11, 1);
+    jmp(".CHECK");
+    L(".SECOND_FALSE");
+    mov(r11, 0);
+
+    L(".CHECK");
+    cmp(r10, r11);
+    je(jit_detail::kBackTrackLabel, T_NEAR);
+    outLocalLabel();
   }
 
   void EmitSTART_CAPTURE(const uint8_t* instr, uint32_t len) {
@@ -351,7 +430,7 @@ IV_AERO_OPCODES(V)
           if (i == to) {
             break;
           }
-          add(r10, sizeof(int));
+          add(r10, sizeof(int));  // NOLINT
         }
       }
     } else {
@@ -361,7 +440,7 @@ IV_AERO_OPCODES(V)
       mov(r11, captures_);
       L(".LOOP_START");
       mov(dword[r11], -1);
-      add(r11, sizeof(int));
+      add(r11, sizeof(int));  // NOLINT
       dec(r10);
       test(r10, r10);
       jnz(".LOOP_START");
@@ -397,9 +476,8 @@ IV_AERO_OPCODES(V)
     Return(AERO_ERROR);
     L(".SUCCESS");
     mov(sp_, rax);
-    LoadVM(r10);
-    sub(sp_, ptr[r10]);
-    shr(sp_, sizeof(int) / 2);
+    LoadStack(sp_);
+    shr(sp_, sizeof(int) / 2);  // NOLINT
 
     // copy
     mov(r10, captures_);
@@ -412,15 +490,15 @@ IV_AERO_OPCODES(V)
     dec(r11);
     mov(rdi, dword[r10]);
     mov(dword[rax], edi);
-    add(r10, sizeof(int));
-    add(rax, sizeof(int));
+    add(r10, sizeof(int));  // NOLINT
+    add(rax, sizeof(int));  // NOLINT
     jmp(".LOOP_START");
     L(".LOOP_END");
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
     mov(dword[rax], it->second);
-    mov(dword[rsi + sizeof(int)], cpd_);
+    mov(dword[rsi + sizeof(int)], cpd_);  // NOLINT
     outLocalLabel();
   }
 
@@ -428,17 +506,6 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitBACK_REFERENCE_IGNORE_CASE(const uint8_t* instr, uint32_t len) {
-  }
-
-  static int StaticPrint(int ch) {
-    printf("PUT: %d\n", ch);
-    return 0;
-  }
-
-  void Put(const Xbyak::Reg64& reg) {
-    mov(rdi, reg);
-    mov(rax, core::BitCast<uintptr_t>(&StaticPrint));
-    call(rax);
   }
 
   void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len) {
@@ -537,7 +604,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
-    mov(dword[captures_ + sizeof(int)], cpd_);
+    mov(dword[captures_ + sizeof(int)], cpd_);  // NOLINT
     Return(AERO_SUCCESS);
   }
 
