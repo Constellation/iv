@@ -213,7 +213,7 @@ inline void Compiler::Visit(const WhileStatement* stmt) {
     dst = EmitExpression(stmt->cond());
   }
 
-  if (stmt->body()->IsEffectiveStatement()) {
+  if (stmt->body()->IsEffectiveStatement() || current_variable_scope_->UseExpressionReturn()) {
     if (cond == Condition::COND_INDETERMINATE) {
       const std::size_t label = CurrentSize();
       Emit<OP::IF_FALSE>(Instruction::Jump(0, dst));

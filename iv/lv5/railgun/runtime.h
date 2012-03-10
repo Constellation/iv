@@ -116,7 +116,9 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     }
     JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
     code = CompileEval(ctx, *eval, script);
-    ctx->direct_eval_map()->Insert(str, code);
+    if (!code->strict()) {
+      ctx->direct_eval_map()->Insert(str, code);
+    }
   }
 
   VM* const vm = ctx->vm();
