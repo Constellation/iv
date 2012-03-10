@@ -7,6 +7,7 @@ static const int kUndefined = -1;
 
 class Code {
  public:
+  typedef std::vector<uint8_t> Data;
   Code(const std::vector<uint8_t>& vec,
        int captures, int counters, uint16_t filter, bool one_char)
     : bytes_(vec),
@@ -29,7 +30,7 @@ class Code {
   bool IsQuickCheckOneChar() const { return one_char_; }
 
  private:
-  std::vector<uint8_t> bytes_;
+  Data bytes_;
   int captures_;
   int counters_;
   uint16_t filter_;

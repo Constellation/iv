@@ -35,7 +35,8 @@ class VM : private core::Noncopyable<VM> {
   static const std::size_t kInitialStackSize = 10000;
 
   VM()
-    : stack_(kInitialStackSize),
+    : stack_base_pointer_for_jit_(NULL),
+      stack_(kInitialStackSize),
       state_() {
   }
 
@@ -47,6 +48,11 @@ class VM : private core::Noncopyable<VM> {
   int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
     return ExecuteImpl(code, subject, captures, offset);
+  }
+
+  // JIT interface for VM
+  static int* NewStateForJIT(VM* vm, int sp, std::size_t size) {
+    return vm->NewState(vm->stack_.data() + sp, size);
   }
 
  private:
@@ -107,7 +113,8 @@ class VM : private core::Noncopyable<VM> {
     const std::size_t offset = (current - stack_.data()) + size;
     do {
       if (offset <= stack_.size()) {
-        return stack_.data() + offset;
+        stack_base_pointer_for_jit_ = stack_.data();
+        return stack_base_pointer_for_jit_ + offset;
       }
       // overflow
       stack_.resize(stack_.size() * 2);
@@ -115,6 +122,7 @@ class VM : private core::Noncopyable<VM> {
     return NULL;
   }
 
+  int* stack_base_pointer_for_jit_;
   std::vector<int> stack_;
   std::vector<int> state_;
 };
