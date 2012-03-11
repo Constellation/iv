@@ -191,7 +191,7 @@ TEST(AeroVMCase, CaptureTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
-    // disasm.DisAssemble(code);
+    // disasm.DisAssemble(*code.get());
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
     EXPECT_EQ(6, vec[1]);

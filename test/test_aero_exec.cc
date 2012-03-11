@@ -87,3 +87,42 @@ TEST(AeroExecCase, MainTest) {
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
 }
+
+TEST(AeroExecCase, CounterTest) {
+  iv::core::Space space;
+  iv::aero::VM vm;
+  std::vector<int> vec(1000);
+  iv::aero::OutputDisAssembler disasm(stdout);
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("a{2,3}");
+    iv::core::UString str1 = iv::core::ToUString("aa");
+    iv::core::UString str2 = iv::core::ToUString("aaa");
+    iv::core::UString str3 = iv::core::ToUString("a");
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str3, vec.data(), 0));
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("^a+$");
+    iv::core::UString str1 = iv::core::ToUString("aa");
+    iv::core::UString str2 = iv::core::ToUString("aaa");
+    iv::core::UString str3 = iv::core::ToUString("");
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
+    ASSERT_FALSE(vm.Execute(code.get(), str3, vec.data(), 0));
+  }
+}
