@@ -428,7 +428,7 @@ IV_AERO_OPCODES(V)
       0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0
     };
-    mov(out, size_t(tbl));  // get tbl address
+    mov(out, reinterpret_cast<uintptr_t>(tbl));  // get tbl address
     const Xbyak::Reg64 reg64(reg.getIdx());
     movzx(reg64, reg);  // zero extension
     movzx(out, byte[out + reg64]);
@@ -443,7 +443,7 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(ch10_, dword[subject_ + cp_ * kCharSize - kCharSize]);
+    mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
     SetRegIfIsWord(rax, ch10_);
     jmp(".SECOND");
     L(".FIRST_FALSE");
@@ -452,7 +452,7 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(ch11_, dword[subject_ + cp_ * kCharSize]);
+    mov(ch11_, character[subject_ + cp_ * kCharSize]);
     SetRegIfIsWord(rcx, ch11_);
     jmp(".CHECK");
     L(".SECOND_FALSE");
@@ -460,7 +460,7 @@ IV_AERO_OPCODES(V)
 
     L(".CHECK");
     xor(rax, rcx);
-    jnz(jit_detail::kBackTrackLabel, T_NEAR);
+    jz(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
 
@@ -471,7 +471,7 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(ch10_, dword[subject_ + cp_ * kCharSize - kCharSize]);
+    mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
     SetRegIfIsWord(rax, ch10_);
     jmp(".SECOND");
     L(".FIRST_FALSE");
@@ -480,7 +480,7 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(ch11_, dword[subject_ + cp_ * kCharSize]);
+    mov(ch11_, character[subject_ + cp_ * kCharSize]);
     SetRegIfIsWord(rcx, ch11_);
     jmp(".CHECK");
     L(".SECOND_FALSE");
@@ -488,7 +488,7 @@ IV_AERO_OPCODES(V)
 
     L(".CHECK");
     xor(r10, r11);
-    jz(jit_detail::kBackTrackLabel, T_NEAR);
+    jnz(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
 
