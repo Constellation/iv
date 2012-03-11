@@ -602,9 +602,8 @@ IV_AERO_OPCODES(V)
     je(".SUCCESS", T_NEAR);
     movsxd(r10, dword[captures_ + kIntSize * (ref * 2)]);
     sub(rax, r10);
-    mov(rcx, rax);
+    lea(rcx, ptr[rax + cp_]);
 
-    add(rcx, cp_);
     cmp(rcx, size_);
     jg(jit_detail::kBackTrackLabel, T_NEAR);
 
@@ -645,9 +644,8 @@ IV_AERO_OPCODES(V)
     je(".SUCCESS", T_NEAR);
     movsxd(r10, dword[captures_ + kIntSize * (ref * 2)]);
     sub(rax, r10);
-    mov(rcx, rax);
+    lea(rcx, ptr[rax + cp_]);
 
-    add(rcx, cp_);
     cmp(rcx, size_);
     jg(jit_detail::kBackTrackLabel, T_NEAR);
 
