@@ -8,8 +8,10 @@
 #include <iv/aero/op.h>
 #include <iv/aero/code.h>
 #include <iv/aero/utility.h>
+#include <iv/aero/jit_fwd.h>
 #if defined(IV_ENABLE_JIT)
 #include <iv/third_party/xbyak/xbyak.h>
+
 namespace iv {
 namespace aero {
 namespace jit_detail {
@@ -42,7 +44,7 @@ struct Reg<uint16_t> {
 }  // namespace jit_detail
 
 template<typename CharT>
-class JIT : private Xbyak::CodeGenerator {
+class JIT : public Xbyak::CodeGenerator {
  public:
   // x64 JIT
   //
@@ -56,14 +58,14 @@ class JIT : private Xbyak::CodeGenerator {
   // r15 : current position
   // rbx : stack position
 
-  typedef int(*Executable)(VM* vm, const CharT* subject, uint32_t size, int* captures, uint32_t cp);  // NOLINT
   typedef std::unordered_map<int, uintptr_t> BackTrackMap;
   typedef typename jit_detail::Reg<CharT>::type RegC;
+  typedef typename JITExecutable<CharT>::Executable Executable;
 
   static const int kVM = 0;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192),
+    : Xbyak::CodeGenerator(8192 * 16),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
@@ -374,28 +376,26 @@ IV_AERO_OPCODES(V)
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsWord(const RegC& reg, const char* ok) {
-    inLocalLabel();
+  void InlineIsWord(const RegC& reg, uint32_t n, const char* ok) {
     if (sizeof(CharT) == 2) {
       // insert ASCII check
       test(reg, static_cast<uint16_t>(65408));  // (1111111110000000)2
-      jnz(".NG");
+      jnz(MakeLabel(n, ".NG").c_str());
     }
     cmp(reg, '0');
-    jl(".UNDERSCORE");
+    jl(MakeLabel(n, ".UNDERSCORE").c_str());
     cmp(reg, '9');
     jle(ok);
-    L(".UNDERSCORE");
+    L(MakeLabel(n, ".UNDERSCORE").c_str());
     cmp(reg, '_');
     je(ok);
-    L(".ASCIIAlpha");
+    L(MakeLabel(n, ".ASCIIAlpha").c_str());
     or(reg, 0x20);
     cmp(reg, 'a');
-    jl(".NG");
+    jl(MakeLabel(n, ".NG").c_str());
     cmp(reg, 'z');
     jle(ok);
-    L(".NG");
-    outLocalLabel();
+    L(MakeLabel(n, ".NG").c_str());
   }
 
   void EmitASSERTION_WORD_BOUNDARY(const uint8_t* instr, uint32_t len) {
@@ -405,7 +405,7 @@ IV_AERO_OPCODES(V)
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
     mov(ch10_, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
-    InlineIsWord(ch10_, ".FIRST_TRUE");
+    InlineIsWord(ch10_, 1, ".FIRST_TRUE");
     jmp(".FIRST_FALSE");
     L(".FIRST_TRUE");
     mov(r10, 1);
@@ -417,7 +417,7 @@ IV_AERO_OPCODES(V)
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
     mov(ch11_, dword[subject_ + cp_ * sizeof(CharT)]);
-    InlineIsWord(ch11_, ".SECOND_TRUE");
+    InlineIsWord(ch11_, 2, ".SECOND_TRUE");
     jmp(".SECOND_FALSE");
     L(".SECOND_TRUE");
     mov(r11, 1);
@@ -438,7 +438,7 @@ IV_AERO_OPCODES(V)
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
     mov(ch10_, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
-    InlineIsWord(ch10_, ".FIRST_TRUE");
+    InlineIsWord(ch10_, 1, ".FIRST_TRUE");
     jmp(".FIRST_FALSE");
     L(".FIRST_TRUE");
     mov(r10, 1);
@@ -450,7 +450,7 @@ IV_AERO_OPCODES(V)
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
     mov(ch11_, dword[subject_ + cp_ * sizeof(CharT)]);
-    InlineIsWord(ch11_, ".SECOND_TRUE");
+    InlineIsWord(ch11_, 2, ".SECOND_TRUE");
     jmp(".SECOND_FALSE");
     L(".SECOND_TRUE");
     mov(r11, 1);
@@ -812,8 +812,8 @@ IV_AERO_OPCODES(V)
     Return(AERO_SUCCESS);
   }
 
-  std::string MakeLabel(uint32_t num) {
-    std::string str("AERO_");
+  std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
+    std::string str(prefix);
     core::UInt32ToString(num, std::back_inserter(str));
     return str;
   }

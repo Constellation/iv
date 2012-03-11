@@ -15,6 +15,9 @@
 #include <iv/aero/compiler.h>
 #include <iv/aero/quick_check.h>
 #include <iv/aero/vm.h>
+#include <iv/aero/jit_fwd.h>
+#include <iv/aero/jit.h>
+#include <iv/aero/jit_code.h>
 
 namespace iv {
 namespace aero {

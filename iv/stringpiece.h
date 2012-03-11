@@ -169,6 +169,7 @@ class BasicStringPiece {
   // standard STL container boilerplate
   typedef Traits traits_type;
   typedef typename Traits::char_type value_type;
+  typedef CharT char_type;
   typedef const CharT* pointer;
   typedef const CharT* const_pointer;
   typedef const CharT& reference;

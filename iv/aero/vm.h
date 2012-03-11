@@ -2,6 +2,7 @@
 #define IV_AERO_VM_H_
 #include <vector>
 #include <algorithm>
+#include <iv/no_operator_names_guard.h>
 #include <iv/noncopyable.h>
 #include <iv/ustringpiece.h>
 #include <iv/scoped_ptr.h>
@@ -144,6 +145,9 @@ class VM : private core::Noncopyable<VM> {
 template<typename Piece>
 inline int VM::Main(Code* code, const Piece& subject,
                     int* captures, std::size_t current_position) {
+#if defined(IV_ENABLE_JIT)
+  return code->jit()->Execute(this, code, subject, captures, current_position);
+#else
   assert(code->captures() >= 1);
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
@@ -462,6 +466,7 @@ inline int VM::Main(Code* code, const Piece& subject,
     return AERO_FAILURE;
   }
   return AERO_SUCCESS;  // makes compiler happy
+#endif
 }
 #undef DEFINE_OPCODE
 #undef DISPATCH
