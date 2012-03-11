@@ -1,3 +1,9 @@
+// AeroHand RegExp Runtime JIT Compiler
+// only works on x64 and gcc or clang calling convensions
+//
+// special thanks
+//   MITSUNARI Shigeo
+//
 #ifndef IV_AERO_JIT_H_
 #define IV_AERO_JIT_H_
 #include <vector>
