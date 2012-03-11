@@ -147,6 +147,7 @@ template<typename Piece>
 inline int VM::Main(Code* code, const Piece& subject,
                     int* captures, std::size_t current_position) {
 #if defined(IV_ENABLE_JIT)
+  // TODO(Constellation) merge this and quickcheck to JIT code
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
   state_.assign(size, kUndefined);
   state_[0] = current_position;

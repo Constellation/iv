@@ -237,7 +237,7 @@ IV_AERO_OPCODES(V)
     mov(subject_, rsi);
     mov(size_, rdx);
     LoadVM(rcx);
-    mov(captures_, ptr[rcx + sizeof(int*)]);
+    mov(captures_, ptr[rcx + sizeof(int*)]);  // NOLINT
     mov(cp_, r8);
 
     // initialize sp_ to 0
@@ -275,7 +275,7 @@ IV_AERO_OPCODES(V)
     mov(r10, captures_);
     mov(r11, size);
     LoadStack(rax);
-    lea(rax, ptr[rax + sp_ * sizeof(int)]);
+    lea(rax, ptr[rax + sp_ * sizeof(int)]);  // NOLINT
 
     L(".LOOP_START");
     test(r11, r11);
@@ -548,7 +548,7 @@ IV_AERO_OPCODES(V)
 
     L(".SUCCESS");
     add(sp_, size);
-    sub(rax, sizeof(int) * (size));
+    sub(rax, sizeof(int) * (size));  // NOLINT
 
     // copy
     mov(r10, captures_);
@@ -569,7 +569,7 @@ IV_AERO_OPCODES(V)
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
     mov(dword[rsi + sizeof(int)], cpd_);  // NOLINT
-    mov(dword[rsi + sizeof(int) * (size - 1)], static_cast<uint32_t>(it->second));
+    mov(dword[rsi + sizeof(int) * (size - 1)], static_cast<uint32_t>(it->second));  // NOLINT
     outLocalLabel();
   }
 
@@ -581,10 +581,10 @@ IV_AERO_OPCODES(V)
     }
 
     inLocalLabel();
-    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);
+    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);  // NOLINT
     cmp(rax, -1);
     je(".SUCCESS", T_NEAR);
-    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);
+    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);  // NOLINT
 
     mov(rcx, rax);
     add(rcx, cp_);
@@ -623,10 +623,10 @@ IV_AERO_OPCODES(V)
     }
 
     inLocalLabel();
-    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);
+    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);  // NOLINT
     cmp(rax, -1);
     je(".SUCCESS", T_NEAR);
-    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);
+    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);  // NOLINT
 
     mov(rcx, rax);
     add(rcx, cp_);
