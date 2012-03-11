@@ -848,9 +848,8 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
+    inLocalLabel();
     mov(dword[captures_ + kIntSize], cpd_);
-
-
     // copy to result
     LoadResult(r10);
     mov(r11, code_.captures() * 2);
@@ -867,7 +866,7 @@ IV_AERO_OPCODES(V)
     sub(r11, 1);
     jnz(".LOOP_START");
     L(".LOOP_END");
-
+    outLocalLabel();
     Return(AERO_SUCCESS);
   }
 
