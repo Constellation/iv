@@ -290,8 +290,7 @@ IV_AERO_OPCODES(V)
     movsxd(cp_, dword[captures_ + sizeof(int)]);  // NOLINT
     movsxd(rcx, dword[captures_ + sizeof(int) * (size - 1)]);  // NOLINT
     mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
-    mov(rax, ptr[rax + rcx * sizeof(uintptr_t)]);
-    jmp(rax);
+    jmp(ptr[rax + rcx * sizeof(uintptr_t)]);
 
     // generate error path
     L(".ERROR");
