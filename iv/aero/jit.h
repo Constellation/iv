@@ -748,7 +748,7 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
+    movsx(r10, character[subject_ + cp_ * sizeof(CharT)]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
@@ -757,14 +757,14 @@ IV_AERO_OPCODES(V)
         jmp(jit_detail::kBackTrackLabel, T_NEAR);
         break;
       }
-      cmp(ch10_, start);
+      cmp(r10, start);
       jl(jit_detail::kBackTrackLabel, T_NEAR);
 
       if (sizeof(CharT) == 1 && (finish & 0xFF00)) {
         jmp(".SUCCESS", T_NEAR);
         break;
       }
-      cmp(ch10_, finish);
+      cmp(r10, finish);
       jle(".SUCCESS", T_NEAR);
     }
     L(".SUCCESS");
@@ -775,7 +775,7 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
+    movsx(r10, character[subject_ + cp_ * sizeof(CharT)]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
