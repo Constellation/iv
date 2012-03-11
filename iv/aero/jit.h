@@ -10,12 +10,35 @@
 #include <iv/aero/utility.h>
 #if defined(IV_ENABLE_JIT)
 #include <iv/third_party/xbyak/xbyak.h>
+#include <iv/third_party/xbyak/xbyak_util.h>
 namespace iv {
 namespace aero {
 namespace jit_detail {
 
 static const char* kBackTrackLabel = "BACKTRACK";
 static const char* kReturnLabel = "RETURN";
+
+template<typename CharT = char>
+struct Reg {
+  typedef Xbyak::Reg8 type;
+  static const type& GetR10(Xbyak::CodeGenerator* gen) {
+    return gen->r10b;
+  }
+  static const type& GetR11(Xbyak::CodeGenerator* gen) {
+    return gen->r11b;
+  }
+};
+
+template<>
+struct Reg<uint16_t> {
+  typedef Xbyak::Reg16 type;
+  static const type& GetR10(Xbyak::CodeGenerator* gen) {
+    return gen->r10w;
+  }
+  static const type& GetR11(Xbyak::CodeGenerator* gen) {
+    return gen->r11w;
+  }
+};
 
 }  // namespace jit_detail
 
@@ -36,11 +59,13 @@ class JIT : private Xbyak::CodeGenerator {
 
   typedef int(*Executable)(VM* vm, const CharT* subject, uint32_t size, int* captures, uint32_t cp);  // NOLINT
   typedef std::unordered_map<int, uintptr_t> BackTrackMap;
+  typedef typename jit_detail::Reg<CharT>::type RegC;
 
   static const int kVM = 0;
 
   explicit JIT(const Code& code)
-    : code_(code),
+    : Xbyak::CodeGenerator(8192 * 8),
+      code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
       backtracks_(),
@@ -52,7 +77,9 @@ class JIT : private Xbyak::CodeGenerator {
       cp_(r15),
       cpd_(r15d),
       sp_(rbx),
-      spd_(ebx) { }
+      spd_(ebx),
+      ch10_(jit_detail::Reg<CharT>::GetR10(this)),
+      ch11_(jit_detail::Reg<CharT>::GetR10(this)) { }
 
   Executable Compile() {
     // start
@@ -77,15 +104,36 @@ class JIT : private Xbyak::CodeGenerator {
     mov(dst, ptr[dst]);
   }
 
-  static int StaticPrint(int ch) {
-    printf("PUT: %d\n", ch);
+  static int StaticPrint(const char* format, int64_t ch) {
+    printf("%s: %lld\n", format, ch);
     return 0;
   }
 
-  void Put(const Xbyak::Reg64& reg) {
-    mov(rdi, reg);
+  // debug
+  template<typename REG>
+  void Put(const char* format, const REG& reg) {
+    push(r10);
+    push(r11);
+    push(rdi);
+    push(rsi);
+    push(rax);
+    push(rdx);
+    push(rcx);
+    push(r8);
+
+    mov(rdi, core::BitCast<uintptr_t>(format));
+    mov(rsi, reg);
     mov(rax, core::BitCast<uintptr_t>(&StaticPrint));
     call(rax);
+
+    pop(r8);
+    pop(rcx);
+    pop(rdx);
+    pop(rax);
+    pop(rsi);
+    pop(rdi);
+    pop(r11);
+    pop(r10);
   }
 
   void ScanJumpReference() {
@@ -136,6 +184,12 @@ class JIT : private Xbyak::CodeGenerator {
       if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
         length += Load4Bytes(instr + 1);
       }
+
+#define INTERCEPT()\
+  do {\
+    mov(r10, offset);\
+    Put("OPCODE", r10);\
+  } while (0)
 
 #define V(op, N)\
   case OP::op: {\
@@ -199,7 +253,7 @@ IV_AERO_OPCODES(V)
     inLocalLabel();
     L(jit_detail::kBackTrackLabel);
     test(sp_, sp_);
-    jz(".ERROR");
+    jz(".ERROR", T_NEAR);
     const int size = code_.captures() * 2 + code_.counters() + 1;
     sub(sp_, size);
 
@@ -207,22 +261,22 @@ IV_AERO_OPCODES(V)
     mov(r10, captures_);
     mov(r11, size);
     LoadStack(rax);
-    add(rax, sp_);
+    lea(rax, ptr[rax + sp_ * sizeof(int)]);
 
     L(".LOOP_START");
     test(r11, r11);
     jz(".LOOP_END");
     dec(r11);
-    mov(rdi, dword[rax]);
-    mov(dword[r10], edi);
+    mov(ecx, dword[rax]);
+    mov(dword[r10], ecx);
     add(r10, sizeof(int));  // NOLINT
     add(rax, sizeof(int));  // NOLINT
     jmp(".LOOP_START");
     L(".LOOP_END");
-    mov(cp_, dword[captures_ + sizeof(int)]);  // NOLINT
-    mov(rdi, dword[captures_ + sizeof(int) * (size - 1)]);  // NOLINT
+    movsxd(cp_, dword[captures_ + sizeof(int)]);  // NOLINT
+    movsxd(rcx, dword[captures_ + sizeof(int) * (size - 1)]);  // NOLINT
     mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
-    mov(rax, ptr[rax + rdi * sizeof(uintptr_t)]);
+    mov(rax, ptr[rax + rcx * sizeof(uintptr_t)]);
     jmp(rax);
 
     // generate error path
@@ -258,41 +312,43 @@ IV_AERO_OPCODES(V)
 
   void EmitPOSITION_TEST(const uint8_t* instr, uint32_t len) {
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
-    cmp(cp_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
+    cmp(cpd_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
   void EmitASSERTION_SUCCESS(const uint8_t* instr, uint32_t len) {
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
-    mov(sp_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
+    movsxd(sp_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
     LoadStack(r10);
-    mov(cp_, dword[r10 + sizeof(int)]);  // NOLINT
+    movsxd(cp_, dword[r10 + sizeof(int)]);  // NOLINT
     Jump(Load4Bytes(instr + 5));
   }
 
   void EmitASSERTION_FAILURE(const uint8_t* instr, uint32_t len) {
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
-    mov(sp_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
+    movsxd(sp_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsLineTerminator(const Xbyak::Reg64& reg, const char* ok) {
+  void InlineIsLineTerminator(const RegC& reg, const char* ok) {
     cmp(reg, core::character::code::CR);
     je(ok);
     cmp(reg, core::character::code::LF);
     je(ok);
-    cmp(reg, 0x2028);
-    je(ok);
-    cmp(reg, 0x2029);
-    je(ok);
+    if (sizeof(CharT) == 2) {
+      cmp(reg, 0x2028);
+      je(ok);
+      cmp(reg, 0x2029);
+      je(ok);
+    }
   }
 
   void EmitASSERTION_BOL(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     test(cp_, cp_);
     jz(".SUCCESS");
-    mov(r10, character[subject_ + (cp_ * sizeof(CharT)) - (sizeof(CharT))]);
-    InlineIsLineTerminator(r10, ".SUCCESS");
+    mov(ch10_, character[subject_ + (cp_ * sizeof(CharT)) - (sizeof(CharT))]);
+    InlineIsLineTerminator(ch10_, ".SUCCESS");
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
     outLocalLabel();
@@ -307,8 +363,8 @@ IV_AERO_OPCODES(V)
     inLocalLabel();
     cmp(cp_, size_);
     je(".SUCCESS");
-    mov(r10, character[subject_ + (cp_ * sizeof(CharT))]);
-    InlineIsLineTerminator(r10, ".SUCCESS");
+    mov(ch10_, character[subject_ + (cp_ * sizeof(CharT))]);
+    InlineIsLineTerminator(ch10_, ".SUCCESS");
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
     outLocalLabel();
@@ -319,8 +375,13 @@ IV_AERO_OPCODES(V)
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsWord(const Xbyak::Reg64& reg, const char* ok) {
+  void InlineIsWord(const RegC& reg, const char* ok) {
     inLocalLabel();
+    if (sizeof(CharT) == 2) {
+      // insert ASCII check
+      test(reg, static_cast<uint16_t>(65408));  // (1111111110000000)2
+      jnz(".NG");
+    }
     cmp(reg, '0');
     jl(".UNDERSCORE");
     cmp(reg, '9');
@@ -344,8 +405,8 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(r10, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
-    InlineIsWord(r10, ".FIRST_TRUE");
+    mov(ch10_, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
+    InlineIsWord(ch10_, ".FIRST_TRUE");
     jmp(".FIRST_FALSE");
     L(".FIRST_TRUE");
     mov(r10, 1);
@@ -356,8 +417,8 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(r11, dword[subject_ + cp_ * sizeof(CharT)]);
-    InlineIsWord(r11, ".SECOND_TRUE");
+    mov(ch11_, dword[subject_ + cp_ * sizeof(CharT)]);
+    InlineIsWord(ch11_, ".SECOND_TRUE");
     jmp(".SECOND_FALSE");
     L(".SECOND_TRUE");
     mov(r11, 1);
@@ -377,8 +438,8 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(r10, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
-    InlineIsWord(r10, ".FIRST_TRUE");
+    mov(ch10_, dword[subject_ + cp_ * sizeof(CharT) - sizeof(CharT)]);
+    InlineIsWord(ch10_, ".FIRST_TRUE");
     jmp(".FIRST_FALSE");
     L(".FIRST_TRUE");
     mov(r10, 1);
@@ -389,8 +450,8 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(r11, dword[subject_ + cp_ * sizeof(CharT)]);
-    InlineIsWord(r11, ".SECOND_TRUE");
+    mov(ch11_, dword[subject_ + cp_ * sizeof(CharT)]);
+    InlineIsWord(ch11_, ".SECOND_TRUE");
     jmp(".SECOND_FALSE");
     L(".SECOND_TRUE");
     mov(r11, 1);
@@ -459,7 +520,7 @@ IV_AERO_OPCODES(V)
     mov(r10d, dword[captures_ + sizeof(int) * counter]);  // NOLINT
     inc(r10d);
     mov(dword[captures_ + sizeof(int) * counter], r10d);  // NOLINT
-    cmp(r10, max);
+    cmp(r10d, max);
     jl(MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
   }
 
@@ -473,11 +534,10 @@ IV_AERO_OPCODES(V)
     call(rax);
     test(rax, rax);
     jnz(".SUCCESS", T_NEAR);
-    Return(AERO_ERROR);
+
     L(".SUCCESS");
-    mov(sp_, rax);
-    LoadStack(sp_);
-    shr(sp_, sizeof(int) / 2);  // NOLINT
+    add(sp_, size);
+    sub(rax, sizeof(int) * (size));
 
     // copy
     mov(r10, captures_);
@@ -488,8 +548,8 @@ IV_AERO_OPCODES(V)
     test(r11, r11);
     jz(".LOOP_END");
     dec(r11);
-    mov(rdi, dword[r10]);
-    mov(dword[rax], edi);
+    mov(ecx, dword[r10]);
+    mov(dword[rax], ecx);
     add(r10, sizeof(int));  // NOLINT
     add(rax, sizeof(int));  // NOLINT
     jmp(".LOOP_START");
@@ -497,15 +557,17 @@ IV_AERO_OPCODES(V)
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
-    mov(dword[rax], it->second);
     mov(dword[rsi + sizeof(int)], cpd_);  // NOLINT
+    mov(dword[rsi + sizeof(int) * (size - 1)], static_cast<uint32_t>(it->second));
     outLocalLabel();
   }
 
   void EmitBACK_REFERENCE(const uint8_t* instr, uint32_t len) {
+    UNREACHABLE();
   }
 
   void EmitBACK_REFERENCE_IGNORE_CASE(const uint8_t* instr, uint32_t len) {
+    UNREACHABLE();
   }
 
   void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len) {
@@ -519,9 +581,9 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len) {
     if (sizeof(CharT) == 2) {
       EmitSizeGuard();
-      const CharT ch = Load1Bytes(instr + 2);
-      mov(r10, character[subject_ + cp_ * sizeof(CharT)]);
-      cmp(r10, ch);
+      const uint16_t ch = Load1Bytes(instr + 2);
+      mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
+      cmp(ch10_, ch);
       jne(jit_detail::kBackTrackLabel, T_NEAR);
       inc(cp_);
     } else {
@@ -532,11 +594,17 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(r10, character[subject_ + cp_ * sizeof(CharT)]);
-    cmp(r10, Load2Bytes(instr + 1));
-    je(".SUCCESS");
-    cmp(r10, Load2Bytes(instr + 3));
-    je(".SUCCESS");
+    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
+    const uint16_t first = Load2Bytes(instr + 1);
+    if (!(sizeof(CharT) == 1 && (first & 0xFF00))) {
+      cmp(ch10_, first);
+      je(".SUCCESS");
+    }
+    const uint16_t second = Load2Bytes(instr + 3);
+    if (!(sizeof(CharT) == 1 && (second & 0xFF00))) {
+      cmp(ch10_, second);
+      je(".SUCCESS");
+    }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
     inc(cp_);
@@ -546,13 +614,22 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_3CHAR_OR(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(r10, character[subject_ + cp_ * sizeof(CharT)]);
-    cmp(r10, Load2Bytes(instr + 1));
-    je(".SUCCESS");
-    cmp(r10, Load2Bytes(instr + 3));
-    je(".SUCCESS");
-    cmp(r10, Load2Bytes(instr + 5));
-    je(".SUCCESS");
+    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
+    const uint16_t first = Load2Bytes(instr + 1);
+    if (!(sizeof(CharT) == 1 && (first & 0xFF00))) {
+      cmp(ch10_, first);
+      je(".SUCCESS");
+    }
+    const uint16_t second = Load2Bytes(instr + 3);
+    if (!(sizeof(CharT) == 1 && (second & 0xFF00))) {
+      cmp(ch10_, second);
+      je(".SUCCESS");
+    }
+    const uint16_t third = Load2Bytes(instr + 5);
+    if (!(sizeof(CharT) == 1 && (third & 0xFF00))) {
+      cmp(ch10_, third);
+      je(".SUCCESS");
+    }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
     inc(cp_);
@@ -562,15 +639,24 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(r10, character[subject_ + cp_ * sizeof(CharT)]);
+    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-      cmp(r10, start);
-      jl(jit_detail::kBackTrackLabel, T_NEAR);
       const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
-      cmp(r10, finish);
-      jle(".SUCCESS");
+      if (sizeof(CharT) == 1 && (start & 0xFF00)) {
+        jmp(jit_detail::kBackTrackLabel, T_NEAR);
+        break;
+      }
+      cmp(ch10_, start);
+      jl(jit_detail::kBackTrackLabel, T_NEAR);
+
+      if (sizeof(CharT) == 1 && (finish & 0xFF00)) {
+        jmp(".SUCCESS", T_NEAR);
+        break;
+      }
+      cmp(ch10_, finish);
+      jle(".SUCCESS", T_NEAR);
     }
     L(".SUCCESS");
     inc(cp_);
@@ -580,14 +666,23 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(r10, character[subject_ + cp_ * sizeof(CharT)]);
+    mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-      cmp(r10, start);
-      jl(".SUCCESS");
       const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
-      cmp(r10, finish);
+      if (sizeof(CharT) == 1 && (start & 0xFF00)) {
+        jmp(".SUCCESS", T_NEAR);
+        break;
+      }
+      cmp(ch10_, start);
+      jl(".SUCCESS", T_NEAR);
+
+      if (sizeof(CharT) == 1 && (finish & 0xFF00)) {
+        jmp(jit_detail::kBackTrackLabel, T_NEAR);
+        break;
+      }
+      cmp(ch10_, finish);
       jle(jit_detail::kBackTrackLabel, T_NEAR);
     }
     L(".SUCCESS");
@@ -636,6 +731,8 @@ IV_AERO_OPCODES(V)
   const Xbyak::Reg32& cpd_;
   const Xbyak::Reg64& sp_;
   const Xbyak::Reg32& spd_;
+  const RegC& ch10_;
+  const RegC& ch11_;
 };
 
 } }  // namespace iv::aero

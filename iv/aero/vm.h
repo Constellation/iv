@@ -38,6 +38,7 @@ class VM : private core::Noncopyable<VM> {
     : stack_base_pointer_for_jit_(NULL),
       stack_(kInitialStackSize),
       state_() {
+    stack_base_pointer_for_jit_ = stack_.data();
   }
 
   int Execute(Code* code, const core::UStringPiece& subject,
@@ -117,7 +118,7 @@ class VM : private core::Noncopyable<VM> {
         return stack_base_pointer_for_jit_ + offset;
       }
       // overflow
-      stack_.resize(stack_.size() * 2);
+      stack_.resize(stack_.size() * 2, -1);
     } while (true);
     return NULL;
   }
