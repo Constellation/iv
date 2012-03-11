@@ -69,4 +69,42 @@ TEST(AeroJITCase, MainTest) {
     vm.Execute(code.get(), str1, vec.data(), 0);
   }
 }
+
+
+TEST(AeroJITCase, FailedAtTest262Test) {
+  iv::core::Space space;
+  iv::aero::VM vm;
+  std::vector<int> vec(1000);
+  iv::aero::OutputDisAssembler disasm(stdout);
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\u0FFF");
+    iv::core::UString str1 = iv::core::ToUString(0x0FFF);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    // disasm.DisAssemble(*code.get());
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    EXPECT_EQ(0, vec[0]);
+    EXPECT_EQ(1, vec[1]);
+  }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\u7FFF");
+    iv::core::UString str1 = iv::core::ToUString(0x7FFF);
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    // disasm.DisAssemble(*code.get());
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+    EXPECT_EQ(0, vec[0]);
+    EXPECT_EQ(1, vec[1]);
+  }
+}
 #endif

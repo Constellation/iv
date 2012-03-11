@@ -671,7 +671,7 @@ IV_AERO_OPCODES(V)
 
     push(rdx);
     push(rcx);
-    movsxd(rdi, ch10_);
+    movzx(rdi, ch10_);
     mov(r10, core::BitCast<uintptr_t>(&core::character::ToUpperCase));
     call(r10);
     pop(rcx);
@@ -679,10 +679,10 @@ IV_AERO_OPCODES(V)
     je(".CALL_COND_OK");
 
     pop(rdx);
-    movsxd(rdi, character[rdx]);
+    movzx(rdi, character[rdx]);
     push(rdx);
     push(rcx);
-    movsxd(rdi, ch10_);
+    movzx(rdi, ch10_);
     mov(r10, core::BitCast<uintptr_t>(&core::character::ToLowerCase));
     call(r10);
     pop(rcx);
@@ -726,8 +726,13 @@ IV_AERO_OPCODES(V)
       return;
     }
     EmitSizeGuard();
-    const uint16_t ch = Load1Bytes(instr + 2);
-    cmp(character[subject_ + cp_ * kCharSize], ch);
+    const uint16_t ch = Load2Bytes(instr + 1);
+    if (ch <= 0x7FFF) {  // INT16_MAX
+      cmp(character[subject_ + cp_ * kCharSize], ch);
+    } else {
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+      cmp(r10, ch);
+    }
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     inc(cp_);
   }
