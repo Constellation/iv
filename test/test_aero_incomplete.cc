@@ -155,7 +155,6 @@ TEST(AeroIncompleteCase, CounterTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    disasm.DisAssemble(*code.get());
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
 }
