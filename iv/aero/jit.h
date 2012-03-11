@@ -487,7 +487,7 @@ IV_AERO_OPCODES(V)
     mov(rcx, 0);
 
     L(".CHECK");
-    xor(r10, r11);
+    xor(rax, rcx);
     jnz(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
