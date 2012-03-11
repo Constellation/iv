@@ -241,9 +241,10 @@ IV_AERO_OPCODES(V)
     mov(captures_, ptr[rcx + sizeof(int*)]);  // NOLINT
     mov(cp_, r8);
 
+    // generate quick check path
+
     // initialize sp_ to 0
     mov(sp_, 0);
-
     // initialize capture position
     mov(dword[captures_], cpd_);
   }
@@ -278,16 +279,18 @@ IV_AERO_OPCODES(V)
     LoadStack(rax);
     lea(rax, ptr[rax + sp_ * sizeof(int)]);  // NOLINT
 
-    L(".LOOP_START");
     test(r11, r11);
     jz(".LOOP_END");
-    dec(r11);
+
+    L(".LOOP_START");
     mov(ecx, dword[rax]);
+    add(rax, sizeof(int));  // NOLINT
     mov(dword[r10], ecx);
     add(r10, sizeof(int));  // NOLINT
-    add(rax, sizeof(int));  // NOLINT
-    jmp(".LOOP_START");
+    sub(r11, 1);
+    jnz(".LOOP_START");
     L(".LOOP_END");
+
     movsxd(cp_, dword[captures_ + sizeof(int)]);  // NOLINT
     movsxd(rcx, dword[captures_ + sizeof(int) * (size - 1)]);  // NOLINT
     mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
@@ -514,8 +517,7 @@ IV_AERO_OPCODES(V)
       L(".LOOP_START");
       mov(dword[r11], -1);
       add(r11, sizeof(int));  // NOLINT
-      dec(r10);
-      test(r10, r10);
+      sub(r10, 1);
       jnz(".LOOP_START");
       outLocalLabel();
     }
@@ -556,16 +558,18 @@ IV_AERO_OPCODES(V)
     mov(r11, size - 1);
     mov(rsi, rax);
 
-    L(".LOOP_START");
     test(r11, r11);
     jz(".LOOP_END");
-    dec(r11);
+
+    L(".LOOP_START");
     mov(ecx, dword[r10]);
-    mov(dword[rax], ecx);
     add(r10, sizeof(int));  // NOLINT
+    mov(dword[rax], ecx);
     add(rax, sizeof(int));  // NOLINT
-    jmp(".LOOP_START");
+    sub(r11, 1);
+    jnz(".LOOP_START");
     L(".LOOP_END");
+
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
@@ -598,17 +602,19 @@ IV_AERO_OPCODES(V)
     lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
     mov(r8, rax);
 
-    L(".LOOP_START");
     test(r8, r8);
     jz(".LOOP_END");
-    dec(r8);
+
+    L(".LOOP_START");
     mov(ch10_, character[rdx]);
     cmp(ch10_, character[rcx]);
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     add(rdx, sizeof(CharT));  // NOLINT
     add(rcx, sizeof(CharT));  // NOLINT
+    sub(r8, 1);
     jmp(".LOOP_START");
     L(".LOOP_END");
+
     add(cp_, rax);
 
     L(".SUCCESS");
@@ -639,10 +645,10 @@ IV_AERO_OPCODES(V)
     lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
     mov(r8, rax);
 
-    L(".LOOP_START");
     test(r8, r8);
     jz(".LOOP_END");
-    dec(r8);
+
+    L(".LOOP_START");
     mov(ch10_, character[rdx]);
     cmp(ch10_, character[rcx]);
     je(".COND_OK", T_NEAR);
@@ -685,7 +691,9 @@ IV_AERO_OPCODES(V)
     L(".COND_OK");
     add(rdx, sizeof(CharT));  // NOLINT
     add(rcx, sizeof(CharT));  // NOLINT
-    jmp(".LOOP_START");
+    sub(r8, 1);
+    jnz(".LOOP_START");
+
     L(".LOOP_END");
     add(cp_, rax);
 
@@ -832,15 +840,16 @@ IV_AERO_OPCODES(V)
     mov(r11, code_.captures() * 2);
     mov(rax, captures_);
 
-    L(".LOOP_START");
     test(r11, r11);
     jz(".LOOP_END");
-    dec(r11);
+
+    L(".LOOP_START");
     mov(ecx, dword[rax]);
+    add(rax, sizeof(int));  // NOLINT
     mov(dword[r10], ecx);
     add(r10, sizeof(int));  // NOLINT
-    add(rax, sizeof(int));  // NOLINT
-    jmp(".LOOP_START");
+    sub(r11, 1);
+    jnz(".LOOP_START");
     L(".LOOP_END");
 
     Return(AERO_SUCCESS);
