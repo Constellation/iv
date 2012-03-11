@@ -64,7 +64,7 @@ class JIT : private Xbyak::CodeGenerator {
   static const int kVM = 0;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192 * 8),
+    : Xbyak::CodeGenerator(8192),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
