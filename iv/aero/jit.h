@@ -410,91 +410,85 @@ IV_AERO_OPCODES(V)
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsWord(const RegC& reg, uint32_t n, const char* ok) {
+  void SetRegIfIsWord(const Xbyak::Reg64& out, const RegC& reg) {
+    inLocalLabel();
+    xor(out, out);
     if (!kASCII) {
       // insert ASCII check
       test(reg, static_cast<uint16_t>(65408));  // (1111111110000000)2
-      jnz(MakeLabel(n, ".NG").c_str());
+      jnz(".exit");
     }
-    cmp(reg, '0');
-    jl(MakeLabel(n, ".UNDERSCORE").c_str());
-    cmp(reg, '9');
-    jle(ok);
-    L(MakeLabel(n, ".UNDERSCORE").c_str());
-    cmp(reg, '_');
-    je(ok);
-    L(MakeLabel(n, ".ASCIIAlpha").c_str());
-    or(reg, 0x20);
-    cmp(reg, 'a');
-    jl(MakeLabel(n, ".NG").c_str());
-    cmp(reg, 'z');
-    jle(ok);
-    L(MakeLabel(n, ".NG").c_str());
+    static const char tbl[128] = {
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0
+    };
+    mov(out, size_t(tbl));  // get tbl address
+    const Xbyak::Reg64 reg64(reg.getIdx());
+    movzx(reg64, reg);  // zero extension
+    movzx(out, byte[out + reg64]);
+    L(".exit");
+    outLocalLabel();
   }
 
   void EmitASSERTION_WORD_BOUNDARY(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
+
     test(cpd_, cpd_);
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
     mov(ch10_, dword[subject_ + cp_ * kCharSize - kCharSize]);
-    InlineIsWord(ch10_, 1, ".FIRST_TRUE");
-    jmp(".FIRST_FALSE");
-    L(".FIRST_TRUE");
-    mov(r10, 1);
+    SetRegIfIsWord(rax, ch10_);
     jmp(".SECOND");
     L(".FIRST_FALSE");
-    mov(r10, 0);
+    mov(rax, 0);
 
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
     mov(ch11_, dword[subject_ + cp_ * kCharSize]);
-    InlineIsWord(ch11_, 2, ".SECOND_TRUE");
-    jmp(".SECOND_FALSE");
-    L(".SECOND_TRUE");
-    mov(r11, 1);
+    SetRegIfIsWord(rcx, ch11_);
     jmp(".CHECK");
     L(".SECOND_FALSE");
-    mov(r11, 0);
+    mov(rcx, 0);
 
     L(".CHECK");
-    cmp(r10, r11);
-    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    xor(rax, rcx);
+    jnz(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
 
   void EmitASSERTION_WORD_BOUNDARY_INVERTED(const uint8_t* instr, uint32_t len) {  // NOLINT
     inLocalLabel();
+
     test(cpd_, cpd_);
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
     mov(ch10_, dword[subject_ + cp_ * kCharSize - kCharSize]);
-    InlineIsWord(ch10_, 1, ".FIRST_TRUE");
-    jmp(".FIRST_FALSE");
-    L(".FIRST_TRUE");
-    mov(r10, 1);
+    SetRegIfIsWord(rax, ch10_);
     jmp(".SECOND");
     L(".FIRST_FALSE");
-    mov(r10, 0);
+    mov(rax, 0);
 
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
     mov(ch11_, dword[subject_ + cp_ * kCharSize]);
-    InlineIsWord(ch11_, 2, ".SECOND_TRUE");
-    jmp(".SECOND_FALSE");
-    L(".SECOND_TRUE");
-    mov(r11, 1);
+    SetRegIfIsWord(rcx, ch11_);
     jmp(".CHECK");
     L(".SECOND_FALSE");
-    mov(r11, 0);
+    mov(rcx, 0);
 
     L(".CHECK");
-    cmp(r10, r11);
-    je(jit_detail::kBackTrackLabel, T_NEAR);
+    xor(r10, r11);
+    jz(jit_detail::kBackTrackLabel, T_NEAR);
     outLocalLabel();
   }
 
