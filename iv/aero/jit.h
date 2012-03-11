@@ -234,6 +234,9 @@ IV_AERO_OPCODES(V)
 
     // initialize sp_ to 0
     mov(sp_, 0);
+
+    // initialize capture position
+    mov(dword[captures_], cpd_);
   }
 
   void EmitEpilogue() {
