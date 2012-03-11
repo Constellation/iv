@@ -206,6 +206,7 @@ class JIT : public Xbyak::CodeGenerator {
     if (it != backtracks_.end()) {\
       tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());\
     }\
+    /* INTERCEPT(); */\
     Emit##op(instr, length);\
     break;\
   }
@@ -326,7 +327,7 @@ IV_AERO_OPCODES(V)
   void EmitPOSITION_TEST(const uint8_t* instr, uint32_t len) {
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
     cmp(cpd_, dword[captures_ + sizeof(int) * offset]);  // NOLINT
-    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    je(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
   void EmitASSERTION_SUCCESS(const uint8_t* instr, uint32_t len) {
