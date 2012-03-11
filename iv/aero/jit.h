@@ -586,8 +586,9 @@ IV_AERO_OPCODES(V)
     cmp(rax, -1);
     je(".SUCCESS", T_NEAR);
     movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);  // NOLINT
-
+    sub(rax, r10);
     mov(rcx, rax);
+
     add(rcx, cp_);
     cmp(rcx, size_);
     jg(jit_detail::kBackTrackLabel, T_NEAR);
@@ -595,7 +596,6 @@ IV_AERO_OPCODES(V)
     // back reference check
     lea(rdx, ptr[subject_ + r10 * sizeof(CharT)]);
     lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
-    add(rcx, rax);
     mov(r8, rax);
 
     L(".LOOP_START");
@@ -627,8 +627,9 @@ IV_AERO_OPCODES(V)
     cmp(rax, -1);
     je(".SUCCESS", T_NEAR);
     movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);  // NOLINT
-
+    sub(rax, r10);
     mov(rcx, rax);
+
     add(rcx, cp_);
     cmp(rcx, size_);
     jg(jit_detail::kBackTrackLabel, T_NEAR);
@@ -636,7 +637,6 @@ IV_AERO_OPCODES(V)
     // back reference check
     lea(rdx, ptr[subject_ + r10 * sizeof(CharT)]);
     lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
-    add(rcx, rax);
     mov(r8, rax);
 
     L(".LOOP_START");
