@@ -370,9 +370,10 @@ IV_AERO_OPCODES(V)
     cmp(reg, core::character::code::LF);
     je(ok);
     if (!kASCII) {
+      // not ASCII => 16bit
+      // (c & ~1) == 0x2028;  // 0x2028 or 0x2029
+      and(Xbyak::Reg32(reg.getIdx()), 0xFFFD);
       cmp(reg, 0x2028);
-      je(ok);
-      cmp(reg, 0x2029);
       je(ok);
     }
   }
