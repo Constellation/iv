@@ -603,8 +603,7 @@ IV_AERO_OPCODES(V)
     jz(".LOOP_END");
     dec(r8);
     mov(ch10_, character[rdx]);
-    mov(ch11_, character[rcx]);
-    cmp(ch10_, ch11_);
+    cmp(ch10_, character[rcx]);
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     add(rdx, sizeof(int));  // NOLINT
     add(rcx, sizeof(int));  // NOLINT
@@ -645,8 +644,7 @@ IV_AERO_OPCODES(V)
     jz(".LOOP_END");
     dec(r8);
     mov(ch10_, character[rdx]);
-    mov(ch11_, character[rcx]);
-    cmp(ch10_, ch11_);
+    cmp(ch10_, character[rcx]);
     je(".COND_OK", T_NEAR);
 
     // used callar-save registers
@@ -707,8 +705,7 @@ IV_AERO_OPCODES(V)
     if (sizeof(CharT) == 2) {
       EmitSizeGuard();
       const uint16_t ch = Load1Bytes(instr + 2);
-      mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
-      cmp(ch10_, ch);
+      cmp(character[subject_ + cp_ * sizeof(CharT)], ch);
       jne(jit_detail::kBackTrackLabel, T_NEAR);
       inc(cp_);
     } else {
