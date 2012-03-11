@@ -81,7 +81,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192 * 16),
+    : Xbyak::CodeGenerator(8192),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
