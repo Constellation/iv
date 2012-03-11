@@ -8,7 +8,9 @@
 // #error "operator names used. use -fno-operator-names"
 #else
 #if defined(IV_CPU_X64)
+#if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
 #define IV_ENABLE_JIT
+#endif
 #endif
 #endif
 
