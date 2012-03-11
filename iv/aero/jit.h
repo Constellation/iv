@@ -629,7 +629,7 @@ IV_AERO_OPCODES(V)
     add(rdx, kCharSize);
     add(rcx, kCharSize);
     sub(r8, 1);
-    jmp(".LOOP_START");
+    jnz(".LOOP_START");
     L(".LOOP_END");
 
     add(cp_, rax);
