@@ -605,8 +605,8 @@ IV_AERO_OPCODES(V)
     mov(ch10_, character[rdx]);
     cmp(ch10_, character[rcx]);
     jne(jit_detail::kBackTrackLabel, T_NEAR);
-    add(rdx, sizeof(int));  // NOLINT
-    add(rcx, sizeof(int));  // NOLINT
+    add(rdx, sizeof(CharT));  // NOLINT
+    add(rcx, sizeof(CharT));  // NOLINT
     jmp(".LOOP_START");
     L(".LOOP_END");
     add(cp_, rax);
@@ -683,8 +683,8 @@ IV_AERO_OPCODES(V)
     pop(r8);
 
     L(".COND_OK");
-    add(rdx, sizeof(int));  // NOLINT
-    add(rcx, sizeof(int));  // NOLINT
+    add(rdx, sizeof(CharT));  // NOLINT
+    add(rcx, sizeof(CharT));  // NOLINT
     jmp(".LOOP_START");
     L(".LOOP_END");
     add(cp_, rax);
