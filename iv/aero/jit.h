@@ -652,6 +652,7 @@ IV_AERO_OPCODES(V)
     // used callar-save registers
     // r8 r10 r11 rdx rcx
     push(r8);
+    push(r8);
 
     push(rdx);
     push(rcx);
@@ -675,10 +676,12 @@ IV_AERO_OPCODES(V)
 
     pop(rdx);
     pop(r8);
+    pop(r8);
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
 
     L(".CALL_COND_OK");
     pop(rdx);
+    pop(r8);
     pop(r8);
 
     L(".COND_OK");
