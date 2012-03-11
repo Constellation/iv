@@ -78,7 +78,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kPtrSize = core::Size::kPointerSize;
   static const int kCharSize = sizeof(CharT);  // NOLINT
 
-  static const int kASCII = kCharSize == sizeof(char);
+  static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
     : Xbyak::CodeGenerator(8192 * 16),
@@ -87,7 +87,7 @@ class JIT : public Xbyak::CodeGenerator {
       targets_(),
       backtracks_(),
       tracked_(),
-      character(kASCII ? byte : word),  // NOLINT
+      character(kASCII ? byte : word),
       subject_(r12),
       size_(r13),
       captures_(r14),
@@ -590,8 +590,8 @@ IV_AERO_OPCODES(V)
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
-    mov(dword[rsi + kIntSize], cpd_);  // NOLINT
-    mov(dword[rsi + kIntSize * (size - 1)], static_cast<uint32_t>(it->second));  // NOLINT
+    mov(dword[rsi + kIntSize], cpd_);
+    mov(dword[rsi + kIntSize * (size - 1)], static_cast<uint32_t>(it->second));
     outLocalLabel();
   }
 
@@ -626,8 +626,8 @@ IV_AERO_OPCODES(V)
     mov(ch10_, character[rdx]);
     cmp(ch10_, character[rcx]);
     jne(jit_detail::kBackTrackLabel, T_NEAR);
-    add(rdx, kCharSize);  // NOLINT
-    add(rcx, kCharSize);  // NOLINT
+    add(rdx, kCharSize);
+    add(rcx, kCharSize);
     sub(r8, 1);
     jmp(".LOOP_START");
     L(".LOOP_END");
@@ -646,10 +646,10 @@ IV_AERO_OPCODES(V)
     }
 
     inLocalLabel();
-    movsxd(rax, dword[captures_ + kIntSize * (ref * 2 + 1)]);  // NOLINT
+    movsxd(rax, dword[captures_ + kIntSize * (ref * 2 + 1)]);
     cmp(rax, -1);
     je(".SUCCESS", T_NEAR);
-    movsxd(r10, dword[captures_ + kIntSize * (ref * 2)]);  // NOLINT
+    movsxd(r10, dword[captures_ + kIntSize * (ref * 2)]);
     sub(rax, r10);
     mov(rcx, rax);
 
@@ -706,8 +706,8 @@ IV_AERO_OPCODES(V)
     pop(r8);
 
     L(".COND_OK");
-    add(rdx, kCharSize);  // NOLINT
-    add(rcx, kCharSize);  // NOLINT
+    add(rdx, kCharSize);
+    add(rcx, kCharSize);
     sub(r8, 1);
     jnz(".LOOP_START");
 
@@ -849,7 +849,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
-    mov(dword[captures_ + kIntSize], cpd_);  // NOLINT
+    mov(dword[captures_ + kIntSize], cpd_);
 
 
     // copy to result
@@ -862,9 +862,9 @@ IV_AERO_OPCODES(V)
 
     L(".LOOP_START");
     mov(ecx, dword[rax]);
-    add(rax, kIntSize);  // NOLINT
+    add(rax, kIntSize);
     mov(dword[r10], ecx);
-    add(r10, kIntSize);  // NOLINT
+    add(r10, kIntSize);
     sub(r11, 1);
     jnz(".LOOP_START");
     L(".LOOP_END");
@@ -892,7 +892,7 @@ IV_AERO_OPCODES(V)
   BackTrackMap backtracks_;
   std::vector<uintptr_t> tracked_;
 
-  const Xbyak::AddressFrame character;  // NOLINT
+  const Xbyak::AddressFrame character;
   const Xbyak::Reg64& subject_;
   const Xbyak::Reg64& size_;
   const Xbyak::Reg64& captures_;
