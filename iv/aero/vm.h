@@ -125,6 +125,7 @@ class VM : private core::Noncopyable<VM> {
   }
 
   int* stack_base_pointer_for_jit_;
+  int* state_pointer_for_jit_;
   std::vector<int> stack_;
   std::vector<int> state_;
 };
@@ -146,6 +147,10 @@ template<typename Piece>
 inline int VM::Main(Code* code, const Piece& subject,
                     int* captures, std::size_t current_position) {
 #if defined(IV_ENABLE_JIT)
+  const std::size_t size = code->captures() * 2 + code->counters() + 1;
+  state_.assign(size, kUndefined);
+  state_[0] = current_position;
+  state_pointer_for_jit_ = state_.data();
   return code->jit()->Execute(this, code, subject, captures, current_position);
 #else
   assert(code->captures() >= 1);

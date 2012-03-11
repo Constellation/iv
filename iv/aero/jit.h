@@ -100,6 +100,10 @@ class JIT : public Xbyak::CodeGenerator {
     mov(dst, ptr[rbp - 8]);
   }
 
+  void LoadResult(const Xbyak::Reg64& dst) {
+    mov(dst, ptr[rbp - 16]);
+  }
+
   void LoadStack(const Xbyak::Reg64& dst) {
     LoadVM(dst);
     mov(dst, ptr[dst]);
@@ -209,6 +213,7 @@ class JIT : public Xbyak::CodeGenerator {
 IV_AERO_OPCODES(V)
       }
 #undef V
+#undef INTERCEPT
       std::advance(instr, length);
     }
   }
@@ -218,6 +223,8 @@ IV_AERO_OPCODES(V)
     push(rbp);
     mov(rbp, rsp);
     push(rdi);  // push vm to stack
+    push(rcx);  // push captures to stack
+    push(rcx);  // push captures to stack
     push(subject_);
     push(captures_);
     push(size_);
@@ -229,7 +236,8 @@ IV_AERO_OPCODES(V)
     //         uint32_t size, int* captures, uint32_t cp)
     mov(subject_, rsi);
     mov(size_, rdx);
-    mov(captures_, rcx);
+    LoadVM(rcx);
+    mov(captures_, ptr[rcx + sizeof(int*)]);
     mov(cp_, r8);
 
     // initialize sp_ to 0
@@ -247,6 +255,8 @@ IV_AERO_OPCODES(V)
     pop(size_);
     pop(captures_);
     pop(subject_);
+    pop(r10);  // pop captures
+    pop(r10);  // pop captures
     pop(r10);  // pop vm
     mov(rsp, rbp);
     pop(rbp);
@@ -814,6 +824,24 @@ IV_AERO_OPCODES(V)
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
     mov(dword[captures_ + sizeof(int)], cpd_);  // NOLINT
+
+
+    // copy to result
+    LoadResult(r10);
+    mov(r11, code_.captures() * 2);
+    mov(rax, captures_);
+
+    L(".LOOP_START");
+    test(r11, r11);
+    jz(".LOOP_END");
+    dec(r11);
+    mov(ecx, dword[rax]);
+    mov(dword[r10], ecx);
+    add(r10, sizeof(int));  // NOLINT
+    add(rax, sizeof(int));  // NOLINT
+    jmp(".LOOP_START");
+    L(".LOOP_END");
+
     Return(AERO_SUCCESS);
   }
 

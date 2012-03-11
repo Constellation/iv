@@ -36,13 +36,9 @@ TEST(AeroJITCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    iv::aero::JIT<uint16_t> jit(*code.get());
-    jit.Compile();
 
     for (std::size_t i = 0; i < 100000; ++i)
-    jit.Get()(&vm, str1.data(), str1.size(), vec.data(), 0);
-    iv::aero::JIT<uint16_t>::Executable exe = jit.Get();
-    std::cout << exe(&vm, str1.data(), str1.size(), vec.data(), 0) << std::endl;
+      vm.Execute(code.get(), str1, vec.data(), 0);
   }
 
   {
@@ -55,13 +51,9 @@ TEST(AeroJITCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    iv::aero::JIT<char> jit(*code.get());
-    jit.Compile();
-
-    for (std::size_t i = 0; i < 100000; ++i)
-    jit.Get()(&vm, str1.data(), str1.size(), vec.data(), 0);
-    iv::aero::JIT<char>::Executable exe = jit.Get();
-    std::cout << exe(&vm, str1.data(), str1.size(), vec.data(), 0) << std::endl;
+    for (std::size_t i = 0; i < 100000; ++i) {
+      vm.Execute(code.get(), str1, vec.data(), 0);
+    }
   }
 
   {
@@ -74,10 +66,7 @@ TEST(AeroJITCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    iv::aero::JIT<uint16_t> jit(*code.get());
-    jit.Compile();
-    iv::aero::JIT<uint16_t>::Executable exe = jit.Get();
-    std::cout << exe(&vm, str1.data(), str1.size(), vec.data(), 0) << std::endl;
+    vm.Execute(code.get(), str1, vec.data(), 0);
   }
 }
 #endif
