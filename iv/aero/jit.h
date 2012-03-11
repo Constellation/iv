@@ -509,11 +509,10 @@ IV_AERO_OPCODES(V)
     if ((to - from) <= 10) {
       // loop unrolling
       if ((to - from) > 0) {
-        mov(r10, captures_);
-        add(r10, from);
+        lea(r10, ptr[captures_ + kIntSize * from]);
         uint32_t i = from;
         while (true) {
-          mov(dword[r10], -1);
+          mov(dword[r10], kUndefined);
           ++i;
           if (i == to) {
             break;
@@ -525,9 +524,9 @@ IV_AERO_OPCODES(V)
       assert(to - from);  // not 0
       inLocalLabel();
       mov(r10, (to - from));
-      mov(r11, captures_);
+      lea(r11, ptr[captures_ + kIntSize * from]);
       L(".LOOP_START");
-      mov(dword[r11], -1);
+      mov(dword[r11], kUndefined);
       add(r11, kIntSize);
       sub(r10, 1);
       jnz(".LOOP_START");
