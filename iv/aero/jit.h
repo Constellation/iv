@@ -720,12 +720,12 @@ IV_AERO_OPCODES(V)
     EmitSizeGuard();
     mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
     const uint16_t first = Load2Bytes(instr + 1);
-    if (!(sizeof(CharT) == 1 && (first & 0xFF00))) {
+    if (!(sizeof(CharT) == 1 && !core::character::IsASCII(first))) {
       cmp(ch10_, first);
       je(".SUCCESS");
     }
     const uint16_t second = Load2Bytes(instr + 3);
-    if (!(sizeof(CharT) == 1 && (second & 0xFF00))) {
+    if (!(sizeof(CharT) == 1 && !core::character::IsASCII(second))) {
       cmp(ch10_, second);
       je(".SUCCESS");
     }
@@ -740,17 +740,17 @@ IV_AERO_OPCODES(V)
     EmitSizeGuard();
     mov(ch10_, character[subject_ + cp_ * sizeof(CharT)]);
     const uint16_t first = Load2Bytes(instr + 1);
-    if (!(sizeof(CharT) == 1 && (first & 0xFF00))) {
+    if (!(sizeof(CharT) == 1 && !core::character::IsASCII(first))) {
       cmp(ch10_, first);
       je(".SUCCESS");
     }
     const uint16_t second = Load2Bytes(instr + 3);
-    if (!(sizeof(CharT) == 1 && (second & 0xFF00))) {
+    if (!(sizeof(CharT) == 1 && !core::character::IsASCII(second))) {
       cmp(ch10_, second);
       je(".SUCCESS");
     }
     const uint16_t third = Load2Bytes(instr + 5);
-    if (!(sizeof(CharT) == 1 && (third & 0xFF00))) {
+    if (!(sizeof(CharT) == 1 && !core::character::IsASCII(third))) {
       cmp(ch10_, third);
       je(".SUCCESS");
     }
