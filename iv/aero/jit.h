@@ -354,7 +354,7 @@ IV_AERO_OPCODES(V)
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
     movsxd(sp_, dword[captures_ + kIntSize * offset]);
     LoadStack(r10);
-    movsxd(cp_, dword[r10 + kIntSize]);
+    movsxd(cp_, dword[r10 + sp_ * kIntSize + kIntSize]);
     Jump(Load4Bytes(instr + 5));
   }
 
