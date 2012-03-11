@@ -10,7 +10,6 @@
 #include <iv/aero/utility.h>
 #if defined(IV_ENABLE_JIT)
 #include <iv/third_party/xbyak/xbyak.h>
-#include <iv/third_party/xbyak/xbyak_util.h>
 namespace iv {
 namespace aero {
 namespace jit_detail {
@@ -79,7 +78,7 @@ class JIT : private Xbyak::CodeGenerator {
       sp_(rbx),
       spd_(ebx),
       ch10_(jit_detail::Reg<CharT>::GetR10(this)),
-      ch11_(jit_detail::Reg<CharT>::GetR10(this)) { }
+      ch11_(jit_detail::Reg<CharT>::GetR11(this)) { }
 
   Executable Compile() {
     // start
@@ -563,11 +562,121 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitBACK_REFERENCE(const uint8_t* instr, uint32_t len) {
-    UNREACHABLE();
+    const uint16_t ref = Load2Bytes(instr + 1);
+    assert(ref != 0);  // limited by parser
+    if (ref >= code_.captures()) {
+      return;
+    }
+
+    inLocalLabel();
+    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);
+    cmp(rax, -1);
+    je(".SUCCESS", T_NEAR);
+    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);
+
+    mov(rcx, rax);
+    add(rcx, cp_);
+    cmp(rcx, size_);
+    jg(jit_detail::kBackTrackLabel, T_NEAR);
+
+    // back reference check
+    lea(rdx, ptr[subject_ + r10 * sizeof(CharT)]);
+    lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
+    add(rcx, rax);
+    mov(r8, rax);
+
+    L(".LOOP_START");
+    test(r8, r8);
+    jz(".LOOP_END");
+    dec(r8);
+    mov(ch10_, character[rdx]);
+    mov(ch11_, character[rcx]);
+    cmp(ch10_, ch11_);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    add(rdx, sizeof(int));  // NOLINT
+    add(rcx, sizeof(int));  // NOLINT
+    jmp(".LOOP_START");
+    L(".LOOP_END");
+    add(cp_, rax);
+
+    L(".SUCCESS");
+    outLocalLabel();
   }
 
   void EmitBACK_REFERENCE_IGNORE_CASE(const uint8_t* instr, uint32_t len) {
-    UNREACHABLE();
+    const uint16_t ref = Load2Bytes(instr + 1);
+    assert(ref != 0);  // limited by parser
+    if (ref >= code_.captures()) {
+      return;
+    }
+
+    inLocalLabel();
+    movsxd(rax, dword[captures_ + sizeof(int) * (ref * 2 + 1)]);
+    cmp(rax, -1);
+    je(".SUCCESS", T_NEAR);
+    movsxd(r10, dword[captures_ + sizeof(int) * (ref * 2)]);
+
+    mov(rcx, rax);
+    add(rcx, cp_);
+    cmp(rcx, size_);
+    jg(jit_detail::kBackTrackLabel, T_NEAR);
+
+    // back reference check
+    lea(rdx, ptr[subject_ + r10 * sizeof(CharT)]);
+    lea(rcx, ptr[subject_ + cp_ * sizeof(CharT)]);
+    add(rcx, rax);
+    mov(r8, rax);
+
+    L(".LOOP_START");
+    test(r8, r8);
+    jz(".LOOP_END");
+    dec(r8);
+    mov(ch10_, character[rdx]);
+    mov(ch11_, character[rcx]);
+    cmp(ch10_, ch11_);
+    je(".COND_OK", T_NEAR);
+
+    // used callar-save registers
+    // r8 r10 r11 rdx rcx
+    push(r8);
+
+    push(rdx);
+    push(rcx);
+    movsxd(rdi, ch10_);
+    mov(r10, core::BitCast<uintptr_t>(&core::character::ToUpperCase));
+    call(r10);
+    pop(rcx);
+    cmp(eax, character[rcx]);
+    je(".CALL_COND_OK");
+
+    pop(rdx);
+    movsxd(rdi, character[rdx]);
+    push(rdx);
+    push(rcx);
+    movsxd(rdi, ch10_);
+    mov(r10, core::BitCast<uintptr_t>(&core::character::ToLowerCase));
+    call(r10);
+    pop(rcx);
+    cmp(eax, character[rcx]);
+    je(".CALL_COND_OK");
+
+    pop(rdx);
+    pop(r8);
+    jmp(jit_detail::kBackTrackLabel, T_NEAR);
+
+    L(".CALL_COND_OK");
+    pop(rdx);
+    pop(r8);
+
+    L(".COND_OK");
+    add(rdx, sizeof(int));  // NOLINT
+    add(rcx, sizeof(int));  // NOLINT
+    jmp(".LOOP_START");
+    L(".LOOP_END");
+    add(cp_, rax);
+
+    L(".SUCCESS");
+    outLocalLabel();
   }
 
   void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len) {
