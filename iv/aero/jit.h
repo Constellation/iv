@@ -2,7 +2,9 @@
 #define IV_AERO_JIT_H_
 #include <vector>
 #include <iv/detail/cstdint.h>
+#include <iv/detail/type_traits.h>
 #include <iv/no_operator_names_guard.h>
+#include <iv/static_assert.h>
 #include <iv/conversions.h>
 #include <iv/assoc_vector.h>
 #include <iv/aero/op.h>
@@ -62,6 +64,9 @@ class JIT : public Xbyak::CodeGenerator {
   typedef typename jit_detail::Reg<CharT>::type RegC;
   typedef typename JITExecutable<CharT>::Executable Executable;
 
+  IV_STATIC_ASSERT((std::is_same<CharT, char>::value ||
+                    std::is_same<CharT, uint16_t>::value));
+
   static const int kVM = 0;
 
   explicit JIT(const Code& code)
@@ -71,7 +76,7 @@ class JIT : public Xbyak::CodeGenerator {
       targets_(),
       backtracks_(),
       tracked_(),
-      character(sizeof(CharT) * CHAR_BIT),  // NOLINT
+      character(sizeof(CharT) == 1 ? byte : word),  // NOLINT
       subject_(r12),
       size_(r13),
       captures_(r14),
@@ -80,7 +85,8 @@ class JIT : public Xbyak::CodeGenerator {
       sp_(rbx),
       spd_(ebx),
       ch10_(jit_detail::Reg<CharT>::GetR10(this)),
-      ch11_(jit_detail::Reg<CharT>::GetR11(this)) { }
+      ch11_(jit_detail::Reg<CharT>::GetR11(this)) {
+  }
 
   Executable Compile() {
     // start
