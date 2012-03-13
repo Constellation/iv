@@ -55,6 +55,22 @@ class VM : private core::Noncopyable<VM> {
     std::free(state_pointer_for_jit_);
   }
 
+  // JIT interface for VM
+  static int* NewStateForJIT(VM* vm, int sp, std::size_t size) {
+    return vm->NewState(vm->stack_.data() + sp, size);
+  }
+
+#if defined(IV_ENABLE_JIT)
+  int Execute(Code* code, const core::UStringPiece& subject,
+              int* captures, int offset) {
+    return code->jit()->Execute(this, code, subject, captures, offset);
+  }
+
+  int Execute(Code* code, const core::StringPiece& subject,
+              int* captures, int offset) {
+    return code->jit()->Execute(this, code, subject, captures, offset);
+  }
+#else
   int Execute(Code* code, const core::UStringPiece& subject,
               int* captures, int offset) {
     return ExecuteImpl(code, subject, captures, offset);
@@ -63,11 +79,6 @@ class VM : private core::Noncopyable<VM> {
   int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
     return ExecuteImpl(code, subject, captures, offset);
-  }
-
-  // JIT interface for VM
-  static int* NewStateForJIT(VM* vm, int sp, std::size_t size) {
-    return vm->NewState(vm->stack_.data() + sp, size);
   }
 
  private:
@@ -79,11 +90,7 @@ class VM : private core::Noncopyable<VM> {
     if (!filter) {
       // normal path
       do {
-#if defined(IV_ENABLE_JIT)
-        const int res = code->jit()->Execute(this, code, subject, captures, offset);
-#else
         const int res = Main(code, subject, captures, offset);
-#endif
         if (res == AERO_SUCCESS || res == AERO_ERROR) {
           return res;
         } else {
@@ -97,11 +104,7 @@ class VM : private core::Noncopyable<VM> {
         if (ch != filter) {
           ++offset;
         } else {
-#if defined(IV_ENABLE_JIT)
-          const int res = code->jit()->Execute(this, code, subject, captures, offset);
-#else
           const int res = Main(code, subject, captures, offset);
-#endif
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -116,11 +119,7 @@ class VM : private core::Noncopyable<VM> {
         if ((filter & ch) != ch) {
           ++offset;
         } else {
-#if defined(IV_ENABLE_JIT)
-          const int res = code->jit()->Execute(this, code, subject, captures, offset);
-#else
           const int res = Main(code, subject, captures, offset);
-#endif
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -131,7 +130,9 @@ class VM : private core::Noncopyable<VM> {
     }
     return AERO_FAILURE;
   }
+#endif
 
+ private:
   int* NewState(int* current, std::size_t size) {
     const std::size_t offset = (current - stack_.data()) + size;
     do {
