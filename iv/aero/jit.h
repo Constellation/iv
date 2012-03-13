@@ -445,18 +445,9 @@ IV_AERO_OPCODES(V)
 
     // generate error path
     L(".ERROR");
-    Return(AERO_FAILURE);
+    mov(rax, AERO_FAILURE);
+    jmp(jit_detail::kMainReturnLabel, T_NEAR);
     outLocalLabel();
-  }
-
-  void Return(int val) {
-    mov(rax, val);
-    jmp(jit_detail::kMainReturnLabel, T_NEAR);
-  }
-
-  void Return(const Xbyak::Reg64& reg) {
-    mov(rax, reg);
-    jmp(jit_detail::kMainReturnLabel, T_NEAR);
   }
 
   void EmitSizeGuard() {
