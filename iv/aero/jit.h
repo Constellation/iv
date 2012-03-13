@@ -89,7 +89,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192 * 2),
+    : Xbyak::CodeGenerator(8192 * 4),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
@@ -266,35 +266,26 @@ IV_AERO_OPCODES(V)
       cmp(cp_, size_);
       jle(".QUICK_CHECK_NORMAL_START");
       jmp(jit_detail::kFailureLabel, T_NEAR);
-    } else if (code_.IsQuickCheckOneChar()) {
-      // one char check path
-      L(".QUICK_CHECK_ONE_CHAR_START");
-      cmp(cp_, size_);
-      jge(jit_detail::kFailureLabel, T_NEAR);
-      cmp(character[subject_ + cp_ * kCharSize], filter);
-      jne(".QUICK_CHECK_ONE_CHAR_NEXT");
-      call(jit_detail::kMainStartLabel);
-      cmp(rax, AERO_FAILURE);
-      jne(jit_detail::kReturnLabel, T_NEAR);
-      L(".QUICK_CHECK_ONE_CHAR_NEXT");
-      inc(cp_);
-      jmp(".QUICK_CHECK_ONE_CHAR_START");
     } else {
-      // bloom filter path
-      L(".QUICK_CHECK_BLOOM_FILTER_START");
+      // one char check and bloom filter path
+      L(".QUICK_CHECK_SPECIAL_START");
       cmp(cp_, size_);
       jge(jit_detail::kFailureLabel, T_NEAR);
-      mov(ch10_, character[subject_ + cp_ * kCharSize]);
-      mov(ch10_, ch11_);
-      and(ch10_, filter);
-      cmp(ch10_, ch11_);
-      jne(".QUICK_CHECK_BLOOM_FILTER_NEXT");
+      if (code_.IsQuickCheckOneChar()) {
+        cmp(character[subject_ + cp_ * kCharSize], filter);
+      } else {
+        mov(ch10_, character[subject_ + cp_ * kCharSize]);
+        mov(ch11_, ch10_);
+        and(ch10_, filter);
+        cmp(ch10_, ch11_);
+      }
+      jne(".QUICK_CHECK_SPECIAL_NEXT");
       call(jit_detail::kMainStartLabel);
       cmp(rax, AERO_FAILURE);
       jne(jit_detail::kReturnLabel, T_NEAR);
-      L(".QUICK_CHECK_BLOOM_FILTER_NEXT");
+      L(".QUICK_CHECK_SPECIAL_NEXT");
       inc(cp_);
-      jmp(".QUICK_CHECK_BLOOM_FILTER_START");
+      jmp(".QUICK_CHECK_SPECIAL_START");
     }
     outLocalLabel();
   }
