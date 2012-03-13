@@ -77,6 +77,10 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kIntSize = core::Size::kIntSize;
   static const int kPtrSize = core::Size::kPointerSize;
   static const int kCharSize = sizeof(CharT);  // NOLINT
+  static const int k8Size = sizeof(uint8_t);  // NOLINT
+  static const int k16Size = sizeof(uint16_t);  // NOLINT
+  static const int k32Size = sizeof(uint32_t);  // NOLINT
+  static const int k64Size = sizeof(uint64_t);  // NOLINT
 
   static const int kASCII = kCharSize == 1;
 
@@ -121,9 +125,18 @@ class JIT : public Xbyak::CodeGenerator {
     mov(dst, ptr[rbp - 16]);
   }
 
+  Xbyak::Address CP() {
+    return ptr[rbp - 24];
+  }
+
   void LoadStack(const Xbyak::Reg64& dst) {
     LoadVM(dst);
     mov(dst, ptr[dst]);
+  }
+
+  void LoadStateSize(const Xbyak::Reg64& dst) {
+    LoadVM(dst);
+    mov(dst, qword[dst + kPtrSize * 2 + k64Size]);
   }
 
   static int StaticPrint(const char* format, int64_t ch) {
@@ -236,13 +249,16 @@ IV_AERO_OPCODES(V)
     }
   }
 
+  void EmitQuickCheck() {
+  }
+
   void EmitPrologue() {
     // initialize capture buffer and put arguments registers
     push(rbp);
     mov(rbp, rsp);
     push(rdi);  // push vm to stack
     push(rcx);  // push captures to stack
-    push(rcx);  // push captures to stack
+    push(cp_);  // push captures to stack
     push(subject_);
     push(captures_);
     push(size_);
@@ -254,16 +270,50 @@ IV_AERO_OPCODES(V)
     //         uint32_t size, int* captures, uint32_t cp)
     mov(subject_, rsi);
     mov(size_, rdx);
-    LoadVM(rcx);
-    mov(captures_, ptr[rcx + kPtrSize]);
     mov(cp_, r8);
 
-    // generate quick check path
+    const std::size_t size = code_.captures() * 2 + code_.counters() + 1;
+    {
+      // allocate state space
+      // rdi is already VM*
+      inLocalLabel();
+      mov(captures_, ptr[rdi + kPtrSize]);  // load state
+      cmp(qword[rdi + kPtrSize * 2 + k64Size], size);
+      jge(".EXIT", T_NEAR);
+      xchg(rdi, captures_);
+      mov(rax, core::BitCast<uintptr_t>(&std::free));
+      call(rax);
+      // state size is too small
+      const std::size_t allocated = IV_ROUNDUP(size, VM::kInitialStateSize);
+      mov(rdi, allocated * kIntSize);
+      mov(rax, core::BitCast<uintptr_t>(&std::malloc));
+      call(rax);
+      mov(qword[captures_ + kPtrSize], rax);
+      mov(qword[captures_ + kPtrSize * 2 + k64Size], allocated);
+      mov(captures_, rax);
+      L(".EXIT");
+      outLocalLabel();
+    }
 
+    // generate quick check path
+    EmitQuickCheck();
+
+    L("AERO_ENTER");
     // initialize sp_ to 0
     mov(sp_, 0);
-    // initialize capture position
+
+    // initialize captures
     mov(dword[captures_], cpd_);
+    lea(r10, ptr[captures_ + kIntSize]);
+    mov(r11, size - 1);
+    test(r11, r11);
+    jz(".LOOP_END");
+    L(".LOOP_START");
+    mov(dword[r10], kUndefined);
+    add(r10, kIntSize);
+    sub(r11, 1);
+    jnz(".LOOP_START");
+    L(".LOOP_END");
   }
 
   void EmitEpilogue() {

@@ -33,13 +33,26 @@ inline bool IsWordSeparator(const Piece& subject,
 
 class VM : private core::Noncopyable<VM> {
  public:
-  static const std::size_t kInitialStackSize = 10000;
+  static const uint32_t kInitialStackSize = 10000;
+  static const uint32_t kInitialStateSize = 16;
 
   VM()
     : stack_base_pointer_for_jit_(NULL),
-      stack_(kInitialStackSize),
-      state_() {
+      state_pointer_for_jit_(
+          reinterpret_cast<int*>(std::malloc(kInitialStackSize * sizeof(int)))),
+      stack_size_(0),
+      state_size_(kInitialStateSize),
+      stack_(kInitialStackSize)
+#if !defined(IV_ENABLE_JIT)
+      ,
+      state_()
+#endif
+      {
     stack_base_pointer_for_jit_ = stack_.data();
+  }
+
+  ~VM() {
+    std::free(state_pointer_for_jit_);
   }
 
   int Execute(Code* code, const core::UStringPiece& subject,
@@ -66,7 +79,11 @@ class VM : private core::Noncopyable<VM> {
     if (!filter) {
       // normal path
       do {
+#if defined(IV_ENABLE_JIT)
+        const int res = code->jit()->Execute(this, code, subject, captures, offset);
+#else
         const int res = Main(code, subject, captures, offset);
+#endif
         if (res == AERO_SUCCESS || res == AERO_ERROR) {
           return res;
         } else {
@@ -80,7 +97,11 @@ class VM : private core::Noncopyable<VM> {
         if (ch != filter) {
           ++offset;
         } else {
+#if defined(IV_ENABLE_JIT)
+          const int res = code->jit()->Execute(this, code, subject, captures, offset);
+#else
           const int res = Main(code, subject, captures, offset);
+#endif
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -95,7 +116,11 @@ class VM : private core::Noncopyable<VM> {
         if ((filter & ch) != ch) {
           ++offset;
         } else {
+#if defined(IV_ENABLE_JIT)
+          const int res = code->jit()->Execute(this, code, subject, captures, offset);
+#else
           const int res = Main(code, subject, captures, offset);
+#endif
           if (res == AERO_SUCCESS || res == AERO_ERROR) {
             return res;
           } else {
@@ -106,10 +131,6 @@ class VM : private core::Noncopyable<VM> {
     }
     return AERO_FAILURE;
   }
-
-  template<typename Piece>
-  int Main(Code* code, const Piece& subject,
-           int* captures, std::size_t current_position);
 
   int* NewState(int* current, std::size_t size) {
     const std::size_t offset = (current - stack_.data()) + size;
@@ -126,10 +147,19 @@ class VM : private core::Noncopyable<VM> {
 
   int* stack_base_pointer_for_jit_;
   int* state_pointer_for_jit_;
+  uint64_t stack_size_;
+  uint64_t state_size_;
   std::vector<int> stack_;
+#if !defined(IV_ENABLE_JIT)
   std::vector<int> state_;
+
+  template<typename Piece>
+  int Main(Code* code, const Piece& subject,
+           int* captures, std::size_t current_position);
+#endif
 };
 
+#if !defined(IV_ENABLE_JIT)
 // #define DEFINE_OPCODE(op) case OP::op: printf("%s\n", #op);
 
 #define DEFINE_OPCODE(op)\
@@ -146,14 +176,6 @@ class VM : private core::Noncopyable<VM> {
 template<typename Piece>
 inline int VM::Main(Code* code, const Piece& subject,
                     int* captures, std::size_t current_position) {
-#if defined(IV_ENABLE_JIT)
-  // TODO(Constellation) merge this and quickcheck to JIT code
-  const std::size_t size = code->captures() * 2 + code->counters() + 1;
-  state_.assign(size, kUndefined);
-  state_[0] = current_position;
-  state_pointer_for_jit_ = state_.data();
-  return code->jit()->Execute(this, code, subject, captures, current_position);
-#else
   assert(code->captures() >= 1);
   // captures and counters and jump target
   const std::size_t size = code->captures() * 2 + code->counters() + 1;
@@ -472,13 +494,13 @@ inline int VM::Main(Code* code, const Piece& subject,
     return AERO_FAILURE;
   }
   return AERO_SUCCESS;  // makes compiler happy
-#endif
 }
 #undef DEFINE_OPCODE
 #undef DISPATCH
 #undef ADVANCE
 #undef DISPATCH_NEXT
 #undef BACKTRACK
+#endif
 
 } }  // namespace iv::aero
 #endif  // IV_AERO_VM_H_
