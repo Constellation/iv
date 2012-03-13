@@ -85,7 +85,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192),
+    : Xbyak::CodeGenerator(8192 * 4),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
@@ -299,21 +299,25 @@ IV_AERO_OPCODES(V)
     EmitQuickCheck();
 
     L("AERO_ENTER");
-    // initialize sp_ to 0
-    mov(sp_, 0);
+    {
+      inLocalLabel();
+      // initialize sp_ to 0
+      mov(sp_, 0);
 
-    // initialize captures
-    mov(dword[captures_], cpd_);
-    lea(r10, ptr[captures_ + kIntSize]);
-    mov(r11, size - 1);
-    test(r11, r11);
-    jz(".LOOP_END");
-    L(".LOOP_START");
-    mov(dword[r10], kUndefined);
-    add(r10, kIntSize);
-    sub(r11, 1);
-    jnz(".LOOP_START");
-    L(".LOOP_END");
+      // initialize captures
+      mov(dword[captures_], cpd_);
+      lea(r10, ptr[captures_ + kIntSize]);
+      mov(r11, size - 1);
+      test(r11, r11);
+      jz(".LOOP_END");
+      L(".LOOP_START");
+      mov(dword[r10], kUndefined);
+      add(r10, kIntSize);
+      sub(r11, 1);
+      jnz(".LOOP_START");
+      L(".LOOP_END");
+      outLocalLabel();
+    }
   }
 
   void EmitEpilogue() {
