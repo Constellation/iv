@@ -268,6 +268,10 @@ IV_AERO_OPCODES(V)
       jmp(jit_detail::kFailureLabel, T_NEAR);
     } else {
       // one char check and bloom filter path
+      if (kASCII && !core::character::IsASCII(filter)) {
+        jmp(jit_detail::kFailureLabel, T_NEAR);
+        return;
+      }
       L(".QUICK_CHECK_SPECIAL_START");
       cmp(cp_, size_);
       jge(jit_detail::kFailureLabel, T_NEAR);
