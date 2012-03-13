@@ -136,11 +136,11 @@ class VM : private core::Noncopyable<VM> {
     const std::size_t offset = (current - stack_.data()) + size;
     do {
       if (offset <= stack_.size()) {
-        stack_base_pointer_for_jit_ = stack_.data();
         return stack_base_pointer_for_jit_ + offset;
       }
       // overflow
       stack_.resize(stack_.size() * 2, -1);
+      stack_base_pointer_for_jit_ = stack_.data();
     } while (true);
     return NULL;
   }

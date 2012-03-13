@@ -26,6 +26,7 @@ namespace aero {
 namespace jit_detail {
 
 static const char* kBackTrackLabel = "BACKTRACK";
+static const char* kSuccessLabel = "SUCCESS";
 static const char* kReturnLabel = "RETURN";
 
 template<typename CharT = char>
@@ -85,7 +86,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192 * 4),
+    : Xbyak::CodeGenerator(8192 * 2),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
@@ -321,6 +322,32 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitEpilogue() {
+    // generate success path
+    {
+      inLocalLabel();
+      L(jit_detail::kSuccessLabel);
+      mov(dword[captures_ + kIntSize], cpd_);
+      // copy to result
+      LoadResult(r10);
+      mov(r11, code_.captures() * 2);
+      mov(rax, captures_);
+
+      test(r11, r11);
+      jz(".LOOP_END");
+
+      L(".LOOP_START");
+      mov(ecx, dword[rax]);
+      add(rax, kIntSize);
+      mov(dword[r10], ecx);
+      add(r10, kIntSize);
+      sub(r11, 1);
+      jnz(".LOOP_START");
+      L(".LOOP_END");
+      mov(rax, AERO_SUCCESS);
+      outLocalLabel();
+      // fall through
+    }
+
     // generate return path
     L(jit_detail::kReturnLabel);
     pop(sp_);
@@ -604,8 +631,8 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitPUSH_BACKTRACK(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
     const int size = code_.captures() * 2 + code_.counters() + 1;
+    inLocalLabel();
     LoadVM(rdi);
     mov(rsi, sp_);
     mov(rdx, size);
@@ -634,11 +661,11 @@ IV_AERO_OPCODES(V)
     sub(r11, 1);
     jnz(".LOOP_START");
     L(".LOOP_END");
-
+    mov(dword[rsi + kIntSize], cpd_);
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
     assert(it != backtracks_.end());
-    mov(dword[rsi + kIntSize], cpd_);
+    // we use rsi as counter in AERO_PUSH_BACKTRACK
     mov(dword[rsi + kIntSize * (size - 1)], static_cast<uint32_t>(it->second));
     outLocalLabel();
   }
@@ -900,26 +927,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
-    mov(dword[captures_ + kIntSize], cpd_);
-    // copy to result
-    LoadResult(r10);
-    mov(r11, code_.captures() * 2);
-    mov(rax, captures_);
-
-    test(r11, r11);
-    jz(".LOOP_END");
-
-    L(".LOOP_START");
-    mov(ecx, dword[rax]);
-    add(rax, kIntSize);
-    mov(dword[r10], ecx);
-    add(r10, kIntSize);
-    sub(r11, 1);
-    jnz(".LOOP_START");
-    L(".LOOP_END");
-    outLocalLabel();
-    Return(AERO_SUCCESS);
+    jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
   std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
