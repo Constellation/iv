@@ -86,6 +86,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int k16Size = sizeof(uint16_t);  // NOLINT
   static const int k32Size = sizeof(uint32_t);  // NOLINT
   static const int k64Size = sizeof(uint64_t);  // NOLINT
+  static const int kStackSize = k64Size * 9;
 
   static const int kASCII = kCharSize == 1;
 
@@ -123,11 +124,11 @@ class JIT : public Xbyak::CodeGenerator {
 
  private:
   void LoadVM(const Xbyak::Reg64& dst) {
-    mov(dst, ptr[rbp - OFFSET_VM * k64Size]);
+    mov(dst, ptr[rsp + OFFSET_VM * k64Size]);
   }
 
   void LoadResult(const Xbyak::Reg64& dst) {
-    mov(dst, ptr[rbp - OFFSET_CAPTURE * k64Size]);
+    mov(dst, ptr[rsp + OFFSET_CAPTURE * k64Size]);
   }
 
   void LoadStack(const Xbyak::Reg64& dst) {
@@ -289,25 +290,22 @@ IV_AERO_OPCODES(V)
   }
 
   enum {
-    OFFSET_RBP = 1,
-    OFFSET_VM,
+    OFFSET_VM = 0,
     OFFSET_CAPTURE,
     OFFSET_CP
   };
 
   void EmitPrologue() {
     // initialize capture buffer and put arguments registers
-    mov(qword[rsp - k64Size * 1], rbp);
-    mov(rbp, rsp);
-    sub(rsp, k64Size * 9);
-    mov(qword[rbp - k64Size * OFFSET_VM], rdi);  // push vm to stack
-    mov(qword[rbp - k64Size * OFFSET_CAPTURE], rcx);  // push captures to stack
-    // 8 * 4 is reserved for cp store
-    mov(qword[rbp - k64Size * 5], subject_);
-    mov(qword[rbp - k64Size * 6], captures_);
-    mov(qword[rbp - k64Size * 7], size_);
-    mov(qword[rbp - k64Size * 8], cp_);
-    mov(qword[rbp - k64Size * 9], sp_);
+    sub(rsp, kStackSize);
+    mov(qword[rsp + k64Size * OFFSET_VM], rdi);  // push vm to stack
+    mov(qword[rsp + k64Size * OFFSET_CAPTURE], rcx);  // push captures to stack
+    // 8 * 3 is reserved for cp store
+    mov(qword[rsp + k64Size * 4], subject_);
+    mov(qword[rsp + k64Size * 5], captures_);
+    mov(qword[rsp + k64Size * 6], size_);
+    mov(qword[rsp + k64Size * 7], cp_);
+    mov(qword[rsp + k64Size * 8], sp_);
 
     // calling convension is
     // Execute(VM* vm, const char* subject,
@@ -345,7 +343,7 @@ IV_AERO_OPCODES(V)
     L(jit_detail::kStartLabel);
     {
       inLocalLabel();
-      mov(qword[rbp - k64Size * OFFSET_CP], cp_);
+      mov(qword[rsp + k64Size * OFFSET_CP], cp_);
       // initialize sp_ to 0
       xor(sp_, sp_);
 
@@ -395,13 +393,12 @@ IV_AERO_OPCODES(V)
     // generate last return path
     L(jit_detail::kReturnLabel);
     {
-      mov(subject_, qword[rbp - k64Size * 5]);
-      mov(captures_, qword[rbp - k64Size * 6]);
-      mov(size_, qword[rbp - k64Size * 7]);
-      mov(cp_, qword[rbp - k64Size * 8]);
-      mov(sp_, qword[rbp - k64Size * 9]);
-      mov(rsp, rbp);
-      mov(rbp, qword[rbp - k64Size * OFFSET_RBP]);
+      mov(subject_, qword[rsp + k64Size * 4]);
+      mov(captures_, qword[rsp + k64Size * 5]);
+      mov(size_, qword[rsp + k64Size * 6]);
+      mov(cp_, qword[rsp + k64Size * 7]);
+      mov(sp_, qword[rsp + k64Size * 8]);
+      add(rsp, kStackSize);
       ret();
       align(16);
     }
@@ -446,7 +443,7 @@ IV_AERO_OPCODES(V)
       jmp(ptr[rax + rcx * kPtrSize]);
 
       L(".FAILURE");
-      mov(cp_, qword[rbp - k64Size * OFFSET_CP]);
+      mov(cp_, qword[rsp + k64Size * OFFSET_CP]);
       jmp(jit_detail::kQuickCheckNextLabel, T_NEAR);
       outLocalLabel();
     }
