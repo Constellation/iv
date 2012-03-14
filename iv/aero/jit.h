@@ -340,7 +340,7 @@ IV_AERO_OPCODES(V)
       inLocalLabel();
       mov(qword[rbp - 8 * 3], cp_);
       // initialize sp_ to 0
-      mov(sp_, 0);
+      xor(sp_, sp_);
 
       // initialize captures
       mov(dword[captures_], cpd_);
@@ -568,7 +568,7 @@ IV_AERO_OPCODES(V)
     SetRegIfIsWord(rax, r10);
     jmp(".SECOND");
     L(".FIRST_FALSE");
-    mov(rax, 0);
+    xor(rax, rax);
 
     L(".SECOND");
     cmp(cp_, size_);
@@ -577,7 +577,7 @@ IV_AERO_OPCODES(V)
     SetRegIfIsWord(rcx, r11);
     jmp(".CHECK");
     L(".SECOND_FALSE");
-    mov(rcx, 0);
+    xor(rcx, rcx);
 
     L(".CHECK");
     xor(rax, rcx);
@@ -596,7 +596,7 @@ IV_AERO_OPCODES(V)
     SetRegIfIsWord(rax, r10);
     jmp(".SECOND");
     L(".FIRST_FALSE");
-    mov(rax, 0);
+    xor(rax, rax);
 
     L(".SECOND");
     cmp(cp_, size_);
@@ -605,7 +605,7 @@ IV_AERO_OPCODES(V)
     SetRegIfIsWord(rcx, r11);
     jmp(".CHECK");
     L(".SECOND_FALSE");
-    mov(rcx, 0);
+    xor(rcx, rcx);
 
     L(".CHECK");
     xor(rax, rcx);
