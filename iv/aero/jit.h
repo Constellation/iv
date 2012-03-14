@@ -276,9 +276,9 @@ IV_AERO_OPCODES(V)
       if (code_.IsQuickCheckOneChar()) {
         cmp(r10, filter);
       } else {
-        mov(ch11_, ch10_);
-        and(ch10_, filter);
-        cmp(ch10_, ch11_);
+        mov(r11, r10);
+        and(r10, filter);
+        cmp(r11, r10);
       }
       jne(jit_detail::kQuickCheckNextLabel);
       jmp(jit_detail::kStartLabel, T_NEAR);
@@ -499,8 +499,9 @@ IV_AERO_OPCODES(V)
     if (!kASCII) {
       // not ASCII => 16bit
       // (c & ~1) == 0x2028;  // 0x2028 or 0x2029
-      and(Xbyak::Reg32(reg.getIdx()), 0xFFFD);
-      cmp(reg, 0x2028);
+      const Xbyak::Reg32 reg32(reg.getIdx());
+      and(reg32, 0xFFFD);
+      cmp(reg32, 0x2028);
       je(ok);
     }
   }
