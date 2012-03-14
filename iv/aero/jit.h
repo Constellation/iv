@@ -25,12 +25,13 @@ namespace iv {
 namespace aero {
 namespace jit_detail {
 
+static const char* kQuickCheckNextLabel = "QUICK_CHECK_NEXT";
 static const char* kBackTrackLabel = "BACKTRACK";
 static const char* kReturnLabel = "RETURN";
 static const char* kFailureLabel = "FAILURE";
-static const char* kMainReturnLabel = "MAIN_RETURN";
-static const char* kMainSuccessLabel = "MAIN_SUCCESS";
-static const char* kMainStartLabel = "MAIN_START";
+static const char* kErrorLabel = "ERROR";
+static const char* kSuccessLabel = "SUCCESS";
+static const char* kStartLabel = "START";
 
 template<typename CharT = char>
 struct Reg {
@@ -127,10 +128,6 @@ class JIT : public Xbyak::CodeGenerator {
 
   void LoadResult(const Xbyak::Reg64& dst) {
     mov(dst, ptr[rbp - 16]);
-  }
-
-  Xbyak::Address CP() {
-    return ptr[rbp - 24];
   }
 
   void LoadStack(const Xbyak::Reg64& dst) {
@@ -259,9 +256,8 @@ IV_AERO_OPCODES(V)
     if (!filter) {
       // normal path
       L(".QUICK_CHECK_NORMAL_START");
-      call(jit_detail::kMainStartLabel);
-      cmp(rax, AERO_FAILURE);
-      jne(jit_detail::kReturnLabel, T_NEAR);
+      jmp(jit_detail::kStartLabel, T_NEAR);
+      L(jit_detail::kQuickCheckNextLabel);
       inc(cp_);
       cmp(cp_, size_);
       jle(".QUICK_CHECK_NORMAL_START");
@@ -275,19 +271,17 @@ IV_AERO_OPCODES(V)
       L(".QUICK_CHECK_SPECIAL_START");
       cmp(cp_, size_);
       jge(jit_detail::kFailureLabel, T_NEAR);
+      mov(ch10_, character[subject_ + cp_ * kCharSize]);
       if (code_.IsQuickCheckOneChar()) {
-        cmp(character[subject_ + cp_ * kCharSize], filter);
+        cmp(ch10_, filter);
       } else {
-        mov(ch10_, character[subject_ + cp_ * kCharSize]);
         mov(ch11_, ch10_);
         and(ch10_, filter);
         cmp(ch10_, ch11_);
       }
-      jne(".QUICK_CHECK_SPECIAL_NEXT");
-      call(jit_detail::kMainStartLabel);
-      cmp(rax, AERO_FAILURE);
-      jne(jit_detail::kReturnLabel, T_NEAR);
-      L(".QUICK_CHECK_SPECIAL_NEXT");
+      jne(jit_detail::kQuickCheckNextLabel);
+      jmp(jit_detail::kStartLabel, T_NEAR);
+      L(jit_detail::kQuickCheckNextLabel);
       inc(cp_);
       jmp(".QUICK_CHECK_SPECIAL_START");
     }
@@ -298,14 +292,15 @@ IV_AERO_OPCODES(V)
     // initialize capture buffer and put arguments registers
     push(rbp);
     mov(rbp, rsp);
-    push(rdi);  // push vm to stack
-    push(rcx);  // push captures to stack
-    push(cp_);  // push captures to stack
-    push(subject_);
-    push(captures_);
-    push(size_);
-    push(cp_);
-    push(sp_);
+    sub(rsp, 8 * 8);
+    mov(qword[rbp - 8 * 1], rdi);  // push vm to stack
+    mov(qword[rbp - 8 * 2], rcx);  // push captures to stack
+    // 8 * 3 is reserved for cp store
+    mov(qword[rbp - 8 * 4], subject_);
+    mov(qword[rbp - 8 * 5], captures_);
+    mov(qword[rbp - 8 * 6], size_);
+    mov(qword[rbp - 8 * 7], cp_);
+    mov(qword[rbp - 8 * 8], sp_);
 
     // calling convension is
     // Execute(VM* vm, const char* subject,
@@ -340,10 +335,10 @@ IV_AERO_OPCODES(V)
     // generate quick check path
     EmitQuickCheck();
 
-    L(jit_detail::kMainStartLabel);
+    L(jit_detail::kStartLabel);
     {
       inLocalLabel();
-      push(cp_);
+      mov(qword[rbp - 8 * 3], cp_);
       // initialize sp_ to 0
       mov(sp_, 0);
 
@@ -365,9 +360,9 @@ IV_AERO_OPCODES(V)
 
   void EmitEpilogue() {
     // generate success path
+    L(jit_detail::kSuccessLabel);
     {
       inLocalLabel();
-      L(jit_detail::kMainSuccessLabel);
       mov(dword[captures_ + kIntSize], cpd_);
       // copy to result
       LoadResult(r10);
@@ -390,68 +385,71 @@ IV_AERO_OPCODES(V)
       // fall through
     }
 
-    // generate main return path
-    L(jit_detail::kMainReturnLabel);
-    pop(cp_);
-    ret();
-    align(16);
+    // generate last return path
+    L(jit_detail::kReturnLabel);
+    {
+      mov(subject_, qword[rbp - 8 * 4]);
+      mov(captures_, qword[rbp - 8 * 5]);
+      mov(size_, qword[rbp - 8 * 6]);
+      mov(cp_, qword[rbp - 8 * 7]);
+      mov(sp_, qword[rbp - 8 * 8]);
+      mov(rsp, rbp);
+      pop(rbp);
+      ret();
+      align(16);
+    }
 
     // generate last failure path
     L(jit_detail::kFailureLabel);
-    mov(rax, AERO_FAILURE);
-    // fall through
-
-    // generate last return path
-    L(jit_detail::kReturnLabel);
-    pop(sp_);
-    pop(cp_);
-    pop(size_);
-    pop(captures_);
-    pop(subject_);
-    pop(r10);  // pop captures
-    pop(r10);  // pop captures
-    pop(r10);  // pop vm
-    mov(rsp, rbp);
-    pop(rbp);
-    ret();
-    align(16);
+    {
+      mov(rax, AERO_FAILURE);
+      jmp(jit_detail::kReturnLabel);
+    }
 
     // generate backtrack path
-    inLocalLabel();
-    L(jit_detail::kBackTrackLabel);
-    test(sp_, sp_);
-    jz(".ERROR", T_NEAR);
-    const int size = code_.captures() * 2 + code_.counters() + 1;
-    sub(sp_, size);
+    {
+      inLocalLabel();
+      L(jit_detail::kBackTrackLabel);
+      test(sp_, sp_);
+      jz(".FAILURE", T_NEAR);
+      const int size = code_.captures() * 2 + code_.counters() + 1;
+      sub(sp_, size);
 
-    // copy to captures
-    mov(r10, captures_);
-    mov(r11, size);
-    LoadStack(rax);
-    lea(rax, ptr[rax + sp_ * kIntSize]);
+      // copy to captures
+      mov(r10, captures_);
+      mov(r11, size);
+      LoadStack(rax);
+      lea(rax, ptr[rax + sp_ * kIntSize]);
 
-    test(r11, r11);
-    jz(".LOOP_END");
+      test(r11, r11);
+      jz(".LOOP_END");
 
-    L(".LOOP_START");
-    mov(ecx, dword[rax]);
-    add(rax, kIntSize);
-    mov(dword[r10], ecx);
-    add(r10, kIntSize);
-    sub(r11, 1);
-    jnz(".LOOP_START");
-    L(".LOOP_END");
+      L(".LOOP_START");
+      mov(ecx, dword[rax]);
+      add(rax, kIntSize);
+      mov(dword[r10], ecx);
+      add(r10, kIntSize);
+      sub(r11, 1);
+      jnz(".LOOP_START");
+      L(".LOOP_END");
 
-    movsxd(cp_, dword[captures_ + kIntSize]);
-    movsxd(rcx, dword[captures_ + kIntSize * (size - 1)]);
-    mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
-    jmp(ptr[rax + rcx * kPtrSize]);
+      movsxd(cp_, dword[captures_ + kIntSize]);
+      movsxd(rcx, dword[captures_ + kIntSize * (size - 1)]);
+      mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
+      jmp(ptr[rax + rcx * kPtrSize]);
+
+      L(".FAILURE");
+      mov(cp_, qword[rbp - 8 * 3]);
+      jmp(jit_detail::kQuickCheckNextLabel, T_NEAR);
+      outLocalLabel();
+    }
 
     // generate error path
-    L(".ERROR");
-    mov(rax, AERO_FAILURE);
-    jmp(jit_detail::kMainReturnLabel, T_NEAR);
-    outLocalLabel();
+    L(jit_detail::kErrorLabel);
+    {
+      mov(rax, AERO_ERROR);
+      jmp(jit_detail::kReturnLabel);
+    }
   }
 
   void EmitSizeGuard() {
@@ -683,9 +681,8 @@ IV_AERO_OPCODES(V)
     mov(rax, core::BitCast<uintptr_t>(&VM::NewStateForJIT));
     call(rax);
     test(rax, rax);
-    jnz(".SUCCESS", T_NEAR);
+    jz(jit_detail::kErrorLabel, T_NEAR);
 
-    L(".SUCCESS");
     add(sp_, size);
     sub(rax, kIntSize * (size));
 
@@ -853,8 +850,8 @@ IV_AERO_OPCODES(V)
     if (ch <= 0x7FFF) {  // INT16_MAX
       cmp(character[subject_ + cp_ * kCharSize], ch);
     } else {
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-      cmp(r10, ch);
+      mov(ch10_, character[subject_ + cp_ * kCharSize]);
+      cmp(ch10_, ch);
     }
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     inc(cp_);
@@ -971,7 +968,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
-    jmp(jit_detail::kMainSuccessLabel, T_NEAR);
+    jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
   std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
