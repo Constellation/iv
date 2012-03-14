@@ -271,9 +271,9 @@ IV_AERO_OPCODES(V)
       L(".QUICK_CHECK_SPECIAL_START");
       cmp(cp_, size_);
       jge(jit_detail::kFailureLabel, T_NEAR);
-      mov(ch10_, character[subject_ + cp_ * kCharSize]);
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
       if (code_.IsQuickCheckOneChar()) {
-        cmp(ch10_, filter);
+        cmp(r10, filter);
       } else {
         mov(ch11_, ch10_);
         and(ch10_, filter);
@@ -860,15 +860,15 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(ch10_, character[subject_ + cp_ * kCharSize]);
+    movzx(r10, character[subject_ + cp_ * kCharSize]);
     const uint16_t first = Load2Bytes(instr + 1);
     if (!(kASCII && !core::character::IsASCII(first))) {
-      cmp(ch10_, first);
+      cmp(r10, first);
       je(".SUCCESS");
     }
     const uint16_t second = Load2Bytes(instr + 3);
     if (!(kASCII && !core::character::IsASCII(second))) {
-      cmp(ch10_, second);
+      cmp(r10, second);
       je(".SUCCESS");
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
@@ -880,20 +880,20 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_3CHAR_OR(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    mov(ch10_, character[subject_ + cp_ * kCharSize]);
+    movzx(r10, character[subject_ + cp_ * kCharSize]);
     const uint16_t first = Load2Bytes(instr + 1);
     if (!(kASCII && !core::character::IsASCII(first))) {
-      cmp(ch10_, first);
+      cmp(r10, first);
       je(".SUCCESS");
     }
     const uint16_t second = Load2Bytes(instr + 3);
     if (!(kASCII && !core::character::IsASCII(second))) {
-      cmp(ch10_, second);
+      cmp(r10, second);
       je(".SUCCESS");
     }
     const uint16_t third = Load2Bytes(instr + 5);
     if (!(kASCII && !core::character::IsASCII(third))) {
-      cmp(ch10_, third);
+      cmp(r10, third);
       je(".SUCCESS");
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
@@ -905,8 +905,7 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    xor(r10, r10);
-    mov(ch10_, character[subject_ + cp_ * kCharSize]);
+    movzx(r10, character[subject_ + cp_ * kCharSize]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
@@ -934,8 +933,7 @@ IV_AERO_OPCODES(V)
   void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len) {
     inLocalLabel();
     EmitSizeGuard();
-    xor(r10, r10);
-    mov(ch10_, character[subject_ + cp_ * kCharSize]);
+    movzx(r10, character[subject_ + cp_ * kCharSize]);
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
