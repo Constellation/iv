@@ -6,6 +6,7 @@
 #include <iv/stringpiece.h>
 #include <iv/conversions.h>
 #include <iv/aero/aero.h>
+#include <iv/ignore_unused_variable_warning.h>
 #include "test_aero.h"
 namespace {
 
@@ -114,6 +115,7 @@ TEST(AeroSourceEscapeCase, OneCharTest) {
       int error = 0;
       iv::aero::ParsedData data = parser.ParsePattern(&error);
       EXPECT_FALSE(error);
+      iv::core::ignore_unused_variable_warning(data);
     }
   }
 }
