@@ -1,0 +1,75 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>iv / js: E4X TO STRING</title>
+  <link rel="stylesheet" href="ivjs.css" type="text/css" />
+  <script src="http://github.com/Constellation/iv/raw/master/misc/e4x.js" type="text/javascript"></script>
+  <script type="text/javascript">
+function $D(elm) {
+  var range = document.createRange();
+  range.selectNodeContents(elm);
+  range.deleteContents();
+  range.detach();
+}
+function $T(mes) {
+  return document.createTextNode(mes);
+}
+function hasClass (e, name){
+  name = name.toLowerCase();
+  var cn = e.className;
+  if (!cn) return false;
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  for (var i=0,l=cnlist.length;i<l;i++)
+    if(cnlist[i] == name) return true;
+  return false;
+}
+function addClass (e, name){
+  var cn = e.className || '';
+  if(hasClass(e, name)) return;
+  e.className = cn+' '+name;
+}
+function removeClass(e, name){
+  if(!hasClass(e, name)) return;
+  var cn = e.className || '';
+  name = name.toLowerCase();
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  cnlist.splice(cnlist.indexOf(name), 1);
+  e.className = cnlist.join(' ');
+}
+function toggleClass(e, name){
+  (hasClass(e, name))? removeClass(e, name) : addClass(e, name);
+}
+document.addEventListener('DOMContentLoaded', function(ev) {
+  var textarea = document.getElementById("console");
+  var pre = document.getElementById("output");
+  function show() {
+    var src = textarea.value;
+    var parser = new Parser(src);
+    $D(pre);
+    try {
+      removeClass(textarea, "invalid");
+      parser.parse();
+      var current = src.split('');
+      parser.e4x.forEach(function(val) {
+        current.splice(val.start, val.len, val.value);
+      });
+      pre.appendChild($T(current.join('')));
+    } catch (e) {
+      addClass(textarea, "invalid")
+      pre.appendChild($T("Invalid"));
+    }
+  }
+  show();
+  textarea.addEventListener("input", show, false);
+}, false);
+  </script>
+</head>
+<body>
+<h1>spider iv</h1>
+<p>iv /js + recognizing E4X Literal</p>
+<p><a href="http://github.com/Constellation/iv">iv code page</a></p>
+<textarea id="console" rows="10" cols="30"></textarea>
+<pre id="output"></pre>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>ijs : interactive js shell</title>
+  <link rel="stylesheet" href="ijs.css" type="text/css" />
+  <script src="ijs.js" type="text/javascript"></script>
+<script type="text/javascript">
+(function() {
+  // Annex E indirect eval call
+  var geval = eval;
+  (function() {
+    geval("var this_is_test_value = true;");
+  })();
+  var global_context = window.this_is_test_value;
+  delete window.this_is_test_value;
+  if (global_context) {
+    window.ijsEval = function ijsEval(text) {
+      // for break
+      do {
+        return geval(text);
+      } while(false);
+    }
+  }
+})();
+function $D(elm) {
+  var range = document.createRange();
+  range.selectNodeContents(elm);
+  range.deleteContents();
+  range.detach();
+}
+function $T(mes) {
+  return document.createTextNode(mes);
+}
+function hasClass (e, name){
+  name = name.toLowerCase();
+  var cn = e.className;
+  if (!cn) return false;
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  for (var i=0,l=cnlist.length;i<l;i++)
+    if(cnlist[i] == name) return true;
+  return false;
+}
+function addClass (e, name){
+  var cn = e.className || '';
+  if(hasClass(e, name)) return;
+  e.className = cn+' '+name;
+}
+function $A(arr) {
+  return Array.prototype.slice.call(arr);
+}
+function removeClass(e, name){
+  if(!hasClass(e, name)) return;
+  var cn = e.className || '';
+  name = name.toLowerCase();
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  cnlist.splice(cnlist.indexOf(name), 1);
+  e.className = cnlist.join(' ');
+}
+function toggleClass(e, name){
+  (hasClass(e, name))? removeClass(e, name) : addClass(e, name);
+}
+document.addEventListener('DOMContentLoaded', function(ev) {
+  var doc = document;
+  var form = doc.getElementById("console");
+  var preline = doc.getElementById("preline");
+  var line = doc.getElementById("line");
+  var pre = doc.getElementById("output");
+  var stack = [];
+  if (window.console) {
+    var console_log_original = console.log;
+    console.log = function console_log() {
+      var res = console_log_original.apply(console, arguments);
+      $A(arguments).forEach(function(elm) {
+        plain(''+elm);
+      });
+      return res;
+    }
+    var console_error_original = console.error;
+    console.error = function console_error() {
+      var res = console_error_original.apply(console, arguments);
+      $A(arguments).forEach(function(elm) {
+        error(''+elm);
+      });
+      return res;
+    }
+    var console_info_original = console.info;
+    console.info = function console_info() {
+      var res = console_info_original.apply(console, arguments);
+      $A(arguments).forEach(function(elm) {
+        result(''+elm);
+      });
+      return res;
+    }
+  }
+  form.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    var text = line.value;
+    var src = stack.concat(text).join('\n') + '\n';
+    line.value = "";  // clear
+    append(text);
+
+    var valid = false;
+
+    try {
+      var p = new Parser(src);
+      p.parse();
+      // if valid src
+      valid = true;
+    } catch(e) {
+      if (p.token === Lexer.EOS && e === Parser.SYNTAX) {
+        // returnable syntax error
+        addClass(line, "way");
+        stack.push(text);
+      } else {
+        stack = [];
+        try {
+          // for make error
+          with(window) {
+            eval(src);
+          }
+        } catch(e) {
+          error(e.message);
+        }
+      }
+    }
+
+    if (valid) {
+      stack = [];
+      try{
+        var res = ijsEval(src);
+        result(''+res);
+      } catch(e) {
+        error(e.message);
+      }
+      removeClass(line, "way");
+    }
+  }, false);
+  function append(text) {
+    var p = document.createElement('p');
+    p.setAttribute('class', 'line');
+    p.appendChild($T(text));
+    preline.appendChild(p);
+  }
+  function plain(text) {
+    var p = document.createElement('p');
+    p.setAttribute('class', 'plain');
+    p.appendChild($T(text));
+    preline.appendChild(p);
+  }
+  function result(text) {
+    var p = document.createElement('p');
+    p.setAttribute('class', 'result');
+    p.appendChild($T(text));
+    preline.appendChild(p);
+  }
+  function error(text) {
+    var p = document.createElement('p');
+    p.setAttribute('class', 'error');
+    p.appendChild($T(text));
+    preline.appendChild(p);
+  }
+}, false);
+</script>
+</head>
+<body>
+<h1>ijs : interactive js shell</h1>
+<p><a href="http://github.com/Constellation/iv">iv code page</a></p>
+<form id="console">
+<pre id="preline"></pre>
+<span id="input"><input id="line" placeholder="input your script"></span>
+</form>
+</body>
+</html>

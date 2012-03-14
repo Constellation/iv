@@ -1,0 +1,92 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>syntax highlight with iv / js</title>
+  <link rel="stylesheet" href="syntax.css" type="text/css" />
+  <script src="syntax.js" type="text/javascript"></script>
+<script type="text/javascript">
+function $D(elm) {
+  var range = document.createRange();
+  range.selectNodeContents(elm);
+  range.deleteContents();
+  range.detach();
+}
+function $T(mes) {
+  return document.createTextNode(mes);
+}
+function $SPAN(mes, cls) {
+  if (cls) {
+    var elm = document.createElement("span");
+    elm.className = cls;
+    elm.appendChild($T(mes));
+  } else {
+    var elm = document.createTextNode(mes);
+  }
+  return elm;
+}
+function hasClass (e, name){
+  name = name.toLowerCase();
+  var cn = e.className;
+  if (!cn) return false;
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  for (var i=0,l=cnlist.length;i<l;i++)
+    if(cnlist[i] == name) return true;
+  return false;
+}
+function addClass (e, name){
+  var cn = e.className || '';
+  if(hasClass(e, name)) return;
+  e.className = cn+' '+name;
+}
+function $A(arr) {
+  return Array.prototype.slice.call(arr);
+}
+function removeClass(e, name){
+  if(!hasClass(e, name)) return;
+  var cn = e.className || '';
+  name = name.toLowerCase();
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  cnlist.splice(cnlist.indexOf(name), 1);
+  e.className = cnlist.join(' ');
+}
+function toggleClass(e, name){
+  (hasClass(e, name))? removeClass(e, name) : addClass(e, name);
+}
+document.addEventListener('DOMContentLoaded', function(ev) {
+  var textarea = document.getElementById("console");
+  var pre = document.getElementById("output");
+  function show() {
+    var text = textarea.value || "";
+    var parser = new Parser(text);
+    $D(pre);
+    try {
+      removeClass(textarea, "invalid");
+      parser.parse();
+      var df = document.createDocumentFragment();
+      var last = 0;
+      parser.lexer.list.forEach(function(token) {
+        if (token.start !== last) {
+          df.appendChild($T(text.slice(last, token.start)));
+        }
+        last = token.start + token.len;
+        df.appendChild($SPAN(text.slice(token.start, token.start + token.len), token.type));
+      });
+      pre.appendChild(df);
+    } catch (e) {
+      addClass(textarea, "invalid")
+      pre.appendChild($T("Invalid"));
+    }
+  }
+  show();
+  textarea.addEventListener("input", show, false);
+}, false);
+</script>
+</head>
+<body>
+<h1>syntax highlight iv / js</h1>
+<p><a href="http://github.com/Constellation/iv">iv code page</a></p>
+<textarea id="console" rows="10" cols="30"></textarea>
+<pre id="output" class="code"></pre>
+</body>
+</html>

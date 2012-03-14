@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>iv / js, ES.next test</title>
+  <link rel="stylesheet" href="ivjs.css" type="text/css" />
+  <script src="/iv/misc/es.next.js" type="text/javascript"></script>
+  <script type="text/javascript">
+function $D(elm) {
+  var range = document.createRange();
+  range.selectNodeContents(elm);
+  range.deleteContents();
+  range.detach();
+}
+function $T(mes) {
+  return document.createTextNode(mes);
+}
+function hasClass (e, name){
+  name = name.toLowerCase();
+  var cn = e.className;
+  if (!cn) return false;
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  for (var i=0,l=cnlist.length;i<l;i++)
+    if(cnlist[i] == name) return true;
+  return false;
+}
+function addClass (e, name){
+  var cn = e.className || '';
+  if(hasClass(e, name)) return;
+  e.className = cn+' '+name;
+}
+function removeClass(e, name){
+  if(!hasClass(e, name)) return;
+  var cn = e.className || '';
+  name = name.toLowerCase();
+  var cnlist = cn.toLowerCase().split(/\s+/);
+  cnlist.splice(cnlist.indexOf(name), 1);
+  e.className = cnlist.join(' ');
+}
+function toggleClass(e, name){
+  (hasClass(e, name))? removeClass(e, name) : addClass(e, name);
+}
+document.addEventListener('DOMContentLoaded', function(ev) {
+  var textarea = document.getElementById("console");
+  var pre = document.getElementById("output");
+  function show() {
+    var parser = new Parser(textarea.value);
+    $D(pre);
+    try {
+      removeClass(textarea, "invalid");
+      pre.appendChild($T(JSON.stringify(parser.parse().body, null, "  ")));
+    } catch (e) {
+      addClass(textarea, "invalid")
+      pre.appendChild($T("Invalid"));
+    }
+  }
+  show();
+  textarea.addEventListener("input", show, false);
+}, false);
+  </script>
+</head>
+<body>
+<h1>iv / js : ES.next</h1>
+<p>ES.next lexer and parser (draft based BNF precisely)</p>
+<p>This is based on <a href="http://wiki.ecmascript.org/lib/exe/fetch.php?id=harmony%3Aspecification_drafts&cache=cache&media=harmony:working_draft_ecma-262_edition_6_2-27-12.pdf">ECMA262 6th Edition / Draft February 27, 2012</a></p>
+<p><a href="http://github.com/Constellation/iv">iv code page</a></p>
+<textarea id="console" rows="10" cols="30" placeholder="write your ES.next code to get AST"></textarea>
+<pre id="output"></pre>
+</body>
+</html>

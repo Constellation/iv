@@ -1,0 +1,73 @@
+* {
+  font-size 12px;
+  font-family:'Trebuchet MS', Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, h4, h5, p {
+  text-align: center;
+}
+
+p {
+  color: #849EAA;
+}
+
+pre {
+  font-family:'Bitstream Vera Sans Mono', Courier, monospace;
+  font-size: 12px;
+  padding:10px;
+  overflow: auto;
+}
+
+a { color: #000; }
+a:visited { color: #666; }
+a:hover { color: #fff; background-color:#000; }
+
+body {
+  font-size:   13px;
+}
+
+#console {
+  -webkit-border-radius: 5px;
+  -moz-border-radius   : 5px;
+  -o-border-radius     : 5px;
+  border-radius        : 5px;
+  border : 1px solid  #C6C6C6;
+  outline: none;
+  padding:10px;
+  display: block;
+  width  : 80%;
+  margin: 10px auto 10px auto;
+}
+
+.invalid {
+  border-color: #fbc2c4 !important;
+}
+
+#output {
+  -webkit-border-radius: 5px;
+  -moz-border-radius   : 5px;
+  -o-border-radius     : 5px;
+  border-radius        : 5px;
+  border : 1px solid  #C6C6C6;
+  width  : 80%;
+  margin : 10px auto 10px auto;
+}
+
+pre.code {
+  border: 1px solid #888;
+  background-color : #000;
+  color: #C6C6C6;
+}
+
+pre.code * {
+  font-family:'Bitstream Vera Sans Mono', Courier, monospace;
+}
+
+pre.code .special { color: #FFD7AF; }
+pre.code .type { color: #AFAF5F; }
+pre.code .comment { color: #87D7FF; }
+pre.code .preproc { color: #D75F5F; }
+pre.code .identifier { color: #87FF87; }
+pre.code .constant { color: #FFAFAF; }
+pre.code .statement { color: #FFD787; }
+
