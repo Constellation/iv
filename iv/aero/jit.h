@@ -533,9 +533,8 @@ IV_AERO_OPCODES(V)
     jne(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void SetRegIfIsWord(const Xbyak::Reg64& out, const RegC& reg) {
+  void SetRegIfIsWord(const Xbyak::Reg64& out, const Xbyak::Reg64& reg) {
     inLocalLabel();
-    xor(out, out);
     if (!kASCII) {
       // insert ASCII check
       test(reg, static_cast<uint16_t>(65408));  // (1111111110000000)2
@@ -551,10 +550,9 @@ IV_AERO_OPCODES(V)
       0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0
     };
+    xor(out, out);
     mov(out, reinterpret_cast<uintptr_t>(tbl));  // get tbl address
-    const Xbyak::Reg64 reg64(reg.getIdx());
-    movzx(reg64, reg);  // zero extension
-    movzx(out, byte[out + reg64]);
+    movzx(out, byte[out + reg]);
     L(".exit");
     outLocalLabel();
   }
@@ -566,8 +564,8 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
-    SetRegIfIsWord(rax, ch10_);
+    movzx(r10, character[subject_ + (cp_ * kCharSize) - kCharSize]);
+    SetRegIfIsWord(rax, r10);
     jmp(".SECOND");
     L(".FIRST_FALSE");
     mov(rax, 0);
@@ -575,8 +573,8 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(ch11_, character[subject_ + cp_ * kCharSize]);
-    SetRegIfIsWord(rcx, ch11_);
+    movzx(r11, character[subject_ + cp_ * kCharSize]);
+    SetRegIfIsWord(rcx, r11);
     jmp(".CHECK");
     L(".SECOND_FALSE");
     mov(rcx, 0);
@@ -594,8 +592,8 @@ IV_AERO_OPCODES(V)
     jz(".FIRST_FALSE");
     cmp(cp_, size_);
     jg(".FIRST_FALSE");
-    mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
-    SetRegIfIsWord(rax, ch10_);
+    movzx(r10, character[subject_ + (cp_ * kCharSize) - kCharSize]);
+    SetRegIfIsWord(rax, r10);
     jmp(".SECOND");
     L(".FIRST_FALSE");
     mov(rax, 0);
@@ -603,8 +601,8 @@ IV_AERO_OPCODES(V)
     L(".SECOND");
     cmp(cp_, size_);
     jge(".SECOND_FALSE");
-    mov(ch11_, character[subject_ + cp_ * kCharSize]);
-    SetRegIfIsWord(rcx, ch11_);
+    movzx(r11, character[subject_ + cp_ * kCharSize]);
+    SetRegIfIsWord(rcx, r11);
     jmp(".CHECK");
     L(".SECOND_FALSE");
     mov(rcx, 0);
@@ -850,8 +848,8 @@ IV_AERO_OPCODES(V)
     if (ch <= 0x7FFF) {  // INT16_MAX
       cmp(character[subject_ + cp_ * kCharSize], ch);
     } else {
-      mov(ch10_, character[subject_ + cp_ * kCharSize]);
-      cmp(ch10_, ch);
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+      cmp(r10, ch);
     }
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     inc(cp_);
