@@ -731,7 +731,7 @@ inline Category GetCategory(uint16_t c) {
     if (code < 0x100) {
       return static_cast<Category>(code);
     }
-    return static_cast<Category>((c & 1) == 1 ? code >> 8 : code & 0xff);
+    return static_cast<Category>((c & 1) ? code >> 8 : code & 0xff);
   }
   return UNASSIGNED;
 }
@@ -822,7 +822,7 @@ inline uint16_t ToLowerCase(uint16_t c) {
     const std::size_t index = c - 192;
     if (index < kLowerCaseCache.size()) {
       assert(index < kLowerCaseCache.size());
-      return kUpperCaseCache[index];
+      return kLowerCaseCache[index];
     }
   }
   std::array<uint16_t, 101>::const_iterator it =
