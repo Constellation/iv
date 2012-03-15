@@ -679,15 +679,21 @@ IV_AERO_OPCODES(V)
     const int size = code_.captures() * 2 + code_.counters() + 1;
     inLocalLabel();
     LoadVM(rdi);
-    mov(rsi, sp_);
-    mov(rdx, size);
+    add(sp_, size);
+    mov(rcx, ptr[rdi + kPtrSize * 2]);  // stack size
+    mov(rsi, sp_);  // offset
+    cmp(rsi, rcx);
+    jle(".ALLOCATABLE");
+
     mov(rax, core::BitCast<uintptr_t>(&VM::NewStateForJIT));
     call(rax);
     test(rax, rax);
     jz(jit_detail::kErrorLabel, T_NEAR);
 
-    add(sp_, size);
-    sub(rax, kIntSize * (size));
+    L(".ALLOCATABLE");
+    LoadVM(rdi);
+    mov(rdi, ptr[rdi]);
+    lea(rax, ptr[rdi + (sp_ * kIntSize) - (kIntSize * size)]);
 
     // copy
     mov(r10, captures_);

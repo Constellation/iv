@@ -33,8 +33,8 @@ inline bool IsWordSeparator(const Piece& subject,
 
 class VM : private core::Noncopyable<VM> {
  public:
-  static const uint32_t kInitialStackSize = 10000;
-  static const uint32_t kInitialStateSize = 16;
+  static const uint32_t kInitialStackSize = 8096;
+  static const uint32_t kInitialStateSize = 64;
 
   VM()
     : stack_base_pointer_for_jit_(NULL),
@@ -56,8 +56,8 @@ class VM : private core::Noncopyable<VM> {
   }
 
   // JIT interface for VM
-  static int* NewStateForJIT(VM* vm, int sp, std::size_t size) {
-    return vm->NewState(vm->stack_.data() + sp, size);
+  static int* NewStateForJIT(VM* vm, int offset) {
+    return vm->NewState(offset);
   }
 
 #if defined(IV_ENABLE_JIT)
@@ -132,8 +132,7 @@ class VM : private core::Noncopyable<VM> {
 #endif
 
  private:
-  int* NewState(int* current, std::size_t size) {
-    const std::size_t offset = (current - stack_.data()) + size;
+  int* NewState(std::size_t offset) {
     do {
       if (offset <= stack_.size()) {
         return stack_base_pointer_for_jit_ + offset;
@@ -141,6 +140,7 @@ class VM : private core::Noncopyable<VM> {
       // overflow
       stack_.resize(stack_.size() * 2, -1);
       stack_base_pointer_for_jit_ = stack_.data();
+      stack_size_ = stack_.size();
     } while (true);
     return NULL;
   }
@@ -191,7 +191,7 @@ inline int VM::Main(Code* code, const Piece& subject,
     // fetch opcode
     switch (instr[0]) {
       DEFINE_OPCODE(PUSH_BACKTRACK) {
-        if ((sp = NewState(sp, size))) {
+        if ((sp = NewState((sp - stack_.data()) + size))) {
           // copy state and push to backtrack stack
           int* target = sp - size;
           std::copy(state_.begin(), state_.begin() + size - 1, target);
