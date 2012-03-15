@@ -39,8 +39,8 @@ class VM : private core::Noncopyable<VM> {
   VM()
     : stack_base_pointer_for_jit_(NULL),
       state_pointer_for_jit_(
-          reinterpret_cast<int*>(std::malloc(kInitialStackSize * sizeof(int)))),
-      stack_size_(0),
+          reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int)))),
+      stack_size_(kInitialStackSize),
       state_size_(kInitialStateSize),
       stack_(kInitialStackSize)
 #if !defined(IV_ENABLE_JIT)
@@ -83,8 +83,7 @@ class VM : private core::Noncopyable<VM> {
 
  private:
   template<typename Piece>
-  int ExecuteImpl(Code* code, const Piece& subject,
-                      int* captures, int offset) {
+  int ExecuteImpl(Code* code, const Piece& subject, int* captures, int offset) {
     const int size = subject.size();
     const uint16_t filter = code->filter();
     if (!filter) {
