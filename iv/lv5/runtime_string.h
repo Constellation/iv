@@ -987,34 +987,44 @@ inline JSString* ConvertCase(Context* ctx, JSString* str, Converter converter) {
     std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
     return JSString::New(ctx, builder.begin(), builder.end(), true);
   } else {
+    // Special Casing is considered
     std::vector<uint16_t> builder;
-    builder.resize(str->size());
+    builder.reserve(str->size());
     const Fiber16* fiber = str->Get16Bit();
-    std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
+    for (Fiber16::const_iterator it = fiber->begin(),
+         last = fiber->end(); it != last; ++it) {
+      const uint32_t ch = converter(*it);
+      if (ch > 0xFFFF) {
+        builder.push_back(ch >> 16);
+        builder.push_back(ch & 0xFFFF);
+      } else {
+        builder.push_back(ch);
+      }
+    }
     return JSString::New(ctx, builder.begin(), builder.end(), false);
   }
 }
 
 struct ToLowerCase {
-  uint16_t operator()(uint16_t ch) {
+  uint32_t operator()(uint16_t ch) {
     return core::character::ToLowerCase(ch);
   }
 };
 
 struct ToLocaleLowerCase {
-  uint16_t operator()(uint16_t ch) {
+  uint32_t operator()(uint16_t ch) {
     return core::character::ToLowerCase(ch);
   }
 };
 
 struct ToUpperCase {
-  uint16_t operator()(uint16_t ch) {
+  uint32_t operator()(uint16_t ch) {
     return core::character::ToUpperCase(ch);
   }
 };
 
 struct ToLocaleUpperCase {
-  uint16_t operator()(uint16_t ch) {
+  uint32_t operator()(uint16_t ch) {
     return core::character::ToUpperCase(ch);
   }
 };

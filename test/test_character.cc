@@ -25,6 +25,7 @@ TEST(CharacterCase, ToUpperCaseTest) {
     ToUpperCase(ch);
   }
   ASSERT_EQ(0x00530053, ToUpperCase(0x00DF));
+  ASSERT_EQ(0x00460046, ToUpperCase(0xFB00));
 }
 
 TEST(CharacterCase, ToLowerCaseTest) {
