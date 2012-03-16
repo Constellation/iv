@@ -6,11 +6,216 @@ import string
 import re
 import bisect
 
-class Mapper(object):
-  def __init__(self, keys, values, special):
+UNASSIGNED = 1                   #  Cn
+UPPERCASE_LETTER = 2             #  Lu
+LOWERCASE_LETTER = 3             #  Ll
+TITLECASE_LETTER = 4             #  Lt
+CASED_LETTER = 5                 #  LC
+MODIFIER_LETTER = 6              #  Lm
+OTHER_LETTER = 7                 #  Lo
+NON_SPACING_MARK = 8             #  Mn
+ENCLOSING_MARK = 9               #  Me
+COMBINING_SPACING_MARK = 10      #  Mc
+DECIMAL_DIGIT_NUMBER = 11        #  Nd
+LETTER_NUMBER = 12               #  Nl
+OTHER_NUMBER = 13                #  No
+SPACE_SEPARATOR = 14             #  Zs
+LINE_SEPARATOR = 15              #  Zl
+PARAGRAPH_SEPARATOR = 16         #  Zp
+CONTROL = 17                     #  Cc
+FORMAT = 18                      #  Cf
+PRIVATE_USE = 19                 #  Co
+SURROGATE = 20                   #  Cs
+DASH_PUNCTUATION = 21            #  Pd
+START_PUNCTUATION = 22           #  Ps
+END_PUNCTUATION = 23             #  Pe
+CONNECTOR_PUNCTUATION = 24       #  Pc
+OTHER_PUNCTUATION = 25           #  Po
+MATH_SYMBOL = 26                 #  Sm
+CURRENCY_SYMBOL = 27             #  Sc
+MODIFIER_SYMBOL = 28             #  Sk
+OTHER_SYMBOL = 29                #  So
+INITIAL_QUOTE_PUNCTUATION = 30   #  Pi
+FINAL_QUOTE_PUNCTUATION = 31     #  Pf
+
+Categories = {
+  'Cn': UNASSIGNED,
+  'Lu': UPPERCASE_LETTER,
+  'Ll': LOWERCASE_LETTER,
+  'Lt': TITLECASE_LETTER,
+  'LC': CASED_LETTER,
+  'Lm': MODIFIER_LETTER,
+  'Lo': OTHER_LETTER,
+  'Mn': NON_SPACING_MARK,
+  'Me': ENCLOSING_MARK,
+  'Mc': COMBINING_SPACING_MARK,
+  'Nd': DECIMAL_DIGIT_NUMBER,
+  'Nl': LETTER_NUMBER,
+  'No': OTHER_NUMBER,
+  'Zs': SPACE_SEPARATOR,
+  'Zl': LINE_SEPARATOR,
+  'Zp': PARAGRAPH_SEPARATOR,
+  'Cc': CONTROL,
+  'Cf': FORMAT,
+  'Co': PRIVATE_USE,
+  'Cs': SURROGATE,
+  'Pd': DASH_PUNCTUATION,
+  'Ps': START_PUNCTUATION,
+  'Pe': END_PUNCTUATION,
+  'Pc': CONNECTOR_PUNCTUATION,
+  'Po': OTHER_PUNCTUATION,
+  'Sm': MATH_SYMBOL,
+  'Sc': CURRENCY_SYMBOL,
+  'Sk': MODIFIER_SYMBOL,
+  'So': OTHER_SYMBOL,
+  'Pi': INITIAL_QUOTE_PUNCTUATION,
+  'Pf': FINAL_QUOTE_PUNCTUATION
+}
+
+class CategoryMapper(object):
+  def __init__(self, db):
+    self.db = db
+    self.cache = [Categories[self.db.get_category(ch)] for ch in range(0, 1000)]
+
+    # first sequencial concat
+    tmp = []
+    start = None
+    category = None
+    for ch in range(1000, 0x10000):
+      cat = Categories[self.db.get_category(ch)]
+      if category is None:
+        category = cat
+        start = ch
+      else:
+        if category == cat:
+          pass
+        else:
+          assert start is not None
+          tmp.append((start, ch - 1, category))
+          start = ch
+          category = cat
+
+    if start is not None:
+      assert category is not None
+      tmp.append((start, 0xFFFF, category))
+
+    tmp2 = []
+    latest = None
+    prev = None
+    start = None
+
+    def output(start, prev, latest):
+      v = 0
+      if start[0] & 1:
+        v = (start[2] << 8) | (prev[2])
+      else:
+        v = (prev[2] << 8) | (start[2])
+      tmp2.append((start[0], latest[1], v, True))
+
+    for t in tmp:
+      if (t[0] - t[1]) != 0:
+        # not one char tuple
+        if start is not None:
+          if prev is not None:
+            assert latest is not None
+            output(start, prev, latest)
+            start = None
+            prev = None
+            latest = None
+          else:
+            tmp2.append((start[0], start[1], start[2], False))
+            start = None
+            latest = None
+        else:
+          assert prev is None
+          assert latest is None
+        tmp2.append((t[0], t[1], t[2], False))
+        continue
+
+      if start is None:
+        start = t
+        latest = t
+        assert prev is None
+        continue
+
+      if prev is None:
+        # start!
+        prev = t
+        latest = t
+        continue
+
+      assert start is not None and prev is not None
+
+      if (t[0] & 1) == (start[0] & 1):
+        if t[2] == start[2]:
+          latest = t
+          pass
+        else:
+          # break this
+          output(start, prev, latest)
+          prev = None
+          latest = None
+          start = t
+      else:
+        assert (t[0] & 1) == (prev[0] & 1)
+        if t[2] == prev[2]:
+          latest = t
+          pass
+        else:
+          # break this
+          output(start, prev, latest)
+          prev = None
+          latest = None
+          start = t
+    if start is not None:
+      if prev is not None:
+        assert latest is not None
+        output(start, prev, latest)
+      else:
+        tmp2.append(start)
+        tmp2.append((start[0], start[1], start[2], False))
+
+    self.keys = []
+    self.values = []
+    for t in tmp2:
+      self.keys.append(t[0])
+      self.values.append(t[1])
+      self.values.append(t[2])
+
+  def map(self, ch):
+    if ch < 1000:
+      return self.cache[ch]
+    i = bisect.bisect_right(self.keys, ch) - 1
+    high = self.values[i * 2]
+    if ch <= high:
+      code = self.values[i * 2 + 1]
+      if code < 0x100:
+        return code
+      if (ch & 1) == 1:
+        return code >> 8
+      else:
+        return code & 0xFF
+    return UNASSIGNED
+
+  def check(self):
+    for ch in range(0, 0x10000):
+      c = Categories[self.db.get_category(ch)]
+      target = self.map(ch)
+      # print ch, c, target
+      assert c == target
+
+  def dump(self):
+    view8(self.keys)
+    view8(self.values)
+    view16(self.cache)
+
+
+class CaseMapper(object):
+  def __init__(self, keys, values, special, case):
     self.keys = keys
     self.values = values
     self.special_casing = special
+    self.case = case
 
   def map(self, ch):
     i = bisect.bisect_right(self.keys, ch) - 1
@@ -44,12 +249,12 @@ class Mapper(object):
         result.append(v)
     return result
 
-  def check(self, db, lower):
+  def check(self, db):
     for ch in range(0, 0xFFFF + 1):
       c = db.database[ch]
       target = -1
       if c is not None:
-        if lower:
+        if self.case:
           target = c.lower()
         else:
           target = c.upper()
@@ -215,7 +420,7 @@ class Detector(object):
 
     for i in range(0xFFFF + 1):
       if dictionary.get(i) == None:
-        data.append("Un")
+        data.append("Cn")
         character.append(None)
       else:
         data.append(dictionary[i])
@@ -347,9 +552,8 @@ class Detector(object):
       return ch == ord('$') or ch == ord('_') or ch == ord('\\') or self.is_ascii_alphanumeric(ch)
     return self._is_non_ascii_identifier_part(ch)
 
-class CategoryGenerator(object):
-  def __init__(self, detector):
-    self.detector = detector
+  def get_category(self, ch):
+    return self.data[ch]
 
 def key_lookup_bind(list):
   SPECIAL_CASING = 0xFFFFFFFFFFFFFFFFFFFFFFFF
@@ -463,6 +667,18 @@ def key_lookup_bind(list):
 
   return keys, values
 
+def view16(l):
+  print len(l)
+  result = []
+  current = []
+  for idx in range(0, len(l)):
+    if idx != 0 and idx % 16 == 0:
+      result.append(', '.join(current))
+      current = []
+    current.append("%2d" % (l[idx]))
+  result.append(', '.join(current))
+  print ',\n'.join(result)
+
 def view8(l):
   print len(l)
   result = []
@@ -524,9 +740,8 @@ def main(source, special):
 
   keys, values = key_lookup_bind(
       [(ch.character(), ch.lower(), ch.special_casing_lower_index()) for ch in lower])
-  mapper = Mapper(keys, values, db.special_casing)
-  print len(keys), len(values)
-  mapper.check(db, True)  # assertion
+  mapper = CaseMapper(keys, values, db.special_casing, True)
+  mapper.check(db)  # assertion
   # view8(keys)
   # view8(values)
   # print "0x%04X" % (mapper.map(0x7B))
@@ -542,19 +757,23 @@ def main(source, special):
 
   keys, values = key_lookup_bind(
       [(ch.character(), ch.upper(), ch.special_casing_upper_index()) for ch in upper])
-  mapper = Mapper(keys, values, db.special_casing)
+  mapper = CaseMapper(keys, values, db.special_casing, False)
   # print len(keys), len(values)
-  mapper.check(db, False)  # assertion
-  view8(keys)
-  view8(values)
-  view8(mapper.dump_cache(0xb5, 1000))
+  mapper.check(db)  # assertion
+#  view8(keys)
+#  view8(values)
+#  view8(mapper.dump_cache(0xb5, 1000))
 
   # special casing
-  print len(db.special_casing)
   # view3([ ch[2] for ch in db.special_casing ])
   # view2([ ch[2] for ch in db.special_casing ])
   # view8(mapper.dump_cache(0xB5, 1000))
-
+  #
+  #
+  #
+  category = CategoryMapper(db)
+  category.check()
+  category.dump()
 
 if __name__ == '__main__':
   main(sys.argv[1], sys.argv[2])

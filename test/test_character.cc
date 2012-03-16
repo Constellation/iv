@@ -6,7 +6,7 @@ TEST(CharacterCase, CategoryTest) {
   for (uint16_t i = 0; i < 0xffff; ++i) {
     GetCategory(i);
   }
-  ASSERT_EQ(0, GetCategory(0x037F));
+  ASSERT_EQ(iv::core::character::UNASSIGNED, GetCategory(0x037F));
 }
 
 TEST(CharacterCase, ToUpperCaseTest) {
