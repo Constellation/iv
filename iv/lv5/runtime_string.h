@@ -1037,14 +1037,16 @@ inline JSString* ConvertCaseLocale(Context* ctx, Iter it, Iter last, Converter c
     prev = ch;
     // hard coding
     const uint64_t res = converter(core::character::locale::EN, ch, prev, next);
-    if (res > 0xFFFF) {
-      if (res > 0xFFFFFFFF) {
-        builder.push_back((res >> 32) & 0xFFFF);
+    if (res != core::character::code::REMOVE) {
+      if (res > 0xFFFF) {
+        if (res > 0xFFFFFFFF) {
+          builder.push_back((res >> 32) & 0xFFFF);
+        }
+        builder.push_back((res >> 16) & 0xFFFF);
+        builder.push_back(res & 0xFFFF);
+      } else {
+        builder.push_back(res);
       }
-      builder.push_back((res >> 16) & 0xFFFF);
-      builder.push_back(res & 0xFFFF);
-    } else {
-      builder.push_back(res);
     }
   }
   return JSString::New(ctx, builder.begin(), builder.end(), false);
