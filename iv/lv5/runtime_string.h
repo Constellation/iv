@@ -987,35 +987,83 @@ inline JSString* ConvertCase(Context* ctx, JSString* str, Converter converter) {
     std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
     return JSString::New(ctx, builder.begin(), builder.end(), true);
   } else {
+    // Special Casing is considered
     std::vector<uint16_t> builder;
-    builder.resize(str->size());
+    builder.reserve(str->size());
     const Fiber16* fiber = str->Get16Bit();
-    std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
+    for (Fiber16::const_iterator it = fiber->begin(),
+         last = fiber->end(); it != last; ++it) {
+      const uint64_t ch = converter(*it);
+      if (ch > 0xFFFF) {
+        if (ch > 0xFFFFFFFF) {
+          builder.push_back((ch >> 32) & 0xFFFF);
+        }
+        builder.push_back((ch >> 16) & 0xFFFF);
+        builder.push_back(ch & 0xFFFF);
+      } else {
+        builder.push_back(ch);
+      }
+    }
     return JSString::New(ctx, builder.begin(), builder.end(), false);
   }
 }
 
 struct ToLowerCase {
-  uint16_t operator()(uint16_t ch) {
-    return core::character::ToLowerCase(ch);
-  }
-};
-
-struct ToLocaleLowerCase {
-  uint16_t operator()(uint16_t ch) {
+  uint64_t operator()(uint16_t ch) {
     return core::character::ToLowerCase(ch);
   }
 };
 
 struct ToUpperCase {
-  uint16_t operator()(uint16_t ch) {
+  uint64_t operator()(uint16_t ch) {
     return core::character::ToUpperCase(ch);
   }
 };
 
+template<typename Iter, typename Converter>
+inline JSString* ConvertCaseLocale(Context* ctx, Iter it, Iter last, Converter converter) {
+  std::vector<uint16_t> builder;
+  builder.reserve(std::distance(it, last));
+  int prev = core::character::code::DEFAULT;
+  int next = core::character::code::DEFAULT;
+  for (; it != last;) {
+    const uint16_t ch = *it;
+    ++it;
+    if (it != last) {
+      next = *it;
+    } else {
+      next = core::character::code::DEFAULT;
+    }
+    prev = ch;
+    // hard coding
+    const uint64_t res = converter(core::character::locale::EN, ch, prev, next);
+    if (res != core::character::code::REMOVE) {
+      if (res > 0xFFFF) {
+        if (res > 0xFFFFFFFF) {
+          builder.push_back((res >> 32) & 0xFFFF);
+        }
+        builder.push_back((res >> 16) & 0xFFFF);
+        builder.push_back(res & 0xFFFF);
+      } else {
+        builder.push_back(res);
+      }
+    }
+  }
+  return JSString::New(ctx, builder.begin(), builder.end(), false);
+}
+
 struct ToLocaleUpperCase {
-  uint16_t operator()(uint16_t ch) {
-    return core::character::ToUpperCase(ch);
+  uint64_t operator()(core::character::locale::Locale locale,
+                      uint16_t c, int prev, int next) {
+    return core::character::ToLocaleUpperCase(locale, c, prev, next);
+  }
+};
+
+
+struct ToLocaleLowerCase {
+  uint64_t operator()(core::character::locale::Locale locale,
+                      uint16_t c, int prev, int next) {
+    return core::character::ToLocaleLowerCase(locale, c, prev, next);
   }
 };
 
@@ -1036,7 +1084,17 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return detail::ConvertCase(args.ctx(), str, detail::ToLocaleLowerCase());
+  if (str->Is8Bit()) {
+    const Fiber8* fiber = str->Get8Bit();
+    return detail::ConvertCaseLocale(args.ctx(),
+                                     fiber->begin(), fiber->end(),
+                                     detail::ToLocaleLowerCase());
+  } else {
+    const Fiber16* fiber = str->Get16Bit();
+    return detail::ConvertCaseLocale(args.ctx(),
+                                     fiber->begin(), fiber->end(),
+                                     detail::ToLocaleLowerCase());
+  }
 }
 
 // section 15.5.4.18 String.prototype.toUpperCase()
@@ -1054,7 +1112,17 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return detail::ConvertCase(args.ctx(), str, detail::ToLocaleUpperCase());
+  if (str->Is8Bit()) {
+    const Fiber8* fiber = str->Get8Bit();
+    return detail::ConvertCaseLocale(args.ctx(),
+                                     fiber->begin(), fiber->end(),
+                                     detail::ToLocaleUpperCase());
+  } else {
+    const Fiber16* fiber = str->Get16Bit();
+    return detail::ConvertCaseLocale(args.ctx(),
+                                     fiber->begin(), fiber->end(),
+                                     detail::ToLocaleUpperCase());
+  }
 }
 
 template<typename FiberType>
