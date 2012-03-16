@@ -239,6 +239,7 @@ class Detector(object):
         if len(line) == 0 or line[0] == '#':
           continue
         d = string.split(line, ";")
+        # print d
         val = int(d[0], 16)
         if flag:
           if re.compile("<.+, Last>").match(d[1]):
@@ -263,19 +264,34 @@ class Detector(object):
       sp = data[1].strip().split(' ')
       if len(sp) == 2:
         self.special_casing.append((k, True, (int(sp[0], 16) << 16) | int(sp[1], 16)))
-      elif len(sp[0]) != 0:
-        self.database[k].__lower = int(sp[0], 16)
+      elif len(sp) == 1:
+        if len(sp[0]) != 0:
+          self.database[k].__lower = int(sp[0], 16)
+      elif len(sp) == 3:
+        self.special_casing.append(
+            (k, True,
+              (int(sp[0], 16) << 32) | (int(sp[1], 16) << 16) | (int(sp[2], 16))))
+      else:
+        assert 0
 
       # upper
       sp = data[3].strip().split(' ')
       if len(sp) == 2:
         self.special_casing.append((k, False, (int(sp[0], 16) << 16) | int(sp[1], 16)))
-      elif len(sp[0]) != 0:
-        self.database[k].__upper = int(sp[0], 16)
+      elif len(sp) == 1:
+        if len(sp[0]) != 0:
+          self.database[k].__upper = int(sp[0], 16)
+      elif len(sp) == 3:
+        self.special_casing.append(
+            (k, False,
+              (int(sp[0], 16) << 32) | (int(sp[1], 16) << 16) | (int(sp[2], 16))))
+      else:
+        assert 0
 
     for i, case in enumerate(self.special_casing):
       ch = self.database[case[0]]
       assert ch is not None
+      # print case
       ch.append_casing(case, i)
 
   def is_ascii(self, ch):
@@ -336,7 +352,7 @@ class CategoryGenerator(object):
     self.detector = detector
 
 def key_lookup_bind(list):
-  SPECIAL_CASING = 0xFFFFFFFF
+  SPECIAL_CASING = 0xFFFFFFFFFFFFFFFFFFFFFFFF
   keys = []
   values = []
 
@@ -448,6 +464,7 @@ def key_lookup_bind(list):
   return keys, values
 
 def view8(l):
+  print len(l)
   result = []
   current = []
   for idx in range(0, len(l)):
@@ -459,6 +476,7 @@ def view8(l):
   print ',\n'.join(result)
 
 def view4(l):
+  print len(l)
   result = []
   current = []
   for idx in range(0, len(l)):
@@ -466,6 +484,30 @@ def view4(l):
       result.append(', '.join(current))
       current = []
     current.append("0x%08X" % (l[idx]))
+  result.append(', '.join(current))
+  print ',\n'.join(result)
+
+def view3(l):
+  print len(l)
+  result = []
+  current = []
+  for idx in range(0, len(l)):
+    if idx != 0 and idx % 3 == 0:
+      result.append(', '.join(current))
+      current = []
+    current.append("0x%016X" % (l[idx]))
+  result.append(', '.join(current))
+  print ',\n'.join(result)
+
+def view2(l):
+  print len(l)
+  result = []
+  current = []
+  for idx in range(0, len(l)):
+    if idx != 0 and idx % 2 == 0:
+      result.append(', '.join(current))
+      current = []
+    current.append("UINT64_C(0x%016X)" % (l[idx]))
   result.append(', '.join(current))
   print ',\n'.join(result)
 
@@ -484,12 +526,12 @@ def main(source, special):
       [(ch.character(), ch.lower(), ch.special_casing_lower_index()) for ch in lower])
   mapper = Mapper(keys, values, db.special_casing)
   print len(keys), len(values)
-  # mapper.check(db, True)  # assertion
+  mapper.check(db, True)  # assertion
   # view8(keys)
   # view8(values)
   # print "0x%04X" % (mapper.map(0x7B))
   # view8([mapper.map(ch) for ch in range(0xc0, 1000)])
-  view8(mapper.dump_cache(0xC0, 1000))
+  # view8(mapper.dump_cache(0xC0, 1000))
 
   upper = []
   for ch in range(0x0000, 0xFFFF + 1):
@@ -502,14 +544,15 @@ def main(source, special):
       [(ch.character(), ch.upper(), ch.special_casing_upper_index()) for ch in upper])
   mapper = Mapper(keys, values, db.special_casing)
   # print len(keys), len(values)
-  # mapper.check(db, False)  # assertion
-  # view8(keys)
-  # view8(values)
-  # view8([mapper.map(ch) for ch in range(0xb5, 1000)])
+  mapper.check(db, False)  # assertion
+  view8(keys)
+  view8(values)
+  view8(mapper.dump_cache(0xb5, 1000))
 
   # special casing
-  # print len(db.special_casing)
-  # view4([ ch[2] for ch in db.special_casing ])
+  print len(db.special_casing)
+  # view3([ ch[2] for ch in db.special_casing ])
+  # view2([ ch[2] for ch in db.special_casing ])
   # view8(mapper.dump_cache(0xB5, 1000))
 
 
