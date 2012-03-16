@@ -20,6 +20,11 @@ TEST(CharacterCase, ToUpperCaseTest) {
   ASSERT_EQ(0x0531, ToUpperCase(0x0561));
   ASSERT_EQ('A', ToUpperCase('A'));
   ASSERT_EQ(0x0560, ToUpperCase(0x0560));
+
+  for (uint32_t ch = 0; ch < 0x10000; ++ch) {
+    ToUpperCase(ch);
+  }
+  ASSERT_EQ(0x00530053, ToUpperCase(0x00DF));
 }
 
 TEST(CharacterCase, ToLowerCaseTest) {
@@ -31,4 +36,8 @@ TEST(CharacterCase, ToLowerCaseTest) {
   }
   ASSERT_EQ(0x0561, ToLowerCase(0x0531));
   ASSERT_EQ(0x0560, ToLowerCase(0x0560));
+
+  for (uint32_t ch = 0; ch < 0x10000; ++ch) {
+    ToLowerCase(ch);
+  }
 }
