@@ -180,10 +180,7 @@ class JIT : public Xbyak::CodeGenerator {
         code_.bytes().data() + code_.bytes().size();
     while (instr != last) {
       const uint8_t opcode = *instr;
-      uint32_t length = kOPLength[opcode];
-      if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
-        length += Load4Bytes(instr + 1);
-      }
+      const uint32_t length = OP::GetLength(instr);
       switch (opcode) {
         case OP::PUSH_BACKTRACK: {
           const int dis = Load4Bytes(instr + 1);
@@ -215,13 +212,13 @@ class JIT : public Xbyak::CodeGenerator {
     Code::Data::const_pointer instr = first_instr_;
     const Code::Data::const_pointer last =
         code_.bytes().data() + code_.bytes().size();
+
+    std::vector<uint8_t*> basic_block;
+    basic_block.reserve(64);
+
     while (instr != last) {
       const uint8_t opcode = *instr;
-      uint32_t length = kOPLength[opcode];
-      if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
-        length += Load4Bytes(instr + 1);
-      }
-
+      const uint32_t length = OP::GetLength(instr);
       const uint32_t offset = instr - first_instr_;
       if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
         DefineLabel(offset);
