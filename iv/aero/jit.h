@@ -319,10 +319,8 @@ class JIT : public Xbyak::CodeGenerator {
       }
 
       // basic block optimization pass
-      if (JIT::CanOptimize(opcode)) {
-        if (EmitOptimized(instr, last, &instr)) {
-          continue;
-        }
+      if (JIT::CanOptimize(opcode) && EmitOptimized(instr, last, &instr)) {
+        continue;
       }
 
 #define INTERCEPT()\
@@ -946,9 +944,8 @@ IV_AERO_OPCODES(V)
       jne(jit_detail::kBackTrackLabel, T_NEAR);
       inc(cp_);
     } else {
-      cmp(character[rbp], ch);
+      cmp(character[rbp + offset * kCharSize], ch);
       jne(jit_detail::kBackTrackLabel, T_NEAR);
-      add(rbp, kCharSize);
     }
   }
 
@@ -970,13 +967,12 @@ IV_AERO_OPCODES(V)
       inc(cp_);
     } else {
       if (ch <= 0x7FFF) {  // INT16_MAX
-        cmp(character[rbp], ch);
+        cmp(character[rbp + offset * kCharSize], ch);
       } else {
-        movzx(r10, character[rbp]);
+        movzx(r10, character[rbp + offset * kCharSize]);
         cmp(r10, ch);
       }
       jne(jit_detail::kBackTrackLabel, T_NEAR);
-      add(rbp, kCharSize);
     }
   }
 
@@ -988,7 +984,7 @@ IV_AERO_OPCODES(V)
       EmitSizeGuard();
       movzx(r10, character[subject_ + cp_ * kCharSize]);
     } else {
-      movzx(r10, character[rbp]);
+      movzx(r10, character[rbp + offset * kCharSize]);
     }
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
@@ -1002,8 +998,6 @@ IV_AERO_OPCODES(V)
     L(".SUCCESS");
     if (offset < 0) {
       inc(cp_);
-    } else {
-      add(rbp, kCharSize);
     }
     outLocalLabel();
   }
@@ -1017,7 +1011,7 @@ IV_AERO_OPCODES(V)
       EmitSizeGuard();
       movzx(r10, character[subject_ + cp_ * kCharSize]);
     } else {
-      movzx(r10, character[rbp]);
+      movzx(r10, character[rbp + offset * kCharSize]);
     }
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
@@ -1035,8 +1029,6 @@ IV_AERO_OPCODES(V)
     L(".SUCCESS");
     if (offset < 0) {
       inc(cp_);
-    } else {
-      add(rbp, kCharSize);
     }
     outLocalLabel();
   }
@@ -1047,7 +1039,7 @@ IV_AERO_OPCODES(V)
       EmitSizeGuard();
       movzx(r10, character[subject_ + cp_ * kCharSize]);
     } else {
-      movzx(r10, character[rbp]);
+      movzx(r10, character[rbp + offset * kCharSize]);
     }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
@@ -1071,8 +1063,6 @@ IV_AERO_OPCODES(V)
     L(".SUCCESS");
     if (offset < 0) {
       inc(cp_);
-    } else {
-      add(rbp, kCharSize);
     }
     outLocalLabel();
   }
@@ -1083,7 +1073,7 @@ IV_AERO_OPCODES(V)
       EmitSizeGuard();
       movzx(r10, character[subject_ + cp_ * kCharSize]);
     } else {
-      movzx(r10, character[rbp]);
+      movzx(r10, character[rbp + offset * kCharSize]);
     }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
@@ -1106,8 +1096,6 @@ IV_AERO_OPCODES(V)
     L(".SUCCESS");
     if (offset < 0) {
       inc(cp_);
-    } else {
-      add(rbp, kCharSize);
     }
     outLocalLabel();
   }
