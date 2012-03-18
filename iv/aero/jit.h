@@ -222,23 +222,24 @@ class JIT : public Xbyak::CodeGenerator {
         length += Load4Bytes(instr + 1);
       }
 
+      const uint32_t offset = instr - first_instr_;
+      if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
+        DefineLabel(offset);
+      }
+      const BackTrackMap::const_iterator it = backtracks_.find(offset);
+      if (it != backtracks_.end()) {
+        tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());\
+      }
 #define INTERCEPT()\
   do {\
     mov(r10, offset);\
     Put("OPCODE", r10);\
   } while (0)
+      // INTERCEPT();
+#undef INTERCEPT
 
 #define V(op, N)\
   case OP::op: {\
-    const uint32_t offset = instr - first_instr_;\
-    if (std::binary_search(targets_.begin(), targets_.end(), offset)) {\
-      DefineLabel(offset);\
-    }\
-    const BackTrackMap::const_iterator it = backtracks_.find(offset);\
-    if (it != backtracks_.end()) {\
-      tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());\
-    }\
-    /* INTERCEPT(); */\
     Emit##op(instr, length);\
     break;\
   }
@@ -246,7 +247,6 @@ class JIT : public Xbyak::CodeGenerator {
 IV_AERO_OPCODES(V)
       }
 #undef V
-#undef INTERCEPT
       std::advance(instr, length);
     }
   }
