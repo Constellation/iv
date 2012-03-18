@@ -57,7 +57,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
       }
     } else {
       JSArray* const ary = JSArray::New(ctx, 1);
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(0u),
           DataDescriptor(first, ATTR::W | ATTR::E | ATTR::C),
@@ -69,7 +69,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
     uint32_t index = 0;
     for (Arguments::const_iterator it = args.begin(),
          last = args.end(); it != last; ++it, ++index) {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(index),
           DataDescriptor(*it, ATTR::W | ATTR::E | ATTR::C),
@@ -115,7 +115,7 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
     const Symbol sym = symbol::MakeSymbolFromIndex(k);
     if (target->HasProperty(ctx, sym)) {
       const JSVal value = target->Get(ctx, sym, IV_LV5_ERROR(e));
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx, sym,
           DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
           false, IV_LV5_ERROR(e));
@@ -223,7 +223,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       if (elm->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
         const JSVal subelm =
             elm->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(n),
             DataDescriptor(subelm, ATTR::W | ATTR::E | ATTR::C),
@@ -233,7 +233,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++k;
     }
   } else {
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(n),
         DataDescriptor(obj, ATTR::W | ATTR::E | ATTR::C),
@@ -251,7 +251,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
         if (elm->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
           const JSVal subelm =
               elm->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(n),
               DataDescriptor(subelm, ATTR::W | ATTR::E | ATTR::C),
@@ -261,7 +261,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
         ++k;
       }
     } else {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(n),
           DataDescriptor(*it, ATTR::W | ATTR::E | ATTR::C),
@@ -269,7 +269,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++n;
     }
   }
-  ary->Put(ctx, symbol::length(), JSVal::UInt32(n), false, IV_LV5_ERROR(e));
+  ary->JSArray::Put(ctx, symbol::length(), JSVal::UInt32(n), false, IV_LV5_ERROR(e));
   return ary;
 }
 
@@ -485,7 +485,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       const JSVal kval =
           obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(n),
           DataDescriptor(kval, ATTR::W | ATTR::E | ATTR::C),
@@ -829,7 +829,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
       const JSVal from_val =
           obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(k),
           DataDescriptor(from_val, ATTR::W | ATTR::E | ATTR::C),
@@ -1170,7 +1170,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
       arg_list[2] = obj;
       const JSVal mapped_value =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(k),
           DataDescriptor(mapped_value, ATTR::W | ATTR::E | ATTR::C),
@@ -1211,7 +1211,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
       const bool result = selected.ToBoolean();
       if (result) {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(to),
             DataDescriptor(k_value, ATTR::W | ATTR::E | ATTR::C),

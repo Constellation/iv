@@ -134,7 +134,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it, ++n) {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             args.ctx(), symbol::MakeSymbolFromIndex(n),
             DataDescriptor(JSString::New(ctx, *it),
                            ATTR::W | ATTR::E | ATTR::C),
@@ -425,7 +425,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it, ++index) {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(index),
             DataDescriptor(
                 JSString::New(args.ctx(), *it),

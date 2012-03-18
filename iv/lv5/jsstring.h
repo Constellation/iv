@@ -16,7 +16,7 @@ inline uint32_t SplitFiber(Context* ctx,
   ary->Reserve(fiber->size());
   for (typename FiberType::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last && index != limit; ++it, ++index) {
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx, symbol::MakeSymbolFromIndex(index),
         DataDescriptor(
             JSString::NewSingle(ctx, *it),
@@ -39,7 +39,7 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
     if (*it != ch) {
       builder->Append(*it);
     } else {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx, symbol::MakeSymbolFromIndex(index),
           DataDescriptor(
               builder->Build(ctx, fiber->Is8Bit()),
@@ -96,7 +96,7 @@ inline JSString::JSString(JSVal* src, uint32_t count)
 }
 
 // "STRING".split("") => ['S', 'T', 'R', 'I', 'N', 'G']
-JSArray* JSString::Split(Context* ctx, JSArray* ary,
+JSArray* JSString::Split(Context* ctx,
                          uint32_t limit, Error* e) const {
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
@@ -146,7 +146,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
   }
 }
 
-JSArray* JSString::Split(Context* ctx, JSArray* ary,
+JSArray* JSString::Split(Context* ctx,
                          uint16_t ch, uint32_t limit, Error* e) const {
   JSStringBuilder builder;
   uint32_t index = 0;
@@ -211,7 +211,7 @@ JSArray* JSString::Split(Context* ctx, JSArray* ary,
       }
     }
   }
-  ary->DefineOwnProperty(
+  ary->JSArray::DefineOwnProperty(
       ctx, symbol::MakeSymbolFromIndex(index),
       DataDescriptor(
           builder.Build(ctx),
