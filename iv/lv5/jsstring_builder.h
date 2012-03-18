@@ -16,7 +16,9 @@ class JSStringBuilder : public core::BasicStringBuilder<uint16_t> {
 
   // override Append is failed...
   void AppendJSString(const JSString& str) {
-    str.Copy(std::back_inserter<container_type>(*this));
+    const size_t current_size = container_type::size();
+    container_type::resize(current_size + str.size());
+    str.Copy(container_type::begin() + current_size);
   }
 };
 
