@@ -964,7 +964,20 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitJUMP(const uint8_t* instr, uint32_t len) {
-    Jump(Load4Bytes(instr + 1));
+    uint32_t offset = Load4Bytes(instr + 1);
+    while (*(first_instr_ + offset) == OP::JUMP) {
+      offset = Load4Bytes(first_instr_ + offset + 1);
+    }
+    switch (*(first_instr_ + offset)) {
+      case OP::SUCCESS:
+        jmp(jit_detail::kSuccessLabel, T_NEAR);
+        return;
+      case OP::FAILURE:
+        jmp(jit_detail::kBackTrackLabel, T_NEAR);
+        return;
+    }
+    assert(*(first_instr_ + offset) != OP::JUMP);
+    Jump(offset);
   }
 
   void EmitFAILURE(const uint8_t* instr, uint32_t len) {
