@@ -20,6 +20,14 @@ class JSStringBuilder : public core::BasicStringBuilder<uint16_t> {
     container_type::resize(current_size + str.size());
     str.Copy(container_type::begin() + current_size);
   }
+
+  void AppendJSString(const JSString& str,
+                      size_t from,
+                      size_t to) {
+    const size_t current_size = container_type::size();
+    container_type::resize(current_size + (to - from));
+    str.Copy(from, to, container_type::begin() + current_size);
+  }
 };
 
 } }  // namespace iv::lv5
