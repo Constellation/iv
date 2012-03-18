@@ -34,10 +34,11 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
                                            context::Intern(ctx, i),
                                            reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          ary->Delete(ctx,
-                      symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
+          ary->JSArray::Delete(
+              ctx,
+              symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
         } else {
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx, symbol::MakeSymbolFromIndex(i),
               DataDescriptor(new_element, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));

@@ -98,17 +98,17 @@ inline JSVal StringSplit(Context* ctx,
                          JSString* target,
                          JSString* rhs, uint32_t lim, Error* e) {
   const uint32_t rsize = rhs->size();
-  JSArray* const ary = JSArray::New(ctx);
   if (rsize == 0) {
     if (target->empty()) {
       // "".split("") => []
-      return ary;
+      return JSArray::New(ctx);
     } else {
-      return target->Split(ctx, ary, lim, e);
+      return target->Split(ctx, lim, e);
     }
   } else if (rsize == 1) {
-    return target->Split(ctx, ary, rhs->At(0), lim, e);
+    return target->Split(ctx, rhs->At(0), lim, e);
   }
+  JSArray* const ary = JSArray::New(ctx);
   const uint32_t size = target->size();
   uint32_t p = 0;
   uint32_t q = p;
@@ -122,7 +122,7 @@ inline JSVal StringSplit(Context* ctx,
       if (end == p) {
         ++q;
       } else {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
                 target->Substring(ctx, p, q),
@@ -136,7 +136,7 @@ inline JSVal StringSplit(Context* ctx,
       }
     }
   }
-  ary->DefineOwnProperty(
+  ary->JSArray::DefineOwnProperty(
       ctx, symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           target->Substring(ctx, p, size),
@@ -881,7 +881,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (get<2>(reg->Match(ctx, str, 0, &cap))) {
       return ary;
     }
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(0),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
@@ -903,7 +903,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (q == end && end == p) {
       ++q;
     } else {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(length),
           DataDescriptor(str->Substring(ctx, p, start_match),
@@ -919,7 +919,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
            last = cap.end(); it != last; ++it) {
         ++i;
         if (it->first != -1 && it->second != -1) {
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(
@@ -927,7 +927,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                   ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         } else {
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(JSUndefined,
@@ -942,7 +942,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       q = p = end;
     }
   }
-  ary->DefineOwnProperty(
+  ary->JSArray::DefineOwnProperty(
       ctx,
       symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
@@ -1265,7 +1265,7 @@ inline JSVal StringToArray(const Arguments& args, Error* e) {
   const uint32_t len = str->size();
   JSArray* ary = JSArray::New(ctx, len);
   for (uint32_t i = 0; i < len; ++i) {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(i),
           DataDescriptor(JSString::NewSingle(ctx, str->At(i)),
