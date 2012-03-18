@@ -208,8 +208,7 @@ class JIT : public Xbyak::CodeGenerator {
   }
 
   static bool CanOptimize(uint8_t opcode) {
-    // return OP::STORE_SP <= opcode;
-    return OP::CHECK_1BYTE_CHAR == opcode;
+    return OP::STORE_SP <= opcode;
   }
 
   bool ReferencedByJump(const_pointer instr) const {
