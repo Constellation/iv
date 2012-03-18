@@ -254,9 +254,9 @@ class JSRegExp : public JSObject {
           ctx,
           symbol::MakeSymbolFromIndex(n),
           DataDescriptor(
-              JSString::New(ctx,
-                            fiber->begin() + offset_vector[0],
-                            fiber->begin() + offset_vector[1]),
+              JSString::NewWithFiber(
+                  ctx, fiber,
+                  offset_vector[0], offset_vector[1]),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
       ++n;
@@ -328,9 +328,7 @@ class JSRegExp : public JSObject {
             ctx,
             symbol::MakeSymbolFromIndex(i),
             DataDescriptor(
-                JSString::New(ctx,
-                              fiber->begin() + offset_vector[i*2],
-                              fiber->begin() + offset_vector[i*2+1]),
+                JSString::NewWithFiber(ctx, fiber, begin, end),
                 ATTR::W | ATTR::E | ATTR::C),
             true, IV_LV5_ERROR(e));
       } else {
