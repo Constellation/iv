@@ -98,6 +98,7 @@ inline JSString::JSString(JSVal* src, uint32_t count)
 // "STRING".split("") => ['S', 'T', 'R', 'I', 'N', 'G']
 JSArray* JSString::Split(Context* ctx,
                          uint32_t limit, Error* e) const {
+  JSArray* ary = JSArray::New(ctx);
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
     if (base->Is8Bit()) {
@@ -149,6 +150,7 @@ JSArray* JSString::Split(Context* ctx,
 JSArray* JSString::Split(Context* ctx,
                          uint16_t ch, uint32_t limit, Error* e) const {
   JSStringBuilder builder;
+  JSArray* ary = JSArray::New(ctx);
   uint32_t index = 0;
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
