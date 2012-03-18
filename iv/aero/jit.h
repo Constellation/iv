@@ -75,6 +75,7 @@ class JIT : public Xbyak::CodeGenerator {
   typedef std::unordered_map<int, uintptr_t> BackTrackMap;
   typedef typename jit_detail::Reg<CharT>::type RegC;
   typedef typename JITExecutable<CharT>::Executable Executable;
+  typedef typename Code::Data::const_pointer const_pointer;
 
   IV_STATIC_ASSERT((std::is_same<CharT, char>::value ||
                     std::is_same<CharT, uint16_t>::value));
@@ -86,7 +87,7 @@ class JIT : public Xbyak::CodeGenerator {
   static const int k16Size = sizeof(uint16_t);  // NOLINT
   static const int k32Size = sizeof(uint32_t);  // NOLINT
   static const int k64Size = sizeof(uint64_t);  // NOLINT
-  static const int kStackSize = k64Size * 9;
+  static const int kStackSize = k64Size * 11;
 
   static const int kASCII = kCharSize == 1;
 
@@ -175,9 +176,8 @@ class JIT : public Xbyak::CodeGenerator {
 
   void ScanJumpReference() {
     // scan jump referenced opcode, and record it to jump table
-    Code::Data::const_pointer instr = first_instr_;
-    const Code::Data::const_pointer last =
-        code_.bytes().data() + code_.bytes().size();
+    const_pointer instr = first_instr_;
+    const const_pointer last = code_.bytes().data() + code_.bytes().size();
     while (instr != last) {
       const uint8_t opcode = *instr;
       const uint32_t length = OP::GetLength(instr);
@@ -207,14 +207,105 @@ class JIT : public Xbyak::CodeGenerator {
     tracked_.resize(backtracks_.size(), 0);
   }
 
+  static bool CanOptimize(uint8_t opcode) {
+    // return OP::STORE_SP <= opcode;
+    return OP::CHECK_1BYTE_CHAR == opcode;
+  }
+
+  bool ReferencedByJump(const_pointer instr) const {
+    const uint32_t offset = instr - first_instr_;
+    if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
+      return true;
+    }
+    if (backtracks_.find(offset) != backtracks_.end()) {
+      return true;
+    }
+    return false;
+  }
+
+  static uint32_t GuardedSize(uint8_t opcode) {
+    assert(CanOptimize(opcode));
+    return (opcode > OP::COUNTER_ZERO) ? 1 : 0;
+  }
+
+  bool EmitOptimized(const_pointer instr,
+                     const_pointer last,
+                     const_pointer* result) {
+    // first
+    assert(CanOptimize(*instr));
+    assert(instr != last);
+
+    uint32_t guarded = JIT::GuardedSize(*instr);
+    const_pointer current = instr;
+    std::advance(current, OP::GetLength(current));
+    const const_pointer start = current;
+
+    // calculate size
+    while (current != last) {
+      if (CanOptimize(*current) && !ReferencedByJump(current)) {
+        // ok
+        guarded += JIT::GuardedSize(*current);
+      } else {
+        // bailout
+        break;
+      }
+      std::advance(current, OP::GetLength(current));
+    }
+
+    if (current == start) {
+      // not optimized
+      return false;
+    }
+
+    lea(rbp, ptr[subject_ + cp_ * kCharSize]);
+    if (guarded > 0) {
+      add(cp_, guarded);
+      cmp(cp_, size_);
+      jg(jit_detail::kBackTrackLabel, T_NEAR);
+    }
+    int offset = 0;
+    while (instr != current) {
+      const uint32_t length = OP::GetLength(instr);
+      switch (*instr) {
+        case OP::CHECK_1BYTE_CHAR:
+          EmitCHECK_1BYTE_CHAR(instr, length, offset);
+          break;
+        case OP::CHECK_2BYTE_CHAR:
+          EmitCHECK_2BYTE_CHAR(instr, length, offset);
+          break;
+        case OP::CHECK_2CHAR_OR:
+          EmitCHECK_2CHAR_OR(instr, length, offset);
+          break;
+        case OP::CHECK_3CHAR_OR:
+          EmitCHECK_3CHAR_OR(instr, length, offset);
+          break;
+        case OP::CHECK_RANGE:
+          EmitCHECK_RANGE(instr, length, offset);
+          break;
+        case OP::CHECK_RANGE_INVERTED:
+          EmitCHECK_RANGE_INVERTED(instr, length, offset);
+          break;
+        case OP::STORE_SP:
+          EmitSTORE_SP(instr, length);
+          break;
+        case OP::COUNTER_ZERO:
+          EmitCOUNTER_ZERO(instr, length);
+          break;
+        default: {
+          UNREACHABLE();
+        }
+      }
+      offset += JIT::GuardedSize(*instr);
+      std::advance(instr, length);
+    }
+    *result = current;
+    return true;
+  }
+
   void Main() {
     // main pass
-    Code::Data::const_pointer instr = first_instr_;
-    const Code::Data::const_pointer last =
-        code_.bytes().data() + code_.bytes().size();
-
-    std::vector<uint8_t*> basic_block;
-    basic_block.reserve(64);
+    const_pointer instr = first_instr_;
+    const const_pointer last = code_.bytes().data() + code_.bytes().size();
 
     while (instr != last) {
       const uint8_t opcode = *instr;
@@ -225,8 +316,16 @@ class JIT : public Xbyak::CodeGenerator {
       }
       const BackTrackMap::const_iterator it = backtracks_.find(offset);
       if (it != backtracks_.end()) {
-        tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());\
+        tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());
       }
+
+      // basic block optimization pass
+      if (JIT::CanOptimize(opcode)) {
+        if (EmitOptimized(instr, last, &instr)) {
+          continue;
+        }
+      }
+
 #define INTERCEPT()\
   do {\
     mov(r10, offset);\
@@ -303,6 +402,7 @@ IV_AERO_OPCODES(V)
     mov(qword[rsp + k64Size * 6], size_);
     mov(qword[rsp + k64Size * 7], cp_);
     mov(qword[rsp + k64Size * 8], sp_);
+    mov(qword[rsp + k64Size * 9], rbp);
 
     // calling convension is
     // Execute(VM* vm, const char* subject,
@@ -395,6 +495,7 @@ IV_AERO_OPCODES(V)
       mov(size_, qword[rsp + k64Size * 6]);
       mov(cp_, qword[rsp + k64Size * 7]);
       mov(sp_, qword[rsp + k64Size * 8]);
+      mov(rbp, qword[rsp + k64Size * 9]);
       add(rsp, kStackSize);
       ret();
       align(16);
@@ -838,80 +939,117 @@ IV_AERO_OPCODES(V)
     outLocalLabel();
   }
 
-  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len) {
-    EmitSizeGuard();
+  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const CharT ch = Load1Bytes(instr + 1);
-    cmp(character[subject_ + cp_ * kCharSize], ch);
-    jne(jit_detail::kBackTrackLabel, T_NEAR);
-    inc(cp_);
+    if (offset < 0) {
+      EmitSizeGuard();
+      cmp(character[subject_ + cp_ * kCharSize], ch);
+      jne(jit_detail::kBackTrackLabel, T_NEAR);
+      inc(cp_);
+    } else {
+      cmp(character[rbp], ch);
+      jne(jit_detail::kBackTrackLabel, T_NEAR);
+      add(rbp, kCharSize);
+    }
   }
 
-  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len) {
+  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
     if (kASCII) {
       jmp(jit_detail::kBackTrackLabel, T_NEAR);
       return;
     }
-    EmitSizeGuard();
     const uint16_t ch = Load2Bytes(instr + 1);
-    if (ch <= 0x7FFF) {  // INT16_MAX
-      cmp(character[subject_ + cp_ * kCharSize], ch);
+    if (offset < 0) {
+      EmitSizeGuard();
+      if (ch <= 0x7FFF) {  // INT16_MAX
+        cmp(character[subject_ + cp_ * kCharSize], ch);
+      } else {
+        movzx(r10, character[subject_ + cp_ * kCharSize]);
+        cmp(r10, ch);
+      }
+      jne(jit_detail::kBackTrackLabel, T_NEAR);
+      inc(cp_);
     } else {
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-      cmp(r10, ch);
+      if (ch <= 0x7FFF) {  // INT16_MAX
+        cmp(character[rbp], ch);
+      } else {
+        movzx(r10, character[rbp]);
+        cmp(r10, ch);
+      }
+      jne(jit_detail::kBackTrackLabel, T_NEAR);
+      add(rbp, kCharSize);
     }
-    jne(jit_detail::kBackTrackLabel, T_NEAR);
-    inc(cp_);
   }
 
-  void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
-    EmitSizeGuard();
-    movzx(r10, character[subject_ + cp_ * kCharSize]);
+  void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const uint16_t first = Load2Bytes(instr + 1);
+    const uint16_t second = Load2Bytes(instr + 3);
+    inLocalLabel();
+    if (offset < 0) {
+      EmitSizeGuard();
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+    } else {
+      movzx(r10, character[rbp]);
+    }
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
       je(".SUCCESS");
     }
-    const uint16_t second = Load2Bytes(instr + 3);
     if (!(kASCII && !core::character::IsASCII(second))) {
       cmp(r10, second);
       je(".SUCCESS");
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    inc(cp_);
+    if (offset < 0) {
+      inc(cp_);
+    } else {
+      add(rbp, kCharSize);
+    }
     outLocalLabel();
   }
 
-  void EmitCHECK_3CHAR_OR(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
-    EmitSizeGuard();
-    movzx(r10, character[subject_ + cp_ * kCharSize]);
+  void EmitCHECK_3CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const uint16_t first = Load2Bytes(instr + 1);
+    const uint16_t second = Load2Bytes(instr + 3);
+    const uint16_t third = Load2Bytes(instr + 5);
+    inLocalLabel();
+    if (offset < 0) {
+      EmitSizeGuard();
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+    } else {
+      movzx(r10, character[rbp]);
+    }
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
       je(".SUCCESS");
     }
-    const uint16_t second = Load2Bytes(instr + 3);
     if (!(kASCII && !core::character::IsASCII(second))) {
       cmp(r10, second);
       je(".SUCCESS");
     }
-    const uint16_t third = Load2Bytes(instr + 5);
     if (!(kASCII && !core::character::IsASCII(third))) {
       cmp(r10, third);
       je(".SUCCESS");
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    inc(cp_);
+    if (offset < 0) {
+      inc(cp_);
+    } else {
+      add(rbp, kCharSize);
+    }
     outLocalLabel();
   }
 
-  void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len) {
+  void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len, int offset = -1) {
     inLocalLabel();
-    EmitSizeGuard();
-    movzx(r10, character[subject_ + cp_ * kCharSize]);
+    if (offset < 0) {
+      EmitSizeGuard();
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+    } else {
+      movzx(r10, character[rbp]);
+    }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
@@ -932,14 +1070,22 @@ IV_AERO_OPCODES(V)
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    inc(cp_);
+    if (offset < 0) {
+      inc(cp_);
+    } else {
+      add(rbp, kCharSize);
+    }
     outLocalLabel();
   }
 
-  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len) {
+  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {
     inLocalLabel();
-    EmitSizeGuard();
-    movzx(r10, character[subject_ + cp_ * kCharSize]);
+    if (offset < 0) {
+      EmitSizeGuard();
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+    } else {
+      movzx(r10, character[rbp]);
+    }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
       const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
@@ -959,7 +1105,11 @@ IV_AERO_OPCODES(V)
       jle(jit_detail::kBackTrackLabel, T_NEAR);
     }
     L(".SUCCESS");
-    inc(cp_);
+    if (offset < 0) {
+      inc(cp_);
+    } else {
+      add(rbp, kCharSize);
+    }
     outLocalLabel();
   }
 
@@ -1003,7 +1153,7 @@ IV_AERO_OPCODES(V)
   }
 
   const Code& code_;
-  const Code::Data::const_pointer first_instr_;
+  const const_pointer first_instr_;
   core::SortedVector<uint32_t> targets_;
   BackTrackMap backtracks_;
   std::vector<uintptr_t> tracked_;
