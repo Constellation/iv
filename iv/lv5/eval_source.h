@@ -15,8 +15,8 @@ class EvalSource : public core::Noncopyable<> {
  public:
   explicit EvalSource(const JSString& str)
     : source_() {
-    source_.reserve(str.size());
-    str.Copy(std::back_inserter(source_));
+    source_.resize(str.size());
+    str.Copy(source_.begin());
   }
 
   inline uint16_t operator[](std::size_t pos) const {
