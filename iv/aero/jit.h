@@ -91,12 +91,13 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(8192 * 4),
+    : Xbyak::CodeGenerator(1024*4, Xbyak::AutoGrow),
       code_(code),
       first_instr_(code.bytes().data()),
       targets_(),
       backtracks_(),
       tracked_(),
+      tracked_offset_(),
       character(kASCII ? byte : word),
       subject_(r12),
       size_(r13),
@@ -111,10 +112,14 @@ class JIT : public Xbyak::CodeGenerator {
 
   Executable Compile() {
     // start
+try {
     ScanJumpReference();
     EmitPrologue();
     Main();
     EmitEpilogue();
+} catch (Xbyak::Error err) {
+	fprintf(stderr, "QQQ err=%s\n", Xbyak::ConvertErrorToString(err));
+}
     return Get();
   }
 
@@ -208,6 +213,7 @@ class JIT : public Xbyak::CodeGenerator {
       std::advance(instr, length);
     }
     tracked_.resize(backtracks_.size(), 0);
+    tracked_offset_.resize(tracked_.size());
   }
 
   void Main() {
@@ -236,7 +242,8 @@ class JIT : public Xbyak::CodeGenerator {
     }\
     const BackTrackMap::const_iterator it = backtracks_.find(offset);\
     if (it != backtracks_.end()) {\
-      tracked_[it->second] = core::BitCast<uintptr_t>(getCurr());\
+/*      tracked_[it->second] = core::BitCast<uintptr_t>(getCurr()); */ \
+      tracked_offset_[it->second] = getSize();\
     }\
     /* INTERCEPT(); */\
     Emit##op(instr, length);\
@@ -453,6 +460,15 @@ IV_AERO_OPCODES(V)
     {
       mov(rax, AERO_ERROR);
       jmp(jit_detail::kReturnLabel);
+    }
+    // finish generating code and calc tracked_ from tracked_offset_
+    ready();
+    {
+      const uint8_t *top = getCode();
+      for (size_t i = 0; i < tracked_.size(); i++) {
+fprintf(stderr, "QQQ %d offset=%016llx\n", (int)i, (long long)tracked_offset_[i]);
+        tracked_[i] = core::BitCast<uintptr_t>(top + tracked_offset_[i]);
+      }
     }
   }
 
@@ -997,6 +1013,7 @@ IV_AERO_OPCODES(V)
   core::SortedVector<uint32_t> targets_;
   BackTrackMap backtracks_;
   std::vector<uintptr_t> tracked_;
+  std::vector<size_t> tracked_offset_;
 
   const Xbyak::AddressFrame character;
   const Xbyak::Reg64& subject_;

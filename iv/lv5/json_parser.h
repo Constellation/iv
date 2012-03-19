@@ -139,7 +139,7 @@ class JSONParser : private core::Noncopyable<> {
     bool trailing_comma = false;
     while (token_ != Token::TK_RBRACK) {
       const JSVal target = ParseJSONValue(CHECK);
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx_, symbol::MakeSymbolFromIndex(current),
           DataDescriptor(target, ATTR::W | ATTR::E | ATTR::C),
           false, CHECK);
@@ -156,8 +156,9 @@ class JSONParser : private core::Noncopyable<> {
       RAISE();
     }
     Next();
-    ary->Put(ctx_, symbol::length(),
-             JSVal::UInt32(current), false, CHECK);
+    ary->JSArray::Put(
+        ctx_, symbol::length(),
+        JSVal::UInt32(current), false, CHECK);
     return ary;
   }
 

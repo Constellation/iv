@@ -33,7 +33,7 @@
 	#endif
 #else
 	#ifndef __GNUC_PREREQ
-    	#define __GNUC_PREREQ(major, minor) ((((__GNUC__) << 16) + (__GNUC__MINOR__)) >= (((major) << 16) + (minor)))
+    	#define __GNUC_PREREQ(major, minor) ((((__GNUC__) << 16) + (__GNUC_MINOR__)) >= (((major) << 16) + (minor)))
 	#endif
 	#if __GNUC_PREREQ(4, 3) && !defined(__APPLE__)
 		#include <cpuid.h>
@@ -74,12 +74,12 @@ public:
 	{
 #ifdef _MSC_VER
 		return __xgetbv(0);
-#elif __GNUC_PREREQ(4, 3)
-		unsigned int eax, edx;
-		__asm__ volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
-		return ((uint64)edx << 32) | eax;
 #else
-		return 0;
+		unsigned int eax, edx;
+		// xgetvb is not support on gcc 4.2
+//		__asm__ volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+		__asm__ volatile(".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c"(0));
+		return ((uint64)edx << 32) | eax;
 #endif
 	}
 	enum Type {

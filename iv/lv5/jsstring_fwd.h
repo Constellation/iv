@@ -370,10 +370,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return new (PointerFreeGC) this_type(this, count);
   }
 
-  inline JSArray* Split(Context* ctx, JSArray* ary,
+  inline JSArray* Split(Context* ctx,
                         uint32_t limit, Error* e) const;
 
-  inline JSArray* Split(Context* ctx, JSArray* ary,
+  inline JSArray* Split(Context* ctx,
                         uint16_t ch, uint32_t limit, Error* e) const;
 
   inline this_type* Substring(Context* ctx, uint32_t from, uint32_t to) const;
