@@ -35,10 +35,7 @@ class DisAssembler : private core::Noncopyable<> {
     for (std::vector<uint8_t>::const_iterator it = code.bytes().begin(),
          last = code.bytes().end(); it != last;) {
       const uint8_t opcode = *it;
-      uint32_t length = kOPLength[opcode];
-      if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
-        length += Load4Bytes(it + 1);
-      }
+      const uint32_t length = OP::GetLength(it);
       const int len = snprintf(buf, sizeof(buf) - 1, "%05d: ", index);
       assert(len >= 0);  // %05d, so always pass
       line.insert(line.end(), buf, buf + len);
