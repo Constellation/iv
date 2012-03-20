@@ -268,8 +268,7 @@ class Compiler : private Visitor {
       EmitClearCaptures(capture);
     } else if (atom->min() == atom->max()) {
       // same quantity pattern. greedy parameter is no effect.
-      const CounterHolder holder(this);
-      EmitFixed(atom, holder.counter(), atom->min(), capture);
+      EmitFixed(atom, atom->min(), capture);
     } else if (atom->min() == 0) {
       if (atom->max() == 1) {
         // ? pattern. counter not used
@@ -293,121 +292,129 @@ class Compiler : private Visitor {
           Emit4At(pos2, Current());
         }
       } else if (atom->max() == kRegExpInfinity) {
-        // * pattern. counter not used
-        if (atom->greedy()) {
-          const CounterHolder pos_holder(this);
-          const std::size_t pos1 = Current();
-          Emit<OP::PUSH_BACKTRACK>();
-          const std::size_t pos2 = Current();
-          Emit4(0u);  // dummy
-          EmitClearCaptures(capture);
-          Emit<OP::STORE_POSITION>();
-          Emit4(pos_holder.counter());
-          atom->expression()->Accept(this);
-          Emit<OP::POSITION_TEST>();
-          Emit4(pos_holder.counter());
-          Emit<OP::JUMP>();
-          Emit4(pos1);
-          Emit4At(pos2, Current());
-        } else {
-          const CounterHolder pos_holder(this);
-          const std::size_t pos1 = Current();
-          Emit<OP::PUSH_BACKTRACK>();
-          const std::size_t pos2 = Current();
-          Emit4(0u);  // dummy 1
-          Emit<OP::JUMP>();
-          const std::size_t pos3 = Current();
-          Emit4(0u);  // dummy 2
-          Emit4At(pos2, Current());
-          EmitClearCaptures(capture);
-          Emit<OP::STORE_POSITION>();
-          Emit4(pos_holder.counter());
-          atom->expression()->Accept(this);
-          Emit<OP::POSITION_TEST>();
-          Emit4(pos_holder.counter());
-          Emit<OP::JUMP>();
-          Emit4(pos1);
-          Emit4At(pos3, Current());
-        }
+        EmitInfinity(atom, capture);
       } else {
-        // min == 0 and max
-        const CounterHolder holder(this);
-        const CounterHolder pos_holder(this);
-        EmitFollowingRepeat(atom,
-                            holder.counter(),
-                            atom->max(), capture, pos_holder.counter());
+        // min == 0 and max exists
+        EmitFollowingRepeat(atom, atom->max(), capture);
       }
     } else {
-      const CounterHolder holder(this);
-      const CounterHolder pos_holder(this);
       assert(atom->min() != 0);
-      EmitFixed(atom, holder.counter(), atom->min(), capture);
+      EmitFixed(atom, atom->min(), capture);
       current_captures_num_ = now;
-      const uint32_t delta = atom->max() - atom->min();
-      assert(delta > 0);
-      EmitFollowingRepeat(atom,
-                          holder.counter(),
-                          delta, capture, pos_holder.counter());
+      if (atom->max() == kRegExpInfinity) {
+        EmitInfinity(atom, capture);
+      } else {
+        const uint32_t delta = atom->max() - atom->min();
+        assert(delta > 0);
+        EmitFollowingRepeat(atom, delta, capture);
+      }
     }
     current_captures_num_ = capture;
   }
 
-  void EmitFixed(Quantifiered* atom,
-                 uint32_t counter, int32_t fixed, uint32_t capture) {
-    // COUNTER_ZERO | COUNTER_TARGET
-    Emit<OP::COUNTER_ZERO>();
-    Emit4(counter);
-    const std::size_t target = Current();
-    EmitClearCaptures(capture);
-    atom->expression()->Accept(this);
-    // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
-    Emit<OP::COUNTER_NEXT>();
-    Emit4(counter);
-    Emit4(fixed);
-    Emit4(target);
+  void EmitFixed(Quantifiered* atom, int32_t fixed, uint32_t capture) {
+    if (fixed == 1) {
+      atom->expression()->Accept(this);
+    } else {
+      const CounterHolder holder(this);
+      // COUNTER_ZERO | COUNTER_TARGET
+      Emit<OP::COUNTER_ZERO>();
+      Emit4(holder.counter());
+      const std::size_t target = Current();
+      EmitClearCaptures(capture);
+      atom->expression()->Accept(this);
+      // COUNTER_NEXT | COUNTER_TARGET | MAX | JUMP_TARGET
+      Emit<OP::COUNTER_NEXT>();
+      Emit4(holder.counter());
+      Emit4(fixed);
+      Emit4(target);
+    }
   }
 
-  void EmitFollowingRepeat(Quantifiered* atom,
-                           uint32_t counter, int32_t max,
-                           uint32_t capture, uint32_t position_test) {
-    Emit<OP::COUNTER_ZERO>();
-    Emit4(counter);
+  void EmitInfinity(Quantifiered* atom, uint32_t capture) {
+    // * pattern. counter not used
     if (atom->greedy()) {
+      const CounterHolder pos_holder(this);
       const std::size_t pos1 = Current();
       Emit<OP::PUSH_BACKTRACK>();
       const std::size_t pos2 = Current();
-      Emit4(0u);
+      Emit4(0u);  // dummy
       EmitClearCaptures(capture);
       Emit<OP::STORE_POSITION>();
-      Emit4(position_test);
+      Emit4(pos_holder.counter());
       atom->expression()->Accept(this);
       Emit<OP::POSITION_TEST>();
-      Emit4(position_test);
-      Emit<OP::COUNTER_NEXT>();
-      Emit4(counter);
-      Emit4(max);
+      Emit4(pos_holder.counter());
+      Emit<OP::JUMP>();
       Emit4(pos1);
       Emit4At(pos2, Current());
     } else {
+      const CounterHolder pos_holder(this);
       const std::size_t pos1 = Current();
       Emit<OP::PUSH_BACKTRACK>();
       const std::size_t pos2 = Current();
-      Emit4(0u);
+      Emit4(0u);  // dummy 1
       Emit<OP::JUMP>();
       const std::size_t pos3 = Current();
-      Emit4(0u);
+      Emit4(0u);  // dummy 2
       Emit4At(pos2, Current());
       EmitClearCaptures(capture);
       Emit<OP::STORE_POSITION>();
-      Emit4(position_test);
+      Emit4(pos_holder.counter());
       atom->expression()->Accept(this);
       Emit<OP::POSITION_TEST>();
-      Emit4(position_test);
-      Emit<OP::COUNTER_NEXT>();
-      Emit4(counter);
-      Emit4(max);
+      Emit4(pos_holder.counter());
+      Emit<OP::JUMP>();
       Emit4(pos1);
       Emit4At(pos3, Current());
+    }
+  }
+
+  void EmitFollowingRepeat(Quantifiered* atom, int32_t max, uint32_t capture) {
+    if (max == kRegExpInfinity) {
+      EmitInfinity(atom, capture);
+    } else {
+      const CounterHolder holder(this);
+      const CounterHolder pos_holder(this);
+      Emit<OP::COUNTER_ZERO>();
+      Emit4(holder.counter());
+      if (atom->greedy()) {
+        const std::size_t pos1 = Current();
+        Emit<OP::PUSH_BACKTRACK>();
+        const std::size_t pos2 = Current();
+        Emit4(0u);
+        EmitClearCaptures(capture);
+        Emit<OP::STORE_POSITION>();
+        Emit4(pos_holder.counter());
+        atom->expression()->Accept(this);
+        Emit<OP::POSITION_TEST>();
+        Emit4(pos_holder.counter());
+        Emit<OP::COUNTER_NEXT>();
+        Emit4(holder.counter());
+        Emit4(max);
+        Emit4(pos1);
+        Emit4At(pos2, Current());
+      } else {
+        const std::size_t pos1 = Current();
+        Emit<OP::PUSH_BACKTRACK>();
+        const std::size_t pos2 = Current();
+        Emit4(0u);
+        Emit<OP::JUMP>();
+        const std::size_t pos3 = Current();
+        Emit4(0u);
+        Emit4At(pos2, Current());
+        EmitClearCaptures(capture);
+        Emit<OP::STORE_POSITION>();
+        Emit4(pos_holder.counter());
+        atom->expression()->Accept(this);
+        Emit<OP::POSITION_TEST>();
+        Emit4(pos_holder.counter());
+        Emit<OP::COUNTER_NEXT>();
+        Emit4(holder.counter());
+        Emit4(max);
+        Emit4(pos1);
+        Emit4At(pos3, Current());
+      }
     }
   }
 
