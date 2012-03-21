@@ -12,14 +12,14 @@ class ThreadSafeRefCounted : private iv::core::Noncopyable<T> {
     : ref_(count) {
   }
 
-  inline void Retain() {
+  inline void Retain() const {
     AtomicIncrement(&ref_);
   }
 
-  inline void Release() {
+  inline void Release() const {
     assert(ref_ != 0);
     if (!(AtomicDecrement(&ref_))) {  // ref counter will be 0
-      delete static_cast<T*>(this);
+      delete static_cast<const T*>(this);
     }
   }
 
@@ -28,17 +28,17 @@ class ThreadSafeRefCounted : private iv::core::Noncopyable<T> {
   }
 
  private:
-  int ref_;
+  mutable int ref_;
 };
 
 // for boost::intrusive_ptr
 template<typename T>
-inline void intrusive_ptr_add_ref(ThreadSafeRefCounted<T>* obj) {
+inline void intrusive_ptr_add_ref(const ThreadSafeRefCounted<T>* obj) {
   obj->Retain();
 }
 
 template<typename T>
-inline void intrusive_ptr_release(ThreadSafeRefCounted<T>* obj) {
+inline void intrusive_ptr_release(const ThreadSafeRefCounted<T>* obj) {
   obj->Release();
 }
 
