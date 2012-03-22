@@ -45,9 +45,20 @@ class GlobalData {
       boolean_map_(Map::New(ctx)),
       number_map_(Map::New(ctx)),
       date_map_(Map::New(ctx)),
-      regexp_map_(Map::New(ctx)),
+      regexp_map_(NULL),
       error_map_(Map::New(ctx)),
       gc_hook_(this) {
+    {
+      // RegExp Map
+      // see also jsregexp.h, JSRegExp::FIELD
+      MapBuilder builder(ctx);
+      builder.Add(symbol::source());
+      builder.Add(symbol::global());
+      builder.Add(symbol::ignoreCase());
+      builder.Add(symbol::multiline());
+      builder.Add(symbol::lastIndex());
+      regexp_map_ = builder.Build();
+    }
   }
 
   Symbol Intern(const core::StringPiece& str) {

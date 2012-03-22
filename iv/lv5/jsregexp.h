@@ -20,6 +20,15 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
+  // see also global_data.h
+  enum FIELD {
+    FIELD_SOURCE = 0,
+    FIELD_GLOBAL = 1,
+    FIELD_IGNORE_CASE = 2,
+    FIELD_MULTILINE = 3,
+    FIELD_LAST_INDEX = 4
+  };
+
   JSString* source(Context* ctx) {
     Error e;
     const JSVal source = Get(ctx, symbol::source(), &e);
@@ -81,14 +90,14 @@ class JSRegExp : public JSObject {
   bool sticky() const { return impl_->sticky(); }
 
   int LastIndex(Context* ctx, Error* e) {
-    const JSVal index =
-        Get(ctx, symbol::lastIndex(), IV_LV5_ERROR_WITH(e, 0));
-    return index.ToInt32(ctx, e);
+    // because not configurable
+    assert(GetSlot(FIELD_LAST_INDEX).IsDataDescriptor());
+    return
+        GetSlot(FIELD_LAST_INDEX).AsDataDescriptor()->value().ToInt32(ctx, e);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
-    Put(ctx, symbol::lastIndex(),
-        static_cast<double>(i), true, IV_LV5_ERROR_VOID(e));
+    PutToSlotOffset(ctx, FIELD_LAST_INDEX, JSVal::Int32(i), true, e);
   }
 
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e) {
@@ -182,7 +191,18 @@ class JSRegExp : public JSObject {
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
-    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
+    // TODO(Constellation) cleanup logic
+    bind::Object(ctx, this)
+        .def(symbol::source(),
+             JSString::NewAsciiString(ctx, "(?:)"),
+             ATTR::NONE)
+        .def(symbol::global(),
+             JSVal::Bool(impl_->global()), ATTR::NONE)
+        .def(symbol::ignoreCase(),
+             JSVal::Bool(impl_->ignore()), ATTR::NONE)
+        .def(symbol::multiline(),
+             JSVal::Bool(impl_->multiline()), ATTR::NONE)
+        .def(symbol::lastIndex(), 0.0, ATTR::W);
   }
 
   static JSString* Escape(Context* ctx, JSString* str) {
@@ -211,17 +231,18 @@ class JSRegExp : public JSObject {
   }
 
   void InitializeProperty(Context* ctx, JSString* src) {
-    bind::Object(ctx, this)
-        .def(symbol::source(),
-             src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src,
-             ATTR::NONE)
-        .def(symbol::global(),
-             JSVal::Bool(impl_->global()), ATTR::NONE)
-        .def(symbol::ignoreCase(),
-             JSVal::Bool(impl_->ignore()), ATTR::NONE)
-        .def(symbol::multiline(),
-             JSVal::Bool(impl_->multiline()), ATTR::NONE)
-        .def(symbol::lastIndex(), 0.0, ATTR::W);
+    GetSlot(FIELD_SOURCE) =
+        DataDescriptor(
+            src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src,
+            ATTR::NONE);
+    GetSlot(FIELD_GLOBAL) =
+        DataDescriptor(JSVal::Bool(impl_->global()), ATTR::NONE);
+    GetSlot(FIELD_IGNORE_CASE) =
+        DataDescriptor(JSVal::Bool(impl_->ignore()), ATTR::NONE);
+    GetSlot(FIELD_MULTILINE) =
+        DataDescriptor(JSVal::Bool(impl_->multiline()), ATTR::NONE);
+    GetSlot(FIELD_LAST_INDEX) =
+        DataDescriptor(JSVal::Int32(0), ATTR::W);
   }
 
   template<typename FiberType>
