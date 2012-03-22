@@ -25,7 +25,8 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
   enum Flag {
     NONE = 0,
     IS_CONS = 1,
-    IS_8BIT = 2
+    IS_8BIT = 2,
+    IS_ORIGINAL = 4
   };
 
   static const int kFlagShift = 2;
@@ -37,17 +38,19 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
     }
   }
 
-  bool IsCons() const {
-    return flags_ & IS_CONS;
-  }
+  bool IsCons() const { return flags_ & IS_CONS; }
 
-  bool Is8Bit() const {
-    return flags_ & IS_8BIT;
+  bool Is8Bit() const { return flags_ & IS_8BIT; }
+
+  bool IsOriginal() const {
+    return flags_ & IS_ORIGINAL;
   }
 
   size_type size() const {
     return size_;
   }
+
+  inline ~FiberSlot();
 
  protected:
   explicit FiberSlot(std::size_t n, int flags)
@@ -206,7 +209,14 @@ class FiberBase : public FiberSlot {
   const_reverse_iterator crend() const { return rend(); }
 
  public:
-  FiberBase(std::size_t size, int flags) : FiberSlot(size, flags) { }
+  FiberBase(std::size_t size,
+            int flags,
+            FiberBase* original)
+    : FiberSlot(size, flags),
+      original_(original) {
+  }
+
+  FiberBase* original() const { return original_; }
 
   template<typename OutputIter>
   inline OutputIter Copy(OutputIter out) const;
@@ -242,6 +252,9 @@ class FiberBase : public FiberSlot {
   inline friend bool operator>=(const this_type& x, const this_type& y) {
     return x.compare(y) >= 0;
   }
+
+ private:
+  FiberBase* original_;
 };
 
 template<typename CharT>
@@ -273,22 +286,33 @@ class Fiber : public FiberBase {
  private:
   template<typename String>
   explicit Fiber(const String& piece)
-    : FiberBase(piece.size(), k8BitFlag) {
+    : FiberBase(piece.size(), k8BitFlag | IS_ORIGINAL, this),
+      ptr_(reinterpret_cast<pointer>(this) +
+           GetControlSize() / sizeof(char_type)) {
     std::copy(piece.begin(), piece.end(), begin());
   }
 
   explicit Fiber(std::size_t n)
-    : FiberBase(n, k8BitFlag) {
+    : FiberBase(n, k8BitFlag | IS_ORIGINAL, this),
+      ptr_(reinterpret_cast<pointer>(this) +
+           GetControlSize() / sizeof(char_type)) {
   }
 
   template<typename Iter>
   Fiber(Iter it, std::size_t n)
-    : FiberBase(n, k8BitFlag) {
+    : FiberBase(n, k8BitFlag | IS_ORIGINAL, this),
+      ptr_(reinterpret_cast<pointer>(this) +
+           GetControlSize() / sizeof(char_type)) {
     std::copy(it, it + n, begin());
   }
 
- public:
+  Fiber(const this_type* fiber, std::size_t from, std::size_t to)
+    : FiberBase((to - from), k8BitFlag, fiber->original()),
+      ptr_(fiber->ptr_ + from) {
+    original()->Retain();
+  }
 
+ public:
   template<typename String>
   static this_type* New(const String& piece) {
     return New(piece.begin(), piece.size());
@@ -310,6 +334,10 @@ class Fiber : public FiberBase {
     return new (mem) Fiber(it, n);
   }
 
+  static this_type* New(const this_type* original, std::size_t from, std::size_t to) {
+    return new (std::malloc(sizeof(this_type))) Fiber(original, from, to);
+  }
+
   operator core::BasicStringPiece<char_type>() const {
     return core::BasicStringPiece<char_type>(data(), size());
   }
@@ -323,13 +351,11 @@ class Fiber : public FiberBase {
   }
 
   pointer data() {
-    return reinterpret_cast<pointer>(this) +
-        GetControlSize() / sizeof(char_type);
+    return ptr_;
   }
 
   const_pointer data() const {
-    return reinterpret_cast<const_pointer>(this) +
-        GetControlSize() / sizeof(char_type);
+    return ptr_;
   }
 
   iterator begin() {
@@ -413,6 +439,8 @@ class Fiber : public FiberBase {
   inline friend bool operator>=(const this_type& x, const this_type& y) {
     return x.compare(y) >= 0;
   }
+
+  char_type* ptr_;
 };
 
 template<typename OutputIter>
@@ -459,6 +487,12 @@ int FiberBase::compare(const this_type& x) const {
     return core::CompareIterators(
         As16Bit()->begin(), As16Bit()->end(),
         x.As8Bit()->begin(), x.As8Bit()->end());
+  }
+}
+
+FiberSlot::~FiberSlot() {
+  if (!IsOriginal() && !IsCons()) {
+    static_cast<const FiberBase*>(this)->original()->Release();
   }
 }
 

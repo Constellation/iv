@@ -98,17 +98,17 @@ inline JSVal StringSplit(Context* ctx,
                          JSString* target,
                          JSString* rhs, uint32_t lim, Error* e) {
   const uint32_t rsize = rhs->size();
-  JSArray* const ary = JSArray::New(ctx);
   if (rsize == 0) {
     if (target->empty()) {
       // "".split("") => []
-      return ary;
+      return JSArray::New(ctx);
     } else {
-      return target->Split(ctx, ary, lim, e);
+      return target->Split(ctx, lim, e);
     }
   } else if (rsize == 1) {
-    return target->Split(ctx, ary, rhs->At(0), lim, e);
+    return target->Split(ctx, rhs->At(0), lim, e);
   }
+  JSArray* const ary = JSArray::New(ctx);
   const uint32_t size = target->size();
   uint32_t p = 0;
   uint32_t q = p;
@@ -122,7 +122,7 @@ inline JSVal StringSplit(Context* ctx,
       if (end == p) {
         ++q;
       } else {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx, symbol::MakeSymbolFromIndex(length),
             DataDescriptor(
                 target->Substring(ctx, p, q),
@@ -136,7 +136,7 @@ inline JSVal StringSplit(Context* ctx,
       }
     }
   }
-  ary->DefineOwnProperty(
+  ary->JSArray::DefineOwnProperty(
       ctx, symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
           target->Substring(ctx, p, size),
@@ -162,10 +162,10 @@ class Replacer : private core::Noncopyable<> {
     using std::get;
     const regexp::MatchResult res = reg_.Match(ctx_, str_, 0, &vec_);
     if (get<2>(res)) {
-      str_->Copy(0, get<0>(res), std::back_inserter(*builder));
+      builder->AppendJSString(*str_, 0, get<0>(res));
       static_cast<T*>(this)->DoReplace(builder, res, e);
     }
-    str_->Copy(get<1>(res), str_->size(), std::back_inserter(*builder));
+    builder->AppendJSString(*str_, get<1>(res), str_->size());
   }
 
   template<typename Builder>
@@ -180,8 +180,7 @@ class Replacer : private core::Noncopyable<> {
       if (!get<2>(res)) {
         break;
       }
-      str_->Copy(not_matched_index, get<0>(res),
-                 std::back_inserter(*builder));
+      builder->AppendJSString(*str_, not_matched_index, get<0>(res));
       const int this_index = get<1>(res);
       not_matched_index = this_index;
       if (previous_index == this_index) {
@@ -194,8 +193,7 @@ class Replacer : private core::Noncopyable<> {
         break;
       }
     } while (true);
-    str_->Copy(not_matched_index, str_->size(),
-               std::back_inserter(*builder));
+    builder->AppendJSString(*str_, not_matched_index, str_->size());
   }
 
  protected:
@@ -259,20 +257,23 @@ class StringReplacer : public Replacer<StringReplacer> {
 
           case '&':  // $& pattern
             state = Replace::kNormal;
-            str_->Copy(get<0>(res), get<1>(res),
-                       std::back_inserter(*builder));
+            builder->AppendJSString(
+                *str_,
+                get<0>(res), get<1>(res));
             break;
 
           case '`':  // $` pattern
             state = Replace::kNormal;
-            str_->Copy(0, get<0>(res),
-                       std::back_inserter(*builder));
+            builder->AppendJSString(
+                *str_,
+                0, get<0>(res));
             break;
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
-            str_->Copy(get<1>(res), str_->size(),
-                       std::back_inserter(*builder));
+            builder->AppendJSString(
+                *str_,
+                get<1>(res), str_->size());
             break;
 
           default:
@@ -292,15 +293,18 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              str_->Copy(pair.first, pair.second, std::back_inserter(*builder));
+              builder->AppendJSString(
+                  *str_,
+                  pair.first, pair.second);
             }
           } else {
             // single digit pattern search
             if (vec_.size() >= single_n) {
               const regexp::PairVector::value_type& pair = vec_[single_n - 1];
               if (pair.first != -1 && pair.second != -1) {  // check undefined
-                str_->Copy(pair.first, pair.second,
-                           std::back_inserter(*builder));
+                builder->AppendJSString(
+                    *str_,
+                    pair.first, pair.second);
               }
             } else {
               builder->Append('$');
@@ -313,7 +317,9 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              str_->Copy(pair.first, pair.second, std::back_inserter(*builder));
+              builder->AppendJSString(
+                  *str_,
+                  pair.first, pair.second);
             }
           } else {
             builder->Append('$');
@@ -330,7 +336,9 @@ class StringReplacer : public Replacer<StringReplacer> {
           if (vec_.size() >= n) {
             const regexp::PairVector::value_type& pair = vec_[n - 1];
             if (pair.first != -1 && pair.second != -1) {  // check undefined
-              str_->Copy(pair.first, pair.second, std::back_inserter(*builder));
+              builder->AppendJSString(
+                  *str_,
+                  pair.first, pair.second);
             }
           } else {
             builder->Append("$0");
@@ -352,7 +360,9 @@ class StringReplacer : public Replacer<StringReplacer> {
       if (vec_.size() >= n) {
         const regexp::PairVector::value_type& pair = vec_[n - 1];
         if (pair.first != -1 && pair.second != -1) {  // check undefined
-          str_->Copy(pair.first, pair.second, std::back_inserter(*builder));
+          builder->AppendJSString(
+              *str_,
+              pair.first, pair.second);
         }
       } else {
         builder->Append('$');
@@ -434,13 +444,14 @@ inline void ReplaceOnce(Builder* builder,
 
         case '`':  // $` pattern
           state = Replace::kNormal;
-          str->Copy(0, loc, std::back_inserter(*builder));
+          builder->AppendJSString(*str, 0, loc);
           break;
 
         case '\'':  // $' pattern
           state = Replace::kNormal;
-          str->Copy(loc + search_str->size(), str->size(),
-                    std::back_inserter(*builder));
+          builder->AppendJSString(
+              *str,
+              loc + search_str->size(), str->size());
           break;
 
         default:
@@ -702,7 +713,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     }
     // found pattern
     JSStringBuilder builder;
-    str->Copy(0, loc, std::back_inserter(builder));
+    builder.AppendJSString(*str, 0, loc);
     if (args_count > 1 && args[1].IsCallable()) {
       JSFunction* const callable = args[1].object()->AsCallable();
       ScopedArguments a(ctx, 3, IV_LV5_ERROR(e));
@@ -727,8 +738,9 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
                             loc, replace_value->Get16Bit());
       }
     }
-    str->Copy(loc + search_str->size(), str->size(),
-              std::back_inserter(builder));
+    builder.AppendJSString(
+        *str,
+        loc + search_str->size(), str->size());
     return builder.Build(ctx);
   }
 }
@@ -869,7 +881,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (get<2>(reg->Match(ctx, str, 0, &cap))) {
       return ary;
     }
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(0),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
@@ -891,7 +903,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (q == end && end == p) {
       ++q;
     } else {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(length),
           DataDescriptor(str->Substring(ctx, p, start_match),
@@ -907,7 +919,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
            last = cap.end(); it != last; ++it) {
         ++i;
         if (it->first != -1 && it->second != -1) {
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(
@@ -915,7 +927,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
                   ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         } else {
-          ary->DefineOwnProperty(
+          ary->JSArray::DefineOwnProperty(
               ctx,
               symbol::MakeSymbolFromIndex(length),
               DataDescriptor(JSUndefined,
@@ -930,7 +942,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       q = p = end;
     }
   }
-  ary->DefineOwnProperty(
+  ary->JSArray::DefineOwnProperty(
       ctx,
       symbol::MakeSymbolFromIndex(length),
       DataDescriptor(
@@ -1253,7 +1265,7 @@ inline JSVal StringToArray(const Arguments& args, Error* e) {
   const uint32_t len = str->size();
   JSArray* ary = JSArray::New(ctx, len);
   for (uint32_t i = 0; i < len; ++i) {
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(i),
           DataDescriptor(JSString::NewSingle(ctx, str->At(i)),

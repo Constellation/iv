@@ -49,7 +49,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   static const size_type kMaxFibers = 5;
   static const size_type npos = static_cast<size_type>(-1);
 
-  typedef std::array<FiberSlot*, kMaxFibers> FiberSlots;
+  typedef std::array<const FiberSlot*, kMaxFibers> FiberSlots;
 
   struct Hasher {
     std::size_t operator()(this_type* str) const {
@@ -69,7 +69,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
  private:
   struct Retainer {
-    FiberSlot* operator()(FiberSlot* slot) {
+    const FiberSlot* operator()(const FiberSlot* slot) {
       slot->Retain();
       return slot;
     }
@@ -128,7 +128,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
    public:
     friend class JSString;
     typedef Cons this_type;
-    typedef FiberSlot* value_type;
+    typedef const FiberSlot* value_type;
     typedef value_type* iterator;
     typedef const value_type* const_iterator;
     typedef value_type* pointer;
@@ -370,10 +370,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return new (PointerFreeGC) this_type(this, count);
   }
 
-  inline JSArray* Split(Context* ctx, JSArray* ary,
+  inline JSArray* Split(Context* ctx,
                         uint32_t limit, Error* e) const;
 
-  inline JSArray* Split(Context* ctx, JSArray* ary,
+  inline JSArray* Split(Context* ctx,
                         uint16_t ch, uint32_t limit, Error* e) const;
 
   inline this_type* Substring(Context* ctx, uint32_t from, uint32_t to) const;
@@ -440,6 +440,22 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return context::EmptyString(ctx);
   }
 
+  template<typename FiberType>
+  static this_type* NewWithFiber(Context* ctx, const FiberType* fiber,
+                                 std::size_t from, std::size_t to) {
+    const std::size_t size = to - from;
+    if (size == 0) {
+      return NewEmptyString(ctx);
+    }
+    if (size == 1) {
+      return NewSingle(ctx, (*fiber)[from]);
+    }
+    if (size == fiber->size()) {
+      return new (PointerFreeGC) this_type(fiber);
+    }
+    return new (PointerFreeGC) this_type(fiber, from, to);
+  }
+
   static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
     if (lhs->empty()) {
       return rhs;
@@ -476,15 +492,15 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   template<typename Iter>
   static void Destroy(Iter it, Iter last) {
-    std::vector<FiberSlot*> slots(it, last);
+    std::vector<const FiberSlot*> slots(it, last);
     while (true) {
-      FiberSlot* current = slots.back();
+      const FiberSlot* current = slots.back();
       assert(!slots.empty());
       slots.pop_back();
       if (current->IsCons() && current->RetainCount() == 1) {
         slots.insert(slots.end(),
-                     static_cast<Cons*>(current)->begin(),
-                     static_cast<Cons*>(current)->end());
+                     static_cast<const Cons*>(current)->begin(),
+                     static_cast<const Cons*>(current)->end());
       }
       current->Release();
       if (slots.empty()) {
@@ -511,8 +527,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   inline const FiberBase* Flatten() const {
     if (fiber_count_ != 1) {
       if (fiber_count_ == 2 && !fibers_[0]->IsCons() && !fibers_[1]->IsCons()) {
-        FastFlatten(static_cast<FiberBase*>(fibers_[1]),
-                    static_cast<FiberBase*>(fibers_[0]));
+        FastFlatten(static_cast<const FiberBase*>(fibers_[1]),
+                    static_cast<const FiberBase*>(fibers_[0]));
       } else {
         SlowFlatten();
       }
@@ -524,7 +540,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   template<typename CharT>
-  void FastFlattenImpl(FiberBase* head, FiberBase* tail) const {
+  void FastFlattenImpl(const FiberBase* head, const FiberBase* tail) const {
     Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
     tail->Copy(head->Copy(fiber->begin()));
     // these are Fibers, not Cons. so simply call Release
@@ -534,7 +550,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     fibers_[0] = fiber;
   }
 
-  void FastFlatten(FiberBase* head, FiberBase* tail) const {
+  void FastFlatten(const FiberBase* head, const FiberBase* tail) const {
     // use fast case flatten
     // Fiber and Fiber
     if (Is8Bit()) {
@@ -568,6 +584,24 @@ class JSString: public radio::HeapObject<radio::STRING> {
       fiber_count_(1),
       fibers_() {
     fibers_[0] = Fiber8::NewWithSize(0);
+  }
+
+  explicit JSString(const FiberBase* fiber)
+    : size_(fiber->size()),
+      is_8bit_(fiber->Is8Bit()),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = fiber;
+    fibers_[0]->Retain();
+  }
+
+  template<typename FiberType>
+  JSString(const FiberType* fiber, std::size_t from, std::size_t to)
+    : size_(to - from),
+      is_8bit_(fiber->Is8Bit()),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = FiberType::New(fiber, from, to);
   }
 
   // single char string

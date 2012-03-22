@@ -250,13 +250,13 @@ class JSRegExp : public JSObject {
       if (previous_index > size || previous_index < 0) {
         break;
       }
-      ary->DefineOwnProperty(
+      ary->JSArray::DefineOwnProperty(
           ctx,
           symbol::MakeSymbolFromIndex(n),
           DataDescriptor(
-              JSString::New(ctx,
-                            fiber->begin() + offset_vector[0],
-                            fiber->begin() + offset_vector[1]),
+              JSString::NewWithFiber(
+                  ctx, fiber,
+                  offset_vector[0], offset_vector[1]),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
       ++n;
@@ -264,12 +264,12 @@ class JSRegExp : public JSObject {
     if (n == 0) {
       return JSNull;
     }
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::index(),
         DataDescriptor(start, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::input(),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
@@ -310,12 +310,12 @@ class JSRegExp : public JSObject {
     }
 
     JSArray* ary = JSArray::New(ctx, num_of_captures);
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::index(),
         DataDescriptor(offset_vector[0], ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
-    ary->DefineOwnProperty(
+    ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::input(),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
@@ -324,17 +324,15 @@ class JSRegExp : public JSObject {
       const int begin = offset_vector[i*2];
       const int end = offset_vector[i*2+1];
       if (begin != -1 && end != -1) {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(i),
             DataDescriptor(
-                JSString::New(ctx,
-                              fiber->begin() + offset_vector[i*2],
-                              fiber->begin() + offset_vector[i*2+1]),
+                JSString::NewWithFiber(ctx, fiber, begin, end),
                 ATTR::W | ATTR::E | ATTR::C),
             true, IV_LV5_ERROR(e));
       } else {
-        ary->DefineOwnProperty(
+        ary->JSArray::DefineOwnProperty(
             ctx,
             symbol::MakeSymbolFromIndex(i),
             DataDescriptor(JSUndefined, ATTR::W | ATTR::E | ATTR::C),
