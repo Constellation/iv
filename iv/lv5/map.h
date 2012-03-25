@@ -15,8 +15,11 @@
 namespace iv {
 namespace lv5 {
 
+class MapBuilder;
+
 class Map : public radio::HeapObject<radio::POINTER> {
  public:
+  friend class MapBuilder;
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
 
   class Transitions {
@@ -124,11 +127,6 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   static Map* New(Context* ctx) {
     return new Map();
-  }
-
-  template<typename Iter>
-  static Map* NewObjectLiteralMap(Context* ctx, Iter it, Iter last) {
-    return new Map(it, last);
   }
 
   std::size_t Get(Context* ctx, Symbol name) {
@@ -299,6 +297,17 @@ class Map : public radio::HeapObject<radio::POINTER> {
       transit_count_(0) {
   }
 
+  explicit Map(TargetTable* table)
+    : previous_(NULL),
+      table_(table),
+      transitions_(true),
+      deleted_(),
+      added_(std::make_pair(symbol::kDummySymbol, core::kNotFound)),
+      calculated_size_(GetSlotsSize()),
+      transit_count_(0) {
+  }
+
+
   // ObjectLiteral Map
   template<typename Iter>
   Map(Iter it, Iter last)
@@ -383,6 +392,41 @@ class Map : public radio::HeapObject<radio::POINTER> {
   std::pair<Symbol, std::size_t> added_;
   std::size_t calculated_size_;
   std::size_t transit_count_;
+};
+
+class MapBuilder {
+ public:
+  MapBuilder(Context* ctx)
+    : table_(new(GC)Map::TargetTable()) { }
+
+  Map* Build() {
+    return new Map(table_);
+  }
+
+  void Add(Symbol symbol, std::size_t index) {
+    assert(Find(symbol) == core::kNotFound);
+    table_->insert(std::make_pair(symbol, index));
+  }
+
+  std::size_t Add(Symbol symbol) {
+    assert(Find(symbol) == core::kNotFound);
+    const std::size_t index = table_->size();
+    table_->insert(std::make_pair(symbol, index));
+    return index;
+  }
+
+  std::size_t Find(Symbol symbol) const {
+    const Map::TargetTable::const_iterator it = table_->find(symbol);
+    if (it != table_->end()) {
+      return it->second;
+    } else {
+      return core::kNotFound;
+    }
+  }
+
+ private:
+  Context* ctx_;
+  Map::TargetTable* table_;
 };
 
 } }  // namespace iv::lv5

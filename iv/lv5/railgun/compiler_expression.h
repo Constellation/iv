@@ -928,7 +928,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   const std::size_t arg_index = CurrentSize() + 2;
   RegisterID obj = Temporary(dst_);
   Emit<OP::LOAD_OBJECT>(obj, 0u);
-  std::unordered_map<Symbol, std::size_t> slots;
+  MapBuilder builder(ctx_);
   const Properties& properties = lit->properties();
   for (Properties::const_iterator it = properties.begin(),
        last = properties.end(); it != last; ++it) {
@@ -938,16 +938,13 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
 
     uint32_t merged = 0;
     uint32_t position = 0;
-    std::unordered_map<Symbol, std::size_t>::const_iterator it2 =
-        slots.find(name);
-    if (it2 == slots.end()) {
-      position = slots.size();
-      slots.insert(std::make_pair(name, position));
-    } else {
+    const std::size_t index = builder.Find(name);
+    if (index != core::kNotFound) {
       merged = 1;  // already defined property
-      position = it2->second;
+      position = index;
+    } else {
+      position = builder.Add(name);
     }
-
     RegisterID item = EmitExpression(std::get<2>(prop));
     if (type == ObjectLiteral::DATA) {
       Emit<OP::STORE_OBJECT_DATA>(
@@ -960,7 +957,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
           Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
     }
   }
-  Map* map = Map::NewObjectLiteralMap(ctx_, slots.begin(), slots.end());
+  Map* map = builder.Build();
   temporary_.push_back(map);
   Instruction inst(0u);
   inst.map = map;
