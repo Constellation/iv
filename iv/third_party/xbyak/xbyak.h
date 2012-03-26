@@ -5,19 +5,18 @@
 	@file xbyak.h
 	@brief Xbyak ; JIT assembler for x86(IA32)/x64 by C++
 	@author herumi
-	@version $Revision: 1.256 $
-	@url http://homepage1.nifty.com/herumi/soft/xbyak.html
-	@date $Date: 2011/11/09 05:06:37 $
+	@url http://homepage1.nifty.com/herumi/soft/xbyak_e.html
 	@note modified new BSD license
-	http://www.opensource.org/licenses/bsd-license.php
+	http://opensource.org/licenses/BSD-3-Clause
 */
 #if not +0
-	#error "use -fno-operator-names"
+	#error "use -fno-operator-names to use 'not', 'xor, 'and' as function names"
 #endif
 
 #include <stdio.h> // for debug print
 #include <assert.h>
 #include <map>
+#include <list>
 #include <string>
 #include <algorithm>
 #ifdef _WIN32
@@ -54,7 +53,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x3050 /* 0xABCD = A.BC(D) */
+	VERSION = 0x3510, /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -105,10 +104,13 @@ enum Error {
 	ERR_BAD_ST_COMBINATION,
 	ERR_OVER_LOCAL_LABEL,
 	ERR_UNDER_LOCAL_LABEL,
+	ERR_CANT_ALLOC,
+	ERR_ONLY_T_NEAR_IS_SUPPORTED_IN_AUTO_GROW,
+	ERR_BAD_PROTECT_MODE,
 	ERR_INTERNAL
 };
 
-static inline const char *ConvertErrorToString(Error err)
+inline const char *ConvertErrorToString(Error err)
 {
 	static const char errTbl[][40] = {
 		"none",
@@ -133,29 +135,40 @@ static inline const char *ConvertErrorToString(Error err)
 		"bad st combination",
 		"over local label",
 		"under local label",
+		"can't alloc",
+		"T_SHORT is not supported in AutoGrow",
+		"bad protect mode",
 		"internal error",
 	};
 	if (err < 0 || err > ERR_INTERNAL) return 0;
 	return errTbl[err];
 }
 
+/*
+	custom allocator
+*/
+struct Allocator {
+	virtual uint8 *alloc(size_t size) { return new uint8[size]; }
+	virtual void free(uint8 *p) { delete[] p; }
+	virtual ~Allocator() {}
+};
+
 namespace inner {
 
 enum { debug = 1 };
 
-static inline uint32 GetPtrDist(const void *p1, const void *p2)
+inline bool IsInDisp8(uint32 x) { return 0xFFFFFF80 <= x || x <= 0x7F; }
+inline bool IsInInt32(uint64 x) { return 0xFFFFFFFF80000000ULL <= x || x <= 0x7FFFFFFFU; }
+
+inline uint32 VerifyInInt32(uint64 x)
 {
-	uint64 diff = static_cast<const char *>(p1) - static_cast<const char *>(p2);
 #ifdef XBYAK64
-	if (0x7FFFFFFFULL < diff && diff < 0xFFFFFFFF80000000ULL) throw ERR_OFFSET_IS_TOO_BIG;
+	if (!IsInInt32(x)) throw ERR_OFFSET_IS_TOO_BIG;
 #endif
-	return static_cast<uint32>(diff);
+	return static_cast<uint32>(x);
 }
 
-static inline bool IsInDisp8(uint32 x) { return 0xFFFFFF80 <= x || x <= 0x7F; }
-static inline bool IsInInt32(uint64 x) { return 0xFFFFFFFF80000000ULL <= x || x <= 0x7FFFFFFFU; }
-
-}
+} // inner
 
 class Operand {
 private:
@@ -390,6 +403,9 @@ struct RegRip {
 };
 #endif
 
+// 2nd parameter for constructor of CodeArray(maxSize, userPtr, alloc)
+void *const AutoGrow = (void*)1;
+
 class CodeArray {
 	enum {
 		ALIGN_PAGE_SIZE = 4096,
@@ -398,37 +414,90 @@ class CodeArray {
 	enum Type {
 		FIXED_BUF, // use buf_(non alignment, non protect)
 		USER_BUF, // use userPtr(non alignment, non protect)
-		ALLOC_BUF // use new(alignment, protect)
+		ALLOC_BUF, // use new(alignment, protect)
+		AUTO_GROW // automatically move and grow memory if necessary
 	};
 	void operator=(const CodeArray&);
-	Type type_;
-	uint8 *const allocPtr_; // for ALLOC_BUF
+	bool isAllocType() const { return type_ == ALLOC_BUF || type_ == AUTO_GROW; }
+	Type getType(size_t maxSize, void *userPtr) const
+	{
+		if (userPtr == AutoGrow) return AUTO_GROW;
+		if (userPtr) return USER_BUF;
+		if (maxSize <= MAX_FIXED_BUF_SIZE) return FIXED_BUF;
+		return ALLOC_BUF;
+	}
+	struct AddrInfo {
+		size_t offset_;
+		size_t val_;
+		int size_;
+		bool isRelative_;
+		AddrInfo(size_t offset, size_t val, int size, bool isRelative)
+			: offset_(offset), val_(val), size_(size), isRelative_(isRelative) {}
+	};
+	typedef std::list<AddrInfo> AddrInfoList;
+	AddrInfoList addrInfoList_;
+	const Type type_;
+	Allocator defaultAllocator_;
+	Allocator *alloc_;
+	uint8 *allocPtr_; // for ALLOC_BUF
 	uint8 buf_[MAX_FIXED_BUF_SIZE]; // for FIXED_BUF
 protected:
-	const size_t maxSize_;
-	uint8 *const top_;
+	size_t maxSize_;
+	uint8 *top_;
 	size_t size_;
+
+	/*
+		allocate new memory and copy old data to the new area
+	*/
+	void growMemory()
+	{
+		const size_t newSize = maxSize_ + ALIGN_PAGE_SIZE;
+		uint8 *newAllocPtr = reinterpret_cast<uint8*>(alloc_->alloc(newSize + ALIGN_PAGE_SIZE));
+		if (newAllocPtr == 0) throw ERR_CANT_ALLOC;
+		uint8 *newTop = getAlignedAddress(newAllocPtr, ALIGN_PAGE_SIZE);
+		for (size_t i = 0; i < size_; i++) newTop[i] = top_[i];
+		alloc_->free(allocPtr_);
+		allocPtr_ = newAllocPtr;
+		top_ = newTop;
+		maxSize_ = newSize;
+	}
+	/*
+		calc jmp address for AutoGrow mode
+	*/
+	void calcJmpAddress()
+	{
+		for (AddrInfoList::const_iterator i = addrInfoList_.begin(), ie = addrInfoList_.end(); i != ie; ++i) {
+//			uint32 disp = inner::GetOffsetDist(i->val_, i->isRelative_ ? 0 : size_t(top_));
+			uint32 disp = inner::VerifyInInt32(i->isRelative_ ? i->val_ : i->val_ - size_t(top_));
+			rewrite(i->offset_, disp, i->size_);
+		}
+		if (!protect(top_, size_, true)) throw ERR_CANT_PROTECT;
+	}
 public:
-	CodeArray(size_t maxSize = MAX_FIXED_BUF_SIZE, void *userPtr = 0)
-		: type_(userPtr ? USER_BUF : maxSize <= MAX_FIXED_BUF_SIZE ? FIXED_BUF : ALLOC_BUF)
-		, allocPtr_(type_ == ALLOC_BUF ? new uint8[maxSize + ALIGN_PAGE_SIZE] : 0)
+	CodeArray(size_t maxSize = MAX_FIXED_BUF_SIZE, void *userPtr = 0, Allocator *allocator = 0)
+		: type_(getType(maxSize, userPtr))
+		, alloc_(allocator ? allocator : &defaultAllocator_)
+		, allocPtr_(isAllocType() ? reinterpret_cast<uint8*>(alloc_->alloc(maxSize + ALIGN_PAGE_SIZE)) : 0)
 		, maxSize_(maxSize)
-		, top_(type_ == ALLOC_BUF ? getAlignedAddress(allocPtr_, ALIGN_PAGE_SIZE) : type_ == USER_BUF ? reinterpret_cast<uint8*>(userPtr) : buf_)
+		, top_(isAllocType() ? getAlignedAddress(allocPtr_, ALIGN_PAGE_SIZE) : type_ == USER_BUF ? reinterpret_cast<uint8*>(userPtr) : buf_)
 		, size_(0)
 	{
+		if (maxSize_ > 0 && top_ == 0) throw ERR_CANT_ALLOC;
 		if (type_ == ALLOC_BUF && !protect(top_, maxSize, true)) {
+			alloc_->free(allocPtr_);
 			throw ERR_CANT_PROTECT;
 		}
 	}
 	virtual ~CodeArray()
 	{
-		if (type_ == ALLOC_BUF) {
+		if (isAllocType()) {
 			protect(top_, maxSize_, false);
-			delete[] allocPtr_;
+			alloc_->free(allocPtr_);
 		}
 	}
 	CodeArray(const CodeArray& rhs)
 		: type_(rhs.type_)
+		, defaultAllocator_(rhs.defaultAllocator_)
 		, allocPtr_(0)
 		, maxSize_(rhs.maxSize_)
 		, top_(buf_)
@@ -439,7 +508,13 @@ public:
 	}
 	void db(int code)
 	{
-		if (size_ >= maxSize_) throw ERR_CODE_IS_TOO_BIG;
+		if (size_ >= maxSize_) {
+			if (type_ == AUTO_GROW) {
+				growMemory();
+			} else {
+				throw ERR_CODE_IS_TOO_BIG;
+			}
+		}
 		top_[size_++] = static_cast<uint8>(code);
 	}
 	void db(const uint8 *code, int codeSize)
@@ -479,17 +554,24 @@ public:
 		}
 	}
 	/*
-		@param data [in] address of jmp data
+		@param offset [in] offset from top
 		@param disp [in] offset from the next of jmp
 		@param size [in] write size(1, 2, 4, 8)
 	*/
-	void rewrite(uint8 *data, uint64 disp, size_t size)
+	void rewrite(size_t offset, uint64 disp, size_t size)
 	{
+		assert(offset < maxSize_);
 		if (size != 1 && size != 2 && size != 4 && size != 8) throw ERR_BAD_PARAMETER;
+		uint8 *const data = top_ + offset;
 		for (size_t i = 0; i < size; i++) {
 			data[i] = static_cast<uint8>(disp >> (i * 8));
 		}
 	}
+	void save(size_t offset, size_t val, int size, bool isRelative)
+	{
+		addrInfoList_.push_back(AddrInfo(offset, val, size, isRelative));
+	}
+	bool isAutoGrow() const { return type_ == AUTO_GROW; }
 	void updateRegField(uint8 regIdx) const
 	{
 		*top_ = (*top_ & B11000111) | ((regIdx << 3) & B00111000);
@@ -623,7 +705,7 @@ public:
 };
 
 struct JmpLabel {
-	uint8 *endOfJmp; /* end address of jmp */
+	size_t endOfJmp; /* offset from top to the end address of jmp */
 	bool isShort;
 };
 
@@ -637,7 +719,7 @@ class Label {
 	int stackPos_;
 	int usedCount_;
 	int localCount_; // for .***
-	typedef std::map<const std::string, const uint8*> DefinedList;
+	typedef std::map<const std::string, size_t> DefinedList;
 	typedef std::multimap<const std::string, const JmpLabel> UndefinedList;
 	DefinedList definedList_;
 	UndefinedList undefinedList_;
@@ -680,7 +762,7 @@ public:
 		localCount_ = stack_[--stackPos_ - 1];
 	}
 	void set(CodeArray *base) { base_ = base; }
-	void define(const char *label, const uint8 *address)
+	void define(const char *label, size_t addr)
 	{
 		std::string newLabel(label);
 		if (newLabel == "@@") {
@@ -690,7 +772,7 @@ public:
 		}
 		label = newLabel.c_str();
 		// add label
-		DefinedList::value_type item(label, address);
+		DefinedList::value_type item(label, addr);
 		std::pair<DefinedList::iterator, bool> ret = definedList_.insert(item);
 		if (!ret.second) throw ERR_LABEL_IS_REDEFINED;
 		// search undefined label
@@ -698,22 +780,27 @@ public:
 			UndefinedList::iterator itr = undefinedList_.find(label);
 			if (itr == undefinedList_.end()) break;
 			const JmpLabel *jmp = &itr->second;
-			uint32 disp = inner::GetPtrDist(address, jmp->endOfJmp);
+			uint32 disp = inner::VerifyInInt32(addr - jmp->endOfJmp);
 			if (jmp->isShort && !inner::IsInDisp8(disp)) throw ERR_LABEL_IS_TOO_FAR;
-			size_t jmpSize = jmp->isShort ? 1 : 4;
-			uint8 *data = jmp->endOfJmp - jmpSize;
-			base_->rewrite(data, disp, jmpSize);
+			int jmpSize = jmp->isShort ? 1 : 4;
+			size_t offset = jmp->endOfJmp - jmpSize;
+			if (base_->isAutoGrow()) {
+				base_->save(offset, disp, jmpSize, true);
+			} else {
+				base_->rewrite(offset, disp, jmpSize);
+			}
 			undefinedList_.erase(itr);
 		}
 	}
-	const uint8 *getAddress(const char *label) const
+	bool getOffset(size_t *offset, const char *label) const
 	{
 		std::string newLabel = convertLabel(label);
 		DefinedList::const_iterator itr = definedList_.find(newLabel);
 		if (itr != definedList_.end()) {
-			return itr->second;
+			*offset = itr->second;
+			return true;
 		} else {
-			return 0;
+			return false;
 		}
 	}
 	void addUndefinedLabel(const char *label, const JmpLabel& jmp)
@@ -734,11 +821,7 @@ public:
 	{
 		char buf[16];
 #ifdef _WIN32
-		#if _MSC_VER < 1400
-			_snprintf
-		#else
-			_snprintf_s
-		#endif
+		_snprintf_s
 #else
 		snprintf
 #endif
@@ -847,52 +930,50 @@ private:
 		addr.updateRegField(static_cast<uint8>(reg.getIdx()));
 		db(addr.getCode(), static_cast<int>(addr.getSize()));
 	}
-	void opJmp(const char *label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
+	void makeJmp(uint32 disp, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
 	{
-		const uint8 *address = label_.getAddress(label);
-		if (address) { /* label exists */
-			opJmp(address, type, shortCode, longCode, longPref);
-		} else {
-			const int shortHeaderSize = 1;
-			const int shortJmpSize = shortHeaderSize + 1; /* +1 means 8-bit displacement */
-			const int longHeaderSize = longPref ? 2 : 1;
-			const int longJmpSize = longHeaderSize + 4; /* +4 means 32-bit displacement */
-			uint8 *top = const_cast<uint8*>(getCurr());
-			bool isShort = (type != T_NEAR);
-			JmpLabel jmp;
-			jmp.endOfJmp = top + (isShort ? shortJmpSize : longJmpSize);
-			jmp.isShort = isShort;
-			if (isShort) {
-				db(shortCode);
-				db(0);
-			} else {
-				if (longPref) db(longPref);
-				db(longCode);
-				dd(0);
-			}
-			label_.addUndefinedLabel(label, jmp);
-		}
-	}
-	void opJmp(const void *addr, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
-	{
-		const int shortHeaderSize = 1;
-		const int shortJmpSize = shortHeaderSize + 1; /* +1 means 8-bit displacement */
+		const int shortJmpSize = 2;
 		const int longHeaderSize = longPref ? 2 : 1;
-		const int longJmpSize = longHeaderSize + 4; /* +4 means 32-bit displacement */
-
-		uint8 *top = const_cast<uint8*>(getCurr());
-		uint32 disp = inner::GetPtrDist(addr, top);
+		const int longJmpSize = longHeaderSize + 4;
 		if (type != T_NEAR && inner::IsInDisp8(disp - shortJmpSize)) {
-			db(shortCode);
-			db(0);
-			rewrite(top + shortHeaderSize, disp - shortJmpSize, 1);
+			db(shortCode); db(disp - shortJmpSize);
 		} else {
 			if (type == T_SHORT) throw ERR_LABEL_IS_TOO_FAR;
 			if (longPref) db(longPref);
-			db(longCode);
-			dd(0);
-			rewrite(top + longHeaderSize, disp - longJmpSize, 4);
+			db(longCode); dd(disp - longJmpSize);
 		}
+	}
+	void opJmp(const char *label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
+	{
+		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory(); /* avoid splitting code of jmp */
+		size_t offset = 0;
+		if (label_.getOffset(&offset, label)) { /* label exists */
+			makeJmp(inner::VerifyInInt32(offset - getSize()), type, shortCode, longCode, longPref);
+		} else {
+			JmpLabel jmp;
+			jmp.isShort = (type != T_NEAR);
+			if (jmp.isShort) {
+				db(shortCode); db(0);
+			} else {
+				if (longPref) db(longPref);
+				db(longCode); dd(0);
+			}
+			jmp.endOfJmp = getSize();
+			label_.addUndefinedLabel(label, jmp);
+		}
+	}
+	void opJmpAbs(const void *addr, LabelType type, uint8 shortCode, uint8 longCode)
+	{
+		if (isAutoGrow()) {
+			if (type != T_NEAR) throw ERR_ONLY_T_NEAR_IS_SUPPORTED_IN_AUTO_GROW;
+			if (size_ + 16 >= maxSize_) growMemory();
+			db(longCode);
+			save(size_, size_t(addr) - (getSize() + 4), 4, false);
+			dd(0);
+		} else {
+			makeJmp(inner::VerifyInInt32(reinterpret_cast<const uint8*>(addr) - getCurr()), type, shortCode, longCode, 0);
+		}
+
 	}
 	/* preCode is for SSSE3/SSE4 */
 	void opGen(const Operand& reg, const Operand& op, int code, int pref, bool isValid(const Operand&, const Operand&), int imm8 = NONE, int preCode = NONE)
@@ -1093,7 +1174,7 @@ public:
 
 	void L(const char *label)
 	{
-		label_.define(label, getCurr());
+		label_.define(label, getSize());
 	}
 	void inLocalLabel() { label_.enterLocal(); }
 	void outLocalLabel() { label_.leaveLocal(); }
@@ -1103,7 +1184,7 @@ public:
 	}
 	void jmp(const void *addr, LabelType type = T_AUTO)
 	{
-		opJmp(addr, type, B11101011, B11101001, 0);
+		opJmpAbs(addr, type, B11101011, B11101001);
 	}
 	void jmp(const Operand& op)
 	{
@@ -1282,7 +1363,7 @@ public:
 	}
 	void call(const void *addr)
 	{
-		opJmp(addr, T_NEAR, 0, B11101000, 0);
+		opJmpAbs(addr, T_NEAR, 0, B11101000);
 	}
 	// special case
 	void movd(const Address& addr, const Mmx& mmx)
@@ -1452,8 +1533,8 @@ public:
 	}
 	enum { NONE = 256 };
 public:
-	CodeGenerator(size_t maxSize = DEFAULT_MAX_CODE_SIZE, void *userPtr = 0)
-		: CodeArray(maxSize, userPtr)
+	CodeGenerator(size_t maxSize = DEFAULT_MAX_CODE_SIZE, void *userPtr = 0, Allocator *allocator = 0)
+		: CodeArray(maxSize, userPtr, allocator)
 		, mm0(0), mm1(1), mm2(2), mm3(3), mm4(4), mm5(5), mm6(6), mm7(7)
 		, xmm0(0), xmm1(1), xmm2(2), xmm3(3), xmm4(4), xmm5(5), xmm6(6), xmm7(7)
 		, ymm0(0), ymm1(1), ymm2(2), ymm3(3), ymm4(4), ymm5(5), ymm6(6), ymm7(7)
@@ -1480,11 +1561,13 @@ public:
 		label_.set(this);
 	}
 	bool hasUndefinedLabel() const { return label_.hasUndefinedLabel(); }
-	const uint8 *getCode() const
+	/*
+		call ready() to complete generating code on AutoGrow
+	*/
+	void ready()
 	{
-		assert(!hasUndefinedLabel());
-//		if (hasUndefinedLabel()) throw ERR_LABEL_IS_NOT_FOUND;
-		return top_;
+		if (hasUndefinedLabel()) throw ERR_LABEL_IS_NOT_FOUND;
+		calcJmpAddress();
 	}
 #ifdef XBYAK_TEST
 	void dump(bool doClear = true)
@@ -1498,7 +1581,7 @@ public:
 #include "xbyak_mnemonic.h"
 	void align(int x = 16)
 	{
-		if (x != 4 && x != 8 && x != 16 && x != 32) throw ERR_BAD_ALIGN;
+		if (x < 2 || (x & (x - 1))) throw ERR_BAD_ALIGN;
 		while (size_t(getCurr()) % x) {
 			nop();
 		}
