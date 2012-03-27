@@ -133,33 +133,26 @@ class JSONParser : private core::Noncopyable<> {
 
   JSVal ParseJSONArray(Error* e) {
     assert(token_ == Token::TK_LBRACK);
-    JSArray* const ary = JSArray::New(ctx_);
-    uint32_t current = 0;
+    JSVector* const vec = JSVector::New(ctx_);
+    vec->reserve(8);
     Next();
     bool trailing_comma = false;
     while (token_ != Token::TK_RBRACK) {
       const JSVal target = ParseJSONValue(CHECK);
-      ary->JSArray::DefineOwnProperty(
-          ctx_, symbol::MakeSymbolFromIndex(current),
-          DataDescriptor(target, ATTR::W | ATTR::E | ATTR::C),
-          false, CHECK);
+      vec->push_back(target);
       if (token_ != Token::TK_RBRACK) {
         EXPECT(Token::TK_COMMA);
         trailing_comma = true;
       } else {
         trailing_comma = false;
       }
-      ++current;
     }
     assert(token_ == Token::TK_RBRACK);
     if (trailing_comma) {
       RAISE();
     }
     Next();
-    ary->JSArray::Put(
-        ctx_, symbol::length(),
-        JSVal::UInt32(current), false, CHECK);
-    return ary;
+    return vec->ToJSArray();
   }
 
   JSVal ParseJSONString() {
