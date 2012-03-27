@@ -1033,7 +1033,8 @@ struct ToUpperCase {
 };
 
 template<typename Iter, typename Converter>
-inline JSString* ConvertCaseLocale(Context* ctx, Iter it, Iter last, Converter converter) {
+inline JSString* ConvertCaseLocale(Context* ctx,
+                                   Iter it, Iter last, Converter converter) {
   std::vector<uint16_t> builder;
   builder.reserve(std::distance(it, last));
   int prev = core::character::code::DEFAULT;
@@ -1263,16 +1264,11 @@ inline JSVal StringToArray(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t len = str->size();
-  JSArray* ary = JSArray::New(ctx, len);
+  JSVector* vec = JSVector::New(ctx, len);
   for (uint32_t i = 0; i < len; ++i) {
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(i),
-          DataDescriptor(JSString::NewSingle(ctx, str->At(i)),
-                         ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
+    (*vec)[i] = JSString::NewSingle(ctx, str->At(i));
   }
-  return ary;
+  return vec->ToJSArray();
 }
 
 // section 15.5.4.26 String.prototype.reverse()

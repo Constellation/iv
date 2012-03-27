@@ -15,6 +15,7 @@
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/match_result.h>
 #include <iv/lv5/bind.h>
+#include <iv/lv5/jsvector.h>
 namespace iv {
 namespace lv5 {
 
@@ -250,10 +251,10 @@ class JSRegExp : public JSObject {
                    const FiberType* fiber, Error* e) {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures) * 2);
-    JSArray* ary = JSArray::New(ctx);
+    JSVector* vec = JSVector::New(ctx);
+    vec->reserve(8);
     SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
     int previous_index = 0;
-    int n = 0;
     const int start = previous_index;
     const int size = fiber->size();
     do {
@@ -271,20 +272,14 @@ class JSRegExp : public JSObject {
       if (previous_index > size || previous_index < 0) {
         break;
       }
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(n),
-          DataDescriptor(
-              JSString::NewWithFiber(
-                  ctx, fiber,
-                  offset_vector[0], offset_vector[1]),
-              ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR(e));
-      ++n;
+      vec->push_back(JSString::NewWithFiber(ctx, fiber, offset_vector[0], offset_vector[1]));
     } while (true);
-    if (n == 0) {
+    if (vec->empty()) {
       return JSNull;
     }
+
+    // set index and input
+    JSArray* ary = vec->ToJSArray();
     ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::index(),
@@ -330,7 +325,17 @@ class JSRegExp : public JSObject {
       SetLastIndex(ctx, previous_index, IV_LV5_ERROR(e));
     }
 
-    JSArray* ary = JSArray::New(ctx, num_of_captures);
+    JSVector* vec = JSVector::New(ctx, num_of_captures);
+    for (int i = 0; i < num_of_captures; ++i) {
+      const int begin = offset_vector[i*2];
+      const int end = offset_vector[i*2+1];
+      if (begin != -1 && end != -1) {
+        (*vec)[i] = JSString::NewWithFiber(ctx, fiber, begin, end);
+      }
+    }
+
+    // set index and input
+    JSArray* ary = vec->ToJSArray();
     ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::index(),
@@ -341,25 +346,6 @@ class JSRegExp : public JSObject {
         symbol::input(),
         DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
-    for (int i = 0; i < num_of_captures; ++i) {
-      const int begin = offset_vector[i*2];
-      const int end = offset_vector[i*2+1];
-      if (begin != -1 && end != -1) {
-        ary->JSArray::DefineOwnProperty(
-            ctx,
-            symbol::MakeSymbolFromIndex(i),
-            DataDescriptor(
-                JSString::NewWithFiber(ctx, fiber, begin, end),
-                ATTR::W | ATTR::E | ATTR::C),
-            true, IV_LV5_ERROR(e));
-      } else {
-        ary->JSArray::DefineOwnProperty(
-            ctx,
-            symbol::MakeSymbolFromIndex(i),
-            DataDescriptor(JSUndefined, ATTR::W | ATTR::E | ATTR::C),
-            true, IV_LV5_ERROR(e));
-      }
-    }
     return ary;
   }
 
