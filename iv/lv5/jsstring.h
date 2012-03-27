@@ -225,14 +225,10 @@ JSArray* JSString::Split(Context* ctx,
 JSString* JSString::Substring(Context* ctx, uint32_t from, uint32_t to) const {
   if (Is8Bit()) {
     const Fiber8* fiber = Get8Bit();
-    return New(ctx, fiber->begin() + from, fiber->begin() + to, true);
+    return NewWithFiber(ctx, fiber, from, to);
   } else {
     const Fiber16* fiber = Get16Bit();
-    return New(ctx,
-               fiber->begin() + from,
-               fiber->begin() + to,
-               core::character::IsASCII(fiber->begin() + from,
-                                        fiber->begin() + to));
+    return NewWithFiber(ctx, fiber, from, to);
   }
 }
 
