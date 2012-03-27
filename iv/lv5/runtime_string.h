@@ -27,20 +27,7 @@ namespace runtime {
 namespace detail {
 
 static inline JSVal StringToStringValueOfImpl(const Arguments& args,
-                                              const char* msg,
-                                              Error* e) {
-  const JSVal& obj = args.this_binding();
-  if (!obj.IsString()) {
-    if (obj.IsObject() && obj.object()->IsClass<Class::String>()) {
-      return static_cast<JSStringObject*>(obj.object())->value();
-    } else {
-      e->Report(Error::Type, msg);
-      return JSEmpty;
-    }
-  } else {
-    return obj.string();
-  }
-}
+                                              const char* msg, Error* e);
 
 static inline bool IsTrimmed(uint16_t c) {
   return core::character::IsWhiteSpace(c) ||
@@ -108,11 +95,11 @@ inline JSVal StringSplit(Context* ctx,
   } else if (rsize == 1) {
     return target->Split(ctx, rhs->At(0), lim, e);
   }
-  JSArray* const ary = JSArray::New(ctx);
   const uint32_t size = target->size();
   uint32_t p = 0;
   uint32_t q = p;
-  uint32_t length = 0;
+  JSVector* vec = JSVector::New(ctx);
+  vec->reserve(16);
   while (q != size) {
     const int64_t rs = detail::SplitMatch(target, q, rhs);
     if (rs == -1) {
@@ -122,27 +109,16 @@ inline JSVal StringSplit(Context* ctx,
       if (end == p) {
         ++q;
       } else {
-        ary->JSArray::DefineOwnProperty(
-            ctx, symbol::MakeSymbolFromIndex(length),
-            DataDescriptor(
-                target->Substring(ctx, p, q),
-                ATTR::W | ATTR::E | ATTR::C),
-            false, e);
-        ++length;
-        if (length == lim) {
-          return ary;
+        vec->push_back(target->Substring(ctx, p, q));
+        if (vec->size() == lim) {
+          return vec->ToJSArray();
         }
         q = p = end;
       }
     }
   }
-  ary->JSArray::DefineOwnProperty(
-      ctx, symbol::MakeSymbolFromIndex(length),
-      DataDescriptor(
-          target->Substring(ctx, p, size),
-          ATTR::W | ATTR::E | ATTR::C),
-      false, e);
-  return ary;
+  vec->push_back(target->Substring(ctx, p, size));
+  return vec->ToJSArray();
 }
 
 struct Replace {
@@ -502,6 +478,21 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
     builder.Append(ch);
   }
   return builder.Build(args.ctx());
+}
+
+static inline JSVal detail::StringToStringValueOfImpl(
+    const Arguments& args, const char* msg, Error* e) {
+  const JSVal& obj = args.this_binding();
+  if (!obj.IsString()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::String>()) {
+      return static_cast<JSStringObject*>(obj.object())->value();
+    } else {
+      e->Report(Error::Type, msg);
+      return JSEmpty;
+    }
+  } else {
+    return obj.string();
+  }
 }
 
 // section 15.5.4.2 String.prototype.toString()
@@ -874,13 +865,13 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 
   assert(target.IsObject());
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
-  JSArray* const ary = JSArray::New(ctx);
   regexp::PairVector cap;
   const uint32_t size = str->size();
   if (size == 0) {
     if (get<2>(reg->Match(ctx, str, 0, &cap))) {
-      return ary;
+      return JSArray::New(ctx);
     }
+    JSArray* const ary = JSArray::New(ctx);
     ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::MakeSymbolFromIndex(0),
@@ -892,7 +883,8 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   uint32_t p = 0;
   uint32_t q = p;
   uint32_t start_match = 0;
-  uint32_t length = 0;
+  JSVector* vec = JSVector::New(ctx);
+  vec->reserve(16);
   while (q != size) {
     const regexp::MatchResult rs = reg->Match(ctx, str, q, &cap);
     if (!get<2>(rs) ||
@@ -903,53 +895,28 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
     if (q == end && end == p) {
       ++q;
     } else {
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(length),
-          DataDescriptor(str->Substring(ctx, p, start_match),
-                         ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
-      ++length;
-      if (length == lim) {
-        return ary;
+      vec->push_back(str->Substring(ctx, p, start_match));
+      if (vec->size() == lim) {
+        return vec->ToJSArray();
       }
-
       uint32_t i = 0;
       for (regexp::PairVector::const_iterator it = cap.begin(),
            last = cap.end(); it != last; ++it) {
         ++i;
         if (it->first != -1 && it->second != -1) {
-          ary->JSArray::DefineOwnProperty(
-              ctx,
-              symbol::MakeSymbolFromIndex(length),
-              DataDescriptor(
-                  str->Substring(ctx, it->first, it->second),
-                  ATTR::W | ATTR::E | ATTR::C),
-              false, IV_LV5_ERROR(e));
+          vec->push_back(str->Substring(ctx, it->first, it->second));
         } else {
-          ary->JSArray::DefineOwnProperty(
-              ctx,
-              symbol::MakeSymbolFromIndex(length),
-              DataDescriptor(JSUndefined,
-                             ATTR::W | ATTR::E | ATTR::C),
-              false, IV_LV5_ERROR(e));
+          vec->push_back(JSUndefined);
         }
-        ++length;
-        if (length == lim) {
-          return ary;
+        if (vec->size() == lim) {
+          return vec->ToJSArray();
         }
       }
       q = p = end;
     }
   }
-  ary->JSArray::DefineOwnProperty(
-      ctx,
-      symbol::MakeSymbolFromIndex(length),
-      DataDescriptor(
-          str->Substring(ctx, p, size),
-          ATTR::W | ATTR::E | ATTR::C),
-      false, IV_LV5_ERROR(e));
-  return ary;
+  vec->push_back(str->Substring(ctx, p, size));
+  return vec->ToJSArray();
 }
 
 // section 15.5.4.15 String.prototype.substring(start, end)
