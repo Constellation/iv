@@ -124,23 +124,19 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
     const JSVal& first = args[0];
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      JSArray* const ary = JSArray::New(args.ctx());
       Context* const ctx = args.ctx();
-      uint32_t n = 0;
       PropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::INCLUDE_NOT_ENUMERABLE);
+      JSVector* const vec = JSVector::New(args.ctx(), collector.names().size());
+      uint32_t index = 0;
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();
-           it != last; ++it, ++n) {
-        ary->JSArray::DefineOwnProperty(
-            args.ctx(), symbol::MakeSymbolFromIndex(n),
-            DataDescriptor(JSString::New(ctx, *it),
-                           ATTR::W | ATTR::E | ATTR::C),
-            false, IV_LV5_ERROR(e));
+           it != last; ++it, ++index) {
+        (*vec)[index] = JSString::New(ctx, *it);
       }
-      return ary;
+      return vec->ToJSArray();
     }
   }
   e->Report(Error::Type,
@@ -417,22 +413,15 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
       PropertyNamesCollector collector;
       obj->GetOwnPropertyNames(ctx, &collector,
                                JSObject::EXCLUDE_NOT_ENUMERABLE);
-      JSArray* const ary =
-          JSArray::New(args.ctx(),
-                       static_cast<uint32_t>(collector.names().size()));
+      JSVector* const vec = JSVector::New(ctx, collector.names().size());
       uint32_t index = 0;
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it, ++index) {
-        ary->JSArray::DefineOwnProperty(
-            ctx, symbol::MakeSymbolFromIndex(index),
-            DataDescriptor(
-                JSString::New(args.ctx(), *it),
-                ATTR::W | ATTR::E | ATTR::C),
-            false, IV_LV5_ERROR(e));
+        (*vec)[index] = JSString::New(args.ctx(), *it);
       }
-      return ary;
+      return vec->ToJSArray();
     }
   }
   e->Report(Error::Type, "Object.keys requires Object argument");

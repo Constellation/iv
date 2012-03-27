@@ -63,16 +63,16 @@ const uint32_t JSArrayConstants<T>::kMaxVectorSize = 10000;
 }  // namespace iv::lv5::jsarray_detail
 
 class Context;
+class JSVector;
 
 class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  public:
   friend class railgun::VM;
+  friend class JSVector;
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
   typedef JSVals JSValVector;
 
-  uint32_t GetLength() const {
-    return length_.value();
-  }
+  uint32_t GetLength() const { return length_.value(); }
 
   static JSArray* New(Context* ctx) {
     JSArray* const ary = new JSArray(ctx, 0);

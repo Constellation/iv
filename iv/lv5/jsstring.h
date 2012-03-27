@@ -2,28 +2,23 @@
 #define IV_LV5_JSSTRING_H_
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/jsstring_builder.h>
 namespace iv {
 namespace lv5 {
 namespace detail {
 
-template<typename FiberType>
-inline uint32_t SplitFiber(Context* ctx,
-                           JSArray* ary,
-                           const FiberType* fiber,
-                           uint32_t index, uint32_t limit, Error* e) {
-  ary->Reserve(fiber->size());
+template<typename FiberType, typename InputIterator>
+inline InputIterator SplitFiber(Context* ctx,
+                                InputIterator iit,
+                                InputIterator ilast,
+                                const FiberType* fiber) {
   for (typename FiberType::const_iterator it = fiber->begin(),
-       last = fiber->end(); it != last && index != limit; ++it, ++index) {
-    ary->JSArray::DefineOwnProperty(
-        ctx, symbol::MakeSymbolFromIndex(index),
-        DataDescriptor(
-            JSString::NewSingle(ctx, *it),
-            ATTR::W | ATTR::E | ATTR::C),
-        false, e);
+       last = fiber->end(); it != last && iit != ilast; ++it, ++iit) {
+    *iit = JSString::NewSingle(ctx, *it);
   }
-  return index;
+  return iit;
 }
 
 template<typename FiberType>
@@ -98,25 +93,21 @@ inline JSString::JSString(JSVal* src, uint32_t count)
 // "STRING".split("") => ['S', 'T', 'R', 'I', 'N', 'G']
 JSArray* JSString::Split(Context* ctx,
                          uint32_t limit, Error* e) const {
-  JSArray* ary = JSArray::New(ctx);
+  JSVector* vec = JSVector::New(ctx, std::min<uint32_t>(limit, size()));
+  JSVector::iterator it = vec->begin();
+  const JSVector::iterator last = vec->end();
   if (fiber_count() == 1 && !fibers_[0]->IsCons()) {
     const FiberBase* base = static_cast<const FiberBase*>(fibers_[0]);
     if (base->Is8Bit()) {
-      detail::SplitFiber(
-          ctx,
-          ary,
-          base->As8Bit(), 0, limit, e);
+      detail::SplitFiber(ctx, it, last, base->As8Bit());
     } else {
-      detail::SplitFiber(
-          ctx,
-          ary,
-          base->As16Bit(), 0, limit, e);
+      detail::SplitFiber(ctx, it, last, base->As16Bit());
     }
-    return ary;
+    assert(it == last);
+    return vec->ToJSArray();
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),
                                         fibers_.begin() + fiber_count());
-    uint32_t index = 0;
     while (true) {
       const FiberSlot* current = slots.back();
       assert(!slots.empty());
@@ -128,22 +119,16 @@ JSArray* JSString::Split(Context* ctx,
       } else {
         const FiberBase* base = static_cast<const FiberBase*>(current);
         if (base->Is8Bit()) {
-          index = detail::SplitFiber(ctx,
-                                     ary,
-                                     base->As8Bit(),
-                                     index, limit, e);
+          it = detail::SplitFiber(ctx, it, last, base->As8Bit());
         } else {
-          index = detail::SplitFiber(ctx,
-                                     ary,
-                                     base->As16Bit(),
-                                     index, limit, e);
+          it = detail::SplitFiber(ctx, it, last, base->As16Bit());
         }
-        if (index == limit || slots.empty()) {
+        if (it == last) {
           break;
         }
       }
     }
-    return ary;
+    return vec->ToJSArray();
   }
 }
 
@@ -225,14 +210,10 @@ JSArray* JSString::Split(Context* ctx,
 JSString* JSString::Substring(Context* ctx, uint32_t from, uint32_t to) const {
   if (Is8Bit()) {
     const Fiber8* fiber = Get8Bit();
-    return New(ctx, fiber->begin() + from, fiber->begin() + to, true);
+    return NewWithFiber(ctx, fiber, from, to);
   } else {
     const Fiber16* fiber = Get16Bit();
-    return New(ctx,
-               fiber->begin() + from,
-               fiber->begin() + to,
-               core::character::IsASCII(fiber->begin() + from,
-                                        fiber->begin() + to));
+    return NewWithFiber(ctx, fiber, from, to);
   }
 }
 

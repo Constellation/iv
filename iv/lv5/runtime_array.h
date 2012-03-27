@@ -8,6 +8,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/runtime_object.h>
@@ -65,17 +66,9 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
       return ary;
     }
   } else {
-    JSArray* const ary =JSArray::New(ctx, args.size());
-    uint32_t index = 0;
-    for (Arguments::const_iterator it = args.begin(),
-         last = args.end(); it != last; ++it, ++index) {
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(index),
-          DataDescriptor(*it, ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
-    }
-    return ary;
+    JSVector* vec = JSVector::New(ctx);
+    vec->assign(args.begin(), args.end());
+    return vec->ToJSArray();
   }
 }
 
@@ -110,18 +103,29 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSObject* target = arg1.ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, target, IV_LV5_ERROR(e));
-  JSArray* ary = JSArray::New(ctx);
-  for (uint32_t k = 0; k < len; ++k) {
-    const Symbol sym = symbol::MakeSymbolFromIndex(k);
-    if (target->HasProperty(ctx, sym)) {
-      const JSVal value = target->Get(ctx, sym, IV_LV5_ERROR(e));
-      ary->JSArray::DefineOwnProperty(
-          ctx, sym,
-          DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
+  if (len > JSArray::kMaxVectorSize) {
+    JSArray* ary = JSArray::New(ctx, len);
+    for (uint32_t k = 0; k < len; ++k) {
+      const Symbol sym = symbol::MakeSymbolFromIndex(k);
+      if (target->HasProperty(ctx, sym)) {
+        const JSVal value = target->Get(ctx, sym, IV_LV5_ERROR(e));
+        ary->JSArray::DefineOwnProperty(
+            ctx, sym,
+            DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
+            false, IV_LV5_ERROR(e));
+      }
     }
+    return ary;
+  } else {
+    JSVector* vec = JSVector::New(ctx, len, JSEmpty);
+    for (uint32_t k = 0; k < len; ++k) {
+      const Symbol sym = symbol::MakeSymbolFromIndex(k);
+      if (target->HasProperty(ctx, sym)) {
+        (*vec)[k] = target->Get(ctx, sym, IV_LV5_ERROR(e));
+      }
+    }
+    return vec->ToJSArray();
   }
-  return ary;
 }
 
 // ES.next Array.of()
@@ -451,7 +455,6 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.slice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  JSArray* const ary = JSArray::New(ctx);
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   uint32_t k;
   if (!args.empty()) {
@@ -481,18 +484,32 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   } else {
     final = len;
   }
-  for (uint32_t n = 0; k < final; ++k, ++n) {
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
-      const JSVal kval =
-          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(n),
-          DataDescriptor(kval, ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
+
+  const uint32_t result_length = final > k ? final - k : 0;
+  if (result_length > JSArray::kMaxVectorSize) {
+    JSArray* const ary = JSArray::New(ctx, result_length);
+    for (uint32_t n = 0; k < final; ++k, ++n) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal kval =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        ary->JSArray::DefineOwnProperty(
+            ctx,
+            symbol::MakeSymbolFromIndex(n),
+            DataDescriptor(kval, ATTR::W | ATTR::E | ATTR::C),
+            false, IV_LV5_ERROR(e));
+      }
     }
+    return ary;
+  } else {
+    JSVector* const vec = JSVector::New(ctx, result_length, JSEmpty);
+    for (uint32_t n = 0; k < final; ++k, ++n) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        (*vec)[n] =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      }
+    }
+    return vec->ToJSArray();
   }
-  return ary;
 }
 
 // section 15.4.4.11 Array.prototype.sort(comparefn)
@@ -797,7 +814,6 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  JSArray* const ary = JSArray::New(ctx);
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   const uint32_t args_size = args.size();
   uint32_t actual_start;
@@ -824,17 +840,32 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   } else {
     actual_delete_count = std::min<uint32_t>(0, len - actual_start);
   }
-  for (uint32_t k = 0; k < actual_delete_count; ++k) {
-    const uint32_t from = actual_start + k;
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
-      const JSVal from_val =
-          obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(k),
-          DataDescriptor(from_val, ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
+
+  JSArray* ary = NULL;
+  if (actual_delete_count > JSArray::kMaxVectorSize) {
+    ary = JSArray::New(ctx, actual_delete_count);
+    for (uint32_t k = 0; k < actual_delete_count; ++k) {
+      const uint32_t from = actual_start + k;
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+        const JSVal from_val =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+        ary->JSArray::DefineOwnProperty(
+            ctx,
+            symbol::MakeSymbolFromIndex(k),
+            DataDescriptor(from_val, ATTR::W | ATTR::E | ATTR::C),
+            false, IV_LV5_ERROR(e));
+      }
     }
+  } else {
+    JSVector* const vec = JSVector::New(ctx, actual_delete_count, JSEmpty);
+    for (uint32_t k = 0; k < actual_delete_count; ++k) {
+      const uint32_t from = actual_start + k;
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(from))) {
+        (*vec)[k] =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(from), IV_LV5_ERROR(e));
+      }
+    }
+    ary = vec->ToJSArray();
   }
 
   const uint32_t item_count = (args_size > 2)? args_size - 2 : 0;
@@ -1157,27 +1188,42 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
     return JSUndefined;
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
-
-  JSArray* const ary = JSArray::New(ctx, len);
-
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  for (uint32_t k = 0; k < len; ++k) {
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
-      ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
-      arg_list[0] = obj->Get(ctx,
-                             symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      arg_list[1] = k;
-      arg_list[2] = obj;
-      const JSVal mapped_value =
-          callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      ary->JSArray::DefineOwnProperty(
-          ctx,
-          symbol::MakeSymbolFromIndex(k),
-          DataDescriptor(mapped_value, ATTR::W | ATTR::E | ATTR::C),
-          false, IV_LV5_ERROR(e));
+
+  if (len > JSArray::kMaxVectorSize) {
+    JSArray* const ary = JSArray::New(ctx, len);
+    for (uint32_t k = 0; k < len; ++k) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
+        arg_list[0] = obj->Get(ctx,
+                               symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        arg_list[1] = k;
+        arg_list[2] = obj;
+        const JSVal mapped_value =
+            callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
+        ary->JSArray::DefineOwnProperty(
+            ctx,
+            symbol::MakeSymbolFromIndex(k),
+            DataDescriptor(mapped_value, ATTR::W | ATTR::E | ATTR::C),
+            false, IV_LV5_ERROR(e));
+      }
     }
+    return ary;
+  } else {
+    JSVector* const vec = JSVector::New(ctx, len, JSEmpty);
+    for (uint32_t k = 0; k < len; ++k) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
+        arg_list[0] = obj->Get(ctx,
+                               symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        arg_list[1] = k;
+        arg_list[2] = obj;
+        (*vec)[k] =
+            callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
+      }
+    }
+    return vec->ToJSArray();
   }
-  return ary;
 }
 
 // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
@@ -1196,10 +1242,9 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   }
   JSFunction* const callbackfn = args[0].object()->AsCallable();
 
-  JSArray* const ary = JSArray::New(ctx);
-
+  JSVector* const vec = JSVector::New(ctx);
   const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
-  for (uint32_t k = 0, to = 0; k < len; ++k) {
+  for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
       const JSVal k_value =
@@ -1209,18 +1254,12 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
       arg_list[2] = obj;
       const JSVal selected =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = selected.ToBoolean();
-      if (result) {
-        ary->JSArray::DefineOwnProperty(
-            ctx,
-            symbol::MakeSymbolFromIndex(to),
-            DataDescriptor(k_value, ATTR::W | ATTR::E | ATTR::C),
-            false, IV_LV5_ERROR(e));
-        ++to;
+      if (selected.ToBoolean()) {
+        vec->push_back(k_value);
       }
     }
   }
-  return ary;
+  return vec->ToJSArray();
 }
 
 // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
