@@ -117,24 +117,15 @@ class JSRegExp : public JSObject {
     }
   }
 
-  regexp::MatchResult Match(Context* ctx,
-                            JSString* str,
-                            int index,
-                            regexp::PairVector* result) const {
-    result->clear();
-    const int num_of_captures = impl_->number_of_captures();
-    std::vector<int> offset_vector(num_of_captures * 2);
+  bool Match(Context* ctx,
+             JSString* str,
+             int index,
+             std::vector<int>* vec) const {
+    assert(impl_->number_of_captures() * 2 <= vec->size());
     const int res = (str->Is8Bit()) ?
-        impl_->Execute(ctx, *str->Get8Bit(), &index, offset_vector.data()) :
-        impl_->Execute(ctx, *str->Get16Bit(), &index, offset_vector.data());
-    if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
-      return std::make_tuple(0, 0, false);
-    }
-    for (int i = 1, len = num_of_captures; i < len; ++i) {
-      result->push_back(
-          std::make_pair(offset_vector[i*2], offset_vector[i*2+1]));
-    }
-    return std::make_tuple(offset_vector[0], offset_vector[1], true);
+        impl_->Execute(ctx, *str->Get8Bit(), &index, vec->data()) :
+        impl_->Execute(ctx, *str->Get16Bit(), &index, vec->data());
+    return res == aero::AERO_SUCCESS;
   }
 
   static const Class* GetClass() {
@@ -144,6 +135,8 @@ class JSRegExp : public JSObject {
     };
     return &cls;
   }
+
+  uint32_t num_of_captures() const { return impl_->number_of_captures(); }
 
  private:
   JSRegExp(Context* ctx, JSString* pattern, JSString* flags)

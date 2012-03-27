@@ -136,12 +136,13 @@ class Replacer : private core::Noncopyable<> {
   template<typename Builder>
   void Replace(Builder* builder, Error* e) {
     using std::get;
-    const regexp::MatchResult res = reg_.Match(ctx_, str_, 0, &vec_);
-    if (get<2>(res)) {
-      builder->AppendJSString(*str_, 0, get<0>(res));
-      static_cast<T*>(this)->DoReplace(builder, res, e);
+    if (reg_.Match(ctx_, str_, 0, &vec_)) {
+      builder->AppendJSString(*str_, 0, vec_[0]);
+      static_cast<T*>(this)->DoReplace(builder, e);
+      builder->AppendJSString(*str_, vec_[1], str_->size());
+    } else {
+      builder->AppendJSString(*str_, 0, str_->size());
     }
-    builder->AppendJSString(*str_, get<1>(res), str_->size());
   }
 
   template<typename Builder>
@@ -151,20 +152,18 @@ class Replacer : private core::Noncopyable<> {
     int not_matched_index = previous_index;
     const int size = str_->size();
     do {
-      const regexp::MatchResult res =
-          reg_.Match(ctx_, str_, previous_index, &vec_);
-      if (!get<2>(res)) {
+      if (!reg_.Match(ctx_, str_, previous_index, &vec_)) {
         break;
       }
-      builder->AppendJSString(*str_, not_matched_index, get<0>(res));
-      const int this_index = get<1>(res);
+      builder->AppendJSString(*str_, not_matched_index, vec_[0]);
+      const int this_index = vec_[1];
       not_matched_index = this_index;
       if (previous_index == this_index) {
         ++previous_index;
       } else {
         previous_index = this_index;
       }
-      static_cast<T*>(this)->DoReplace(builder, res, IV_LV5_ERROR_VOID(e));
+      static_cast<T*>(this)->DoReplace(builder, IV_LV5_ERROR_VOID(e));
       if (previous_index > size || previous_index < 0) {
         break;
       }
@@ -177,13 +176,13 @@ class Replacer : private core::Noncopyable<> {
     : ctx_(ctx),
       str_(str),
       reg_(reg),
-      vec_() {
+      vec_(reg.num_of_captures() * 2) {
   }
 
   Context* ctx_;
   JSString* str_;
   const JSRegExp& reg_;
-  regexp::PairVector vec_;
+  std::vector<int> vec_;
 };
 
 class StringReplacer : public Replacer<StringReplacer> {
@@ -199,18 +198,16 @@ class StringReplacer : public Replacer<StringReplacer> {
   }
 
   template<typename Builder>
-  void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
+  void DoReplace(Builder* builder, Error* e) {
     if (replace_->Is8Bit()) {
-      DoReplaceImpl(replace_->Get8Bit(), builder, res, e);
+      DoReplaceImpl(replace_->Get8Bit(), builder, e);
     } else {
-      DoReplaceImpl(replace_->Get16Bit(), builder, res, e);
+      DoReplaceImpl(replace_->Get16Bit(), builder, e);
     }
   }
 
   template<typename Builder, typename FiberType>
-  void DoReplaceImpl(const FiberType* fiber,
-                     Builder* builder, const regexp::MatchResult& res,
-                     Error* e) {
+  void DoReplaceImpl(const FiberType* fiber, Builder* builder, Error* e) {
     using std::get;
     Replace::State state = Replace::kNormal;
     uint16_t upper_digit_char = '\0';
@@ -235,21 +232,21 @@ class StringReplacer : public Replacer<StringReplacer> {
             state = Replace::kNormal;
             builder->AppendJSString(
                 *str_,
-                get<0>(res), get<1>(res));
+                vec_[0], vec_[1]);
             break;
 
           case '`':  // $` pattern
             state = Replace::kNormal;
             builder->AppendJSString(
                 *str_,
-                0, get<0>(res));
+                0, vec_[0]);
             break;
 
           case '\'':  // $' pattern
             state = Replace::kNormal;
             builder->AppendJSString(
                 *str_,
-                get<1>(res), str_->size());
+                vec_[1], str_->size());
             break;
 
           default:
@@ -266,21 +263,21 @@ class StringReplacer : public Replacer<StringReplacer> {
         if (core::character::IsDecimalDigit(ch)) {  // twin digit
           const std::size_t single_n = core::Radix36Value(upper_digit_char);
           const std::size_t n = single_n * 10 + core::Radix36Value(ch);
-          if (vec_.size() >= n) {
-            const regexp::PairVector::value_type& pair = vec_[n - 1];
-            if (pair.first != -1 && pair.second != -1) {  // check undefined
+          if ((vec_.size() / 2) > n) {
+            // check undefined
+            if (vec_[n * 2] != -1 && vec_[n * 2 + 1] != -1) {
               builder->AppendJSString(
                   *str_,
-                  pair.first, pair.second);
+                  vec_[n * 2], vec_[n * 2 + 1]);
             }
           } else {
             // single digit pattern search
-            if (vec_.size() >= single_n) {
-              const regexp::PairVector::value_type& pair = vec_[single_n - 1];
-              if (pair.first != -1 && pair.second != -1) {  // check undefined
+            if ((vec_.size() / 2) > single_n) {
+              // check undefined
+              if (vec_[single_n * 2] != -1 && vec_[single_n * 2 + 1] != -1) {
                 builder->AppendJSString(
                     *str_,
-                    pair.first, pair.second);
+                    vec_[single_n * 2], vec_[single_n * 2 + 1]);
               }
             } else {
               builder->Append('$');
@@ -290,12 +287,12 @@ class StringReplacer : public Replacer<StringReplacer> {
           }
         } else {
           const std::size_t n = core::Radix36Value(upper_digit_char);
-          if (vec_.size() >= n) {
-            const regexp::PairVector::value_type& pair = vec_[n - 1];
-            if (pair.first != -1 && pair.second != -1) {  // check undefined
+          if ((vec_.size() / 2) > n) {
+            // check undefined
+            if (vec_[n * 2] != -1 && vec_[n * 2 + 1] != -1) {
               builder->AppendJSString(
                   *str_,
-                  pair.first, pair.second);
+                  vec_[n * 2], vec_[n * 2 + 1]);
             }
           } else {
             builder->Append('$');
@@ -309,12 +306,12 @@ class StringReplacer : public Replacer<StringReplacer> {
         if (core::character::IsDecimalDigit(ch)) {
           const std::size_t n =
               core::Radix36Value(upper_digit_char)*10 + core::Radix36Value(ch);
-          if (vec_.size() >= n) {
-            const regexp::PairVector::value_type& pair = vec_[n - 1];
-            if (pair.first != -1 && pair.second != -1) {  // check undefined
+          if ((vec_.size() / 2) > n) {
+            // check undefined
+            if (vec_[n * 2] != -1 && vec_[n * 2 + 1] != -1) {
               builder->AppendJSString(
                   *str_,
-                  pair.first, pair.second);
+                  vec_[n * 2], vec_[n * 2 + 1]);
             }
           } else {
             builder->Append("$0");
@@ -333,12 +330,12 @@ class StringReplacer : public Replacer<StringReplacer> {
       builder->Append('$');
     } else if (state == Replace::kDigit) {
       const std::size_t n = core::Radix36Value(upper_digit_char);
-      if (vec_.size() >= n) {
-        const regexp::PairVector::value_type& pair = vec_[n - 1];
-        if (pair.first != -1 && pair.second != -1) {  // check undefined
+      if ((vec_.size() / 2) > n) {
+        // check undefined
+        if (vec_[n * 2] != -1 && vec_[n * 2 + 1] != -1) {
           builder->AppendJSString(
               *str_,
-              pair.first, pair.second);
+              vec_[n * 2], vec_[n * 2 + 1]);
         }
       } else {
         builder->Append('$');
@@ -366,18 +363,17 @@ class FunctionReplacer : public Replacer<FunctionReplacer> {
   }
 
   template<typename Builder>
-  void DoReplace(Builder* builder, const regexp::MatchResult& res, Error* e) {
+  void DoReplace(Builder* builder, Error* e) {
     using std::get;
-    ScopedArguments a(ctx_, 3 + vec_.size(), IV_LV5_ERROR_VOID(e));
-    a[0] = str_->Substring(ctx_, get<0>(res), get<1>(res));
-    std::size_t i = 1;
-    for (regexp::PairVector::const_iterator it = vec_.begin(),
-         last = vec_.end(); it != last; ++it, ++i) {
-      if (it->first != -1 && it->second != -1) {  // check undefined
-        a[i] = str_->Substring(ctx_, it->first, it->second);
+    ScopedArguments a(ctx_, 2 + (vec_.size() / 2), IV_LV5_ERROR_VOID(e));
+    std::size_t i = 0;
+    for (std::size_t len = vec_.size() / 2; i < len; ++i) {
+      // check undefined
+      if (vec_[i * 2] != -1 && vec_[i * 2 + 1] != -1) {
+        a[i] = str_->Substring(ctx_, vec_[i * 2], vec_[i * 2 + 1]);
       }
     }
-    a[i++] = get<0>(res);
+    a[i++] = vec_[0];
     a[i++] = str_;
     const JSVal result = function_->Call(&a, JSUndefined, IV_LV5_ERROR_VOID(e));
     const JSString* const replaced_str =
@@ -865,10 +861,10 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 
   assert(target.IsObject());
   JSRegExp* const reg = static_cast<JSRegExp*>(target.object());
-  regexp::PairVector cap;
+  std::vector<int> cap(reg->num_of_captures() * 2);
   const uint32_t size = str->size();
   if (size == 0) {
-    if (get<2>(reg->Match(ctx, str, 0, &cap))) {
+    if (reg->Match(ctx, str, 0, &cap)) {
       return JSArray::New(ctx);
     }
     JSArray* const ary = JSArray::New(ctx);
@@ -886,12 +882,11 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
   JSVector* vec = JSVector::New(ctx);
   vec->reserve(16);
   while (q != size) {
-    const regexp::MatchResult rs = reg->Match(ctx, str, q, &cap);
-    if (!get<2>(rs) ||
-        size == (start_match = get<0>(rs))) {
+    if (!reg->Match(ctx, str, q, &cap) ||
+        (start_match = static_cast<uint32_t>(cap[0])) == size) {
         break;
     }
-    const uint32_t end = get<1>(rs);
+    const uint32_t end = cap[1];
     if (q == end && end == p) {
       ++q;
     } else {
@@ -899,12 +894,9 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
       if (vec->size() == lim) {
         return vec->ToJSArray();
       }
-      uint32_t i = 0;
-      for (regexp::PairVector::const_iterator it = cap.begin(),
-           last = cap.end(); it != last; ++it) {
-        ++i;
-        if (it->first != -1 && it->second != -1) {
-          vec->push_back(str->Substring(ctx, it->first, it->second));
+      for (uint32_t i = 1, len = cap.size() >> 1; i < len; ++i) {
+        if (cap[i * 2] != -1 && cap[i * 2 + 1] != -1) {
+          vec->push_back(str->Substring(ctx, cap[i * 2], cap[i * 2 + 1]));
         } else {
           vec->push_back(JSUndefined);
         }
