@@ -360,6 +360,7 @@ IV_AERO_OPCODES(V)
       // one char check and bloom filter path
       if (kASCII && !core::character::IsASCII(filter)) {
         jmp(jit_detail::kFailureLabel, T_NEAR);
+        L(jit_detail::kQuickCheckNextLabel);
         return;
       }
       L(".QUICK_CHECK_SPECIAL_START");
@@ -373,7 +374,7 @@ IV_AERO_OPCODES(V)
         and(r10, filter);
         cmp(r11, r10);
       }
-      jne(jit_detail::kQuickCheckNextLabel);
+      jne(jit_detail::kQuickCheckNextLabel, T_NEAR);
       jmp(jit_detail::kStartLabel, T_NEAR);
       L(jit_detail::kQuickCheckNextLabel);
       inc(cp_);
