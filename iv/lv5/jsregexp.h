@@ -123,8 +123,8 @@ class JSRegExp : public JSObject {
              std::vector<int>* vec) const {
     assert(impl_->number_of_captures() * 2 <= vec->size());
     const int res = (str->Is8Bit()) ?
-        impl_->Execute(ctx, *str->Get8Bit(), &index, vec->data()) :
-        impl_->Execute(ctx, *str->Get16Bit(), &index, vec->data());
+        impl_->Execute(ctx, *str->Get8Bit(), index, vec->data()) :
+        impl_->Execute(ctx, *str->Get16Bit(), index, vec->data());
     return res == aero::AERO_SUCCESS;
   }
 
@@ -245,15 +245,14 @@ class JSRegExp : public JSObject {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures) * 2);
     JSVector* vec = JSVector::New(ctx);
-    vec->reserve(8);
+    vec->reserve(32);
     SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
     int previous_index = 0;
-    const int start = previous_index;
     const int size = fiber->size();
     do {
       const int res =
-          impl_->Execute(ctx, *fiber, &previous_index, offset_vector.data());
-      if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
+          impl_->Execute(ctx, *fiber, previous_index, offset_vector.data());
+      if (res != aero::AERO_SUCCESS) {
         break;
       }
       const int this_index = offset_vector[1];
@@ -262,11 +261,12 @@ class JSRegExp : public JSObject {
       } else {
         previous_index = this_index;
       }
-      if (previous_index > size || previous_index < 0) {
+      if (previous_index > size) {
         break;
       }
       vec->push_back(JSString::NewWithFiber(ctx, fiber, offset_vector[0], offset_vector[1]));
     } while (true);
+
     if (vec->empty()) {
       return JSNull;
     }
@@ -276,7 +276,7 @@ class JSRegExp : public JSObject {
     ary->JSArray::DefineOwnProperty(
         ctx,
         symbol::index(),
-        DataDescriptor(start, ATTR::W | ATTR::E | ATTR::C),
+        DataDescriptor(JSVal::Int32(0), ATTR::W | ATTR::E | ATTR::C),
         true, IV_LV5_ERROR(e));
     ary->JSArray::DefineOwnProperty(
         ctx,
@@ -302,9 +302,9 @@ class JSRegExp : public JSObject {
     }
 
     const int res =
-        impl_->Execute(ctx, *fiber, &previous_index, offset_vector.data());
+        impl_->Execute(ctx, *fiber, previous_index, offset_vector.data());
 
-    if (res == aero::AERO_FAILURE || res == aero::AERO_ERROR) {
+    if (res != aero::AERO_SUCCESS) {
       SetLastIndex(ctx, 0, e);
       return JSNull;
     }
