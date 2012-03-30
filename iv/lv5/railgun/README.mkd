@@ -7,9 +7,11 @@ railgun is ECMAScript Register VM / Compiler
 VM and Inline Cache operations design is a lot of inspired from Lua VM & JSC VM.
 
 [The Implementation of Lua5.0](http://www.tecgraf.puc-rio.br/~lhf/ftp/doc/jucs05.pdf)
+
 [Announcing SquirrelFish](http://www.webkit.org/blog/189/announcing-squirrelfish/)
 
 # compiler
 
 Base compiler design is inspired from JSC Compiler.
+
 And railgun::Compiler has original Register Allocation System, that generates less copy code that is wasted.
