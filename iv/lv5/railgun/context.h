@@ -14,7 +14,8 @@ inline Context::Context()
   : lv5::Context(),
     vm_(),
     direct_eval_map_(10),
-    iterator_cache_() {
+    iterator_cache_(),
+    global_map_cache_(kGlobalMapCacheSize) {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());

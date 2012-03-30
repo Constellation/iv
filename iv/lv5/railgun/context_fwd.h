@@ -3,6 +3,7 @@
 #include <gc/gc_cpp.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/lru_code_map.h>
+#include <iv/lv5/railgun/lru_map_cache.h>
 #include <iv/lv5/factory.h>
 namespace iv {
 namespace lv5 {
@@ -11,6 +12,7 @@ namespace railgun {
 class Context : public lv5::Context {
  public:
   static const std::size_t kNativeIteratorCacheMax = 20;
+  static const std::size_t kGlobalMapCacheSize = 1024;
 
   explicit Context();
   ~Context();
@@ -21,6 +23,10 @@ class Context : public lv5::Context {
 
   LRUCodeMap* direct_eval_map() {
     return &direct_eval_map_;
+  }
+
+  LRUMapCache* global_map_cache() {
+    return &global_map_cache_;
   }
 
   NativeIterator* GainNativeIterator(JSObject* obj);
@@ -34,6 +40,7 @@ class Context : public lv5::Context {
   VM* vm_;
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
+  LRUMapCache global_map_cache_;
 
 #ifdef DEBUG
   int iterator_live_count_;
