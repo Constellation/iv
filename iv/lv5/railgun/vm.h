@@ -509,12 +509,15 @@ JSVal VM::Execute(Frame* start, Error* e) {
           // cache miss
           // search megamorphic cache table
           const Symbol name = frame->GetName(instr[1].ssw.u32);
-          const LRUMapCache::key_type key(obj->map(), name);
-          const std::size_t offset = ctx_->global_map_cache()->Lookup(key);
-          if (offset != core::kNotFound) {
+
+          const std::size_t hash =
+              std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
+          const Context::MapCache::value_type& value =
+              (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
+          if (std::get<2>(value) != core::kNotFound) {
             // cache hit
             const JSVal res =
-                obj->GetSlot(offset).Get(ctx_, base, ERR);
+                obj->GetSlot(std::get<2>(value)).Get(ctx_, base, ERR);
             REG(instr[1].ssw.i16[0]) = res;
           } else {
             Slot slot;
@@ -530,7 +533,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
               if (slot.base() == obj) {
                 // own property => register it to map cache
-                ctx_->global_map_cache()->Insert(key, slot.offset());
+                (*ctx_->global_map_cache())[
+                    hash % Context::kGlobalMapCacheSize
+                    ] = Context::MapCache::value_type(obj->map(),
+                                                      name, slot.offset());
                 const JSVal res = slot.Get(ctx_, base, ERR);
                 REG(instr[1].ssw.i16[0]) = res;
                 DISPATCH(LOAD_PROP_OWN);

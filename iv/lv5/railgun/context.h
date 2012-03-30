@@ -15,10 +15,12 @@ inline Context::Context()
     vm_(),
     direct_eval_map_(10),
     iterator_cache_(),
-    global_map_cache_(kGlobalMapCacheSize) {
+    global_map_cache_(NULL) {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
+  global_map_cache_ = new (GC) MapCache();
+  global_map_cache_->assign(MapCache::value_type(NULL, symbol::kDummySymbol, core::kNotFound));
 #ifdef DEBUG
   iterator_live_count_ = 0;
 #endif
