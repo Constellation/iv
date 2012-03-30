@@ -582,13 +582,21 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
       // section 15.7.3.6 Number.POSITIVE_INFINITY
       .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity())
-      // section 15.7.3.7 Number.isNaN(number)
+      // section 15.7.3.7 Number.EPSILON
+      .def("EPSILON", DBL_EPSILON)
+      // section 15.7.3.8 Number.MAX_INTEGER
+      .def("MAX_INTEGER", 9007199254740991.0)
+      // section 15.7.3.9 Number.parseInt(string, radix)
+      .def<&runtime::GlobalParseInt, 2>("parseInt")
+      // section 15.7.3.10 Number.parseFloat(string)
+      .def<&runtime::GlobalParseFloat, 1>("parseFloat")
+      // section 15.7.3.11 Number.isNaN(number)
       .def<&runtime::NumberIsNaN, 1>("isNaN")
-      // section 15.7.3.8 Number.isFinite(number)
+      // section 15.7.3.12 Number.isFinite(number)
       .def<&runtime::NumberIsFinite, 1>("isFinite")
-      // section 15.7.3.9 Number.isInteger(number)
+      // section 15.7.3.13 Number.isInteger(number)
       .def<&runtime::NumberIsInteger, 1>("isInteger")
-      // section 15.7.3.10 Number.toInteger(number)
+      // section 15.7.3.14 Number.toInteger(number)
       .def<&runtime::NumberToInteger, 1>("toInteger");
 
   bind::Object(this, proto)
