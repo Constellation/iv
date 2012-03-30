@@ -1232,8 +1232,10 @@ inline JSVal StringToArray(const Arguments& args, Error* e) {
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t len = str->size();
   JSVector* vec = JSVector::New(ctx, len);
-  for (uint32_t i = 0; i < len; ++i) {
-    (*vec)[i] = JSString::NewSingle(ctx, str->At(i));
+  JSVector::iterator out = vec->begin();
+  for (JSString::const_iterator it = str->begin(),
+       last = str->end(); it != last; ++it, ++out) {
+    *out = JSString::NewSingle(ctx, *it);
   }
   return vec->ToJSArray();
 }
