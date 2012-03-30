@@ -382,7 +382,7 @@ inline JSVal MathSign(const Arguments& args, Error* e) {
 
 // section 15.8.2.33 cbrt(x)
 inline JSVal MathCbrt(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Math.cbrt", args, e);
   if (!args.empty()) {
     const double x = args.front().ToNumber(args.ctx(), e);
     if (!core::math::IsFinite(x) || x == 0) {
