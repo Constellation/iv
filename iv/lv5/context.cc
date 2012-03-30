@@ -706,7 +706,9 @@ void Context::InitMath(const ClassSlot& func_cls,
       // section 15.8.2.31 trunc(x)
       .def<&runtime::MathTrunc, 1>("trunc")
       // section 15.8.2.32 sign(x)
-      .def<&runtime::MathSign, 1>("sign");
+      .def<&runtime::MathSign, 1>("sign")
+      // section 15.8.2.33 cbrt(x)
+      .def<&runtime::MathCbrt, 1>("cbrt");
 }
 
 void Context::InitDate(const ClassSlot& func_cls,

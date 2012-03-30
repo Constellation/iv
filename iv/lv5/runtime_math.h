@@ -380,5 +380,18 @@ inline JSVal MathSign(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+// section 15.8.2.33 cbrt(x)
+inline JSVal MathCbrt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
+  if (!args.empty()) {
+    const double x = args.front().ToNumber(args.ctx(), e);
+    if (!core::math::IsFinite(x) || x == 0) {
+      return x;
+    }
+    return core::math::Cbrt(x);
+  }
+  return JSNaN;
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_MATH_H_

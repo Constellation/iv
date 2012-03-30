@@ -46,6 +46,7 @@ static const char* kPassFileNames[] = {
   "test/lv5/suite/ex/hypot2.js",
   "test/lv5/suite/ex/trunc.js",
   "test/lv5/suite/ex/sign.js",
+  "test/lv5/suite/ex/cbrt.js",
   "test/lv5/suite/ex/isnan.js",
   "test/lv5/suite/ex/isfinite.js",
   "test/lv5/suite/ex/isinteger.js",

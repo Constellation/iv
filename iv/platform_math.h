@@ -2,8 +2,8 @@
 #define IV_PLATFORM_MATH_H_
 #include <cmath>
 #include <cassert>
-#include <iostream>
 #include <limits>
+#include <cfloat>
 #include <iv/platform.h>
 #include <iv/canonicalized_nan.h>
 #include <iv/detail/cmath.h>
@@ -291,7 +291,6 @@ inline double Hypot(double x, double y, double z) {
   y /= x;
   z /= x;
   return x * std::sqrt(1.0 + y * y + z * z);
-
 }
 
 inline double Hypot2(double x, double y, double z = 0.0) {
@@ -304,6 +303,16 @@ inline double Hypot2(double x, double y, double z = 0.0) {
     return IsInf(x) || IsInf(y) ? kInfinity : kNaN;
   }
   return x*x + y*y + z*z;
+}
+
+inline double Cbrt(double x) {
+  if (fabs(x) < DBL_EPSILON) {
+    return 0.0;
+  }
+  if (x > 0.0) {
+    return pow(x, 1.0/3.0);
+  }
+  return -pow(-x, 1.0/3.0);
 }
 
 } } }  // namespace iv::core::math
