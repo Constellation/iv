@@ -514,7 +514,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
               std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
           const Context::MapCache::value_type& value =
               (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
-          if (std::get<2>(value) != core::kNotFound) {
+          if (std::get<0>(value) == obj->map() && std::get<1>(value) == name) {
             // cache hit
             const JSVal res =
                 obj->GetSlot(std::get<2>(value)).Get(ctx_, base, ERR);

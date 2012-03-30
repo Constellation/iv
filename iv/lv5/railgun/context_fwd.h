@@ -11,7 +11,7 @@ namespace railgun {
 class Context : public lv5::Context {
  public:
   static const std::size_t kNativeIteratorCacheMax = 20;
-  static const std::size_t kGlobalMapCacheSize = 8196;
+  static const std::size_t kGlobalMapCacheSize = 16192;
   typedef std::array<
       std::tuple<Map*, Symbol, std::size_t>, kGlobalMapCacheSize> MapCache;
 
