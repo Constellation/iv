@@ -505,6 +505,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           const JSVal res =
               obj->GetSlot(instr[3].u32[0]).Get(ctx_, base, ERR);
           REG(instr[1].ssw.i16[0]) = res;
+          DISPATCH(LOAD_PROP_OWN);
         } else {
           // cache miss
           // search megamorphic cache table
@@ -533,10 +534,16 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
               if (slot.base() == obj) {
                 // own property => register it to map cache
+                instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP_OWN_MEGAMORPHIC);
                 (*ctx_->global_map_cache())[
                     hash % Context::kGlobalMapCacheSize
                     ] = Context::MapCache::value_type(obj->map(),
                                                       name, slot.offset());
+                (*ctx_->global_map_cache())[
+                    (std::hash<Map*>()(instr[2].map) +
+                     std::hash<Symbol>()(name)) % Context::kGlobalMapCacheSize
+                    ] = Context::MapCache::value_type(instr[2].map,
+                                                      name, instr[3].u32[0]);
                 const JSVal res = slot.Get(ctx_, base, ERR);
                 REG(instr[1].ssw.i16[0]) = res;
                 DISPATCH(LOAD_PROP_OWN);
@@ -545,16 +552,71 @@ JSVal VM::Execute(Frame* start, Error* e) {
               instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
               const JSVal res = slot.Get(ctx_, base, ERR);
               REG(instr[1].ssw.i16[0]) = res;
-              DISPATCH(LOAD_PROP_OWN);
             } else {
               // not found => uncache
               instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
               REG(instr[1].ssw.i16[0]) = JSUndefined;
-              DISPATCH(LOAD_PROP_OWN);
             }
           }
         }
         DISPATCH(LOAD_PROP_OWN);
+      }
+
+      DEFINE_OPCODE(LOAD_PROP_OWN_MEGAMORPHIC) {
+        const JSVal base = REG(instr[1].ssw.i16[1]);
+        base.CheckObjectCoercible(ERR);
+        JSObject* obj = NULL;
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
+        if (base.IsPrimitive()) {
+          // primitive prototype cache
+          JSVal res;
+          if (operation_.GetPrimitiveOwnProperty(base, name, &res)) {
+            REG(instr[1].ssw.i16[0]) = res;
+            DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
+          } else {
+            obj = base.GetPrimitiveProto(ctx_);
+          }
+        } else {
+          obj = base.object();
+        }
+        assert(obj);
+        const std::size_t hash =
+            std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
+        const Context::MapCache::value_type& value =
+            (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
+        if (std::get<0>(value) == obj->map() && std::get<1>(value) == name) {
+          // cache hit
+          const JSVal res =
+              obj->GetSlot(std::get<2>(value)).Get(ctx_, base, ERR);
+          REG(instr[1].ssw.i16[0]) = res;
+        } else {
+          Slot slot;
+          if (obj->GetPropertySlot(ctx_, name, &slot)) {
+            // property found
+            if (!slot.IsCacheable()) {
+              // uncache
+              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+              const JSVal res = slot.Get(ctx_, base, ERR);
+              REG(instr[1].ssw.i16[0]) = res;
+              DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
+            }
+            if (slot.base() == obj) {
+              // own property => register it to map cache
+              (*ctx_->global_map_cache())[
+                  hash % Context::kGlobalMapCacheSize
+                  ] = Context::MapCache::value_type(obj->map(),
+                                                    name, slot.offset());
+              const JSVal res = slot.Get(ctx_, base, ERR);
+              REG(instr[1].ssw.i16[0]) = res;
+              DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
+            }
+            const JSVal res = slot.Get(ctx_, base, ERR);
+            REG(instr[1].ssw.i16[0]) = res;
+          } else {
+            REG(instr[1].ssw.i16[0]) = JSUndefined;
+          }
+        }
+        DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
       }
 
       DEFINE_OPCODE(LOAD_PROP_PROTO) {
