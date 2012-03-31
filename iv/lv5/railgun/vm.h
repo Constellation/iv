@@ -512,9 +512,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
           const Symbol name = frame->GetName(instr[1].ssw.u32);
 
           const std::size_t hash =
-              std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
+              (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
+              Context::kGlobalMapCacheSize;
           const Context::MapCache::value_type& value =
-              (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
+              (*ctx_->global_map_cache())[hash];
           if (std::get<0>(value) == obj->map() && std::get<1>(value) == name) {
             // cache hit
             const JSVal res =
@@ -534,11 +535,12 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
               if (slot.base() == obj) {
                 // own property => register it to map cache
-                instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP_OWN_MEGAMORPHIC);
-                (*ctx_->global_map_cache())[
-                    hash % Context::kGlobalMapCacheSize
-                    ] = Context::MapCache::value_type(obj->map(),
-                                                      name, slot.offset());
+                instr[0] =
+                    Instruction::GetOPInstruction(
+                        OP::LOAD_PROP_OWN_MEGAMORPHIC);
+                (*ctx_->global_map_cache())[hash] =
+                    Context::MapCache::value_type(obj->map(),
+                                                  name, slot.offset());
                 (*ctx_->global_map_cache())[
                     (std::hash<Map*>()(instr[2].map) +
                      std::hash<Symbol>()(name)) % Context::kGlobalMapCacheSize
@@ -581,9 +583,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         assert(obj);
         const std::size_t hash =
-            std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
+            (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
+            Context::kGlobalMapCacheSize;
         const Context::MapCache::value_type& value =
-            (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
+            (*ctx_->global_map_cache())[hash];
         if (std::get<0>(value) == obj->map() && std::get<1>(value) == name) {
           // cache hit
           const JSVal res =
@@ -602,10 +605,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
             }
             if (slot.base() == obj) {
               // own property => register it to map cache
-              (*ctx_->global_map_cache())[
-                  hash % Context::kGlobalMapCacheSize
-                  ] = Context::MapCache::value_type(obj->map(),
-                                                    name, slot.offset());
+              (*ctx_->global_map_cache())[hash] =
+                  Context::MapCache::value_type(obj->map(),
+                                                name, slot.offset());
               const JSVal res = slot.Get(ctx_, base, ERR);
               REG(instr[1].ssw.i16[0]) = res;
               DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
