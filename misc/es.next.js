@@ -828,6 +828,48 @@
     return result;
   };
 
+  // future use
+  // current draft is broken
+  Parser.prototype.reinterpretAsBinding = function(expr) {
+    var that = this;
+    if (expr.sealed) {
+      throw new Error('ILLEGAL');
+    }
+    if (expr.type === 'Object') {
+      expr.type = 'ObjectBindingPattern';
+      if (expr.accessors.length) {
+        throw new Error('ILLEGAL');
+      }
+      expr.patterns = expr.values.map(function(prop) {
+        that.reinterpretAsBinding(prop.val);
+        prop.type = 'BindingProperty';
+        return prop;
+      });
+      return expr;
+    } else if (expr.type === 'Array') {
+      expr.type = 'ArrayBindingPattern';
+      expr.patterns = expr.items.map(function(item) {
+        if (item) {
+          if (item.type === 'RestElement') {
+            item.type = "AssignmentRestElement";
+            that.reinterpretAsBinding(target);
+          } else {
+            that.reinterpretAsBinding(item);
+          }
+        }
+        return item;
+      });
+      return expr;
+    } else {
+      if (expr.type !== 'Identifier' &&
+          expr.type !== 'FuncCall' &&
+          expr.type !== 'NewCall' &&
+          expr.type !== 'PropertyAccess') {
+        throw new Error('ILLEGAL');
+      }
+    }
+  };
+
   Parser.prototype.reinterpretAsBinding = function(expr, save) {
       if (!isBindingParseRequired(expr)) {
         return expr;

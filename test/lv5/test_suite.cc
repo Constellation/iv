@@ -10,9 +10,13 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx, const Source& src) {
   core::Parser<lv5::AstFactory, Source> parser(
       &factory, src, ctx->symbol_table());
   const lv5::FunctionLiteral* const global = parser.ParseProgram();
-  lv5::railgun::JSScript* script =
-      lv5::railgun::JSGlobalScript::New(ctx, &src);
-  return lv5::railgun::CompileIndirectEval(ctx, *global, script);
+  if (global) {
+    lv5::railgun::JSScript* script =
+        lv5::railgun::JSGlobalScript::New(ctx, &src);
+    return lv5::railgun::CompileIndirectEval(ctx, *global, script);
+  } else {
+    return NULL;
+  }
 }
 
 static const char* kPassFileNames[] = {
@@ -39,8 +43,10 @@ static const char* kPassFileNames[] = {
   "test/lv5/suite/ex/asinh.js",
   "test/lv5/suite/ex/atanh.js",
   "test/lv5/suite/ex/hypot.js",
+  "test/lv5/suite/ex/hypot2.js",
   "test/lv5/suite/ex/trunc.js",
   "test/lv5/suite/ex/sign.js",
+  "test/lv5/suite/ex/cbrt.js",
   "test/lv5/suite/ex/isnan.js",
   "test/lv5/suite/ex/isfinite.js",
   "test/lv5/suite/ex/isinteger.js",

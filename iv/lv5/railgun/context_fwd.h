@@ -11,6 +11,9 @@ namespace railgun {
 class Context : public lv5::Context {
  public:
   static const std::size_t kNativeIteratorCacheMax = 20;
+  static const std::size_t kGlobalMapCacheSize = 16192;
+  typedef std::array<
+      std::tuple<Map*, Symbol, std::size_t>, kGlobalMapCacheSize> MapCache;
 
   explicit Context();
   ~Context();
@@ -21,6 +24,10 @@ class Context : public lv5::Context {
 
   LRUCodeMap* direct_eval_map() {
     return &direct_eval_map_;
+  }
+
+  MapCache* global_map_cache() {
+    return global_map_cache_;
   }
 
   NativeIterator* GainNativeIterator(JSObject* obj);
@@ -34,6 +41,7 @@ class Context : public lv5::Context {
   VM* vm_;
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
+  MapCache* global_map_cache_;
 
 #ifdef DEBUG
   int iterator_live_count_;

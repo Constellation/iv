@@ -1,14 +1,18 @@
 #ifndef IV_PLATFORM_MATH_H_
 #define IV_PLATFORM_MATH_H_
 #include <cmath>
+#include <cassert>
 #include <limits>
+#include <cfloat>
 #include <iv/platform.h>
+#include <iv/canonicalized_nan.h>
 #include <iv/detail/cmath.h>
 namespace iv {
 namespace core {
 namespace math {
 
 static const double kInfinity = std::numeric_limits<double>::infinity();
+static const double kNaN = core::kNaN;
 
 #if defined(IV_COMPILER_MSVC)
 
@@ -213,24 +217,102 @@ inline double Hypot(double x, double y) {
   //
   // http://d.hatena.ne.jp/scior/20101214/1292333501
   // http://d.hatena.ne.jp/rubikitch/20081020/1224507459
-  if (x < 0) {
+  if (Signbit(x)) {
     x = -x;
   }
-  if (y < 0) {
+  if (Signbit(y)) {
     y = -y;
   }
+
+  // NaN check
+  if (IsNaN(x)) {
+    return IsInf(y) ? kInfinity : kNaN;
+  } else if (IsNaN(y)) {
+    return IsInf(x) ? kInfinity : kNaN;
+  }
+
   if (y > x) {
-    std::swap(y, x);
+    std::swap(x, y);
   }
-  if (y == 0) {
-    if (x == 0) {
-      // if x and y are -0, hypot(-0, -0) returns +0
-      return 0;
-    }
-    return x;
+  assert(x >= y);
+
+  if (x == 0) {
+    return 0;
   }
+
   y /= x;
   return x * std::sqrt(1.0 + y * y);
+}
+
+inline double Hypot(double x, double y, double z) {
+  // hypot(x, y, z)^2 = x^2 + y^2 + z^2
+  // hypot(x, y, z) = sqrt(x^2 + y^2 + z^2)
+  //
+  // hypot(x, y, z) = x * sqrt(1.0 + (y/x)^2 + (z/x)^2)
+  //
+  if (Signbit(x)) {
+    x = -x;
+  }
+  if (Signbit(y)) {
+    y = -y;
+  }
+  if (Signbit(z)) {
+    z = -z;
+  }
+
+  // NaN check
+  if (IsNaN(x)) {
+    return IsInf(y) || IsInf(z) ? kInfinity : kNaN;
+  } else if (IsNaN(y)) {
+    return IsInf(x) || IsInf(z) ? kInfinity : kNaN;
+  } else if (IsNaN(z)) {
+    return IsInf(x) || IsInf(y) ? kInfinity : kNaN;
+  }
+
+  if (y > x) {
+    if (y > z) {
+      std::swap(x, y);
+    } else {
+      std::swap(x, z);
+    }
+  } else {
+    if (z > x) {
+      std::swap(x, z);
+    }
+  }
+
+  assert(x >= y && x >= z);
+
+  if (x == 0) {
+    // all values are 0
+    return 0;
+  }
+
+  y /= x;
+  z /= x;
+  return x * std::sqrt(1.0 + y * y + z * z);
+}
+
+inline double Hypot2(double x, double y, double z = 0.0) {
+  // NaN check
+  if (IsNaN(x)) {
+    return IsInf(y) || IsInf(z) ? kInfinity : kNaN;
+  } else if (IsNaN(y)) {
+    return IsInf(x) || IsInf(z) ? kInfinity : kNaN;
+  } else if (IsNaN(z)) {
+    return IsInf(x) || IsInf(y) ? kInfinity : kNaN;
+  }
+  return x*x + y*y + z*z;
+}
+
+inline double Cbrt(double x) {
+  if (fabs(x) < DBL_EPSILON) {
+    return 0.0;
+  }
+  if (x > 0.0) {
+    return pow(x, 1.0/3.0);
+  }
+  return -pow(-x, 1.0/3.0);
 }
 
 } } }  // namespace iv::core::math

@@ -582,13 +582,21 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
       // section 15.7.3.6 Number.POSITIVE_INFINITY
       .def("POSITIVE_INFINITY", std::numeric_limits<double>::infinity())
-      // section 15.7.3.7 Number.isNaN(number)
+      // section 15.7.3.7 Number.EPSILON
+      .def("EPSILON", DBL_EPSILON)
+      // section 15.7.3.8 Number.MAX_INTEGER
+      .def("MAX_INTEGER", 9007199254740991.0)
+      // section 15.7.3.9 Number.parseInt(string, radix)
+      .def<&runtime::GlobalParseInt, 2>("parseInt")
+      // section 15.7.3.10 Number.parseFloat(string)
+      .def<&runtime::GlobalParseFloat, 1>("parseFloat")
+      // section 15.7.3.11 Number.isNaN(number)
       .def<&runtime::NumberIsNaN, 1>("isNaN")
-      // section 15.7.3.8 Number.isFinite(number)
+      // section 15.7.3.12 Number.isFinite(number)
       .def<&runtime::NumberIsFinite, 1>("isFinite")
-      // section 15.7.3.9 Number.isInteger(number)
+      // section 15.7.3.13 Number.isInteger(number)
       .def<&runtime::NumberIsInteger, 1>("isInteger")
-      // section 15.7.3.10 Number.toInteger(number)
+      // section 15.7.3.14 Number.toInteger(number)
       .def<&runtime::NumberToInteger, 1>("toInteger");
 
   bind::Object(this, proto)
@@ -699,12 +707,16 @@ void Context::InitMath(const ClassSlot& func_cls,
       .def<&runtime::MathAsinh, 1>("asinh")
       // section 15.8.2.28 atanh(x)
       .def<&runtime::MathAtanh, 1>("atanh")
-      // section 15.8.2.29 hypot(y, x)
-      .def<&runtime::MathHypot, 1>("hypot")
-      // section 15.8.2.30 trunc(x)
+      // section 15.8.2.29 hypot(value1, value2[, value3])
+      .def<&runtime::MathHypot, 2>("hypot")
+      // section 15.8.2.30 hypot2(value1, value2[, value3])
+      .def<&runtime::MathHypot2, 2>("hypot2")
+      // section 15.8.2.31 trunc(x)
       .def<&runtime::MathTrunc, 1>("trunc")
-      // section 15.8.2.31 sign(x)
-      .def<&runtime::MathSign, 1>("sign");
+      // section 15.8.2.32 sign(x)
+      .def<&runtime::MathSign, 1>("sign")
+      // section 15.8.2.33 cbrt(x)
+      .def<&runtime::MathCbrt, 1>("cbrt");
 }
 
 void Context::InitDate(const ClassSlot& func_cls,

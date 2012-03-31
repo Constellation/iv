@@ -103,7 +103,6 @@ JSArray* JSString::Split(Context* ctx,
     } else {
       detail::SplitFiber(ctx, it, last, base->As16Bit());
     }
-    assert(it == last);
     return vec->ToJSArray();
   } else {
     std::vector<const FiberSlot*> slots(fibers_.begin(),

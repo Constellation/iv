@@ -506,12 +506,53 @@ JSVal VM::Execute(Frame* start, Error* e) {
               obj->GetSlot(instr[3].u32[0]).Get(ctx_, base, ERR);
           REG(instr[1].ssw.i16[0]) = res;
         } else {
-          // uncache
+          // cache miss
+          // search megamorphic cache table
           const Symbol name = frame->GetName(instr[1].ssw.u32);
-          instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-          const JSVal res =
-              operation_.LoadProp(base, name, strict, ERR);
-          REG(instr[1].ssw.i16[0]) = res;
+
+          const std::size_t hash =
+              std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name);
+          const Context::MapCache::value_type& value =
+              (*ctx_->global_map_cache())[hash % Context::kGlobalMapCacheSize];
+          if (std::get<0>(value) == obj->map() && std::get<1>(value) == name) {
+            // cache hit
+            const JSVal res =
+                obj->GetSlot(std::get<2>(value)).Get(ctx_, base, ERR);
+            REG(instr[1].ssw.i16[0]) = res;
+          } else {
+            Slot slot;
+            if (obj->GetPropertySlot(ctx_, name, &slot)) {
+              // property found
+              if (!slot.IsCacheable()) {
+                // uncacheable => uncache
+                instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+                const JSVal res = slot.Get(ctx_, base, ERR);
+                REG(instr[1].ssw.i16[0]) = res;
+                DISPATCH(LOAD_PROP_OWN);
+              }
+
+              if (slot.base() == obj) {
+                // own property => register it to map cache
+                (*ctx_->global_map_cache())[
+                    hash % Context::kGlobalMapCacheSize
+                    ] = Context::MapCache::value_type(obj->map(),
+                                                      name, slot.offset());
+                const JSVal res = slot.Get(ctx_, base, ERR);
+                REG(instr[1].ssw.i16[0]) = res;
+                DISPATCH(LOAD_PROP_OWN);
+              }
+
+              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+              const JSVal res = slot.Get(ctx_, base, ERR);
+              REG(instr[1].ssw.i16[0]) = res;
+              DISPATCH(LOAD_PROP_OWN);
+            } else {
+              // not found => uncache
+              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+              REG(instr[1].ssw.i16[0]) = JSUndefined;
+              DISPATCH(LOAD_PROP_OWN);
+            }
+          }
         }
         DISPATCH(LOAD_PROP_OWN);
       }
