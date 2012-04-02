@@ -106,6 +106,7 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::LOAD_EMPTY:
       case OP::LOAD_ARGUMENTS:
       case OP::THROW:
+      case OP::RESULT:
       case OP::RETURN: {
         const int r0 = instr[1].i32[0];
         len = snprintf(buf, sizeof(buf) - 1, "%s r%d", op, r0);
@@ -224,6 +225,9 @@ class DisAssembler : private core::Noncopyable<> {
                        op, r0, r1, index, size);
         break;
       }
+      case OP::CALL:
+      case OP::EVAL:
+      case OP::CONSTRUCT:
       case OP::CONCAT:
       case OP::PREPARE_DYNAMIC_CALL:
       case OP::POSTFIX_INCREMENT_PROP:
@@ -304,15 +308,6 @@ class DisAssembler : private core::Noncopyable<> {
         const int jump = instr[1].jump.to;
         const int to = index + jump;
         len = snprintf(buf, sizeof(buf) - 1, "%s %d ; => %d", op, jump, to);
-        break;
-      }
-      case OP::CALL:
-      case OP::EVAL:
-      case OP::CONSTRUCT: {
-        const int r0 = instr[1].i16[0], r1 = instr[1].i16[1],
-              r2 = instr[1].i16[2], arg_with_this = instr[2].i32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d r%d %d",
-                       op, r0, r1, r2, arg_with_this);
         break;
       }
       case OP::NUM_OF_OP: {

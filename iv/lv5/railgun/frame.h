@@ -190,7 +190,6 @@ struct Frame {
   JSEnv* lexical_env_;
   Frame* prev_;
   uint32_t argc_;
-  int32_t r_;
   bool constructor_call_;
 };
 

@@ -1133,13 +1133,16 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   thunkpool_.Spill(dst);
   if (direct_call_to_eval) {
     Emit<OP::EVAL>(
-        Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
-        Instruction::Int32(site.argc_with_this(), 0));
+        Instruction::SSW(site.callee(),
+                         site.GetFirstPosition(),
+                         site.argc_with_this()));
   } else {
     Emit<op>(
-        Instruction::Reg3(dst, site.callee(), site.GetFirstPosition()),
-        Instruction::Int32(site.argc_with_this(), 0));
+        Instruction::SSW(site.callee(),
+                         site.GetFirstPosition(),
+                         site.argc_with_this()));
   }
+  Emit<OP::RESULT>(dst);
   assert(registers_.IsLiveTop(site.base()->register_offset()));
   return dst;
 }

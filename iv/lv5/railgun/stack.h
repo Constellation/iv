@@ -78,7 +78,6 @@ class Stack : public lv5::Stack {
                       JSEnv* env,
                       JSVal callee,
                       Instruction* pc,
-                      int16_t return_register,
                       std::size_t argc_with_this,
                       bool constructor_call) {
     assert(code);
@@ -93,8 +92,6 @@ class Stack : public lv5::Stack {
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = constructor_call;
-      // return register
-      frame->r_ = return_register;
       current_ = frame;
       return frame;
     } else {
@@ -120,7 +117,6 @@ class Stack : public lv5::Stack {
       std::fill_n<JSVal*, std::size_t, JSVal>(
           frame->RegisterFile(), code->registers(), JSUndefined);
       frame->constructor_call_ = false;
-      frame->r_ = 0;
       current_ = frame;
       return frame;
     } else {

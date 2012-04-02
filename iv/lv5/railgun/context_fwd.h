@@ -30,6 +30,8 @@ class Context : public lv5::Context {
     return global_map_cache_;
   }
 
+  inline JSVal& RAX() { return RAX_; }
+
   NativeIterator* GainNativeIterator(JSObject* obj);
   NativeIterator* GainNativeIterator(JSString* str);
   void ReleaseNativeIterator(NativeIterator* iterator);
@@ -39,6 +41,7 @@ class Context : public lv5::Context {
  private:
   NativeIterator* GainNativeIterator();
   VM* vm_;
+  JSVal RAX_;
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
   MapCache* global_map_cache_;
