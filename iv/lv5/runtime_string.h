@@ -26,7 +26,7 @@ namespace lv5 {
 namespace runtime {
 namespace detail {
 
-static inline JSVal StringToStringValueOfImpl(const Arguments& args,
+static inline JSVal StringToStringValueOfImpl(JSVal this_binding,
                                               const char* msg, Error* e);
 
 static inline bool IsTrimmed(uint16_t c) {
@@ -476,33 +476,36 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
   return builder.Build(args.ctx());
 }
 
-static inline JSVal detail::StringToStringValueOfImpl(
-    const Arguments& args, const char* msg, Error* e) {
-  const JSVal& obj = args.this_binding();
-  if (!obj.IsString()) {
-    if (obj.IsObject() && obj.object()->IsClass<Class::String>()) {
-      return static_cast<JSStringObject*>(obj.object())->value();
-    } else {
-      e->Report(Error::Type, msg);
-      return JSEmpty;
-    }
-  } else {
-    return obj.string();
+static inline JSVal detail::StringToStringValueOfImpl(JSVal this_binding,
+                                                      const char* msg,
+                                                      Error* e) {
+  if (this_binding.IsString()) {
+    return this_binding.string();
   }
+
+  if (this_binding.IsObject() &&
+      this_binding.object()->IsClass<Class::String>()) {
+    return static_cast<JSStringObject*>(this_binding.object())->value();
+  }
+
+  e->Report(Error::Type, msg);
+  return JSEmpty;
 }
 
 // section 15.5.4.2 String.prototype.toString()
 inline JSVal StringToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toString", args, e);
   return detail::StringToStringValueOfImpl(
-      args, "String.prototype.toString is not generic function", e);
+      args.this_binding(),
+      "String.prototype.toString is not generic function", e);
 }
 
 // section 15.5.4.3 String.prototype.valueOf()
 inline JSVal StringValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.valueOf", args, e);
   return detail::StringToStringValueOfImpl(
-      args, "String.prototype.valueOf is not generic function", e);
+      args.this_binding(),
+      "String.prototype.valueOf is not generic function", e);
 }
 
 // section 15.5.4.4 String.prototype.charAt(pos)
@@ -557,24 +560,18 @@ inline JSVal StringIndexOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, e);
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
-  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  JSString* search_str;
+  JSString* str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
+  JSString* const search_str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   // undefined -> NaN -> 0
   double position = 0;
-  if (!args.empty()) {
-    search_str = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
-    if (args.size() > 1) {
-      position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      position = core::DoubleToInteger(position);
-    }
-  } else {
-    // undefined -> "undefined"
-    search_str = args.ctx()->global_data()->string_undefined();
+  if (args.size() > 1) {
+    position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    position = core::DoubleToInteger(position);
   }
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
   const JSString::size_type loc = str->find(*search_str, start);
-  return (loc == JSString::npos) ? -1.0 : loc;
+  return (loc == JSString::npos) ? JSVal::Int32(-1) : JSVal(loc);
 }
 
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
@@ -583,28 +580,21 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  JSString* search_str;
   std::size_t target = str->size();
-  if (!args.empty()) {
-    search_str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
-    // undefined -> NaN
-    if (args.size() > 1) {
-      const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      if (!core::math::IsNaN(position)) {
-        const double integer = core::DoubleToInteger(position);
-        if (integer < 0) {
-          target = 0;
-        } else if (integer < target) {
-          target = static_cast<std::size_t>(integer);
-        }
+  JSString* const search_str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
+  if (args.size() > 1) {
+    const double position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    if (!core::math::IsNaN(position)) {
+      const double integer = core::DoubleToInteger(position);
+      if (integer < 0) {
+        target = 0;
+      } else if (integer < target) {
+        target = static_cast<std::size_t>(integer);
       }
     }
-  } else {
-    // undefined -> "undefined"
-    search_str = args.ctx()->global_data()->string_undefined();
   }
   const JSString::size_type loc = str->rfind(*search_str, target);
-  return (loc == JSString::npos) ? -1.0 : loc;
+  return (loc == JSString::npos) ? JSVal::Int32(-1) : JSVal(loc);
 }
 
 // section 15.5.4.9 String.prototype.localeCompare(that)
@@ -1098,7 +1088,7 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
 }
 
 template<typename FiberType>
-JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
+inline JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
   typename FiberType::const_iterator lit = fiber->begin();
   const typename FiberType::const_iterator last = fiber->end();
   // trim leading space
