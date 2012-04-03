@@ -26,6 +26,10 @@ namespace symbol {
     V(message)\
     V(get)\
     V(set)\
+    V(value)\
+    V(configurable)\
+    V(writable)\
+    V(enumerable)\
     V(lastIndex)\
     V(index)\
     V(input)\

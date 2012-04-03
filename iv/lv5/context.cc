@@ -298,7 +298,7 @@ void Context::InitGlobal(const ClassSlot& func_cls,
   // Global
   struct ClassSlot cls = {
     JSGlobal::GetClass(),
-    context::Intern(this, "global"),
+    symbol::global(),
     JSString::NewAsciiString(this, "global"),
     NULL,
     obj_proto

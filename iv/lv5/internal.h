@@ -24,11 +24,11 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
   if (desc.IsDataDescriptor()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     obj->DefineOwnProperty(
-        ctx, context::Intern(ctx, "value"),
+        ctx, symbol::value(),
         DataDescriptor(data->value(), ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
     obj->DefineOwnProperty(
-        ctx, context::Intern(ctx, "writable"),
+        ctx, symbol::writable(),
         DataDescriptor(JSVal::Bool(data->IsWritable()),
                        ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
@@ -37,22 +37,22 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     const JSVal getter = (accs->get()) ? accs->get() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
-        ctx, context::Intern(ctx, "get"),
+        ctx, symbol::get(),
         DataDescriptor(getter, ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
     const JSVal setter = (accs->set()) ? accs->set() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
-        ctx, context::Intern(ctx, "set"),
+        ctx, symbol::set(),
         DataDescriptor(setter, ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
   }
   obj->DefineOwnProperty(
-      ctx, context::Intern(ctx, "enumerable"),
+      ctx, symbol::enumerable(),
       DataDescriptor(JSVal::Bool(desc.IsEnumerable()),
                      ATTR::W | ATTR::E | ATTR::C),
       false, NULL);
   obj->DefineOwnProperty(
-      ctx, context::Intern(ctx, "configurable"),
+      ctx, symbol::configurable(),
       DataDescriptor(JSVal::Bool(desc.IsConfigurable()),
                      ATTR::W | ATTR::E | ATTR::C),
       false, NULL);
@@ -73,7 +73,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   JSObject* setter = NULL;
   {
     // step 3
-    const Symbol sym = context::Intern(ctx, "enumerable");
+    const Symbol sym = symbol::enumerable();
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool enumerable = r.ToBoolean();
@@ -86,7 +86,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 4
-    const Symbol sym = context::Intern(ctx, "configurable");
+    const Symbol sym = symbol::configurable();
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool configurable = r.ToBoolean();
@@ -99,7 +99,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 5
-    const Symbol sym = context::Intern(ctx, "value");
+    const Symbol sym = symbol::value();
     if (obj->HasProperty(ctx, sym)) {
       value = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       attr |= ATTR::DATA;
@@ -108,7 +108,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 6
-    const Symbol sym = context::Intern(ctx, "writable");
+    const Symbol sym = symbol::writable();
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       const bool writable = r.ToBoolean();
@@ -121,7 +121,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 7
-    const Symbol sym = context::Intern(ctx, "get");
+    const Symbol sym = symbol::get();
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
@@ -137,7 +137,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   }
   {
     // step 8
-    const Symbol sym = context::Intern(ctx, "set");
+    const Symbol sym = symbol::set();
     if (obj->HasProperty(ctx, sym)) {
       const JSVal r = obj->Get(ctx, sym, IV_LV5_ERROR(e));
       if (!r.IsCallable() && !r.IsUndefined()) {
@@ -222,9 +222,7 @@ inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
   if (obj->IsClass<Class::Array>()) {
     return static_cast<JSArray*>(obj)->GetLength();
   }
-  const JSVal length = obj->Get(ctx,
-                                symbol::length(),
-                                IV_LV5_ERROR_WITH(e, 0));
+  const JSVal length = obj->Get(ctx, symbol::length(), IV_LV5_ERROR_WITH(e, 0));
   return length.ToUInt32(ctx, e);
 }
 

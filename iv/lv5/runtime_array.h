@@ -478,7 +478,8 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
              JSVal::Int32(0), true, IV_LV5_ERROR(e));
     return JSUndefined;
   }
-  const JSVal first = obj->Get(ctx, context::Intern(ctx, "0"), IV_LV5_ERROR(e));
+  const JSVal first =
+      obj->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR(e));
   uint32_t to = 0;
   uint32_t from = 0;
   for (uint32_t k = 1; k < len; ++k, to = from) {

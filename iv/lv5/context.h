@@ -85,8 +85,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     InitContext(
         JSInlinedFunction<FunctionConstructor, 1>::NewPlain(
             this, context::Intern(this, "Function")),
-        JSInlinedFunction<GlobalEval, 1>::NewPlain(
-            this, context::Intern(this, "eval")));
+        JSInlinedFunction<GlobalEval, 1>::NewPlain(this, symbol::eval()));
   }
 
   JSFunction* throw_type_error() {
