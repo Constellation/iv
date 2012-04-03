@@ -345,7 +345,7 @@ inline JSVal MathHypot2(const Arguments& args, Error* e) {
     }
   }
   if (args.empty()) {
-    return 0.0;
+    return JSVal::Int32(0);
   }
   return JSNaN;
 }
