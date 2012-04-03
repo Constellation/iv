@@ -118,10 +118,21 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
     return ary;
   } else {
     JSVector* vec = JSVector::New(ctx, len, JSEmpty);
-    for (uint32_t k = 0; k < len; ++k) {
-      const Symbol sym = symbol::MakeSymbolFromIndex(k);
-      if (target->HasProperty(ctx, sym)) {
-        (*vec)[k] = target->Get(ctx, sym, IV_LV5_ERROR(e));
+    JSVector::iterator out = vec->begin();
+    if (target->IsClass<Class::Array>()) {
+      JSArray* ary = static_cast<JSArray*>(target);
+      for (uint32_t k = 0; k < len; ++k, ++out) {
+        const Symbol sym = symbol::MakeSymbolFromIndex(k);
+        if (ary->JSArray::HasProperty(ctx, sym)) {
+          *out = ary->JSArray::Get(ctx, sym, IV_LV5_ERROR(e));
+        }
+      }
+    } else {
+      for (uint32_t k = 0; k < len; ++k, ++out) {
+        const Symbol sym = symbol::MakeSymbolFromIndex(k);
+        if (target->HasProperty(ctx, sym)) {
+          *out = target->Get(ctx, sym, IV_LV5_ERROR(e));
+        }
       }
     }
     return vec->ToJSArray();
@@ -139,9 +150,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
   JSObject* const obj =
       args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
-  const JSVal join = obj->Get(
-      args.ctx(),
-      context::Intern(args.ctx(), "join"), IV_LV5_ERROR(e));
+  const JSVal join = obj->Get(args.ctx(), symbol::join(), IV_LV5_ERROR(e));
   if (join.IsCallable()) {
     ScopedArguments a(args.ctx(), 0, IV_LV5_ERROR(e));
     return join.object()->AsCallable()->Call(&a, obj, e);
@@ -158,6 +167,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const array = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, array, IV_LV5_ERROR(e));
+
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
@@ -285,36 +295,56 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   JSString* separator;
-  if (!args.empty() && !args[0].IsUndefined()) {
-    separator = args[0].ToString(ctx, IV_LV5_ERROR(e));
+  if (!args.At(0).IsUndefined()) {
+    separator = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   } else {
     separator = JSString::NewAsciiString(ctx, ",");
   }
+
   if (len == 0) {
     return JSString::NewEmptyString(ctx);
   }
+
   JSStringBuilder builder;
   {
     const JSVal element0 =
         obj->Get(ctx, symbol::MakeSymbolFromIndex(0u), IV_LV5_ERROR(e));
-    if (!element0.IsUndefined() && !element0.IsNull()) {
+    if (!element0.IsNullOrUndefined()) {
       const JSString* const str = element0.ToString(ctx, IV_LV5_ERROR(e));
       builder.AppendJSString(*str);
     }
   }
+
   uint32_t k = 1;
-  while (k < len) {
-    builder.AppendJSString(*separator);
-    const JSVal element = obj->Get(
-        ctx,
-        symbol::MakeSymbolFromIndex(k),
-        IV_LV5_ERROR(e));
-    if (!element.IsUndefined() && !element.IsNull()) {
-      const JSString* const str = element.ToString(ctx, IV_LV5_ERROR(e));
-      builder.AppendJSString(*str);
+  if (obj->IsClass<Class::Array>()) {
+    JSArray* ary = static_cast<JSArray*>(obj);
+    while (k < len) {
+      builder.AppendJSString(*separator);
+      const JSVal element = ary->JSArray::Get(
+          ctx,
+          symbol::MakeSymbolFromIndex(k),
+          IV_LV5_ERROR(e));
+      if (!element.IsNullOrUndefined()) {
+        const JSString* const str = element.ToString(ctx, IV_LV5_ERROR(e));
+        builder.AppendJSString(*str);
+      }
+      ++k;
     }
-    ++k;
+  } else {
+    while (k < len) {
+      builder.AppendJSString(*separator);
+      const JSVal element = obj->Get(
+          ctx,
+          symbol::MakeSymbolFromIndex(k),
+          IV_LV5_ERROR(e));
+      if (!element.IsNullOrUndefined()) {
+        const JSString* const str = element.ToString(ctx, IV_LV5_ERROR(e));
+        builder.AppendJSString(*str);
+      }
+      ++k;
+    }
   }
+
   return builder.Build(ctx);
 }
 
@@ -325,8 +355,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   if (len == 0) {
-    obj->Put(ctx, symbol::length(),
-             JSVal::Int32(0), true, IV_LV5_ERROR(e));
+    obj->Put(ctx, symbol::length(), JSVal::Int32(0), true, IV_LV5_ERROR(e));
     return JSUndefined;
   } else {
     const uint32_t index = len - 1;
@@ -543,10 +572,9 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     comparefn = args[0].object()->AsCallable();
   } else {
     comparefn =
-        JSInlinedFunction<&detail::CompareFn, 2>::New(
-            ctx,
-            context::Intern(ctx, "compare"));
+        JSInlinedFunction<&detail::CompareFn, 2>::New(ctx, symbol::compare());
   }
+
   if (len == 0) {
     return obj;
   }
@@ -1024,16 +1052,30 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
     k = 0;
   }
 
-  for (; k < len; ++k) {
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
-      const JSVal element_k =
-          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      if (JSVal::StrictEqual(search_element, element_k)) {
-        return k;
+  if (obj->IsClass<Class::Array>()) {
+    JSArray* ary = static_cast<JSArray*>(obj);
+    for (; k < len; ++k) {
+      if (ary->JSArray::HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal element_k =
+            ary->JSArray::Get(
+                ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        if (JSVal::StrictEqual(search_element, element_k)) {
+          return k;
+        }
+      }
+    }
+  } else {
+    for (; k < len; ++k) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal element_k =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        if (JSVal::StrictEqual(search_element, element_k)) {
+          return k;
+        }
       }
     }
   }
-  return -1;
+  return JSVal::Int32(-1);
 }
 
 // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
@@ -1045,15 +1087,10 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   const uint32_t arg_count = args.size();
 
   if (len == 0) {
-    return -1;
+    return JSVal::Int32(-1);
   }
 
-  JSVal search_element;
-  if (arg_count > 0) {
-    search_element = args[0];
-  } else {
-    search_element = JSUndefined;
-  }
+  const JSVal search_element = args.At(0);
 
   uint32_t k;
   if (arg_count > 1) {
@@ -1076,21 +1113,41 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
     k = len - 1;
   }
 
-  while (true) {
-    if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
-      const JSVal element_k =
-          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      if (JSVal::StrictEqual(search_element, element_k)) {
-        return k;
+
+  if (obj->IsClass<Class::Array>()) {
+    JSArray* ary = static_cast<JSArray*>(obj);
+    while (true) {
+      if (ary->JSArray::HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal element_k =
+            ary->JSArray::Get(
+                ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        if (JSVal::StrictEqual(search_element, element_k)) {
+          return k;
+        }
+      }
+      if (k == 0) {
+        break;
+      } else {
+        k--;
       }
     }
-    if (k == 0) {
-      break;
-    } else {
-      k--;
+  } else {
+    while (true) {
+      if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
+        const JSVal element_k =
+            obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+        if (JSVal::StrictEqual(search_element, element_k)) {
+          return k;
+        }
+      }
+      if (k == 0) {
+        break;
+      } else {
+        k--;
+      }
     }
   }
-  return -1;
+  return JSVal::Int32(-1);
 }
 
 // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
@@ -1099,28 +1156,26 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  const uint32_t arg_count = args.size();
 
-  if (arg_count == 0 || !args[0].IsCallable()) {
+  if (args.empty() || !args[0].IsCallable()) {
     e->Report(
         Error::Type,
         "Array.protoype.every requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn = args.front().object()->AsCallable();
 
-  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
+  const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
-      arg_list[0] = obj->Get(ctx,
-                             symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      arg_list[0] =
+          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal test_result =
+      const JSVal result =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = test_result.ToBoolean();
-      if (!result) {
+      if (!result.ToBoolean()) {
         return JSFalse;
       }
     }
@@ -1134,28 +1189,26 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  const uint32_t arg_count = args.size();
 
-  if (arg_count == 0 || !args[0].IsCallable()) {
+  if (args.empty() || !args[0].IsCallable()) {
     e->Report(
         Error::Type,
         "Array.protoype.some requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn = args.front().object()->AsCallable();
 
-  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
+  const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
-      arg_list[0] = obj->Get(ctx,
-                             symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      arg_list[0] =
+          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
-      const JSVal test_result =
+      const JSVal result =
           callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
-      const bool result = test_result.ToBoolean();
-      if (result) {
+      if (result.ToBoolean()) {
         return JSTrue;
       }
     }
@@ -1169,22 +1222,21 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  const uint32_t arg_count = args.size();
 
-  if (arg_count == 0 || !args[0].IsCallable()) {
+  if (args.empty() || !args[0].IsCallable()) {
     e->Report(
         Error::Type,
         "Array.protoype.forEach requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn = args.front().object()->AsCallable();
 
-  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
+  const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));
-      arg_list[0] = obj->Get(ctx,
-                             symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      arg_list[0] =
+          obj->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
       arg_list[1] = k;
       arg_list[2] = obj;
       callbackfn->Call(&arg_list, this_binding, IV_LV5_ERROR(e));
@@ -1199,17 +1251,16 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  const uint32_t arg_count = args.size();
 
-  if (arg_count == 0 || !args[0].IsCallable()) {
+  if (args.empty() || !args[0].IsCallable()) {
     e->Report(
         Error::Type,
         "Array.protoype.map requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
-  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
+  JSFunction* const callbackfn = args.front().object()->AsCallable();
 
+  const JSVal this_binding = args.At(1);
   if (len > JSArray::kMaxVectorSize) {
     JSArray* const ary = JSArray::New(ctx, len);
     for (uint32_t k = 0; k < len; ++k) {
@@ -1252,18 +1303,17 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  const uint32_t arg_count = args.size();
 
-  if (arg_count == 0 || !args[0].IsCallable()) {
+  if (args.empty() || !args[0].IsCallable()) {
     e->Report(
         Error::Type,
         "Array.protoype.filter requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn = args.front().object()->AsCallable();
 
   JSVector* const vec = JSVector::New(ctx);
-  const JSVal this_binding = (arg_count > 1) ? args[1] : JSUndefined;
+  const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
     if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
       ScopedArguments arg_list(ctx, 3, IV_LV5_ERROR(e));

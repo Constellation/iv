@@ -31,7 +31,9 @@ namespace symbol {
     V(ignoreCase)\
     V(multiline)\
     V(global)\
-    V(source)
+    V(source)\
+    V(compare)\
+    V(join)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:
