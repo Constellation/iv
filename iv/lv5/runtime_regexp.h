@@ -25,7 +25,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
       if (args_count > 1 && !args[1].IsUndefined()) {
         e->Report(Error::Type,
                   "RegExp Constructor with RegExp object and unknown flags");
-        return JSUndefined;
+        return JSEmpty;
       }
       if (args.IsConstructorCalled()) {
         return JSRegExp::New(ctx, static_cast<JSRegExp*>(first.object()));
@@ -46,10 +46,9 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   }
   if (reg->IsValid()) {
     return reg;
-  } else {
-    e->Report(Error::Syntax, "RegExp Constructor with invalid pattern");
-    return JSUndefined;
   }
+  e->Report(Error::Syntax, "RegExp Constructor with invalid pattern");
+  return JSEmpty;
 }
 
 // section 15.10.6.2 RegExp.prototype.exec(string)
@@ -58,18 +57,12 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
-    JSString* string;
-    if (args.empty()) {
-      string = ctx->global_data()->string_undefined();
-    } else {
-      string = args[0].ToString(ctx, IV_LV5_ERROR(e));
-    }
+    JSString* string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     return reg->Exec(ctx, string, e);
   }
-  e->Report(Error::Type,
-            "RegExp.prototype.exec is not generic function");
-  return JSUndefined;
+  e->Report(Error::Type, "RegExp.prototype.exec is not generic function");
+  return JSEmpty;
 }
 
 // section 15.10.6.3 RegExp.prototype.test(string)
@@ -78,19 +71,13 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   const JSVal& obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
-    JSString* string;
-    if (args.empty()) {
-      string = ctx->global_data()->string_undefined();
-    } else {
-      string = args[0].ToString(ctx, IV_LV5_ERROR(e));
-    }
+    JSString* string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     const JSVal result = reg->Exec(ctx, string, IV_LV5_ERROR(e));
     return JSVal::Bool(!result.IsNull());
   }
-  e->Report(Error::Type,
-            "RegExp.prototype.test is not generic function");
-  return JSUndefined;
+  e->Report(Error::Type, "RegExp.prototype.test is not generic function");
+  return JSEmpty;
 }
 
 // section 15.10.6.4 RegExp.prototype.toString()
@@ -115,9 +102,8 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
     }
     return builder.Build(ctx);
   }
-  e->Report(Error::Type,
-            "RegExp.prototype.toString is not generic function");
-  return JSUndefined;
+  e->Report(Error::Type, "RegExp.prototype.toString is not generic function");
+  return JSEmpty;
 }
 
 // Not Standard RegExp.prototype.compile(pattern, flags)
@@ -153,9 +139,8 @@ inline JSVal RegExpCompile(const Arguments& args, Error* e) {
     // reg->Compile(pattern, flags, IV_LV5_ERROR(e));
     return reg;
   }
-  e->Report(Error::Type,
-            "RegExp.prototype.compile is not generic function");
-  return JSUndefined;
+  e->Report(Error::Type, "RegExp.prototype.compile is not generic function");
+  return JSEmpty;
 }
 
 } } }  // namespace iv::lv5::runtime
