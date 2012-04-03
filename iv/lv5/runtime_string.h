@@ -13,7 +13,6 @@
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
-#include <iv/lv5/match_result.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsstring.h>

@@ -13,7 +13,6 @@
 #include <iv/lv5/context.h>
 #include <iv/lv5/jsregexp_impl.h>
 #include <iv/lv5/context_utils.h>
-#include <iv/lv5/match_result.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/jsvector.h>
 namespace iv {
