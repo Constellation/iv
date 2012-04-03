@@ -82,14 +82,27 @@ class GlobalData {
   }
 
   Symbol InternDouble(double number) {
-    if (number == static_cast<uint32_t>(number)) {
-      return InternUInt32(static_cast<uint32_t>(number));
+    const uint32_t converted = static_cast<uint32_t>(number);
+    if (number == converted) {
+      return InternUInt32(converted);
     } else {
       std::array<char, 80> buffer;
       const char* const str = core::DoubleToCString(number,
                                                     buffer.data(),
                                                     buffer.size());
       return symbol_table_.Lookup(core::StringPiece(str));
+    }
+  }
+
+  Symbol Intern64(uint64_t val) {
+    const uint32_t converted = static_cast<uint32_t>(val);
+    if (val == converted) {
+      return InternUInt32(converted);
+    } else {
+      std::array<char, 30> buffer;
+      const char* last = core::UInt64ToString(val, buffer.data());
+      return symbol_table_.Lookup(
+          core::StringPiece(buffer.data(), last - buffer.data()));
     }
   }
 

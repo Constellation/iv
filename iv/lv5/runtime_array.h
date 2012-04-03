@@ -273,7 +273,8 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
       ++n;
     }
   }
-  ary->JSArray::Put(ctx, symbol::length(), JSVal::UInt32(n), false, IV_LV5_ERROR(e));
+  ary->JSArray::Put(ctx,
+                    symbol::length(), JSVal::UInt32(n), false, IV_LV5_ERROR(e));
   return ary;
 }
 
@@ -343,36 +344,54 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  uint32_t n = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
-  bool index_over = false;
+  uint64_t n = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
+  const uint64_t max = UINT64_C(0x100000000);
+
   Arguments::const_iterator it = args.begin();
   const Arguments::const_iterator last = args.end();
-  for (; it != last; ++it, ++n) {
-    obj->Put(
-        ctx,
-        symbol::MakeSymbolFromIndex(n),
-        *it,
-        true, IV_LV5_ERROR(e));
-    if (n == UINT32_MAX) {
-      index_over = true;
-      break;
+
+  if ((n + args.size()) <= max) {
+    // fast case
+    // probably, target is Array
+    if (obj->IsClass<Class::Array>()) {
+      JSArray* ary = static_cast<JSArray*>(obj);
+      for (; it != last; ++it, ++n) {
+        assert(n < max);
+        ary->JSArray::Put(
+            ctx,
+            symbol::MakeSymbolFromIndex(n),
+            *it,
+            true, IV_LV5_ERROR(e));
+      }
+    } else {
+      for (; it != last; ++it, ++n) {
+        assert(n < max);
+        obj->Put(
+            ctx,
+            symbol::MakeSymbolFromIndex(n),
+            *it,
+            true, IV_LV5_ERROR(e));
+      }
     }
-  }
-  double len = static_cast<double>(n);
-  if (index_over) {
-    for (++len, ++it; it != last; ++it, ++len) {
+  } else {
+    for (; n < max; ++it, ++n) {
       obj->Put(
           ctx,
-          context::Intern(ctx, len),
+          symbol::MakeSymbolFromIndex(n),
+          *it,
+          true, IV_LV5_ERROR(e));
+    }
+    for (; it != last; ++it, ++n) {
+      obj->Put(
+          ctx,
+          context::Intern64(ctx, n),
           *it,
           true, IV_LV5_ERROR(e));
     }
   }
-  obj->Put(
-      ctx,
-      symbol::length(),
-      len,
-      true, IV_LV5_ERROR(e));
+
+  const JSVal len(static_cast<double>(n));
+  obj->Put(ctx, symbol::length(), len, true, IV_LV5_ERROR(e));
   return len;
 }
 
@@ -536,7 +555,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
     // non recursive quick sort
     int sp = 1;
     int64_t l = 0, r = 0;
-    const JSVal zero(0.0);
+    const JSVal zero = JSVal::Int32(0);
     const int32_t kStackSize = 32;
     std::array<int64_t, kStackSize> lstack, rstack;
     lstack[0] = 0;
@@ -943,7 +962,8 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
                  symbol::MakeSymbolFromIndex(to),
                  from_value, true, IV_LV5_ERROR(e));
       } else {
-        obj->Delete(ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
+        obj->Delete(
+            ctx, symbol::MakeSymbolFromIndex(to), true, IV_LV5_ERROR(e));
       }
     }
   }

@@ -37,6 +37,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
   friend Symbol context::Intern(Context* ctx, uint32_t index);
   friend Symbol context::Intern(Context* ctx, double number);
+  friend Symbol context::Intern64(Context* ctx, uint64_t index);
 
   friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 

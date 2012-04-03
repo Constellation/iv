@@ -57,6 +57,10 @@ Symbol Intern(Context* ctx, double number) {
   return ctx->global_data()->InternDouble(number);
 }
 
+Symbol Intern64(Context* ctx, uint64_t number) {
+  return ctx->global_data()->Intern64(number);
+}
+
 GlobalData* Global(Context* ctx) {
   return ctx->global_data();
 }
