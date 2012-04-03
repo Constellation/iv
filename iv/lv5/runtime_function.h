@@ -38,9 +38,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
     JSStringBuilder builder;
     builder.Append(detail::kFunctionPrefix);
     Slot slot;
-    if (func->GetOwnPropertySlot(ctx,
-                                 context::Intern(ctx, "name"),
-                                 &slot)) {
+    if (func->GetOwnPropertySlot(ctx, symbol::name(), &slot)) {
       const JSVal name = slot.Get(ctx, func, IV_LV5_ERROR(e));
       JSString* name_str = name.ToString(ctx, IV_LV5_ERROR(e));
       if (name_str->empty()) {
@@ -52,10 +50,9 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
       builder.Append("anonymous");
     }
     builder.Append(func->GetSource());
-    return builder.Build(args.ctx());
+    return builder.Build(ctx);
   }
-  e->Report(Error::Type,
-            "Function.prototype.toString is not generic function");
+  e->Report(Error::Type, "Function.prototype.toString is not generic function");
   return JSEmpty;
 }
 
@@ -69,11 +66,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
     const std::size_t args_size = args.size();
     if (args_size < 2) {
       ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-      if (args_size == 0) {
-        return func->Call(&a, JSUndefined, e);
-      } else {
-        return func->Call(&a, args[0], e);
-      }
+      return func->Call(&a, args.At(0), e);
     }
     const JSVal& second = args[1];
     if (!second.IsObject()) {
@@ -91,10 +84,9 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
           arg_array->Get(ctx,
                          symbol::MakeSymbolFromIndex(index), IV_LV5_ERROR(e));
     }
-    return func->Call(&args_list, args[0], e);
+    return func->Call(&args_list, args.front(), e);
   }
-  e->Report(Error::Type,
-            "Function.prototype.apply is not generic function");
+  e->Report(Error::Type, "Function.prototype.apply is not generic function");
   return JSEmpty;
 }
 
@@ -104,21 +96,16 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
-    Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
-
-    ScopedArguments args_list(ctx,
+    ScopedArguments args_list(args.ctx(),
                               (args_size > 1) ? args_size - 1 : 0,
                               IV_LV5_ERROR(e));
     if (args_size > 1) {
       std::copy(args.begin() + 1, args.end(), args_list.begin());
     }
-
-    const JSVal this_binding((args_size > 0) ? args[0] : JSUndefined);
-    return func->Call(&args_list, this_binding, e);
+    return func->Call(&args_list, args.At(0), e);
   }
-  e->Report(Error::Type,
-            "Function.prototype.call is not generic function");
+  e->Report(Error::Type, "Function.prototype.call is not generic function");
   return JSEmpty;
 }
 
@@ -128,11 +115,9 @@ inline JSVal FunctionBind(const Arguments& args, Error* e) {
   const JSVal& obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const target = obj.object()->AsCallable();
-    const JSVal this_binding((!args.empty()) ? args.front() : JSUndefined);
-    return JSBoundFunction::New(args.ctx(), target, this_binding, args);
+    return JSBoundFunction::New(args.ctx(), target, args.At(0), args);
   }
-  e->Report(Error::Type,
-            "Function.prototype.bind is not generic function");
+  e->Report(Error::Type, "Function.prototype.bind is not generic function");
   return JSEmpty;
 }
 
