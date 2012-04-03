@@ -35,9 +35,7 @@ class VMArguments : public lv5::Arguments {
 
 class Operation {
  public:
-  explicit Operation(Context* ctx)
-    : ctx_(ctx) {
-  }
+  explicit Operation(Context* ctx) : ctx_(ctx) { }
 
   JSVal Invoke(JSFunction* func, JSVal* arg, int argc_with_this, Error* e) {
     detail::VMArguments args(ctx_,
@@ -695,6 +693,7 @@ class Operation {
 
 #undef CHECK
 
+  inline Context* ctx() const { return ctx_; }
  private:
   Context* ctx_;
 };

@@ -11,7 +11,8 @@
 namespace iv {
 namespace lv5 {
 namespace railgun {
-class VM {
+
+class VM : private Operation {
  public:
   static const int32_t kJumpFromSubroutine = 0;
   static const int32_t kJumpFromReturn = 1;
@@ -27,8 +28,7 @@ class VM {
 
   // normal pass
   explicit VM(Context* ctx)
-    : ctx_(ctx),
-      operation_(ctx),
+    : Operation(ctx),
       stack_(),
       direct_threading_dispatch_table_(NULL),
       statistics_() {
@@ -59,8 +59,7 @@ class VM {
  private:
   // dispatch table get pass
   explicit VM(DispatchTableTag tag)
-    : ctx_(NULL),
-      operation_(NULL),
+    : Operation(NULL),
       stack_(tag),
       direct_threading_dispatch_table_(NULL) {
     Execute(NULL, NULL);
@@ -111,8 +110,6 @@ class VM {
     assert(env == frame->variable_env());
   }
 
-  Context* ctx_;
-  Operation operation_;
   Stack stack_;
   const DirectThreadingDispatchTable* direct_threading_dispatch_table_;
   Statistics statistics_;
