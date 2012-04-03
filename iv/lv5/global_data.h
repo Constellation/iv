@@ -37,7 +37,15 @@ class GlobalData {
       string_cache_(),
       global_obj_(JSGlobal::New(ctx)),
       string_empty_(new JSString()),
+      string_null_(JSString::NewAsciiString(ctx, "null")),
+      string_true_(JSString::NewAsciiString(ctx, "true")),
+      string_false_(JSString::NewAsciiString(ctx, "false")),
       string_undefined_(JSString::NewAsciiString(ctx, "undefined")),
+      string_function_(JSString::NewAsciiString(ctx, "function")),
+      string_object_(JSString::NewAsciiString(ctx, "object")),
+      string_number_(JSString::NewAsciiString(ctx, "number")),
+      string_string_(JSString::NewAsciiString(ctx, "string")),
+      string_boolean_(JSString::NewAsciiString(ctx, "boolean")),
       empty_object_map_(Map::New(ctx)),
       function_map_(Map::New(ctx)),
       array_map_(Map::New(ctx)),
@@ -107,7 +115,23 @@ class GlobalData {
 
   JSString* string_empty() const { return string_empty_; }
 
+  JSString* string_null() const { return string_null_; }
+
+  JSString* string_true() const { return string_true_; }
+
+  JSString* string_false() const { return string_false_; }
+
   JSString* string_undefined() const { return string_undefined_; }
+
+  JSString* string_function() const { return string_function_; }
+
+  JSString* string_object() const { return string_object_; }
+
+  JSString* string_number() const { return string_number_; }
+
+  JSString* string_string() const { return string_string_; }
+
+  JSString* string_boolean() const { return string_boolean_; }
 
   JSString* GetSingleString(uint16_t ch) {
     if (ch < 0x80) {
@@ -152,8 +176,17 @@ class GlobalData {
   std::array<JSString*, 0x80> string_cache_;
   JSGlobal* global_obj_;
 
+  // cached strings
   JSString* string_empty_;
+  JSString* string_null_;
+  JSString* string_true_;
+  JSString* string_false_;
   JSString* string_undefined_;
+  JSString* string_function_;
+  JSString* string_object_;
+  JSString* string_number_;
+  JSString* string_string_;
+  JSString* string_boolean_;
 
   // builtin maps
   Map* empty_object_map_;

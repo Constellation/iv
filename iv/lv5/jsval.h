@@ -607,20 +607,20 @@ inline std::size_t JSVal::Hasher::operator()(JSVal val) const {
 #endif  // 32 or 64 bit JSLayout ifdef
 
 JSString* JSLayout::TypeOf(Context* ctx) const {
+  // This method must not allocate new object
   if (IsObject()) {
     if (object()->IsCallable()) {
-      return JSString::NewAsciiString(ctx, "function");
-    } else {
-      return JSString::NewAsciiString(ctx, "object");
+      return ctx->global_data()->string_function();
     }
+    return ctx->global_data()->string_object();
   } else if (IsNumber()) {
-    return JSString::NewAsciiString(ctx, "number");
+    return ctx->global_data()->string_number();
   } else if (IsString()) {
-    return JSString::NewAsciiString(ctx, "string");
+    return ctx->global_data()->string_string();
   } else if (IsBoolean()) {
-    return JSString::NewAsciiString(ctx, "boolean");
+    return ctx->global_data()->string_boolean();
   } else if (IsNull()) {
-    return JSString::NewAsciiString(ctx, "object");
+    return ctx->global_data()->string_object();
   } else {
     assert(IsUndefined());
     return ctx->global_data()->string_undefined();
@@ -671,15 +671,16 @@ JSString* JSLayout::ToString(Context* ctx, Error* e) const {
         core::DoubleToCString(number(), buffer.data(), buffer.size());
     return JSString::NewAsciiString(ctx, str);
   } else if (IsBoolean()) {
-    return JSString::NewAsciiString(ctx, (boolean() ? "true" : "false"));
+    return boolean() ?
+        ctx->global_data()->string_true() : ctx->global_data()->string_false();
   } else if (IsNull()) {
-    return JSString::NewAsciiString(ctx, "null");
+    return ctx->global_data()->string_null();
   } else if (IsUndefined()) {
     return ctx->global_data()->string_undefined();
   } else {
     assert(IsObject());
-    JSLayout prim = object()->DefaultValue(ctx, Hint::STRING,
-                                           IV_LV5_ERROR_WITH(e, NULL));
+    JSLayout prim =
+        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR_WITH(e, NULL));
     return prim.ToString(ctx, e);
   }
 }
@@ -776,8 +777,8 @@ double JSLayout::ToNumber(Context* ctx, Error* e) const {
     return core::kNaN;
   } else {
     assert(IsObject());
-    JSLayout prim = object()->DefaultValue(ctx, Hint::NUMBER,
-                                           IV_LV5_ERROR_WITH(e, 0.0));
+    JSLayout prim =
+        object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
   }
 }
@@ -800,8 +801,9 @@ JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
     return core::kNaN;
   } else {
     assert(IsObject());
-    JSVal prim = object()->DefaultValue(ctx, Hint::NUMBER,
-                                        IV_LV5_ERROR_WITH(e, JSVal::Int32(0)));
+    const JSVal prim =
+        object()->DefaultValue(ctx, Hint::NUMBER,
+                               IV_LV5_ERROR_WITH(e, JSVal::Int32(0)));
     return prim.ToNumber(ctx, e);
   }
 }

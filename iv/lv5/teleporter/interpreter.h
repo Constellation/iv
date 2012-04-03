@@ -1120,8 +1120,7 @@ void Interpreter::Visit(const UnaryOperation* unary) {
       EVAL(unary->expr());
       if (ctx_->ret().IsReference()) {
         if (ctx_->ret().reference()->base().IsUndefined()) {
-          ctx_->Return(
-              JSString::NewAsciiString(ctx_, "undefined"));
+          ctx_->Return(ctx_->global_data()->string_undefined());
           return;
         }
       }

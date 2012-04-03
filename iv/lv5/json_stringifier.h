@@ -87,7 +87,6 @@ class JSONStringifier : private core::Noncopyable<> {
   JSString* Quote(const JSString& str, Error* e) {
     JSStringBuilder builder;
     builder.Append('"');
-    // TODO(Constellation) 8bit string optimization point
     if (str.Is8Bit()) {
       const Fiber8* fiber = str.Get8Bit();
       core::JSONQuote(fiber->begin(),
@@ -280,13 +279,13 @@ class JSONStringifier : private core::Noncopyable<> {
       }
     }
     if (value.IsNull()) {
-      return JSString::NewAsciiString(ctx_, "null");
+      return ctx_->global_data()->string_null();
     }
     if (value.IsBoolean()) {
       if (value.boolean()) {
-        return JSString::NewAsciiString(ctx_, "true");
+        return ctx_->global_data()->string_true();
       } else {
-        return JSString::NewAsciiString(ctx_, "false");
+        return ctx_->global_data()->string_false();
       }
     }
     if (value.IsString()) {
@@ -297,7 +296,7 @@ class JSONStringifier : private core::Noncopyable<> {
       if (core::math::IsFinite(val)) {
         return value.ToString(ctx_, e);
       } else {
-        return JSString::NewAsciiString(ctx_, "null");
+        return ctx_->global_data()->string_null();
       }
     }
     if (value.IsObject() && !value.IsCallable()) {

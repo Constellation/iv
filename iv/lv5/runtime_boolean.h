@@ -41,7 +41,9 @@ inline JSVal BooleanToString(const Arguments& args, Error* e) {
   } else {
     b = obj.boolean();
   }
-  return JSString::NewAsciiString(args.ctx(), (b) ? "true" : "false");
+  return b ?
+      args.ctx()->global_data()->string_true() :
+      args.ctx()->global_data()->string_false();
 }
 
 // section 15.6.4.3 Boolean.prototype.valueOf()
