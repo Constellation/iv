@@ -20,7 +20,8 @@ namespace symbol {
     V(valueOf)\
     V(prototype)\
     V(constructor)\
-    V(__proto__)\
+    V(undefined)\
+    V(null)\
     V(name)\
     V(message)\
     V(get)\

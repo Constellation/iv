@@ -710,9 +710,9 @@ Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
     } else if (IsBoolean()) {
       return context::Intern(ctx, (boolean() ? "true" : "false"));
     } else if (IsNull()) {
-      return context::Intern(ctx, "null");
+      return symbol::null();
     } else if (IsUndefined()) {
-      return context::Intern(ctx, "undefined");
+      return symbol::undefined();
     } else {
       assert(IsObject());
       const JSLayout prim =
