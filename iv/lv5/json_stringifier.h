@@ -252,9 +252,7 @@ class JSONStringifier : private core::Noncopyable<> {
     JSVal value = holder->Get(ctx_, key, IV_LV5_ERROR(e));
     if (value.IsObject()) {
       JSObject* const target = value.object();
-      const JSVal method = target->Get(ctx_,
-                                       context::Intern(ctx_, "toJSON"),
-                                       IV_LV5_ERROR(e));
+      const JSVal method = target->Get(ctx_, symbol::toJSON(), IV_LV5_ERROR(e));
       if (method.IsCallable()) {
         ScopedArguments args_list(ctx_, 1, IV_LV5_ERROR(e));
         args_list[0] = JSString::New(ctx_, key);

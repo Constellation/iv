@@ -16,6 +16,7 @@ namespace symbol {
     V(caller)\
     V(callee)\
     V(toString)\
+    V(toJSON)\
     V(valueOf)\
     V(prototype)\
     V(constructor)\

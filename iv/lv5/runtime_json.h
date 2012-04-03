@@ -29,17 +29,14 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       JSArray* const ary = static_cast<JSArray*>(obj);
       const uint32_t len = internal::GetLength(ctx, ary, IV_LV5_ERROR(e));
       for (uint32_t i = 0; i < len; ++i) {
-        const JSVal new_element = JSONWalk(ctx,
-                                           ary,
-                                           context::Intern(ctx, i),
+        const Symbol sym = symbol::MakeSymbolFromIndex(i);
+        const JSVal new_element = JSONWalk(ctx, ary, sym,
                                            reviver, IV_LV5_ERROR(e));
         if (new_element.IsUndefined()) {
-          ary->JSArray::Delete(
-              ctx,
-              symbol::MakeSymbolFromIndex(i), false, IV_LV5_ERROR(e));
+          ary->JSArray::Delete(ctx, sym, false, IV_LV5_ERROR(e));
         } else {
           ary->JSArray::DefineOwnProperty(
-              ctx, symbol::MakeSymbolFromIndex(i),
+              ctx, sym,
               DataDescriptor(new_element, ATTR::W | ATTR::E | ATTR::C),
               false, IV_LV5_ERROR(e));
         }
@@ -88,28 +85,23 @@ class PropertyListEqual {
 // section 15.12.2 parse(text[, reviver])
 inline JSVal JSONParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("JSON.parse", args, e);
-  const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
-  JSVal first;
-  if (args_size > 0) {
-    first = args[0];
-  }
-  JSString* const text = first.ToString(ctx, IV_LV5_ERROR(e));
+  JSString* const text = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   JSVal result;
   if (text->Is8Bit()) {
     result = ParseJSON<true>(ctx, *text->Get8Bit(), IV_LV5_ERROR(e));
   } else {
     result = ParseJSON<true>(ctx, *text->Get16Bit(), IV_LV5_ERROR(e));
   }
-  if (args_size > 1 && args[1].IsCallable()) {
+  const JSVal second = args.At(1);
+  if (second.IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
     const Symbol empty = context::Intern(ctx, "");
     root->DefineOwnProperty(
         ctx, empty,
         DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),
         false, IV_LV5_ERROR(e));
-    return detail::JSONWalk(ctx, root, empty,
-                            args[1].object()->AsCallable(), e);
+    return detail::JSONWalk(ctx, root, empty, second.object()->AsCallable(), e);
   }
   return result;
 }
@@ -117,21 +109,14 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
 // section 15.12.3 stringify(value[, replacer[, space]])
 inline JSVal JSONStringify(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("JSON.stringify", args, e);
-  const std::size_t args_size = args.size();
   Context* const ctx = args.ctx();
-  JSVal value, replacer, space;
   trace::Vector<JSString*>::type property_list;
   trace::Vector<JSString*>::type* maybe = NULL;
   JSFunction* replacer_function = NULL;
-  if (args_size > 0) {
-    value = args[0];
-    if (args_size > 1) {
-      replacer = args[1];
-      if (args_size > 2) {
-        space = args[2];
-      }
-    }
-  }
+  const JSVal value(args.At(0));
+  const JSVal replacer(args.At(1));
+  JSVal space(args.At(2));
+
   // step 4
   if (replacer.IsObject()) {
     JSObject* const rep = replacer.object();
