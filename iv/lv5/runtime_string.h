@@ -747,14 +747,11 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
   regexp->SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
   const JSVal result = regexp->Exec(ctx, str, e);
   regexp->SetLastIndex(ctx, last_index, IV_LV5_ERROR(e));
-  if (!e) {
-    return JSUndefined;
-  }
   if (result.IsNull()) {
-    return static_cast<double>(-1);
+    return JSVal::Int32(-1);
   } else {
     assert(result.IsObject());
-    return result.object()->Get(ctx, context::Intern(ctx, "index"), e);
+    return result.object()->Get(ctx, symbol::index(), e);
   }
 }
 
