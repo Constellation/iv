@@ -26,10 +26,11 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
     NONE = 0,
     IS_CONS = 1,
     IS_8BIT = 2,
-    IS_ORIGINAL = 4
+    IS_ORIGINAL = 4,
+    IS_EXTERNAL = 8
   };
 
-  static const int kFlagShift = 2;
+  static const uint32_t kFlagShift = 2;
 
   inline void operator delete(void* p) {
     // this type memory is allocated by malloc
@@ -42,18 +43,20 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
 
   bool Is8Bit() const { return flags_ & IS_8BIT; }
 
-  bool IsOriginal() const {
-    return flags_ & IS_ORIGINAL;
+  bool IsOriginal() const { return flags_ & IS_ORIGINAL; }
+
+  bool IsExternal() const { return flags_ & IS_EXTERNAL; }
+
+  bool ReleaseNeeded() const {
+    return !(flags_ & (IS_ORIGINAL | IS_CONS | IS_EXTERNAL));
   }
 
-  size_type size() const {
-    return size_;
-  }
+  size_type size() const { return size_; }
 
   inline ~FiberSlot();
 
  protected:
-  explicit FiberSlot(std::size_t n, int flags)
+  explicit FiberSlot(uint32_t n, uint32_t flags)
     : size_(n),
       flags_(flags) {
   }
@@ -66,8 +69,8 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
     }
   }
 
-  size_type size_;
-  int flags_;
+  uint32_t size_;
+  uint32_t flags_;
 
  private:
   // noncopyable
@@ -209,9 +212,7 @@ class FiberBase : public FiberSlot {
   const_reverse_iterator crend() const { return rend(); }
 
  public:
-  FiberBase(std::size_t size,
-            int flags,
-            FiberBase* original)
+  FiberBase(uint32_t size, uint32_t flags, FiberBase* original)
     : FiberSlot(size, flags),
       original_(original) {
   }
@@ -276,7 +277,7 @@ class Fiber : public FiberBase {
   typedef typename std::iterator_traits<iterator>::difference_type difference_type;  // NOLINT
   typedef std::size_t size_type;
 
-  static const int k8BitFlag =
+  static const uint32_t k8BitFlag =
       std::is_same<CharT, char>::value ? FiberSlot::IS_8BIT : FiberSlot::NONE;
 
   static std::size_t GetControlSize() {
@@ -292,24 +293,30 @@ class Fiber : public FiberBase {
     std::copy(piece.begin(), piece.end(), begin());
   }
 
-  explicit Fiber(std::size_t n)
+  explicit Fiber(uint32_t n)
     : FiberBase(n, k8BitFlag | IS_ORIGINAL, this),
       ptr_(reinterpret_cast<pointer>(this) +
            GetControlSize() / sizeof(char_type)) {
   }
 
   template<typename Iter>
-  Fiber(Iter it, std::size_t n)
+  Fiber(Iter it, uint32_t n)
     : FiberBase(n, k8BitFlag | IS_ORIGINAL, this),
       ptr_(reinterpret_cast<pointer>(this) +
            GetControlSize() / sizeof(char_type)) {
     std::copy(it, it + n, begin());
   }
 
-  Fiber(const this_type* fiber, std::size_t from, std::size_t to)
+  Fiber(const this_type* fiber, uint32_t from, uint32_t to)
     : FiberBase((to - from), k8BitFlag, fiber->original()),
       ptr_(fiber->ptr_ + from) {
     original()->Retain();
+  }
+
+  explicit Fiber(const core::BasicStringPiece<CharT>& str)
+    : FiberBase(str.size(), k8BitFlag | IS_ORIGINAL | IS_EXTERNAL, this),
+      // TODO(Constellation) avoid const_cast
+      ptr_(const_cast<CharT*>(str.data())) {
   }
 
  public:
@@ -318,7 +325,7 @@ class Fiber : public FiberBase {
     return New(piece.begin(), piece.size());
   }
 
-  static this_type* NewWithSize(std::size_t n) {
+  static this_type* NewWithSize(uint32_t n) {
     void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
     return new (mem) Fiber(n);
   }
@@ -329,12 +336,16 @@ class Fiber : public FiberBase {
   }
 
   template<typename Iter>
-  static this_type* New(Iter it, std::size_t n) {
+  static this_type* New(Iter it, uint32_t n) {
     void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
     return new (mem) Fiber(it, n);
   }
 
-  static this_type* New(const this_type* original, std::size_t from, std::size_t to) {
+  static this_type* NewWithExternal(const core::BasicStringPiece<CharT>& str) {
+    return new (std::malloc(sizeof(this_type))) Fiber(str);
+  }
+
+  static this_type* New(const this_type* original, uint32_t from, uint32_t to) {
     return new (std::malloc(sizeof(this_type))) Fiber(original, from, to);
   }
 
@@ -491,7 +502,7 @@ int FiberBase::compare(const this_type& x) const {
 }
 
 FiberSlot::~FiberSlot() {
-  if (!IsOriginal() && !IsCons()) {
+  if (ReleaseNeeded()) {
     static_cast<const FiberBase*>(this)->original()->Release();
   }
 }

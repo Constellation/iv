@@ -459,11 +459,13 @@ class JSString: public radio::HeapObject<radio::STRING> {
   static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
     if (lhs->empty()) {
       return rhs;
-    } else if (rhs->empty()) {
-      return lhs;
-    } else {
-      return new (PointerFreeGC) this_type(lhs, rhs);
     }
+
+    if (rhs->empty()) {
+      return lhs;
+    }
+
+    return new (PointerFreeGC) this_type(lhs, rhs);
   }
 
   static this_type* New(Context* ctx, Symbol sym) {
@@ -476,7 +478,15 @@ class JSString: public radio::HeapObject<radio::STRING> {
       char* end = core::UInt32ToString(index, buffer.data());
       return New(ctx, buffer.data(), end, true);
     } else {
-      return New(ctx, *symbol::GetStringFromSymbol(sym));
+      assert(!symbol::IsIndexSymbol(sym));
+      const core::UString* str = symbol::GetStringFromSymbol(sym);
+      if (str->empty()) {
+        return NewEmptyString(ctx);
+      }
+      if (str->size() == 1) {
+        return NewSingle(ctx, (*str)[0]);
+      }
+      return new (PointerFreeGC) this_type(*str);
     }
   }
 
@@ -514,12 +524,11 @@ class JSString: public radio::HeapObject<radio::STRING> {
  private:
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, std::size_t n, bool is_8bit) {
-    if (n <= 1) {
-      if (n == 0) {
-        return NewEmptyString(ctx);
-      } else {
-        return NewSingle(ctx, *it);
-      }
+    if (n == 0) {
+      return NewEmptyString(ctx);
+    }
+    if (n == 1) {
+      return NewSingle(ctx, *it);
     }
     return new (PointerFreeGC) this_type(it, n, is_8bit);
   }
@@ -615,6 +624,15 @@ class JSString: public radio::HeapObject<radio::STRING> {
     } else {
       fibers_[0] = Fiber16::New(&ch, 1);
     }
+  }
+
+  // external string
+  explicit JSString(const core::UStringPiece& str)
+    : size_(str.size()),
+      is_8bit_(false),
+      fiber_count_(1),
+      fibers_() {
+    fibers_[0] = Fiber16::NewWithExternal(str);
   }
 
   template<typename Iter>
