@@ -98,7 +98,7 @@ class JSVMFunction : public JSFunction {
         false, &e);
     if (code->HasName()) {
       DefineOwnProperty(
-          ctx, context::Intern(ctx, "name"),
+          ctx, symbol::name(),
           DataDescriptor(JSString::New(ctx, code->name()), ATTR::NONE),
           false, &e);
     }

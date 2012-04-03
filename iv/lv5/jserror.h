@@ -43,8 +43,7 @@ class JSError : public JSObject {
     : JSObject(context::GetErrorMap(ctx)),
       code_(code) {
     if (str) {
-      DefineOwnProperty(ctx,
-                        context::Intern(ctx, "message"),
+      DefineOwnProperty(ctx, symbol::message(),
                         DataDescriptor(str, ATTR::C | ATTR::W), false, NULL);
     }
   }

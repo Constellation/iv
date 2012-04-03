@@ -138,21 +138,11 @@ class JSCodeFunction : public JSFunction {
                        ATTR::WRITABLE),
         false, &e);
     if (HasName()) {
-      const core::UString str(symbol::GetSymbolString(name()));
-      if (!str.empty()) {
-        DefineOwnProperty(
-            ctx, context::Intern(ctx, "name"),
-            DataDescriptor(JSString::New(ctx, str),
-                           ATTR::NONE),
-            false, &e);
-      } else {
-        DefineOwnProperty(
-            ctx, context::Intern(ctx, "name"),
-            DataDescriptor(
-                JSString::NewEmptyString(ctx),
-                ATTR::NONE),
-            false, &e);
-      }
+      JSString* str = symbol::GetSymbolString(name()).empty() ?
+          JSString::NewEmptyString(ctx) : JSString::New(ctx, name());
+      DefineOwnProperty(
+          ctx, symbol::name(),
+          DataDescriptor(str, ATTR::NONE), false, &e);
     }
     if (function_->strict()) {
       JSFunction* const throw_type_error = ctx->throw_type_error();

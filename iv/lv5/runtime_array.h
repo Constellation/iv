@@ -202,7 +202,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         ctx,
         symbol::MakeSymbolFromIndex(k),
         IV_LV5_ERROR(e));
-    if (!element.IsNullUndefined()) {
+    if (!element.IsNullOrUndefined()) {
       JSObject* const elm_obj = element.ToObject(ctx, IV_LV5_ERROR(e));
       const JSVal method = elm_obj->Get(ctx, toLocaleString, IV_LV5_ERROR(e));
       if (!method.IsCallable()) {
