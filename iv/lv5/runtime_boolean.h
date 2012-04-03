@@ -15,13 +15,9 @@ namespace runtime {
 // section 15.6.2.1 new Boolean(value)
 inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
-    bool res = false;
-    if (!args.empty()) {
-      res = args[0].ToBoolean();
-    }
-    return JSBooleanObject::New(args.ctx(), res);
+    return JSBooleanObject::New(args.ctx(), args.At(0).ToBoolean());
   } else {
-    return JSVal::Bool(!args.empty() && args.front().ToBoolean());
+    return JSVal::Bool(args.At(0).ToBoolean());
   }
 }
 
@@ -50,16 +46,15 @@ inline JSVal BooleanToString(const Arguments& args, Error* e) {
 inline JSVal BooleanValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, e);
   const JSVal& obj = args.this_binding();
-  if (!obj.IsBoolean()) {
-    if (obj.IsObject() && obj.object()->IsClass<Class::Boolean>()) {
-      return JSVal::Bool(static_cast<JSBooleanObject*>(obj.object())->value());
-    } else {
-      e->Report(Error::Type,
-                "Boolean.prototype.valueOf is not generic function");
-      return JSEmpty;
-    }
+  if (obj.IsBoolean()) {
+    return obj;
+  }
+  if (obj.IsObject() && obj.object()->IsClass<Class::Boolean>()) {
+    return JSVal::Bool(static_cast<JSBooleanObject*>(obj.object())->value());
   } else {
-    return JSVal::Bool(obj.boolean());
+    e->Report(Error::Type,
+              "Boolean.prototype.valueOf is not generic function");
+    return JSEmpty;
   }
 }
 
