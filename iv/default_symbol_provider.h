@@ -22,6 +22,7 @@ namespace symbol {
     V(constructor)\
     V(__proto__)\
     V(name)\
+    V(message)\
     V(get)\
     V(set)\
     V(lastIndex)\

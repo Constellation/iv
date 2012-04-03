@@ -18,16 +18,11 @@ namespace runtime {
 namespace detail {
 
 static inline JSString* ErrorMessageString(const Arguments& args, Error* e) {
-  if (!args.empty()) {
-    const JSVal& msg = args.front();
-    if (!msg.IsUndefined()) {
-      return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, NULL));
-    } else {
-      return NULL;
-    }
-  } else {
+  const JSVal msg = args.At(0);
+  if (msg.IsUndefined()) {
     return NULL;
   }
+  return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, NULL));
 }
 
 }  // namespace detail
@@ -47,9 +42,8 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
   if (obj.IsObject()) {
     JSString* name;
     {
-      const JSVal target = obj.object()->Get(ctx,
-                                             context::Intern(ctx, "name"),
-                                             IV_LV5_ERROR(e));
+      const JSVal target =
+          obj.object()->Get(ctx, symbol::name(), IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
         name = JSString::NewAsciiString(ctx, "Error");
       } else {
@@ -58,9 +52,8 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
     }
     JSString* msg;
     {
-      const JSVal target = obj.object()->Get(ctx,
-                                             context::Intern(ctx, "message"),
-                                             IV_LV5_ERROR(e));
+      const JSVal target =
+          obj.object()->Get(ctx, symbol::message(), IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
         msg = JSString::NewEmptyString(ctx);
       } else {
