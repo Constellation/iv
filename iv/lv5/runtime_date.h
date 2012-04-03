@@ -31,8 +31,7 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
 
     if (args_size == 0) {
       // section 15.9.3.3 new Date()
-      return JSDate::New(
-          ctx, date::TimeClip(date::CurrentTime()));
+      return JSDate::New(ctx, date::TimeClip(date::CurrentTime()));
     }
 
     if (args_size == 1) {
