@@ -12,8 +12,9 @@ class Context : public lv5::Context {
  public:
   static const std::size_t kNativeIteratorCacheMax = 20;
   static const std::size_t kGlobalMapCacheSize = 1024;
-  typedef std::array<
-      std::tuple<Map*, Symbol, std::size_t>, kGlobalMapCacheSize> MapCache;
+  typedef std::pair<Map*, Symbol> MapCacheKey;
+  typedef std::pair<MapCacheKey, std::size_t> MapCacheEntry;
+  typedef std::array<MapCacheEntry, kGlobalMapCacheSize> MapCache;
 
   explicit Context();
   ~Context();

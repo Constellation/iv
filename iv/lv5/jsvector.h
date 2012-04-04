@@ -76,15 +76,15 @@ class JSVector : private JSArray {
   void pop_back() { vector_.pop_back(); }
 
 
-  iterator insert(iterator position, const JSVal& x) {
-    return vector_.insert(position, x);
+  void insert(iterator position, const JSVal& x) {
+    vector_.insert(position, x);
   }
   void insert(iterator position, size_type n, const JSVal& x) {
-    return vector_.insert(position, n, x);
+    vector_.insert(position, n, x);
   }
   template<typename InputIterator>
   void insert(iterator position, InputIterator first, InputIterator last) {
-    return vector_.insert(position, first, last);
+    vector_.insert(position, first, last);
   }
 
   iterator erase(iterator position) { return vector_.erase(position); }

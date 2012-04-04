@@ -21,8 +21,9 @@ inline Context::Context()
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
   global_map_cache_ = new(GC)MapCache();
-  global_map_cache_->assign(
-      MapCache::value_type(NULL, symbol::kDummySymbol, core::kNotFound));
+  std::fill_n(global_map_cache_->begin(), global_map_cache_->size(),
+              MapCacheEntry(
+                  MapCacheKey(NULL, symbol::kDummySymbol), core::kNotFound));
 #ifdef DEBUG
   iterator_live_count_ = 0;
 #endif
