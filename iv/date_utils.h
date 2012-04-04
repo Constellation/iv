@@ -66,7 +66,8 @@ inline double TimeFromYear(int y) {
   return kMsPerDay * DaysFromYear(y);
 }
 
-// JSC's method
+// 365.2425 days are average year in every 400 years.
+// See http://en.wikipedia.org/wiki/Gregorian_calendar
 inline int YearFromTime(double t) {
   const int about = static_cast<int>(
       std::floor(t / (kMsPerDay * 365.2425)) + 1970);
