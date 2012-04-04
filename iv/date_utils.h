@@ -1,5 +1,5 @@
-#ifndef IV_LV5_DATE_UTILS_H_
-#define IV_LV5_DATE_UTILS_H_
+#ifndef IV_DATE_UTILS_H_
+#define IV_DATE_UTILS_H_
 #include <ctime>
 #include <cmath>
 #include <cstring>
@@ -11,7 +11,7 @@
 #include <iv/utils.h>
 #include <iv/canonicalized_nan.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace date {
 
 static const int kHoursPerDay = 24;
@@ -321,10 +321,10 @@ inline double TimeClip(double time) {
   return core::DoubleToInteger(time);
 }
 
-} } }  // namespace iv::lv5::date
+} } }  // namespace iv::core::date
 #if defined(IV_OS_WIN)
-#include <iv/lv5/date_utils_win.h>
+#include <iv/date_utils_win.h>
 #else
-#include <iv/lv5/date_utils_posix.h>
+#include <iv/date_utils_posix.h>
 #endif  // OS_WIN
-#endif  // IV_LV5_DATE_UTILS_H_
+#endif  // IV_DATE_UTILS_H_

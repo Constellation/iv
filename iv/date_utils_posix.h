@@ -1,11 +1,11 @@
-#ifndef IV_LV5_DATE_UTILS_POSIX_H_
-#define IV_LV5_DATE_UTILS_POSIX_H_
+#ifndef IV_DATE_UTILS_POSIX_H_
+#define IV_DATE_UTILS_POSIX_H_
 #include <sys/time.h>
 #include <unistd.h>
 #include <iv/platform_math.h>
 #include <iv/canonicalized_nan.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace date {
 
 inline double DaylightSavingTA(double utc) {
@@ -57,5 +57,5 @@ inline const char* LocalTimeZone(double t) {
 #endif
 }
 
-} } }  // namespace iv::lv5::date
-#endif  // IV_LV5_DATE_UTILS_POSIX_H_
+} } }  // namespace iv::core::date
+#endif  // IV_DATE_UTILS_POSIX_H_

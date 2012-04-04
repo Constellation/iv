@@ -1,14 +1,14 @@
-#ifndef IV_LV5_DATE_PARSER_H_
-#define IV_LV5_DATE_PARSER_H_
+#ifndef IV_DATE_PARSER_H_
+#define IV_DATE_PARSER_H_
 #include <algorithm>
 #include <limits>
 #include <iv/detail/array.h>
 #include <iv/noncopyable.h>
 #include <iv/canonicalized_nan.h>
 #include <iv/stringpiece.h>
-#include <iv/lv5/date_utils.h>
+#include <iv/date_utils.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace date {
 
 // inspired from V8 Keyword Table
@@ -442,5 +442,5 @@ double Parse(const String& str) {
   return parser.Parse(str.begin(), str.end());
 }
 
-} } }  // namespace iv::lv5::date
-#endif  // IV_LV5_DATE_PARSER_H_
+} } }  // namespace iv::core::date
+#endif  // IV_DATE_PARSER_H_

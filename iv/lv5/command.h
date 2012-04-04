@@ -7,7 +7,7 @@ extern "C" {
 }
 #include <iv/conversions.h>
 #include <iv/unicode.h>
-#include <iv/lv5/date_utils.h>
+#include <iv/date_utils.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
@@ -41,7 +41,7 @@ inline JSVal Quit(const Arguments& args, Error* e) {
 }
 
 inline JSVal HiResTime(const Arguments& args, Error* e) {
-  return date::HighResTime();
+  return core::date::HighResTime();
 }
 
 inline JSVal CollectGarbage(const Arguments& args, Error* e) {

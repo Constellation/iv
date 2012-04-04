@@ -2,9 +2,9 @@
 #define IV_LV5_RAILGUN_COMMAND_H_
 #include <iv/file_source.h>
 #include <iv/utils.h>
+#include <iv/date_utils.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/error_check.h>
-#include <iv/lv5/date_utils.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/railgun/disassembler.h>
@@ -51,10 +51,10 @@ inline JSVal StackDepth(const Arguments& args, Error* e) {
 class TickTimer : private core::Noncopyable<TickTimer> {
  public:
   explicit TickTimer()
-    : start_(date::HighResTime()) { }
+    : start_(core::date::HighResTime()) { }
 
   double GetTime() const {
-    return date::HighResTime() - start_;
+    return core::date::HighResTime() - start_;
   }
  private:
   double start_;

@@ -10,14 +10,14 @@
 // WideCharToMultiByte function
 // http://msdn.microsoft.com/en-us/library/windows/desktop/dd374130(v=vs.85).aspx
 //
-#ifndef IV_LV5_DATE_UTILS_WIN_H_
-#define IV_LV5_DATE_UTILS_WIN_H_
+#ifndef IV_DATE_UTILS_WIN_H_
+#define IV_DATE_UTILS_WIN_H_
 #include <windows.h>
 #include <iv/detail/array.h>
 #include <iv/singleton.h>
 #include <iv/platform_math.h>
 namespace iv {
-namespace lv5 {
+namespace core {
 namespace date {
 
 // UTF-8 code max length is 4
@@ -171,5 +171,5 @@ inline const char* LocalTimeZone(double t) {
   return kTZ.data();
 }
 
-} } }  // namespace iv::lv5::date
-#endif  // IV_LV5_DATE_UTILS_WIN_H_
+} } }  // namespace iv::core::date
+#endif  // IV_DATE_UTILS_WIN_H_
