@@ -48,7 +48,9 @@ class JSVector : private JSArray {
 
   size_type max_size() const { return vector_.max_size(); }
 
-  void resize(size_type sz, JSVal c = JSUndefined) { vector_.resize(sz, c); }
+  void resize(size_type sz) { vector_.resize(sz); }
+  void resize(size_type sz, const_reference c) { vector_.resize(sz, c); }
+
 
   size_type capacity() const { return vector_.capacity(); }
 
@@ -66,6 +68,9 @@ class JSVector : private JSArray {
   reference back() { return vector_.back(); }
   const_reference back() const { return vector_.back(); }
 
+  value_type* data() { return vector_.data(); }
+  const value_type* data() const { return vector_.data(); }
+
   template<typename InputIterator>
   void assign(InputIterator first, InputIterator last) {
     vector_.assign(first, last);
@@ -76,8 +81,8 @@ class JSVector : private JSArray {
   void pop_back() { vector_.pop_back(); }
 
 
-  void insert(iterator position, const JSVal& x) {
-    vector_.insert(position, x);
+  iterator insert(iterator position, const JSVal& x) {
+    return vector_.insert(position, x);
   }
   void insert(iterator position, size_type n, const JSVal& x) {
     vector_.insert(position, n, x);
@@ -103,7 +108,8 @@ class JSVector : private JSArray {
     return vec;
   }
 
-  static JSVector* New(Context* ctx, size_type n, const JSVal& v = JSUndefined) {
+  static JSVector* New(Context* ctx, size_type n,
+                       const JSVal& v = JSUndefined) {
     JSVector* vec = new JSVector(ctx, n, v);
     vec->set_cls(JSArray::GetClass());
     vec->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
