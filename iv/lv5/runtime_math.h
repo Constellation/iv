@@ -12,11 +12,6 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace math_detail {
-
-static const double kInfinity = std::numeric_limits<double>::infinity();
-
-}  // namespace math_detail
 
 // section 15.8.2.1 abs(x)
 inline JSVal MathAbs(const Arguments& args, Error* e) {
@@ -122,7 +117,7 @@ inline JSVal MathLog(const Arguments& args, Error* e) {
 // section 15.8.2.11 max([value1[, value2[, ... ]]])
 inline JSVal MathMax(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.max", args, e);
-  double max = -math_detail::kInfinity;
+  double max = -core::math::kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
@@ -138,7 +133,7 @@ inline JSVal MathMax(const Arguments& args, Error* e) {
 // section 15.8.2.12 min([value1[, value2[, ... ]]])
 inline JSVal MathMin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.min", args, e);
-  double min = math_detail::kInfinity;
+  double min = core::math::kInfinity;
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double x = it->ToNumber(args.ctx(), IV_LV5_ERROR(e));
