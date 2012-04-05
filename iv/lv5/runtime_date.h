@@ -282,7 +282,8 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       const double time = core::date::LocalTime(t);
       char buf[20];
@@ -309,7 +310,8 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       const double dst = core::date::DaylightSavingTA(t);
       double offset = core::date::LocalTZA() + dst;
@@ -351,7 +353,8 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       const double dst = core::date::DaylightSavingTA(t);
       double offset = core::date::LocalTZA() + dst;
@@ -397,7 +400,8 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       const double time = core::date::LocalTime(t);
       char buf[20];
@@ -424,7 +428,8 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       const double dst = core::date::DaylightSavingTA(t);
       double offset = core::date::LocalTZA() + dst;
@@ -1329,7 +1334,8 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(time)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       char buf[40];
       const int num = snprintf(
@@ -1358,7 +1364,8 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(time)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date");
+      e->Report(Error::Range, "Invalid Date");
+      return JSEmpty;
     } else {
       char buf[30];
       const int num = snprintf(
