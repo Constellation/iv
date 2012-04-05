@@ -174,7 +174,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
 
   // implementation depended locale based separator
   const char separator = ',';
-  const Symbol toLocaleString = context::Intern(ctx, "toLocaleString");
+  const Symbol toLocaleString = symbol::toLocaleString();
   JSStringBuilder builder;
   {
     const JSVal first =
