@@ -1,3 +1,10 @@
+// PropertyNamesCollector ensures property names enumeration order
+// Order is defined in
+//   http://wiki.ecmascript.org/doku.php?id=strawman:enumeration
+//
+// 1. index properties (see definition below) in ascending numeric order
+// 2. all other properties, in the order in which they were created
+//
 #ifndef IV_LV5_PROPERTY_NAMES_COLLECTOR_H_
 #define IV_LV5_PROPERTY_NAMES_COLLECTOR_H_
 #include <vector>
