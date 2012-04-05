@@ -163,7 +163,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
   }
 
   uint32_t registers() const {
-    return stack_size() + heap_size() + temporary_registers();
+    return stack_size() + temporary_registers();
+    // return stack_size() + heap_size() + temporary_registers();
   }
 
   bool needs_declarative_environment() const {

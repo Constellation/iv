@@ -19,6 +19,7 @@ struct FrameConstant {
   static const int kThisOffset;
   static const int kCalleeOffset;
   static int Arg(int i);
+  static int FromRegisterToArg(int16_t i);
 };
 
 //
@@ -218,6 +219,10 @@ inline JSVal* Frame::RegisterFile() {
   return GetFrameBase() + FrameConstant<>::kFrameSize;
 }
 
+template<typename T>
+int FrameConstant<T>::FromRegisterToArg(int16_t i) {
+  return kThisOffset - 1 + i;
+}
 
 // Registers implementation
 

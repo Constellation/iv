@@ -696,7 +696,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     //   for example,
     //     * direct call to eval in normal code
     //     * global code
-    assert(thunkpool_.empty());
     registers_.Clear(0, 0);
 
     // save eval result or not
@@ -754,6 +753,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         EmitPatchingBindingInstantiation(lit, TYPE == Code::EVAL);
       }
     }
+    thunkpool_.Initialize(code);
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
