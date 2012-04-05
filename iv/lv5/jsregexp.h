@@ -120,7 +120,9 @@ class JSRegExp : public JSObject {
              JSString* str,
              int index,
              std::vector<int>* vec) const {
-    assert(impl_->number_of_captures() * 2 <= vec->size());
+    assert(
+        static_cast<std::size_t>(impl_->number_of_captures() * 2)
+        <= vec->size());
     const int res = (str->Is8Bit()) ?
         impl_->Execute(ctx, *str->Get8Bit(), index, vec->data()) :
         impl_->Execute(ctx, *str->Get16Bit(), index, vec->data());
