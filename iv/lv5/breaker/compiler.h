@@ -15,7 +15,32 @@ namespace lv5 {
 namespace breaker {
 
 class Compiler {
+ public:
+  Compiler()
+    : code_(NULL) {
+  }
+
+  void Initialize(railgun::Code* code) {
+    code_ = code;
+  }
+
+  void Compile(railgun::Code* code) {
+    Initialize(code);
+  }
 };
+
+inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
+  compiler->Compile(code);
+  for (Code::Codes::const_iterator it = code->codes().begin(),
+       last = code->codes().end(); it != last; ++it) {
+    CompileInternal(compiler, *it);
+  }
+}
+
+inline void Compile(railgun::Code* code) {
+  Compiler compiler;
+  CompileInternal(compiler, code);
+}
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_COMPILER_H_
