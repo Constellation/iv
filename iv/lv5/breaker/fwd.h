@@ -10,4 +10,11 @@
 
 #include <iv/detail/cstdint.h>
 
+namespace iv {
+namespace lv5 {
+namespace breaker {
+
+class Compiler;
+
+} } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_
