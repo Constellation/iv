@@ -9,7 +9,7 @@
 #include <vector>
 #include <iv/detail/cstdint.h>
 #include <iv/detail/type_traits.h>
-#include <iv/no_operator_names_guard.h>
+#include <iv/platform.h>
 #include <iv/static_assert.h>
 #include <iv/conversions.h>
 #include <iv/assoc_vector.h>

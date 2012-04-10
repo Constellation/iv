@@ -1,7 +1,7 @@
 #ifndef IV_LV5_BREAKER_FWD_H_
 #define IV_LV5_BREAKER_FWD_H_
 
-#include <iv/no_operator_names_guard.h>
+#include <iv/platform.h>
 
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler

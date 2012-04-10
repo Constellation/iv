@@ -75,4 +75,17 @@
 #define IV_CPU_OTHERS
 #endif
 
+// ENABLE_JIT
+// http://homepage1.nifty.com/herumi/diary/1109.html#7
+#if not +0
+#define IV_DISABLE_JIT
+// #error "operator names used. use -fno-operator-names"
+#else
+#if defined(IV_CPU_X64) && (defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD))
+#define IV_ENABLE_JIT
+#else
+#define IV_DISABLE_JIT
+#endif
+#endif
+
 #endif  // IV_PLATFORM_H_

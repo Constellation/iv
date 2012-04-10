@@ -2,7 +2,6 @@
 #define IV_AERO_CODE_H_
 #include <iv/platform.h>
 #include <iv/detail/unique_ptr.h>
-#include <iv/no_operator_names_guard.h>
 #include <iv/aero/jit_fwd.h>
 namespace iv {
 namespace aero {

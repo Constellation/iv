@@ -2,7 +2,7 @@
 #define IV_AERO_VM_H_
 #include <vector>
 #include <algorithm>
-#include <iv/no_operator_names_guard.h>
+#include <iv/platform.h>
 #include <iv/noncopyable.h>
 #include <iv/ustringpiece.h>
 #include <iv/scoped_ptr.h>

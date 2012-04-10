@@ -1,6 +1,6 @@
 #ifndef IV_AERO_JIT_CODE_H_
 #define IV_AERO_JIT_CODE_H_
-#include <iv/no_operator_names_guard.h>
+#include <iv/platform.h>
 #include <iv/aero/jit_fwd.h>
 #include <iv/aero/jit.h>
 #if defined(IV_ENABLE_JIT)
