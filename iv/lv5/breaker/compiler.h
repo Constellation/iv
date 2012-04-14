@@ -352,6 +352,73 @@ class Compiler {
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
   }
 
+  // opcode | (dst | src)
+  void EmitUNARY_POSITIVE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      IsNumber(asm_->rsi, asm_->rax);
+      jnz(".UNARY_POSITIVE_FAST");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::TO_NUMBER);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      jmp(".UNARY_POSITIVE_EXIT");
+      L(".UNARY_POSITIVE_FAST");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      L(".UNARY_POSITIVE_EXIT");
+      outLocalLabel();
+    }
+  }
+
+  // opcode | (dst | src)
+  void EmitUNARY_NEGATIVE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::UNARY_NEGATIVE);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // TODO(Constellation) fusion opcode
+  // opcode | (dst | src)
+  void EmitUNARY_NOT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::UNARY_NOT);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | src)
+  void EmitUNARY_BIT_NOT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
+      asm_->not(asm_->esi);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      jmp(".UNARY_BIT_NOT_EXIT");
+      L(".UNARY_BIT_NOT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::UNARY_BIT_NOT);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      L(".UNARY_BIT_NOT_EXIT");
+      outLocalLabel();
+    }
+  }
+
+  // leave flags
+  void IsNumber(const Reg64& reg, Reg64& tmp) {
+    asm_->mov(tmp, reg);
+    asm_->and(tmp, detail::jsval64::kNumberMask);
+  }
+
   // NaN is not handled
   void ConvertNotNaNDoubleToJSVal(Reg64& target) {  // NOLINT
     asm_->add(target, detail::jsval64::kDoubleOffset);
