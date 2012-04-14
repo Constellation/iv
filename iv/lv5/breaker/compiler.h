@@ -20,6 +20,12 @@ class Compiler {
  public:
   typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
   typedef std::unordered_map<uint32_t, std::size_t> JumpMap;
+
+  // introducing railgun to this scope
+  typedef railgun::Instruction Instruction;
+
+  static const int kJSValSize = sizeof(JSVal);
+
   Compiler()
     : code_(NULL),
       asm_(new (PointerFree) Assembler),
@@ -57,8 +63,8 @@ class Compiler {
     //   FORIN_ENUMERATE
     namespace r = railgun;
 
-    const r::Instruction* first_instr = code_->begin();
-    for (const r::Instruction* instr = code_->begin(),
+    const Instruction* first_instr = code_->begin();
+    for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
@@ -95,8 +101,8 @@ class Compiler {
     // generate local label scope
     const Assembler::LocalLabelScope local_label_scope(asm_);
 
-    const r::Instruction* first_instr = code_->begin();
-    for (const r::Instruction* instr = code_->begin(),
+    const Instruction* first_instr = code_->begin();
+    for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
@@ -111,6 +117,26 @@ class Compiler {
       }
       std::advance(it, length);
     }
+  }
+
+  // Emitters
+  //
+  // JIT Convension is
+  //  caller-save
+  //   r10 : tmp
+  //   r11 : tmp
+  //
+  //  callee-save
+  //   r12 : virtual register base
+
+  void EmitNOP(const Instruction* instr) {
+  }
+
+  void EmitMV(const Instruction* instr) {
+    const int16_t r0 = instr[1].i16[0];
+    const int16_t r1 = instr[1].i16[1];
+    asm_->mov(r10, ptr[r12 + r1 * kJSValSize]);
+    asm_->mov(ptr[r12 + r0 * kJSValSize], r10);
   }
 
   static std::string MakeLabel(uint32_t num) {
