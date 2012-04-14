@@ -35,6 +35,9 @@
 
 #define IV_LV5_BREAKER_TO_STRING(s) #s
 
+
+// Because mangling convension in C is different,
+// we must define mangling macro for each systems.
 #if defned(IV_OS_MACOSX)
 #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
 #elif defined(IV_OS_LINUX)
@@ -42,6 +45,19 @@
 #else
 #error Unknown symbol convension. Please add to iv/lv5/breaker/fwd.h
 #endif
+
+#define IV_LV5_BREAKER_RAISE()\
+  do {\
+    IV_LV5_BREAKER_ASSERT_RETURN_ADDRESS();\
+    void* pc = IV_LV5_BREAKER_RETURN_ADDRESS();\
+    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));\
+    return pc;\
+  } while (0)
+
+// prototype
+extern "C" void iv_lv5_breaker_dispatch_exception_handler(void);
+extern "C" void* iv_lv5_breaker_search_exception_handler(void* pc);
+extern "C" void iv_lv5_breaker_exception_handler_is_not_found(void);
 
 namespace iv {
 namespace lv5 {
