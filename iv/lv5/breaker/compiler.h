@@ -113,6 +113,13 @@ class Compiler {
     }
   }
 
+  static std::string MakeLabel(uint32_t num) {
+    std::string str("IV_LV5_BREAKER_JUMP_TARGET_");
+    str.reserve(str.size() + 10);
+    core::UInt32ToString(num, std::back_inserter(str));
+    return str;
+  }
+
   railgun::Code* code_;
   Assembler* asm_;
   JumpMap jump_map_;
