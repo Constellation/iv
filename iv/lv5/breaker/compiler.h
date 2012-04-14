@@ -144,18 +144,20 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitMV(const Instruction* instr) {
-    const int16_t r0 = Reg(instr[1].i16[0]);
-    const int16_t r1 = Reg(instr[1].i16[1]);
-    asm_->mov(asm_->r10, asm_->ptr[asm_->r13 + r1 * kJSValSize]);
-    asm_->mov(asm_->ptr[asm_->r13 + r0 * kJSValSize], asm_->r10);
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    asm_->mov(asm_->r10, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->r10);
   }
 
   // opcode | (size | mutable_start)
   void EmitBUILD_ENV(const Instruction* instr) {
+    const uint32_t size = instr[1].u32[0];
+    const uint32_t mutable_start = instr[1].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->rdx, instr[1].u32[0]);
-    asm_->mov(asm_->rcx, instr[1].u32[1]);
+    asm_->mov(asm_->rdx, size);
+    asm_->mov(asm_->rcx, mutable_start);
     asm_->Call(&stub::BUILD_ENV);
   }
 
@@ -164,7 +166,8 @@ class Compiler {
     // extract constant bytes
     // append immediate value to machine code
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const uint64_t bytes = code_->constants()[instr[1].ssw.u32].Layout().bytes_;
+    const uint32_t offset = instr[1].ssw.u32;
+    const uint64_t bytes = code_->constants()[offset].Layout().bytes_;
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], bytes);
   }
 
@@ -179,14 +182,17 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
-      AddingInt32OverflowGuard(asm_->edi, asm_->esi, asm_->rax, ".BINARY_ADD_SLOW_NUMBER");
+      AddingInt32OverflowGuard(asm_->edi,
+                               asm_->esi, asm_->rax, ".BINARY_ADD_SLOW_NUMBER");
       asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
       asm_->mov(asm_->edi, asm_->eax);
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdi);
       jmp(".BINARY_ADD_EXIT");
       L(".BINARY_ADD_SLOW_NUMBER");
       // rdi and rsi is always int32 (but overflow)
-      // so we just add as int64_t and convert to double
+      // So we just add as int64_t and convert to double,
+      // because INT32_MAX + INT32_MAX is in int64_t range, and convert to
+      // double makes no error.
       asm_->movsxd(asm_->rdi, asm_->edi);
       asm_->movsxd(asm_->rsi, asm_->esi);
       asm_->add(asm_->rdi, asm_->rsi);
@@ -202,12 +208,125 @@ class Compiler {
     }
   }
 
+  // TODO(Constellation) refactoring emitter for binary lt / lte / gt / gte
+  // fusion opcode (IF_FALSE / IF_TRUE)
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_LT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_LT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
+      asm_->cmp(asm_->edi, asm_->esi);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
+      asm_->setl(asm_->rax);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      jmp(".BINARY_LT_EXIT");
+      L(".BINARY_LT_SLOW");
+      asm_->Call(&stub::BINARY_LT);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      L(".BINARY_LT_EXIT");
+      outLocalLabel();
+    }
+  }
+
+  // fusion opcode (IF_FALSE / IF_TRUE)
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_LTE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_LTE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
+      asm_->cmp(asm_->edi, asm_->esi);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
+      asm_->setle(asm_->rax);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      jmp(".BINARY_LTE_EXIT");
+      L(".BINARY_LTE_SLOW");
+      asm_->Call(&stub::BINARY_LTE);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      L(".BINARY_LTE_EXIT");
+      outLocalLabel();
+    }
+  }
+
+  // fusion opcode (IF_FALSE / IF_TRUE)
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_GT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_GT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
+      asm_->cmp(asm_->edi, asm_->esi);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
+      asm_->setg(asm_->rax);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      jmp(".BINARY_GT_EXIT");
+      L(".BINARY_GT_SLOW");
+      asm_->Call(&stub::BINARY_GT);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      L(".BINARY_GT_EXIT");
+      outLocalLabel();
+    }
+  }
+
+  // fusion opcode (IF_FALSE / IF_TRUE)
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_GTE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_GTE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
+      asm_->cmp(asm_->edi, asm_->esi);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
+      asm_->setge(asm_->rax);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      jmp(".BINARY_GTE_EXIT");
+      L(".BINARY_GTE_SLOW");
+      asm_->Call(&stub::BINARY_GTE);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      L(".BINARY_GTE_EXIT");
+      outLocalLabel();
+    }
+  }
+
   // NaN is not handled
-  void ConvertNotNaNDoubleToJSVal(Reg64& target) {
+  void ConvertNotNaNDoubleToJSVal(Reg64& target) {  // NOLINT
     asm_->add(target, detail::jsval64::kDoubleOffset);
   }
 
-  void Int32Guard(const Reg64& target, Reg64& tmp, const char* label) {
+  void ConvertBooleanToJSVal(Reg64& target) {  // NOLINT
+    asm_->or(target, detail::jsval64::kBooleanRepresentation);
+  }
+
+  void Int32Guard(const Reg64& target, Reg64& tmp, const char* label) {  // NOLINT
     asm_->mov(tmp, target);
     asm_->and(tmp, detail::jsval64::kNumberMask);
     asm_->cmp(tmp, detail::jsval64::kNumberMask);
@@ -215,7 +334,7 @@ class Compiler {
   }
 
   void AddingInt32OverflowGuard(const Reg32& lhs, const Reg32& rhs,
-                                Reg32& out, const char* label) {
+                                Reg32& out, const char* label) {  // NOLINT
     asm_->mov(out, lhs);
     asm_->add(out, rhs);
     asm_->jo(label);

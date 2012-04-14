@@ -49,8 +49,9 @@ static const uint64_t kValueMask = kNumberMask | kOtherValueTag;
 //  undefined:  1010
 //  null:       0010
 //  empty:      0000
-static const uint64_t kFalse = kOtherValueTag | kBooleanTag | 0x0;
-static const uint64_t kTrue = kOtherValueTag | kBooleanTag | 0x1;
+static const uint64_t kBooleanRepresentation = kOtherValueTag | kBooleanTag;
+static const uint64_t kFalse = kBooleanRepresentation | 0x0;
+static const uint64_t kTrue = kBooleanRepresentation | 0x1;
 static const uint64_t kUndefined = kOtherValueTag | kUndefinedTag;
 static const uint64_t kNull = kOtherValueTag;
 static const uint64_t kEmpty = 0x0;
