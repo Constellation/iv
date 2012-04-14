@@ -776,7 +776,7 @@ IV_AERO_OPCODES(V)
     inc(r10d);
     mov(dword[captures_ + kIntSize * counter], r10d);
     cmp(r10d, max);
-    jl(MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
+    jl(JIT::MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
   }
 
   void EmitPUSH_BACKTRACK(const uint8_t* instr, uint32_t len) {
@@ -1134,18 +1134,18 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
-  std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
+  static std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
     std::string str(prefix);
     core::UInt32ToString(num, std::back_inserter(str));
     return str;
   }
 
   void DefineLabel(uint32_t num) {
-    L(MakeLabel(num).c_str());
+    L(JIT::MakeLabel(num).c_str());
   }
 
   void Jump(uint32_t num) {
-    jmp(MakeLabel(num).c_str(), T_NEAR);
+    jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
   }
 
   const Code& code_;
