@@ -82,10 +82,14 @@
 // #error "operator names used. use -fno-operator-names"
 #else
 #if defined(IV_CPU_X64) && (defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD))
+#if defined(IV_COMPILER_CLANG) || (defined(IV_COMPILER_GCC) && IV_COMPILER_GCC >= 40000)
 #define IV_ENABLE_JIT
-#else
-#define IV_DISABLE_JIT
 #endif
+#endif
+#endif
+
+#if !defined(IV_ENABLE_JIT)
+#define IV_DISABLE_JIT
 #endif
 
 #endif  // IV_PLATFORM_H_
