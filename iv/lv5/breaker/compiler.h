@@ -123,18 +123,26 @@ class Compiler {
   //
   // JIT Convension is
   //  caller-save
+  //   rax : tmp
+  //   rcx : tmp
+  //   rdx : tmp
   //   r10 : tmp
   //   r11 : tmp
   //
   //  callee-save
-  //   r12 : virtual register base
+  //   r12 : frame
+  //   r13 : context
+
+  static int16_t Reg(int16_t reg) {
+    return railgun::FrameConstant<>::kFrameSize + reg;
+  }
 
   void EmitNOP(const Instruction* instr) {
   }
 
   void EmitMV(const Instruction* instr) {
-    const int16_t r0 = instr[1].i16[0];
-    const int16_t r1 = instr[1].i16[1];
+    const int16_t r0 = Reg(instr[1].i16[0]);
+    const int16_t r1 = Reg(instr[1].i16[1]);
     asm_->mov(r10, ptr[r12 + r1 * kJSValSize]);
     asm_->mov(ptr[r12 + r0 * kJSValSize], r10);
   }

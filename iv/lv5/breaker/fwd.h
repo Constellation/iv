@@ -2,6 +2,7 @@
 #define IV_LV5_BREAKER_FWD_H_
 
 #include <iv/platform.h>
+#include <iv/static_assert.h>
 
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
@@ -33,8 +34,11 @@
 #define IV_NEVER_INLINE __attribute__((noinline))
 #define IV_ALWAYS_INLINE __attribute__((always_inline))
 
-#define IV_LV5_BREAKER_TO_STRING(s) #s
+#define IV_LV5_BREAKER_TO_STRING_IMPL(s) #s
+#define IV_LV5_BREAKER_TO_STRING(s) IV_LV5_BREAKER_TO_STRING_IMPL(s)
 
+#define IV_LV5_BREAKER_CONST_IMPL(s) IV_LV5_BREAKER_TO_STRING($ ##s)
+#define IV_LV5_BREAKER_CONST(s) IV_LV5_BREAKER_CONST_IMPL(s)
 
 // Because mangling convension in C is different,
 // we must define mangling macro for each systems.
@@ -63,8 +67,23 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
+enum StackOffset {
+  FRAME_OFFSET = 0,
+  CONTEXT_OFFSET = 1
+};
+
+static const int k64Size = sizeof(uint64_t);  // NOLINT
+
+#define IV_LV5_BREAKER_STACK_OFFSET_FRAME 0
+#define IV_LV5_BREAKER_STACK_OFFSET_CONTEXT 8
+
 class Compiler;
 class Assembler;
 
+STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
+STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
+
 } } }  // namespace iv::lv5::breaker
+
+
 #endif  // IV_LV5_BREAKER_FWD_H_
