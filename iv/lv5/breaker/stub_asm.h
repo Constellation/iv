@@ -6,16 +6,17 @@
 // If handler is found, return to handler pc.
 // copied from railgun::VM exception handler phase
 extern "C" inline void* iv_lv5_breaker_search_exception_handler(
-    void* pc, railgun::Frame* frame, railgun::Context* ctx) {
-  Code* code = frame->code();
+    void* pc, iv::lv5::railgun::Context* ctx, iv::lv5::railgun::Frame* frame) {
+  using namespace iv::lv5;
+  railgun::Code* code = frame->code();
   JSVal* reg = frame->RegisterFile();
   Error* e = ctx->PendingError();
   while (true) {
     bool in_range = false;
-    const ExceptionTable& table = frame->code()->exception_table();
-    for (ExceptionTable::const_iterator it = table.begin(),
+    const railgun::ExceptionTable& table = frame->code()->exception_table();
+    for (railgun::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
-      const Handler& handler = *it;
+      const railgun::Handler& handler = *it;
       if (in_range && handler.program_counter_begin() > pc) {
         break;  // handler not found
       }
@@ -23,7 +24,7 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
           pc < handler.program_counter_end()) {
         in_range = true;
         switch (handler.type()) {
-          case Handler::ITERATOR: {
+          case railgun::Handler::ITERATOR: {
             // control iterator lifetime
             NativeIterator* it =
                 static_cast<NativeIterator*>(reg[handler.ret()].cell());
@@ -31,7 +32,7 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
             continue;
           }
 
-          case Handler::ENV: {
+          case railgun::Handler::ENV: {
             // roll up environment
             frame->set_lexical_env(frame->lexical_env()->outer());
             continue;
@@ -41,8 +42,8 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
             // catch or finally
             const JSVal error = JSError::Detail(ctx, e);
             e->Clear();
-            if (handler.type() == Handler::FINALLY) {
-              reg[handler.flag()] = kJumpFromFinally;
+            if (handler.type() == railgun::Handler::FINALLY) {
+              reg[handler.flag()] = railgun::VM::kJumpFromFinally;
               reg[handler.jmp()] = error;
             } else {
               reg[handler.ret()] = error;
@@ -73,7 +74,7 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
 }
 
 // In this procedure, callee-save registers are the same to main code.
-// So use r12(frame) and r13(context) directly.
+// So use r12(context) and r13(frame) directly.
 __asm__(
   IV_LV5_BREAKER_SYMBOL(iv_lv5_breaker_dispatch_exception_handler) ":" "\n"
   // passing
