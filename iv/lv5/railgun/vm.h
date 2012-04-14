@@ -1667,7 +1667,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(LOAD_REGEXP) {
-        // opcode | (dst | const)
+        // opcode | (dst | offset)
         REG(instr[1].ssw.i16[0]) = JSRegExp::New(
             ctx(),
             static_cast<JSRegExp*>(

@@ -34,6 +34,8 @@ class Compiler {
   }
 
   ~Compiler() {
+    // Compilation is finished.
+    // Link jumps / calls and set each entry point to Code.
     asm_->ready();
     for (EntryPointMap::const_iterator it = entry_points_.begin(),
          last = entry_points_.end(); it != last; ++it) {
@@ -411,6 +413,72 @@ class Compiler {
       L(".UNARY_BIT_NOT_EXIT");
       outLocalLabel();
     }
+  }
+
+  // opcode | src
+  void EmitTHROW(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::THROW);
+  }
+
+  // opcode | (dst | start | count)
+  void EmitCONCAT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t start = Reg(instr[1].ssw.i16[1]);
+    const uint32_t count = instr[1].ssw.u32;
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
+    asm_->mov(asm_->rdx, count);
+    asm_->Call(
+        static_cast<JSString*(*)(Context*, JSVal*, uint32_t)>(&JSString::New));
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode
+  void EmitPOP_ENV(const Instruction* instr) {
+    asm_->mov(asm_->rdi, asm_->r13);
+    asm_->Call(&stub::POP_ENV);
+  }
+
+  // opcode | (dst | size)
+  void EmitLOAD_ARRAY(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t size = instr[1].ssw.u32;
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, size);
+    asm_->Call(&JSArray::ReservedNew);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | code)
+  void EmitLOAD_FUNCTION(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t code = instr[1].ssw.u32;
+    Code* target = code_->codes()[code];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, target);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(Frame, lexical_env_)]);
+    asm_->Call(&JSVMFunction::New);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | offset)
+  void EmitLOAD_REGEXP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[1].ssw.u32;
+    JSRegExp* regexp = static_cast<JSRegExp*>(frame->GetConstant(offset).object());
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, regexp);
+    asm_->Call(&JSRegExp::New);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | dst
+  void EmitRESULT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // leave flags
