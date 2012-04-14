@@ -317,6 +317,41 @@ class Compiler {
     }
   }
 
+  // opcode | dst
+  void EmitLOAD_UNDEFINED(const Instruction* instr) {
+    static const uint64_t layout = JSVal(JSUndefined).Layout.bytes_;
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+  }
+
+  // opcode | dst
+  void EmitLOAD_EMPTY(const Instruction* instr) {
+    static const uint64_t layout = JSVal(JSEmpty).Layout.bytes_;
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+  }
+
+  // opcode | dst
+  void EmitLOAD_NULL(const Instruction* instr) {
+    static const uint64_t layout = JSVal(JSNull).Layout.bytes_;
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+  }
+
+  // opcode | dst
+  void EmitLOAD_TRUE(const Instruction* instr) {
+    static const uint64_t layout = JSVal(JSTrue).Layout.bytes_;
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+  }
+
+  // opcode | dst
+  void EmitLOAD_FALSE(const Instruction* instr) {
+    static const uint64_t layout = JSVal(JSFalse).Layout.bytes_;
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+  }
+
   // NaN is not handled
   void ConvertNotNaNDoubleToJSVal(Reg64& target) {  // NOLINT
     asm_->add(target, detail::jsval64::kDoubleOffset);
