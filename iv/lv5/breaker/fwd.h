@@ -18,7 +18,7 @@
 // See http://www.mail-archive.com/gcc@gcc.gnu.org/msg32003.html
 #define IV_LV5_BREAKER_RETURN_ADDRESS() __builtin_return_address(0)
 #define IV_LV5_BREAKER_RETURN_ADDRESS_POSITION\
-    ((void**)(((uint64_t*)__builtin_frame_address(0)) + 1))
+    ((void**)(((uint64_t*)__builtin_frame_address(0)) + 1))  /* NOLINT */
 
 #define IV_LV5_BREAKER_REPATCH_RETURN_ADDRESS(ptr)\
   do {\
@@ -54,8 +54,8 @@
   do {\
     IV_LV5_BREAKER_ASSERT_RETURN_ADDRESS();\
     void* pc = IV_LV5_BREAKER_RETURN_ADDRESS();\
-    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));\
-    return pc;\
+    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));\  /* NOLINT */
+    return core::BitCast<uint64_t>(pc);\
   } while (0)
 
 // prototype
@@ -82,6 +82,12 @@ class Assembler;
 
 STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
 STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
+
+typedef uint64_t Rep;
+
+inline Rep Extract(JSVal val) {
+  return val.Layout().bytes_;
+}
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_

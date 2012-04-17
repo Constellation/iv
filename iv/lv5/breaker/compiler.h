@@ -189,29 +189,30 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       inLocallabel();
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
-      AddingInt32OverflowGuard(asm_->edi,
-                               asm_->esi, asm_->rax, ".BINARY_ADD_SLOW_NUMBER");
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->mov(asm_->edi, asm_->eax);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdi);
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
+      AddingInt32OverflowGuard(asm_->esi,
+                               asm_->edx, asm_->rax, ".BINARY_ADD_SLOW_NUMBER");
+      asm_->mov(asm_->rsi, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->esi, asm_->eax);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       jmp(".BINARY_ADD_EXIT");
       L(".BINARY_ADD_SLOW_NUMBER");
       // rdi and rsi is always int32 (but overflow)
       // So we just add as int64_t and convert to double,
       // because INT32_MAX + INT32_MAX is in int64_t range, and convert to
       // double makes no error.
-      asm_->movsxd(asm_->rdi, asm_->edi);
       asm_->movsxd(asm_->rsi, asm_->esi);
-      asm_->add(asm_->rdi, asm_->rsi);
-      asm_->cvtsi2sd(asm_->rdi, asm_->rdi);
-      ConvertNotNaNDoubleToJSVal(asm_->rdi);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdi);
+      asm_->movsxd(asm_->rdx, asm_->edx);
+      asm_->add(asm_->rsi, asm_->rdx);
+      asm_->cvtsi2sd(asm_->rsi, asm_->rsi);
+      ConvertNotNaNDoubleToJSVal(asm_->rsi);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       jmp(".BINARY_ADD_EXIT");
       L(".BINARY_ADD_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_ADD);
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       L(".BINARY_ADD_EXIT");
@@ -228,21 +229,21 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       inLocalLabel();
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_LT_SLOW");
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
-      asm_->cmp(asm_->edi, asm_->esi);
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
       asm_->setl(asm_->rax);
       ConvertBooleanToJSVal(asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       jmp(".BINARY_LT_EXIT");
       L(".BINARY_LT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_LT);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       L(".BINARY_LT_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       outLocalLabel();
     }
   }
@@ -255,21 +256,21 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       inLocalLabel();
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_LTE_SLOW");
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
-      asm_->cmp(asm_->edi, asm_->esi);
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
       asm_->setle(asm_->rax);
       ConvertBooleanToJSVal(asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       jmp(".BINARY_LTE_EXIT");
       L(".BINARY_LTE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_LTE);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       L(".BINARY_LTE_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       outLocalLabel();
     }
   }
@@ -282,21 +283,21 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       inLocalLabel();
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_GT_SLOW");
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
-      asm_->cmp(asm_->edi, asm_->esi);
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
       asm_->setg(asm_->rax);
       ConvertBooleanToJSVal(asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       jmp(".BINARY_GT_EXIT");
       L(".BINARY_GT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_GT);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       L(".BINARY_GT_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       outLocalLabel();
     }
   }
@@ -309,21 +310,21 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       inLocalLabel();
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_GTE_SLOW");
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
-      asm_->cmp(asm_->edi, asm_->esi);
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
       asm_->setge(asm_->rax);
       ConvertBooleanToJSVal(asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       jmp(".BINARY_GTE_EXIT");
       L(".BINARY_GTE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_GTE);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       L(".BINARY_GTE_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
       outLocalLabel();
     }
   }
@@ -387,10 +388,20 @@ class Compiler {
   void EmitUNARY_NEGATIVE(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-    asm_->Call(&stub::UNARY_NEGATIVE);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    {
+      inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->eax, asm_->esi);
+      jmp(".UNARY_NEGATIVE_EXIT");
+      L(".UNARY_NEGATIVE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::UNARY_NEGATIVE);
+      L(".UNARY_NEGATIVE_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      outLocalLabel();
+    }
   }
 
   // TODO(Constellation) fusion opcode
@@ -398,8 +409,7 @@ class Compiler {
   void EmitUNARY_NOT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -447,6 +457,7 @@ class Compiler {
 
   // opcode
   void EmitPOP_ENV(const Instruction* instr) {
+    // TODO(Constellation) inline this function
     asm_->mov(asm_->rdi, asm_->r13);
     asm_->Call(&stub::POP_ENV);
   }
