@@ -2,7 +2,7 @@
 #define IV_LV5_BREAKER_STUB_ASM_H_
 #include <iv/lv5/breaker/fwd.h>
 
-static const uint64_t kStackPayload = sizeof(uint64_t) * 2;  // NOLINT
+static const uint64_t kStackPayload = 2;  // NOLINT
 
 // Search exception handler from pc, and unwind frames.
 // If handler is found, return to handler pc.
@@ -56,7 +56,7 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
               reg[handler.ret()] = error;
             }
             *frame_out = frame;
-            *offset_out = offset * kStackPayload;
+            *offset_out += offset * kStackPayload;
             return handler.program_counter_end();
           }
         }
@@ -81,7 +81,7 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
     }
   }
   *frame_out = frame;
-  *offset_out = offset * kStackPayload;
+  *offset_out += offset * kStackPayload;
   return reinterpret_cast<void*>(&iv_lv5_breaker_exception_handler_is_not_found);
 }
 
@@ -94,14 +94,13 @@ __asm__(
   //   Frame to 2nd argument
   "mov %rax, %rdi" "\n"
   "mov %r12, %rsi" "\n"
+  "mov %rax, %rsp" "\n"
   "push %r12" "\n"
-  "push %r13" "\n"
-  "mov %rsp, %rdx" "\n"
+  "push %rax" "\n"
   "call " IV_LV5_BREAKER_SYMBOL(iv_lv5_breaker_search_exception_handler) "\n"
   "pop %r13" "\n"
-  "pop %rdi" "\n"
-  // calculate rsp offset
-  "add %rsp, %rdi" "\n"
+  // calculated rsp offset
+  "pop %rsp" "\n"
   // jump to exception handler
   "jmpq *%rax" "\n"
 );
