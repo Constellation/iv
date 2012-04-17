@@ -25,6 +25,19 @@ class Assembler : public Xbyak::CodeGenerator {
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
   }
 
+  // helper implementation for Xbyak::CodeGenerator
+  void interrupt(int imm8 = 3) {
+    if (imm8 == 3) {
+			db(B11001100);
+    } else {
+			db(B11001101); db(imm8);
+    }
+  }
+
+  void Breakpoint() {
+    interrupt(3);
+  }
+
   Executable GainExecutableByOffset(std::size_t offset) const {
     return reinterpret_cast<Executable>(getCode() + offset);
   }
