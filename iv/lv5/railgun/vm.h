@@ -128,7 +128,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
   // current frame values
   Frame* frame = start;
   Instruction* instr = frame->data();
-  JSVal* register_offset = frame->RegisterFile();
   bool strict = frame->code()->strict();
 
 #define INCREMENT_NEXT(op) (instr += OPLength<OP::op>::value)
@@ -215,7 +214,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #define JUMPTO(x) (instr = frame->data() + (x))
 #define JUMPBY(x) (instr += (x))
 
-#define REG(n) (register_offset[n])
+#define REG(n) (reinterpret_cast<JSVal*>(frame)[FrameConstant<>::kFrameSize + (n)])
 
 #define GETITEM(target, i) ((*target)[(i)])
 
@@ -330,7 +329,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
         assert(frame->lexical_env() == frame->variable_env());
 
         frame = stack_.Unwind(frame);
-        register_offset = frame->RegisterFile();
         strict = frame->code()->strict();
 
         // inline RESULT
@@ -1763,7 +1761,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
           }
           frame = new_frame;
           instr = frame->data();
-          register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
           frame->InitThisBinding(ctx(), ERR);
           DISPATCH_WITH_NO_INCREMENT();
@@ -1805,7 +1802,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
           }
           frame = new_frame;
           instr = frame->data();
-          register_offset = frame->RegisterFile();
           strict = code->strict();
           JSObject* const obj = JSObject::New(ctx(), code->ConstructMap(ctx()));
           frame->set_this_binding(obj);
@@ -1859,7 +1855,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
           }
           frame = new_frame;
           instr = frame->data();
-          register_offset = frame->RegisterFile();
           strict = frame->code()->strict();
           frame->InitThisBinding(ctx(), ERR);
           DISPATCH_WITH_NO_INCREMENT();
@@ -1972,7 +1967,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // (if Eval / Global, this is not valid)
         assert(frame->lexical_env() == frame->variable_env());
         frame = stack_.Unwind(frame);
-        register_offset = frame->RegisterFile();
         strict = frame->code()->strict();
       }
     }
