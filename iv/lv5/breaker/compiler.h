@@ -8,6 +8,7 @@
 // Stub function implementations are in stub.h
 #ifndef IV_LV5_BREAKER_COMPILER_H_
 #define IV_LV5_BREAKER_COMPILER_H_
+#include <iv/debug.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/executable.h>
@@ -445,6 +446,14 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::THROW);
+  }
+
+  // opcode
+  void EmitDEBUGGER(const Instruction* instr) {
+    // debug mode only
+#if defined(DEBUG)
+    asm_->Breakpoint();
+#endif
   }
 
   // opcode | (dst | start | count)
