@@ -361,6 +361,23 @@ inline OutputIter UIntToString(UIntT integer, OutputIter res) {
   return std::copy(buf.begin() + integer_pos, buf.end(), res);
 }
 
+template<typename UIntT, typename OutputIter>
+inline OutputIter UIntToStringWithRadix(UIntT integer, OutputIter res, uint32_t radix) {
+  // UINT32_MAX => 4294967295
+  //  => 10
+  // UINT64_MAX => 18446744073709551615
+  //  => 20
+  IV_STATIC_ASSERT(std::is_unsigned<UIntT>::value);
+  std::array<char, 65> buf;
+  int integer_pos = buf.size();
+  do {
+    buf[--integer_pos] = kHexDigits[integer % radix];
+    integer /= radix;
+  } while (integer > 0);
+  assert(integer_pos >= 0);
+  return std::copy(buf.begin() + integer_pos, buf.end(), res);
+}
+
 }  // namespace detail
 
 template<typename OutputIter>

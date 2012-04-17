@@ -542,9 +542,9 @@ class Compiler {
   }
 
   static std::string MakeLabel(uint32_t num) {
-    std::string str("IV_LV5_BREAKER_JUMP_TARGET_");
+    std::string str("IV_LV5_BREAKER_JT_");
     str.reserve(str.size() + 10);
-    core::UInt32ToString(num, std::back_inserter(str));
+    core::detail::UIntToStringWithRadix(num, std::back_inserter(str), 32);
     return str;
   }
 
