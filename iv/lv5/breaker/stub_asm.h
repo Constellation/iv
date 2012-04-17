@@ -2,15 +2,22 @@
 #define IV_LV5_BREAKER_STUB_ASM_H_
 #include <iv/lv5/breaker/fwd.h>
 
+static const uint64_t kStackPayload = sizeof(uint64_t) * 2;  // NOLINT
+
 // Search exception handler from pc, and unwind frames.
 // If handler is found, return to handler pc.
 // copied from railgun::VM exception handler phase
 extern "C" inline void* iv_lv5_breaker_search_exception_handler(
-    void* pc, iv::lv5::railgun::Context* ctx, iv::lv5::railgun::Frame* frame) {
+    void* pc, iv::lv5::railgun::Context* ctx,
+    void** target) {
   using namespace iv::lv5;
   railgun::Code* code = frame->code();
   JSVal* reg = frame->RegisterFile();
   Error* e = ctx->PendingError();
+  railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
+  uint64_t** offset_out = (reinterpret_cast<uint64_t**>(target) + 1);
+  railgun::Frame* frame = *frame_out;
+  uint64_t offset = 0;
   while (true) {
     bool in_range = false;
     const railgun::ExceptionTable& table = frame->code()->exception_table();
@@ -48,6 +55,8 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
             } else {
               reg[handler.ret()] = error;
             }
+            *frame_out = frame;
+            *offset_out = offset * kStackPayload;
             return handler.program_counter_end();
           }
         }
@@ -67,9 +76,12 @@ extern "C" inline void* iv_lv5_breaker_search_exception_handler(
       // (if Eval / Global, this is not valid)
       assert(frame->lexical_env() == frame->variable_env());
       frame = ctx->vm()->stack()->Unwind(frame);
+      offset += 1;
       reg = frame->RegisterFile();
     }
   }
+  *frame_out = frame;
+  *offset_out = offset * kStackPayload;
   return reinterpret_cast<void*>(&iv_lv5_breaker_exception_handler_is_not_found);
 }
 
@@ -82,8 +94,14 @@ __asm__(
   //   Frame to 2nd argument
   "mov %rax, %rdi" "\n"
   "mov %r12, %rsi" "\n"
-  "mov %r13, %rdx" "\n"
+  "push %r12" "\n"
+  "push %r13" "\n"
+  "mov %rsp, %rdx" "\n"
   "call " IV_LV5_BREAKER_SYMBOL(iv_lv5_breaker_search_exception_handler) "\n"
+  "pop %r13" "\n"
+  "pop %rdi" "\n"
+  // calculate rsp offset
+  "add %rsp, %rdi" "\n"
   // jump to exception handler
   "jmpq *%rax" "\n"
 );
