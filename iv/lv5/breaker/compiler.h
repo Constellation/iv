@@ -163,6 +163,15 @@ class Compiler {
     asm_->Call(&stub::BUILD_ENV);
   }
 
+  // opcode | src
+  void EmitWITH_SETUP(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->r13);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::WITH_SETUP);
+  }
+
   // opcode | (dst | offset)
   void EmitLOAD_CONST(const Instruction* instr) {
     // extract constant bytes
@@ -479,6 +488,17 @@ class Compiler {
   void EmitRESULT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | src
+  void EmitRETURN(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rsi, asm_->r13);
+    asm_->Call(&stub::RETURN);
+    // restore previous frame
+    asm_->mov(asm_->r13, ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);
+    asm_->ret();
   }
 
   // leave flags
