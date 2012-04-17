@@ -25,18 +25,19 @@ class Assembler : public Xbyak::CodeGenerator {
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
   }
 
-  // helper implementation for Xbyak::CodeGenerator
+  // implementation of INT $3 and INT imm8
+  // INT3 is used for gdb breakpoint.
   void interrupt(int imm8 = 3) {
     if (imm8 == 3) {
-      db(B11001100);
+      db(Xbyak::B11001100);
     } else {
-      db(B11001101);
+      db(Xbyak::B11001101);
       db(imm8);
     }
   }
 
   void Breakpoint() {
-    interrupt(3);
+    interrupt();
   }
 
   Executable GainExecutableByOffset(std::size_t offset) const {
