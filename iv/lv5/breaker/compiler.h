@@ -201,8 +201,8 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
                                asm_->edx, asm_->rax, ".BINARY_ADD_SLOW_NUMBER");
-      asm_->mov(asm_->rsi, detail::jsval64::kNumberMask);
       asm_->mov(asm_->esi, asm_->eax);
+      asm_->add(asm_->rsi, detail::jsval64::kNumberMask);
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       jmp(".BINARY_ADD_EXIT");
       L(".BINARY_ADD_SLOW_NUMBER");
@@ -398,8 +398,8 @@ class Compiler {
       inLocalLabel();
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
       asm_->mov(asm_->eax, asm_->esi);
+      asm_->add(asm_->rax, detail::jsval64::kNumberMask);
       jmp(".UNARY_NEGATIVE_EXIT");
       L(".UNARY_NEGATIVE_SLOW");
       asm_->mov(asm_->rdi, asm_->r12);
