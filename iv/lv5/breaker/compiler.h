@@ -104,6 +104,11 @@ class Compiler {
     // generate local label scope
     const Assembler::LocalLabelScope local_label_scope(asm_);
 
+    // emit prologue
+
+    // push for alignment
+    asm_->push(asm_->r12);
+
     const Instruction* first_instr = code_->begin();
     for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
@@ -509,6 +514,7 @@ class Compiler {
     asm_->Call(&stub::RETURN);
     // restore previous frame
     asm_->mov(asm_->r13, ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);
+    asm_->pop(asm_->rcx);  // discard alignment element
     asm_->ret();
   }
 
@@ -541,10 +547,10 @@ class Compiler {
     asm_->jo(label);
   }
 
-  static std::string MakeLabel(uint32_t num) {
+  static std::string MakeLabel(std::size_t num) {
     std::string str("IV_LV5_BREAKER_JT_");
     str.reserve(str.size() + 10);
-    core::detail::UIntToStringWithRadix(num, std::back_inserter(str), 32);
+    core::detail::UIntToStringWithRadix<uint64_t>(num, std::back_inserter(str), 32);
     return str;
   }
 
