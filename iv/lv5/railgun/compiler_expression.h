@@ -1142,6 +1142,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
                          site.GetFirstPosition(),
                          site.argc_with_this()));
   }
+
   Emit<OP::RESULT>(dst);
   assert(registers_.IsLiveTop(site.base()->register_offset()));
   return dst;

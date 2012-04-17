@@ -18,12 +18,12 @@ namespace railgun {
 
 class JSVMFunction : public JSFunction {
  public:
-  JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
   }
 
-  JSVal Construct(Arguments* args, Error* e) {
+  virtual JSVal Construct(Arguments* args, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
     JSObject* const obj = JSObject::New(ctx, code_->ConstructMap(ctx));
     const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
@@ -31,15 +31,7 @@ class JSVMFunction : public JSFunction {
       obj->set_prototype(proto.object());
     }
     assert(args->IsConstructorCalled());
-    return Call(args, obj, e);
-  }
-
-  JSEnv* scope() const {
-    return env_;
-  }
-
-  Code* code() const {
-    return code_;
+    return JSVMFunction::Call(args, obj, e);
   }
 
   static JSVMFunction* New(Context* ctx,
@@ -47,28 +39,26 @@ class JSVMFunction : public JSFunction {
     return new JSVMFunction(ctx, code, env);
   }
 
-  bool IsNativeFunction() const {
-    return false;
-  }
+  virtual bool IsNativeFunction() const { return false; }
 
-  bool IsBoundFunction() const {
-    return false;
-  }
+  virtual bool IsBoundFunction() const { return false; }
 
-  core::UStringPiece GetSource() const {
+  virtual core::UStringPiece GetSource() const {
     const std::size_t start_pos = code_->block_begin_position();
     const std::size_t end_pos = code_->block_end_position();
     return code_->script()->SubString(start_pos, end_pos - start_pos);
   }
 
-  bool IsStrict() const {
-    return code_->strict();
-  }
+  virtual bool IsStrict() const { return code_->strict(); }
 
-  void MarkChildren(radio::Core* core) {
+  virtual void MarkChildren(radio::Core* core) {
     core->MarkCell(code_);
     core->MarkCell(env_);
   }
+
+  JSEnv* scope() const { return env_; }
+
+  Code* code() const { return code_; }
 
  private:
   JSVMFunction(Context* ctx,

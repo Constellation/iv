@@ -214,10 +214,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #define JUMPTO(x) (instr = frame->data() + (x))
 #define JUMPBY(x) (instr += (x))
 
-#define REG(n) (reinterpret_cast<JSVal*>(frame)[FrameConstant<>::kFrameSize + (n)])
-
-#define GETITEM(target, i) ((*target)[(i)])
-
+#define REG(n)\
+  (reinterpret_cast<JSVal*>(frame)[FrameConstant<>::kFrameSize + (n)])
 
 // fast opcode macros
 
@@ -306,17 +304,18 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
       DEFINE_OPCODE(RETURN) {
         // opcode | src
-        JSVal val = REG(instr[1].i32[0]);
-        if ((frame->constructor_call_ && !val.IsObject())) {
-          val = frame->GetThis();
+        JSVal src = REG(instr[1].i32[0]);
+        if (frame->constructor_call_ && !src.IsObject()) {
+          src = frame->GetThis();
         }
+
 
         // no return at last
         // return undefined
         // if previous code is not native code, unwind frame and jump
         if (frame->prev_pc_ == NULL) {
           // this code is invoked by native function
-          return val;
+          return src;
         }
         // this code is invoked by JS code
         // EVAL / CALL / CONSTRUCT
@@ -332,7 +331,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         strict = frame->code()->strict();
 
         // inline RESULT
-        REG(instr[1].i32[0]) = val;
+        REG(instr[1].i32[0]) = src;
         DISPATCH(RESULT);
       }
 
@@ -1982,8 +1981,13 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #undef DEFINE_OPCODE
 #undef JUMPTO
 #undef JUMPBY
-#undef GETITEM
 #undef REG
+#undef FAST_PATH_LOAD_CONST
+#undef FAST_PATH_IF_FALSE
+#undef FAST_PATH_BINARY_LT
+#undef FAST_PATH_BINARY_ADD
+#undef FAST_PATH_JUMP_BY
+
 }  // NOLINT
 
 } } }  // namespace iv::lv5::railgun

@@ -25,15 +25,11 @@ class JSFunction : public JSObject {
     return this;
   }
 
-  virtual JSVal Call(Arguments* args,
-                     const JSVal& this_binding,
-                     Error* e) = 0;
+  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) = 0;
 
-  virtual JSVal Construct(Arguments* args,
-                          Error* e) = 0;
+  virtual JSVal Construct(Arguments* args, Error* e) = 0;
 
-  virtual bool HasInstance(Context* ctx,
-                           const JSVal& val, Error* e) {
+  virtual bool HasInstance(Context* ctx, const JSVal& val, Error* e) {
     if (!val.IsObject()) {
       return false;
     }
@@ -55,7 +51,7 @@ class JSFunction : public JSObject {
     return false;
   }
 
-  JSVal Get(Context* ctx, Symbol name, Error* e) {
+  virtual JSVal Get(Context* ctx, Symbol name, Error* e) {
     const JSVal val = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         val.IsCallable() &&
@@ -71,9 +67,7 @@ class JSFunction : public JSObject {
 
   virtual bool IsBoundFunction() const = 0;
 
-  virtual JSAPI NativeFunction() const {
-    return NULL;
-  }
+  virtual JSAPI NativeFunction() const { return NULL; }
 
   virtual core::UStringPiece GetSource() const {
     static const core::UString kBlock =
@@ -107,33 +101,23 @@ class JSFunction : public JSObject {
 
 class JSNativeFunction : public JSFunction {
  public:
-  JSVal Call(Arguments* args,
-             const JSVal& this_binding,
-             Error* e) {
+  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return func_(*args, e);
   }
 
-  JSVal Construct(Arguments* args, Error* e) {
+  virtual JSVal Construct(Arguments* args, Error* e) {
     args->set_this_binding(JSUndefined);
     return func_(*args, e);
   }
 
-  bool IsNativeFunction() const {
-    return true;
-  }
+  virtual bool IsNativeFunction() const { return true; }
 
-  bool IsBoundFunction() const {
-    return false;
-  }
+  virtual bool IsBoundFunction() const { return false; }
 
-  bool IsStrict() const {
-    return false;
-  }
+  virtual bool IsStrict() const { return false; }
 
-  virtual JSAPI NativeFunction() const {
-    return func_;
-  }
+  virtual JSAPI NativeFunction() const { return func_; }
 
   template<typename Func>
   static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
@@ -165,31 +149,19 @@ class JSNativeFunction : public JSFunction {
 
 class JSBoundFunction : public JSFunction {
  public:
-  bool IsStrict() const {
-    return false;
-  }
+  virtual bool IsStrict() const { return false; }
 
-  bool IsNativeFunction() const {
-    return true;
-  }
+  virtual bool IsNativeFunction() const { return true; }
 
-  bool IsBoundFunction() const {
-    return true;
-  }
+  virtual bool IsBoundFunction() const { return true; }
 
-  JSFunction* target() const {
-    return target_;
-  }
+  JSFunction* target() const { return target_; }
 
-  const JSVal& this_binding() const {
-    return this_binding_;
-  }
+  const JSVal& this_binding() const { return this_binding_; }
 
-  const JSVals& arguments() const {
-    return arguments_;
-  }
+  const JSVals& arguments() const { return arguments_; }
 
-  JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     ScopedArguments args_list(args->ctx(),
                               args->size() + arguments_.size(),
                               IV_LV5_ERROR(e));
@@ -199,7 +171,7 @@ class JSBoundFunction : public JSFunction {
     return target_->Call(&args_list, this_binding_, e);
   }
 
-  JSVal Construct(Arguments* args, Error* e) {
+  virtual JSVal Construct(Arguments* args, Error* e) {
     ScopedArguments args_list(args->ctx(),
                               args->size() + arguments_.size(),
                               IV_LV5_ERROR(e));
@@ -211,8 +183,7 @@ class JSBoundFunction : public JSFunction {
     return target_->Construct(&args_list, e);
   }
 
-  bool HasInstance(Context* ctx,
-                   const JSVal& val, Error* e) {
+  virtual bool HasInstance(Context* ctx, const JSVal& val, Error* e) {
     return target_->HasInstance(ctx, val, e);
   }
 
@@ -222,7 +193,7 @@ class JSBoundFunction : public JSFunction {
     return new JSBoundFunction(ctx, target, this_binding, args);
   }
 
-  void MarkChildren(radio::Core* core) {
+  virtual void MarkChildren(radio::Core* core) {
     JSObject::MarkChildren(core);
     core->MarkCell(target_);
     core->MarkValue(this_binding_);
@@ -286,33 +257,23 @@ class JSInlinedFunction : public JSFunction {
  public:
   typedef JSInlinedFunction<func, n> this_type;
 
-  JSVal Call(Arguments* args,
-             const JSVal& this_binding,
-             Error* e) {
+  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return func(*args, e);
   }
 
-  JSVal Construct(Arguments* args, Error* e) {
+  virtual JSVal Construct(Arguments* args, Error* e) {
     args->set_this_binding(JSUndefined);
     return func(*args, e);
   }
 
-  bool IsNativeFunction() const {
-    return true;
-  }
+  virtual bool IsNativeFunction() const { return true; }
 
-  bool IsBoundFunction() const {
-    return false;
-  }
+  virtual bool IsBoundFunction() const { return false; }
 
-  bool IsStrict() const {
-    return false;
-  }
+  virtual bool IsStrict() const { return false; }
 
-  virtual JSAPI NativeFunction() const {
-    return func;
-  }
+  virtual JSAPI NativeFunction() const { return func; }
 
   static this_type* New(Context* ctx, const Symbol& name) {
     this_type* const obj = new this_type(ctx, name);
