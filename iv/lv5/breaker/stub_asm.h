@@ -98,8 +98,9 @@ __asm__(
   "push %r12" "\n"
   "push %rax" "\n"
   "call " IV_LV5_BREAKER_SYMBOL(iv_lv5_breaker_search_exception_handler) "\n"
+  // unwinded frame
   "pop %r13" "\n"
-  // calculated rsp offset
+  // calculated rsp
   "pop %rsp" "\n"
   // jump to exception handler
   "jmpq *%rax" "\n"
