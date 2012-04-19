@@ -139,6 +139,12 @@ class Compiler {
         case r::OP::RESULT:
           EmitRESULT(instr);
           break;
+        case r::OP::NOP:
+          EmitNOP(instr);
+          break;
+        case r::OP::MV:
+          EmitMV(instr);
+          break;
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
           break;
