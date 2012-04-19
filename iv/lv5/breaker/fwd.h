@@ -77,6 +77,7 @@ class Assembler;
 IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
 IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
 
+// Representation of JSVal, it is uint64_t in 64bit system
 typedef uint64_t Rep;
 
 inline Rep Extract(JSVal val) {

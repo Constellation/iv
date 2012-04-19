@@ -107,7 +107,8 @@ class Compiler {
 
     // emit prologue
 
-    // push for alignment
+    // general storage space
+    // We can access this space by qword[rsp + k64Size * 1]
     asm_->push(asm_->r12);
 
     const Instruction* first_instr = code_->begin();
@@ -128,6 +129,9 @@ class Compiler {
           break;
         case r::OP::DEBUGGER:
           EmitDEBUGGER(instr);
+          break;
+        case r::OP::CALL:
+          EmitCALL(instr);
           break;
         case r::OP::RETURN:
           EmitRETURN(instr);
@@ -565,21 +569,26 @@ class Compiler {
 
   // opcode | (callee | offset | argc_with_this)
   void EmitCONSTRUCT(const Instruction* instr) {
-    // after call of JS Function
-    // rax is result value
-    asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
-    asm_->and(asm_->rsi, asm_->rax);
-    asm_->jnz(".RESULT_IS_OK");  // not cell
-    asm_->test(asm_->rax, asm_->rax);
-    asm_->jz(".RESULT_IS_OK");  // empty
-    // currently, rax target is garanteed as object
-    asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
-    asm_->shr(asm_->rcx, radio::Color::kOffset);
-    asm_->cmp(asm_->rcx, radio::OBJECT);
-    asm_->je(".RESULT_IS_OK");
-    // constructor call and return value is not object
-    asm_->mov(asm_->rax, asm_->ptr[asm_->r13 - kJSValSize * railgun::FrameConstant<>::kThisOffset]);  // NOLINT
-    asm_->L(".RESULT_IS_OK");
+    {
+      asm_->inLocalLabel();
+
+      // after call of JS Function
+      // rax is result value
+      asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
+      asm_->and(asm_->rsi, asm_->rax);
+      asm_->jnz(".RESULT_IS_OK");  // not cell
+      asm_->test(asm_->rax, asm_->rax);
+      asm_->jz(".RESULT_IS_OK");  // empty
+      // currently, rax target is garanteed as object
+      asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
+      asm_->shr(asm_->rcx, radio::Color::kOffset);
+      asm_->cmp(asm_->rcx, radio::OBJECT);
+      asm_->je(".RESULT_IS_OK");
+      // constructor call and return value is not object
+      asm_->mov(asm_->rax, asm_->ptr[asm_->r13 - kJSValSize * railgun::FrameConstant<>::kThisOffset]);  // NOLINT
+      asm_->L(".RESULT_IS_OK");
+      asm_->outLocalLabel();
+    }
   }
 
   // opcode | (dst | index) | nop | nop
@@ -596,6 +605,34 @@ class Compiler {
       asm_->Call(&stub::LOAD_GLOBAL<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (callee | offset | argc_with_this)
+  void EmitCALL(const Instruction* instr) {
+    const int16_t callee = Reg(instr[1].ssw.i16[0]);
+    const int16_t offset = Reg(instr[1].ssw.i16[1]);
+    const uint32_t argc_with_this = instr[1].ssw.u32;
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + callee * kJSValSize]);
+      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
+      asm_->mov(asm_->rcx, argc_with_this);
+      asm_->mov(asm_->r8, asm_->rsp);
+      asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
+      asm_->Call(&stub::CALL);
+      asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
+      asm_->cmp(asm_->rcx, asm_->r13);
+      asm_->je(".CALL_EXIT");
+      // move to new Frame
+      asm_->mov(asm_->r13, asm_->rcx);
+      asm_->call(asm_->rax);
+      // unwind Frame
+      // TODO(Constellation) slide stack offset in railgun::Stack
+      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);
+      asm_->L(".CALL_EXIT");
+      asm_->outLocalLabel();
+    }
   }
 
   // leave flags

@@ -34,9 +34,9 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     //   Frame to 2nd argument
     mov(rdi, rax);
     mov(rsi, r12);
-    mov(rax, rsp);
-    push(r13);
     push(rax);
+    push(r13);
+    mov(rdx, rsp);
     mov(rax, core::BitCast<uint64_t>(&search_exception_handler));
     call(rax);
     pop(r13);  // unwinded frame
@@ -61,14 +61,14 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
   // rdx : code ptr
   void CompileBreakerPrologue(std::size_t size) {
     sub(rsp, k64Size * 3);
-    mov(ptr[rsp + k64Size * 1], r13);
-    mov(ptr[rsp + k64Size * 2], r12);
+    mov(ptr[rsp + k64Size * 0], r13);
+    mov(ptr[rsp + k64Size * 1], r12);
     mov(r12, rdi);
     mov(r13, rsi);
     call(rdx);
-    pop(r13);
-    pop(r12);
-    pop(rcx);  // alignment element
+    mov(r13, ptr[rsp + k64Size * 0]);
+    mov(r12, ptr[rsp + k64Size * 1]);
+    add(rsp, k64Size * 3);
     ret();
     Padding(size);
   }

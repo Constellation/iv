@@ -173,6 +173,50 @@ inline Rep LOAD_GLOBAL(railgun::Context* ctx,
   }
 }
 
+inline Rep CALL(railgun::Context* ctx,
+                JSVal callee,
+                JSVal* offset,
+                uint64_t argc_with_this,
+                railgun::Frame** out_frame) {
+  if (!callee.IsCallable()) {
+    ctx->PendingError()->Report(Error::Type, "not callable object");
+    IV_LV5_BREAKER_RAISE();
+  }
+  JSFunction* func = callee.object()->AsCallable();
+  if (!func->IsNativeFunction()) {
+    // inline call
+    railgun::JSVMFunction* vm_func = static_cast<railgun::JSVMFunction*>(func);
+    railgun::Code* code = vm_func->code();
+    if (code->empty()) {
+      return Extract(JSUndefined);
+    }
+    railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
+        ctx,
+        offset,
+        code,
+        vm_func->scope(),
+        func,
+        NULL,  // TODO(Constellation) set precise position
+        argc_with_this, false);
+    if (!new_frame) {
+      ctx->PendingError()->Report(Error::Range, "maximum call stack size exceeded");
+      IV_LV5_BREAKER_RAISE();
+    }
+    new_frame->InitThisBinding(ctx, ERR);
+    *out_frame = new_frame;
+    return reinterpret_cast<Rep>(code->executable());
+  }
+
+  // Native Function
+  {
+    railgun::detail::VMArguments args(ctx,
+                                      offset + (argc_with_this - 1),
+                                      argc_with_this - 1);
+    const JSVal res = func->Call(&args, args.this_binding(), ERR);
+    return Extract(res);
+  }
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
