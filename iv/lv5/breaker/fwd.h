@@ -37,8 +37,8 @@
 #define IV_LV5_BREAKER_TO_STRING_IMPL(s) #s
 #define IV_LV5_BREAKER_TO_STRING(s) IV_LV5_BREAKER_TO_STRING_IMPL(s)
 
-#define IV_LV5_BREAKER_CONST_IMPL(s) IV_LV5_BREAKER_TO_STRING($ ##s)
-#define IV_LV5_BREAKER_CONST(s) IV_LV5_BREAKER_CONST_IMPL(s)
+//#define IV_LV5_BREAKER_CONST_IMPL(s) IV_LV5_BREAKER_TO_STRING($ ##s)
+//#define IV_LV5_BREAKER_CONST(s) IV_LV5_BREAKER_CONST_IMPL(s)
 
 // Because mangling convension in C is different,
 // we must define mangling macro for each systems.
