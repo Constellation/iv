@@ -135,6 +135,12 @@ class Compiler {
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
           break;
+        case r::OP::LOAD_GLOBAL:
+          EmitLOAD_GLOBAL(instr);
+          break;
+        case r::OP::LOAD_FUNCTION:
+          EmitLOAD_FUNCTION(instr);
+          break;
         case r::OP::BINARY_ADD:
           EmitBINARY_ADD(instr);
           break;
@@ -576,36 +582,52 @@ class Compiler {
     asm_->L(".RESULT_IS_OK");
   }
 
+  // opcode | (dst | index) | nop | nop
+  void EmitLOAD_GLOBAL(const Instruction* instr) {
+    const uint32_t index = instr[1].ssw.u32;
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const Symbol name = code_->names()[index];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
+    if (code_->strict()) {
+      asm_->Call(&stub::LOAD_GLOBAL<true>);
+    } else {
+      asm_->Call(&stub::LOAD_GLOBAL<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
   // leave flags
-    void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
-      asm_->mov(tmp, detail::jsval64::kNumberMask);
-      asm_->and(tmp, reg);
-    }
+  void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
+    asm_->mov(tmp, detail::jsval64::kNumberMask);
+    asm_->and(tmp, reg);
+  }
 
-    // NaN is not handled
-    void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target,
-                                    const Xbyak::Reg64& tmp) {
-      asm_->mov(tmp, detail::jsval64::kDoubleOffset);
-      asm_->add(target, tmp);
-    }
+  // NaN is not handled
+  void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target,
+                                  const Xbyak::Reg64& tmp) {
+    asm_->mov(tmp, detail::jsval64::kDoubleOffset);
+    asm_->add(target, tmp);
+  }
 
-    void ConvertBooleanToJSVal(const Xbyak::Reg64& target) {
-      asm_->or(target, detail::jsval64::kBooleanRepresentation);
-    }
+  void ConvertBooleanToJSVal(const Xbyak::Reg64& target) {
+    asm_->or(target, detail::jsval64::kBooleanRepresentation);
+  }
 
-    void Int32Guard(const Xbyak::Reg64& target,
-                    const Xbyak::Reg64& tmp1,
-                    const Xbyak::Reg64& tmp2, const char* label) {
-      asm_->mov(tmp1, detail::jsval64::kNumberMask);
-      asm_->and(tmp1, target);
-      asm_->mov(tmp2, detail::jsval64::kNumberMask);
-      asm_->cmp(tmp1, tmp2);
-      asm_->jne(label);
-    }
+  void Int32Guard(const Xbyak::Reg64& target,
+                  const Xbyak::Reg64& tmp1,
+                  const Xbyak::Reg64& tmp2, const char* label) {
+    asm_->mov(tmp1, detail::jsval64::kNumberMask);
+    asm_->and(tmp1, target);
+    asm_->mov(tmp2, detail::jsval64::kNumberMask);
+    asm_->cmp(tmp1, tmp2);
+    asm_->jne(label);
+  }
 
-    void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,
-                                  const Xbyak::Reg32& rhs,
-                                  const Xbyak::Reg32& out, const char* label) {
+  void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,
+                                const Xbyak::Reg32& rhs,
+                                const Xbyak::Reg32& out, const char* label) {
     asm_->mov(out, lhs);
     asm_->add(out, rhs);
     asm_->jo(label);

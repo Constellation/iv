@@ -123,6 +123,56 @@ inline JSVal RETURN(railgun::Context* ctx, railgun::Frame* frame, JSVal val) {
   return val;
 }
 
+inline void RaiseReferenceError(Symbol name, Error* e) {
+  core::UStringBuilder builder;
+  builder.Append('"');
+  builder.Append(symbol::GetSymbolString(name));
+  builder.Append("\" not defined");
+  e->Report(Error::Reference, builder.BuildPiece());
+}
+
+inline JSEnv* GetEnv(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  JSEnv* current = env;
+  while (current) {
+    if (current->HasBinding(ctx, name)) {
+      return current;
+    } else {
+      current = current->outer();
+    }
+  }
+  return NULL;
+}
+
+template<bool STRICT>
+inline Rep LOAD_GLOBAL(railgun::Context* ctx,
+                       Symbol name, railgun::Instruction* instr) {
+  // opcode | (dst | index) | nop | nop
+  JSGlobal* global = ctx->global_obj();
+  if (instr[2].map == global->map()) {
+    // map is cached, so use previous index code
+    const JSVal res = global->GetBySlotOffset(ctx, instr[3].u32[0], ERR);
+    return Extract(res);
+  } else {
+    Slot slot;
+    if (global->GetOwnPropertySlot(ctx, name, &slot)) {
+      // now Own Property Pattern only implemented
+      assert(slot.IsCacheable());
+      instr[2].map = global->map();
+      instr[3].u32[0] = slot.offset();
+      const JSVal res = slot.Get(ctx, global, ERR);
+      return Extract(res);
+    } else {
+      instr[2].map = NULL;
+      if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
+        const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
+        return Extract(res);
+      }
+      RaiseReferenceError(name, ERR);
+      return 0;
+    }
+  }
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
