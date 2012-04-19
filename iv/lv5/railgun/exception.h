@@ -35,6 +35,10 @@ class Handler {
 
   uint32_t end() const { return end_; }
 
+  void* program_counter_begin() const { return program_counter_begin_; }
+
+  void* program_counter_end() const { return program_counter_end_; }
+
   int16_t jmp() const { return jmp_; }
 
   int16_t ret() const { return ret_; }
@@ -46,8 +50,14 @@ class Handler {
   int16_t jmp_;
   int16_t ret_;
   int16_t flag_;
-  uint32_t begin_;
-  uint32_t end_;
+  union {
+    uint32_t begin_;
+    void* program_counter_begin_;
+  };
+  union {
+    uint32_t end_;
+    void* program_counter_end_;
+  };
 };
 
 typedef GCVector<Handler>::type ExceptionTable;

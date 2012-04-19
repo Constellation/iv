@@ -1,5 +1,6 @@
 #ifndef IV_LV5_RAILGUN_JSSCRIPT_H_
 #define IV_LV5_RAILGUN_JSSCRIPT_H_
+#include <iv/file_source.h>
 #include <iv/lv5/jsscript.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/eval_source.h>

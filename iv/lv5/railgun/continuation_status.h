@@ -8,7 +8,7 @@ namespace lv5 {
 namespace railgun {
 namespace continuation_status_detail {
 
-const Statement* kNextStatement = NULL;
+static const Statement* kNextStatement = NULL;
 
 }  // namespace continuation_status_detail
 

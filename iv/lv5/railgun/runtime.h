@@ -1,6 +1,7 @@
 #ifndef IV_LV5_RAILGUN_RUNTIME_H_
 #define IV_LV5_RAILGUN_RUNTIME_H_
 #include <iv/detail/memory.h>
+#include <iv/parser.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/internal.h>

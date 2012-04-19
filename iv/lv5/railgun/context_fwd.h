@@ -4,6 +4,7 @@
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/lru_code_map.h>
 #include <iv/lv5/factory.h>
+#include <iv/lv5/error.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -31,6 +32,8 @@ class Context : public lv5::Context {
     return global_map_cache_;
   }
 
+  Error* PendingError() { return &pending_error_; }
+
   inline JSVal& RAX() { return RAX_; }
 
   NativeIterator* GainNativeIterator(JSObject* obj);
@@ -46,6 +49,7 @@ class Context : public lv5::Context {
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
   MapCache* global_map_cache_;
+  Error pending_error_;
 
 #ifdef DEBUG
   int iterator_live_count_;
