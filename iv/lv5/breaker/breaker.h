@@ -4,6 +4,7 @@
 #if defined(IV_ENABLE_JIT)
 
 #include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/templates.h>
 
 #endif  // defined(IV_ENABLE_JIT)
 #endif  // IV_BREAKER_BREAKER_H_

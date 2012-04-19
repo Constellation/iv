@@ -12,23 +12,21 @@ namespace breaker {
 
 static const std::size_t kDispatchExceptionHandler = 0;
 static const std::size_t kExceptionHandlerIsNotFound = 48;
+static const std::size_t kBreakerPrologue = 96;
 
 class TemplatesGenerator : private Xbyak::CodeGenerator {
  public:
-  friend class core::Singleton<Templates>;
-
-  Templates(char* ptr, std::size_t size)
+  TemplatesGenerator(char* ptr, std::size_t size)
     : Xbyak::CodeGenerator(size, ptr) {
     Xbyak::CodeArray::protect(ptr, size, true);
-    dispatch_exception_handler_ = CompileDispatchExceptionHandler(kExceptionHandlerIsNotFound);
-    exception_handler_is_not_found_ = CompileExceptionHandlerIsNotFound(0);
+    CompileDispatchExceptionHandler(kExceptionHandlerIsNotFound);
+    CompileExceptionHandlerIsNotFound(kBreakerPrologue);
+    CompileBreakerPrologue(0);
   }
 
-  void* CompileDispatchExceptionHandler(std::size_t size) {
+  void CompileDispatchExceptionHandler(std::size_t size) {
     // In this procedure, callee-save registers are the same to main code.
     // So use r12(context) and r13(frame) directly.
-    void* ptr = core::BitCast<void*>(getCode());
-
     // passing
     //   pc to 1st argument
     //   Frame to 2nd argument
@@ -37,20 +35,28 @@ class TemplatesGenerator : private Xbyak::CodeGenerator {
     mov(rax, rsp);
     push(r13);
     push(rax);
-    mov(rax, &iv_lv5_breaker_search_exception_handler);
+    mov(rax, core::BitCast<uint64_t>(&iv_lv5_breaker_search_exception_handler));
     call(rax);
     pop(r13);  // unwinded frame
     pop(rsp);  // calculated rsp
     jmp(rax);  // jump to exception handler
     Padding(size);
-    return ptr;
   }
 
-  void* CompileExceptionHandlerIsNotFound(std::size_t size) {
-    void* ptr = core::BitCast<void*>(getCode());
+  void CompileExceptionHandlerIsNotFound(std::size_t size) {
+    // restore callee-save registers
+    pop(r13);
+    pop(r12);
+    pop(rax);  // alignment element
     ret();
     Padding(size);
-    return ptr;
+  }
+
+  void CompileBreakerPrologue(std::size_t size) {
+    sub(rsp, k64Size * 3);
+    mov(ptr[rsp + k64Size * 1], r13);
+    mov(ptr[rsp + k64Size * 2], r12);
+    Padding(size);
   }
 
   void Padding(std::size_t size) {
@@ -62,30 +68,31 @@ class TemplatesGenerator : private Xbyak::CodeGenerator {
       }
     }
   }
-
-  void* dispatch_exception_handler_;
-  void* exception_handler_is_not_found_;
 };
 
 template<typename D = void>
 struct Templates {
   static void* dispatch_exception_handler() {
-    return reinterpret_cast<void*>(code_ + kDispatchExceptionHandler);
+    return reinterpret_cast<void*>(code + kDispatchExceptionHandler);
   }
 
   static void* exception_handler_is_not_found() {
-    return reinterpret_cast<void*>(code_ + kExceptionHandlerIsNotFound);
+    return reinterpret_cast<void*>(code + kExceptionHandlerIsNotFound);
   }
 
-  MIE_ALIGN(4096) char code_[4096];
+  static void* breaker_prologue() {
+    return reinterpret_cast<void*>(code + kBreakerPrologue);
+  }
+
+  static MIE_ALIGN(4096) char code[4096];
   static TemplatesGenerator generator;
 };
 
 template<typename D>
-TemplatesGenerator Templates<D>::generator(code_, 4096);
+TemplatesGenerator Templates<D>::generator(code, 4096);
 
 template<typename D>
-char Templates<D>::code_[4096];
+char Templates<D>::code[4096];
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_TEMPLATES_H_
