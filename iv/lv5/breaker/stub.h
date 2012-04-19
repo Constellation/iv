@@ -231,6 +231,37 @@ inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
   return Extract(str);
 }
 
+template<bool CONFIGURABLE>
+inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  if (!env->HasBinding(ctx, name)) {
+    env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
+  } else if (env == ctx->global_env()) {
+    JSObject* const go = ctx->global_obj();
+    const PropertyDescriptor existing_prop = go->GetProperty(ctx, name);
+    if (existing_prop.IsConfigurable()) {
+      go->DefineOwnProperty(
+          ctx,
+          name,
+          DataDescriptor(
+              JSUndefined,
+              ATTR::W | ATTR::E |
+              ((CONFIGURABLE) ? ATTR::C : ATTR::NONE)),
+          true, ERR);
+    } else {
+      if (existing_prop.IsAccessorDescriptor()) {
+        ctx->PendingError()->Report(Error::Type, "create mutable function binding failed");
+        IV_LV5_BREAKER_RAISE();
+      }
+      const DataDescriptor* const data = existing_prop.AsDataDescriptor();
+      if (!data->IsWritable() || !data->IsEnumerable()) {
+        ctx->PendingError()->Report(Error::Type, "create mutable function binding failed");
+        IV_LV5_BREAKER_RAISE();
+      }
+    }
+  }
+  return 0;
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

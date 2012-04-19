@@ -163,6 +163,9 @@ class Compiler {
         case r::OP::CONCAT:
           EmitCONCAT(instr);
           break;
+        case r::OP::INSTANTIATE_DECLARATION_BINDING:
+          EmitINSTANTIATE_DECLARATION_BINDING(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -665,6 +668,20 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
       asm_->L(".CALL_EXIT");
       asm_->outLocalLabel();
+    }
+  }
+
+  // opcode | (name | configurable)
+  void EmitINSTANTIATE_DECLARATION_BINDING(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].u32[0]];
+    const bool configurable = instr[1].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (configurable) {
+      asm_->Call(&stub::INSTANTIATE_DECLARATION_BINDING<true>);
+    } else {
+      asm_->Call(&stub::INSTANTIATE_DECLARATION_BINDING<false>);
     }
   }
 
