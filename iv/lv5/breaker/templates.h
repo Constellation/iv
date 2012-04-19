@@ -92,8 +92,8 @@ struct Templates {
     return reinterpret_cast<void*>(code + kExceptionHandlerIsNotFound);
   }
 
-  static TemplatesGenerator::PrologueType breaker_prologue() {
-    return TemplatesGenerator::PrologueType(code + kBreakerPrologue);
+  static JSVal breaker_prologue(railgun::Context* ctx, railgun::Frame* frame, void* ptr) {
+    return TemplatesGenerator::PrologueType(code + kBreakerPrologue)(ctx, frame, ptr);
   }
 
   static MIE_ALIGN(4096) char code[4096];
