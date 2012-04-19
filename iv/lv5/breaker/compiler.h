@@ -157,6 +157,12 @@ class Compiler {
         case r::OP::BINARY_ADD:
           EmitBINARY_ADD(instr);
           break;
+        case r::OP::TO_PRIMITIVE_AND_TO_STRING:
+          EmitTO_PRIMITIVE_AND_TO_STRING(instr);
+          break;
+        case r::OP::CONCAT:
+          EmitCONCAT(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -504,6 +510,15 @@ class Compiler {
 #endif
   }
 
+  // opcode | src
+  void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
+    asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
+  }
+
   // opcode | (dst | start | count)
   void EmitCONCAT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
@@ -511,9 +526,8 @@ class Compiler {
     const uint32_t count = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
-    asm_->mov(asm_->rdx, count);
-    asm_->Call(
-        static_cast<JSString*(*)(Context*, JSVal*, uint32_t)>(&JSString::New));
+    asm_->mov(asm_->edx, count);
+    asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 

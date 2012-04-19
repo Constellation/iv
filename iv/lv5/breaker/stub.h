@@ -221,6 +221,16 @@ inline Rep CALL(railgun::Context* ctx,
   }
 }
 
+inline Rep CONCAT(railgun::Context* ctx, JSVal* src, uint32_t count) {
+  return Extract(JSString::New(ctx, src, count));
+}
+
+inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
+  const JSVal primitive = src.ToPrimitive(ctx, Hint::NONE, ERR);
+  JSString* str = primitive.ToString(ctx, ERR);
+  return Extract(str);
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
