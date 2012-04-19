@@ -1982,6 +1982,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
 #undef JUMPTO
 #undef JUMPBY
 #undef REG
+#undef ERR
 #undef FAST_PATH_LOAD_CONST
 #undef FAST_PATH_IF_FALSE
 #undef FAST_PATH_BINARY_LT

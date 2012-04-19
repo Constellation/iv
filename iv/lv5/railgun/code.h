@@ -55,7 +55,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
       params_(func.params().size()),
       constants_(),
       exception_table_(),
-      construct_map_(NULL) {
+      construct_map_(NULL),
+      executable_(NULL) {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }
@@ -171,6 +172,12 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return needs_declarative_environment_;
   }
 
+  void set_executable(void* executable) {
+    executable_ = executable;
+  }
+
+  void* executable() const { return executable_; }
+
  private:
 
   void set_start(std::size_t start) { start_ = start; }
@@ -210,6 +217,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   JSVals constants_;
   ExceptionTable exception_table_;
   Map* construct_map_;
+  void* executable_;
 };
 
 } } }  // namespace iv::lv5::railgun
