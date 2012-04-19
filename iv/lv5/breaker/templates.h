@@ -12,8 +12,8 @@ namespace lv5 {
 namespace breaker {
 
 static const std::size_t kDispatchExceptionHandler = 0;
-static const std::size_t kExceptionHandlerIsNotFound = 48;
-static const std::size_t kBreakerPrologue = 96;
+static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 48;
+static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 48;
 
 class TemplatesGenerator : private Xbyak::CodeGenerator {
  public:
@@ -53,7 +53,8 @@ class TemplatesGenerator : private Xbyak::CodeGenerator {
     Padding(size);
   }
 
-  typedef JSVal(*PrologueType)(railgun::Context* ctx, railgun::Frame* frame, void* code);
+  typedef JSVal(*PrologueType)(railgun::Context* ctx,
+                               railgun::Frame* frame, void* code);
   // rdi : context
   // rsi : frame
   // rdx : code ptr
@@ -90,10 +91,6 @@ struct Templates {
 
   static void* exception_handler_is_not_found() {
     return reinterpret_cast<void*>(code + kExceptionHandlerIsNotFound);
-  }
-
-  static JSVal breaker_prologue(railgun::Context* ctx, railgun::Frame* frame, void* ptr) {
-    return TemplatesGenerator::PrologueType(code + kBreakerPrologue)(ctx, frame, ptr);
   }
 
   static MIE_ALIGN(4096) char code[4096];
@@ -186,6 +183,12 @@ inline void* search_exception_handler(void* pc,
   *frame_out = frame;
   *offset_out += offset * kStackPayload;
   return Templates<>::exception_handler_is_not_found();
+}
+
+inline JSVal breaker_prologue(railgun::Context* ctx,
+                              railgun::Frame* frame, void* ptr) {
+  return TemplatesGenerator::PrologueType(
+      Templates<>::code + kBreakerPrologue)(ctx, frame, ptr);
 }
 
 } } }  // namespace iv::lv5::breaker
