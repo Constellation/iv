@@ -123,14 +123,18 @@ class Compiler {
       }
 
       switch (opcode) {
-        case r::OP::LOAD_UNDEFINED: {
+        case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
-        }
-        case r::OP::RETURN: {
+        case r::OP::RETURN:
           EmitRETURN(instr);
           break;
-        }
+        case r::OP::LOAD_CONST:
+          EmitLOAD_CONST(instr);
+          break;
+        case r::OP::BINARY_ADD:
+          EmitBINARY_ADD(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -192,8 +196,14 @@ class Compiler {
     // append immediate value to machine code
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
-    const uint64_t bytes = code_->constants()[offset].Layout().bytes_;
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], bytes);
+    const uint64_t bytes = Extract(code_->constants()[offset]);
+    if (bytes <= UINT32_MAX) {
+      // only mov m64, imm32 is allowed
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], bytes);
+    } else {
+      asm_->mov(asm_->rax, bytes);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
   }
 
   // opcode | (dst | lhs | rhs)
@@ -222,7 +232,8 @@ class Compiler {
       asm_->movsxd(asm_->rsi, asm_->esi);
       asm_->movsxd(asm_->rdx, asm_->edx);
       asm_->add(asm_->rsi, asm_->rdx);
-      asm_->cvtsi2sd(asm_->rsi, asm_->rsi);
+      asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
+      asm_->movq(asm_->rsi, asm_->xmm0);
       ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
@@ -348,6 +359,7 @@ class Compiler {
   void EmitLOAD_UNDEFINED(const Instruction* instr) {
     static const uint64_t layout = Extract(JSUndefined);
     const int16_t dst = Reg(instr[1].i32[0]);
+    assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
   }
 
@@ -355,6 +367,7 @@ class Compiler {
   void EmitLOAD_EMPTY(const Instruction* instr) {
     static const uint64_t layout = Extract(JSEmpty);
     const int16_t dst = Reg(instr[1].i32[0]);
+    assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
@@ -362,6 +375,7 @@ class Compiler {
   void EmitLOAD_NULL(const Instruction* instr) {
     static const uint64_t layout = Extract(JSNull);
     const int16_t dst = Reg(instr[1].i32[0]);
+    assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
@@ -369,6 +383,7 @@ class Compiler {
   void EmitLOAD_TRUE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSTrue);
     const int16_t dst = Reg(instr[1].i32[0]);
+    assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
@@ -376,6 +391,7 @@ class Compiler {
   void EmitLOAD_FALSE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
     const int16_t dst = Reg(instr[1].i32[0]);
+    assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
@@ -581,7 +597,7 @@ class Compiler {
       asm_->and(tmp1, target);
       asm_->mov(tmp2, detail::jsval64::kNumberMask);
       asm_->cmp(tmp1, tmp2);
-      asm_->je(label);
+      asm_->jne(label);
     }
 
     void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,
