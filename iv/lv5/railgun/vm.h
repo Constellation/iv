@@ -1768,7 +1768,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         const JSVal ret = Invoke(func, offset, argc_with_this, ERR);
 
         // inlined RESULT
-        INCREMENT_NEXT(CONSTRUCT);
+        INCREMENT_NEXT(CALL);
         REG(instr[1].i32[0]) = ret;
         DISPATCH(RESULT);
       }
