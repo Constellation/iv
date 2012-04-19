@@ -108,7 +108,7 @@ class Compiler {
     // emit prologue
 
     // general storage space
-    // We can access this space by qword[rsp + k64Size * 1]
+    // We can access this space by qword[rsp + k64Size * 0]
     asm_->push(asm_->r12);
 
     const Instruction* first_instr = code_->begin();
