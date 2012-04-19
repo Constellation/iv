@@ -136,6 +136,9 @@ class Compiler {
         case r::OP::RETURN:
           EmitRETURN(instr);
           break;
+        case r::OP::RESULT:
+          EmitRESULT(instr);
+          break;
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
           break;
@@ -563,7 +566,7 @@ class Compiler {
     // So r13 is still callee Frame.
     const int16_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + src * kJSValSize]);
-    asm_->pop(asm_->rcx);
+    asm_->add(asm_->rsp, k64Size);
     asm_->ret();
   }
 
@@ -615,7 +618,7 @@ class Compiler {
     {
       asm_->inLocalLabel();
       asm_->mov(asm_->rdi, asm_->r12);
-      asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + callee * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->rcx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
