@@ -53,14 +53,9 @@
   do {\
     IV_LV5_BREAKER_ASSERT_RETURN_ADDRESS();\
     void* pc = IV_LV5_BREAKER_RETURN_ADDRESS();\
-    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));  /* NOLINT */\
+    IV_LV5_BREAKER_REPATCH_RETURN_ADDRESS(Templates<>::dispatch_exception_handler());  /* NOLINT */\
     return core::BitCast<uint64_t>(pc);\
   } while (0)
-
-// prototype
-extern "C" void iv_lv5_breaker_dispatch_exception_handler(void);
-extern "C" void* iv_lv5_breaker_search_exception_handler(void* pc);
-extern "C" void iv_lv5_breaker_exception_handler_is_not_found(void);
 
 namespace iv {
 namespace lv5 {
@@ -87,6 +82,11 @@ typedef uint64_t Rep;
 inline Rep Extract(JSVal val) {
   return val.Layout().bytes_;
 }
+
+
+void* search_exception_handler(void* pc,
+                               iv::lv5::railgun::Context* ctx,
+                               void** target);
 
 } } }  // namespace iv::lv5::breaker
 #endif  // defined(IV_ENABLE_JIT)

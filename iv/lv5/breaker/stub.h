@@ -2,6 +2,8 @@
 #ifndef IV_LV5_BREAKER_STUB_H_
 #define IV_LV5_BREAKER_STUB_H_
 #include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/breaker/templates.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -9,14 +11,16 @@ namespace stub {
 
 #define ERR\
   ctx->PendingError());\
-  if (*e) {\
+  if (*ctx->PendingError()) {\
     IV_LV5_BREAKER_RAISE();\
   }\
 ((void)0
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-inline void BUILD_ENV(Context* ctx, railgun::Frame* framx,
+
+
+inline void BUILD_ENV(railgun::Context* ctx, railgun::Frame* frame,
                       uint32_t size, uint32_t mutable_start) {
   frame->variable_env_ = frame->lexical_env_ =
       JSDeclEnv::New(ctx,
@@ -26,7 +30,7 @@ inline void BUILD_ENV(Context* ctx, railgun::Frame* framx,
                      mutable_start);
 }
 
-inline Rep WITH_SETUP(Context* ctx, railgun::Frame* frame, JSVal src) {
+inline Rep WITH_SETUP(railgun::Context* ctx, railgun::Frame* frame, JSVal src) {
   JSObject* const obj = src.ToObject(ctx, ERR);
   JSObjectEnv* const with_env =
       JSObjectEnv::New(ctx, frame->lexical_env(), obj);
@@ -35,7 +39,7 @@ inline Rep WITH_SETUP(Context* ctx, railgun::Frame* frame, JSVal src) {
   return 0;
 }
 
-inline Rep BINARY_ADD(Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   assert(!lhs.IsNumber() || !rhs.IsNumber());
   if (lhs.IsString()) {
     if (rhs.IsString()) {
@@ -55,37 +59,37 @@ inline Rep BINARY_ADD(Context* ctx, JSVal lhs, JSVal rhs) {
     return Extract(JSString::New(ctx, lstr, rstr));
   }
 
-  const double left = lprim.ToNumber(ctx_, ERR);
-  const double right = rprim.ToNumber(ctx_, ERR);
+  const double left = lprim.ToNumber(ctx, ERR);
+  const double right = rprim.ToNumber(ctx, ERR);
   return Extract(left + right);
 }
 
-inline Rep BINARY_LT(Context* ctx, JSVal lhs, JSVal rhs) {
-  const CompareResult res = JSVal::Compare<true>(ctx_, lhs, rhs, ERR);
+inline Rep BINARY_LT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
-inline Rep BINARY_LTE(Context* ctx, JSVal lhs, JSVal rhs) {
-  const CompareResult res = JSVal::Compare<false>(ctx_, rhs, lhs, ERR);
+inline Rep BINARY_LTE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
-inline Rep BINARY_GT(Context* ctx, JSVal lhs, JSVal rhs) {
-  const CompareResult res = JSVal::Compare<false>(ctx_, rhs, lhs, ERR);
+inline Rep BINARY_GT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
-inline Rep BINARY_GTE(Context* ctx, JSVal lhs, JSVal rhs) {
-  const CompareResult res = JSVal::Compare<true>(ctx_, lhs, rhs, ERR);
+inline Rep BINARY_GTE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
-inline Rep TO_NUMBER(Context* ctx, JSVal src) {
+inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
   return Extract(x);
 }
 
-inline Rep UNARY_NEGATIVE(Context* ctx, JSVal src) {
+inline Rep UNARY_NEGATIVE(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
   return Extract(-x);
 }
@@ -94,12 +98,12 @@ inline JSVal UNARY_NOT(JSVal src) {
   return JSVal::Bool(!src.ToBoolean());
 }
 
-inline Rep UNARY_BIT_NOT(Context* ctx, JSVal src) {
+inline Rep UNARY_BIT_NOT(railgun::Context* ctx, JSVal src) {
   const double value = src.ToNumber(ctx, ERR);
   return Extract(JSVal::Int32(~core::DoubleToInt32(value)));
 }
 
-inline Rep THROW(Context* ctx, JSVal src) {
+inline Rep THROW(railgun::Context* ctx, JSVal src) {
   ctx->PendingError()->Report(src);
   IV_LV5_BREAKER_RAISE();
 }
@@ -108,7 +112,7 @@ inline void POP_ENV(railgun::Frame* frame) {
   frame->set_lexical_env(frame->lexical_env()->outer());
 }
 
-inline JSVal RETURN(JSVal val, railgun::Frame* frame) {
+inline JSVal RETURN(railgun::Context* ctx, railgun::Frame* frame, JSVal val) {
   if (frame->constructor_call_ && !val.IsObject()) {
     val = frame->GetThis();
   }
@@ -116,7 +120,7 @@ inline JSVal RETURN(JSVal val, railgun::Frame* frame) {
   // first lexical_env is variable_env.
   // (if Eval / Global, this is not valid)
   assert(frame->lexical_env() == frame->variable_env());
-  stack_.Unwind(frame);
+  ctx->vm()->stack()->Unwind(frame);
   return val;
 }
 

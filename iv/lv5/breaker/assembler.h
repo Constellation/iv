@@ -40,8 +40,8 @@ class Assembler : public Xbyak::CodeGenerator {
     interrupt();
   }
 
-  Executable GainExecutableByOffset(std::size_t offset) const {
-    return reinterpret_cast<Executable>(getCode() + offset);
+  void* GainExecutableByOffset(std::size_t offset) const {
+    return core::BitCast<void*>(getCode() + offset);
   }
 
   template<typename Func>

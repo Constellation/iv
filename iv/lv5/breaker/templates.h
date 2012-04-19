@@ -35,7 +35,7 @@ class TemplatesGenerator : private Xbyak::CodeGenerator {
     mov(rax, rsp);
     push(r13);
     push(rax);
-    mov(rax, core::BitCast<uint64_t>(&iv_lv5_breaker_search_exception_handler));
+    mov(rax, core::BitCast<uint64_t>(&search_exception_handler));
     call(rax);
     pop(r13);  // unwinded frame
     pop(rsp);  // calculated rsp
@@ -93,6 +93,88 @@ TemplatesGenerator Templates<D>::generator(code, 4096);
 
 template<typename D>
 char Templates<D>::code[4096];
+
+static const uint64_t kStackPayload = 2;  // NOLINT
+
+// Search exception handler from pc, and unwind frames.
+// If handler is found, return to handler pc.
+// copied from railgun::VM exception handler phase
+inline void* search_exception_handler(void* pc,
+                                      iv::lv5::railgun::Context* ctx,
+                                      void** target) {
+  using namespace iv::lv5;
+  railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
+  uint64_t** offset_out = (reinterpret_cast<uint64_t**>(target) + 1);
+  railgun::Frame* frame = *frame_out;
+  JSVal* reg = frame->RegisterFile();
+  Error* e = ctx->PendingError();
+  uint64_t offset = 0;
+  while (true) {
+    bool in_range = false;
+    const railgun::ExceptionTable& table = frame->code()->exception_table();
+    for (railgun::ExceptionTable::const_iterator it = table.begin(),
+         last = table.end(); it != last; ++it) {
+      const railgun::Handler& handler = *it;
+      if (in_range && handler.program_counter_begin() > pc) {
+        break;  // handler not found
+      }
+      if (handler.program_counter_begin() <= pc &&
+          pc < handler.program_counter_end()) {
+        in_range = true;
+        switch (handler.type()) {
+          case railgun::Handler::ITERATOR: {
+            // control iterator lifetime
+            railgun::NativeIterator* it =
+                static_cast<railgun::NativeIterator*>(reg[handler.ret()].cell());
+            ctx->ReleaseNativeIterator(it);
+            continue;
+          }
+
+          case railgun::Handler::ENV: {
+            // roll up environment
+            frame->set_lexical_env(frame->lexical_env()->outer());
+            continue;
+          }
+
+          default: {
+            // catch or finally
+            const JSVal error = JSError::Detail(ctx, e);
+            e->Clear();
+            if (handler.type() == railgun::Handler::FINALLY) {
+              reg[handler.flag()] = railgun::VM::kJumpFromFinally;
+              reg[handler.jmp()] = error;
+            } else {
+              reg[handler.ret()] = error;
+            }
+            *frame_out = frame;
+            *offset_out += offset * kStackPayload;
+            return handler.program_counter_end();
+          }
+        }
+      }
+    }
+    // handler not in this frame
+    // so, unwind frame and search again
+    if (frame->return_address_ == NULL) {
+      // this code is invoked by native function
+      // so, not unwind and return (continues to after for main loop)
+      break;
+    } else {
+      // unwind frame
+      pc = frame->return_address_;
+      // because of Frame is code frame,
+      // first lexical_env is variable_env.
+      // (if Eval / Global, this is not valid)
+      assert(frame->lexical_env() == frame->variable_env());
+      frame = ctx->vm()->stack()->Unwind(frame);
+      offset += 1;
+      reg = frame->RegisterFile();
+    }
+  }
+  *frame_out = frame;
+  *offset_out += offset * kStackPayload;
+  return Templates<>::exception_handler_is_not_found();
+}
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_TEMPLATES_H_
