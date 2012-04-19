@@ -184,6 +184,12 @@ class Compiler {
         case r::OP::BINARY_GTE:
           EmitBINARY_GTE(instr);
           break;
+        case r::OP::INCREMENT:
+          EmitINCREMENT(instr);
+          break;
+        case r::OP::DECREMENT:
+          EmitDECREMENT(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -741,6 +747,68 @@ class Compiler {
     }
   }
 
+  // opcode | src
+  void EmitINCREMENT(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      asm_->inc(asm_->esi);
+      asm_->jo(".INCREMENT_OVERFLOW");
+
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->jmp(".INCREMENT_EXIT");
+
+      asm_->L(".INCREMENT_OVERFLOW");
+      // overflow ==> INT32_MAX + 1
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->jmp(".INCREMENT_EXIT");
+
+      asm_->L(".INCREMENT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::INCREMENT);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+
+      asm_->L(".INCREMENT_EXIT");
+      asm_->outLocalLabel();
+    }
+  }
+
+  // opcode | src
+  void EmitDECREMENT(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      asm_->dec(asm_->esi);
+      asm_->jo(".DECREMENT_OVERFLOW");
+
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->jmp(".DECREMENT_EXIT");
+
+      asm_->L(".DECREMENT_OVERFLOW");
+      // overflow ==> INT32_MIN - 1
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->jmp(".DECREMENT_EXIT");
+
+      asm_->L(".DECREMENT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::DECREMENT);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+
+      asm_->L(".DECREMENT_EXIT");
+      asm_->outLocalLabel();
+    }
+  }
+
   // leave flags
   void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
     asm_->mov(tmp, detail::jsval64::kNumberMask);
@@ -755,7 +823,7 @@ class Compiler {
   }
 
   void ConvertBooleanToJSVal(const Xbyak::Reg64& target) {
-    asm_->or(target, detail::jsval64::kBooleanRepresentation);
+    asm_->or(Xbyak::Reg32(target.getIdx()), detail::jsval64::kBooleanRepresentation);
   }
 
   void Int32Guard(const Xbyak::Reg64& target,

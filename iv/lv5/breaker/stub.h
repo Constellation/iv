@@ -305,6 +305,16 @@ inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx, JSEnv* env, Symbo
   return 0;
 }
 
+inline Rep INCREMENT(railgun::Context* ctx, JSVal src) {
+  const double res = src.ToNumber(ctx, ERR);
+  return Extract(res + 1);
+}
+
+inline Rep DECREMENT(railgun::Context* ctx, JSVal src) {
+  const double res = src.ToNumber(ctx, ERR);
+  return Extract(res - 1);
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
