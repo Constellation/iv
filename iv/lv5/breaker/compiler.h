@@ -166,6 +166,9 @@ class Compiler {
         case r::OP::INSTANTIATE_DECLARATION_BINDING:
           EmitINSTANTIATE_DECLARATION_BINDING(instr);
           break;
+        case r::OP::INSTANTIATE_VARIABLE_BINDING:
+          EmitINSTANTIATE_VARIABLE_BINDING(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -682,6 +685,28 @@ class Compiler {
       asm_->Call(&stub::INSTANTIATE_DECLARATION_BINDING<true>);
     } else {
       asm_->Call(&stub::INSTANTIATE_DECLARATION_BINDING<false>);
+    }
+  }
+
+  // opcode | (name | configurable)
+  void EmitINSTANTIATE_VARIABLE_BINDING(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].u32[0]];
+    const bool configurable = instr[1].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (configurable) {
+      if (code_->strict()) {
+        asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<true, true>);
+      } else {
+        asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<true, false>);
+      }
+    } else {
+      if (code_->strict()) {
+        asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<false, true>);
+      } else {
+        asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<false, false>);
+      }
     }
   }
 

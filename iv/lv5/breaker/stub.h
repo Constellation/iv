@@ -262,6 +262,16 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx, JSEnv* env, Sy
   return 0;
 }
 
+template<bool CONFIGURABLE, bool STRICT>
+inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  // opcode | (name | configurable)
+  if (!env->HasBinding(ctx, name)) {
+    env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
+    env->SetMutableBinding(ctx, name, JSUndefined, STRICT, ERR);
+  }
+  return 0;
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
