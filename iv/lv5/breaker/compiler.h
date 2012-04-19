@@ -163,7 +163,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     asm_->mov(asm_->r10, asm_->ptr[asm_->r13 + src * kJSValSize]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->r10);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->r10);
   }
 
   // opcode | (size | mutable_start)
@@ -193,7 +193,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     const uint64_t bytes = code_->constants()[offset].Layout().bytes_;
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], bytes);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], bytes);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -212,7 +212,7 @@ class Compiler {
       asm_->mov(asm_->esi, asm_->eax);
       asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
       asm_->add(asm_->rsi, asm_->rdi);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
       asm_->L(".BINARY_ADD_SLOW_NUMBER");
       // rdi and rsi is always int32 (but overflow)
@@ -224,12 +224,12 @@ class Compiler {
       asm_->add(asm_->rsi, asm_->rdx);
       asm_->cvtsi2sd(asm_->rsi, asm_->rsi);
       ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
       asm_->L(".BINARY_ADD_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_ADD);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_ADD_EXIT");
       asm_->outLocalLabel();
     }
@@ -258,7 +258,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_LT);
       asm_->L(".BINARY_LT_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->outLocalLabel();
     }
   }
@@ -285,7 +285,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_LTE);
       asm_->L(".BINARY_LTE_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->outLocalLabel();
     }
   }
@@ -312,7 +312,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_GT);
       asm_->L(".BINARY_GT_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->outLocalLabel();
     }
   }
@@ -339,7 +339,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_GTE);
       asm_->L(".BINARY_GTE_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->outLocalLabel();
     }
   }
@@ -355,28 +355,28 @@ class Compiler {
   void EmitLOAD_EMPTY(const Instruction* instr) {
     static const uint64_t layout = Extract(JSEmpty);
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
   // opcode | dst
   void EmitLOAD_NULL(const Instruction* instr) {
     static const uint64_t layout = Extract(JSNull);
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
   // opcode | dst
   void EmitLOAD_TRUE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSTrue);
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
   // opcode | dst
   void EmitLOAD_FALSE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
   // opcode | (dst | src)
@@ -390,10 +390,10 @@ class Compiler {
       asm_->jnz(".UNARY_POSITIVE_FAST");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::TO_NUMBER);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->jmp(".UNARY_POSITIVE_EXIT");
       asm_->L(".UNARY_POSITIVE_FAST");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->L(".UNARY_POSITIVE_EXIT");
       asm_->outLocalLabel();
     }
@@ -415,7 +415,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::UNARY_NEGATIVE);
       asm_->L(".UNARY_NEGATIVE_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->outLocalLabel();
     }
   }
@@ -427,7 +427,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::UNARY_NOT);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (dst | src)
@@ -439,12 +439,12 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
       asm_->L(".UNARY_BIT_NOT_SLOW");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::UNARY_BIT_NOT);
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".UNARY_BIT_NOT_EXIT");
       asm_->outLocalLabel();
     }
@@ -476,7 +476,7 @@ class Compiler {
     asm_->mov(asm_->rdx, count);
     asm_->Call(
         static_cast<JSString*(*)(Context*, JSVal*, uint32_t)>(&JSString::New));
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode
@@ -493,7 +493,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, size);
     asm_->Call(&JSArray::ReservedNew);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (dst | code)
@@ -506,7 +506,7 @@ class Compiler {
     asm_->mov(asm_->rdx,
               asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->Call(&railgun::JSVMFunction::New);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (dst | offset)
@@ -518,13 +518,13 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
     asm_->Call(static_cast<JSRegExp*(*)(Context*, JSRegExp*)>(&JSRegExp::New));
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | dst
   void EmitRESULT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | src
