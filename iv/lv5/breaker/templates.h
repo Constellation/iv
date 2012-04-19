@@ -6,6 +6,7 @@
 #include <iv/singleton.h>
 #include <iv/bit_cast.h>
 #include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/railgun/railgun.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -47,15 +48,26 @@ class TemplatesGenerator : private Xbyak::CodeGenerator {
     // restore callee-save registers
     pop(r13);
     pop(r12);
-    pop(rax);  // alignment element
+    pop(rcx);  // alignment element
     ret();
     Padding(size);
   }
 
+  typedef JSVal(*PrologueType)(railgun::Context* ctx, railgun::Frame* frame, void* code);
+  // rdi : context
+  // rsi : frame
+  // rdx : code ptr
   void CompileBreakerPrologue(std::size_t size) {
     sub(rsp, k64Size * 3);
     mov(ptr[rsp + k64Size * 1], r13);
     mov(ptr[rsp + k64Size * 2], r12);
+    mov(r12, rdi);
+    mov(r13, rsi);
+    call(rdx);
+    pop(r13);
+    pop(r12);
+    pop(rcx);  // alignment element
+    ret();
     Padding(size);
   }
 
@@ -80,8 +92,8 @@ struct Templates {
     return reinterpret_cast<void*>(code + kExceptionHandlerIsNotFound);
   }
 
-  static void* breaker_prologue() {
-    return reinterpret_cast<void*>(code + kBreakerPrologue);
+  static TemplatesGenerator::PrologueType breaker_prologue() {
+    return TemplatesGenerator::PrologueType(code + kBreakerPrologue);
   }
 
   static MIE_ALIGN(4096) char code[4096];
@@ -102,7 +114,7 @@ static const uint64_t kStackPayload = 2;  // NOLINT
 inline void* search_exception_handler(void* pc,
                                       iv::lv5::railgun::Context* ctx,
                                       void** target) {
-  using namespace iv::lv5;
+  using namespace iv::lv5;  // NOLINT
   railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
   uint64_t** offset_out = (reinterpret_cast<uint64_t**>(target) + 1);
   railgun::Frame* frame = *frame_out;
@@ -125,7 +137,8 @@ inline void* search_exception_handler(void* pc,
           case railgun::Handler::ITERATOR: {
             // control iterator lifetime
             railgun::NativeIterator* it =
-                static_cast<railgun::NativeIterator*>(reg[handler.ret()].cell());
+                static_cast<railgun::NativeIterator*>(
+                    reg[handler.ret()].cell());
             ctx->ReleaseNativeIterator(it);
             continue;
           }
