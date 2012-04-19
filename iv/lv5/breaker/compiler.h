@@ -628,8 +628,18 @@ class Compiler {
       asm_->mov(asm_->r13, asm_->rcx);
       asm_->call(asm_->rax);
       // unwind Frame
-      // TODO(Constellation) slide stack offset in railgun::Stack
-      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);
+      asm_->mov(asm_->rcx, asm_->r13);  // old frame
+      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]); // current frame
+      const int16_t frame_end_offset = Reg(code_->registers());
+      asm_->lea(asm_->rbx, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(asm_->rcx, asm_->rbx);
+      asm_->jge(".CALL_UNWIND_OLD");
+      asm_->mov(asm_->rcx, asm_->rbx);
+      asm_->L(".CALL_UNWIND_OLD");
+      // rcx is new stack pointer
+      asm_->mov(asm_->rbx, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
       asm_->L(".CALL_EXIT");
       asm_->outLocalLabel();
     }

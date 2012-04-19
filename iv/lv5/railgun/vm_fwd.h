@@ -8,12 +8,14 @@
 #include <iv/lv5/railgun/stack.h>
 #include <iv/lv5/railgun/direct_threading.h>
 #include <iv/lv5/railgun/statistics.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
 class VM : private Operation {
  public:
+  friend class breaker::Compiler;
   static const int32_t kJumpFromSubroutine = 0;
   static const int32_t kJumpFromReturn = 1;
   static const int32_t kJumpFromFinally = 2;

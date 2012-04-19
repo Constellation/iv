@@ -11,11 +11,13 @@
 #include <iv/static_assert.h>
 #include <iv/os_allocator.h>
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
 class Stack : core::Noncopyable<Stack> {
  public:
+  friend class breaker::Compiler;
   struct EmptyTag { };
 
   typedef JSVal* iterator;

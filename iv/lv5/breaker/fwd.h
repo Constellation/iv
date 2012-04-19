@@ -7,6 +7,7 @@
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
 #include <iv/third_party/xbyak/xbyak.h>
+#endif  // defined(IV_ENABLE_JIT)
 
 #include <iv/detail/cstdint.h>
 
@@ -59,36 +60,27 @@
 
 namespace iv {
 namespace lv5 {
+namespace railgun {
+
+class Context;
+struct Frame;
+class Code;
+
+}  // namespace railgun
 namespace breaker {
 
-enum StackOffset {
-  FRAME_OFFSET = 0,
-  CONTEXT_OFFSET = 1
-};
-
 static const int k64Size = sizeof(uint64_t);  // NOLINT
-
-#define IV_LV5_BREAKER_STACK_OFFSET_FRAME 0
-#define IV_LV5_BREAKER_STACK_OFFSET_CONTEXT 8
 
 class Compiler;
 class Assembler;
 
-IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
-IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
-
 // Representation of JSVal, it is uint64_t in 64bit system
 typedef uint64_t Rep;
 
-inline Rep Extract(JSVal val) {
-  return val.Layout().bytes_;
-}
-
-
+Rep Extract(JSVal val);
 void* search_exception_handler(void* pc, railgun::Context* ctx, void** target);
 JSVal breaker_prologue(railgun::Context* ctx, railgun::Frame* frame, void* ptr);
 JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e);
 
 } } }  // namespace iv::lv5::breaker
-#endif  // defined(IV_ENABLE_JIT)
 #endif  // IV_LV5_BREAKER_FWD_H_

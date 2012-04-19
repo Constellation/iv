@@ -18,6 +18,7 @@
 #include <iv/lv5/object_utils.h>
 #include <iv/lv5/adapter/select1st.h>
 #include <iv/lv5/railgun/fwd.h>
+#include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -68,6 +69,7 @@ class JSVector;
 class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  public:
   friend class railgun::VM;
+  friend class breaker::Compiler;
   friend class JSVector;
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
   typedef JSVals JSValVector;
@@ -597,7 +599,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
- public:
+ private:
   // use VM only
   //   ReservedNew
   //   Reserve
@@ -634,7 +636,6 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
- private:
   bool FixUpLength(uint32_t old_len, uint32_t index) {
     if (index >= old_len) {
       length_.set_value(index + 1);

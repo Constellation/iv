@@ -7,6 +7,11 @@
 namespace iv {
 namespace lv5 {
 namespace breaker {
+
+inline Rep Extract(JSVal val) {
+  return val.Layout().bytes_;
+}
+
 namespace stub {
 
 #define ERR\
@@ -17,7 +22,6 @@ namespace stub {
 ((void)0
 #define DUMMY )  // to make indentation work
 #undef DUMMY
-
 
 
 inline void BUILD_ENV(railgun::Context* ctx, railgun::Frame* frame,

@@ -5,12 +5,14 @@
 #include <iv/lv5/railgun/lru_code_map.h>
 #include <iv/lv5/factory.h>
 #include <iv/lv5/error.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
 class Context : public lv5::Context {
  public:
+  friend class breaker::Compiler;
   static const std::size_t kNativeIteratorCacheMax = 20;
   static const std::size_t kGlobalMapCacheSize = 1024;
   typedef std::pair<Map*, Symbol> MapCacheKey;

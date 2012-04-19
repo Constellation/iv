@@ -18,12 +18,14 @@
 #include <iv/lv5/railgun/frame.h>
 #include <iv/lv5/railgun/direct_threading.h>
 #include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
 class Stack : public lv5::Stack {
  public:
+  friend class breaker::Compiler;
   class Resource : public GCKind<Resource> {
    public:
     explicit Resource(Stack* stack) : stack_(stack) { }
