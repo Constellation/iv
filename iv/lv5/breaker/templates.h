@@ -118,7 +118,6 @@ inline void* search_exception_handler(void* pc,
   railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
   uint64_t** offset_out = (reinterpret_cast<uint64_t**>(target) + 1);
   railgun::Frame* frame = *frame_out;
-  JSVal* reg = frame->RegisterFile();
   Error* e = ctx->PendingError();
   uint64_t offset = 0;
   while (true) {
@@ -138,7 +137,7 @@ inline void* search_exception_handler(void* pc,
             // control iterator lifetime
             railgun::NativeIterator* it =
                 static_cast<railgun::NativeIterator*>(
-                    reg[handler.ret()].cell());
+                    frame->RegisterFile()[handler.ret()].cell());
             ctx->ReleaseNativeIterator(it);
             continue;
           }
@@ -153,6 +152,7 @@ inline void* search_exception_handler(void* pc,
             // catch or finally
             const JSVal error = JSError::Detail(ctx, e);
             e->Clear();
+            JSVal* reg = frame->RegisterFile();
             if (handler.type() == railgun::Handler::FINALLY) {
               reg[handler.flag()] = railgun::VM::kJumpFromFinally;
               reg[handler.jmp()] = error;
@@ -181,7 +181,6 @@ inline void* search_exception_handler(void* pc,
       assert(frame->lexical_env() == frame->variable_env());
       frame = ctx->vm()->stack()->Unwind(frame);
       offset += 1;
-      reg = frame->RegisterFile();
     }
   }
   *frame_out = frame;
