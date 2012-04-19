@@ -597,6 +597,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
+ public:
   // use VM only
   //   ReservedNew
   //   Reserve
@@ -633,6 +634,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
+ private:
   bool FixUpLength(uint32_t old_len, uint32_t index) {
     if (index >= old_len) {
       length_.set_value(index + 1);
