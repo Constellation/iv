@@ -5,6 +5,7 @@
 #define IV_LV5_BREAKER_TEMPLATES_H_
 #include <iv/singleton.h>
 #include <iv/bit_cast.h>
+#include <iv/debug.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 namespace iv {
@@ -15,7 +16,7 @@ static const std::size_t kDispatchExceptionHandler = 0;
 static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 48;
 static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 48;
 
-class TemplatesGenerator : private Xbyak::CodeGenerator {
+class TemplatesGenerator : public Xbyak::CodeGenerator {
  public:
   TemplatesGenerator(char* ptr, std::size_t size)
     : Xbyak::CodeGenerator(size, ptr) {
@@ -102,6 +103,10 @@ TemplatesGenerator Templates<D>::generator(code, 4096);
 
 template<typename D>
 char Templates<D>::code[4096];
+
+struct ForceInstantiate {
+  ForceInstantiate() { Templates<>::generator.getCode(); }
+};
 
 static const uint64_t kStackPayload = 2;  // NOLINT
 

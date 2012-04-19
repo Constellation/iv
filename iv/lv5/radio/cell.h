@@ -24,12 +24,15 @@ enum CellTag {
 class Cell {
  public:
   // next is used for free list ptr and gc mark bits
-  explicit Cell(int tag) : next_(tag << Color::kOffset | Color::WHITE) { }
-  Cell() : next_(Color::CLEAR) { }
+  explicit Cell(int tag)
+    : next_address_of_freelist_or_storage_(
+        tag << Color::kOffset | Color::WHITE) {
+  }
+  Cell() : next_address_of_freelist_or_storage_(Color::CLEAR) { }
   virtual ~Cell() { }
 
   int tag() const {
-    return next_ >> Color::kOffset;
+    return next_address_of_freelist_or_storage_ >> Color::kOffset;
   }
 
   Block* block() const {
@@ -38,24 +41,27 @@ class Cell {
   }
 
   Color::Type color() const {
-    return static_cast<Color::Type>(next_ & Color::kMask);
+    return static_cast<Color::Type>(
+        next_address_of_freelist_or_storage_& Color::kMask);
   }
 
   void Coloring(Color::Type color) {
-    next_ &= ~Color::kMask;  // clear color
-    next_ |= color;
+    next_address_of_freelist_or_storage_ &= ~Color::kMask;  // clear color
+    next_address_of_freelist_or_storage_ |= color;
   }
 
-  Cell* next() const { return reinterpret_cast<Cell*>(next_); }
+  Cell* next() const {
+    return reinterpret_cast<Cell*>(next_address_of_freelist_or_storage_);
+  }
 
   void set_next(Cell* cell) {
-    next_ = reinterpret_cast<uintptr_t>(cell);
+    next_address_of_freelist_or_storage_ = reinterpret_cast<uintptr_t>(cell);
   }
 
   virtual void MarkChildren(Core* core) { }
 
- private:
-  uintptr_t next_;
+  // This is public, because offsetof to this is used in breaker::Compiler
+  uintptr_t next_address_of_freelist_or_storage_;
 };
 
 template<CellTag TAG = POINTER>

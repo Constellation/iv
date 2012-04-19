@@ -194,7 +194,7 @@ struct Frame {
   JSEnv* lexical_env_;
   Frame* prev_;
   uint32_t argc_;
-  bool constructor_call_;
+  uint32_t constructor_call_;
 };
 
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)

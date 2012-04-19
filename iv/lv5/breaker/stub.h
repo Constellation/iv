@@ -120,7 +120,6 @@ inline JSVal RETURN(railgun::Context* ctx, railgun::Frame* frame, JSVal val) {
   // first lexical_env is variable_env.
   // (if Eval / Global, this is not valid)
   assert(frame->lexical_env() == frame->variable_env());
-  ctx->vm()->stack()->Unwind(frame);
   return val;
 }
 

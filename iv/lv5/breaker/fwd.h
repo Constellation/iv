@@ -86,6 +86,7 @@ inline Rep Extract(JSVal val) {
 
 void* search_exception_handler(void* pc, railgun::Context* ctx, void** target);
 JSVal breaker_prologue(railgun::Context* ctx, railgun::Frame* frame, void* ptr);
+JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e);
 
 } } }  // namespace iv::lv5::breaker
 #endif  // defined(IV_ENABLE_JIT)

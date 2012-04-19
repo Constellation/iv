@@ -123,6 +123,14 @@ class Compiler {
       }
 
       switch (opcode) {
+        case r::OP::LOAD_UNDEFINED: {
+          EmitLOAD_UNDEFINED(instr);
+          break;
+        }
+        case r::OP::RETURN: {
+          EmitRETURN(instr);
+          break;
+        }
       }
       std::advance(instr, length);
     }
@@ -340,7 +348,7 @@ class Compiler {
   void EmitLOAD_UNDEFINED(const Instruction* instr) {
     static const uint64_t layout = Extract(JSUndefined);
     const int16_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
   }
 
   // opcode | dst
@@ -521,17 +529,32 @@ class Compiler {
 
   // opcode | src
   void EmitRETURN(const Instruction* instr) {
-    // TODO(Constellation) inlining stack unwind and purge return call
+    // Calling convension is different from railgun::VM.
+    // Constructor checks value is object in call site, not callee site.
+    // So r13 is still callee Frame.
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
-    asm_->Call(&stub::RETURN);
-    // restore previous frame
-    asm_->mov(asm_->r13,
-              asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);
-    asm_->pop(asm_->rcx);  // discard alignment element
+    asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->pop(asm_->rcx);
     asm_->ret();
+  }
+
+  // opcode | (callee | offset | argc_with_this)
+  void EmitCONSTRUCT(const Instruction* instr) {
+    // after call of JS Function
+    // rax is result value
+    asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
+    asm_->and(asm_->rsi, asm_->rax);
+    asm_->jnz(".RESULT_IS_OK");  // not cell
+    asm_->test(asm_->rax, asm_->rax);
+    asm_->jz(".RESULT_IS_OK");  // empty
+    // currently, rax target is garanteed as object
+    asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
+    asm_->shr(asm_->rcx, radio::Color::kOffset);
+    asm_->cmp(asm_->rcx, radio::OBJECT);
+    asm_->je(".RESULT_IS_OK");
+    // constructor call and return value is not object
+    asm_->mov(asm_->rax, asm_->ptr[asm_->r13 - kJSValSize * railgun::FrameConstant<>::kThisOffset]);  // NOLINT
+    asm_->L(".RESULT_IS_OK");
   }
 
   // leave flags
