@@ -177,6 +177,39 @@ inline Rep LOAD_GLOBAL(railgun::Context* ctx,
   }
 }
 
+template<bool STRICT>
+inline Rep STORE_GLOBAL(railgun::Context* ctx,
+                        JSVal src, Symbol name, railgun::Instruction* instr) {
+  // opcode | (src | name) | nop | nop
+  JSGlobal* global = ctx->global_obj();
+  if (instr[2].map == global->map()) {
+    // map is cached, so use previous index code
+    global->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+  } else {
+    Slot slot;
+    if (global->GetOwnPropertySlot(ctx, name, &slot)) {
+      instr[2].map = global->map();
+      instr[3].u32[0] = slot.offset();
+      global->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+    } else {
+      instr[2].map = NULL;
+      if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
+        current->SetMutableBinding(ctx, name, src, STRICT, ERR);
+      } else {
+        if (STRICT) {
+          ctx->PendingError()->Report(Error::Reference,
+                    "putting to unresolvable reference "
+                    "not allowed in strict reference");
+          IV_LV5_BREAKER_RAISE();
+        } else {
+          ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
+        }
+      }
+    }
+  }
+  return 0;
+}
+
 inline Rep CALL(railgun::Context* ctx,
                 JSVal callee,
                 JSVal* offset,

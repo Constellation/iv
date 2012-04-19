@@ -151,6 +151,9 @@ class Compiler {
         case r::OP::LOAD_GLOBAL:
           EmitLOAD_GLOBAL(instr);
           break;
+        case r::OP::STORE_GLOBAL:
+          EmitSTORE_GLOBAL(instr);
+          break;
         case r::OP::LOAD_FUNCTION:
           EmitLOAD_FUNCTION(instr);
           break;
@@ -634,6 +637,22 @@ class Compiler {
       asm_->Call(&stub::LOAD_GLOBAL<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (src | name) | nop | nop
+  void EmitSTORE_GLOBAL(const Instruction* instr) {
+    const uint32_t index = instr[1].ssw.u32;
+    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const Symbol name = code_->names()[index];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
+    if (code_->strict()) {
+      asm_->Call(&stub::STORE_GLOBAL<true>);
+    } else {
+      asm_->Call(&stub::STORE_GLOBAL<false>);
+    }
   }
 
   // opcode | (callee | offset | argc_with_this)
