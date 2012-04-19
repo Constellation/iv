@@ -7,7 +7,6 @@
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
 #include <iv/third_party/xbyak/xbyak.h>
-#endif
 
 #include <iv/detail/cstdint.h>
 
@@ -42,7 +41,7 @@
 
 // Because mangling convension in C is different,
 // we must define mangling macro for each systems.
-#if defned(IV_OS_MACOSX)
+#if defined(IV_OS_MACOSX)
 #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
 #elif defined(IV_OS_LINUX)
 #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
@@ -54,7 +53,7 @@
   do {\
     IV_LV5_BREAKER_ASSERT_RETURN_ADDRESS();\
     void* pc = IV_LV5_BREAKER_RETURN_ADDRESS();\
-    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));\  /* NOLINT */
+    REPATCH_RETURN_ADDRESS(reinterpret_cast<void*>(&iv_lv5_breaker_dispatch_exception_handler));  /* NOLINT */\
     return core::BitCast<uint64_t>(pc);\
   } while (0)
 
@@ -80,8 +79,8 @@ static const int k64Size = sizeof(uint64_t);  // NOLINT
 class Compiler;
 class Assembler;
 
-STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
-STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
+IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_FRAME == FRAME_OFFSET * k64Size);
+IV_STATIC_ASSERT(IV_LV5_BREAKER_STACK_OFFSET_CONTEXT == CONTEXT_OFFSET * k64Size);
 
 typedef uint64_t Rep;
 
@@ -90,4 +89,5 @@ inline Rep Extract(JSVal val) {
 }
 
 } } }  // namespace iv::lv5::breaker
+#endif  // defined(IV_ENABLE_JIT)
 #endif  // IV_LV5_BREAKER_FWD_H_
