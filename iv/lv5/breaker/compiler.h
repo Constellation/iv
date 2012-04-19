@@ -31,7 +31,9 @@ class Compiler {
   Compiler()
     : code_(NULL),
       asm_(new(PointerFreeGC)Assembler),
-      entry_points_() {
+      jump_map_(),
+      entry_points_(),
+      counter_(0) {
   }
 
   ~Compiler() {
@@ -82,7 +84,7 @@ class Compiler {
         case r::OP::FORIN_ENUMERATE: {
           const int32_t jump = instr[1].jump.to;
           const uint32_t to = index + jump;
-          jump_map_.insert(std::make_pair(to, 0));
+          jump_map_.insert(std::make_pair(to, counter_++));
           break;
         }
       }
@@ -94,8 +96,8 @@ class Compiler {
     for (r::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const r::Handler& handler = *it;
-      jump_map_.insert(std::make_pair(handler.begin(), 0));
-      jump_map_.insert(std::make_pair(handler.end(), 0));
+      jump_map_.insert(std::make_pair(handler.begin(), counter_++));
+      jump_map_.insert(std::make_pair(handler.end(), counter_++));
     }
   }
 
@@ -120,7 +122,7 @@ class Compiler {
 
       const JumpMap::iterator it = jump_map_.find(index);
       if (it != jump_map_.end()) {
-        it->second = asm_->size();
+        asm_->L(MakeLabel(it->second).c_str());
       }
 
       switch (opcode) {
@@ -189,6 +191,15 @@ class Compiler {
           break;
         case r::OP::DECREMENT:
           EmitDECREMENT(instr);
+          break;
+        case r::OP::IF_TRUE:
+          EmitIF_TRUE(instr);
+          break;
+        case r::OP::IF_FALSE:
+          EmitIF_FALSE(instr);
+          break;
+        case r::OP::JUMP_BY:
+          EmitJUMP_BY(instr);
           break;
       }
       std::advance(instr, length);
@@ -809,6 +820,43 @@ class Compiler {
     }
   }
 
+  // opcode | (jmp | cond)
+  void EmitIF_TRUE(const Instruction* instr) {
+    // TODO(Constelation) inlining this
+    const int16_t cond = Reg(instr[1].jump.i16[0]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+    asm_->Call(&stub::TO_BOOLEAN);
+    asm_->test(asm_->eax, asm_->eax);
+    asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  // opcode | (jmp | cond)
+  void EmitIF_FALSE(const Instruction* instr) {
+    // TODO(Constelation) inlining this
+    const int16_t cond = Reg(instr[1].jump.i16[0]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+    asm_->Call(&stub::TO_BOOLEAN);
+    asm_->test(asm_->eax, asm_->eax);
+    asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  // opcode | jmp
+  void EmitJUMP_BY(const Instruction* instr) {
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+  }
+
   // leave flags
   void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
     asm_->mov(tmp, detail::jsval64::kNumberMask);
@@ -856,6 +904,7 @@ class Compiler {
   Assembler* asm_;
   JumpMap jump_map_;
   EntryPointMap entry_points_;
+  std::size_t counter_;
 };
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {

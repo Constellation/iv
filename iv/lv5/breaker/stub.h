@@ -315,6 +315,10 @@ inline Rep DECREMENT(railgun::Context* ctx, JSVal src) {
   return Extract(res - 1);
 }
 
+inline bool TO_BOOLEAN(JSVal src) {
+  return src.ToBoolean();
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
