@@ -126,6 +126,9 @@ class Compiler {
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
+        case r::OP::DEBUGGER:
+          EmitDEBUGGER(instr);
+          break;
         case r::OP::RETURN:
           EmitRETURN(instr);
           break;
