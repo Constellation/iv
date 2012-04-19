@@ -172,6 +172,18 @@ class Compiler {
         case r::OP::INSTANTIATE_VARIABLE_BINDING:
           EmitINSTANTIATE_VARIABLE_BINDING(instr);
           break;
+        case r::OP::BINARY_LT:
+          EmitBINARY_LT(instr);
+          break;
+        case r::OP::BINARY_LTE:
+          EmitBINARY_LTE(instr);
+          break;
+        case r::OP::BINARY_GT:
+          EmitBINARY_GT(instr);
+          break;
+        case r::OP::BINARY_GTE:
+          EmitBINARY_GTE(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -299,7 +311,7 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
-      asm_->setl(asm_->rax);
+      asm_->setl(asm_->al);
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_LT_EXIT");
       asm_->L(".BINARY_LT_SLOW");
@@ -326,7 +338,7 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
-      asm_->setle(asm_->rax);
+      asm_->setle(asm_->al);
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_LTE_EXIT");
       asm_->L(".BINARY_LTE_SLOW");
@@ -353,7 +365,7 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
-      asm_->setg(asm_->rax);
+      asm_->setg(asm_->al);
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_GT_EXIT");
       asm_->L(".BINARY_GT_SLOW");
@@ -380,7 +392,7 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
-      asm_->setge(asm_->rax);
+      asm_->setge(asm_->al);
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_GTE_EXIT");
       asm_->L(".BINARY_GTE_SLOW");
