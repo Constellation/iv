@@ -7,6 +7,9 @@
 #ifndef IV_I18N_H_
 #define IV_I18N_H_
 #include <iv/character.h>
+#include <iv/i18n_language_tag_verifier.h>
+#include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -22,10 +25,24 @@ inline uint16_t ToLocaleIdentifierUpperCase(uint16_t ch) {
 
 // 6.2.2 IsWellFormedLanguageTag(locale)
 // BCP 47 language tag as specified in RFC 5646 section 2.1
+//
+// See iv/i18n_language_tag_verifier.h
 template<typename Iter>
 inline bool IsWellFormedLanguageTag(Iter it, Iter last) {
-  // TODO(Constellation) not implemented yet
-  return false;
+  LanguageTagVerifier<Iter> verifier(it, last);
+  return verifier.Verify();
+}
+
+inline bool IsWellFormedLanguageTag(const StringPiece& piece) {
+  typedef StringPiece::const_iterator Iter;
+  LanguageTagVerifier<Iter> verifier(piece.cbegin(), piece.cend());
+  return verifier.Verify();
+}
+
+inline bool IsWellFormedLanguageTag(const UStringPiece& piece) {
+  typedef UStringPiece::const_iterator Iter;
+  LanguageTagVerifier<Iter> verifier(piece.cbegin(), piece.cend());
+  return verifier.Verify();
 }
 
 // 6.2.3 CanonicalizeLanguageTag(locale)
