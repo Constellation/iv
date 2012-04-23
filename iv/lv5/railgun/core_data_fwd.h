@@ -4,12 +4,15 @@
 #include <iv/lv5/gc_kind.h>
 #include <iv/lv5/railgun/op.h>
 #include <iv/lv5/railgun/instruction_fwd.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
 
 class CoreData : public GCKind<CoreData> {
  public:
+  friend class breaker::Compiler;
+
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Instruction*>::type InstTargets;
 
@@ -39,11 +42,17 @@ class CoreData : public GCKind<CoreData> {
  private:
   explicit CoreData(Data* data)
     : data_(data),
-      compiled_(false) {
+      compiled_(false),
+      asm_(NULL) {
+  }
+
+  void set_asm(breaker::Assembler* assembler) {
+    asm_ = assembler;
   }
 
   Data* data_;
   bool compiled_;
+  breaker::Assembler* asm_;
 };
 
 } } }  // namespace iv::lv5::railgun

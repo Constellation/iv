@@ -28,12 +28,14 @@ class Compiler {
 
   static const int kJSValSize = sizeof(JSVal);
 
-  Compiler()
-    : code_(NULL),
+  Compiler(railgun::Code* top)
+    : top_(top),
+      code_(NULL),
       asm_(new(PointerFreeGC)Assembler),
       jump_map_(),
       entry_points_(),
       counter_(0) {
+    top_->core_data()->set_asm(asm_);
   }
 
   ~Compiler() {
@@ -900,6 +902,7 @@ class Compiler {
     return str;
   }
 
+  railgun::Code* top_;
   railgun::Code* code_;
   Assembler* asm_;
   JumpMap jump_map_;
@@ -916,7 +919,7 @@ inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
 }
 
 inline void Compile(railgun::Code* code) {
-  Compiler compiler;
+  Compiler compiler(code);
   CompileInternal(&compiler, code);
 }
 

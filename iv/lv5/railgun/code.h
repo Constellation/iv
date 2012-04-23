@@ -14,6 +14,7 @@
 #include <iv/lv5/railgun/jsscript.h>
 #include <iv/lv5/railgun/exception.h>
 #include <iv/lv5/railgun/direct_threading.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -26,6 +27,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
     EVAL
   };
   friend class Compiler;
+  friend class breaker::Compiler;
   typedef GCVector<Symbol>::type Names;
   typedef GCVector<Instruction>::type Data;
   typedef GCVector<Code*>::type Codes;
@@ -195,6 +197,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
   void set_needs_declarative_environment(bool val) {
     needs_declarative_environment_ = val;
   }
+
+  CoreData* core_data() { return core_; }
 
   CodeType code_type_;
   bool strict_;
