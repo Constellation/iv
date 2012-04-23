@@ -27,7 +27,8 @@ class Error {
   Error()
     : code_(Normal),
       value_(),
-      detail_() {
+      detail_(),
+      next_(NULL) {
   }
 
   Error(const Error& rhs)
@@ -83,12 +84,17 @@ class Error {
     return lhs.swap(rhs);
   }
 
+  Error* next() const { return next_; }
+
+  void set_next(Error* error) { next_ = error; }
+
  private:
   void this_type_does_not_support_comparisons() const { }
 
   Code code_;
   JSVal value_;
   core::UString detail_;
+  Error* next_;
 };
 
 } }  // namespace iv::lv5

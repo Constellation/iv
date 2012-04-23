@@ -34,7 +34,18 @@ class Context : public lv5::Context {
     return global_map_cache_;
   }
 
-  Error* PendingError() { return &pending_error_; }
+  void PushError(Error* e) {
+    e->set_next(pending_error_);
+    pending_error_ = e;
+  }
+
+  Error* PopError() {
+    Error* e = pending_error_;
+    pending_error_ = pending_error_->next();
+    return e;
+  }
+
+  Error* PendingError() { return pending_error_; }
 
   inline JSVal& RAX() { return RAX_; }
 
@@ -51,7 +62,7 @@ class Context : public lv5::Context {
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;
   MapCache* global_map_cache_;
-  Error pending_error_;
+  Error* pending_error_;
 
 #ifdef DEBUG
   int iterator_live_count_;

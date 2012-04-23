@@ -17,7 +17,7 @@ inline Context::Context()
     direct_eval_map_(10),
     iterator_cache_(),
     global_map_cache_(NULL),
-    pending_error_() {
+    pending_error_(NULL) {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
