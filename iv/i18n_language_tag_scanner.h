@@ -78,9 +78,10 @@
 //
 // alphanum      = (ALPHA / DIGIT)     ; letters and numbers
 //
-#ifndef IV_I18N_LANGUAGE_TAG_VERIFIER_H_
-#define IV_I18N_LANGUAGE_TAG_VERIFIER_H_
+#ifndef IV_I18N_LANGUAGE_TAG_SCANNER_H_
+#define IV_I18N_LANGUAGE_TAG_SCANNER_H_
 #include <bitset>
+#include <map>
 #include <iv/detail/array.h>
 #include <iv/character.h>
 #include <iv/stringpiece.h>
@@ -139,16 +140,38 @@ static const Regular kRegular = { {
   } while (0)
 
 template<typename Iter>
-class LanguageTagVerifier {
+class LanguageTagScanner {
  public:
-  typedef LanguageTagVerifier<Iter> this_type;
+  typedef LanguageTagScanner<Iter> this_type;
 
-  LanguageTagVerifier(Iter it, Iter last)
+  LanguageTagScanner(Iter it, Iter last)
     : start_(it),
       last_(last),
       pos_(it),
       c_(-1),
-      unique_(0) {
+      valid_(),
+      language_(),
+      extlang_(),
+      script_(),
+      region_(),
+      unique_(0),
+      variants_(),
+      extensions_(),
+      privateuse_() {
+    valid_ = Verify();
+  }
+
+  bool IsWellFormed() const { return valid_; }
+
+ private:
+  void Clear() {
+    language_.clear();
+    extlang_.clear();
+    script_.clear();
+    region_.clear();
+    variants_.clear();
+    extensions_.clear();
+    privateuse_.clear();
   }
 
   bool Verify() {
@@ -156,10 +179,12 @@ class LanguageTagVerifier {
     if (ScanLangtag(start_)) {
       return true;
     }
+    Clear();
     if (ScanPrivateUse(start_)) {
       return true;
     }
-    return this_type::IsGrandfathered(start_, last_);
+    Clear();
+    return IsGrandfathered(start_, last_);
   }
 
   bool ScanLangtag(Iter restore) {
@@ -300,24 +325,30 @@ class LanguageTagVerifier {
       Init(restore);
       return false;
     }
-    const int ID = SingletonID(c_);
+    const char target = c_;
+    const int ID = SingletonID(target);
     if (unique_.test(ID)) {
       Init(restore);
       return false;
     }
-    unique_.set(ID);
     Advance();
 
+    Iter s = pos_;
     if (!ExpectExtensionOrPrivateFollowing(2)) {
       Init(restore);
       return false;
     }
+
+    unique_.set(ID);
+    extensions_.insert(std::make_pair(target, std::string(s, current())));
     while (true) {
       Iter restore2 = current();
+      s = pos_;
       if (!ExpectExtensionOrPrivateFollowing(2)) {
         Init(restore2);
         return true;
       }
+      extensions_.insert(std::make_pair(target, std::string(s, current())));
     }
     return true;
   }
@@ -466,7 +497,7 @@ class LanguageTagVerifier {
     return true;
   }
 
-  static bool IsGrandfathered(Iter pos, Iter last) {
+  bool IsGrandfathered(Iter pos, Iter last) {
     // grandfathered = irregular           ; non-redundant tags registered
     //               / regular             ; during the RFC 3066 era
     const std::size_t size = std::distance(pos, last);
@@ -517,15 +548,22 @@ class LanguageTagVerifier {
     return pos_ - 1;
   }
 
- private:
   Iter start_;
   Iter last_;
   Iter pos_;
   int c_;
+  bool valid_;
+  std::string language_;
+  std::string extlang_;
+  std::string script_;
+  std::string region_;
   std::bitset<64> unique_;
+  std::vector<std::string> variants_;
+  std::multimap<char, std::string> extensions_;
+  std::string privateuse_;
 };
 
 #undef IV_EXPECT_NEXT_TAG
 
 } } }  // namespace iv::core::i18n
-#endif  // IV_I18N_LANGUAGE_TAG_VERIFIER_H_
+#endif  // IV_I18N_LANGUAGE_TAG_SCANNER_H_
