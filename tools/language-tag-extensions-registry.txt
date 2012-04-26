@@ -1,0 +1,29 @@
+File-Date: 2012-02-27
+%%
+Identifier: t
+Description: Specifying Transformed Content
+Comments: Subtags for the identification of content that has been
+  transformed, including but not limited to:
+  transliteration, transcription, and translation.
+Added: 2011-12-16
+RFC: [RFC6497]
+Authority: Unicode Consortium
+Contact_Email: cldr-contact&unicode.org
+Mailing_List: cldr-users&unicode.org
+URL: http://www.unicode.org/Public/cldr/latest/core.zip
+%%
+Identifier: u
+Description: Unicode Locale
+Comments: Subtags for the identification of language and cultural
+  variations. Used to set behavior in locale APIs. Data is
+  located in the "common/bcp47" directory inside the referenced
+  URL. Unicode Technical Standard #35 (LDML) provides additional
+  reference material defining the keys and values.
+  For more details please see <http://cldr.unicode.org/index/bcp47-extension>.
+Added: 2010-09-02
+RFC: [RFC6067]
+Authority: Unicode Consortium
+Contact_Email: cldr-contact&unicode.org
+Mailing_List: cldr-users&unicode.org
+URL: http://www.unicode.org/Public/cldr/latest/core.zip
+%%
