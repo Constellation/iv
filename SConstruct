@@ -134,6 +134,10 @@ def Build():
   else:
     env.Append(CCFLAGS="-pedantic")
 
+  if env['i18n']:
+    env.Append(CPPDEFINES=["IV_ENABLE_I18N"])
+    env.ParseConfig('icu-config --ldflags --cppflags')
+
   # XCode 4.3 clang allow this option
   env.Append(CCFLAGS="-fno-operator-names")
 
