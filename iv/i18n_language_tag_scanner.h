@@ -169,12 +169,16 @@ class LanguageTagScanner {
 
 #ifdef IV_ENABLE_I18N
   std::string Canonicalize() {
-    std::vector<char> vec(ULOC_FULLNAME_CAPACITY);
+    std::array<char, ULOC_FULLNAME_CAPACITY> vec1;
     UErrorCode status = U_ZERO_ERROR;
     int32_t length = 0;
     uloc_forLanguageTag(locale_.all_.c_str(),
-                        vec.data(), vec.size(), &length, &status);
-    return std::string(vec.begin(), vec.begin() + length);
+                        vec1.data(), vec1.size(), &length, &status);
+    vec1[length] = '\0';
+    std::array<char, ULOC_FULLNAME_CAPACITY> vec2;
+    length = uloc_toLanguageTag(vec1.data(),
+                                vec2.data(), length, true, &status);
+    return std::string(vec2.begin(), vec2.begin() + length);
   }
 #endif  // IV_ENABLE_I18N
 
