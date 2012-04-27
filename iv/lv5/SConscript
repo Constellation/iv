@@ -22,6 +22,11 @@ conf = Configure(context.Clone())
 conf.CheckLib('pthread')
 conf.CheckLib('gc')
 env = conf.Finish()
+
+if context['i18n']:
+  env.Append(CPPDEFINES=["IV_ENABLE_I18N"])
+  env.ParseConfig('icu-config --ldflags --cppflags')
+
 env.Append(
     CCFLAGS=["-fno-strict-aliasing"],
     CPPDEFINES=["__STDC_FORMAT_MACROS"]

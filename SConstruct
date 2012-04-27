@@ -63,7 +63,8 @@ def Build():
     BoolVariable('cxx1x', '', 0),
     BoolVariable('nosse', '', 0),
     BoolVariable('direct_threading', '', 0),
-    BoolVariable('release', '', 0)
+    BoolVariable('release', '', 0),
+    BoolVariable('i18n', '', 0)
   )
   env = Environment(options=var, tools = ['default', TOOL_SUBST])
   env.VariantDir(join(root_dir, 'obj'), join(root_dir, 'iv'), 0)
