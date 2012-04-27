@@ -85,6 +85,13 @@
 #include <iv/detail/array.h>
 #include <iv/character.h>
 #include <iv/stringpiece.h>
+#include <iv/ustring.h>
+#include <iv/i18n_locale.h>
+
+#ifdef IV_ENABLE_I18N
+#include <unicode/uloc.h>
+#endif  // IV_ENABLE_I18N
+
 namespace iv {
 namespace core {
 namespace i18n {
@@ -150,28 +157,37 @@ class LanguageTagScanner {
       pos_(it),
       c_(-1),
       valid_(),
-      language_(),
-      extlang_(),
-      script_(),
-      region_(),
-      unique_(0),
-      variants_(),
-      extensions_(),
-      privateuse_() {
+      locale_(),
+      unique_(0) {
+    locale_.all_.assign(it, last);
     valid_ = Verify();
   }
 
   bool IsWellFormed() const { return valid_; }
 
+  const Locale& locale() const { return locale_; }
+
+#ifdef IV_ENABLE_I18N
+  std::string Canonicalize() {
+    std::vector<char> vec(ULOC_FULLNAME_CAPACITY);
+    UErrorCode status = U_ZERO_ERROR;
+    int32_t length = 0;
+    uloc_forLanguageTag(locale_.all_.c_str(),
+                        vec.data(), vec.size(), &length, &status);
+    return std::string(vec.begin(), vec.begin() + length);
+  }
+#endif  // IV_ENABLE_I18N
+
  private:
   void Clear() {
-    language_.clear();
-    extlang_.clear();
-    script_.clear();
-    region_.clear();
-    variants_.clear();
-    extensions_.clear();
-    privateuse_.clear();
+    locale_.language_.clear();
+    locale_.extlang_.clear();
+    locale_.script_.clear();
+    locale_.region_.clear();
+    locale_.variants_.clear();
+    locale_.extensions_.clear();
+    locale_.privateuse_.clear();
+    unique_.reset();
   }
 
   bool Verify() {
@@ -244,7 +260,7 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
-    script_ = std::string(s, current());
+    locale_.script_.assign(s, current());
     return true;
   }
 
@@ -253,7 +269,7 @@ class LanguageTagScanner {
     //               / 3DIGIT              ; UN M.49 code
     const Iter restore2 = current();
     if (ExpectAlpha(2) && MaybeValid()) {
-      region_ = std::string(restore2, current());
+      locale_.region_.assign(restore2, current());
       return true;
     }
 
@@ -269,7 +285,7 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
-    region_ = std::string(restore2, current());
+    locale_.region_.assign(restore2, current());
     return true;
   }
 
@@ -285,7 +301,7 @@ class LanguageTagScanner {
         Advance();
       }
       if (MaybeValid()) {
-        variants_.push_back(std::string(restore2, current()));
+        locale_.variants_.push_back(std::string(restore2, current()));
         return true;
       }
     }
@@ -300,7 +316,7 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
-    variants_.push_back(std::string(restore2, current()));
+    locale_.variants_.push_back(std::string(restore2, current()));
     return true;
   }
 
@@ -346,7 +362,7 @@ class LanguageTagScanner {
     }
 
     unique_.set(ID);
-    extensions_.insert(std::make_pair(target, std::string(s, current())));
+    locale_.extensions_.insert(std::make_pair(target, std::string(s, current())));
     while (true) {
       Iter restore2 = current();
       s = pos_;
@@ -354,7 +370,7 @@ class LanguageTagScanner {
         Init(restore2);
         return true;
       }
-      extensions_.insert(std::make_pair(target, std::string(s, current())));
+      locale_.extensions_.insert(std::make_pair(target, std::string(s, current())));
     }
     return true;
   }
@@ -373,15 +389,14 @@ class LanguageTagScanner {
       return false;
     }
 
-    privateuse_.push_back(std::string(s, current()));
+    locale_.privateuse_.append(std::string(s, current()));
     while (true) {
       Iter restore2 = current();
-      s = pos_;
       if (!ExpectExtensionOrPrivateFollowing(1)) {
         Init(restore2);
         return true;
       }
-      privateuse_.push_back(std::string(s, current()));
+      locale_.privateuse_.append(std::string(restore2, current()));
     }
     return true;
   }
@@ -401,7 +416,7 @@ class LanguageTagScanner {
 
     Init(restore2);
     if (ExpectAlpha(4) && MaybeValid()) {
-      language_ = std::string(restore2, current());
+      locale_.language_.assign(restore2, current());
       return true;
     }
 
@@ -421,7 +436,7 @@ class LanguageTagScanner {
       return false;
     }
 
-    language_ = std::string(restore2, current());
+    locale_.language_.assign(restore2, current());
     return true;
   }
 
@@ -441,7 +456,7 @@ class LanguageTagScanner {
     }
 
     Iter restore = current();
-    language_ = std::string(s, restore);
+    locale_.language_.assign(s, restore);
 
     // extlang check
     if (c_ != '-') {
@@ -460,7 +475,7 @@ class LanguageTagScanner {
       assert(MaybeValid());
 
       restore = current();
-      extlang_.push_back(std::string(s, restore));
+      locale_.extlang_.push_back(std::string(s, restore));
     }
 
     for (std::size_t i = 0; i < 2; ++i) {
@@ -476,7 +491,7 @@ class LanguageTagScanner {
       }
       assert(MaybeValid());
       restore = current();
-      extlang_.push_back(std::string(s, restore));
+      locale_.extlang_.push_back(std::string(s, restore));
     }
     assert(MaybeValid());
     return true;
@@ -565,7 +580,8 @@ class LanguageTagScanner {
     if (pos_ == last_) {
       c_ = -1;
     } else {
-      c_ = *pos_++;
+      c_ = *pos_;
+      ++pos_;
     }
   }
 
@@ -581,17 +597,10 @@ class LanguageTagScanner {
   Iter pos_;
   int c_;
   bool valid_;
-  std::string language_;
-  std::vector<std::string> extlang_;
-  std::string script_;
-  std::string region_;
+  Locale locale_;
   std::bitset<64> unique_;
-  std::vector<std::string> variants_;
-  std::multimap<char, std::string> extensions_;
-  std::vector<std::string> privateuse_;
 };
 
 #undef IV_EXPECT_NEXT_TAG
-
 } } }  // namespace iv::core::i18n
 #endif  // IV_I18N_LANGUAGE_TAG_SCANNER_H_

@@ -10,6 +10,7 @@
 #include <iv/i18n_language_tag_scanner.h>
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
+#include <iv/notfound.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -54,6 +55,56 @@ template<typename Iter>
 inline character::locale::Locale CanonicalizeLanguageTag(Iter it, Iter last) {
   // TODO(Constellation) not implemented yet
   return character::locale::EN;
+}
+
+// 10.2.1 IndexOfMatch(availableLocales, locale)
+// use kNotFound instead of -1
+inline std::size_t IndexOfMatch(const std::vector<std::string>& availables,
+                                const std::string& locale) {
+  std::string candidate = locale;
+  while (!candidate.empty()) {
+    const std::vector<std::string>::const_iterator it =
+        std::find(availables.begin(), availables.end(), candidate);
+    if (it != availables.end()) {
+      return std::distance(availables.begin(), it);
+    }
+    std::size_t pos = locale.rfind('-');
+    if (pos == std::string::npos) {
+      return kNotFound;
+    }
+    if (pos >= 2 && candidate[pos - 2] == '-') {
+      pos -= 2;
+    }
+    candidate.resize(pos);
+  }
+  return kNotFound;
+}
+
+inline std::string RemoveExtensionSequence(const std::string& locale) {
+  return locale;
+}
+
+// 10.2.2 LookupMatch(availableLocales, requestedLocales)
+inline int LookupMatch(const std::vector<std::string>& availables,
+                       const std::vector<std::string>& requested) {
+  std::size_t pos = kNotFound;
+  std::string locale;
+  std::string no_extensions_locale;
+  for (std::size_t i = 0, len = requested.size();
+       i < len && pos == kNotFound; ++i) {
+    locale = requested[i];
+    no_extensions_locale = RemoveExtensionSequence(locale);
+    pos = IndexOfMatch(availables, no_extensions_locale);
+  }
+  if (pos != kNotFound) {
+    const std::string available_locale = availables[pos];
+    // TODO(Constellation) not implemented yet
+    if (locale != no_extensions_locale) {
+      return 0;
+    }
+  }
+  // TODO(Constellation) not implemented yet
+  return 0;
 }
 
 // Currency

@@ -18,8 +18,7 @@ TEST(I18NCase, IsWellFormedLanguageTagTest) {
   EXPECT_TRUE(IsWellFormedLanguageTag("sr-Cyrl")) << "(Serbian written using the Cyrillic script)";
   EXPECT_TRUE(IsWellFormedLanguageTag("sr-Latn")) << "(Serbian written using the Latin script)";
 
-  // Extended language subtags and their primary language subtag
-  // counterparts:
+  // Extended language subtags and their primary language subtag counterparts:
   EXPECT_TRUE(IsWellFormedLanguageTag("zh-cmn-Hans-CN")) << "(Chinese, Mandarin, Simplified script, as used in China)";
   EXPECT_TRUE(IsWellFormedLanguageTag("cmn-Hans-CN")) << "(Mandarin Chinese, Simplified script, as used in China)";
   EXPECT_TRUE(IsWellFormedLanguageTag("zh-yue-HK")) << "(Chinese, Cantonese, as used in Hong Kong SAR)";
@@ -67,4 +66,42 @@ TEST(I18NCase, IsWellFormedLanguageTagTest) {
   EXPECT_FALSE(IsWellFormedLanguageTag("de-419-DE")) << "(two region tags)";
   EXPECT_FALSE(IsWellFormedLanguageTag("a-DE")) << "(use of a single-character subtag in primary position; note that there are a few grandfathered tags that start with \"i-\" that are valid)";
   EXPECT_FALSE(IsWellFormedLanguageTag("ar-a-aaa-b-bbb-a-ccc")) << "(two extensions with same single-letter prefix)";
+  EXPECT_FALSE(IsWellFormedLanguageTag("")) << "(empty string should be invalid)";
 }
+
+TEST(I18NCase, ScanTest) {
+  using iv::core::i18n::LanguageTagScanner;
+  {
+    const std::string str("zh-cmn-Hans-CN");
+    LanguageTagScanner<std::string::const_iterator> scanner(str.begin(), str.end());
+    iv::core::i18n::Locale locale = scanner.locale();
+    EXPECT_EQ(locale.language(), "zh");
+    EXPECT_EQ(locale.extlang()[0], "cmn");
+    EXPECT_EQ(locale.script(), "Hans");
+    EXPECT_EQ(locale.region(), "CN");
+  }
+  {
+    const std::string str("zn-Hans");
+    LanguageTagScanner<std::string::const_iterator> scanner(str.begin(), str.end());
+    iv::core::i18n::Locale locale = scanner.locale();
+    EXPECT_EQ(locale.language(), "zn");
+    EXPECT_EQ(locale.script(), "Hans");
+  }
+}
+
+#ifdef IV_ENABLE_I18N
+#include <unicode/locid.h>
+TEST(I18NCase, CanonicalizeTest) {
+  using iv::core::i18n::LanguageTagScanner;
+  {
+    const std::string str("i-ami");
+    LanguageTagScanner<std::string::const_iterator> scanner(str.begin(), str.end());
+    EXPECT_EQ(scanner.Canonicalize(), "ami");
+  }
+  {
+    const std::string str("sr-DEVA");
+    LanguageTagScanner<std::string::const_iterator> scanner(str.begin(), str.end());
+    EXPECT_EQ(scanner.Canonicalize(), "sr-Deva");
+  }
+}
+#endif  // IV_ENABLE_I18N

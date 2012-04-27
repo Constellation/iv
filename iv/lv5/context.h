@@ -149,6 +149,11 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void InitSet(const ClassSlot& func_cls,
                JSObject* obj_proto, bind::Object* global_binder);
 
+#ifdef IV_ENABLE_I18N
+  void InitIntl(const ClassSlot& func_cls,
+                JSObject* obj_proto, bind::Object* global_binder);
+#endif  // IV_ENABLE_I18N
+
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;

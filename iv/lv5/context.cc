@@ -15,6 +15,7 @@
 #include <iv/lv5/jsarguments.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsbooleanobject.h>
+#include <iv/lv5/jsi18n.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/context_utils.h>
@@ -276,6 +277,9 @@ void Context::InitContext(JSFunction* func_constructor,
   InitJSON(func_cls, obj_proto, &global_binder);
 
   // ES.next
+#ifdef IV_ENABLE_I18N
+  InitIntl(func_cls, obj_proto, &global_binder);
+#endif  // IV_ENABLE_I18N
   InitMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
 
@@ -1226,5 +1230,88 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetAdd, 1>("add")
       .def<&runtime::SetDelete, 1>("delete");
 }
+
+#ifdef IV_ENABLE_I18N
+void Context::InitIntl(const ClassSlot& func_cls,
+                       JSObject* obj_proto, bind::Object* global_binder) {
+  struct ClassSlot cls = {
+    JSIntl::GetClass(),
+    context::Intern(this, "Intl"),
+    JSString::NewAsciiString(this, "Intl"),
+    NULL,
+    obj_proto
+  };
+  global_data_.RegisterClass<Class::Intl>(cls);
+  JSObject* const intl = JSIntl::NewPlain(this);
+  global_binder->def("Intl", intl, ATTR::W | ATTR::C);
+
+  bind::Object intl_binder =
+      bind::Object(this, intl)
+        .cls(cls.cls)
+        .prototype(obj_proto);
+
+  {
+    // LocaleList
+    JSObject* const proto =
+        JSLocaleList::NewPlain(this, Map::NewUniqueMap(this));
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::LocaleListConstructor, 1>::NewPlain(
+            this,
+            context::Intern(this, "LocaleList"));
+
+    struct ClassSlot cls = {
+      JSSet::GetClass(),
+      context::Intern(this, "LocaleList"),
+      JSString::NewAsciiString(this, "LocaleList"),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::LocaleList>(cls);
+    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
+
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE);
+
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+  }
+
+  {
+    // Collator
+    JSObject* const proto =
+        JSCollator::NewPlain(this, Map::NewUniqueMap(this));
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::CollatorConstructor, 2>::NewPlain(
+            this,
+            context::Intern(this, "Collator"));
+
+    struct ClassSlot cls = {
+      JSSet::GetClass(),
+      context::Intern(this, "Collator"),
+      JSString::NewAsciiString(this, "Collator"),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::Collator>(cls);
+    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
+
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE);
+
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+        .def_getter<&runtime::CollatorCompareGetter, 0>(symbol::compare())
+        .def_getter<&runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
+  }
+}
+#endif  // IV_ENABLE_I18N
 
 } }  // namespace iv::lv5

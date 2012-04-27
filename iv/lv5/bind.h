@@ -117,6 +117,38 @@ class Object : public Scope {
     return def_accessor(name, getter, NULL, attr);
   }
 
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_getter(const core::StringPiece& string) {
+    return def_getter<func, n>(context::Intern(ctx_, string));
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_getter(const Symbol& name) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      AccessorDescriptor(
+          JSInlinedFunction<func, n>::New(ctx_, name), NULL,
+          ATTR::C | ATTR::UNDEF_SETTER),
+      false, &e_);
+    return *this;
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_getter(const core::StringPiece& string, int attr) {
+    return def_getter<func, n>(context::Intern(ctx_, string), attr);
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_getter(const Symbol& name, int attr) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      AccessorDescriptor(
+          JSInlinedFunction<func, n>::New(ctx_, name), NULL,
+          attr),
+      false, &e_);
+    return *this;
+  }
+
   Object& def_setter(const core::StringPiece& string,
                      JSObject* setter, int attr) {
     return def_accessor(context::Intern(ctx_, string), NULL, setter, attr);
@@ -124,6 +156,38 @@ class Object : public Scope {
 
   Object& def_setter(const Symbol& name, JSObject* setter, int attr) {
     return def_accessor(name, NULL, setter, attr);
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_setter(const core::StringPiece& string) {
+    return def_setter<func, n>(context::Intern(ctx_, string));
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_setter(const Symbol& name) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      AccessorDescriptor(
+          NULL, JSInlinedFunction<func, n>::New(ctx_, name),
+          ATTR::C | ATTR::UNDEF_GETTER),
+      false, &e_);
+    return *this;
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_setter(const core::StringPiece& string, int attr) {
+    return def_setter<func, n>(context::Intern(ctx_, string), attr);
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def_setter(const Symbol& name, int attr) {
+    obj_->DefineOwnProperty(
+      ctx_, name,
+      AccessorDescriptor(
+          NULL, JSInlinedFunction<func, n>::New(ctx_, name),
+          attr),
+      false, &e_);
+    return *this;
   }
 
   JSObject* content() const {

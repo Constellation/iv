@@ -466,6 +466,14 @@ class JSVal : public JSLayout {
                                    this_type lhs,
                                    this_type rhs, Error* e);
 
+  static inline bool SameValue(this_type lhs, this_type rhs) {
+    return JSLayout::SameValue(lhs, rhs);
+  }
+
+  static inline bool StrictEqual(this_type lhs, this_type rhs) {
+    return JSLayout::StrictEqual(lhs, rhs);
+  }
+
   static inline CompareResult NumberCompare(double lhs, double rhs) {
     if (core::math::IsNaN(lhs) || core::math::IsNaN(rhs)) {
       return CMP_UNDEFINED;
