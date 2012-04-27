@@ -239,10 +239,12 @@ class LanguageTagScanner {
 
   bool ScanScript(Iter restore) {
     // script        = 4ALPHA              ; ISO 15924 code
+    const Iter s = current();
     if (!ExpectAlpha(4) || !MaybeValid()) {
       Init(restore);
       return false;
     }
+    script_ = std::string(s, current());
     return true;
   }
 
@@ -251,6 +253,7 @@ class LanguageTagScanner {
     //               / 3DIGIT              ; UN M.49 code
     const Iter restore2 = current();
     if (ExpectAlpha(2) && MaybeValid()) {
+      region_ = std::string(restore2, current());
       return true;
     }
 
@@ -266,6 +269,7 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
+    region_ = std::string(restore2, current());
     return true;
   }
 
@@ -281,6 +285,7 @@ class LanguageTagScanner {
         Advance();
       }
       if (MaybeValid()) {
+        variants_.push_back(std::string(restore2, current()));
         return true;
       }
     }
@@ -295,6 +300,7 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
+    variants_.push_back(std::string(restore2, current()));
     return true;
   }
 
@@ -360,16 +366,22 @@ class LanguageTagScanner {
       return false;
     }
     Advance();
+
+    Iter s = pos_;
     if (!ExpectExtensionOrPrivateFollowing(1)) {
       Init(restore);
       return false;
     }
+
+    privateuse_.push_back(std::string(s, current()));
     while (true) {
       Iter restore2 = current();
+      s = pos_;
       if (!ExpectExtensionOrPrivateFollowing(1)) {
         Init(restore2);
         return true;
       }
+      privateuse_.push_back(std::string(s, current()));
     }
     return true;
   }
@@ -386,10 +398,13 @@ class LanguageTagScanner {
     if (ExpectLanguageFirst()) {
       return true;
     }
+
     Init(restore2);
     if (ExpectAlpha(4) && MaybeValid()) {
+      language_ = std::string(restore2, current());
       return true;
     }
+
     Init(restore2);
     if (!ExpectAlpha(5)) {
       Init(restore);
@@ -405,6 +420,8 @@ class LanguageTagScanner {
       Init(restore);
       return false;
     }
+
+    language_ = std::string(restore2, current());
     return true;
   }
 
@@ -415,6 +432,7 @@ class LanguageTagScanner {
     //
     // extlang       = 3ALPHA              ; selected ISO 639 codes
     //                 *2("-" 3ALPHA)      ; permanently reserved
+    Iter s = current();
     if (!ExpectAlpha(2)) {
       return false;
     }
@@ -422,33 +440,43 @@ class LanguageTagScanner {
       Advance();
     }
 
+    Iter restore = current();
+    language_ = std::string(s, restore);
+
+    // extlang check
     if (c_ != '-') {
       return IsEOS();  // maybe valid
     }
-
-    Iter restore = current();
     Advance();
 
-    // extlang, this is optional
-    if (!ExpectAlpha(3) || !MaybeValid()) {
-      Init(restore);
-      return true;
-    }
-    assert(MaybeValid());
+    {
+      const Iter s = current();
 
-    restore = current();
+      // extlang, this is optional
+      if (!ExpectAlpha(3) || !MaybeValid()) {
+        Init(restore);
+        return true;
+      }
+      assert(MaybeValid());
+
+      restore = current();
+      extlang_.push_back(std::string(s, restore));
+    }
+
     for (std::size_t i = 0; i < 2; ++i) {
       if (c_ != '-') {
         assert(IsEOS());
         return true;  // maybe valid
       }
       Advance();
+      const Iter s = current();
       if (!ExpectAlpha(3) || !MaybeValid()) {
         Init(restore);
         return true;
       }
       assert(MaybeValid());
       restore = current();
+      extlang_.push_back(std::string(s, restore));
     }
     assert(MaybeValid());
     return true;
@@ -554,13 +582,13 @@ class LanguageTagScanner {
   int c_;
   bool valid_;
   std::string language_;
-  std::string extlang_;
+  std::vector<std::string> extlang_;
   std::string script_;
   std::string region_;
   std::bitset<64> unique_;
   std::vector<std::string> variants_;
   std::multimap<char, std::string> extensions_;
-  std::string privateuse_;
+  std::vector<std::string> privateuse_;
 };
 
 #undef IV_EXPECT_NEXT_TAG
