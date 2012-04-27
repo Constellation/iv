@@ -362,7 +362,7 @@ inline UC8InputIter NextUCS4FromUTF8(UC8InputIter it, UC8InputIter last,
     *e = INVALID_SEQUENCE;
     return it;
   }
-  uint32_t res;
+  uint32_t res = 0;
   switch (len) {
     case 1:
       res = UTF8ToCodePoint<1>::Get(it, last, e);
