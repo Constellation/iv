@@ -17,6 +17,8 @@ class Context;
 
 class JSMap : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Map)
+
   typedef GCHashMap<JSVal, JSVal,
                     JSVal::Hasher, JSVal::SameValueEqualer>::type Mapping;
 
@@ -28,14 +30,6 @@ class JSMap : public JSObject {
   JSMap(Context* ctx, Map* map)
     : JSObject(map),
       mapping_() {
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Map",
-      Class::Map
-    };
-    return &cls;
   }
 
   static JSMap* New(Context* ctx) {

@@ -23,13 +23,7 @@ class AstFactory;
 // only class placeholder
 class JSArguments {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Arguments",
-      Class::Arguments
-    };
-    return &cls;
-  }
+  IV_LV5_DEFINE_JSCLASS(Arguments)
 };
 
 class JSNormalArguments : public JSObject {

@@ -8,16 +8,10 @@ namespace lv5 {
 
 class JSNumberObject : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Number)
+
   double value() const {
     return value_;
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Number",
-      Class::Number
-    };
-    return &cls;
   }
 
   static JSNumberObject* New(Context* ctx, double value) {

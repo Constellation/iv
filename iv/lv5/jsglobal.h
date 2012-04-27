@@ -13,13 +13,7 @@ namespace lv5 {
 
 class JSGlobal : public JSObject {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "global",
-      Class::global
-    };
-    return &cls;
-  }
+  IV_LV5_DEFINE_JSCLASS(global)
 
   static JSGlobal* New(Context* ctx) { return new JSGlobal(ctx); }
 

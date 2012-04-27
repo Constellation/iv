@@ -31,7 +31,13 @@ class JSString;
   V(Arguments, 18)\
   V(Map, 19)\
   V(Set, 20)\
-  V(NOT_CACHED, 21)
+  /* i18n */\
+  V(Intl, 21)\
+  V(LocaleList, 22)\
+  V(Collator, 23)\
+  V(NumberFormat, 24)\
+  V(DateTimeFormat, 25)\
+  V(NOT_CACHED, 26)
 
 struct Class {
   enum JSClassType {
@@ -51,6 +57,15 @@ struct ClassSlot {
   JSFunction* constructor;
   JSObject* prototype;
 };
+
+#define IV_LV5_DEFINE_JSCLASS(name)\
+  static const Class* GetClass() {\
+    static const Class cls = {\
+      #name,\
+      Class::name\
+    };\
+    return &cls;\
+  }
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_CLASS_H_

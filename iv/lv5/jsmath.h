@@ -8,13 +8,7 @@ namespace lv5 {
 // only class holder
 class JSMath : public JSObject {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Math",
-      Class::Math
-    };
-    return &cls;
-  }
+  IV_LV5_DEFINE_JSCLASS(Math)
 };
 
 } }  // namespace iv::lv5

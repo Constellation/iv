@@ -20,6 +20,8 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(RegExp)
+
   // see also global_data.h
   enum FIELD {
     FIELD_SOURCE = 0,
@@ -127,14 +129,6 @@ class JSRegExp : public JSObject {
         impl_->Execute(ctx, *str->Get8Bit(), index, vec->data()) :
         impl_->Execute(ctx, *str->Get16Bit(), index, vec->data());
     return res == aero::AERO_SUCCESS;
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "RegExp",
-      Class::RegExp
-    };
-    return &cls;
   }
 
   uint32_t num_of_captures() const { return impl_->number_of_captures(); }

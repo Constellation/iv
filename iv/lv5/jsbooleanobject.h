@@ -8,18 +8,11 @@ namespace lv5 {
 
 class JSBooleanObject : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Boolean)
+
   bool value() const {
     return value_;
   }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Boolean",
-      Class::Boolean
-    };
-    return &cls;
-  }
-
   static JSBooleanObject* New(Context* ctx, bool value) {
     JSBooleanObject* const obj = new JSBooleanObject(ctx, value);
     obj->set_cls(JSBooleanObject::GetClass());

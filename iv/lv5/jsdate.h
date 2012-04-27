@@ -8,6 +8,8 @@ namespace lv5 {
 
 class JSDate : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Date)
+
   JSVal DefaultValue(Context* ctx,
                      Hint::Object hint, Error* res) {
     return JSObject::DefaultValue(
@@ -36,14 +38,6 @@ class JSDate : public JSObject {
 
   void set_value(double val) {
     value_ = val;
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Date",
-      Class::Date
-    };
-    return &cls;
   }
 
  private:

@@ -68,6 +68,8 @@ class JSVector;
 
 class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  public:
+  IV_LV5_DEFINE_JSCLASS(Array)
+
   friend class railgun::VM;
   friend class breaker::Compiler;
   friend class JSVector;
@@ -111,14 +113,6 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
 
   static JSArray* NewPlain(Context* ctx, Map* map) {
     return new JSArray(ctx, map, 0);
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Array",
-      Class::Array
-    };
-    return &cls;
   }
 
   inline bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {

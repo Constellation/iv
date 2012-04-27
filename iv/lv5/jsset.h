@@ -17,6 +17,8 @@ class Context;
 
 class JSSet : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Set)
+
   typedef GCHashSet<JSVal, JSVal::Hasher, JSVal::SameValueEqualer>::type Set;
 
   JSSet(Context* ctx)
@@ -27,14 +29,6 @@ class JSSet : public JSObject {
   JSSet(Context* ctx, Map* map)
     : JSObject(map),
       set_() {
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Set",
-      Class::Set
-    };
-    return &cls;
   }
 
   static JSSet* New(Context* ctx) {

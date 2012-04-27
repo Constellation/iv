@@ -17,6 +17,8 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(Function)
+
   bool IsCallable() const {
     return true;
   }
@@ -85,15 +87,6 @@ class JSFunction : public JSObject {
     set_cls(JSFunction::GetClass());
     set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
   }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Function",
-      Class::Function
-    };
-    return &cls;
-  }
-
  protected:
   explicit JSFunction(Context* ctx)
     : JSObject(context::GetFunctionMap(ctx)) { }

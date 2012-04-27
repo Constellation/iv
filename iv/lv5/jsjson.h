@@ -7,13 +7,7 @@ namespace lv5 {
 
 class JSJSON : public JSObject {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "JSON",
-      Class::JSON
-    };
-    return &cls;
-  }
+  IV_LV5_DEFINE_JSCLASS(JSON)
 };
 
 } }  // namespace iv::lv5

@@ -21,6 +21,8 @@ class Error;
 
 class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
+  IV_LV5_DEFINE_JSCLASS(Object)
+
   enum EnumerationMode {
     EXCLUDE_NOT_ENUMERABLE,
     INCLUDE_NOT_ENUMERABLE
@@ -124,14 +126,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   static JSObject* NewPlain(Context* ctx);
 
   static JSObject* NewPlain(Context* ctx, Map* map);
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Object",
-      Class::Object
-    };
-    return &cls;
-  }
 
   Map* FlattenMap() const;
 

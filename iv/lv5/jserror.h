@@ -22,13 +22,7 @@ class JSURIError;
 
 class JSError : public JSObject {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::Error
-    };
-    return &cls;
-  }
+  IV_LV5_DEFINE_JSCLASS(Error)
 
   static JSVal Detail(Context* ctx, const Error* e);
 

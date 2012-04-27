@@ -10,6 +10,8 @@ namespace lv5 {
 
 class JSStringObject : public JSObject {
  public:
+  IV_LV5_DEFINE_JSCLASS(String)
+
   JSStringObject(Context* ctx, JSString* value)
     : JSObject(Map::NewUniqueMap(ctx)),
       value_(value),
@@ -67,14 +69,6 @@ class JSStringObject : public JSObject {
 
   static JSStringObject* NewPlain(Context* ctx) {
     return new JSStringObject(ctx, JSString::NewEmptyString(ctx));
-  }
-
-  static const Class* GetClass() {
-    static const Class cls = {
-      "String",
-      Class::String
-    };
-    return &cls;
   }
 
   void MarkChildren(radio::Core* core) {
