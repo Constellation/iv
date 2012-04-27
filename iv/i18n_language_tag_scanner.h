@@ -168,6 +168,11 @@ class LanguageTagScanner {
   const Locale& locale() const { return locale_; }
 
 #ifdef IV_ENABLE_I18N
+  // 6.2.3 CanonicalizeLanguageTag(locale)
+  // Returns the canonical and case-regularized form of the locale argument (which
+  // must be a String value that is a well-formed BCP 47 language tag as verified
+  // by the IsWellFormedLanguageTag abstract operation).
+  // Specified in RFC 5646 section 4.5
   std::string Canonicalize() {
     std::array<char, ULOC_FULLNAME_CAPACITY> vec1;
     UErrorCode status = U_ZERO_ERROR;

@@ -46,38 +46,27 @@ inline bool IsWellFormedLanguageTag(const UStringPiece& piece) {
   return verifier.IsWellFormed();
 }
 
-// 6.2.3 CanonicalizeLanguageTag(locale)
-// Returns the canonical and case-regularized form of the locale argument (which
-// must be a String value that is a well-formed BCP 47 language tag as verified
-// by the IsWellFormedLanguageTag abstract operation).
-// Specified in RFC 5646 section 4.5
-template<typename Iter>
-inline character::locale::Locale CanonicalizeLanguageTag(Iter it, Iter last) {
-  // TODO(Constellation) not implemented yet
-  return character::locale::EN;
-}
-
 // 10.2.1 IndexOfMatch(availableLocales, locale)
 // use kNotFound instead of -1
-inline std::size_t IndexOfMatch(const std::vector<std::string>& availables,
-                                const std::string& locale) {
+template<typename AvailIter>
+inline AvailIter IndexOfMatch(AvailIter ait,
+                              AvailIter alast, const std::string& locale) {
   std::string candidate = locale;
   while (!candidate.empty()) {
-    const std::vector<std::string>::const_iterator it =
-        std::find(availables.begin(), availables.end(), candidate);
-    if (it != availables.end()) {
-      return std::distance(availables.begin(), it);
+    const AvailIter it = std::find(ait, alast, candidate);
+    if (it != alast) {
+      return it;
     }
     std::size_t pos = locale.rfind('-');
     if (pos == std::string::npos) {
-      return kNotFound;
+      return alast;
     }
     if (pos >= 2 && candidate[pos - 2] == '-') {
       pos -= 2;
     }
     candidate.resize(pos);
   }
-  return kNotFound;
+  return alast;
 }
 
 inline std::string RemoveExtensionSequence(const std::string& locale) {
@@ -85,19 +74,19 @@ inline std::string RemoveExtensionSequence(const std::string& locale) {
 }
 
 // 10.2.2 LookupMatch(availableLocales, requestedLocales)
-inline int LookupMatch(const std::vector<std::string>& availables,
-                       const std::vector<std::string>& requested) {
-  std::size_t pos = kNotFound;
+template<typename AvailIter, typename ReqIter>
+inline int LookupMatch(AvailIter ait, AvailIter alast,
+                       ReqIter rit, ReqIter rlast) {
+  AvailIter pos = alast;
   std::string locale;
   std::string no_extensions_locale;
-  for (std::size_t i = 0, len = requested.size();
-       i < len && pos == kNotFound; ++i) {
-    locale = requested[i];
+  for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
+    locale = *it;
     no_extensions_locale = RemoveExtensionSequence(locale);
-    pos = IndexOfMatch(availables, no_extensions_locale);
+    pos = IndexOfMatch(ait, alast, no_extensions_locale);
   }
-  if (pos != kNotFound) {
-    const std::string available_locale = availables[pos];
+  if (pos != alast) {
+    const std::string available_locale = *pos;
     // TODO(Constellation) not implemented yet
     if (locale != no_extensions_locale) {
       return 0;
