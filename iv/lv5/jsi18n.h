@@ -160,6 +160,17 @@ class JSCollator : public JSObject {
     return collator;
   }
 
+  static JSCollator* NewPlain(Context* ctx, Map* map) {
+    JSCollator* obj = new JSCollator(ctx, map);
+
+    icu::Locale locale("en_US");  // TODO(Constellation) implement it
+
+    UErrorCode status = U_ZERO_ERROR;
+    icu::Collator* collator = icu::Collator::createInstance(locale, status);
+    obj->set_collator(collator);
+    return obj;
+  }
+
   JSVal GetField(std::size_t n) {
     assert(n < collator_fields_.size());
     return collator_fields_[n];
