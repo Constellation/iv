@@ -430,7 +430,7 @@ class LanguageTagScanner {
     //
     // We assume, after this, '-' or EOS are following is valid.
     Iter restore2 = current();
-    if (ExpectLanguageFirst()) {
+    if (ScanLanguageFirst()) {
       return true;
     }
 
@@ -461,7 +461,7 @@ class LanguageTagScanner {
   }
 
   // not simple expect
-  bool ExpectLanguageFirst() {
+  bool ScanLanguageFirst() {
     // first case
     // 2*3ALPHA ["-" extlang]
     //
