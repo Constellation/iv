@@ -132,8 +132,9 @@ class LanguageTagScanner {
                      last,
                      IsNotASCII()) != last) {
       valid_ = false;
+    } else {
+      valid_ = Scan();
     }
-    valid_ = Scan();
   }
 
   bool IsWellFormed() const { return valid_; }
@@ -197,7 +198,15 @@ class LanguageTagScanner {
       }
     }
 
-    return ScanRegular();
+    if (ScanLangtag(start_)) {
+      return true;
+    }
+
+    Clear();
+    if (ScanPrivateUse(start_)) {
+      return true;
+    }
+    return false;
   }
 
   void Clear() {
@@ -209,17 +218,6 @@ class LanguageTagScanner {
     locale_.extensions_.clear();
     locale_.privateuse_.clear();
     unique_.reset();
-  }
-
-  bool ScanRegular() {
-    if (ScanLangtag(start_)) {
-      return true;
-    }
-    Clear();
-    if (ScanPrivateUse(start_)) {
-      return true;
-    }
-    return false;
   }
 
   bool ScanLangtag(Iter restore) {
@@ -270,37 +268,6 @@ class LanguageTagScanner {
       return false;
     }
     return true;
-  }
-
-  template<typename Iter>
-  static std::string TitleCase(Iter it, Iter last) {
-    std::string str;
-    if (it != last) {
-      str.push_back(core::character::ToUpperCase(*it));
-    }
-    ++it;
-    std::transform(it, last,
-                   std::back_inserter(str),
-                   &core::character::ToLowerCase);
-    return str;
-  }
-
-  template<typename Iter>
-  static std::string UpperCase(Iter it, Iter last) {
-    std::string str;
-    std::transform(it, last,
-                   std::back_inserter(str),
-                   &core::character::ToUpperCase);
-    return str;
-  }
-
-  template<typename Iter>
-  static std::string LowerCase(Iter it, Iter last) {
-    std::string str;
-    std::transform(it, last,
-                   std::back_inserter(str),
-                   &core::character::ToLowerCase);
-    return str;
   }
 
   bool ScanScript(Iter restore) {
@@ -620,6 +587,37 @@ class LanguageTagScanner {
       return last_;
     }
     return pos_ - 1;
+  }
+
+  template<typename Iter>
+  static std::string TitleCase(Iter it, Iter last) {
+    std::string str;
+    if (it != last) {
+      str.push_back(core::character::ToUpperCase(*it));
+    }
+    ++it;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToLowerCase);
+    return str;
+  }
+
+  template<typename Iter>
+  static std::string UpperCase(Iter it, Iter last) {
+    std::string str;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToUpperCase);
+    return str;
+  }
+
+  template<typename Iter>
+  static std::string LowerCase(Iter it, Iter last) {
+    std::string str;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToLowerCase);
+    return str;
   }
 
   std::string original_;
