@@ -36,8 +36,8 @@ class Locale {
   Vector extlang_;
   std::string script_;
   std::string region_;
-  std::vector<std::string> variants_;
-  std::multimap<char, std::string> extensions_;
+  Vector variants_;
+  Map extensions_;
   std::string privateuse_;
 };
 
