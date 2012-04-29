@@ -87,6 +87,7 @@
 #include <iv/stringpiece.h>
 #include <iv/ustring.h>
 #include <iv/i18n_locale.h>
+#include <iv/i18n_language_tag.h>
 
 #ifdef IV_ENABLE_I18N
 #include <unicode/uloc.h>
@@ -95,45 +96,6 @@
 namespace iv {
 namespace core {
 namespace i18n {
-namespace i18n_detail {
-
-// irregular
-typedef std::array<StringPiece, 17> Irregular;
-static const Irregular kIrregular = { {
-  "en-GB-oed",
-  "i-ami",
-  "i-bnn",
-  "i-default",
-  "i-enochian",
-  "i-hak",
-  "i-klingon",
-  "i-lux",
-  "i-mingo",
-  "i-navajo",
-  "i-pwn",
-  "i-tao",
-  "i-tay",
-  "i-tsu",
-  "sgn-BE-FR",
-  "sgn-BE-NL",
-  "sgn-CH-DE"
-} };
-
-// regular
-typedef std::array<StringPiece, 9> Regular;
-static const Regular kRegular = { {
-  "art-lojban",
-  "cel-gaulish",
-  "no-bok",
-  "no-nyn",
-  "zh-guoyu",
-  "zh-hakka",
-  "zh-min",
-  "zh-min-nan",
-  "zh-xiang"
-} };
-
-}  // namespace i18n_detail
 
 #define IV_EXPECT_NEXT_TAG()\
   do {\
@@ -160,7 +122,8 @@ class LanguageTagScanner {
       locale_(),
       unique_(0) {
     locale_.all_.assign(it, last);
-    valid_ = Verify();
+    Restore(start_);
+    valid_ = Scan();
   }
 
   bool IsWellFormed() const { return valid_; }
@@ -169,8 +132,9 @@ class LanguageTagScanner {
 
 #ifdef IV_ENABLE_I18N
   // 6.2.3 CanonicalizeLanguageTag(locale)
-  // Returns the canonical and case-regularized form of the locale argument (which
-  // must be a String value that is a well-formed BCP 47 language tag as verified
+  // Returns the canonical and case-regularized form of the locale argument
+  // (which must be a String value that is
+  // a well-formed BCP 47 language tag as verified
   // by the IsWellFormedLanguageTag abstract operation).
   // Specified in RFC 5646 section 4.5
   std::string Canonicalize() {
@@ -187,6 +151,28 @@ class LanguageTagScanner {
   }
 #endif  // IV_ENABLE_I18N
 
+  std::string CanonicalizedLanguageTag() {
+    return "";
+  }
+
+  bool Scan() {
+    // check grandfathered
+    const TagMap::const_iterator it =
+        Grandfathered().find(std::string(start_, last_));
+    if (it != Grandfathered().end()) {
+      LanguageTagScanner<std::string::const_iterator>
+          scan2(it->second.begin(), it->second.end());
+      const bool valid = scan2.IsWellFormed();
+      if (valid) {
+        locale_ = scan2.locale();
+      }
+      return valid;
+    }
+    return ScanRegular();
+  }
+
+  const Locale& locale() { return locale_; }
+
  private:
   void Clear() {
     locale_.language_.clear();
@@ -199,8 +185,7 @@ class LanguageTagScanner {
     unique_.reset();
   }
 
-  bool Verify() {
-    Init(start_);
+  bool ScanRegular() {
     if (ScanLangtag(start_)) {
       return true;
     }
@@ -208,8 +193,7 @@ class LanguageTagScanner {
     if (ScanPrivateUse(start_)) {
       return true;
     }
-    Clear();
-    return IsGrandfathered(start_, last_);
+    return false;
   }
 
   bool ScanLangtag(Iter restore) {
@@ -220,7 +204,7 @@ class LanguageTagScanner {
     //                 *("-" extension)
     //                 ["-" privateuse]
     if (!ScanLanguage(restore)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
 
@@ -256,7 +240,7 @@ class LanguageTagScanner {
     ScanPrivateUse(restore2);
 
     if (!IsEOS()) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     return true;
@@ -266,7 +250,7 @@ class LanguageTagScanner {
     // script        = 4ALPHA              ; ISO 15924 code
     const Iter s = current();
     if (!ExpectAlpha(4) || !MaybeValid()) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     locale_.script_.assign(s, current());
@@ -282,16 +266,16 @@ class LanguageTagScanner {
       return true;
     }
 
-    Init(restore2);
+    Restore(restore2);
     for (std::size_t i = 0; i < 3; ++i) {
       if (IsEOS() || !character::IsDecimalDigit(c_)) {
-        Init(restore);
+        Restore(restore);
         return false;
       }
       Advance();
     }
     if (!MaybeValid()) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     locale_.region_.assign(restore2, current());
@@ -315,14 +299,14 @@ class LanguageTagScanner {
       }
     }
 
-    Init(restore2);
+    Restore(restore2);
     if (IsEOS() || !character::IsDigit(c_)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     Advance();
     if (!ExpectAlphanum(3) || !MaybeValid()) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     locale_.variants_.push_back(std::string(restore2, current()));
@@ -353,33 +337,35 @@ class LanguageTagScanner {
     //               / %x61-77             ; a - w
     //               / %x79-7A             ; y - z
     if (IsEOS() || !character::IsASCIIAlphanumeric(c_) || c_ == 'x') {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     const char target = c_;
     const int ID = SingletonID(target);
     if (unique_.test(ID)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     Advance();
 
     Iter s = pos_;
     if (!ExpectExtensionOrPrivateFollowing(2)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
 
     unique_.set(ID);
-    locale_.extensions_.insert(std::make_pair(target, std::string(s, current())));
+    locale_.extensions_.insert(
+        std::make_pair(target, std::string(s, current())));
     while (true) {
       Iter restore2 = current();
       s = pos_;
       if (!ExpectExtensionOrPrivateFollowing(2)) {
-        Init(restore2);
+        Restore(restore2);
         return true;
       }
-      locale_.extensions_.insert(std::make_pair(target, std::string(s, current())));
+      locale_.extensions_.insert(
+          std::make_pair(target, std::string(s, current())));
     }
     return true;
   }
@@ -387,14 +373,14 @@ class LanguageTagScanner {
   bool ScanPrivateUse(Iter restore) {
     // privateuse    = "x" 1*("-" (1*8alphanum))
     if (c_ != 'x') {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     Advance();
 
     Iter s = pos_;
     if (!ExpectExtensionOrPrivateFollowing(1)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
 
@@ -402,7 +388,7 @@ class LanguageTagScanner {
     while (true) {
       Iter restore2 = current();
       if (!ExpectExtensionOrPrivateFollowing(1)) {
-        Init(restore2);
+        Restore(restore2);
         return true;
       }
       locale_.privateuse_.append(std::string(restore2, current()));
@@ -423,15 +409,15 @@ class LanguageTagScanner {
       return true;
     }
 
-    Init(restore2);
+    Restore(restore2);
     if (ExpectAlpha(4) && MaybeValid()) {
       locale_.language_.assign(restore2, current());
       return true;
     }
 
-    Init(restore2);
+    Restore(restore2);
     if (!ExpectAlpha(5)) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
     for (std::size_t i = 0; i < 3; ++i) {
@@ -441,7 +427,7 @@ class LanguageTagScanner {
       Advance();
     }
     if (!MaybeValid()) {
-      Init(restore);
+      Restore(restore);
       return false;
     }
 
@@ -478,7 +464,7 @@ class LanguageTagScanner {
 
       // extlang, this is optional
       if (!ExpectAlpha(3) || !MaybeValid()) {
-        Init(restore);
+        Restore(restore);
         return true;
       }
       assert(MaybeValid());
@@ -495,7 +481,7 @@ class LanguageTagScanner {
       Advance();
       const Iter s = current();
       if (!ExpectAlpha(3) || !MaybeValid()) {
-        Init(restore);
+        Restore(restore);
         return true;
       }
       assert(MaybeValid());
@@ -549,29 +535,6 @@ class LanguageTagScanner {
     return true;
   }
 
-  bool IsGrandfathered(Iter pos, Iter last) {
-    // grandfathered = irregular           ; non-redundant tags registered
-    //               / regular             ; during the RFC 3066 era
-    const std::size_t size = std::distance(pos, last);
-    for (typename i18n_detail::Irregular::const_iterator
-         it = i18n_detail::kIrregular.begin(),
-         last = i18n_detail::kIrregular.end();
-         it != last; ++it) {
-      if (it->size() == size && std::equal(it->begin(), it->end(), pos)) {
-        return true;
-      }
-    }
-    for (typename i18n_detail::Regular::const_iterator
-         it = i18n_detail::kRegular.begin(),
-         last = i18n_detail::kRegular.end();
-         it != last; ++it) {
-      if (it->size() == size && std::equal(it->begin(), it->end(), pos)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   inline bool IsEOS() const {
     return c_ < 0;
   }
@@ -580,7 +543,7 @@ class LanguageTagScanner {
     return IsEOS() || c_ == '-';
   }
 
-  void Init(Iter pos) {
+  void Restore(Iter pos) {
     pos_ = pos;
     Advance();
   }
