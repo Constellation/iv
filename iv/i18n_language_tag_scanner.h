@@ -324,7 +324,7 @@ class LanguageTagScanner {
         Advance();
       }
       if (MaybeValid()) {
-        locale_.variants_.push_back(std::string(restore2, current()));
+        locale_.variants_.push_back(LowerCase(restore2, current()));
         return true;
       }
     }
@@ -339,7 +339,7 @@ class LanguageTagScanner {
       Restore(restore);
       return false;
     }
-    locale_.variants_.push_back(std::string(restore2, current()));
+    locale_.variants_.push_back(LowerCase(restore2, current()));
     return true;
   }
 

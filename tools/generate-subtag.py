@@ -57,8 +57,22 @@ inline const TagMap& Redundant() {
 #endif  // IV_I18N_LANGUAGE_TAG_H_
 """
 
+LOWER = re.compile('^[a-z0-9]+$')
+UPPER = re.compile('^[A-Z0-9]+$')
+TITLE = re.compile('^[A-Z0-9][a-z0-9]*$')
+
+def is_lower(str):
+  return LOWER.match(str)
+
+def is_upper(str):
+  return UPPER.match(str)
+
+def is_title(str):
+  return TITLE.match(str)
+
 class DB(object):
   PATTERN = re.compile('^(?P<key>.+)\s*:\s*(?P<value>.+)$')
+  RANGE = re.compile('(?P<first>[^\.]+)\.\.(?P<last>[^\.]+)')
 
   def __init__(self, source):
     self.__registry = []
@@ -94,6 +108,7 @@ class DB(object):
               else:
                 item[prev_key] = item[prev_key] + ' ' + line
       self.validate_and_append(item)
+      self.extract_registry()
 
   def registry(self):
     return self.__registry
@@ -101,6 +116,15 @@ class DB(object):
   def validate_and_append(self, item):
     if item.has_key('Type'):
       self.__registry.append(item)
+
+  def extract_registry(self):
+    pass
+#    for item in self.__registry:
+#      sub = item['Subtag']
+#      m = self.RANGE.match(sub)
+#      if m:
+#        for tag in range(m.group('first'), m.group('last')):
+#          print tag
 
 def main(source):
   db = DB(source)
@@ -126,15 +150,23 @@ def main(source):
 
   # all language tag should be title case
   for item in filter(lambda i: i['Type'] == 'language', db.registry()):
-    assert item['Subtag'].islower()
+    if not is_lower(item['Subtag']):
+      #print item
+      pass
 
   # all extlang tag should be title case
   for item in filter(lambda i: i['Type'] == 'extlang', db.registry()):
-    assert item['Subtag'].islower()
+    assert is_lower(item['Subtag']), item['Subtag']
 
   # all script tag should be title case
   for item in filter(lambda i: i['Type'] == 'script', db.registry()):
-    assert item['Subtag'].istitle()
+    if not is_title(item['Subtag']):
+      #print item
+      pass
+
+  # all variant tag should be title case
+  for item in filter(lambda i: i['Type'] == 'variant', db.registry()):
+    assert is_lower(item['Subtag']), item['Subtag']
 
   print (HEADER % (len(grandfathered), ',\n'.join(grandfathered), len(redundant), ',\n'.join(redundant))).strip()
 
