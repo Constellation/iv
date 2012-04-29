@@ -348,6 +348,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Collator.compare", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::Collator>()) {
@@ -365,6 +366,7 @@ inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Collator.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::Collator>()) {
@@ -406,6 +408,93 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
            collator->GetField(JSCollator::IGNORE_PUNCTUATION),
            ATTR::W | ATTR::E | ATTR::C);
   return obj;
+}
+
+template<typename AvailIter>
+inline JSVal LookupSupportedLocales(
+    Context* ctx, AvailIter it, AvailIter last,
+    JSLocaleList* list, Error* e) {
+  const uint32_t len = internal::GetLength(ctx, list, IV_LV5_ERROR(e));
+  std::vector<std::string> subset;
+  for (uint32_t k = 0; k < len; ++k) {
+    const JSVal res =
+        list->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+    // TODO(Constellation) noExtensionsLocale
+    JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
+    const std::string locale(str->begin(), str->end());
+    const AvailIter t = core::i18n::IndexOfMatch(it, last, locale);
+    if (t != last) {
+      subset.push_back(locale);
+    }
+  }
+
+  JSLocaleList* localelist = JSLocaleList::New(ctx);
+
+  uint32_t index = 0;
+  for (std::vector<std::string>::const_iterator it = subset.begin(),
+       last = subset.end(); it != last; ++it, ++index) {
+    localelist->DefineOwnProperty(
+        ctx,
+        symbol::MakeSymbolFromIndex(index),
+        DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
+        true, IV_LV5_ERROR(e));
+  }
+  localelist->DefineOwnProperty(
+      ctx,
+      symbol::length(),
+      DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
+      true, IV_LV5_ERROR(e));
+  localelist->MakeInitializedLocaleList();
+  return localelist;
+}
+
+template<typename AvailIter>
+inline JSVal BestFitSupportedLocales(
+    Context* ctx, AvailIter it, AvailIter last,
+    JSLocaleList* list, Error* e) {
+  return LookupSupportedLocales(ctx, it, last, list, e);
+}
+
+template<typename AvailIter>
+inline JSVal SupportedLocales(Context* ctx,
+                              AvailIter it,
+                              AvailIter last,
+                              JSVal requested, JSVal options, Error* e) {
+  JSLocaleList* list = NULL;
+  if (requested.IsObject() &&
+      requested.object()->IsClass<Class::LocaleList>()) {
+    list = static_cast<JSLocaleList*>(requested.object());
+  } else {
+    list = JSLocaleList::New(ctx);
+  }
+  bool best_fit = true;
+  if (!options.IsUndefined()) {
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
+    const JSVal matcher =
+        opt->Get(ctx, context::Intern(ctx, "localeMatcher"), IV_LV5_ERROR(e));
+    if (!matcher.IsUndefined()) {
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
+      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
+        best_fit = false;
+      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
+        e->Report(Error::Range,
+                  "localeMatcher should be 'lookup' or 'best fit'");
+        return JSEmpty;
+      }
+    }
+  }
+  if (best_fit) {
+    return BestFitSupportedLocales(ctx, it, last, list, e);
+  } else {
+    return LookupSupportedLocales(ctx, it, last, list, e);
+  }
+}
+
+inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
+  return SupportedLocales(args.ctx(),
+                          ICUStringIteration(icu::Collator::getAvailableLocales()),
+                          ICUStringIteration(),
+                          args.At(0), args.At(1), e);
 }
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {

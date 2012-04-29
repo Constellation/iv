@@ -3,9 +3,11 @@
 #ifndef IV_LV5_JSI18N_H_
 #define IV_LV5_JSI18N_H_
 #ifdef IV_ENABLE_I18N
+#include <iterator>
 #include <unicode/coll.h>
 #include <unicode/rbnf.h>
 #include <iv/i18n.h>
+#include <iv/detail/unique_ptr.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
@@ -15,6 +17,74 @@
 #include <iv/detail/unique_ptr.h>
 namespace iv {
 namespace lv5 {
+
+class ICUStringIteration
+  : public std::iterator<std::forward_iterator_tag, const char*> {
+ public:
+  typedef ICUStringIteration this_type;
+
+  explicit ICUStringIteration(icu::StringEnumeration* enumeration)
+    : enumeration_(enumeration) {
+    Next();
+  }
+
+  ICUStringIteration()
+    : enumeration_(NULL),
+      current_(NULL) {
+  }
+
+  ICUStringIteration(const ICUStringIteration& rhs)
+    : enumeration_((rhs.enumeration_) ? rhs.enumeration_->clone() : NULL),
+      current_(rhs.current_) {
+  }
+
+  this_type& operator++() {
+    Next();
+    return *this;
+  }
+
+  this_type operator++(int) {  // NOLINT
+    const this_type temp(*this);
+    Next();
+    return temp;
+  }
+
+  const char* operator*() const {
+    return current_;
+  }
+
+  bool operator==(const this_type& rhs) const {
+    if (enumeration_) {
+      if (!rhs.enumeration_) {
+        return false;
+      }
+      return *enumeration_ == *rhs.enumeration_;
+    } else {
+      return enumeration_ == rhs.enumeration_;
+    }
+  }
+
+  bool operator!=(const this_type& rhs) const {
+      return !(operator==(rhs));
+  }
+
+ private:
+  void Next() {
+    if (enumeration_) {
+      UErrorCode status = U_ZERO_ERROR;
+      current_ = enumeration_->next(NULL, status);
+      if (U_FAILURE(status)) {
+        current_ = NULL;
+      }
+      if (!current_) {
+        enumeration_.reset();
+      }
+    }
+  }
+
+  core::unique_ptr<icu::StringEnumeration> enumeration_;
+  const char* current_;
+};
 
 class JSIntl : public JSObject {
  public:

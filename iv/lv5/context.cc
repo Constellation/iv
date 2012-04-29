@@ -1302,7 +1302,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
     bind::Object(this, constructor)
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(symbol::prototype(), proto, ATTR::NONE);
+        .def(symbol::prototype(), proto, ATTR::NONE)
+        .def<&runtime::CollatorSupportedLocalesOf, 1>("supportedLocalesOf");
 
     bind::Object(this, proto)
         .cls(cls.cls)
