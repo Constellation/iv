@@ -160,10 +160,7 @@ class LanguageTagScanner {
   }
 #endif  // IV_ENABLE_I18N
 
-  std::string CanonicalizedLanguageTag() {
-    return "";
-  }
-
+ private:
   struct LowerCase {
     char operator()(char ch) {
       return ch | 0x20;
@@ -212,9 +209,6 @@ class LanguageTagScanner {
     return ScanRegular();
   }
 
-  const Locale& locale() { return locale_; }
-
- private:
   void Clear() {
     locale_.language_.clear();
     locale_.extlang_.clear();
@@ -303,7 +297,9 @@ class LanguageTagScanner {
     //               / 3DIGIT              ; UN M.49 code
     const Iter restore2 = current();
     if (ExpectAlpha(2) && MaybeValid()) {
-      locale_.region_.assign(restore2, current());
+      std::transform(restore2, current(),
+                     std::back_inserter(locale_.region_),
+                     &core::character::ToUpperCase);
       return true;
     }
 
