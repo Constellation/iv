@@ -81,6 +81,38 @@ static const RedundantArray kRedundant = { {
   std::make_pair("zh-yue", "yue")
 } };
 
+// Language tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, 16> LanguageArray;
+static const LanguageArray kLanguage = { {
+  std::make_pair("in", "id"),
+  std::make_pair("iw", "he"),
+  std::make_pair("ji", "yi"),
+  std::make_pair("jw", "jv"),
+  std::make_pair("mo", "ro"),
+  std::make_pair("ayx", "nun"),
+  std::make_pair("cjr", "mom"),
+  std::make_pair("cmk", "xch"),
+  std::make_pair("drh", "khk"),
+  std::make_pair("drw", "prs"),
+  std::make_pair("gav", "dev"),
+  std::make_pair("mst", "mry"),
+  std::make_pair("myt", "mry"),
+  std::make_pair("tie", "ras"),
+  std::make_pair("tkk", "twm"),
+  std::make_pair("tnf", "prs")
+} };
+
+// Region tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, 6> RegionArray;
+static const RegionArray kRegion = { {
+  std::make_pair("BU", "MM"),
+  std::make_pair("DD", "DE"),
+  std::make_pair("FX", "FR"),
+  std::make_pair("TP", "TL"),
+  std::make_pair("YD", "YE"),
+  std::make_pair("ZR", "CD")
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
@@ -90,6 +122,16 @@ inline const TagMap& Grandfathered() {
 
 inline const TagMap& Redundant() {
   static const TagMap map(kRedundant.begin(), kRedundant.end());
+  return map;
+}
+
+inline const TagMap& Language() {
+  static const TagMap map(kLanguage.begin(), kLanguage.end());
+  return map;
+}
+
+inline const TagMap& Region() {
+  static const TagMap map(kRegion.begin(), kRegion.end());
   return map;
 }
 

@@ -41,6 +41,18 @@ static const RedundantArray kRedundant = { {
 %s
 } };
 
+// Language tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, %d> LanguageArray;
+static const LanguageArray kLanguage = { {
+%s
+} };
+
+// Region tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, %d> RegionArray;
+static const RegionArray kRegion = { {
+%s
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
@@ -50,6 +62,16 @@ inline const TagMap& Grandfathered() {
 
 inline const TagMap& Redundant() {
   static const TagMap map(kRedundant.begin(), kRedundant.end());
+  return map;
+}
+
+inline const TagMap& Language() {
+  static const TagMap map(kLanguage.begin(), kLanguage.end());
+  return map;
+}
+
+inline const TagMap& Region() {
+  static const TagMap map(kRegion.begin(), kRegion.end());
   return map;
 }
 
@@ -148,27 +170,54 @@ def main(source):
       redundant.append(
           '  std::make_pair("%s", "%s")' % (item['Tag'].lower(), item['Preferred-Value']))
 
-  # all language tag should be title case
+  # all language tag should be lower case
+  language = []
   for item in filter(lambda i: i['Type'] == 'language', db.registry()):
     if not is_lower(item['Subtag']):
       #print item
       pass
+    if item.has_key('Preferred-Value'):
+      language.append(
+          '  std::make_pair("%s", "%s")' % (item['Subtag'].lower(), item['Preferred-Value']))
 
-  # all extlang tag should be title case
+  # all extlang tag should be lower case
   for item in filter(lambda i: i['Type'] == 'extlang', db.registry()):
     assert is_lower(item['Subtag']), item['Subtag']
 
   # all script tag should be title case
+  script = []
   for item in filter(lambda i: i['Type'] == 'script', db.registry()):
     if not is_title(item['Subtag']):
-      #print item
-      pass
+      assert not item.has_key('Preferred-Value')
+    if item.has_key('Preferred-Value'):
+      script.append(
+          '  std::make_pair("%s", "%s")' % (item['Subtag'].upper(), item['Preferred-Value']))
+
+  # all region tag should be upper case
+  region = []
+  for item in filter(lambda i: i['Type'] == 'region', db.registry()):
+    if not is_upper(item['Subtag']):
+      assert not item.has_key('Preferred-Value')
+    if item.has_key('Preferred-Value'):
+      region.append(
+          '  std::make_pair("%s", "%s")' % (item['Subtag'].upper(), item['Preferred-Value']))
+
 
   # all variant tag should be title case
   for item in filter(lambda i: i['Type'] == 'variant', db.registry()):
     assert is_lower(item['Subtag']), item['Subtag']
+    if item.has_key('Preferred-Value'):
+      pass
+      # print item
 
-  print (HEADER % (len(grandfathered), ',\n'.join(grandfathered), len(redundant), ',\n'.join(redundant))).strip()
+  print (HEADER %
+      (
+        len(grandfathered), ',\n'.join(grandfathered),
+        len(redundant), ',\n'.join(redundant),
+        len(language), ',\n'.join(language),
+        len(region), ',\n'.join(region)
+       )
+      ).strip()
 
 if __name__ == '__main__':
   main(sys.argv[1])

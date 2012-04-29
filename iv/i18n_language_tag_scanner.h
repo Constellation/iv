@@ -80,8 +80,9 @@
 //
 #ifndef IV_I18N_LANGUAGE_TAG_SCANNER_H_
 #define IV_I18N_LANGUAGE_TAG_SCANNER_H_
-#include <bitset>
 #include <map>
+#include <string>
+#include <bitset>
 #include <algorithm>
 #include <iv/detail/array.h>
 #include <iv/character.h>
@@ -89,10 +90,6 @@
 #include <iv/ustring.h>
 #include <iv/i18n_locale.h>
 #include <iv/i18n_language_tag.h>
-
-#ifdef IV_ENABLE_I18N
-#include <unicode/uloc.h>
-#endif  // IV_ENABLE_I18N
 
 namespace iv {
 namespace core {
@@ -141,31 +138,100 @@ class LanguageTagScanner {
 
   const Locale& locale() const { return locale_; }
 
-#ifdef IV_ENABLE_I18N
   // 6.2.3 CanonicalizeLanguageTag(locale)
   // Returns the canonical and case-regularized form of the locale argument
   // (which must be a String value that is
   // a well-formed BCP 47 language tag as verified
   // by the IsWellFormedLanguageTag abstract operation).
   // Specified in RFC 5646 section 4.5
+  //
+  // This implementation doesn't use ICU Locale implementation.
+  //
+  // We also record ICU-based implementation.
+  //
+  //   std::string CanonicalizeLanguageTag() {
+  //     std::array<char, ULOC_FULLNAME_CAPACITY> vec1;
+  //     UErrorCode status = U_ZERO_ERROR;
+  //     int32_t length = 0;
+  //     uloc_forLanguageTag(locale_.all_.c_str(),
+  //                         vec1.data(), vec1.size(), &length, &status);
+  //     if (U_FAILURE(status) || !length) {
+  //       return "";
+  //     }
+  //     std::array<char, ULOC_FULLNAME_CAPACITY> vec2;
+  //     length = uloc_toLanguageTag(
+  //         vec1.data(), vec2.data(), vec2.size(), true, &status);
+  //     if (U_FAILURE(status)) {
+  //       return "";
+  //     }
+  //     return vec2.data();
+  //   }
   std::string Canonicalize() {
-    std::array<char, ULOC_FULLNAME_CAPACITY> vec1;
-    UErrorCode status = U_ZERO_ERROR;
-    int32_t length = 0;
-    uloc_forLanguageTag(locale_.all_.c_str(),
-                        vec1.data(), vec1.size(), &length, &status);
-    if (U_FAILURE(status) || !length) {
-      return "";
+    assert(IsWellFormed());
+
+    // treat extlang
+    if (!locale_.extlang().empty()) {
+      locale_.language_ = locale_.extlang_[0];
+      locale_.extlang_.clear();
     }
-    std::array<char, ULOC_FULLNAME_CAPACITY> vec2;
-    length = uloc_toLanguageTag(
-        vec1.data(), vec2.data(), vec2.size(), true, &status);
-    if (U_FAILURE(status)) {
-      return "";
+
+    {
+      // canonicalize language
+      const TagMap::const_iterator it = Language().find(locale_.language_);
+      if (it != Language().end()) {
+        locale_.language_ = it->second;
+      }
     }
-    return vec2.data();
+
+    {
+      // canonicalize region
+      const TagMap::const_iterator it = Region().find(locale_.region_);
+      if (it != Region().end()) {
+        locale_.region_ = it->second;
+      }
+    }
+
+    if (locale_.language_.empty()) {
+      // privateuse only
+      return locale_.privateuse_;
+    }
+
+    std::string lang(locale_.language_);
+
+    if (!locale_.script_.empty()) {
+      lang.push_back('-');
+      lang.append(locale_.script_);
+    }
+
+    if (!locale_.region_.empty()) {
+      lang.push_back('-');
+      lang.append(locale_.region_);
+    }
+
+    for (Locale::Vector::const_iterator it = locale_.variants_.begin(),
+         last = locale_.variants_.end(); it != last; ++it) {
+      lang.push_back('-');
+      lang.append(*it);
+    }
+
+    for (Locale::Map::const_iterator it = locale_.extensions_.begin(),
+         last = locale_.extensions_.end(); it != last; ++it) {
+      const char first = it->first;
+      lang.push_back('-');
+      lang.push_back(first);
+      for (;it->first == first; ++it) {
+        lang.push_back('-');
+        lang.append(it->second);
+      }
+    }
+
+    if (!locale_.privateuse_.empty()) {
+      lang.push_back('-');
+      lang.append(locale_.privateuse_);
+    }
+
+    return lang;
   }
-#endif  // IV_ENABLE_I18N
 
  private:
   struct IsNotASCII {
@@ -177,7 +243,7 @@ class LanguageTagScanner {
 
   bool Scan() {
     // check grandfathered
-    const std::string lower_case = LowerCase(start_, last_);
+    const std::string lower_case = ToLowerCase(start_, last_);
     {
       const TagMap::const_iterator it = Grandfathered().find(lower_case);
       if (it != Grandfathered().end()) {
@@ -277,21 +343,28 @@ class LanguageTagScanner {
 
   bool ScanScript(Iter restore) {
     // script        = 4ALPHA              ; ISO 15924 code
+    //
+    // RFC 5646 2.1.1
+    // [ISO15924] recommends that script codes use lowercase with the
+    // initial letter capitalized ('Cyrl' Cyrillic).
     const Iter s = current();
     if (!ExpectAlpha(4) || !MaybeValid()) {
       Restore(restore);
       return false;
     }
-    locale_.script_ = TitleCase(s, current());
+    locale_.script_ = ToTitleCase(s, current());
     return true;
   }
 
   bool ScanRegion(Iter restore) {
     // region        = 2ALPHA              ; ISO 3166-1 code
     //               / 3DIGIT              ; UN M.49 code
+    //
+    // RFC 5646 2.1.1
+    // [ISO3166-1] recommends that country codes be capitalized ('MN' Mongolia).
     const Iter restore2 = current();
     if (ExpectAlpha(2) && MaybeValid()) {
-      locale_.region_ = UpperCase(restore2, current());
+      locale_.region_ = ToUpperCase(restore2, current());
       return true;
     }
 
@@ -324,7 +397,7 @@ class LanguageTagScanner {
         Advance();
       }
       if (MaybeValid()) {
-        locale_.variants_.push_back(LowerCase(restore2, current()));
+        locale_.variants_.push_back(ToLowerCase(restore2, current()));
         return true;
       }
     }
@@ -339,7 +412,7 @@ class LanguageTagScanner {
       Restore(restore);
       return false;
     }
-    locale_.variants_.push_back(LowerCase(restore2, current()));
+    locale_.variants_.push_back(ToLowerCase(restore2, current()));
     return true;
   }
 
@@ -434,6 +507,10 @@ class LanguageTagScanner {
     //               / 5*8ALPHA            ; or registered language subtag
     //
     // We assume, after this, '-' or EOS are following is valid.
+    //
+    // RFC 5646 2.1.1
+    // [ISO639-1] recommends that language codes be written in lowercase
+    // ('mn' Mongolian).
     Iter restore2 = current();
     if (ScanLanguageFirst()) {
       return true;
@@ -441,7 +518,7 @@ class LanguageTagScanner {
 
     Restore(restore2);
     if (ExpectAlpha(4) && MaybeValid()) {
-      locale_.language_ = LowerCase(restore2, current());
+      locale_.language_ = ToLowerCase(restore2, current());
       return true;
     }
 
@@ -461,7 +538,7 @@ class LanguageTagScanner {
       return false;
     }
 
-    locale_.language_ = LowerCase(restore2, current());
+    locale_.language_ = ToLowerCase(restore2, current());
     return true;
   }
 
@@ -481,7 +558,7 @@ class LanguageTagScanner {
     }
 
     Iter restore = current();
-    locale_.language_ = LowerCase(s, restore);
+    locale_.language_ = ToLowerCase(s, restore);
 
     // extlang check
     if (c_ != '-') {
@@ -500,7 +577,7 @@ class LanguageTagScanner {
       assert(MaybeValid());
 
       restore = current();
-      locale_.extlang_.push_back(LowerCase(s, restore));
+      locale_.extlang_.push_back(ToLowerCase(s, restore));
     }
 
     for (std::size_t i = 0; i < 2; ++i) {
@@ -516,7 +593,7 @@ class LanguageTagScanner {
       }
       assert(MaybeValid());
       restore = current();
-      locale_.extlang_.push_back(LowerCase(s, restore));
+      locale_.extlang_.push_back(ToLowerCase(s, restore));
     }
     assert(MaybeValid());
     return true;
@@ -595,7 +672,7 @@ class LanguageTagScanner {
   }
 
   template<typename Iter>
-  static std::string TitleCase(Iter it, Iter last) {
+  static std::string ToTitleCase(Iter it, Iter last) {
     std::string str;
     if (it != last) {
       str.push_back(core::character::ToUpperCase(*it));
@@ -608,7 +685,7 @@ class LanguageTagScanner {
   }
 
   template<typename Iter>
-  static std::string UpperCase(Iter it, Iter last) {
+  static std::string ToUpperCase(Iter it, Iter last) {
     std::string str;
     std::transform(it, last,
                    std::back_inserter(str),
@@ -617,7 +694,7 @@ class LanguageTagScanner {
   }
 
   template<typename Iter>
-  static std::string LowerCase(Iter it, Iter last) {
+  static std::string ToLowerCase(Iter it, Iter last) {
     std::string str;
     std::transform(it, last,
                    std::back_inserter(str),

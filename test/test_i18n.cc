@@ -89,8 +89,6 @@ TEST(I18NCase, ScanTest) {
   }
 }
 
-#ifdef IV_ENABLE_I18N
-#include <unicode/locid.h>
 TEST(I18NCase, CanonicalizeTest) {
   using iv::core::i18n::LanguageTagScanner;
   {
@@ -103,5 +101,9 @@ TEST(I18NCase, CanonicalizeTest) {
     LanguageTagScanner scanner(str.begin(), str.end());
     EXPECT_EQ(scanner.Canonicalize(), "sr-Deva");
   }
+  {
+    const std::string str("SR-CYRL-rS");
+    LanguageTagScanner scanner(str.begin(), str.end());
+    EXPECT_EQ(scanner.Canonicalize(), "sr-Cyrl-RS");
+  }
 }
-#endif  // IV_ENABLE_I18N
