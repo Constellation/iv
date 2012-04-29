@@ -124,6 +124,11 @@ def main(source):
       redundant.append(
           '  std::make_pair("%s", "%s")' % (item['Tag'].lower(), item['Preferred-Value']))
 
+  # all script tag should be title case
+  for item in filter(lambda i: i['Type'] == 'script', db.registry()):
+    assert item['Subtag'].istitle()
+
+
   print (HEADER % (len(grandfathered), ',\n'.join(grandfathered), len(redundant), ',\n'.join(redundant))).strip()
 
 if __name__ == '__main__':

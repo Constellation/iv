@@ -82,6 +82,7 @@
 #define IV_I18N_LANGUAGE_TAG_SCANNER_H_
 #include <bitset>
 #include <map>
+#include <algorithm>
 #include <iv/detail/array.h>
 #include <iv/character.h>
 #include <iv/stringpiece.h>
@@ -161,12 +162,6 @@ class LanguageTagScanner {
 #endif  // IV_ENABLE_I18N
 
  private:
-  struct LowerCase {
-    char operator()(char ch) {
-      return ch | 0x20;
-    }
-  };
-
   struct IsNotASCII {
     template<typename CharT>
     bool operator()(CharT ch) {
@@ -176,11 +171,7 @@ class LanguageTagScanner {
 
   bool Scan() {
     // check grandfathered
-    std::string lower_case;
-    lower_case.reserve(std::distance(start_, last_));
-    std::transform(start_, last_,
-                   std::back_inserter(lower_case), LowerCase());
-
+    const std::string lower_case = LowerCase(start_, last_);
     {
       const TagMap::const_iterator it = Grandfathered().find(lower_case);
       if (it != Grandfathered().end()) {
@@ -281,6 +272,37 @@ class LanguageTagScanner {
     return true;
   }
 
+  template<typename Iter>
+  static std::string TitleCase(Iter it, Iter last) {
+    std::string str;
+    if (it != last) {
+      str.push_back(core::character::ToUpperCase(*it));
+    }
+    ++it;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToLowerCase);
+    return str;
+  }
+
+  template<typename Iter>
+  static std::string UpperCase(Iter it, Iter last) {
+    std::string str;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToUpperCase);
+    return str;
+  }
+
+  template<typename Iter>
+  static std::string LowerCase(Iter it, Iter last) {
+    std::string str;
+    std::transform(it, last,
+                   std::back_inserter(str),
+                   &core::character::ToLowerCase);
+    return str;
+  }
+
   bool ScanScript(Iter restore) {
     // script        = 4ALPHA              ; ISO 15924 code
     const Iter s = current();
@@ -288,7 +310,7 @@ class LanguageTagScanner {
       Restore(restore);
       return false;
     }
-    locale_.script_.assign(s, current());
+    locale_.script_ = TitleCase(s, current());
     return true;
   }
 
@@ -297,9 +319,7 @@ class LanguageTagScanner {
     //               / 3DIGIT              ; UN M.49 code
     const Iter restore2 = current();
     if (ExpectAlpha(2) && MaybeValid()) {
-      std::transform(restore2, current(),
-                     std::back_inserter(locale_.region_),
-                     &core::character::ToUpperCase);
+      locale_.region_ = UpperCase(restore2, current());
       return true;
     }
 
