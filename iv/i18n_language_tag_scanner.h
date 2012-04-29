@@ -441,7 +441,7 @@ class LanguageTagScanner {
 
     Restore(restore2);
     if (ExpectAlpha(4) && MaybeValid()) {
-      locale_.language_.assign(restore2, current());
+      locale_.language_ = LowerCase(restore2, current());
       return true;
     }
 
@@ -461,7 +461,7 @@ class LanguageTagScanner {
       return false;
     }
 
-    locale_.language_.assign(restore2, current());
+    locale_.language_ = LowerCase(restore2, current());
     return true;
   }
 
@@ -500,7 +500,7 @@ class LanguageTagScanner {
       assert(MaybeValid());
 
       restore = current();
-      locale_.extlang_.push_back(std::string(s, restore));
+      locale_.extlang_.push_back(LowerCase(s, restore));
     }
 
     for (std::size_t i = 0; i < 2; ++i) {
@@ -516,7 +516,7 @@ class LanguageTagScanner {
       }
       assert(MaybeValid());
       restore = current();
-      locale_.extlang_.push_back(std::string(s, restore));
+      locale_.extlang_.push_back(LowerCase(s, restore));
     }
     assert(MaybeValid());
     return true;
