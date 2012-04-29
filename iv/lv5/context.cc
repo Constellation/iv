@@ -1260,7 +1260,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
             context::Intern(this, "LocaleList"));
 
     struct ClassSlot cls = {
-      JSSet::GetClass(),
+      JSLocaleList::GetClass(),
       context::Intern(this, "LocaleList"),
       JSString::NewAsciiString(this, "LocaleList"),
       constructor,
@@ -1290,7 +1290,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
             context::Intern(this, "Collator"));
 
     struct ClassSlot cls = {
-      JSSet::GetClass(),
+      JSCollator::GetClass(),
       context::Intern(this, "Collator"),
       JSString::NewAsciiString(this, "Collator"),
       constructor,
