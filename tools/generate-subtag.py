@@ -20,7 +20,7 @@ namespace i18n {
 namespace i18n_detail {
 }  // namespace i18n_detail
 
-// Irregular / regular grandfathered language tags and Preferred-Value
+// Irregular / regular grandfathered language tags and Preferred-Value.
 // Following tags don't provide Preferred-Value in registry.
 // So we define fallback tags by executing ICU canonicalizations.
 //     cel-graulish cel-graulis
@@ -34,10 +34,22 @@ static const GrandfatheredArray kGrandfathered = { {
 %s
 } };
 
+// Redundant tags are replaced to Preferred-Value.
+// If tag don't provide Preferred-Value, we don't replace it.
+typedef std::array<std::pair<StringPiece, StringPiece>, %d> RedundantArray;
+static const RedundantArray kRedundant = { {
+%s
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
   static const TagMap map(kGrandfathered.begin(), kGrandfathered.end());
+  return map;
+}
+
+inline const TagMap& Redundant() {
+  static const TagMap map(kRedundant.begin(), kRedundant.end());
   return map;
 }
 
@@ -95,7 +107,7 @@ def main(source):
 
   grandfathered = [
       '  std::make_pair("cel-graulish", "cel-graulis")',
-      '  std::make_pair("en-GB-oed", "en-GB-x-oed")',
+      '  std::make_pair("en-gb-oed", "en-GB-x-oed")',
       '  std::make_pair("i-default", "en-x-i-default")',
       '  std::make_pair("i-enochian", "x-i-enochian")',
       '  std::make_pair("i-mingo", "see-x-i-mingo")',
@@ -103,9 +115,16 @@ def main(source):
   ]
   for item in filter(lambda i: i['Type'] == 'grandfathered', db.registry()):
     if item.has_key('Preferred-Value'):
-      grandfathered.append('  std::make_pair("%s", "%s")' % (item['Tag'], item['Preferred-Value']))
+      grandfathered.append(
+          '  std::make_pair("%s", "%s")' % (item['Tag'].lower(), item['Preferred-Value']))
 
-  print (HEADER % (len(grandfathered), ',\n'.join(grandfathered))).strip()
+  redundant = []
+  for item in filter(lambda i: i['Type'] == 'redundant', db.registry()):
+    if item.has_key('Preferred-Value'):
+      redundant.append(
+          '  std::make_pair("%s", "%s")' % (item['Tag'].lower(), item['Preferred-Value']))
+
+  print (HEADER % (len(grandfathered), ',\n'.join(grandfathered), len(redundant), ',\n'.join(redundant))).strip()
 
 if __name__ == '__main__':
   main(sys.argv[1])

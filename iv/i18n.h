@@ -30,19 +30,19 @@ inline uint16_t ToLocaleIdentifierUpperCase(uint16_t ch) {
 // See iv/i18n_language_tag_verifier.h
 template<typename Iter>
 inline bool IsWellFormedLanguageTag(Iter it, Iter last) {
-  LanguageTagScanner<Iter> verifier(it, last);
+  LanguageTagScanner verifier(it, last);
   return verifier.IsWellFormed();
 }
 
 inline bool IsWellFormedLanguageTag(const StringPiece& piece) {
   typedef StringPiece::const_iterator Iter;
-  LanguageTagScanner<Iter> verifier(piece.cbegin(), piece.cend());
+  LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsWellFormed();
 }
 
 inline bool IsWellFormedLanguageTag(const UStringPiece& piece) {
   typedef UStringPiece::const_iterator Iter;
-  LanguageTagScanner<Iter> verifier(piece.cbegin(), piece.cend());
+  LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsWellFormed();
 }
 

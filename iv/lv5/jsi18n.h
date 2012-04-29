@@ -4,6 +4,7 @@
 #define IV_LV5_JSI18N_H_
 #ifdef IV_ENABLE_I18N
 #include <unicode/coll.h>
+#include <unicode/rbnf.h>
 #include <iv/i18n.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval.h>
@@ -11,11 +12,18 @@
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
+#include <iv/detail/unique_ptr.h>
 namespace iv {
 namespace lv5 {
 
 class JSIntl : public JSObject {
  public:
+  template<typename T>
+  class GCHandle : public gc_cleanup {
+   public:
+    core::unique_ptr<T> handle;
+  };
+
   IV_LV5_DEFINE_JSCLASS(Intl)
 };
 
@@ -47,15 +55,6 @@ class JSCollator : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(Collator)
 
-  class CollatorHandle : public gc_cleanup {
-   public:
-    friend class JSCollator;
-    explicit CollatorHandle(icu::Collator* coll) : collator(coll) { }
-   private:
-    core::unique_ptr<icu::Collator> collator;
-  };
-
-
   enum CollatorField {
     USAGE = 0,
     LOCALE_MATCHER,
@@ -74,13 +73,13 @@ class JSCollator : public JSObject {
   explicit JSCollator(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)),
       collator_fields_(),
-      handle_(new CollatorHandle(NULL)) {
+      collator_(new JSIntl::GCHandle<icu::Collator>()) {
   }
 
   JSCollator(Context* ctx, Map* map)
     : JSObject(map),
       collator_fields_(),
-      handle_(new CollatorHandle(NULL)) {
+      collator_(new JSIntl::GCHandle<icu::Collator>()) {
   }
 
   static JSCollator* New(Context* ctx) {
@@ -91,21 +90,21 @@ class JSCollator : public JSObject {
     return collator;
   }
 
-  JSVal GetCollatorField(std::size_t n) {
+  JSVal GetField(std::size_t n) {
     assert(n < collator_fields_.size());
     return collator_fields_[n];
   }
 
-  void SetCollatorField(std::size_t n, JSVal v) {
+  void SetField(std::size_t n, JSVal v) {
     assert(n < collator_fields_.size());
     collator_fields_[n] = v;
   }
 
   void set_collator(icu::Collator* collator) {
-    handle_->collator.reset(collator);
+    collator_->handle.reset(collator);
   }
 
-  icu::Collator* collator() const { return handle_->collator.get(); }
+  icu::Collator* collator() const { return collator_->handle.get(); }
 
   JSVal Compare(Context* ctx, JSVal left, JSVal right, Error* e) {
     const core::UString lhs = left.ToUString(ctx, IV_LV5_ERROR(e));
@@ -124,7 +123,7 @@ class JSCollator : public JSObject {
 
  private:
   std::array<JSVal, NUM_OF_FIELDS> collator_fields_;
-  CollatorHandle* handle_;
+  JSIntl::GCHandle<icu::Collator>* collator_;
 };
 
 class JSCollatorBoundFunction : public JSFunction {
@@ -174,6 +173,53 @@ class JSCollatorBoundFunction : public JSFunction {
 class JSNumberFormat : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(NumberFormat)
+
+  enum NumberFormatField {
+    USAGE = 0,
+    NUM_OF_FIELDS
+  };
+
+  explicit JSNumberFormat(Context* ctx)
+    : JSObject(Map::NewUniqueMap(ctx)),
+      number_format_(new JSIntl::GCHandle<icu::NumberFormat>()),
+      fields_() {
+  }
+
+  JSNumberFormat(Context* ctx, Map* map)
+    : JSObject(map),
+      number_format_(new JSIntl::GCHandle<icu::NumberFormat>()),
+      fields_() {
+  }
+
+  static JSNumberFormat* New(Context* ctx) {
+    JSNumberFormat* const format = new JSNumberFormat(ctx);
+    format->set_cls(JSNumberFormat::GetClass());
+    format->set_prototype(
+        context::GetClassSlot(ctx, Class::NumberFormat).prototype);
+    return format;
+  }
+
+  JSVal GetField(std::size_t n) {
+    assert(n < fields_.size());
+    return fields_[n];
+  }
+
+  void SetField(std::size_t n, JSVal v) {
+    assert(n < fields_.size());
+    fields_[n] = v;
+  }
+
+  void set_number_foramt(icu::NumberFormat* number_format) {
+    number_format_->handle.reset(number_format);
+  }
+
+  icu::NumberFormat* number_format() const {
+    return number_format_->handle.get();
+  }
+
+ private:
+  JSIntl::GCHandle<icu::NumberFormat>* number_format_;
+  std::array<JSVal, NUM_OF_FIELDS> fields_;
 };
 
 class JSDateTimeFormat : public JSObject {

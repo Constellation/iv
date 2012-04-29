@@ -108,21 +108,30 @@ namespace i18n {
     Advance();\
   } while (0)
 
-template<typename Iter>
 class LanguageTagScanner {
  public:
-  typedef LanguageTagScanner<Iter> this_type;
+  typedef LanguageTagScanner this_type;
+  typedef std::string::const_iterator Iter;
 
-  LanguageTagScanner(Iter it, Iter last)
-    : start_(it),
-      last_(last),
-      pos_(it),
+  template<typename EIter>
+  LanguageTagScanner(EIter it, EIter last)
+    : original_(it, last),
+      start_(original_.begin()),
+      last_(original_.end()),
+      pos_(original_.begin()),
       c_(-1),
       valid_(),
       locale_(),
       unique_(0) {
-    locale_.all_.assign(it, last);
+    locale_.all_.assign(original_);
     Restore(start_);
+
+    // check ascii
+    if (std::find_if(it,
+                     last,
+                     IsNotASCII()) != last) {
+      valid_ = false;
+    }
     valid_ = Scan();
   }
 
@@ -155,19 +164,51 @@ class LanguageTagScanner {
     return "";
   }
 
+  struct LowerCase {
+    char operator()(char ch) {
+      return ch | 0x20;
+    }
+  };
+
+  struct IsNotASCII {
+    template<typename CharT>
+    bool operator()(CharT ch) {
+      return !core::character::IsASCII(ch);
+    }
+  };
+
   bool Scan() {
     // check grandfathered
-    const TagMap::const_iterator it =
-        Grandfathered().find(std::string(start_, last_));
-    if (it != Grandfathered().end()) {
-      LanguageTagScanner<std::string::const_iterator>
-          scan2(it->second.begin(), it->second.end());
-      const bool valid = scan2.IsWellFormed();
-      if (valid) {
-        locale_ = scan2.locale();
+    std::string lower_case;
+    lower_case.reserve(std::distance(start_, last_));
+    std::transform(start_, last_,
+                   std::back_inserter(lower_case), LowerCase());
+
+    {
+      const TagMap::const_iterator it = Grandfathered().find(lower_case);
+      if (it != Grandfathered().end()) {
+        LanguageTagScanner scan2(it->second.begin(), it->second.end());
+        const bool valid = scan2.IsWellFormed();
+        if (valid) {
+          locale_ = scan2.locale();
+        }
+        return valid;
       }
-      return valid;
     }
+
+    // check redundant
+    {
+      const TagMap::const_iterator it = Redundant().find(lower_case);
+      if (it != Redundant().end()) {
+        LanguageTagScanner scan2(it->second.begin(), it->second.end());
+        const bool valid = scan2.IsWellFormed();
+        if (valid) {
+          locale_ = scan2.locale();
+        }
+        return valid;
+      }
+    }
+
     return ScanRegular();
   }
 
@@ -278,6 +319,7 @@ class LanguageTagScanner {
       Restore(restore);
       return false;
     }
+    // This is digit region, so uppercase is unnecessary.
     locale_.region_.assign(restore2, current());
     return true;
   }
@@ -564,6 +606,7 @@ class LanguageTagScanner {
     return pos_ - 1;
   }
 
+  std::string original_;
   Iter start_;
   Iter last_;
   Iter pos_;

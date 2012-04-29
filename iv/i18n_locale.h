@@ -5,12 +5,10 @@ namespace iv {
 namespace core {
 namespace i18n {
 
-template<typename Iter>
 class LanguageTagScanner;
 
 class Locale {
  public:
-  template<typename Iter>
   friend class LanguageTagScanner;
 
   typedef std::vector<std::string> Vector;

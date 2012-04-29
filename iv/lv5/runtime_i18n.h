@@ -13,7 +13,6 @@ namespace lv5 {
 namespace runtime {
 
 inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
-  typedef core::i18n::LanguageTagScanner<JSString::const_iterator> Scanner;
   std::vector<std::string> list;
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -32,7 +31,7 @@ inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
           return JSEmpty;
         }
         JSString* tag = value.ToString(ctx, IV_LV5_ERROR(e));
-        Scanner scanner(tag->begin(), tag->end());
+        core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
         if (!scanner.IsWellFormed()) {
           e->Report(Error::Range, "locale pattern is not well formed");
           return JSEmpty;
@@ -146,7 +145,7 @@ template<JSCollator::CollatorField TYPE, UColAttribute ATTR>
 inline void SetICUCollatorBooleanOption(JSCollator* obj,
                                         icu::Collator* collator, Error* e) {
   UErrorCode status = U_ZERO_ERROR;
-  const bool res = obj->GetCollatorField(TYPE).ToBoolean();
+  const bool res = obj->GetField(TYPE).ToBoolean();
   collator->setAttribute(ATTR, res ? UCOL_ON : UCOL_OFF, status);
   if (U_FAILURE(status)) {
     e->Report(Error::Type, "icu collator initialization failed");
@@ -154,7 +153,6 @@ inline void SetICUCollatorBooleanOption(JSCollator* obj,
   }
 }
 
-// TODO(Constellation) not implemented yet
 inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   const JSVal arg1 = args.At(0);
   const JSVal arg2 = args.At(1);
@@ -181,7 +179,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
                             Options::STRING, vec->ToJSArray(),
                             sort, IV_LV5_ERROR(e));
     assert(u.IsString());
-    obj->SetCollatorField(JSCollator::USAGE, u);
+    obj->SetField(JSCollator::USAGE, u);
   }
 
   {
@@ -195,7 +193,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
                                   Options::STRING, vec->ToJSArray(),
                                   best_fit, IV_LV5_ERROR(e));
     assert(matcher.IsString());
-    obj->SetCollatorField(JSCollator::LOCALE_MATCHER, matcher);
+    obj->SetField(JSCollator::LOCALE_MATCHER, matcher);
   }
 
   {
@@ -224,7 +222,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
           value = JSFalse;
         }
       }
-      obj->SetCollatorField(it->field, value);
+      obj->SetField(it->field, value);
     }
   }
 
@@ -253,7 +251,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
                       Options::STRING, vec->ToJSArray(),
                       JSUndefined, IV_LV5_ERROR(e));
     if (s.IsUndefined()) {
-      if (JSVal::StrictEqual(obj->GetCollatorField(JSCollator::USAGE),
+      if (JSVal::StrictEqual(obj->GetField(JSCollator::USAGE),
                              JSString::NewAsciiString(ctx, "sort"))) {
         s = o_variant;
       } else {
@@ -261,7 +259,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
         s = o_base;
       }
     }
-    obj->SetCollatorField(JSCollator::SENSITIVITY, s);
+    obj->SetField(JSCollator::SENSITIVITY, s);
   }
 
   {
@@ -269,9 +267,9 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
                              context::Intern(ctx, "ignorePunctuation"),
                              Options::BOOLEAN, NULL,
                              JSFalse, IV_LV5_ERROR(e));
-    obj->SetCollatorField(JSCollator::IGNORE_PUNCTUATION, ip);
+    obj->SetField(JSCollator::IGNORE_PUNCTUATION, ip);
   }
-  obj->SetCollatorField(JSCollator::BOUND_COMPARE, JSUndefined);
+  obj->SetField(JSCollator::BOUND_COMPARE, JSUndefined);
 
   // initialize icu::Collator
   SetICUCollatorBooleanOption<
@@ -291,7 +289,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
       UCOL_NORMALIZATION_MODE>(obj, collator, IV_LV5_ERROR(e));
 
   {
-    const JSVal v = obj->GetCollatorField(JSCollator::CASE_FIRST);
+    const JSVal v = obj->GetField(JSCollator::CASE_FIRST);
     if (v.IsUndefined()) {
       collator->setAttribute(UCOL_CASE_FIRST, UCOL_OFF, status);
     } else {
@@ -313,7 +311,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   }
 
   {
-    const JSVal v = obj->GetCollatorField(JSCollator::SENSITIVITY);
+    const JSVal v = obj->GetField(JSCollator::SENSITIVITY);
     if (v.IsUndefined()) {
       collator->setStrength(icu::Collator::TERTIARY);
     } else {
@@ -338,7 +336,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   }
 
   {
-    if (obj->GetCollatorField(JSCollator::IGNORE_PUNCTUATION).ToBoolean()) {
+    if (obj->GetField(JSCollator::IGNORE_PUNCTUATION).ToBoolean()) {
       collator->setAttribute(UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, status);
       if (U_FAILURE(status)) {
         e->Report(Error::Type, "icu collator initialization failed");
@@ -358,10 +356,10 @@ inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
     return JSEmpty;
   }
   JSCollator* obj = static_cast<JSCollator*>(o);
-  JSVal bound = obj->GetCollatorField(JSCollator::BOUND_COMPARE);
+  JSVal bound = obj->GetField(JSCollator::BOUND_COMPARE);
   if (bound.IsUndefined()) {
     bound = JSCollatorBoundFunction::New(ctx, obj);
-    obj->SetCollatorField(JSCollator::BOUND_COMPARE, bound);
+    obj->SetField(JSCollator::BOUND_COMPARE, bound);
   }
   return bound;
 }
@@ -381,32 +379,49 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
            collator,
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "usage"),
-           collator->GetCollatorField(JSCollator::USAGE),
+           collator->GetField(JSCollator::USAGE),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "sensitivity"),
-           collator->GetCollatorField(JSCollator::SENSITIVITY),
+           collator->GetField(JSCollator::SENSITIVITY),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "backwards"),
-           collator->GetCollatorField(JSCollator::BACKWARDS),
+           collator->GetField(JSCollator::BACKWARDS),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "caseLevel"),
-           collator->GetCollatorField(JSCollator::CASE_LEVEL),
+           collator->GetField(JSCollator::CASE_LEVEL),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "numeric"),
-           collator->GetCollatorField(JSCollator::NUMERIC),
+           collator->GetField(JSCollator::NUMERIC),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "hiraganaQuaternary"),
-           collator->GetCollatorField(JSCollator::HIRAGANA_QUATERNARY),
+           collator->GetField(JSCollator::HIRAGANA_QUATERNARY),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "normalization"),
-           collator->GetCollatorField(JSCollator::NORMALIZATION),
+           collator->GetField(JSCollator::NORMALIZATION),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "caseFirst"),
-           collator->GetCollatorField(JSCollator::CASE_FIRST),
+           collator->GetField(JSCollator::CASE_FIRST),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "ignorePunctuation"),
-           collator->GetCollatorField(JSCollator::IGNORE_PUNCTUATION),
+           collator->GetField(JSCollator::IGNORE_PUNCTUATION),
            ATTR::W | ATTR::E | ATTR::C);
+  return obj;
+}
+
+inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
+  const JSVal arg1 = args.At(0);
+  const JSVal arg2 = args.At(1);
+  Context* ctx = args.ctx();
+  JSNumberFormat* obj = JSNumberFormat::New(ctx);
+
+  JSObject* options = NULL;
+  if (arg2.IsUndefined()) {
+    options = JSObject::New(ctx);
+  } else {
+    options = arg2.ToObject(ctx, IV_LV5_ERROR(e));
+  }
+
+  Options opt(options);
   return obj;
 }
 

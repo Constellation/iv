@@ -11,7 +11,7 @@ namespace i18n {
 namespace i18n_detail {
 }  // namespace i18n_detail
 
-// Irregular / regular grandfathered language tags and Preferred-Value
+// Irregular / regular grandfathered language tags and Preferred-Value.
 // Following tags don't provide Preferred-Value in registry.
 // So we define fallback tags by executing ICU canonicalizations.
 //     cel-graulish cel-graulis
@@ -23,7 +23,7 @@ namespace i18n_detail {
 typedef std::array<std::pair<StringPiece, StringPiece>, 26> GrandfatheredArray;
 static const GrandfatheredArray kGrandfathered = { {
   std::make_pair("cel-graulish", "cel-graulis"),
-  std::make_pair("en-GB-oed", "en-GB-x-oed"),
+  std::make_pair("en-gb-oed", "en-GB-x-oed"),
   std::make_pair("i-default", "en-x-i-default"),
   std::make_pair("i-enochian", "x-i-enochian"),
   std::make_pair("i-mingo", "see-x-i-mingo"),
@@ -41,19 +41,55 @@ static const GrandfatheredArray kGrandfathered = { {
   std::make_pair("i-tsu", "tsu"),
   std::make_pair("no-bok", "nb"),
   std::make_pair("no-nyn", "nn"),
-  std::make_pair("sgn-BE-FR", "sfb"),
-  std::make_pair("sgn-BE-NL", "vgt"),
-  std::make_pair("sgn-CH-DE", "sgg"),
+  std::make_pair("sgn-be-fr", "sfb"),
+  std::make_pair("sgn-be-nl", "vgt"),
+  std::make_pair("sgn-ch-de", "sgg"),
   std::make_pair("zh-guoyu", "cmn"),
   std::make_pair("zh-hakka", "hak"),
   std::make_pair("zh-min-nan", "nan"),
   std::make_pair("zh-xiang", "hsn")
 } };
 
+// Redundant tags are replaced to Preferred-Value.
+// If tag don't provide Preferred-Value, we don't replace it.
+typedef std::array<std::pair<StringPiece, StringPiece>, 25> RedundantArray;
+static const RedundantArray kRedundant = { {
+  std::make_pair("sgn-br", "bzs"),
+  std::make_pair("sgn-co", "csn"),
+  std::make_pair("sgn-de", "gsg"),
+  std::make_pair("sgn-dk", "dsl"),
+  std::make_pair("sgn-es", "ssp"),
+  std::make_pair("sgn-fr", "fsl"),
+  std::make_pair("sgn-gb", "bfi"),
+  std::make_pair("sgn-gr", "gss"),
+  std::make_pair("sgn-ie", "isg"),
+  std::make_pair("sgn-it", "ise"),
+  std::make_pair("sgn-jp", "jsl"),
+  std::make_pair("sgn-mx", "mfs"),
+  std::make_pair("sgn-ni", "ncs"),
+  std::make_pair("sgn-nl", "dse"),
+  std::make_pair("sgn-no", "nsl"),
+  std::make_pair("sgn-pt", "psr"),
+  std::make_pair("sgn-se", "swl"),
+  std::make_pair("sgn-us", "ase"),
+  std::make_pair("sgn-za", "sfs"),
+  std::make_pair("zh-cmn", "cmn"),
+  std::make_pair("zh-cmn-hans", "cmn-Hans"),
+  std::make_pair("zh-cmn-hant", "cmn-Hant"),
+  std::make_pair("zh-gan", "gan"),
+  std::make_pair("zh-wuu", "wuu"),
+  std::make_pair("zh-yue", "yue")
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
   static const TagMap map(kGrandfathered.begin(), kGrandfathered.end());
+  return map;
+}
+
+inline const TagMap& Redundant() {
+  static const TagMap map(kRedundant.begin(), kRedundant.end());
   return map;
 }
 
