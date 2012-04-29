@@ -1312,6 +1312,37 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<&runtime::CollatorCompareGetter, 0>(symbol::compare())
         .def_getter<&runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
   }
+
+  {
+    // NumberFormat
+    JSObject* const proto =
+        JSNumberFormat::NewPlain(this, Map::NewUniqueMap(this));
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::NumberFormatConstructor, 2>::NewPlain(
+            this,
+            context::Intern(this, "NumberFormat"));
+
+    struct ClassSlot cls = {
+      JSNumberFormat::GetClass(),
+      context::Intern(this, "NumberFormat"),
+      JSString::NewAsciiString(this, "NumberFormat"),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::NumberFormat>(cls);
+    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
+
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE)
+        .def<&runtime::CollatorSupportedLocalesOf, 1>("supportedLocalesOf");
+
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+  }
 }
 #endif  // IV_ENABLE_I18N
 

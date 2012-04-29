@@ -272,14 +272,6 @@ class JSNumberFormat : public JSObject {
       fields_() {
   }
 
-  static JSNumberFormat* New(Context* ctx) {
-    JSNumberFormat* const format = new JSNumberFormat(ctx);
-    format->set_cls(JSNumberFormat::GetClass());
-    format->set_prototype(
-        context::GetClassSlot(ctx, Class::NumberFormat).prototype);
-    return format;
-  }
-
   JSVal GetField(std::size_t n) {
     assert(n < fields_.size());
     return fields_[n];
@@ -290,12 +282,32 @@ class JSNumberFormat : public JSObject {
     fields_[n] = v;
   }
 
-  void set_number_foramt(icu::NumberFormat* number_format) {
+  void set_number_format(icu::NumberFormat* number_format) {
     number_format_->handle.reset(number_format);
   }
 
   icu::NumberFormat* number_format() const {
     return number_format_->handle.get();
+  }
+
+  static JSNumberFormat* New(Context* ctx) {
+    JSNumberFormat* const collator = new JSNumberFormat(ctx);
+    collator->set_cls(JSNumberFormat::GetClass());
+    collator->set_prototype(
+        context::GetClassSlot(ctx, Class::NumberFormat).prototype);
+    return collator;
+  }
+
+  static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
+    JSNumberFormat* obj = new JSNumberFormat(ctx, map);
+
+    icu::Locale locale("en_US");  // TODO(Constellation) implement it
+
+    UErrorCode status = U_ZERO_ERROR;
+    icu::NumberFormat* format =
+        icu::NumberFormat::createInstance(locale, status);
+    obj->set_number_format(format);
+    return obj;
   }
 
  private:

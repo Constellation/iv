@@ -491,10 +491,11 @@ inline JSVal SupportedLocales(Context* ctx,
 }
 
 inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
-  return SupportedLocales(args.ctx(),
-                          ICUStringIteration(icu::Collator::getAvailableLocales()),
-                          ICUStringIteration(),
-                          args.At(0), args.At(1), e);
+  return SupportedLocales(
+      args.ctx(),
+      ICUStringIteration(icu::Collator::getAvailableLocales()),
+      ICUStringIteration(),
+      args.At(0), args.At(1), e);
 }
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
@@ -512,6 +513,14 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
 
   Options opt(options);
   return obj;
+}
+
+inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+  return SupportedLocales(
+      args.ctx(),
+      ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
+      ICUStringIteration(),
+      args.At(0), args.At(1), e);
 }
 
 #undef IV_LV5_I18N_INTL_CHECK
