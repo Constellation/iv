@@ -154,11 +154,16 @@ class LanguageTagScanner {
     int32_t length = 0;
     uloc_forLanguageTag(locale_.all_.c_str(),
                         vec1.data(), vec1.size(), &length, &status);
-    vec1[length] = '\0';
+    if (U_FAILURE(status) || !length) {
+      return "";
+    }
     std::array<char, ULOC_FULLNAME_CAPACITY> vec2;
-    length = uloc_toLanguageTag(vec1.data(),
-                                vec2.data(), length, true, &status);
-    return std::string(vec2.begin(), vec2.begin() + length);
+    length = uloc_toLanguageTag(
+        vec1.data(), vec2.data(), vec2.size(), true, &status);
+    if (U_FAILURE(status)) {
+      return "";
+    }
+    return vec2.data();
   }
 #endif  // IV_ENABLE_I18N
 
@@ -203,7 +208,7 @@ class LanguageTagScanner {
     }
 
     Clear();
-    if (ScanPrivateUse(start_)) {
+    if (ScanPrivateUse(start_) && IsEOS()) {
       return true;
     }
     return false;
@@ -476,7 +481,7 @@ class LanguageTagScanner {
     }
 
     Iter restore = current();
-    locale_.language_.assign(s, restore);
+    locale_.language_ = LowerCase(s, restore);
 
     // extlang check
     if (c_ != '-') {
