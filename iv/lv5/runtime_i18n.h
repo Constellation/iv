@@ -1,6 +1,7 @@
 #ifndef IV_LV5_RUNTIME_I18N_H_
 #define IV_LV5_RUNTIME_I18N_H_
 #ifdef IV_ENABLE_I18N
+#include <iv/ignore_unused_variable_warning.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -160,6 +161,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   const JSVal arg2 = args.At(1);
   Context* ctx = args.ctx();
   JSCollator* obj = JSCollator::New(ctx);
+  ignore_unused_variable_warning(arg1);
 
   JSObject* options = NULL;
   if (arg2.IsUndefined()) {
@@ -526,6 +528,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   const JSVal arg2 = args.At(1);
   Context* ctx = args.ctx();
   JSNumberFormat* obj = JSNumberFormat::New(ctx);
+  ignore_unused_variable_warning(arg1);
 
   JSObject* options = NULL;
   if (arg2.IsUndefined()) {
@@ -548,6 +551,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
                                   best_fit, IV_LV5_ERROR(e));
     assert(matcher.IsString());
     // TODO(Constellation) fix ResolveLocale
+    ignore_unused_variable_warning(matcher);
   }
 
   icu::Locale locale("en_US");  // TODO(Constellation) implement it
