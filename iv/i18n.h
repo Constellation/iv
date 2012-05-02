@@ -70,27 +70,41 @@ inline AvailIter IndexOfMatch(AvailIter ait,
 }
 
 // 10.2.2 LookupMatch(availableLocales, requestedLocales)
-template<typename AvailIter, typename ReqIter>
-inline int LookupMatch(AvailIter ait, AvailIter alast,
-                       ReqIter rit, ReqIter rlast) {
-  AvailIter pos = alast;
+class LookupResult {
+ public:
+  LookupResult(const std::string& l,
+               Locale loc, std::size_t p)
+    : locale(l), parsed(loc), position(p) { }
+  LookupResult(const std::string& l)
+    : locale(l), parsed(), position(kNotFound) { }
+
+  bool empty() { return position == kNotFound; }
+
+ private:
   std::string locale;
-  std::string no_extensions_locale;
+  Locale parsed;
+  std::size_t position;
+};
+
+template<typename AvailIter, typename ReqIter>
+inline LookupResult LookupMatch(AvailIter ait, AvailIter alast,
+                                ReqIter rit, ReqIter rlast) {
+  AvailIter pos = alast;
+  Locale locale;
   for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
-    locale = *it;
-    no_extensions_locale =
-        LanguageTagScanner::RemoveExtension(locale.begin(), locale.end());
+    LanguageTagScanner scanner(it->begin(), it->end());
+    if (!scanner.IsWellFormed()) {
+      continue;
+    }
+    const std::string no_extensions_locale = scanner.Canonicalize(true);
+    locale = scanner.locale();
     pos = IndexOfMatch(ait, alast, no_extensions_locale);
   }
   if (pos != alast) {
-    const std::string available_locale = *pos;
-    // TODO(Constellation) not implemented yet
-    if (locale != no_extensions_locale) {
-      return 0;
-    }
+    return LookupResult(*pos, locale, std::distance(ait, pos));
   }
-  // TODO(Constellation) not implemented yet
-  return 0;
+  // TODO(Constellation) fix default locale
+  return LookupResult("en-US");
 }
 
 // Currency
