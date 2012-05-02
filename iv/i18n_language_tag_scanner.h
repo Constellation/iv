@@ -138,6 +138,15 @@ class LanguageTagScanner {
 
   const Locale& locale() const { return locale_; }
 
+  template<typename Iter>
+  static std::string RemoveExtension(Iter it, Iter last) {
+    this_type scanner(it, last);
+    if (scanner.IsWellFormed()) {
+      return scanner.Canonicalize(false);
+    }
+    return std::string(it, last);
+  }
+
   // 6.2.3 CanonicalizeLanguageTag(locale)
   // Returns the canonical and case-regularized form of the locale argument
   // (which must be a String value that is
@@ -166,7 +175,7 @@ class LanguageTagScanner {
   //     }
   //     return vec2.data();
   //   }
-  std::string Canonicalize() {
+  std::string Canonicalize(bool remove_extensions = false) {
     assert(IsWellFormed());
 
     // treat extlang
@@ -214,20 +223,22 @@ class LanguageTagScanner {
       lang.append(*it);
     }
 
-    for (Locale::Map::const_iterator it = locale_.extensions_.begin(),
-         last = locale_.extensions_.end(); it != last; ++it) {
-      const char first = it->first;
-      lang.push_back('-');
-      lang.push_back(first);
-      for (;it->first == first; ++it) {
+    if (!remove_extensions) {
+      for (Locale::Map::const_iterator it = locale_.extensions_.begin(),
+           last = locale_.extensions_.end(); it != last; ++it) {
+        const char first = it->first;
         lang.push_back('-');
-        lang.append(it->second);
+        lang.push_back(first);
+        for (;it->first == first; ++it) {
+          lang.push_back('-');
+          lang.append(it->second);
+        }
       }
-    }
 
-    if (!locale_.privateuse_.empty()) {
-      lang.push_back('-');
-      lang.append(locale_.privateuse_);
+      if (!locale_.privateuse_.empty()) {
+        lang.push_back('-');
+        lang.append(locale_.privateuse_);
+      }
     }
 
     return lang;

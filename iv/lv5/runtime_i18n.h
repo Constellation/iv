@@ -433,9 +433,10 @@ inline JSVal LookupSupportedLocales(
   for (uint32_t k = 0; k < len; ++k) {
     const JSVal res =
         list->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-    // TODO(Constellation) noExtensionsLocale
     JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
-    const std::string locale(str->begin(), str->end());
+    const std::string locale(
+        core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
+                                                        str->end()));
     const AvailIter t = core::i18n::IndexOfMatch(it, last, locale);
     if (t != last) {
       subset.push_back(locale);

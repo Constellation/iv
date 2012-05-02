@@ -69,10 +69,6 @@ inline AvailIter IndexOfMatch(AvailIter ait,
   return alast;
 }
 
-inline std::string RemoveExtensionSequence(const std::string& locale) {
-  return locale;
-}
-
 // 10.2.2 LookupMatch(availableLocales, requestedLocales)
 template<typename AvailIter, typename ReqIter>
 inline int LookupMatch(AvailIter ait, AvailIter alast,
@@ -82,7 +78,8 @@ inline int LookupMatch(AvailIter ait, AvailIter alast,
   std::string no_extensions_locale;
   for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
     locale = *it;
-    no_extensions_locale = RemoveExtensionSequence(locale);
+    no_extensions_locale =
+        LanguageTagScanner::RemoveExtension(locale.begin(), locale.end());
     pos = IndexOfMatch(ait, alast, no_extensions_locale);
   }
   if (pos != alast) {
