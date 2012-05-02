@@ -179,9 +179,7 @@ class JSCollator : public JSObject {
 
   static JSCollator* NewPlain(Context* ctx, Map* map) {
     JSCollator* obj = new JSCollator(ctx, map);
-
-    icu::Locale locale("en_US");  // TODO(Constellation) implement it
-
+    const icu::Locale locale = icu::Locale::getDefault();
     UErrorCode status = U_ZERO_ERROR;
     icu::Collator* collator = icu::Collator::createInstance(locale, status);
     obj->set_collator(collator);
@@ -328,9 +326,7 @@ class JSNumberFormat : public JSObject {
 
   static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
     JSNumberFormat* obj = new JSNumberFormat(ctx, map);
-
-    icu::Locale locale("en_US");  // TODO(Constellation) implement it
-
+    const icu::Locale locale = icu::Locale::getDefault();
     UErrorCode status = U_ZERO_ERROR;
     icu::NumberFormat* format =
         icu::NumberFormat::createInstance(locale, status);
