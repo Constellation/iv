@@ -1,7 +1,7 @@
 #ifndef IV_LV5_RUNTIME_I18N_H_
 #define IV_LV5_RUNTIME_I18N_H_
 #ifdef IV_ENABLE_I18N
-#include <iv/ignore_unused_variable_warning.h>
+#include <unicode/decimfmt.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -13,6 +13,8 @@ namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail_i18n {
+
+#define IV_ICU_VERSION (U_ICU_VERSION_MAJOR_NUM * 10000 + U_ICU_VERSION_MINOR_NUM * 100 + U_ICU_VERSION_PATCHLEVEL_NUM)  // NOLINT
 
 JSLocaleList* CreateLocaleList(Context* ctx,
                                JSVal target, Error* e);
@@ -574,19 +576,19 @@ class NumberOptions : public Options {
  public:
   explicit NumberOptions(JSObject* options) : Options(options) { }
 
-  double GetNumber(Context* ctx,
-                   Symbol property,
-                   double minimum,
-                   double maximum, double fallback, Error* e) {
+  int32_t GetNumber(Context* ctx,
+                    Symbol property,
+                    int32_t minimum,
+                    int32_t maximum, int32_t fallback, Error* e) {
     const JSVal value =
-        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0.0));
+        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0));
     if (!value.IsNullOrUndefined()) {
-      const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0.0));
+      const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
       if (core::math::IsNaN(res) || res < minimum || res > maximum) {
         e->Report(Error::Range, "option out of range");
-        return 0.0;
+        return 0;
       }
-      return std::floor(res);
+      return static_cast<int32_t>(std::floor(res));
     }
     return fallback;
   }
@@ -620,19 +622,12 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   // TODO(Constellation) not implement extension check
   icu::Locale locale(result.locale().c_str());
 
-  UErrorCode status = U_ZERO_ERROR;
-  icu::NumberFormat* format = icu::NumberFormat::createInstance(locale, status);
-  if (U_FAILURE(status)) {
-    e->Report(Error::Type, "number format creation failed");
-    return JSEmpty;
-  }
-  obj->set_number_format(format);
-
   enum {
     DECIMAL_STYLE,
     PERCENT_STYLE,
     CURRENCY_STYLE
   } style = DECIMAL_STYLE;
+  icu::DecimalFormat* format = NULL;
   {
     JSString* decimal = JSString::NewAsciiString(ctx, "decimal");
     JSString* percent = JSString::NewAsciiString(ctx, "percent");
@@ -646,117 +641,148 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
                             Options::STRING, vec->ToJSArray(),
                             decimal, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::STYLE, t);
+
+    UErrorCode status = U_ZERO_ERROR;
     if (JSVal::StrictEqual(style, currency)) {
       style = CURRENCY_STYLE;
+      {
+        // currency option
+        const JSVal currency = opt.Get(ctx,
+                                       context::Intern(ctx, "currency"),
+                                       Options::STRING, NULL,
+                                       JSUndefined, IV_LV5_ERROR(e));
+        if (currency.IsUndefined()) {
+          e->Report(Error::Type, "currency is not specified");
+          return JSEmpty;
+        }
+        JSString* tmp = currency.string();
+        if (!core::i18n::IsWellFormedCurrencyCode(tmp->begin(), tmp->end())) {
+          e->Report(Error::Range, "invalid currency code");
+          return JSEmpty;
+        }
+        JSStringBuilder builder;
+        for (JSString::const_iterator it = tmp->begin(), last = tmp->end();
+             it != last; ++it) {
+          if (core::character::IsASCII(*it)) {
+            builder.Append(core::character::ToUpperCase(*it));
+          } else {
+            builder.Append(*it);
+          }
+        }
+        JSString* c = builder.Build(ctx);
+        obj->SetField(JSNumberFormat::CURRENCY, c);
+      }
+      {
+        // currencyDisplay option
+        JSVector* vec = JSVector::New(ctx);
+        JSString* code = JSString::NewAsciiString(ctx, "code");
+        JSString* symbol = JSString::NewAsciiString(ctx, "symbol");
+        JSString* name = JSString::NewAsciiString(ctx, "name");
+        vec->push_back(code);
+        vec->push_back(symbol);
+        vec->push_back(name);
+        const JSVal cd = opt.Get(ctx,
+                                 context::Intern(ctx, "currencyDisplay"),
+                                 Options::STRING, vec->ToJSArray(),
+                                 symbol, IV_LV5_ERROR(e));
+        obj->SetField(JSNumberFormat::CURRENCY_DISPLAY, cd);
+#if IV_ICU_VERSION < 40700
+        // old ICU
+        const icu::NumberFormat::EStyle number_style =
+            (JSVal::StrictEqual(cd, code)) ?
+              icu::NumberFormat::kIsoCurrencyStyle :
+            (JSVal::StrictEqual(cd, name)) ?
+              icu::NumberFormat::kPluralCurrencyStyle :
+              icu::NumberFormat::kCurrencyStyle;
+#else
+        const UNumberFormatStyle number_style =
+            (JSVal::StrictEqual(cd, code)) ? UNUM_CURRENCY_ISO :
+            (JSVal::StrictEqual(cd, name)) ? UNUM_CURRENCY_PLURAL :
+            UNUM_CURRENCY;
+#endif  // IV_ICU_VERSION < 40700
+        format = static_cast<icu::DecimalFormat*>(
+            icu::NumberFormat::createInstance(locale, number_style, status));
+      }
     } else if (JSVal::StrictEqual(style, decimal)) {
       style = DECIMAL_STYLE;
+      format = static_cast<icu::DecimalFormat*>(
+          icu::NumberFormat::createInstance(locale, status));
     } else {
       style = PERCENT_STYLE;
+      format = static_cast<icu::DecimalFormat*>(
+          icu::NumberFormat::createPercentInstance(locale, status));
     }
+
+    if (U_FAILURE(status)) {
+      e->Report(Error::Type, "number format creation failed");
+      return JSEmpty;
+    }
+    obj->set_number_format(format);
   }
 
-  {
-    const JSVal currency = opt.Get(ctx,
-                                   context::Intern(ctx, "currency"),
-                                   Options::STRING, NULL,
-                                   JSUndefined, IV_LV5_ERROR(e));
-    if (style == CURRENCY_STYLE) {
-      if (currency.IsUndefined()) {
-        e->Report(Error::Type, "currency is not specified");
-        return JSEmpty;
-      }
-      // TODO(Constellation) once check uppercase and if found transform it
-      JSString* tmp = currency.string();
-      JSStringBuilder builder;
-      for (JSString::const_iterator it = tmp->begin(), last = tmp->end();
-           it != last; ++it) {
-        if (core::character::IsASCII(*it)) {
-          builder.Append(core::character::ToUpperCase(*it));
-        } else {
-          builder.Append(*it);
-        }
-      }
-      JSString* c = builder.Build(ctx);
-      obj->SetField(JSNumberFormat::CURRENCY, c);
-    }
-  }
-
-  {
-    JSVector* vec = JSVector::New(ctx);
-    JSString* code = JSString::NewAsciiString(ctx, "code");
-    JSString* symbol = JSString::NewAsciiString(ctx, "symbol");
-    JSString* name = JSString::NewAsciiString(ctx, "name");
-    vec->push_back(code);
-    vec->push_back(symbol);
-    vec->push_back(name);
-    const JSVal cd = opt.Get(ctx,
-                             context::Intern(ctx, "currencyDisplay"),
-                             Options::STRING, vec->ToJSArray(),
-                             symbol, IV_LV5_ERROR(e));
-    if (style == CURRENCY_STYLE) {
-      obj->SetField(JSNumberFormat::CURRENCY_DISPLAY, cd);
-    }
-  }
-
-  const double minimum_integer_digits =
+  const int32_t minimum_integer_digits =
       opt.GetNumber(ctx,
                     context::Intern(ctx, "minimumIntegerDigits"),
                     1,
                     21,
                     1, IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::MINIMUM_INTEGER_DIGITS,
-                minimum_integer_digits);
+                JSVal::Int32(minimum_integer_digits));
+  format->setMinimumIntegerDigits(minimum_integer_digits);
 
   // TODO(Constellation) use CurrencyDigits(c)
-  const double minimum_fraction_digits_default = 0;
+  const int32_t minimum_fraction_digits_default = 0;
 
-  const double minimum_fraction_digits =
+  const int32_t minimum_fraction_digits =
       opt.GetNumber(ctx,
                     context::Intern(ctx, "minimumFractionDigits"),
                     0,
                     20,
                     minimum_fraction_digits_default, IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::MINIMUM_FRACTION_DIGITS,
-                minimum_fraction_digits);
+                JSVal::Int32(minimum_fraction_digits));
+  format->setMinimumFractionDigits(minimum_fraction_digits);
 
   // TODO(Constellation) use CurrencyDigits(c)
-  const double maximum_fraction_digits_default =
+  const int32_t maximum_fraction_digits_default =
       (style == CURRENCY_STYLE) ?
-        (std::max)(minimum_fraction_digits_default, 3.0) :
+        (std::max)(minimum_fraction_digits_default, 3) :
       (style == PERCENT_STYLE) ?
-        (std::max)(minimum_fraction_digits_default, 0.0) :
-        (std::max)(minimum_fraction_digits_default, 3.0);
-
-  const double maximum_fraction_digits =
+        (std::max)(minimum_fraction_digits_default, 0) :
+        (std::max)(minimum_fraction_digits_default, 3);
+  const int32_t maximum_fraction_digits =
       opt.GetNumber(ctx,
                     context::Intern(ctx, "maximumFractionDigits"),
                     minimum_fraction_digits,
                     20,
                     maximum_fraction_digits_default, IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::MAXIMUM_FRACTION_DIGITS,
-                maximum_fraction_digits);
+                JSVal::Int32(maximum_fraction_digits));
+  format->setMaximumFractionDigits(maximum_fraction_digits);
 
   if (options->HasProperty(ctx,
                            context::Intern(ctx, "minimumSignificantDigits")) ||
       options->HasProperty(ctx,
                            context::Intern(ctx, "maximumSignificantDigits"))) {
-    const double minimum_significant_digits =
+    const int32_t minimum_significant_digits =
         opt.GetNumber(ctx,
                       context::Intern(ctx, "minimumSignificantDigits"),
                       1,
                       21,
                       1, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::MINIMUM_SIGNIFICANT_DIGITS,
-                  minimum_significant_digits);
+                  JSVal::Int32(minimum_significant_digits));
+    format->setMinimumSignificantDigits(minimum_significant_digits);
 
-    const double maximum_significant_digits =
+    const int32_t maximum_significant_digits =
         opt.GetNumber(ctx,
                       context::Intern(ctx, "maximumSignificantDigits"),
                       minimum_significant_digits,
                       21,
                       21, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::MAXIMUM_SIGNIFICANT_DIGITS,
-                  maximum_significant_digits);
+                  JSVal::Int32(maximum_significant_digits));
+    format->setMaximumSignificantDigits(maximum_significant_digits);
   }
 
   {
@@ -765,6 +791,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
                              Options::BOOLEAN, NULL,
                              JSTrue, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::USE_GROUPING, ug);
+    format->setGroupingUsed(JSVal::StrictEqual(ug, JSTrue));
   }
   return obj;
 }

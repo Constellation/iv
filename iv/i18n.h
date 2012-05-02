@@ -24,6 +24,13 @@ inline uint16_t ToLocaleIdentifierUpperCase(uint16_t ch) {
   return ch;
 }
 
+inline uint16_t ToLocaleIdentifierLowerCase(uint16_t ch) {
+  if ('A' <= ch && ch <= 'Z') {
+    return ch + ('a' - 'A');
+  }
+  return ch;
+}
+
 // 6.2.2 IsWellFormedLanguageTag(locale)
 // BCP 47 language tag as specified in RFC 5646 section 2.1
 //
