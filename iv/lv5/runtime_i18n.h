@@ -406,7 +406,6 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
                              JSString::NewAsciiString(ctx, "sort"))) {
         s = o_variant;
       } else {
-        // TODO(Constellation) dataLocale
         s = o_base;
       }
     }
