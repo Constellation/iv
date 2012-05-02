@@ -178,6 +178,7 @@ class JSCollator : public JSObject {
   }
 
   static JSCollator* NewPlain(Context* ctx, Map* map) {
+    // TODO(Constellation): fix default plain internal options
     JSCollator* obj = new JSCollator(ctx, map);
     const icu::Locale locale = icu::Locale::getDefault();
     UErrorCode status = U_ZERO_ERROR;
@@ -283,6 +284,7 @@ class JSNumberFormat : public JSObject {
     POSITIVE_PATTERN,
     NEGATIVE_PATTERN,
     LOCALE,
+    NUMBERING_SYSTEM,
     NUM_OF_FIELDS
   };
 
@@ -325,6 +327,7 @@ class JSNumberFormat : public JSObject {
   }
 
   static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
+    // TODO(Constellation): fix default plain internal options
     JSNumberFormat* obj = new JSNumberFormat(ctx, map);
     const icu::Locale locale = icu::Locale::getDefault();
     UErrorCode status = U_ZERO_ERROR;

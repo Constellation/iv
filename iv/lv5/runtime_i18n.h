@@ -2,6 +2,7 @@
 #define IV_LV5_RUNTIME_I18N_H_
 #ifdef IV_ENABLE_I18N
 #include <unicode/decimfmt.h>
+#include <unicode/numsys.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -500,7 +501,7 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Collator.compare", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.compare", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::Collator>()) {
@@ -518,7 +519,7 @@ inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Collator.resolvedOptions", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::Collator>()) {
@@ -621,6 +622,17 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
                 JSString::NewAsciiString(ctx, result.locale()));
   // TODO(Constellation) not implement extension check
   icu::Locale locale(result.locale().c_str());
+  {
+    UErrorCode err = U_ZERO_ERROR;
+    core::unique_ptr<icu::NumberingSystem> numbering_system(
+        icu::NumberingSystem::createInstance(locale, err));
+    if (U_FAILURE(err)) {
+      e->Report(Error::Type, "numbering system initialization failed");
+      return JSEmpty;
+    }
+    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM,
+                  JSString::NewAsciiString(ctx, numbering_system->getName()));
+  }
 
   enum {
     DECIMAL_STYLE,
@@ -643,7 +655,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
     obj->SetField(JSNumberFormat::STYLE, t);
 
     UErrorCode status = U_ZERO_ERROR;
-    if (JSVal::StrictEqual(style, currency)) {
+    if (JSVal::StrictEqual(t, currency)) {
       style = CURRENCY_STYLE;
       {
         // currency option
@@ -703,7 +715,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
         format = static_cast<icu::DecimalFormat*>(
             icu::NumberFormat::createInstance(locale, number_style, status));
       }
-    } else if (JSVal::StrictEqual(style, decimal)) {
+    } else if (JSVal::StrictEqual(t, decimal)) {
       style = DECIMAL_STYLE;
       format = static_cast<icu::DecimalFormat*>(
           icu::NumberFormat::createInstance(locale, status));
@@ -793,6 +805,78 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
     obj->SetField(JSNumberFormat::USE_GROUPING, ug);
     format->setGroupingUsed(JSVal::StrictEqual(ug, JSTrue));
   }
+  return obj;
+}
+
+inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.prototype.format", args, e);
+  Context* ctx = args.ctx();
+  JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  if (!o->IsClass<Class::NumberFormat>()) {
+    e->Report(Error::Type,
+              "Intl.NumberFormat.prototype.format is not generic function");
+    return JSEmpty;
+  }
+  JSNumberFormat* format = static_cast<JSNumberFormat*>(o);
+  const double value = args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
+  UErrorCode err = U_ZERO_ERROR;
+  icu::UnicodeString result;
+  static_cast<icu::DecimalFormat*>(
+      format->number_format())->format(value, result);
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "Intl.NumberFormat parse failed");
+    return JSEmpty;
+  }
+  return JSString::New(
+      ctx, result.getBuffer(), result.getBuffer() + result.length());
+}
+
+inline JSVal NumberFormatResolvedOptionsGetter(
+    const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.resolvedOptions", args, e);
+  Context* ctx = args.ctx();
+  JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  if (!o->IsClass<Class::NumberFormat>()) {
+    e->Report(
+        Error::Type,
+        "Intl.NumberFormat.prototype.resolvedOptions is not generic getter");
+    return JSEmpty;
+  }
+  JSNumberFormat* format = static_cast<JSNumberFormat*>(o);
+  JSObject* obj = JSObject::New(ctx);
+  bind::Object(ctx, obj)
+      .def(context::Intern(ctx, "style"),
+           format->GetField(JSNumberFormat::STYLE),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "currency"),
+           format->GetField(JSNumberFormat::CURRENCY),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "currencyDisplay"),
+           format->GetField(JSNumberFormat::CURRENCY_DISPLAY),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "minimumIntegerDigits"),
+           format->GetField(JSNumberFormat::MINIMUM_INTEGER_DIGITS),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "minimumFractionDigits"),
+           format->GetField(JSNumberFormat::MINIMUM_FRACTION_DIGITS),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "maximumFractionDigits"),
+           format->GetField(JSNumberFormat::MAXIMUM_FRACTION_DIGITS),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "minimumSignificantDigits"),
+           format->GetField(JSNumberFormat::MINIMUM_SIGNIFICANT_DIGITS),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "maximumSignificantDigits"),
+           format->GetField(JSNumberFormat::MAXIMUM_SIGNIFICANT_DIGITS),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "useGrouping"),
+           format->GetField(JSNumberFormat::USE_GROUPING))
+      .def(context::Intern(ctx, "locale"),
+           format->GetField(JSNumberFormat::LOCALE),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "numberingSystem"),
+           format->GetField(JSNumberFormat::NUMBERING_SYSTEM),
+           ATTR::W | ATTR::E | ATTR::C);
   return obj;
 }
 

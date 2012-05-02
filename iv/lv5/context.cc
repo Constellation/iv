@@ -1310,7 +1310,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .prototype(obj_proto)
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
         .def_getter<&runtime::CollatorCompareGetter, 0>(symbol::compare())
-        .def_getter<&runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
+        .def_getter<
+          &runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
   }
 
   {
@@ -1341,7 +1342,10 @@ void Context::InitIntl(const ClassSlot& func_cls,
     bind::Object(this, proto)
         .cls(cls.cls)
         .prototype(obj_proto)
-        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+        .def<&runtime::NumberFormatFormat, 1>("format")
+        .def_getter<
+          &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
 }
 #endif  // IV_ENABLE_I18N
