@@ -12,30 +12,36 @@
 namespace iv {
 namespace lv5 {
 namespace runtime {
+namespace detail_i18n {
 
-inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
+JSLocaleList* CreateLocaleList(Context* ctx,
+                               JSVal target, Error* e);
+
+}  // namespace detail_i18n
+
+inline JSLocaleList* detail_i18n::CreateLocaleList(
+    Context* ctx, JSVal target, Error* e) {
   std::vector<std::string> list;
-  const JSVal target = args.At(0);
-  Context* ctx = args.ctx();
   if (target.IsUndefined()) {
     // TODO(Constellation) implement default locale system
     list.push_back("en-US");
   } else {
-    JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR(e));
-    const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
+    JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    const uint32_t len =
+        internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, NULL));
     for (uint32_t k = 0; k < len; ++k) {
       const Symbol name = symbol::MakeSymbolFromIndex(k);
       if (obj->HasProperty(ctx, name)) {
-        const JSVal value = obj->Get(ctx, name, IV_LV5_ERROR(e));
+        const JSVal value = obj->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
         if (!(value.IsString() || value.IsObject())) {
           e->Report(Error::Type, "locale should be string or object");
-          return JSEmpty;
+          return NULL;
         }
-        JSString* tag = value.ToString(ctx, IV_LV5_ERROR(e));
+        JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
         core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
         if (!scanner.IsWellFormed()) {
           e->Report(Error::Range, "locale pattern is not well formed");
-          return JSEmpty;
+          return NULL;
         }
         const std::string canonicalized = scanner.Canonicalize();
         if (std::find(list.begin(), list.end(), canonicalized) == list.end()) {
@@ -54,15 +60,19 @@ inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
         ctx,
         symbol::MakeSymbolFromIndex(index),
         DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
-        true, IV_LV5_ERROR(e));
+        true, IV_LV5_ERROR_WITH(e, NULL));
   }
   localelist->DefineOwnProperty(
       ctx,
       symbol::length(),
       DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
-      true, IV_LV5_ERROR(e));
+      true, IV_LV5_ERROR_WITH(e, NULL));
   localelist->MakeInitializedLocaleList();
   return localelist;
+}
+
+inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
+  return detail_i18n::CreateLocaleList(args.ctx(), args.At(0), e);
 }
 
 class Options {
@@ -465,11 +475,11 @@ inline JSVal SupportedLocales(Context* ctx,
                               AvailIter last,
                               JSVal requested, JSVal options, Error* e) {
   JSLocaleList* list = NULL;
-  if (requested.IsObject() &&
-      requested.object()->IsClass<Class::LocaleList>()) {
+  JSObject* req = requested.ToObject(ctx, IV_LV5_ERROR(e));
+  if (!req->IsClass<Class::LocaleList>()) {
     list = static_cast<JSLocaleList*>(requested.object());
   } else {
-    list = JSLocaleList::New(ctx);
+    list = detail_i18n::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
   }
   bool best_fit = true;
   if (!options.IsUndefined()) {
@@ -510,7 +520,8 @@ class NumberOptions : public Options {
                    Symbol property,
                    double minimum,
                    double maximum, double fallback, Error* e) {
-    const JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0.0));
+    const JSVal value =
+        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0.0));
     if (!value.IsNullOrUndefined()) {
       const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0.0));
       if (core::math::IsNaN(res) || res < minimum || res > maximum) {
