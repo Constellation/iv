@@ -182,7 +182,6 @@ inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
       args.At(0), args.At(1), e);
 }
 
-#undef IV_LV5_I18N_INTL_CHECK
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_ENABLE_I18N_H_
 #endif  // IV_LV5_RUNTIME_I18N_H_
