@@ -153,10 +153,10 @@ inline double Atanh(double x) {
 
 inline double Round(double value) {
   const double res = std::ceil(value);
-  if (res - value > 0.5) {
-    return res - 1;
+  if (value > 0) {
+    return (res - value > 0.5) ? res - 1 : res;
   } else {
-    return res;
+    return (res - value >= 0.5) ? res - 1 : res;
   }
 }
 
