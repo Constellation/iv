@@ -160,6 +160,12 @@ inline double Round(double value) {
   }
 }
 
+// This behavior is based on ECMA262
+inline double JSRound(double value) {
+  const double res = std::ceil(value);
+  return (res - value > 0.5) ? res - 1 : res;
+}
+
 inline double Trunc(double value) {
   return (value > 0) ? std::floor(value) : std::ceil(value);
 }

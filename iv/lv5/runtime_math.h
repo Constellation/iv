@@ -175,7 +175,7 @@ inline JSVal MathRound(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.round", args, e);
   if (!args.empty()) {
     const double x = args.front().ToNumber(args.ctx(), e);
-    return core::math::Round(x);
+    return core::math::JSRound(x);
   }
   return JSNaN;
 }
