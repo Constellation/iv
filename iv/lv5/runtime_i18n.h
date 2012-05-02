@@ -17,6 +17,147 @@ namespace detail_i18n {
 JSLocaleList* CreateLocaleList(Context* ctx,
                                JSVal target, Error* e);
 
+template<typename AvailIter>
+inline JSVal LookupSupportedLocales(
+    Context* ctx, AvailIter it, AvailIter last,
+    JSLocaleList* list, Error* e) {
+  std::vector<std::string> subset;
+  {
+    const uint32_t len = internal::GetLength(ctx, list, IV_LV5_ERROR(e));
+    for (uint32_t k = 0; k < len; ++k) {
+      const JSVal res =
+          list->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
+      JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
+      const std::string locale(
+          core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
+                                                          str->end()));
+      const AvailIter t = core::i18n::IndexOfMatch(it, last, locale);
+      if (t != last) {
+        subset.push_back(locale);
+      }
+    }
+  }
+
+  JSLocaleList* localelist = JSLocaleList::New(ctx);
+
+  uint32_t index = 0;
+  for (std::vector<std::string>::const_iterator it = subset.begin(),
+       last = subset.end(); it != last; ++it, ++index) {
+    localelist->DefineOwnProperty(
+        ctx,
+        symbol::MakeSymbolFromIndex(index),
+        DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
+        true, IV_LV5_ERROR(e));
+  }
+  localelist->DefineOwnProperty(
+      ctx,
+      symbol::length(),
+      DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
+      true, IV_LV5_ERROR(e));
+  localelist->MakeInitializedLocaleList();
+  return localelist;
+}
+
+template<typename AvailIter>
+inline JSVal BestFitSupportedLocales(
+    Context* ctx, AvailIter it, AvailIter last,
+    JSLocaleList* list, Error* e) {
+  return LookupSupportedLocales(ctx, it, last, list, e);
+}
+
+template<typename AvailIter>
+inline JSVal SupportedLocales(Context* ctx,
+                              AvailIter it,
+                              AvailIter last,
+                              JSVal requested, JSVal options, Error* e) {
+  JSLocaleList* list = NULL;
+  JSObject* req = requested.ToObject(ctx, IV_LV5_ERROR(e));
+  if (!req->IsClass<Class::LocaleList>()) {
+    list = static_cast<JSLocaleList*>(requested.object());
+  } else {
+    list = detail_i18n::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
+  }
+  bool best_fit = true;
+  if (!options.IsUndefined()) {
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
+    const JSVal matcher =
+        opt->Get(ctx, context::Intern(ctx, "localeMatcher"), IV_LV5_ERROR(e));
+    if (!matcher.IsUndefined()) {
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
+      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
+        best_fit = false;
+      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
+        e->Report(Error::Range,
+                  "localeMatcher should be 'lookup' or 'best fit'");
+        return JSEmpty;
+      }
+    }
+  }
+  if (best_fit) {
+    return BestFitSupportedLocales(ctx, it, last, list, e);
+  } else {
+    return LookupSupportedLocales(ctx, it, last, list, e);
+  }
+}
+
+template<typename AvailIter>
+inline core::i18n::LookupResult ResolveLocale(Context* ctx,
+                                              AvailIter it,
+                                              AvailIter last,
+                                              JSVal requested,
+                                              JSVal options, Error* e) {
+  JSLocaleList* list = NULL;
+  JSObject* req =
+      requested.ToObject(ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+  if (!req->IsClass<Class::LocaleList>()) {
+    list = static_cast<JSLocaleList*>(requested.object());
+  } else {
+    list = detail_i18n::CreateLocaleList(
+        ctx, req, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+  }
+
+  bool best_fit = true;
+  if (!options.IsUndefined()) {
+    JSObject* opt = options.ToObject(
+        ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    const JSVal matcher =
+        opt->Get(ctx, context::Intern(ctx, "localeMatcher"),
+                 IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    if (!matcher.IsUndefined()) {
+      JSString* str = matcher.ToString(
+          ctx,
+          IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
+        best_fit = false;
+      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
+        e->Report(Error::Range,
+                  "localeMatcher should be 'lookup' or 'best fit'");
+        return core::i18n::LookupResult();
+      }
+    }
+  }
+
+  std::vector<std::string> locales;
+  {
+    const uint32_t len = internal::GetLength(
+        ctx, list,
+        IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    for (uint32_t k = 0; k < len; ++k) {
+      const JSVal res =
+          list->Get(ctx, symbol::MakeSymbolFromIndex(k),
+                    IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+      JSString* str = res.ToString(
+          ctx,
+          IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+      locales.push_back(str->GetUTF8());
+    }
+  }
+
+  return (best_fit) ?
+      core::i18n::BestFitMatch(it, last, locales.begin(), locales.end()) :
+      core::i18n::LookupMatch(it, last, locales.begin(), locales.end());
+}
+
 }  // namespace detail_i18n
 
 inline JSLocaleList* detail_i18n::CreateLocaleList(
@@ -167,11 +308,10 @@ inline void SetICUCollatorBooleanOption(JSCollator* obj,
 }
 
 inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
-  const JSVal arg1 = args.At(0);
+  const JSVal requested = args.At(0);
   const JSVal arg2 = args.At(1);
   Context* ctx = args.ctx();
   JSCollator* obj = JSCollator::New(ctx);
-  core::ignore_unused_variable_warning(arg1);
 
   JSObject* options = NULL;
   if (arg2.IsUndefined()) {
@@ -196,19 +336,18 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
     obj->SetField(JSCollator::USAGE, u);
   }
 
-  {
-    JSVector* vec = JSVector::New(ctx);
-    JSString* lookup = JSString::NewAsciiString(ctx, "lookup");
-    JSString* best_fit = JSString::NewAsciiString(ctx, "best fit");
-    vec->push_back(lookup);
-    vec->push_back(best_fit);
-    const JSVal matcher = opt.Get(ctx,
-                                  context::Intern(ctx, "localeMatcher"),
-                                  Options::STRING, vec->ToJSArray(),
-                                  best_fit, IV_LV5_ERROR(e));
-    assert(matcher.IsString());
-    obj->SetField(JSCollator::LOCALE_MATCHER, matcher);
-  }
+  const core::i18n::LookupResult result =
+      detail_i18n::ResolveLocale(
+          ctx,
+          ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
+          ICUStringIteration(),
+          requested,
+          options,
+          IV_LV5_ERROR(e));
+  obj->SetField(JSCollator::LOCALE,
+                JSString::NewAsciiString(ctx, result.locale()));
+  // TODO(Constellation) not implement extension check
+  icu::Locale locale(result.locale().c_str());
 
   {
     for (CollatorOptionTable::const_iterator it = kCollatorOptionTable.begin(),
@@ -239,8 +378,6 @@ inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
       obj->SetField(it->field, value);
     }
   }
-
-  icu::Locale locale("en_US");  // TODO(Constellation) implement it
 
   UErrorCode status = U_ZERO_ERROR;
   icu::Collator* collator = icu::Collator::createInstance(locale, status);
@@ -419,94 +556,15 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
            collator->GetField(JSCollator::CASE_FIRST),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "ignorePunctuation"),
-           collator->GetField(JSCollator::IGNORE_PUNCTUATION),
+           collator->GetField(JSCollator::IGNORE_PUNCTUATION))
+      .def(context::Intern(ctx, "locale"),
+           collator->GetField(JSCollator::LOCALE),
            ATTR::W | ATTR::E | ATTR::C);
   return obj;
 }
 
-template<typename AvailIter>
-inline JSVal LookupSupportedLocales(
-    Context* ctx, AvailIter it, AvailIter last,
-    JSLocaleList* list, Error* e) {
-  const uint32_t len = internal::GetLength(ctx, list, IV_LV5_ERROR(e));
-  std::vector<std::string> subset;
-  for (uint32_t k = 0; k < len; ++k) {
-    const JSVal res =
-        list->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-    JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
-    const std::string locale(
-        core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
-                                                        str->end()));
-    const AvailIter t = core::i18n::IndexOfMatch(it, last, locale);
-    if (t != last) {
-      subset.push_back(locale);
-    }
-  }
-
-  JSLocaleList* localelist = JSLocaleList::New(ctx);
-
-  uint32_t index = 0;
-  for (std::vector<std::string>::const_iterator it = subset.begin(),
-       last = subset.end(); it != last; ++it, ++index) {
-    localelist->DefineOwnProperty(
-        ctx,
-        symbol::MakeSymbolFromIndex(index),
-        DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
-        true, IV_LV5_ERROR(e));
-  }
-  localelist->DefineOwnProperty(
-      ctx,
-      symbol::length(),
-      DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
-      true, IV_LV5_ERROR(e));
-  localelist->MakeInitializedLocaleList();
-  return localelist;
-}
-
-template<typename AvailIter>
-inline JSVal BestFitSupportedLocales(
-    Context* ctx, AvailIter it, AvailIter last,
-    JSLocaleList* list, Error* e) {
-  return LookupSupportedLocales(ctx, it, last, list, e);
-}
-
-template<typename AvailIter>
-inline JSVal SupportedLocales(Context* ctx,
-                              AvailIter it,
-                              AvailIter last,
-                              JSVal requested, JSVal options, Error* e) {
-  JSLocaleList* list = NULL;
-  JSObject* req = requested.ToObject(ctx, IV_LV5_ERROR(e));
-  if (!req->IsClass<Class::LocaleList>()) {
-    list = static_cast<JSLocaleList*>(requested.object());
-  } else {
-    list = detail_i18n::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
-  }
-  bool best_fit = true;
-  if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
-    const JSVal matcher =
-        opt->Get(ctx, context::Intern(ctx, "localeMatcher"), IV_LV5_ERROR(e));
-    if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
-      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
-        best_fit = false;
-      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
-        e->Report(Error::Range,
-                  "localeMatcher should be 'lookup' or 'best fit'");
-        return JSEmpty;
-      }
-    }
-  }
-  if (best_fit) {
-    return BestFitSupportedLocales(ctx, it, last, list, e);
-  } else {
-    return LookupSupportedLocales(ctx, it, last, list, e);
-  }
-}
-
 inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
-  return SupportedLocales(
+  return detail_i18n::SupportedLocales(
       args.ctx(),
       ICUStringIteration(icu::Collator::getAvailableLocales()),
       ICUStringIteration(),
@@ -536,11 +594,10 @@ class NumberOptions : public Options {
 };
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
-  const JSVal arg1 = args.At(0);
+  const JSVal requested = args.At(0);
   const JSVal arg2 = args.At(1);
   Context* ctx = args.ctx();
   JSNumberFormat* obj = JSNumberFormat::New(ctx);
-  core::ignore_unused_variable_warning(arg1);
 
   JSObject* options = NULL;
   if (arg2.IsUndefined()) {
@@ -551,22 +608,18 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
 
   NumberOptions opt(options);
 
-  {
-    JSVector* vec = JSVector::New(ctx);
-    JSString* lookup = JSString::NewAsciiString(ctx, "lookup");
-    JSString* best_fit = JSString::NewAsciiString(ctx, "best fit");
-    vec->push_back(lookup);
-    vec->push_back(best_fit);
-    const JSVal matcher = opt.Get(ctx,
-                                  context::Intern(ctx, "localeMatcher"),
-                                  Options::STRING, vec->ToJSArray(),
-                                  best_fit, IV_LV5_ERROR(e));
-    assert(matcher.IsString());
-    // TODO(Constellation) fix ResolveLocale
-    core::ignore_unused_variable_warning(matcher);
-  }
-
-  icu::Locale locale("en_US");  // TODO(Constellation) implement it
+  const core::i18n::LookupResult result =
+      detail_i18n::ResolveLocale(
+          ctx,
+          ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
+          ICUStringIteration(),
+          requested,
+          options,
+          IV_LV5_ERROR(e));
+  obj->SetField(JSNumberFormat::LOCALE,
+                JSString::NewAsciiString(ctx, result.locale()));
+  // TODO(Constellation) not implement extension check
+  icu::Locale locale(result.locale().c_str());
 
   UErrorCode status = U_ZERO_ERROR;
   icu::NumberFormat* format = icu::NumberFormat::createInstance(locale, status);
@@ -718,7 +771,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
-  return SupportedLocales(
+  return detail_i18n::SupportedLocales(
       args.ctx(),
       ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
       ICUStringIteration(),

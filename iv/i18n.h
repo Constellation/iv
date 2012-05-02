@@ -72,18 +72,18 @@ inline AvailIter IndexOfMatch(AvailIter ait,
 // 10.2.2 LookupMatch(availableLocales, requestedLocales)
 class LookupResult {
  public:
-  LookupResult(const std::string& l,
-               Locale loc, std::size_t p)
-    : locale(l), parsed(loc), position(p) { }
-  LookupResult(const std::string& l)
-    : locale(l), parsed(), position(kNotFound) { }
+  typedef Locale::Map Extensions;
+  LookupResult() : locale_(), extensions_() { }
+  explicit LookupResult(const std::string& l)
+    : locale_(l), extensions_() { }
+  LookupResult(const std::string& l, Locale loc)
+    : locale_(l), extensions_(loc.extensions()) { }
 
-  bool empty() { return position == kNotFound; }
-
+  const std::string& locale() const { return locale_; }
+  const Extensions& extensions() const { return extensions_; }
  private:
-  std::string locale;
-  Locale parsed;
-  std::size_t position;
+  std::string locale_;
+  Extensions extensions_;
 };
 
 template<typename AvailIter, typename ReqIter>
@@ -101,11 +101,19 @@ inline LookupResult LookupMatch(AvailIter ait, AvailIter alast,
     pos = IndexOfMatch(ait, alast, no_extensions_locale);
   }
   if (pos != alast) {
-    return LookupResult(*pos, locale, std::distance(ait, pos));
+    return LookupResult(*pos, locale);
   }
   // TODO(Constellation) fix default locale
   return LookupResult("en-US");
 }
+
+template<typename AvailIter, typename ReqIter>
+inline LookupResult BestFitMatch(AvailIter ait, AvailIter alast,
+                                 ReqIter rit, ReqIter rlast) {
+  // TODO(Constellation) implement BestFitMatch
+  return LookupMatch(ait, alast, rit, rlast);
+}
+
 
 // Currency
 // based on

@@ -53,6 +53,12 @@ class ICUStringIteration
     return current_;
   }
 
+  this_type& operator=(const this_type& rhs) {
+    this_type tmp(rhs);
+    tmp.swap(*this);
+    return *this;
+  }
+
   bool operator==(const this_type& rhs) const {
     if (enumeration_) {
       if (!rhs.enumeration_) {
@@ -66,6 +72,17 @@ class ICUStringIteration
 
   bool operator!=(const this_type& rhs) const {
       return !(operator==(rhs));
+  }
+
+  friend void swap(this_type& lhs, this_type& rhs) {
+    using std::swap;
+    swap(lhs.enumeration_, rhs.enumeration_);
+    swap(lhs.current_, rhs.current_);
+  }
+
+  void swap(this_type& rhs) {
+    using std::swap;
+    swap(*this, rhs);
   }
 
  private:
@@ -127,7 +144,6 @@ class JSCollator : public JSObject {
 
   enum CollatorField {
     USAGE = 0,
-    LOCALE_MATCHER,
     BACKWARDS,
     CASE_LEVEL,
     NUMERIC,
@@ -137,6 +153,7 @@ class JSCollator : public JSObject {
     SENSITIVITY,
     IGNORE_PUNCTUATION,
     BOUND_COMPARE,
+    LOCALE,
     NUM_OF_FIELDS
   };
 
@@ -267,6 +284,7 @@ class JSNumberFormat : public JSObject {
     USE_GROUPING,
     POSITIVE_PATTERN,
     NEGATIVE_PATTERN,
+    LOCALE,
     NUM_OF_FIELDS
   };
 
