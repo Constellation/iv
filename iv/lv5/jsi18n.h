@@ -500,13 +500,17 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
                                               JSVal requested,
                                               JSVal options, Error* e) {
   JSLocaleList* list = NULL;
-  JSObject* req =
-      requested.ToObject(ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-  if (!req->IsClass<Class::LocaleList>()) {
-    list = static_cast<JSLocaleList*>(requested.object());
+  if (requested.IsUndefined()) {
+    list = JSLocaleList::New(ctx);
   } else {
-    list = detail_i18n::CreateLocaleList(
-        ctx, req, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    JSObject* req =
+        requested.ToObject(ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    if (!req->IsClass<Class::LocaleList>()) {
+      list = static_cast<JSLocaleList*>(requested.object());
+    } else {
+      list = detail_i18n::CreateLocaleList(
+          ctx, req, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    }
   }
 
   bool best_fit = true;
