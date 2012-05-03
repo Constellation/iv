@@ -832,7 +832,8 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     } };
     for (DatePropertiesOnlyNumeric::const_iterator
          it = kDatePropertiesOnlyNumeric.begin(),
-         last = kDatePropertiesOnlyNumeric.end(); it != last; ++it) {
+         last = kDatePropertiesOnlyNumeric.end();
+         it != last; ++it) {
       const Symbol name = context::Intern(ctx, *it);
       options->DefineOwnProperty(
           ctx,
