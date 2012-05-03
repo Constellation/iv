@@ -1347,6 +1347,40 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<
           &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
+
+  {
+    // DateTimeFormat
+    JSObject* const proto =
+        JSDateTimeFormat::NewPlain(this, Map::NewUniqueMap(this));
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::DateTimeFormatConstructor, 2>::NewPlain(
+            this,
+            context::Intern(this, "DateTimeFormat"));
+
+    struct ClassSlot cls = {
+      JSDateTimeFormat::GetClass(),
+      context::Intern(this, "DateTimeFormat"),
+      JSString::NewAsciiString(this, "DateTimeFormat"),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::DateTimeFormat>(cls);
+    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
+
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE)
+        .def<&runtime::CollatorSupportedLocalesOf, 1>("supportedLocalesOf");
+
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+        .def<&runtime::DateTimeFormatFormat, 1>("format")
+        .def_getter<
+          &runtime::DateTimeFormatResolvedOptionsGetter, 0>("resolvedOptions");
+  }
 }
 #endif  // IV_ENABLE_I18N
 

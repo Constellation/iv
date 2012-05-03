@@ -6,7 +6,10 @@
 #include <iterator>
 #include <unicode/coll.h>
 #include <unicode/decimfmt.h>
+#include <unicode/datefmt.h>
 #include <unicode/numsys.h>
+#include <unicode/dtptngen.h>
+#include <unicode/smpdtfmt.h>
 #include <iv/i18n.h>
 #include <iv/detail/unique_ptr.h>
 #include <iv/lv5/gc_template.h>
@@ -354,6 +357,82 @@ class JSNumberFormat : public JSObject {
 class JSDateTimeFormat : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(DateTimeFormat)
+
+  enum DateTimeFormatField {
+    CALENDAR = 0,
+    TIME_ZONE,
+    HOUR12,
+    PATTERN,
+    LOCALE,
+    NUMBERING_SYSTEM,
+    WEEKDAY,
+    ERA,
+    YEAR,
+    MONTH,
+    DAY,
+    HOUR,
+    MINUTE,
+    SECOND,
+    TIME_ZONE_NAME,
+    FORMAT_MATCH,
+    NUM_OF_FIELDS
+  };
+
+  explicit JSDateTimeFormat(Context* ctx)
+    : JSObject(Map::NewUniqueMap(ctx)),
+      date_time_format_(new JSIntl::GCHandle<icu::DateFormat>()),
+      fields_() {
+  }
+
+  JSDateTimeFormat(Context* ctx, Map* map)
+    : JSObject(map),
+      date_time_format_(new JSIntl::GCHandle<icu::DateFormat>()),
+      fields_() {
+  }
+
+  JSVal GetField(std::size_t n) {
+    assert(n < fields_.size());
+    return fields_[n];
+  }
+
+  void SetField(std::size_t n, JSVal v) {
+    assert(n < fields_.size());
+    fields_[n] = v;
+  }
+
+  void set_date_time_format(icu::DateFormat* format) {
+    date_time_format_->handle.reset(format);
+  }
+
+  icu::DateFormat* date_time_format() const {
+    return date_time_format_->handle.get();
+  }
+
+  static JSDateTimeFormat* New(Context* ctx) {
+    JSDateTimeFormat* const collator = new JSDateTimeFormat(ctx);
+    collator->set_cls(JSDateTimeFormat::GetClass());
+    collator->set_prototype(
+        context::GetClassSlot(ctx, Class::DateTimeFormat).prototype);
+    return collator;
+  }
+
+  static JSDateTimeFormat* NewPlain(Context* ctx, Map* map) {
+    JSDateTimeFormat* obj = new JSDateTimeFormat(ctx, map);
+    Error e;
+    JSDateTimeFormat::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
+    return obj;
+  }
+
+  static JSVal Initialize(Context* ctx,
+                          JSDateTimeFormat* obj,
+                          JSVal requested_locales,
+                          JSVal op,
+                          Error* e);
+
+
+ private:
+  JSIntl::GCHandle<icu::DateFormat>* date_time_format_;
+  std::array<JSVal, NUM_OF_FIELDS> fields_;
 };
 
 namespace detail_i18n {
@@ -504,7 +583,8 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
     list = JSLocaleList::New(ctx);
   } else {
     JSObject* req =
-        requested.ToObject(ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+        requested.ToObject(ctx,
+                           IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
     if (!req->IsClass<Class::LocaleList>()) {
       list = static_cast<JSLocaleList*>(requested.object());
     } else {
@@ -563,11 +643,22 @@ class Options {
     NUMBER
   };
 
+  struct Equaler {
+   public:
+    explicit Equaler(JSVal value) : target_(value) { }
+
+    bool operator()(JSVal t) const {
+      return JSVal::StrictEqual(t, target_);
+    }
+   private:
+    const JSVal target_;
+  };
+
   explicit Options(JSObject* options) : options_(options) { }
 
   JSVal Get(Context* ctx,
             Symbol property, Type type,
-            JSArray* values, JSVal fallback, Error* e) {
+            JSVector* values, JSVal fallback, Error* e) {
     JSVal value = options()->Get(ctx, property, IV_LV5_ERROR(e));
     if (!value.IsNullOrUndefined()) {
       switch (type) {
@@ -582,18 +673,8 @@ class Options {
           break;
       }
       if (values) {
-        const JSVal method =
-            values->Get(ctx, context::Intern(ctx, "indexOf"), IV_LV5_ERROR(e));
-        if (method.IsCallable()) {
-          ScopedArguments args(ctx, 1, IV_LV5_ERROR(e));
-          args[0] = value;
-          const JSVal val =
-            method.object()->AsCallable()->Call(&args, values, IV_LV5_ERROR(e));
-          if (JSVal::StrictEqual(val, JSVal::Int32(-1))) {
-            e->Report(Error::Range, "option out of range");
-            return JSEmpty;
-          }
-        } else {
+        if (std::find_if(values->begin(),
+                         values->end(), Equaler(value)) == values->end()) {
           e->Report(Error::Range, "option out of range");
           return JSEmpty;
         }
@@ -659,7 +740,7 @@ class NumberOptions : public lv5::detail_i18n::Options {
     if (!value.IsNullOrUndefined()) {
       const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
       if (core::math::IsNaN(res) || res < minimum || res > maximum) {
-        e->Report(Error::Range, "option out of range");
+        e->Report(Error::Range, "number option out of range");
         return 0;
       }
       return static_cast<int32_t>(std::floor(res));
@@ -667,6 +748,213 @@ class NumberOptions : public lv5::detail_i18n::Options {
     return fallback;
   }
 };
+
+inline JSObject* ToDateTimeOptions(Context* ctx,
+                                   JSVal op, bool date, bool time, Error* e) {
+  JSObject* options = NULL;
+  if (op.IsUndefined()) {
+    options = JSObject::New(ctx);
+  } else {
+    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+  }
+
+  // create Object that have options as [[Prototype]]
+  {
+    JSObject* tmp = JSObject::New(ctx);
+    tmp->set_prototype(options);
+    options = tmp;
+  }
+
+  bool need_default = true;
+
+  typedef std::array<const char*, 4> DateProperties;
+  static const DateProperties kDateProperties = { {
+    "weekday", "year", "month", "day"
+  } };
+  if (date) {
+    for (DateProperties::const_iterator it = kDateProperties.begin(),
+         last = kDateProperties.end(); it != last; ++it) {
+      const Symbol name = context::Intern(ctx, *it);
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      if (!res.IsUndefined()) {
+        need_default = false;
+      }
+    }
+  }
+
+  typedef std::array<const char*, 3> TimeProperties;
+  static const TimeProperties kTimeProperties = { {
+    "hour", "minute", "second"
+  } };
+  if (time) {
+    for (TimeProperties::const_iterator it = kTimeProperties.begin(),
+         last = kTimeProperties.end(); it != last; ++it) {
+      const Symbol name = context::Intern(ctx, *it);
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      if (!res.IsUndefined()) {
+        need_default = false;
+      }
+    }
+  }
+
+  if (need_default && date) {
+    typedef std::array<const char*, 3> DatePropertiesOnlyNumeric;
+    static const DateProperties kDatePropertiesOnlyNumeric = { {
+      "year", "month", "day"
+    } };
+    for (DatePropertiesOnlyNumeric::const_iterator
+         it = kDatePropertiesOnlyNumeric.begin(),
+         last = kDatePropertiesOnlyNumeric.end(); it != last; ++it) {
+      const Symbol name = context::Intern(ctx, *it);
+      options->DefineOwnProperty(
+          ctx,
+          name,
+          DataDescriptor(
+              JSString::NewAsciiString(ctx, "numeric"),
+              ATTR::W | ATTR::E | ATTR::C),
+          true, IV_LV5_ERROR_WITH(e, NULL));
+    }
+  }
+
+  if (need_default && date) {
+    for (TimeProperties::const_iterator it = kTimeProperties.begin(),
+         last = kTimeProperties.end(); it != last; ++it) {
+      const Symbol name = context::Intern(ctx, *it);
+      options->DefineOwnProperty(
+          ctx,
+          name,
+          DataDescriptor(
+              JSString::NewAsciiString(ctx, "numeric"),
+              ATTR::W | ATTR::E | ATTR::C),
+          true, IV_LV5_ERROR_WITH(e, NULL));
+    }
+  }
+
+  return options;
+}
+
+struct DateTimeOption {
+  typedef std::array<const char*, 5> Values;
+  const char* key;
+  JSDateTimeFormat::DateTimeFormatField field;
+  Values values;
+};
+typedef std::array<DateTimeOption, 9> DateTimeOptions;
+static const DateTimeOptions kDateTimeOptions = { {
+  { "weekday",      JSDateTimeFormat::WEEKDAY,
+    { { "narrow", "short", "long", NULL } } },
+  { "era",          JSDateTimeFormat::ERA,
+    { { "narrow", "short", "long", NULL } } },
+  { "year",         JSDateTimeFormat::YEAR,
+    { { "2-digit", "numeric", NULL } } },
+  { "month",        JSDateTimeFormat::MONTH,
+    { { "2-digit", "numeric", "narrow", "short", "long" } } },
+  { "day",          JSDateTimeFormat::DAY,
+    { { "2-digit", "numeric", NULL } } },
+  { "hour",         JSDateTimeFormat::HOUR,
+    { { "2-digit", "numeric", NULL } } },
+  { "minute",       JSDateTimeFormat::MINUTE,
+    { { "2-digit", "numeric", NULL } } },
+  { "second",       JSDateTimeFormat::SECOND,
+    { { "2-digit", "numeric", NULL } } },
+  { "timeZoneName", JSDateTimeFormat::TIME_ZONE_NAME, { { "short", "long" } } }
+} };
+
+inline JSObject* BasicFormatMatch(Context* ctx,
+                                  JSObject* options,
+                                  JSObject* formats, Error* e) {
+  const int32_t removal_penalty = 120;
+  const int32_t addition_penalty = 20;
+  const int32_t long_less_penalty = 8;
+  const int32_t long_more_penalty = 6;
+  const int32_t short_less_penalty = 6;
+  const int32_t short_more_penalty = 3;
+
+  int32_t best_score = INT32_MIN;
+  JSObject* best_format = NULL;
+  const uint32_t len =
+      internal::GetLength(ctx, formats, IV_LV5_ERROR_WITH(e, NULL));
+  for (uint32_t i = 0; i < len; ++i) {
+    const JSVal v =
+        formats->Get(ctx, symbol::MakeSymbolFromIndex(i),
+                     IV_LV5_ERROR_WITH(e, NULL));
+    assert(v.IsObject());
+    JSObject* format = v.object();
+    int32_t score = 0;
+    for (DateTimeOptions::const_iterator it = kDateTimeOptions.begin(),
+         last = kDateTimeOptions.end(); it != last; ++it) {
+      const Symbol name = context::Intern(ctx, it->key);
+      const JSVal options_prop =
+          options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      const PropertyDescriptor format_prop_desc =
+          formats->GetOwnProperty(ctx, name);
+      JSVal format_prop = JSUndefined;
+      if (!format_prop_desc.IsEmpty()) {
+        format_prop = formats->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      }
+      if (options_prop.IsUndefined() && !format_prop.IsUndefined()) {
+        score -= addition_penalty;
+      } else if (!options_prop.IsUndefined() && format_prop.IsUndefined()) {
+        score -= removal_penalty;
+      } else {
+        typedef std::array<const char*, 5> ValueTypes;
+        static const ValueTypes kValueTypes = { {
+          "2-digit", "numeric", "narrow", "short", "long"
+        } };
+        int32_t options_prop_index = -1;
+        if (options_prop.IsString()) {
+          const std::string str = options_prop.string()->GetUTF8();
+          const ValueTypes::const_iterator it =
+              std::find(kValueTypes.begin(), kValueTypes.end(), str);
+          if (it != kValueTypes.end()) {
+            options_prop_index = std::distance(kValueTypes.begin(), it);
+          }
+        }
+        int32_t format_prop_index = -1;
+        if (format_prop.IsString()) {
+          const std::string str = format_prop.string()->GetUTF8();
+          const ValueTypes::const_iterator it =
+              std::find(kValueTypes.begin(), kValueTypes.end(), str);
+          if (it != kValueTypes.end()) {
+            format_prop_index = std::distance(kValueTypes.begin(), it);
+          }
+        }
+        const int32_t delta =
+            (std::max)(
+                (std::min)(format_prop_index - options_prop_index, 2), -2);
+        switch (delta) {
+          case 2: {
+            score -= long_more_penalty;
+            break;
+          }
+          case 1: {
+            score -= short_more_penalty;
+            break;
+          }
+          case -1: {
+            score -= short_less_penalty;
+            break;
+          }
+          case -2: {
+            score -= long_less_penalty;
+            break;
+          }
+        }
+      }
+    }
+    if (score > best_score) {
+      best_score = score;
+      best_format = format;
+    }
+  }
+  return best_format;
+}
+
+inline JSObject* BestFitFormatMatch(Context* ctx,
+                                    JSObject* options,
+                                    JSObject* formats, Error* e) {
+  return BasicFormatMatch(ctx, options, formats, e);
+}
 
 }  // namespace detail_i18n
 
@@ -694,7 +982,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
     vec->push_back(search);
     const JSVal u = opt.Get(ctx,
                             context::Intern(ctx, "usage"),
-                            detail_i18n::Options::STRING, vec->ToJSArray(),
+                            detail_i18n::Options::STRING, vec,
                             sort, IV_LV5_ERROR(e));
     assert(u.IsString());
     obj->SetField(JSCollator::USAGE, u);
@@ -718,17 +1006,16 @@ inline JSVal JSCollator::Initialize(Context* ctx,
          it = detail_i18n::kCollatorOptionTable.begin(),
          last = detail_i18n::kCollatorOptionTable.end();
          it != last; ++it) {
-      JSArray* ary = NULL;
+      JSVector* vec = NULL;
       if (it->values[0] != NULL) {
-        JSVector* vec = JSVector::New(ctx);
+        vec = JSVector::New(ctx);
         for (const char* const * ptr = it->values.data(); *ptr; ++ptr) {
           vec->push_back(JSString::NewAsciiString(ctx, *ptr));
         }
-        ary = vec->ToJSArray();
       }
       JSVal value = opt.Get(ctx,
                             context::Intern(ctx, it->property),
-                            it->type, ary,
+                            it->type, vec,
                             JSUndefined, IV_LV5_ERROR(e));
       if (it->type == detail_i18n::Options::BOOLEAN) {
         if (!value.IsUndefined()) {
@@ -765,7 +1052,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
     vec->push_back(o_variant);
     JSVal s = opt.Get(ctx,
                       context::Intern(ctx, "sensitivity"),
-                      detail_i18n::Options::STRING, vec->ToJSArray(),
+                      detail_i18n::Options::STRING, vec,
                       JSUndefined, IV_LV5_ERROR(e));
     if (s.IsUndefined()) {
       if (JSVal::StrictEqual(obj->GetField(JSCollator::USAGE),
@@ -917,7 +1204,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
     vec->push_back(currency);
     const JSVal t = opt.Get(ctx,
                             context::Intern(ctx, "style"),
-                            detail_i18n::Options::STRING, vec->ToJSArray(),
+                            detail_i18n::Options::STRING, vec,
                             decimal, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::STYLE, t);
 
@@ -962,7 +1249,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
         vec->push_back(name);
         const JSVal cd = opt.Get(ctx,
                                  context::Intern(ctx, "currencyDisplay"),
-                                 detail_i18n::Options::STRING, vec->ToJSArray(),
+                                 detail_i18n::Options::STRING, vec,
                                  symbol, IV_LV5_ERROR(e));
         obj->SetField(JSNumberFormat::CURRENCY_DISPLAY, cd);
 #if IV_ICU_VERSION < 40700
@@ -1075,6 +1362,287 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   return obj;
 }
 
+inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
+                                          JSDateTimeFormat* obj,
+                                          JSVal requested_locales,
+                                          JSVal op,
+                                          Error* e) {
+  JSObject* options =
+      detail_i18n::ToDateTimeOptions(ctx, op, true, false, IV_LV5_ERROR(e));
+
+  detail_i18n::Options opt(options);
+
+  int32_t num = 0;
+  const icu::Locale* avail = icu::DateFormat::getAvailableLocales(num);
+  std::vector<std::string> vec(num);
+  for (int32_t i = 0; i < num; ++i) {
+    vec[i] = avail[i].getName();
+  }
+  const core::i18n::LookupResult result =
+      detail_i18n::ResolveLocale(
+          ctx,
+          vec.begin(),
+          vec.end(),
+          requested_locales,
+          JSObject::New(ctx),
+          IV_LV5_ERROR(e));
+  obj->SetField(JSDateTimeFormat::LOCALE,
+                JSString::NewAsciiString(ctx, result.locale()));
+  // TODO(Constellation) not implement extension check
+  icu::Locale locale(result.locale().c_str());
+  {
+    UErrorCode err = U_ZERO_ERROR;
+    core::unique_ptr<icu::NumberingSystem> numbering_system(
+        icu::NumberingSystem::createInstance(locale, err));
+    if (U_FAILURE(err)) {
+      e->Report(Error::Type, "numbering system initialization failed");
+      return JSEmpty;
+    }
+    obj->SetField(JSDateTimeFormat::NUMBERING_SYSTEM,
+                  JSString::NewAsciiString(ctx, numbering_system->getName()));
+  }
+
+  JSVal tz =
+      options->Get(ctx, context::Intern(ctx, "timeZone"), IV_LV5_ERROR(e));
+  if (!tz.IsUndefined()) {
+    JSString* str = tz.ToString(ctx, IV_LV5_ERROR(e));
+    std::vector<uint16_t> vec;
+    for (JSString::const_iterator it = str->begin(),
+         last = str->end(); it != last; ++it) {
+      vec.push_back(core::i18n::ToLocaleIdentifierUpperCase(*it));
+    }
+    if (vec.size() != 3 ||
+        vec[0] != 'U' || vec[1] != 'T' || vec[2] != 'C') {
+      e->Report(Error::Range, "tz is not UTC");
+      return JSEmpty;
+    }
+    obj->SetField(JSDateTimeFormat::TIME_ZONE, str);
+  }
+
+  {
+    const JSVal hour12 = opt.Get(ctx,
+                                 context::Intern(ctx, "hour12"),
+                                 detail_i18n::Options::BOOLEAN, NULL,
+                                 JSUndefined, IV_LV5_ERROR(e));
+    obj->SetField(JSDateTimeFormat::HOUR12, hour12);
+  }
+
+  {
+    for (detail_i18n::DateTimeOptions::const_iterator
+         it = detail_i18n::kDateTimeOptions.begin(),
+         last = detail_i18n::kDateTimeOptions.end();
+         it != last; ++it) {
+      const Symbol prop = context::Intern(ctx, it->key);
+      JSVector* vec = JSVector::New(ctx);
+      for (detail_i18n::DateTimeOption::Values::const_iterator
+           current = it->values.begin(); *current; ++current) {
+        vec->push_back(JSString::NewAsciiString(ctx, *current));
+      }
+      const JSVal value = opt.Get(ctx,
+                                  prop,
+                                  detail_i18n::Options::STRING,
+                                  vec,
+                                  JSUndefined, IV_LV5_ERROR(e));
+      obj->SetField(it->field, value);
+    }
+  }
+
+  {
+    JSString* basic = JSString::NewAsciiString(ctx, "basic");
+    JSString* best_fit = JSString::NewAsciiString(ctx, "best fit");
+    JSVector* vec = JSVector::New(ctx);
+    vec->push_back(basic);
+    vec->push_back(best_fit);
+    const JSVal matcher = opt.Get(ctx,
+                                  context::Intern(ctx, "formatMatch"),
+                                  detail_i18n::Options::STRING,
+                                  vec,
+                                  best_fit, IV_LV5_ERROR(e));
+    obj->SetField(JSDateTimeFormat::FORMAT_MATCH, matcher);
+  }
+
+  {
+    const JSVal pattern =
+        options->Get(ctx,
+                     context::Intern(ctx, "pattern"),
+                     IV_LV5_ERROR(e));
+    obj->SetField(JSDateTimeFormat::PATTERN, pattern);
+  }
+
+  // Generate skeleton
+  // See http://userguide.icu-project.org/formatparse/datetime
+  std::string buffer;
+  {
+    // weekday
+    const JSVal val= obj->GetField(JSDateTimeFormat::WEEKDAY);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "narrow") {
+        buffer.append("EEEEE");
+      } else if (target == "short") {
+        buffer.push_back('E');
+      } else {  // target == "long"
+        buffer.append("EEEE");
+      }
+    }
+  }
+  {
+    // era
+    const JSVal val = obj->GetField(JSDateTimeFormat::ERA);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "narrow") {
+        buffer.append("GGGGG");
+      } else if (target == "short") {
+        buffer.push_back('G');
+      } else {  // target == "long"
+        buffer.append("GGGG");
+      }
+    }
+  }
+  {
+    // year
+    const JSVal val = obj->GetField(JSDateTimeFormat::YEAR);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "2-digit") {
+        buffer.append("yy");
+      } else {  // target == "numeric"
+        buffer.append("yyyy");
+      }
+    }
+  }
+  {
+    // month
+    const JSVal val = obj->GetField(JSDateTimeFormat::MONTH);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "2-digit") {
+        buffer.append("MM");
+      } else if (target == "numeric") {
+        buffer.push_back('M');
+      } else if (target == "narrow") {
+        buffer.append("MMMMM");
+      } else if (target == "short") {
+        buffer.append("MMM");
+      } else {  // target == "long"
+        buffer.append("MMMM");
+      }
+    }
+  }
+  {
+    // day
+    const JSVal val = obj->GetField(JSDateTimeFormat::DAY);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "2-digit") {
+        buffer.append("dd");
+      } else {  // target == "numeric"
+        buffer.append("d");
+      }
+    }
+  }
+  {
+    // hour
+    // check hour12 (AM / PM style or 24 style)
+    const JSVal val = obj->GetField(JSDateTimeFormat::HOUR);
+    const JSVal hour12 = obj->GetField(JSDateTimeFormat::HOUR12);
+    if (!val.IsUndefined()) {
+      const bool two_digit = val.string()->GetUTF8() == "2-digit";
+      if (JSVal::StrictEqual(hour12, JSTrue)) {
+        buffer.append(two_digit ? "hh" : "h");
+      } else {
+        buffer.append(two_digit ? "HH" : "H");
+      }
+    }
+  }
+  {
+    // minute
+    const JSVal val = obj->GetField(JSDateTimeFormat::MINUTE);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "2-digit") {
+        buffer.append("mm");
+      } else {  // target == "numeric"
+        buffer.append("m");
+      }
+    }
+  }
+  {
+    // second
+    const JSVal val = obj->GetField(JSDateTimeFormat::SECOND);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "2-digit") {
+        buffer.append("ss");
+      } else {  // target == "numeric"
+        buffer.append("s");
+      }
+    }
+  }
+  {
+    // timezone name
+    const JSVal val = obj->GetField(JSDateTimeFormat::TIME_ZONE_NAME);
+    if (!val.IsUndefined()) {
+      const std::string target = val.string()->GetUTF8();
+      if (target == "short") {
+        buffer.append("v");
+      } else {  // target == "long"
+        buffer.append("vvvv");
+      }
+    }
+  }
+
+  core::unique_ptr<icu::TimeZone> timezone;
+  {
+    // See http://userguide.icu-project.org/datetime/timezone
+    const JSVal val = obj->GetField(JSDateTimeFormat::TIME_ZONE);
+    if (val.IsUndefined()) {
+      timezone.reset(icu::TimeZone::createDefault());
+    } else {
+      // already checked as UTC
+      timezone.reset(icu::TimeZone::createTimeZone("GMT"));
+    }
+  }
+
+  UErrorCode err = U_ZERO_ERROR;
+
+  // See http://icu-project.org/apiref/icu4c/classCalendar.html
+  // Calendar
+  core::unique_ptr<icu::Calendar> calendar(
+      icu::Calendar::createInstance(timezone.get(), locale, err));
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "calendar failed");
+    return JSEmpty;
+  }
+  timezone.release();  // release
+
+  const icu::UnicodeString skeleton(buffer.c_str());
+  core::unique_ptr<icu::DateTimePatternGenerator>
+      generator(icu::DateTimePatternGenerator::createInstance(locale, err));
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "pattern generator failed");
+    return JSEmpty;
+  }
+  const icu::UnicodeString pattern = generator->getBestPattern(skeleton, err);
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "pattern generator failed");
+    return JSEmpty;
+  }
+  icu::SimpleDateFormat* format =
+      new icu::SimpleDateFormat(pattern, locale, err);
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "date formatter failed");
+    return JSEmpty;
+  }
+  obj->set_date_time_format(format);
+
+  format->adoptCalendar(calendar.get());
+  obj->SetField(JSDateTimeFormat::CALENDAR,
+                JSString::NewAsciiString(ctx, calendar->getType()));
+  calendar.release();  // release
+  return obj;
+}
 
 } }  // namespace iv::lv5
 #endif  // IV_ENABLE_I18N

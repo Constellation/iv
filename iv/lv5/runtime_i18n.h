@@ -182,6 +182,110 @@ inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
       args.At(0), args.At(1), e);
 }
 
+inline JSVal DateTimeFormatConstructor(const Arguments& args, Error* e) {
+  Context* ctx = args.ctx();
+  JSDateTimeFormat* obj = JSDateTimeFormat::New(ctx);
+  return JSDateTimeFormat::Initialize(ctx, obj, args.At(0), args.At(1), e);
+}
+
+inline JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.prototype.format", args, e);
+  Context* ctx = args.ctx();
+  JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  if (!o->IsClass<Class::DateTimeFormat>()) {
+    e->Report(Error::Type,
+              "Intl.DateTimeFormat.prototype.format is not generic function");
+    return JSEmpty;
+  }
+  JSDateTimeFormat* format = static_cast<JSDateTimeFormat*>(o);
+  const JSVal arg1 = args.At(0);
+  const double value =
+      (arg1.IsUndefined()) ?
+        std::floor(core::date::CurrentTime()) :
+        args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
+  UErrorCode err = U_ZERO_ERROR;
+  icu::UnicodeString result;
+  format->date_time_format()->format(value, result);
+  if (U_FAILURE(err)) {
+    e->Report(Error::Type, "Intl.DateTimeFormat parse failed");
+    return JSEmpty;
+  }
+  return JSString::New(
+      ctx, result.getBuffer(), result.getBuffer() + result.length());
+}
+
+inline JSVal DateTimeFormatResolvedOptionsGetter(
+    const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.resolvedOptions", args, e);
+  Context* ctx = args.ctx();
+  JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  if (!o->IsClass<Class::DateTimeFormat>()) {
+    e->Report(
+        Error::Type,
+        "Intl.DateTimeFormat.prototype.resolvedOptions is not generic getter");
+    return JSEmpty;
+  }
+  JSDateTimeFormat* format = static_cast<JSDateTimeFormat*>(o);
+  JSObject* obj = JSObject::New(ctx);
+  bind::Object(ctx, obj)
+      .def(context::Intern(ctx, "calendar"),
+           format->GetField(JSDateTimeFormat::CALENDAR),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "timeZone"),
+           format->GetField(JSDateTimeFormat::TIME_ZONE),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "hour12"),
+           format->GetField(JSDateTimeFormat::HOUR12),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "locale"),
+           format->GetField(JSDateTimeFormat::LOCALE),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "numberingSystem"),
+           format->GetField(JSDateTimeFormat::NUMBERING_SYSTEM),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "weekday"),
+           format->GetField(JSDateTimeFormat::WEEKDAY),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "era"),
+           format->GetField(JSDateTimeFormat::ERA),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "year"),
+           format->GetField(JSDateTimeFormat::YEAR))
+      .def(context::Intern(ctx, "month"),
+           format->GetField(JSDateTimeFormat::MONTH),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "day"),
+           format->GetField(JSDateTimeFormat::DAY),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "hour"),
+           format->GetField(JSDateTimeFormat::HOUR),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "minute"),
+           format->GetField(JSDateTimeFormat::MINUTE),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "second"),
+           format->GetField(JSDateTimeFormat::SECOND),
+           ATTR::W | ATTR::E | ATTR::C)
+      .def(context::Intern(ctx, "timeZoneName"),
+           format->GetField(JSDateTimeFormat::TIME_ZONE_NAME),
+           ATTR::W | ATTR::E | ATTR::C);
+  return obj;
+}
+
+inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+  int32_t num = 0;
+  const icu::Locale* avail = icu::DateFormat::getAvailableLocales(num);
+  std::vector<std::string> vec(num);
+  for (int32_t i = 0; i < num; ++i) {
+    vec[i] = avail[i].getName();
+  }
+  return detail_i18n::SupportedLocales(
+      args.ctx(),
+      vec.begin(),
+      vec.end(),
+      args.At(0), args.At(1), e);
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_ENABLE_I18N_H_
 #endif  // IV_LV5_RUNTIME_I18N_H_
