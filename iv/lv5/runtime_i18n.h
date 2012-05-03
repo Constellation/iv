@@ -54,7 +54,7 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
   JSObject* obj = JSObject::New(ctx);
   bind::Object(ctx, obj)
       .def(context::Intern(ctx, "collation"),
-           collator,
+           collator->GetField(JSCollator::COLLATION),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "usage"),
            collator->GetField(JSCollator::USAGE),
