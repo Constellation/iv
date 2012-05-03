@@ -331,6 +331,10 @@ class JSNumberFormat : public JSObject {
   JSVal Format(Context* ctx, double value, Error* e) {
     UErrorCode err = U_ZERO_ERROR;
     icu::UnicodeString result;
+    if (value == 0) {
+      // if value is -0, we overwrite it as +0
+      value = 0;
+    }
     number_format()->format(value, result);
     if (U_FAILURE(err)) {
       e->Report(Error::Type, "Intl.NumberFormat parse failed");
