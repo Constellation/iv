@@ -4,14 +4,16 @@
 #define IV_LV5_JSI18N_H_
 #ifdef IV_ENABLE_I18N
 #include <iterator>
+#include <string>
 #include <unicode/coll.h>
 #include <unicode/decimfmt.h>
 #include <unicode/datefmt.h>
 #include <unicode/numsys.h>
 #include <unicode/dtptngen.h>
 #include <unicode/smpdtfmt.h>
-#include <iv/i18n.h>
 #include <iv/detail/unique_ptr.h>
+#include <iv/detail/unordered_map.h>
+#include <iv/i18n.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
@@ -161,6 +163,7 @@ class JSCollator : public JSObject {
     IGNORE_PUNCTUATION,
     BOUND_COMPARE,
     LOCALE,
+    COLLATION,
     NUM_OF_FIELDS
   };
 
@@ -469,8 +472,8 @@ inline JSLocaleList* CreateLocaleList(
     Context* ctx, JSVal target, Error* e) {
   std::vector<std::string> list;
   if (target.IsUndefined()) {
-    // TODO(Constellation) implement default locale system
-    list.push_back("en-US");
+    const Locale& locale = icu::Locale::getDefault();
+    list.push_back(locale.getName());
   } else {
     JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
     const uint32_t len =
@@ -600,6 +603,29 @@ inline JSVal SupportedLocales(Context* ctx,
   }
 }
 
+typedef std::unordered_map<std::string, std::string> ExtensionMap;
+
+inline ExtensionMap CreateExtensionMap(
+    const core::i18n::Locale::Map& extensions) {
+  ExtensionMap map;
+  core::i18n::Locale::Map::const_iterator it = extensions.find('u');
+  if (it == extensions.end()) {
+    return map;
+  }
+  std::string key;
+  for (core::i18n::Locale::Map::const_iterator last = extensions.end();
+       it != last && it->first == 'u'; ++it) {
+    if (it->second.size() == 3) {
+      key = it->second;
+      map[key] = "";
+    } else if (!key.empty()) {
+      map[key] = it->second;
+      key.clear();
+    }
+  }
+  return map;
+}
+
 template<typename AvailIter>
 inline core::i18n::LookupResult ResolveLocale(Context* ctx,
                                               AvailIter it,
@@ -658,9 +684,10 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
     }
   }
 
-  return (best_fit) ?
+  core::i18n::LookupResult res = (best_fit) ?
       core::i18n::BestFitMatch(it, last, locales.begin(), locales.end()) :
       core::i18n::LookupMatch(it, last, locales.begin(), locales.end());
+  return res;
 }
 
 class Options {
@@ -1027,9 +1054,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
           IV_LV5_ERROR(e));
   obj->SetField(JSCollator::LOCALE,
                 JSString::NewAsciiString(ctx, result.locale()));
-  // TODO(Constellation) not implement extension check
   icu::Locale locale(result.locale().c_str());
-
   {
     for (detail_i18n::CollatorOptionTable::const_iterator
          it = detail_i18n::kCollatorOptionTable.begin(),
@@ -1049,15 +1074,59 @@ inline JSVal JSCollator::Initialize(Context* ctx,
       if (it->type == detail_i18n::Options::BOOLEAN) {
         if (!value.IsUndefined()) {
           if (!value.IsBoolean()) {
-            const JSVal s = value.ToString(ctx, IV_LV5_ERROR(e));
+            const JSVal str = value.ToString(ctx, IV_LV5_ERROR(e));
             value = JSVal::Bool(
-                JSVal::StrictEqual(ctx->global_data()->string_true(), s));
+                JSVal::StrictEqual(ctx->global_data()->string_true(), str));
           }
         } else {
           value = JSFalse;
         }
       }
       obj->SetField(it->field, value);
+    }
+  }
+
+  {
+    const detail_i18n::ExtensionMap map =
+        detail_i18n::CreateExtensionMap(result.extensions());
+    {
+      const detail_i18n::ExtensionMap::const_iterator it = map.find("co");
+      if (it != map.end()) {
+        if (it->second.empty()) {
+          obj->SetField(JSCollator::COLLATION,
+                        JSString::NewAsciiString(ctx, "default"));
+        } else {
+          obj->SetField(JSCollator::COLLATION,
+                        JSString::NewAsciiString(ctx, it->second));
+        }
+      }
+    }
+    for (detail_i18n::CollatorOptionTable::const_iterator
+         it = detail_i18n::kCollatorOptionTable.begin(),
+         last = detail_i18n::kCollatorOptionTable.end();
+         it != last; ++it) {
+      const JSVal option_value = obj->GetField(it->field);
+      if (option_value.IsUndefined()) {
+        const detail_i18n::ExtensionMap::const_iterator
+            target = map.find(it->key);
+        if (target != map.end()) {
+          JSVal value;
+          if (it->type == detail_i18n::Options::BOOLEAN) {
+            obj->SetField(it->field,
+                          JSVal::Bool(target->second == "true"));
+          } else if (it->type == detail_i18n::Options::STRING) {
+            if (it->values[0]) {
+              for (const char* const * ptr = it->values.data(); *ptr; ++ptr) {
+                if (*ptr == target->second) {
+                  obj->SetField(
+                      it->field,
+                      JSString::NewAsciiString(ctx, target->second));
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1203,7 +1272,6 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::LOCALE,
                 JSString::NewAsciiString(ctx, result.locale()));
-  // TODO(Constellation) not implement extension check
   icu::Locale locale(result.locale().c_str());
   {
     UErrorCode err = U_ZERO_ERROR;
@@ -1417,7 +1485,6 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
           IV_LV5_ERROR(e));
   obj->SetField(JSDateTimeFormat::LOCALE,
                 JSString::NewAsciiString(ctx, result.locale()));
-  // TODO(Constellation) not implement extension check
   icu::Locale locale(result.locale().c_str());
   {
     UErrorCode err = U_ZERO_ERROR;

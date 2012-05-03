@@ -229,7 +229,7 @@ class LanguageTagScanner {
         const char first = it->first;
         lang.push_back('-');
         lang.push_back(first);
-        for (;it->first == first; ++it) {
+        for (;it != last && it->first == first; ++it) {
           lang.push_back('-');
           lang.append(it->second);
         }
