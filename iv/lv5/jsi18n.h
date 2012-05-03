@@ -300,13 +300,13 @@ class JSNumberFormat : public JSObject {
 
   explicit JSNumberFormat(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)),
-      number_format_(new JSIntl::GCHandle<icu::NumberFormat>()),
+      number_format_(new JSIntl::GCHandle<icu::DecimalFormat>()),
       fields_() {
   }
 
   JSNumberFormat(Context* ctx, Map* map)
     : JSObject(map),
-      number_format_(new JSIntl::GCHandle<icu::NumberFormat>()),
+      number_format_(new JSIntl::GCHandle<icu::DecimalFormat>()),
       fields_() {
   }
 
@@ -320,12 +320,24 @@ class JSNumberFormat : public JSObject {
     fields_[n] = v;
   }
 
-  void set_number_format(icu::NumberFormat* number_format) {
+  void set_number_format(icu::DecimalFormat* number_format) {
     number_format_->handle.reset(number_format);
   }
 
-  icu::NumberFormat* number_format() const {
+  icu::DecimalFormat* number_format() const {
     return number_format_->handle.get();
+  }
+
+  JSVal Format(Context* ctx, double value, Error* e) {
+    UErrorCode err = U_ZERO_ERROR;
+    icu::UnicodeString result;
+    number_format()->format(value, result);
+    if (U_FAILURE(err)) {
+      e->Report(Error::Type, "Intl.NumberFormat parse failed");
+      return JSEmpty;
+    }
+    return JSString::New(
+        ctx, result.getBuffer(), result.getBuffer() + result.length());
   }
 
   static JSNumberFormat* New(Context* ctx) {
@@ -350,7 +362,7 @@ class JSNumberFormat : public JSObject {
                           Error* e);
 
  private:
-  JSIntl::GCHandle<icu::NumberFormat>* number_format_;
+  JSIntl::GCHandle<icu::DecimalFormat>* number_format_;
   std::array<JSVal, NUM_OF_FIELDS> fields_;
 };
 
@@ -406,6 +418,18 @@ class JSDateTimeFormat : public JSObject {
 
   icu::DateFormat* date_time_format() const {
     return date_time_format_->handle.get();
+  }
+
+  JSVal Format(Context* ctx, double value, Error* e) {
+    UErrorCode err = U_ZERO_ERROR;
+    icu::UnicodeString result;
+    date_time_format()->format(value, result);
+    if (U_FAILURE(err)) {
+      e->Report(Error::Type, "Intl.DateTimeFormat parse failed");
+      return JSEmpty;
+    }
+    return JSString::New(
+        ctx, result.getBuffer(), result.getBuffer() + result.length());
   }
 
   static JSDateTimeFormat* New(Context* ctx) {

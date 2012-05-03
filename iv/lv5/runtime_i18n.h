@@ -113,16 +113,7 @@ inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
   }
   JSNumberFormat* format = static_cast<JSNumberFormat*>(o);
   const double value = args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
-  UErrorCode err = U_ZERO_ERROR;
-  icu::UnicodeString result;
-  static_cast<icu::DecimalFormat*>(
-      format->number_format())->format(value, result);
-  if (U_FAILURE(err)) {
-    e->Report(Error::Type, "Intl.NumberFormat parse failed");
-    return JSEmpty;
-  }
-  return JSString::New(
-      ctx, result.getBuffer(), result.getBuffer() + result.length());
+  return format->Format(ctx, value, e);
 }
 
 inline JSVal NumberFormatResolvedOptionsGetter(
@@ -203,15 +194,7 @@ inline JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
       (arg1.IsUndefined()) ?
         std::floor(core::date::CurrentTime()) :
         args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
-  UErrorCode err = U_ZERO_ERROR;
-  icu::UnicodeString result;
-  format->date_time_format()->format(value, result);
-  if (U_FAILURE(err)) {
-    e->Report(Error::Type, "Intl.DateTimeFormat parse failed");
-    return JSEmpty;
-  }
-  return JSString::New(
-      ctx, result.getBuffer(), result.getBuffer() + result.length());
+  return format->Format(ctx, value, e);
 }
 
 inline JSVal DateTimeFormatResolvedOptionsGetter(
