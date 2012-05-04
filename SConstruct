@@ -10,24 +10,33 @@ from GenerateFile import TOOL_SUBST
 def GetVariables():
   return Variables()
 
-def Test(context):
+def GTestLib(context):
+  return context.SConscript(
+    join(root_dir, 'test', 'gtest', 'SConscript'),
+    variant_dir=join(root_dir, 'obj', 'test', 'gtest'),
+    src=join(root_dir, 'iv', 'test', 'gtest'),
+    duplicate=False,
+    exports="context root_dir"
+  )
+
+def Test(context, gtest):
   test_task = context.SConscript(
     'test/SConscript',
     variant_dir=join(root_dir, 'obj', 'test'),
     src=join(root_dir, 'test'),
     duplicate=False,
-    exports="context"
+    exports="context root_dir gtest"
   )
   context.AlwaysBuild(test_task)
   return test_task
 
-def TestLv5(context, object_files, libs):
+def TestLv5(context, gtest, object_files, libs):
   test_task = context.SConscript(
     'test/lv5/SConscript',
     variant_dir=join(root_dir, 'obj', 'test', 'lv5'),
     src=join(root_dir, 'test', 'lv5'),
     duplicate=False,
-    exports="context libs object_files"
+    exports="context root_dir libs object_files gtest"
   )
   context.AlwaysBuild(test_task)
   return test_task
@@ -41,15 +50,6 @@ def Lv5(context):
     exports="context root_dir"
   )
   return lv5_task, lv5_objs, lv5_libs
-
-def Main(context, deps):
-  return context.SConscript(
-    'iv/SConscript',
-    variant_dir=join(root_dir, 'obj', 'iv'),
-    src=join(root_dir, 'iv'),
-    duplicate=False,
-    exports='root_dir context deps'
-  )
 
 def Build():
   options = {}
@@ -159,8 +159,9 @@ def Build():
   lv5_prog, lv5_objs, lv5_libs = Lv5(env)
   env.Alias('lv5', [lv5_prog])
 
-  test_prog = Test(env)
-  test_lv5_prog = TestLv5(env, lv5_objs, lv5_libs)
+  gtest = GTestLib(env)
+  test_prog = Test(env, gtest)
+  test_lv5_prog = TestLv5(env, gtest, lv5_objs, lv5_libs)
   test_alias = env.Alias('test', test_prog, test_prog[0].abspath)
   test_lv5_alias = env.Alias('testlv5', test_lv5_prog, test_lv5_prog[0].abspath)
   env.Default('lv5')

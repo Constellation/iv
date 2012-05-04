@@ -16,16 +16,16 @@ TEST(CharacterCase, ToUpperCaseTest) {
        target = 'A'; ch <= 'z'; ++ch, ++target) {
     ASSERT_EQ(ToUpperCase(ch), target);
   }
-  ASSERT_EQ(0x00CB, ToUpperCase(0x00EB));
-  ASSERT_EQ(0x0531, ToUpperCase(0x0561));
-  ASSERT_EQ('A', ToUpperCase('A'));
-  ASSERT_EQ(0x0560, ToUpperCase(0x0560));
+  ASSERT_EQ(0x00CBu, ToUpperCase(0x00EB));
+  ASSERT_EQ(0x0531u, ToUpperCase(0x0561));
+  ASSERT_EQ(static_cast<uint16_t>('A'), ToUpperCase('A'));
+  ASSERT_EQ(0x0560u, ToUpperCase(0x0560));
 
   for (uint32_t ch = 0; ch < 0x10000; ++ch) {
     ToUpperCase(ch);
   }
-  ASSERT_EQ(0x00530053, ToUpperCase(0x00DF));
-  ASSERT_EQ(0x00460046, ToUpperCase(0xFB00));
+  ASSERT_EQ(0x00530053u, ToUpperCase(0x00DF));
+  ASSERT_EQ(0x00460046u, ToUpperCase(0xFB00));
 }
 
 TEST(CharacterCase, ToLowerCaseTest) {
@@ -35,8 +35,8 @@ TEST(CharacterCase, ToLowerCaseTest) {
        target = 'a'; ch <= 'A'; ++ch, ++target) {
     ASSERT_EQ(ToLowerCase(ch), target);
   }
-  ASSERT_EQ(0x0561, ToLowerCase(0x0531));
-  ASSERT_EQ(0x0560, ToLowerCase(0x0560));
+  ASSERT_EQ(0x0561u, ToLowerCase(0x0531));
+  ASSERT_EQ(0x0560u, ToLowerCase(0x0560));
 
   for (uint32_t ch = 0; ch < 0x10000; ++ch) {
     ToLowerCase(ch);

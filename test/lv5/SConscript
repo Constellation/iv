@@ -1,15 +1,16 @@
-Import('context libs object_files')
+from os.path import join, dirname, abspath
+Import('context root_dir libs object_files gtest')
 
 def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
-  conf.CheckLib(library='gtest', language='cxx')
   env = conf.Finish()
   env.Append(
     LIBS=libs,
     CCFLAGS=["-fno-strict-aliasing"],
     CPPDEFINES=["__STDC_FORMAT_MACROS"])
-  return env.Program('cctest', [Glob('*.cc'), object_files])
+  env.Append(CPPPATH=[join(root_dir, 'test')])
+  return env.Program('cctest', [Glob('*.cc'), gtest, object_files])
 
 program = Build()
 Return('program')

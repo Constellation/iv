@@ -275,16 +275,16 @@ TEST(ConversionsCase, ConvertToUInt32) {
   ASSERT_FALSE(ConvertToUInt32("20e", &target));
 
   ASSERT_TRUE(ConvertToUInt32("0", &target));
-  ASSERT_EQ(0, target);
+  ASSERT_EQ(0u, target);
 
   ASSERT_TRUE(ConvertToUInt32("1", &target));
-  ASSERT_EQ(1, target);
+  ASSERT_EQ(1u, target);
 
   ASSERT_TRUE(ConvertToUInt32("10", &target));
-  ASSERT_EQ(10, target);
+  ASSERT_EQ(10u, target);
 
   ASSERT_TRUE(ConvertToUInt32("1000", &target));
-  ASSERT_EQ(1000, target);
+  ASSERT_EQ(1000u, target);
 
   ASSERT_FALSE(ConvertToUInt32("0100", &target));
 

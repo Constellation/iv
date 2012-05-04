@@ -1,11 +1,12 @@
-Import('context')
+from os.path import join, dirname, abspath
+Import('context root_dir gtest')
 
 def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
-  conf.CheckLib(library='gtest', language='cxx')
   env = conf.Finish()
-  return env.Program('cctest', Glob('*.cc'))
+  env.Append(CPPPATH=[join(root_dir, 'test')])
+  return env.Program('cctest', [Glob('*.cc'), gtest])
 
 program = Build()
 Return('program')

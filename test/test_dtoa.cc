@@ -33,7 +33,7 @@ TEST(DToACase, DToAGayFixed) {
     std::fill(buffer.begin(), buffer.end(), '\0');
     const PrecomputedFixed current_test = *it;
     double v = current_test.v;
-    const int number_digits = current_test.number_digits;
+    const std::size_t number_digits = current_test.number_digits;
     iv::core::dtoa::DoubleToASCII<false, false, true, false>(
         buffer.data(), v, number_digits, &sign, &exponent, &precision);
     EXPECT_EQ(0, sign);  // All precomputed numbers are positive.
@@ -44,7 +44,7 @@ TEST(DToACase, DToAGayFixed) {
     } else {
       unsigned dec = exponent + 1;
       if (precision > dec) {
-        EXPECT_EQ(current_test.decimal_point, dec);
+        EXPECT_EQ(static_cast<std::size_t>(current_test.decimal_point), dec);
       } else {
         // EXPECT_EQ(current_test.decimal_point, dec);
       }
@@ -63,7 +63,7 @@ TEST(DToACase, DToAGayPrecision) {
     std::fill(buffer.begin(), buffer.end(), '\0');
     const PrecomputedPrecision current_test = *it;
     double v = current_test.v;
-    const int number_digits = current_test.number_digits;
+    const std::size_t number_digits = current_test.number_digits;
     iv::core::dtoa::DoubleToASCII<false, true, false, false>(
         buffer.data(), v, number_digits, &sign, &exponent, &precision);
     EXPECT_EQ(0, sign);  // All precomputed numbers are positive.

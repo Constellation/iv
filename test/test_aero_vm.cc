@@ -356,7 +356,7 @@ TEST(AeroVMCase, CaptureTest) {
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
-    EXPECT_EQ(str1.size(), vec[1]);
+    EXPECT_EQ(str1.size(), static_cast<std::size_t>(vec[1]));
     EXPECT_EQ(0, vec[2]);
     EXPECT_EQ(5, vec[3]);
   }
