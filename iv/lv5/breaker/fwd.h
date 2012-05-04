@@ -47,7 +47,7 @@
 #elif defined(IV_OS_LINUX)
 #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
 #else
-#error Unknown symbol convension. Please add to iv/lv5/breaker/fwd.h
+#define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
 #endif
 
 #define IV_LV5_BREAKER_RAISE()\

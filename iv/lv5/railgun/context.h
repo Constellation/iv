@@ -22,9 +22,11 @@ inline Context::Context()
   Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
   global_map_cache_ = new(GC)MapCache();
-  std::fill_n(global_map_cache_->begin(), global_map_cache_->size(),
-              MapCacheEntry(
-                  MapCacheKey(NULL, symbol::kDummySymbol), core::kNotFound));
+  {
+    const MapCacheKey key(reinterpret_cast<Map*>(NULL), symbol::kDummySymbol);
+    const MapCacheEntry entry(key, core::kNotFound);
+    std::fill_n(global_map_cache_->begin(), global_map_cache_->size(), entry);
+  }
 #ifdef DEBUG
   iterator_live_count_ = 0;
 #endif
