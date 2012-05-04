@@ -5,7 +5,9 @@ def Build():
   conf = Configure(context.Clone())
   conf.CheckLib('pthread')
   env = conf.Finish()
-  env.Append(CPPPATH=[join(root_dir, 'test')])
+  env.Append(
+      CPPPATH=[join(root_dir, 'test')],
+      CCFLAGS=["-Wno-variadic-macros"])
   return env.Program('cctest', [Glob('*.cc'), gtest])
 
 program = Build()
