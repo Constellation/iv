@@ -746,11 +746,12 @@ class Options {
 };
 
 struct CollatorOption {
+  typedef std::array<const char*, 4> Values;
   const char* key;
   std::size_t field;
   const char* property;
   Options::Type type;
-  std::array<const char*, 4> values;
+  Values values;
 };
 
 typedef std::array<CollatorOption, 6> CollatorOptionTable;
@@ -913,7 +914,8 @@ static const DateTimeOptions kDateTimeOptions = { {
     { { "2-digit", "numeric", NULL } } },
   { "second",       JSDateTimeFormat::SECOND,
     { { "2-digit", "numeric", NULL } } },
-  { "timeZoneName", JSDateTimeFormat::TIME_ZONE_NAME, { { "short", "long" } } }
+  { "timeZoneName", JSDateTimeFormat::TIME_ZONE_NAME,
+    { { "short", "long", NULL } } }
 } };
 
 inline JSObject* BasicFormatMatch(Context* ctx,
@@ -1063,8 +1065,10 @@ inline JSVal JSCollator::Initialize(Context* ctx,
       JSVector* vec = NULL;
       if (it->values[0] != NULL) {
         vec = JSVector::New(ctx);
-        for (const char* const * ptr = it->values.data(); *ptr; ++ptr) {
-          vec->push_back(JSString::NewAsciiString(ctx, *ptr));
+        for (detail_i18n::CollatorOption::Values::const_iterator
+             oit = it->values.begin(),
+             olast = it->values.end(); oit != olast && *oit; ++oit) {
+          vec->push_back(JSString::NewAsciiString(ctx, *oit));
         }
       }
       JSVal value = opt.Get(ctx,
@@ -1531,8 +1535,10 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
       const Symbol prop = context::Intern(ctx, it->key);
       JSVector* vec = JSVector::New(ctx);
       for (detail_i18n::DateTimeOption::Values::const_iterator
-           current = it->values.begin(); *current; ++current) {
-        vec->push_back(JSString::NewAsciiString(ctx, *current));
+           dit = it->values.begin(),
+           dlast = it->values.end();
+           dit != dlast && *dit; ++dit) {
+        vec->push_back(JSString::NewAsciiString(ctx, *dit));
       }
       const JSVal value = opt.Get(ctx,
                                   prop,
