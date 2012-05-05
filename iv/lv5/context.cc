@@ -604,8 +604,8 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .def<&runtime::NumberIsFinite, 1>("isFinite")
       // section 15.7.3.13 Number.isInteger(number)
       .def<&runtime::NumberIsInteger, 1>("isInteger")
-      // section 15.7.3.14 Number.toInteger(number)
-      .def<&runtime::NumberToInteger, 1>("toInteger");
+      // section 15.7.3.14 Number.toInt(number)
+      .def<&runtime::NumberToInt, 1>("toInt");
 
   bind::Object(this, proto)
       .cls(cls.cls)
@@ -623,7 +623,9 @@ void Context::InitNumber(const ClassSlot& func_cls,
       // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
       .def<&runtime::NumberToExponential, 1>("toExponential")
       // section 15.7.4.7 Number.prototype.toPrecision(precision)
-      .def<&runtime::NumberToPrecision, 1>("toPrecision");
+      .def<&runtime::NumberToPrecision, 1>("toPrecision")
+      // section 15.7.4.8 Number.prototype.clz()
+      .def<&runtime::NumberCLZ, 0>("clz");
 }
 
 void Context::InitMath(const ClassSlot& func_cls,
@@ -717,13 +719,11 @@ void Context::InitMath(const ClassSlot& func_cls,
       .def<&runtime::MathAtanh, 1>("atanh")
       // section 15.8.2.29 hypot(value1, value2[, value3])
       .def<&runtime::MathHypot, 2>("hypot")
-      // section 15.8.2.30 hypot2(value1, value2[, value3])
-      .def<&runtime::MathHypot2, 2>("hypot2")
-      // section 15.8.2.31 trunc(x)
+      // section 15.8.2.30 trunc(x)
       .def<&runtime::MathTrunc, 1>("trunc")
-      // section 15.8.2.32 sign(x)
+      // section 15.8.2.31 sign(x)
       .def<&runtime::MathSign, 1>("sign")
-      // section 15.8.2.33 cbrt(x)
+      // section 15.8.2.32 cbrt(x)
       .def<&runtime::MathCbrt, 1>("cbrt");
 }
 

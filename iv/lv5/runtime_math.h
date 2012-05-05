@@ -326,26 +326,7 @@ inline JSVal MathHypot(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
-// section 15.8.2.30 hypot2(value1, value2[, value3])
-inline JSVal MathHypot2(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Math.hypot2", args, e);
-  if (args.size() > 1) {
-    const double value1 = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    const double value2 = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    if (args.size() == 2) {
-      return core::math::Hypot2(value1, value2);
-    } else {
-      const double value3 = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      return core::math::Hypot2(value1, value2, value3);
-    }
-  }
-  if (args.empty()) {
-    return JSVal::Int32(0);
-  }
-  return JSNaN;
-}
-
-// section 15.8.2.31 trunc(x)
+// section 15.8.2.30 trunc(x)
 inline JSVal MathTrunc(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.trunc", args, e);
   if (!args.empty()) {
@@ -362,7 +343,7 @@ inline JSVal MathTrunc(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
-// section 15.8.2.32 sign(x)
+// section 15.8.2.31 sign(x)
 inline JSVal MathSign(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.sign", args, e);
   if (!args.empty()) {
@@ -375,7 +356,7 @@ inline JSVal MathSign(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
-// section 15.8.2.33 cbrt(x)
+// section 15.8.2.32 cbrt(x)
 inline JSVal MathCbrt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Math.cbrt", args, e);
   if (!args.empty()) {

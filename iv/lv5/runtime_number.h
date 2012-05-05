@@ -5,6 +5,7 @@
 #include <iv/detail/cstdint.h>
 #include <iv/conversions.h>
 #include <iv/platform_math.h>
+#include <iv/arith.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -76,9 +77,9 @@ inline JSVal NumberIsInteger(const Arguments& args, Error* e) {
   return JSVal::Bool(core::DoubleToInteger(n) == n);
 }
 
-// section 15.7.3.10 Number.toInteger(number)
-inline JSVal NumberToInteger(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Number.toInteger", args, e);
+// section 15.7.3.10 Number.toInt(number)
+inline JSVal NumberToInt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.toInt", args, e);
   const JSVal num = args.At(0);
   if (num.IsInt32()) {
     return num;
@@ -345,6 +346,26 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
 
   JSStringDToA builder(ctx);
   return builder.BuildPrecision(x, core::DoubleToInt32(p), 0);
+}
+
+// section 15.7.4.8 Number.prototype.clz()
+inline JSVal NumberCLZ(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.clz", args, e);
+
+  const JSVal& obj = args.this_binding();
+  uint32_t x;
+  if (!obj.IsNumber()) {
+    if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
+      x = core::DoubleToUInt32(static_cast<JSNumberObject*>(obj.object())->value());
+    } else {
+      e->Report(Error::Type,
+                "Number.prototype.clz is not generic function");
+      return JSEmpty;
+    }
+  } else {
+    x = obj.GetUInt32();
+  }
+  return JSVal::Int32(static_cast<int32_t>(core::math::NLZ(x)));
 }
 
 } } }  // namespace iv::lv5::runtime

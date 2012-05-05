@@ -3,8 +3,10 @@
 #define IV_ARITH_H_
 #include <iv/detail/array.h>
 #include <iv/detail/cinttypes.h>
+#include <iv/platform.h>
 namespace iv {
 namespace core {
+namespace math {
 namespace detail {
 
 template<uint32_t X, uint32_t N>
@@ -89,6 +91,20 @@ inline bool IsSubtractOverflow(int32_t lhs, int32_t rhs, int32_t* dif) {
   return (((*dif) ^ lhs) & ((*dif) ^ rhs)) & 0x80000000;
 }
 
+// PopCount: population count
+// from "Hacker's Delight" section 5-1
+inline uint32_t PopCount(uint32_t x) {
+#if defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+  return __builtin_popcount(x);
+#else
+  x = (x & 0x55555555) + (x >> 1 & 0x55555555);
+  x = (x & 0x33333333) + (x >> 2 & 0x33333333);
+  x = (x & 0x0F0F0F0F) + (x >> 4 & 0x0F0F0F0F);
+  x = (x & 0x00FF00FF) + (x >> 8 & 0x00FF00FF);
+  return (x & 0x0000FFFF) + (x >>16 & 0x0000FFFF);
+#endif
+}
+
 // from "Hacker's Delight" section 3-2
 // flooring to 2^n
 inline uint32_t FLP2(uint32_t x) {
@@ -109,6 +125,22 @@ inline uint32_t CLP2(uint32_t x) {
   x = x | (x >> 8);
   x = x | (x >> 16);
   return x + 1;
+}
+
+// NLZ: number of leading zeros
+// a.k.a. CLZ, count leading zeros
+// from "Hacker's Delight" section 5-3
+inline uint32_t NLZ(uint32_t x) {
+#if defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+  return __builtin_clz(x);
+#else
+  x = x | (x >> 1);
+  x = x | (x >> 2);
+  x = x | (x >> 4);
+  x = x | (x >> 8);
+  x = x | (x >> 16);
+  return PopCount(~x);
+#endif
 }
 
 // NTZ: number of tailing zeros
@@ -162,5 +194,5 @@ inline std::size_t Ceil(std::size_t n, std::size_t m) {
   return (n + m - 1) / m * m;
 }
 
-} }  // namespace iv::core
+} } }  // namespace iv::core::math
 #endif  // IV_ARITH_H_

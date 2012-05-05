@@ -247,7 +247,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
   const JSVal rhs = REG(instr[1].i16[2]);\
   if (lhs.IsInt32() && rhs.IsInt32()) {\
     int32_t sum;\
-    if (!core::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {\
+    if (!core::math::IsAdditionOverflow(lhs.int32(), rhs.int32(), &sum)) {\
       REG(instr[1].i16[0]) = JSVal::Int32(sum);\
     } else {\
       REG(instr[1].i16[0]) =\
@@ -1230,7 +1230,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         const JSVal rhs = REG(instr[1].i16[2]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
           int32_t dif;
-          if (!core::IsSubtractOverflow(lhs.int32(), rhs.int32(), &dif)) {
+          if (!core::math::IsSubtractOverflow(lhs.int32(), rhs.int32(), &dif)) {
             REG(instr[1].i16[0]) = JSVal::Int32(dif);
           } else {
             REG(instr[1].i16[0]) =

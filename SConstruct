@@ -123,7 +123,8 @@ def Build():
 
   if env['debug']:
     # -Werror is defined in debug mode only
-    env.Append(CCFLAGS=["-g3", "-Werror"])
+    env.Append(CCFLAGS=["-g3"])
+    # env.Append(CCFLAGS=["-Werror"])
   else:
     env.Append(
         CCFLAGS=["-O3", "-fomit-frame-pointer"],

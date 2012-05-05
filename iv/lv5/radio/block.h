@@ -130,7 +130,7 @@ class Block : private core::Noncopyable<Block> {
   Block(size_type cell_size)
     : cell_size_(cell_size) {
     assert((reinterpret_cast<uintptr_t>(this) % kBlockSize) == 0);
-    const std::size_t offset = core::Ceil(sizeof(this_type), cell_size_);
+    const std::size_t offset = core::math::Ceil(sizeof(this_type), cell_size_);
     start_ = reinterpret_cast<uintptr_t>(this) + offset;
     size_ = (kBlockSize - offset) / cell_size_;
   }
