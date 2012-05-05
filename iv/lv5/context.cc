@@ -217,7 +217,7 @@ void Context::InitContext(JSFunction* func_constructor,
       // section 15.2.3.14 Object.keys(O)
       .def<&runtime::ObjectKeys, 1>("keys")
       // section 15.2.3.15 Object.isObject(O)
-      .def<&runtime::ObjectKeys, 1>("isObject")
+      .def<&runtime::ObjectIsObject, 1>("isObject")
       // ES.next Object.is(x, y)
       .def<&runtime::ObjectIs, 2>("is");
 
