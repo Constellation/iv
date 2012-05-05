@@ -385,6 +385,12 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
+// section 15.2.3.15 Object.isObject(O)
+inline JSVal ObjectIsObject(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Object.isObject", args, e);
+  return JSVal::Bool(args.At(0).IsObject());
+}
+
 // ES.next Object.is(x, y)
 // http://wiki.ecmascript.org/doku.php?id=harmony:egal
 inline JSVal ObjectIs(const Arguments& args, Error* e) {
