@@ -1361,13 +1361,13 @@ inline uint64_t ToLocaleLowerCase(locale::Locale locale,
           return 0x012F0307;
         }
         case 0x00CC: {
-          return 0x006903070300;
+          return UINT64_C(0x006903070300);
         }
         case 0x00CD: {
-          return 0x006903070301;
+          return UINT64_C(0x006903070301);
         }
         case 0x0128: {
-          return 0x006903070303;
+          return UINT64_C(0x006903070303);
         }
       }
       break;
