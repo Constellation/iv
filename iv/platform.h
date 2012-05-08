@@ -80,22 +80,29 @@
 #endif
 
 // SSE
-#if defined(__SSE1__)
+#if defined(__SSE1__) ||\
+    (defined(_M_IX86_FP) && _M_IX86_FP == 1)
   #undef IV_CPU_SSE
   #define IV_CPU_SSE IV_MAKE_VERSION(1, 0, 0)
 #endif
 
-#if defined(__SSE2__)
+#if defined(__SSE2__) ||\
+    (defined(_M_IX86_FP) && _M_IX86_FP == 2)
   #undef IV_CPU_SSE
   #define IV_CPU_SSE IV_MAKE_VERSION(2, 0, 0)
 #endif
 
-#if defined(__SSE3__)
+// Currenly, we cannot detect AVX archtecture on MSVC
+//
+// http://connect.microsoft.com/VisualStudio/feedback/details/605858/arch-avx-should-define-a-predefined-macro-in-x64-and-set-a-unique-value-for-m-ix86-fp-in-win32
+#if defined(__SSE3__) ||\
+    (defined(_M_IX86_FP) && _M_IX86_FP == 3)
   #undef IV_CPU_SSE
   #define IV_CPU_SSE IV_MAKE_VERSION(3, 0, 0)
 #endif
 
-#if defined(__SSE4_1__)
+#if defined(__SSE4_1__) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP == 3)
   #undef IV_CPU_SSE
   #define IV_CPU_SSE IV_MAKE_VERSION(4, 1, 0)
 #endif
