@@ -365,7 +365,7 @@ inline JSVal NumberCLZ(const Arguments& args, Error* e) {
   } else {
     x = obj.GetUInt32();
   }
-  return JSVal::Int32(static_cast<int32_t>(core::math::NLZ(x)));
+  return JSVal::Int32(static_cast<int32_t>(core::math::CLZ(x)));
 }
 
 } } }  // namespace iv::lv5::runtime

@@ -60,8 +60,10 @@ def Build():
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
+    EnumVariable('sse', 'sse option', 'no',
+                 allowed_values=('no', 'sse', 'sse2', 'sse3', 'sse4'),
+                 map={}, ignorecase=2),
     BoolVariable('cxx1x', '', 0),
-    BoolVariable('nosse', '', 0),
     BoolVariable('direct_threading', '', 0),
     BoolVariable('release', '', 0),
     BoolVariable('i18n', '', 0)
@@ -101,6 +103,9 @@ def Build():
   if env['prof']:
     env.Append(CCFLAGS=['-g3'])
 
+  if env['sse'] is not 'no':
+    env.Append(CCFLAGS=['-m' + env['sse']])
+
   if env['gcov']:
     env.Append(
       CCFLAGS=["-coverage"],
@@ -113,13 +118,6 @@ def Build():
       # use libc++
       env.Append(CXXFLAGS=["-stdlib=libc++"])
       env.Append(LIBS=["c++"])
-
-  if not env['nosse']:
-    env.Append(
-        CCFLAGS=["-msse2"],
-        CPPDEFINES=["IV_USE_SSE"])
-    if env["CC"] == "gcc":
-      env.Append(CCFLAGS="-mfpmath=sse")
 
   if env['debug']:
     # -Werror is defined in debug mode only

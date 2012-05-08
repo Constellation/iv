@@ -4,6 +4,8 @@
 #include <iv/detail/array.h>
 #include <iv/detail/cinttypes.h>
 #include <iv/platform.h>
+#include <iv/intrinsic.h>
+
 namespace iv {
 namespace core {
 namespace math {
@@ -44,28 +46,28 @@ struct FLP2 {
 };
 
 template<uint32_t N>
-struct NTZTable;
+struct CTZTable;
 
 #define V(I, N)\
-  template<>struct NTZTable<I>{\
+  template<>struct CTZTable<I> {\
     static const int value = N;\
   };
-#define NTZ_TABLE(V)\
-V( 0,  0) V( 1,  1) V( 2, 59) V( 3,  2) V( 4, 60) V( 5, 40) V( 6, 54) V( 7,  3)\
-V( 8, 61) V( 9, 32) V(10, 49) V(11, 41) V(12, 55) V(13, 19) V(14, 35) V(15,  4)\
-V(16, 62) V(17, 52) V(18, 30) V(19, 33) V(20, 50) V(21, 12) V(22, 14) V(23, 42)\
-V(24, 56) V(25, 16) V(26, 27) V(27, 20) V(28, 36) V(29, 23) V(30, 44) V(31,  5)\
-V(32, 63) V(33, 58) V(34, 39) V(35, 53) V(36, 31) V(37, 48) V(38, 18) V(39, 34)\
-V(40, 51) V(41, 29) V(42, 11) V(43, 13) V(44, 15) V(45, 26) V(46, 22) V(47, 43)\
-V(48, 57) V(49, 38) V(50, 47) V(51, 17) V(52, 28) V(53, 10) V(54, 25) V(55, 21)\
-V(56, 37) V(57, 46) V(58,  9) V(59, 24) V(60, 45) V(61,  8) V(62,  7) V(63,  6)
-NTZ_TABLE(V)
+#define CTZ_TABLE(V)\
+V( 0,  0) V( 1,  1) V( 2, 59) V( 3,  2) V( 4, 60) V( 5, 40) V( 6, 54) V( 7,  3)  /* NOLINT */\
+V( 8, 61) V( 9, 32) V(10, 49) V(11, 41) V(12, 55) V(13, 19) V(14, 35) V(15,  4)  /* NOLINT */\
+V(16, 62) V(17, 52) V(18, 30) V(19, 33) V(20, 50) V(21, 12) V(22, 14) V(23, 42)  /* NOLINT */\
+V(24, 56) V(25, 16) V(26, 27) V(27, 20) V(28, 36) V(29, 23) V(30, 44) V(31,  5)  /* NOLINT */\
+V(32, 63) V(33, 58) V(34, 39) V(35, 53) V(36, 31) V(37, 48) V(38, 18) V(39, 34)  /* NOLINT */\
+V(40, 51) V(41, 29) V(42, 11) V(43, 13) V(44, 15) V(45, 26) V(46, 22) V(47, 43)  /* NOLINT */\
+V(48, 57) V(49, 38) V(50, 47) V(51, 17) V(52, 28) V(53, 10) V(54, 25) V(55, 21)  /* NOLINT */\
+V(56, 37) V(57, 46) V(58,  9) V(59, 24) V(60, 45) V(61,  8) V(62,  7) V(63,  6)  /* NOLINT */
+CTZ_TABLE(V)
 #undef V
-#undef NTZ_TABLE
+#undef CTZ_TABLE
 
 template<int64_t X>
-struct NTZ {
-  static const int value = (!X) ? 64 : NTZTable<(static_cast<uint64_t>(X & -X) * UINT64_C(0x03F566ED27179461) >> 58)>::value;
+struct CTZ {
+  static const int value = (!X) ? 64 : CTZTable<(static_cast<uint64_t>(X & -X) * UINT64_C(0x03F566ED27179461) >> 58)>::value;  // NOLINT
 };
 
 }  // namespace detail
@@ -94,7 +96,10 @@ inline bool IsSubtractOverflow(int32_t lhs, int32_t rhs, int32_t* dif) {
 // PopCount: population count
 // from "Hacker's Delight" section 5-1
 inline uint32_t PopCount(uint32_t x) {
-#if defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+#if defined(IV_INTRINSIC_AVAILABLE) &&\
+    defined(IV_CPU_SSE) && IV_CPU_SSE >= IV_MAKE_VERSION(4, 2, 0)
+  return _mm_popcnt_u32(x);
+#elif defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
   return __builtin_popcount(x);
 #else
   x = (x & 0x55555555) + (x >> 1 & 0x55555555);
@@ -127,12 +132,20 @@ inline uint32_t CLP2(uint32_t x) {
   return x + 1;
 }
 
-// NLZ: number of leading zeros
-// a.k.a. CLZ, count leading zeros
+// CLZ: count leading zeros
 // from "Hacker's Delight" section 5-3
-inline uint32_t NLZ(uint32_t x) {
+//
+// and intrinsics
+//   http://en.wikipedia.org/wiki/Find_first_set
+inline uint32_t CLZ(uint32_t x) {
 #if defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
-  return __builtin_clz(x);
+  // if x = 0,
+  // __builtin_clz does undefined behavior
+  return (x) ? __builtin_clz(x) : 32;
+#elif defined(IV_COMPILER_MSVC)
+  // http://msdn.microsoft.com/ja-jp/library/bb384809.aspx
+  // Visual Studio 2008 or upper
+  return __lzcnt(x);
 #else
   x = x | (x >> 1);
   x = x | (x >> 2);
@@ -143,7 +156,7 @@ inline uint32_t NLZ(uint32_t x) {
 #endif
 }
 
-// NTZ: number of tailing zeros
+// CTZ: count trailing zeros
 // faster way than "Hacker's Delight" section 5-4
 // http://www-graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightMultLookup
 // http://slashdot.jp/~Tellur52/journal/448479
@@ -174,18 +187,18 @@ inline uint32_t NLZ(uint32_t x) {
 //     std::cout << std::endl;
 //     return 0;
 //   }
-static const std::array<uint8_t, 64> kNTZ64 = { {
+static const std::array<uint8_t, 64> kCTZ64 = { {
   0,   1, 59,  2, 60, 40, 54,  3, 61, 32, 49, 41, 55, 19, 35,  4,
   62, 52, 30, 33, 50, 12, 14, 42, 56, 16, 27, 20, 36, 23, 44,  5,
   63, 58, 39, 53, 31, 48, 18, 34, 51, 29, 11, 13, 15, 26, 22, 43,
   57, 38, 47, 17, 28, 10, 25, 21, 37, 46,  9, 24, 45,  8,  7,  6
 } };
 
-inline uint64_t NTZ64(int64_t x) {
+inline uint64_t CTZ64(int64_t x) {
   if (!x) {
     return 64;
   }
-  return kNTZ64[
+  return kCTZ64[
       static_cast<uint64_t>(x & -x) * UINT64_C(0x03F566ED27179461) >> 58];
 }
 
