@@ -103,7 +103,7 @@ def Build():
   if env['prof']:
     env.Append(CCFLAGS=['-g3'])
 
-  if env['sse'] is not 'no':
+  if env['sse'] != 'no':
     env.Append(CCFLAGS=['-m' + env['sse']])
 
   if env['gcov']:
