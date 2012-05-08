@@ -143,11 +143,12 @@ inline uint32_t CLZ(uint32_t x) {
   // __builtin_clz does undefined behavior
   return (x) ? __builtin_clz(x) : 32;
 #elif defined(IV_COMPILER_MSVC)
-  // http://msdn.microsoft.com/ja-jp/library/bb384809.aspx
   // Visual Studio 2008 or upper have __lzcnt
+  // http://msdn.microsoft.com/ja-jp/library/bb384809.aspx
   // But we can't detect AVX at compile time (see platform.h)
   //
-  // So we use bsf to calculate clz
+  // So we use bsr to calculate clz
+  // http://msdn.microsoft.com/en-US/library/fbxyd7zd.aspx
   unsigned long r = 0;  // NOLINT
   if (_BitScanReverse(&r, x)) {
     return 31 - r;
