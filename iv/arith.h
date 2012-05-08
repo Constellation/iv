@@ -142,11 +142,11 @@ inline uint32_t CLZ(uint32_t x) {
   // if x = 0,
   // __builtin_clz does undefined behavior
   return (x) ? __builtin_clz(x) : 32;
-#elif defined(IV_COMPILER_MSVC)
+#else
   // http://msdn.microsoft.com/ja-jp/library/bb384809.aspx
   // Visual Studio 2008 or upper
-  return __lzcnt(x);
-#else
+  //  return __lzcnt(x);
+  // but we can't specify SSE at compile time
   x = x | (x >> 1);
   x = x | (x >> 2);
   x = x | (x >> 4);
