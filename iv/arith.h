@@ -4,6 +4,9 @@
 #include <iv/detail/array.h>
 #include <iv/detail/cinttypes.h>
 #include <iv/platform.h>
+#ifdef IV_OS_WIN
+  #include <intrin.h>
+#endif
 namespace iv {
 namespace core {
 namespace math {
@@ -108,16 +111,32 @@ inline uint32_t PopCount(uint32_t x) {
 // from "Hacker's Delight" section 3-2
 // flooring to 2^n
 inline uint32_t FLP2(uint32_t x) {
+#if defined(IV_OS_WIN)
+  unsigned long ret;
+  if (_BitScanReverse(&ret, x)) {
+    return 1U << ret;
+  } else {
+    return 0;
+  }
+#elif defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+  if (x == 0) return 0;
+  return 1U << (__builtin_clz(x) ^ 0x1f);
+#else
   x = x | (x >> 1);
   x = x | (x >> 2);
   x = x | (x >> 4);
   x = x | (x >> 8);
   x = x | (x >> 16);
   return x - (x >> 1);
+#endif
 }
 
 // ceiling to 2^n
 inline uint32_t CLP2(uint32_t x) {
+#if 1
+  if (x == 0 || x > 0x80000000) return 0;
+  return FLP2(2 * x - 1);
+#else
   x = x - 1;
   x = x | (x >> 1);
   x = x | (x >> 2);
@@ -125,6 +144,7 @@ inline uint32_t CLP2(uint32_t x) {
   x = x | (x >> 8);
   x = x | (x >> 16);
   return x + 1;
+#endif
 }
 
 // NLZ: number of leading zeros
