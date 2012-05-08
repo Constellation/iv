@@ -148,8 +148,7 @@ inline uint32_t CLZ(uint32_t x) {
   // But we can't detect AVX at compile time (see platform.h)
   //
   // So we use bsf to calculate clz
-  // http://stackoverflow.com/questions/355967/how-to-use-msvc-intrinsics-to-get-the-equivalent-of-this-gcc-code
-  uint32_t r = 0;
+  unsigned long r = 0;  // NOLINT
   if (_BitScanReverse(&r, x)) {
     return 31 - r;
   }
