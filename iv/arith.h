@@ -113,16 +113,33 @@ inline uint32_t PopCount(uint32_t x) {
 // from "Hacker's Delight" section 3-2
 // flooring to 2^n
 inline uint32_t FLP2(uint32_t x) {
+#if defined(IV_OS_WIN)
+  unsigned long ret;
+  if (_BitScanReverse(&ret, x)) {
+    return 1U << ret;
+  } else {
+    return 0;
+  }
+#elif defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+  if (x == 0) return 0;
+  return 1U << (__builtin_clz(x) ^ 0x1f);
+#else
   x = x | (x >> 1);
   x = x | (x >> 2);
   x = x | (x >> 4);
   x = x | (x >> 8);
   x = x | (x >> 16);
   return x - (x >> 1);
+#endif
 }
 
 // ceiling to 2^n
 inline uint32_t CLP2(uint32_t x) {
+#if 1
+  if (x == 0 || x > 0x80000000) return 0;
+  return FLP2(2 * x - 1);
+#else
+  // This is original Hacker's Delight implementation
   x = x - 1;
   x = x | (x >> 1);
   x = x | (x >> 2);
@@ -130,6 +147,7 @@ inline uint32_t CLP2(uint32_t x) {
   x = x | (x >> 8);
   x = x | (x >> 16);
   return x + 1;
+#endif
 }
 
 // CLZ: count leading zeros
@@ -149,9 +167,9 @@ inline uint32_t CLZ(uint32_t x) {
   //
   // So we use bsr to calculate clz
   // http://msdn.microsoft.com/en-US/library/fbxyd7zd.aspx
-  unsigned long r = 0;  // NOLINT
-  if (_BitScanReverse(&r, x)) {
-    return 31 - r;
+  unsigned long ret = 0;  // NOLINT
+  if (_BitScanReverse(&ret, x)) {
+    return 31 - ret;
   }
   return 32;
 #else
