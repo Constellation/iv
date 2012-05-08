@@ -17,7 +17,7 @@ TEST(ArithCase, FLP2Test) {
   uint32_t i = 0;
   for (Samples::const_iterator it = expected.begin(),
        last = expected.end(); it != last; ++it, ++i) {
-    EXPECT_EQ(*it, iv::core::FLP2(i)) << i;
+    EXPECT_EQ(*it, iv::core::math::FLP2(i)) << i;
   }
 }
 
@@ -36,6 +36,6 @@ TEST(ArithCase, CLP2Test) {
   uint32_t i = 0;
   for (Samples::const_iterator it = expected.begin(),
        last = expected.end(); it != last; ++it, ++i) {
-    EXPECT_EQ(*it, iv::core::CLP2(i)) << i;
+    EXPECT_EQ(*it, iv::core::math::CLP2(i)) << i;
   }
 }
