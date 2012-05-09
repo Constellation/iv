@@ -5,6 +5,7 @@
 #include <iv/utils.h>
 #include <iv/debug.h>
 #include <iv/noncopyable.h>
+#include <iv/arith.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/block_size.h>
 #include <iv/lv5/radio/block_control_fwd.h>
