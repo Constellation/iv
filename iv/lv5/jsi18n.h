@@ -142,9 +142,6 @@ class JSLocaleList : public JSObject {
         context::GetClassSlot(ctx, Class::LocaleList).prototype);
     return localelist;
   }
-
-  void MakeInitializedLocaleList() {
-  }
 };
 
 class JSCollator : public JSObject {
@@ -469,8 +466,11 @@ inline JSLocaleList* CreateLocaleList(
     Context* ctx, JSVal target, Error* e) {
   std::vector<std::string> list;
   if (target.IsUndefined()) {
-    const Locale& locale = icu::Locale::getDefault();
-    list.push_back(locale.getName());
+    // const Locale& locale = icu::Locale::getDefault();
+    // list.push_back(locale.getName());
+
+    // default locale
+    list.push_back("en-US");
   } else {
     JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
     const uint32_t len =
@@ -513,7 +513,6 @@ inline JSLocaleList* CreateLocaleList(
       symbol::length(),
       DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
       true, IV_LV5_ERROR_WITH(e, NULL));
-  localelist->MakeInitializedLocaleList();
   return localelist;
 }
 
@@ -554,7 +553,6 @@ inline JSVal LookupSupportedLocales(
       symbol::length(),
       DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
       true, IV_LV5_ERROR(e));
-  localelist->MakeInitializedLocaleList();
   return localelist;
 }
 
@@ -1058,7 +1056,8 @@ inline JSVal JSCollator::Initialize(Context* ctx,
         vec = JSVector::New(ctx);
         for (detail_i18n::CollatorOption::Values::const_iterator
              oit = it->values.begin(),
-             olast = it->values.end(); oit != olast && *oit; ++oit) {
+             olast = it->values.end();
+             oit != olast && *oit; ++oit) {
           vec->push_back(JSString::NewAsciiString(ctx, *oit));
         }
       }
