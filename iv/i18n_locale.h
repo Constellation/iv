@@ -1,37 +1,12 @@
 #ifndef IV_I18N_LOCALE_H_
 #define IV_I18N_LOCALE_H_
 #include <iv/ustringpiece.h>
+#include <iv/fixed_string.h>
 namespace iv {
 namespace core {
 namespace i18n {
 
 class LanguageTagScanner;
-
-template<std::size_t MAX>
-class FixedString {
- public:
-  FixedString(const StringPiece& str)
-    : size_(str.size()),
-      data_() {
-    assert(size() <= MAX);
-    std::copy(str.begin(), str.end(), data());
-    data()[size()] = '\0';
-  }
-
-  operator StringPiece() {
-    return StringPiece(data(), size());
-  }
-
-  std::size_t size() const { return size_; }
-
-  char* data() { return data_; }
-
-  const char* data() const { return data_; }
-
- private:
-  std::size_t size_;
-  char data_[MAX + 1];
-};
 
 class Locale {
  public:
@@ -39,6 +14,14 @@ class Locale {
 
   typedef std::vector<std::string> Vector;
   typedef std::multimap<char, std::string> Map;
+
+  // currently not used
+  typedef BasicFixedString<char, 3> ExtLang;
+  typedef BasicFixedString<char, 8> Language;
+  typedef BasicFixedString<char, 4> Script;
+  typedef BasicFixedString<char, 3> Region;
+  typedef BasicFixedString<char, 8> Variant;
+  typedef BasicFixedString<char, 8> Extension;
 
   const std::string& all() const { return all_; }
 
