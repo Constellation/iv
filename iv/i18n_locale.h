@@ -7,6 +7,32 @@ namespace i18n {
 
 class LanguageTagScanner;
 
+template<std::size_t MAX>
+class FixedString {
+ public:
+  FixedString(const StringPiece& str)
+    : size_(str.size()),
+      data_() {
+    assert(size() <= MAX);
+    std::copy(str.begin(), str.end(), data());
+    data()[size()] = '\0';
+  }
+
+  operator StringPiece() {
+    return StringPiece(data(), size());
+  }
+
+  std::size_t size() const { return size_; }
+
+  char* data() { return data_; }
+
+  const char* data() const { return data_; }
+
+ private:
+  std::size_t size_;
+  char data_[MAX + 1];
+};
+
 class Locale {
  public:
   friend class LanguageTagScanner;

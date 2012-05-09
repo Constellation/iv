@@ -134,14 +134,14 @@ class LanguageTagScanner {
     }
   }
 
-  bool IsWellFormed() const { return valid_; }
+  bool IsStructurallyValid() const { return valid_; }
 
   const Locale& locale() const { return locale_; }
 
   template<typename Iter>
   static std::string RemoveExtension(Iter it, Iter last) {
     this_type scanner(it, last);
-    if (scanner.IsWellFormed()) {
+    if (scanner.IsStructurallyValid()) {
       return scanner.Canonicalize(false);
     }
     return std::string(it, last);
@@ -151,7 +151,7 @@ class LanguageTagScanner {
   // Returns the canonical and case-regularized form of the locale argument
   // (which must be a String value that is
   // a well-formed BCP 47 language tag as verified
-  // by the IsWellFormedLanguageTag abstract operation).
+  // by the IsStructurallyValidLanguageTag abstract operation).
   // Specified in RFC 5646 section 4.5
   //
   // This implementation doesn't use ICU Locale implementation.
@@ -176,7 +176,7 @@ class LanguageTagScanner {
   //     return vec2.data();
   //   }
   std::string Canonicalize(bool remove_extensions = false) {
-    assert(IsWellFormed());
+    assert(IsStructurallyValid());
 
     // treat extlang
     if (!locale_.extlang().empty()) {
@@ -259,7 +259,7 @@ class LanguageTagScanner {
       const TagMap::const_iterator it = Grandfathered().find(lower_case);
       if (it != Grandfathered().end()) {
         LanguageTagScanner scan2(it->second.begin(), it->second.end());
-        const bool valid = scan2.IsWellFormed();
+        const bool valid = scan2.IsStructurallyValid();
         if (valid) {
           locale_ = scan2.locale();
         }
@@ -272,7 +272,7 @@ class LanguageTagScanner {
       const TagMap::const_iterator it = Redundant().find(lower_case);
       if (it != Redundant().end()) {
         LanguageTagScanner scan2(it->second.begin(), it->second.end());
-        const bool valid = scan2.IsWellFormed();
+        const bool valid = scan2.IsStructurallyValid();
         if (valid) {
           locale_ = scan2.locale();
         }

@@ -488,7 +488,7 @@ inline JSLocaleList* CreateLocaleList(
         }
         JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
         core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
-        if (!scanner.IsWellFormed()) {
+        if (!scanner.IsStructurallyValid()) {
           e->Report(Error::Range, "locale pattern is not well formed");
           return NULL;
         }

@@ -31,26 +31,26 @@ inline uint16_t ToLocaleIdentifierLowerCase(uint16_t ch) {
   return ch;
 }
 
-// 6.2.2 IsWellFormedLanguageTag(locale)
+// 6.2.2 IsStructurallyValidLanguageTag(locale)
 // BCP 47 language tag as specified in RFC 5646 section 2.1
 //
 // See iv/i18n_language_tag_verifier.h
 template<typename Iter>
-inline bool IsWellFormedLanguageTag(Iter it, Iter last) {
+inline bool IsStructurallyValidLanguageTag(Iter it, Iter last) {
   LanguageTagScanner verifier(it, last);
-  return verifier.IsWellFormed();
+  return verifier.IsStructurallyValid();
 }
 
-inline bool IsWellFormedLanguageTag(const StringPiece& piece) {
+inline bool IsStructurallyValidLanguageTag(const StringPiece& piece) {
   typedef StringPiece::const_iterator Iter;
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
-  return verifier.IsWellFormed();
+  return verifier.IsStructurallyValid();
 }
 
-inline bool IsWellFormedLanguageTag(const UStringPiece& piece) {
+inline bool IsStructurallyValidLanguageTag(const UStringPiece& piece) {
   typedef UStringPiece::const_iterator Iter;
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
-  return verifier.IsWellFormed();
+  return verifier.IsStructurallyValid();
 }
 
 // 10.2.1 IndexOfMatch(availableLocales, locale)
@@ -100,7 +100,7 @@ inline LookupResult LookupMatch(AvailIter ait, AvailIter alast,
   Locale locale;
   for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
     LanguageTagScanner scanner(it->begin(), it->end());
-    if (!scanner.IsWellFormed()) {
+    if (!scanner.IsStructurallyValid()) {
       continue;
     }
     const std::string no_extensions_locale = scanner.Canonicalize(true);
