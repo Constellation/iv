@@ -62,17 +62,8 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
       .def(context::Intern(ctx, "sensitivity"),
            collator->GetField(JSCollator::SENSITIVITY),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "backwards"),
-           collator->GetField(JSCollator::BACKWARDS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "caseLevel"),
-           collator->GetField(JSCollator::CASE_LEVEL),
-           ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "numeric"),
            collator->GetField(JSCollator::NUMERIC),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "hiraganaQuaternary"),
-           collator->GetField(JSCollator::HIRAGANA_QUATERNARY),
            ATTR::W | ATTR::E | ATTR::C)
       .def(context::Intern(ctx, "normalization"),
            collator->GetField(JSCollator::NORMALIZATION),

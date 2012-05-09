@@ -153,10 +153,7 @@ class JSCollator : public JSObject {
 
   enum CollatorField {
     USAGE = 0,
-    BACKWARDS,
-    CASE_LEVEL,
     NUMERIC,
-    HIRAGANA_QUATERNARY,
     NORMALIZATION,
     CASE_FIRST,
     SENSITIVITY,
@@ -757,13 +754,7 @@ struct CollatorOption {
 typedef std::array<CollatorOption, 6> CollatorOptionTable;
 
 static const CollatorOptionTable kCollatorOptionTable = { {
-  { "kb", JSCollator::BACKWARDS, "backwards",
-    Options::BOOLEAN, { { NULL } } },
-  { "kc", JSCollator::CASE_LEVEL, "caseLevel",
-    Options::BOOLEAN, { { NULL } } },
   { "kn", JSCollator::NUMERIC, "numeric",
-    Options::BOOLEAN, { { NULL } } },
-  { "kh", JSCollator::HIRAGANA_QUATERNARY, "hiraganaQuaternary",
     Options::BOOLEAN, { { NULL } } },
   { "kk", JSCollator::NORMALIZATION, "normalization",
     Options::BOOLEAN, { { NULL } } },
@@ -1178,17 +1169,8 @@ inline JSVal JSCollator::Initialize(Context* ctx,
 
   // initialize icu::Collator
   detail_i18n::SetICUCollatorBooleanOption<
-      JSCollator::BACKWARDS,
-      UCOL_FRENCH_COLLATION>(obj, collator, IV_LV5_ERROR(e));
-  detail_i18n::SetICUCollatorBooleanOption<
-      JSCollator::CASE_LEVEL,
-      UCOL_CASE_LEVEL>(obj, collator, IV_LV5_ERROR(e));
-  detail_i18n::SetICUCollatorBooleanOption<
       JSCollator::NUMERIC,
       UCOL_NUMERIC_COLLATION>(obj, collator, IV_LV5_ERROR(e));
-  detail_i18n::SetICUCollatorBooleanOption<
-      JSCollator::HIRAGANA_QUATERNARY,
-      UCOL_HIRAGANA_QUATERNARY_MODE>(obj, collator, IV_LV5_ERROR(e));
   detail_i18n::SetICUCollatorBooleanOption<
       JSCollator::NORMALIZATION,
       UCOL_NORMALIZATION_MODE>(obj, collator, IV_LV5_ERROR(e));
