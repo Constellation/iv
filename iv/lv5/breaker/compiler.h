@@ -188,6 +188,18 @@ class Compiler {
         case r::OP::BINARY_IN:
           EmitBINARY_IN(instr);
           break;
+        case r::OP::BINARY_EQ:
+          EmitBINARY_EQ(instr);
+          break;
+        case r::OP::BINARY_STRICT_EQ:
+          EmitBINARY_STRICT_EQ(instr);
+          break;
+        case r::OP::BINARY_NE:
+          EmitBINARY_NE(instr);
+          break;
+        case r::OP::BINARY_STRICT_NE:
+          EmitBINARY_STRICT_NE(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -711,6 +723,106 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_IN);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_EQ(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_EQ_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_EQ_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_EQ and IF_FALSE
+      asm_->sete(asm_->al);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->jmp(".BINARY_EQ_EXIT");
+      asm_->L(".BINARY_EQ_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_EQ);
+      asm_->L(".BINARY_EQ_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_STRICT_EQ(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_STRICT_EQ and IF_FALSE
+      asm_->sete(asm_->al);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->jmp(".BINARY_STRICT_EQ_EXIT");
+      asm_->L(".BINARY_STRICT_EQ_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_STRICT_EQ);
+      asm_->L(".BINARY_STRICT_EQ_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_NE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_NE_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_NE_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_NE and IF_FALSE
+      asm_->setne(asm_->al);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->jmp(".BINARY_NE_EXIT");
+      asm_->L(".BINARY_NE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_NE);
+      asm_->L(".BINARY_NE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_STRICT_NE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
+      asm_->cmp(asm_->esi, asm_->edx);
+      // TODO(Constellation)
+      // we should introduce fusion opcode, like BINARY_STRICT_NE and IF_FALSE
+      asm_->setne(asm_->al);
+      ConvertBooleanToJSVal(asm_->rax);
+      asm_->jmp(".BINARY_STRICT_NE_EXIT");
+      asm_->L(".BINARY_STRICT_NE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_STRICT_NE);
+      asm_->L(".BINARY_STRICT_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }

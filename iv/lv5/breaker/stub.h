@@ -153,6 +153,23 @@ inline Rep BINARY_IN(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, s)));
 }
 
+inline Rep BINARY_EQ(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const bool result = JSVal::AbstractEqual(ctx, lhs, rhs, ERR);
+  return Extract(JSVal::Bool(result));
+}
+
+inline Rep BINARY_STRICT_EQ(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  return Extract(JSVal::Bool(JSVal::StrictEqual(lhs, rhs)));
+}
+
+inline Rep BINARY_NE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const bool result = JSVal::AbstractEqual(ctx, lhs, rhs, ERR);
+  return Extract(JSVal::Bool(!result));
+}
+
+inline Rep BINARY_STRICT_NE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  return Extract(JSVal::Bool(!JSVal::StrictEqual(lhs, rhs)));
+}
 
 inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
