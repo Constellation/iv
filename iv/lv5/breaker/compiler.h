@@ -209,17 +209,61 @@ class Compiler {
         case r::OP::BINARY_BIT_OR:
           EmitBINARY_BIT_OR(instr);
           break;
-        case r::OP::LOAD_UNDEFINED:
-          EmitLOAD_UNDEFINED(instr);
+        case r::OP::RETURN:
+          EmitRETURN(instr);
           break;
+        case r::OP::THROW:
+          EmitTHROW(instr);
+          break;
+        case r::OP::POP_ENV:
+          EmitPOP_ENV(instr);
+          break;
+        case r::OP::WITH_SETUP:
+          EmitWITH_SETUP(instr);
+          break;
+        // case r::OP::RETURN_SUBROUTINE:
         case r::OP::DEBUGGER:
           EmitDEBUGGER(instr);
           break;
+        case r::OP::LOAD_UNDEFINED:
+          EmitLOAD_UNDEFINED(instr);
+          break;
+        case r::OP::LOAD_TRUE:
+          EmitLOAD_TRUE(instr);
+          break;
+        case r::OP::LOAD_FALSE:
+          EmitLOAD_FALSE(instr);
+          break;
+        case r::OP::LOAD_NULL:
+          EmitLOAD_NULL(instr);
+          break;
+        case r::OP::LOAD_EMPTY:
+          EmitLOAD_EMPTY(instr);
+          break;
+        case r::OP::LOAD_REGEXP:
+          EmitLOAD_REGEXP(instr);
+          break;
+        case r::OP::LOAD_OBJECT:
+          EmitLOAD_OBJECT(instr);
+          break;
+        // case r::OP::LOAD_ELEMENT:
+        // case r::OP::STORE_ELEMENT:
+        // case r::OP::DELETE_ELEMENT:
+        // case r::OP::INCREMENT_ELEMENT:
+        // case r::OP::DECREMENT_ELEMENT:
+        // case r::OP::POSTFIX_INCREMENT_ELEMENT:
+        // case r::OP::POSTFIX_DECREMENT_ELEMENT:
+        case r::OP::TO_NUMBER:
+          EmitTO_NUMBER(instr);
+          break;
+        case r::OP::TO_PRIMITIVE_AND_TO_STRING:
+          EmitTO_PRIMITIVE_AND_TO_STRING(instr);
+          break;
+        case r::OP::CONCAT:
+          EmitCONCAT(instr);
+          break;
         case r::OP::CALL:
           EmitCALL(instr);
-          break;
-        case r::OP::RETURN:
-          EmitRETURN(instr);
           break;
         case r::OP::RESULT:
           EmitRESULT(instr);
@@ -235,12 +279,6 @@ class Compiler {
           break;
         case r::OP::LOAD_FUNCTION:
           EmitLOAD_FUNCTION(instr);
-          break;
-        case r::OP::TO_PRIMITIVE_AND_TO_STRING:
-          EmitTO_PRIMITIVE_AND_TO_STRING(instr);
-          break;
-        case r::OP::CONCAT:
-          EmitCONCAT(instr);
           break;
         case r::OP::INSTANTIATE_DECLARATION_BINDING:
           EmitINSTANTIATE_DECLARATION_BINDING(instr);
@@ -268,9 +306,6 @@ class Compiler {
           break;
         case r::OP::JUMP_BY:
           EmitJUMP_BY(instr);
-          break;
-        case r::OP::THROW:
-          EmitTHROW(instr);
           break;
       }
       std::advance(instr, length);
@@ -1036,6 +1071,14 @@ class Compiler {
   }
 
   // opcode | src
+  void EmitTO_NUMBER(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::TO_NUMBER);
+  }
+
+  // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r12);
@@ -1095,6 +1138,15 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
     asm_->Call(static_cast<JSRegExp*(*)(Context*, JSRegExp*)>(&JSRegExp::New));
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | dst | map
+  void EmitLOAD_OBJECT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
+    asm_->Call(static_cast<JSObject*(*)(Context*, Map*)>(&JSObject::New));
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
