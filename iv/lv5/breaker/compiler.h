@@ -170,6 +170,21 @@ class Compiler {
         case r::OP::BINARY_RSHIFT_LOGICAL:
           EmitBINARY_RSHIFT_LOGICAL(instr);
           break;
+        case r::OP::BINARY_LT:
+          EmitBINARY_LT(instr);
+          break;
+        case r::OP::BINARY_LTE:
+          EmitBINARY_LTE(instr);
+          break;
+        case r::OP::BINARY_GT:
+          EmitBINARY_GT(instr);
+          break;
+        case r::OP::BINARY_GTE:
+          EmitBINARY_GTE(instr);
+          break;
+        case r::OP::BINARY_INSTANCEOF:
+          EmitBINARY_INSTANCEOF(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -208,18 +223,6 @@ class Compiler {
           break;
         case r::OP::INSTANTIATE_VARIABLE_BINDING:
           EmitINSTANTIATE_VARIABLE_BINDING(instr);
-          break;
-        case r::OP::BINARY_LT:
-          EmitBINARY_LT(instr);
-          break;
-        case r::OP::BINARY_LTE:
-          EmitBINARY_LTE(instr);
-          break;
-        case r::OP::BINARY_GT:
-          EmitBINARY_GT(instr);
-          break;
-        case r::OP::BINARY_GTE:
-          EmitBINARY_GTE(instr);
           break;
         case r::OP::INCREMENT:
           EmitINCREMENT(instr);
@@ -676,6 +679,22 @@ class Compiler {
       asm_->Call(&stub::BINARY_GTE);
       asm_->L(".BINARY_GTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_INSTANCEOF(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      asm_->Call(&stub::BINARY_INSTANCEOF);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_LSHIFT_EXIT");
     }
   }
 

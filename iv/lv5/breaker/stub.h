@@ -130,6 +130,20 @@ inline Rep BINARY_GTE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
+inline Rep BINARY_INSTANCEOF(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  if (!rhs.IsObject()) {
+    ctx->PendingError()->Report(Error::Type, "instanceof requires object");
+    IV_LV5_BREAKER_RAISE();
+  }
+  JSObject* const robj = rhs.object();
+  if (!robj->IsCallable()) {
+    ctx->PendingError()->Report(Error::Type, "instanceof requires constructor");
+    IV_LV5_BREAKER_RAISE();
+  }
+  const bool result = robj->AsCallable()->HasInstance(ctx, lhs, ERR);
+  return Extract(JSVal::Bool(result));
+}
+
 inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
   return Extract(x);
