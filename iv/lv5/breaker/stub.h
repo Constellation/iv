@@ -144,6 +144,16 @@ inline Rep BINARY_INSTANCEOF(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(result));
 }
 
+inline Rep BINARY_IN(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  if (!rhs.IsObject()) {
+    ctx->PendingError()->Report(Error::Type, "in requires object");
+    IV_LV5_BREAKER_RAISE();
+  }
+  const Symbol s = lhs.ToSymbol(ctx, ERR);
+  return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, s)));
+}
+
+
 inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
   return Extract(x);

@@ -185,6 +185,9 @@ class Compiler {
         case r::OP::BINARY_INSTANCEOF:
           EmitBINARY_INSTANCEOF(instr);
           break;
+        case r::OP::BINARY_IN:
+          EmitBINARY_IN(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -694,7 +697,21 @@ class Compiler {
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_INSTANCEOF);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->L(".BINARY_LSHIFT_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_IN(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      asm_->Call(&stub::BINARY_IN);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
