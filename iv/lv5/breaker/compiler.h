@@ -128,6 +128,36 @@ class Compiler {
       }
 
       switch (opcode) {
+        case r::OP::NOP:
+          EmitNOP(instr);
+          break;
+        case r::OP::MV:
+          EmitMV(instr);
+          break;
+        case r::OP::UNARY_POSITIVE:
+          EmitUNARY_POSITIVE(instr);
+          break;
+        case r::OP::UNARY_NEGATIVE:
+          EmitUNARY_NEGATIVE(instr);
+          break;
+        case r::OP::UNARY_NOT:
+          EmitUNARY_NOT(instr);
+          break;
+        case r::OP::UNARY_BIT_NOT:
+          EmitUNARY_BIT_NOT(instr);
+          break;
+        case r::OP::BINARY_ADD:
+          EmitBINARY_ADD(instr);
+          break;
+        case r::OP::BINARY_SUBTRACT:
+          EmitBINARY_SUBTRACT(instr);
+          break;
+        case r::OP::BINARY_MULTIPLY:
+          EmitBINARY_MULTIPLY(instr);
+          break;
+        case r::OP::BINARY_DIVIDE:
+          EmitBINARY_DIVIDE(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -143,12 +173,6 @@ class Compiler {
         case r::OP::RESULT:
           EmitRESULT(instr);
           break;
-        case r::OP::NOP:
-          EmitNOP(instr);
-          break;
-        case r::OP::MV:
-          EmitMV(instr);
-          break;
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
           break;
@@ -160,12 +184,6 @@ class Compiler {
           break;
         case r::OP::LOAD_FUNCTION:
           EmitLOAD_FUNCTION(instr);
-          break;
-        case r::OP::BINARY_ADD:
-          EmitBINARY_ADD(instr);
-          break;
-        case r::OP::BINARY_SUBTRACT:
-          EmitBINARY_SUBTRACT(instr);
           break;
         case r::OP::TO_PRIMITIVE_AND_TO_STRING:
           EmitTO_PRIMITIVE_AND_TO_STRING(instr);
@@ -292,7 +310,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_ADD_SLOW_GENERIC");
@@ -304,11 +322,12 @@ class Compiler {
       asm_->add(asm_->rsi, asm_->rdi);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
-      asm_->L(".BINARY_ADD_SLOW_NUMBER");
+
       // rdi and rsi is always int32 (but overflow)
       // So we just add as int64_t and convert to double,
       // because INT32_MAX + INT32_MAX is in int64_t range, and convert to
       // double makes no error.
+      asm_->L(".BINARY_ADD_SLOW_NUMBER");
       asm_->movsxd(asm_->rsi, asm_->esi);
       asm_->movsxd(asm_->rdx, asm_->edx);
       asm_->add(asm_->rsi, asm_->rdx);
@@ -317,12 +336,12 @@ class Compiler {
       ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
+
       asm_->L(".BINARY_ADD_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_ADD);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_ADD_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -332,23 +351,24 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_SUB_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_SUB_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_SUBTRACT_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
-                                    asm_->edx, asm_->eax, ".BINARY_SUB_SLOW_NUMBER");
+                                    asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
       asm_->mov(asm_->esi, asm_->eax);
       asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
       asm_->add(asm_->rsi, asm_->rdi);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
-      asm_->jmp(".BINARY_SUB_EXIT");
-      asm_->L(".BINARY_SUB_SLOW_NUMBER");
+      asm_->jmp(".BINARY_SUBTRACT_EXIT");
+
       // rdi and rsi is always int32 (but overflow)
       // So we just sub as int64_t and convert to double,
-      // because INT32_MAX + INT32_MAX is in int64_t range, and convert to
+      // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
       // double makes no error.
+      asm_->L(".BINARY_SUBTRACT_SLOW_NUMBER");
       asm_->movsxd(asm_->rsi, asm_->esi);
       asm_->movsxd(asm_->rdx, asm_->edx);
       asm_->sub(asm_->rsi, asm_->rdx);
@@ -356,13 +376,64 @@ class Compiler {
       asm_->movq(asm_->rsi, asm_->xmm0);
       ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
-      asm_->jmp(".BINARY_SUB_EXIT");
-      asm_->L(".BINARY_SUB_SLOW_GENERIC");
+      asm_->jmp(".BINARY_SUBTRACT_EXIT");
+
+      asm_->L(".BINARY_SUBTRACT_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_SUBTRACT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->L(".BINARY_SUB_EXIT");
-      asm_->outLocalLabel();
+      asm_->L(".BINARY_SUBTRACT_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_MULTIPLY(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      MultiplyingInt32OverflowGuard(asm_->esi,
+                                    asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
+      asm_->mov(asm_->esi, asm_->eax);
+      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rdi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_MULTIPLY_EXIT");
+
+      // rdi and rsi is always int32 (but overflow)
+      asm_->L(".BINARY_MULTIPLY_SLOW_NUMBER");
+      asm_->cvtsi2sd(asm_->xmm0, asm_->esi);
+      asm_->cvtsi2sd(asm_->xmm1, asm_->edx);
+      asm_->mulsd(asm_->xmm0, asm_->xmm1);
+      asm_->movq(asm_->rsi, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_MULTIPLY_EXIT");
+
+      asm_->L(".BINARY_MULTIPLY_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_MULTIPLY);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_MULTIPLY_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_DIVIDE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      asm_->Call(&stub::BINARY_DIVIDE);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -374,7 +445,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_LT_SLOW");
@@ -390,7 +461,6 @@ class Compiler {
       asm_->Call(&stub::BINARY_LT);
       asm_->L(".BINARY_LT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->outLocalLabel();
     }
   }
 
@@ -401,7 +471,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_LTE_SLOW");
@@ -417,7 +487,6 @@ class Compiler {
       asm_->Call(&stub::BINARY_LTE);
       asm_->L(".BINARY_LTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->outLocalLabel();
     }
   }
 
@@ -428,7 +497,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_GT_SLOW");
@@ -444,7 +513,6 @@ class Compiler {
       asm_->Call(&stub::BINARY_GT);
       asm_->L(".BINARY_GT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->outLocalLabel();
     }
   }
 
@@ -455,7 +523,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_GTE_SLOW");
@@ -471,7 +539,6 @@ class Compiler {
       asm_->Call(&stub::BINARY_GTE);
       asm_->L(".BINARY_GTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->outLocalLabel();
     }
   }
 
@@ -520,7 +587,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       IsNumber(asm_->rsi, asm_->rax);
       asm_->jnz(".UNARY_POSITIVE_FAST");
@@ -531,7 +598,6 @@ class Compiler {
       asm_->L(".UNARY_POSITIVE_FAST");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->L(".UNARY_POSITIVE_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -540,7 +606,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_NEGATIVE_SLOW");
       asm_->mov(asm_->eax, asm_->esi);
@@ -552,7 +618,6 @@ class Compiler {
       asm_->Call(&stub::UNARY_NEGATIVE);
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->outLocalLabel();
     }
   }
 
@@ -571,7 +636,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
@@ -582,7 +647,6 @@ class Compiler {
       asm_->Call(&stub::UNARY_BIT_NOT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".UNARY_BIT_NOT_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -684,26 +748,23 @@ class Compiler {
 
   // opcode | (callee | offset | argc_with_this)
   void EmitCONSTRUCT(const Instruction* instr) {
-    {
-      asm_->inLocalLabel();
+    const Assembler::LocalLabelScope scope(asm_);
 
-      // after call of JS Function
-      // rax is result value
-      asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
-      asm_->and(asm_->rsi, asm_->rax);
-      asm_->jnz(".RESULT_IS_OK");  // not cell
-      asm_->test(asm_->rax, asm_->rax);
-      asm_->jz(".RESULT_IS_OK");  // empty
-      // currently, rax target is garanteed as object
-      asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
-      asm_->shr(asm_->rcx, radio::Color::kOffset);
-      asm_->cmp(asm_->rcx, radio::OBJECT);
-      asm_->je(".RESULT_IS_OK");
-      // constructor call and return value is not object
-      asm_->mov(asm_->rax, asm_->ptr[asm_->r13 - kJSValSize * railgun::FrameConstant<>::kThisOffset]);  // NOLINT
-      asm_->L(".RESULT_IS_OK");
-      asm_->outLocalLabel();
-    }
+    // after call of JS Function
+    // rax is result value
+    asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
+    asm_->and(asm_->rsi, asm_->rax);
+    asm_->jnz(".RESULT_IS_OK");  // not cell
+    asm_->test(asm_->rax, asm_->rax);
+    asm_->jz(".RESULT_IS_OK");  // empty
+    // currently, rax target is garanteed as object
+    asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
+    asm_->shr(asm_->rcx, radio::Color::kOffset);
+    asm_->cmp(asm_->rcx, radio::OBJECT);
+    asm_->je(".RESULT_IS_OK");
+    // constructor call and return value is not object
+    asm_->mov(asm_->rax, asm_->ptr[asm_->r13 - kJSValSize * railgun::FrameConstant<>::kThisOffset]);  // NOLINT
+    asm_->L(".RESULT_IS_OK");
   }
 
   // opcode | (dst | index) | nop | nop
@@ -744,7 +805,7 @@ class Compiler {
     const int16_t offset = Reg(instr[1].ssw.i16[1]);
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
@@ -772,7 +833,6 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
       asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
       asm_->L(".CALL_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -817,7 +877,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i32[0]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
       asm_->inc(asm_->esi);
@@ -839,7 +899,6 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".INCREMENT_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -848,7 +907,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i32[0]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
       asm_->sub(asm_->esi, 1);
@@ -859,8 +918,8 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
-      asm_->L(".DECREMENT_OVERFLOW");
       // overflow ==> INT32_MIN - 1
+      asm_->L(".DECREMENT_OVERFLOW");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
       asm_->jmp(".DECREMENT_EXIT");
 
@@ -870,7 +929,6 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".DECREMENT_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -880,7 +938,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
@@ -893,8 +951,8 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
       asm_->jmp(".INCREMENT_EXIT");
 
-      asm_->L(".INCREMENT_OVERFLOW");
       // overflow ==> INT32_MAX + 1
+      asm_->L(".INCREMENT_OVERFLOW");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
       asm_->jmp(".INCREMENT_EXIT");
 
@@ -905,7 +963,6 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".INCREMENT_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -915,7 +972,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
-      asm_->inLocalLabel();
+      const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
@@ -928,8 +985,8 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
-      asm_->L(".DECREMENT_OVERFLOW");
       // overflow ==> INT32_MIN - 1
+      asm_->L(".DECREMENT_OVERFLOW");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
       asm_->jmp(".DECREMENT_EXIT");
 
@@ -940,7 +997,6 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".DECREMENT_EXIT");
-      asm_->outLocalLabel();
     }
   }
 
@@ -1022,6 +1078,17 @@ class Compiler {
     asm_->mov(out, lhs);
     asm_->sub(out, rhs);
     asm_->jo(label);
+  }
+
+  void MultiplyingInt32OverflowGuard(const Xbyak::Reg32& lhs,
+                                     const Xbyak::Reg32& rhs,
+                                     const Xbyak::Reg32& out, const char* label) {
+    asm_->mov(out, lhs);
+    asm_->or(out, rhs);
+    asm_->shr(out, 15);
+    asm_->jnz(label);
+    asm_->mov(out, lhs);
+    asm_->imul(out, rhs);
   }
 
   static std::string MakeLabel(std::size_t num) {
