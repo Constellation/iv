@@ -10,8 +10,8 @@ inline JSVal RunEval(railgun::Context* ctx,
                      railgun::Code* code,
                      JSEnv* variable_env,
                      JSEnv* lexical_env,
-                     JSVal this_binding,
-                     Error* e) {
+                     JSVal this_binding) {
+  Error* e = ctx->PendingError();
   ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
   args.set_this_binding(this_binding);
   railgun::Frame* frame = ctx->vm()->stack()->NewEvalFrame(
@@ -41,12 +41,12 @@ inline JSVal RunEval(railgun::Context* ctx,
   return res;
 }
 
-inline JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e) {
+inline JSVal Run(railgun::Context* ctx, railgun::Code* code) {
   return RunEval(ctx,
                  code,
                  ctx->global_env(),
                  ctx->global_env(),
-                 ctx->global_obj(), e);
+                 ctx->global_obj());
 }
 
 } } }  // namespace iv::lv5::breaker
