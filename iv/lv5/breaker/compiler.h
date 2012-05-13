@@ -200,6 +200,15 @@ class Compiler {
         case r::OP::BINARY_STRICT_NE:
           EmitBINARY_STRICT_NE(instr);
           break;
+        case r::OP::BINARY_BIT_AND:
+          EmitBINARY_BIT_AND(instr);
+          break;
+        case r::OP::BINARY_BIT_XOR:
+          EmitBINARY_BIT_XOR(instr);
+          break;
+        case r::OP::BINARY_BIT_OR:
+          EmitBINARY_BIT_OR(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -823,6 +832,81 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_STRICT_NE);
       asm_->L(".BINARY_STRICT_NE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_BIT_AND(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_AND_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_AND_SLOW");
+      asm_->and(asm_->esi, asm_->edx);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
+      asm_->jmp(".BINARY_BIT_AND_EXIT");
+
+      asm_->L(".BINARY_BIT_AND_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_BIT_AND);
+
+      asm_->L(".BINARY_BIT_AND_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_BIT_XOR(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_XOR_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_XOR_SLOW");
+      asm_->xor(asm_->esi, asm_->edx);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
+      asm_->jmp(".BINARY_BIT_XOR_EXIT");
+
+      asm_->L(".BINARY_BIT_XOR_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_BIT_XOR);
+
+      asm_->L(".BINARY_BIT_XOR_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_BIT_OR(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_OR_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_OR_SLOW");
+      asm_->or(asm_->esi, asm_->edx);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
+      asm_->jmp(".BINARY_BIT_OR_EXIT");
+
+      asm_->L(".BINARY_BIT_OR_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_BIT_OR);
+
+      asm_->L(".BINARY_BIT_OR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }

@@ -171,6 +171,24 @@ inline Rep BINARY_STRICT_NE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(!JSVal::StrictEqual(lhs, rhs)));
 }
 
+inline Rep BINARY_BIT_AND(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const int32_t left = lhs.ToInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::Int32(left & right));
+}
+
+inline Rep BINARY_BIT_XOR(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const int32_t left = lhs.ToInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::Int32(left ^ right));
+}
+
+inline Rep BINARY_BIT_OR(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const int32_t left = lhs.ToInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::Int32(left | right));
+}
+
 inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
   const double x = src.ToNumber(ctx, ERR);
   return Extract(x);
