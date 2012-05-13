@@ -68,6 +68,12 @@ inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(left + right);
 }
 
+inline Rep BINARY_SUBTRACT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const double left = lhs.ToNumber(ctx, ERR);
+  const double res = left -  rhs.ToNumber(ctx, ERR);
+  return res;
+}
+
 inline Rep BINARY_LT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
@@ -310,8 +316,23 @@ inline Rep INCREMENT(railgun::Context* ctx, JSVal src) {
   return Extract(res + 1);
 }
 
+
 inline Rep DECREMENT(railgun::Context* ctx, JSVal src) {
   const double res = src.ToNumber(ctx, ERR);
+  return Extract(res - 1);
+}
+
+inline Rep POSTFIX_INCREMENT(railgun::Context* ctx,
+                             JSVal val, JSVal* src) {
+  const double res = val.ToNumber(ctx, ERR);
+  *src = res;
+  return Extract(res + 1);
+}
+
+inline Rep POSTFIX_DECREMENT(railgun::Context* ctx,
+                             JSVal val, JSVal* src) {
+  const double res = val.ToNumber(ctx, ERR);
+  *src = res;
   return Extract(res - 1);
 }
 

@@ -164,6 +164,9 @@ class Compiler {
         case r::OP::BINARY_ADD:
           EmitBINARY_ADD(instr);
           break;
+        case r::OP::BINARY_SUBTRACT:
+          EmitBINARY_SUBTRACT(instr);
+          break;
         case r::OP::TO_PRIMITIVE_AND_TO_STRING:
           EmitTO_PRIMITIVE_AND_TO_STRING(instr);
           break;
@@ -193,6 +196,12 @@ class Compiler {
           break;
         case r::OP::DECREMENT:
           EmitDECREMENT(instr);
+          break;
+        case r::OP::POSTFIX_INCREMENT:
+          EmitPOSTFIX_INCREMENT(instr);
+          break;
+        case r::OP::POSTFIX_DECREMENT:
+          EmitPOSTFIX_DECREMENT(instr);
           break;
         case r::OP::IF_TRUE:
           EmitIF_TRUE(instr);
@@ -313,6 +322,46 @@ class Compiler {
       asm_->Call(&stub::BINARY_ADD);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_ADD_EXIT");
+      asm_->outLocalLabel();
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_SUBTRACT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_SUB_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_SUB_SLOW_GENERIC");
+      SubtractingInt32OverflowGuard(asm_->esi,
+                                    asm_->edx, asm_->eax, ".BINARY_SUB_SLOW_NUMBER");
+      asm_->mov(asm_->esi, asm_->eax);
+      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rdi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_SUB_EXIT");
+      asm_->L(".BINARY_SUB_SLOW_NUMBER");
+      // rdi and rsi is always int32 (but overflow)
+      // So we just sub as int64_t and convert to double,
+      // because INT32_MAX + INT32_MAX is in int64_t range, and convert to
+      // double makes no error.
+      asm_->movsxd(asm_->rsi, asm_->esi);
+      asm_->movsxd(asm_->rdx, asm_->edx);
+      asm_->sub(asm_->rsi, asm_->rdx);
+      asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
+      asm_->movq(asm_->rsi, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_SUB_EXIT");
+      asm_->L(".BINARY_SUB_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_SUBTRACT);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_SUB_EXIT");
       asm_->outLocalLabel();
     }
   }
@@ -802,7 +851,7 @@ class Compiler {
       asm_->inLocalLabel();
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
-      asm_->sub(asm_->esi, -1);
+      asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
@@ -818,6 +867,76 @@ class Compiler {
       asm_->L(".DECREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::DECREMENT);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+
+      asm_->L(".DECREMENT_EXIT");
+      asm_->outLocalLabel();
+    }
+  }
+
+  // opcode | (dst | src)
+  void EmitPOSTFIX_INCREMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->rsi);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->inc(asm_->esi);
+      asm_->jo(".INCREMENT_OVERFLOW");
+
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->jmp(".INCREMENT_EXIT");
+
+      asm_->L(".INCREMENT_OVERFLOW");
+      // overflow ==> INT32_MAX + 1
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->jmp(".INCREMENT_EXIT");
+
+      asm_->L(".INCREMENT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->lea(asm_->rdx, asm_->qword[asm_->r13 + dst * kJSValSize]);
+      asm_->Call(&stub::POSTFIX_INCREMENT);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+
+      asm_->L(".INCREMENT_EXIT");
+      asm_->outLocalLabel();
+    }
+  }
+
+  // opcode | (dst | src)
+  void EmitPOSTFIX_DECREMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
+    {
+      asm_->inLocalLabel();
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->rsi);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->sub(asm_->esi, 1);
+      asm_->jo(".DECREMENT_OVERFLOW");
+
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rax);
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->jmp(".DECREMENT_EXIT");
+
+      asm_->L(".DECREMENT_OVERFLOW");
+      // overflow ==> INT32_MIN - 1
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->jmp(".DECREMENT_EXIT");
+
+      asm_->L(".DECREMENT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
+      asm_->Call(&stub::POSTFIX_DECREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".DECREMENT_EXIT");
@@ -894,6 +1013,14 @@ class Compiler {
                                 const Xbyak::Reg32& out, const char* label) {
     asm_->mov(out, lhs);
     asm_->add(out, rhs);
+    asm_->jo(label);
+  }
+
+  void SubtractingInt32OverflowGuard(const Xbyak::Reg32& lhs,
+                                     const Xbyak::Reg32& rhs,
+                                     const Xbyak::Reg32& out, const char* label) {
+    asm_->mov(out, lhs);
+    asm_->sub(out, rhs);
     asm_->jo(label);
   }
 
