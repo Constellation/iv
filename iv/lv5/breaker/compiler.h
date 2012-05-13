@@ -203,6 +203,9 @@ class Compiler {
         case r::OP::JUMP_BY:
           EmitJUMP_BY(instr);
           break;
+        case r::OP::THROW:
+          EmitTHROW(instr);
+          break;
       }
       std::advance(instr, length);
     }
@@ -799,7 +802,7 @@ class Compiler {
       asm_->inLocalLabel();
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
-      asm_->dec(asm_->esi);
+      asm_->sub(asm_->esi, -1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);

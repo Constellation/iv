@@ -118,7 +118,8 @@ inline void* search_exception_handler(void* pc,
                                       void** target) {
   using namespace iv::lv5;  // NOLINT
   railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
-  uint64_t** offset_out = (reinterpret_cast<uint64_t**>(target) + 1);
+  uintptr_t* rsp_out = (reinterpret_cast<uintptr_t*>(target) + 1);
+  uintptr_t rsp = reinterpret_cast<uintptr_t>(target);
   railgun::Frame* frame = *frame_out;
   Error* e = ctx->PendingError();
   uint64_t offset = 0;
@@ -162,7 +163,7 @@ inline void* search_exception_handler(void* pc,
               reg[handler.ret()] = error;
             }
             *frame_out = frame;
-            *offset_out += offset * kStackPayload;
+            *rsp_out = rsp + (offset * kStackPayload);
             return handler.program_counter_end();
           }
         }
@@ -186,7 +187,7 @@ inline void* search_exception_handler(void* pc,
     }
   }
   *frame_out = frame;
-  *offset_out += offset * kStackPayload;
+  *rsp_out = rsp + (offset * kStackPayload);
   return Templates<>::exception_handler_is_not_found();
 }
 

@@ -37,17 +37,17 @@
 #define IV_LV5_BREAKER_TO_STRING_IMPL(s) #s
 #define IV_LV5_BREAKER_TO_STRING(s) IV_LV5_BREAKER_TO_STRING_IMPL(s)
 
-//#define IV_LV5_BREAKER_CONST_IMPL(s) IV_LV5_BREAKER_TO_STRING($ ##s)
-//#define IV_LV5_BREAKER_CONST(s) IV_LV5_BREAKER_CONST_IMPL(s)
+// #define IV_LV5_BREAKER_CONST_IMPL(s) IV_LV5_BREAKER_TO_STRING($ ##s)
+// #define IV_LV5_BREAKER_CONST(s) IV_LV5_BREAKER_CONST_IMPL(s)
 
 // Because mangling convension in C is different,
 // we must define mangling macro for each systems.
 #if defined(IV_OS_MACOSX)
-#define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
+  #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
 #elif defined(IV_OS_LINUX)
-#define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
+  #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
 #else
-#define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
+  #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
 #endif
 
 #define IV_LV5_BREAKER_RAISE()\

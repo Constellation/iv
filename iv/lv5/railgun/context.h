@@ -27,6 +27,7 @@ inline Context::Context()
     const MapCacheEntry entry(key, core::kNotFound);
     std::fill_n(global_map_cache_->begin(), global_map_cache_->size(), entry);
   }
+  pending_error_ = new (GC) Error();
 #ifdef DEBUG
   iterator_live_count_ = 0;
 #endif
