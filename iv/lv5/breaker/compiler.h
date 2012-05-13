@@ -161,6 +161,15 @@ class Compiler {
         case r::OP::BINARY_MODULO:
           EmitBINARY_MODULO(instr);
           break;
+        case r::OP::BINARY_LSHIFT:
+          EmitBINARY_LSHIFT(instr);
+          break;
+        case r::OP::BINARY_RSHIFT:
+          EmitBINARY_RSHIFT(instr);
+          break;
+        case r::OP::BINARY_RSHIFT_LOGICAL:
+          EmitBINARY_RSHIFT_LOGICAL(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -475,6 +484,93 @@ class Compiler {
       asm_->Call(&stub::BINARY_MODULO);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_MODULO_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_LSHIFT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
+      asm_->sal(asm_->esi, asm_->cl);
+      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rdx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_LSHIFT_EXIT");
+
+      asm_->L(".BINARY_LSHIFT_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdx, asm_->rcx);
+      asm_->Call(&stub::BINARY_LSHIFT);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_LSHIFT_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_RSHIFT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
+      asm_->sar(asm_->esi, asm_->cl);
+      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rdx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_RSHIFT_EXIT");
+
+      asm_->L(".BINARY_RSHIFT_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdx, asm_->rcx);
+      asm_->Call(&stub::BINARY_RSHIFT);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_RSHIFT_EXIT");
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      asm_->shr(asm_->esi, asm_->cl);
+      asm_->cmp(asm_->esi, 0);
+      asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
+      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rsi, asm_->rdx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
+
+      asm_->L(".BINARY_RSHIFT_LOGICAL_DOUBLE");
+      asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
+      asm_->movq(asm_->rsi, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
+
+      asm_->L(".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdx, asm_->rcx);
+      asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_RSHIFT_LOGICAL_EXIT");
     }
   }
 

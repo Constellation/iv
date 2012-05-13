@@ -92,6 +92,24 @@ inline Rep BINARY_MODULO(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(core::math::Modulo(left, right));
 }
 
+inline Rep BINARY_LSHIFT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const int32_t left = lhs.ToInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::Int32(left << (right & 0x1f)));
+}
+
+inline Rep BINARY_RSHIFT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const int32_t left = lhs.ToInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::Int32(left >> (right & 0x1f)));
+}
+
+inline Rep BINARY_RSHIFT_LOGICAL(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const uint32_t left = lhs.ToUInt32(ctx, ERR);
+  const int32_t right = rhs.ToInt32(ctx, ERR);
+  return Extract(JSVal::UInt32(left >> (right & 0x1f)));
+}
+
 inline Rep BINARY_LT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
@@ -260,7 +278,8 @@ inline Rep CALL(railgun::Context* ctx,
         NULL,  // TODO(Constellation) set precise position
         argc_with_this, false);
     if (!new_frame) {
-      ctx->PendingError()->Report(Error::Range, "maximum call stack size exceeded");
+      ctx->PendingError()->Report(Error::Range,
+                                  "maximum call stack size exceeded");
       IV_LV5_BREAKER_RAISE();
     }
     new_frame->InitThisBinding(ctx, ERR);
@@ -289,7 +308,8 @@ inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
 }
 
 template<bool CONFIGURABLE>
-inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx,
+                                           JSEnv* env, Symbol name) {
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
   } else if (env == ctx->global_env()) {
@@ -306,12 +326,14 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx, JSEnv* env, Sy
           true, ERR);
     } else {
       if (existing_prop.IsAccessorDescriptor()) {
-        ctx->PendingError()->Report(Error::Type, "create mutable function binding failed");
+        ctx->PendingError()->Report(Error::Type,
+                                    "create mutable function binding failed");
         IV_LV5_BREAKER_RAISE();
       }
       const DataDescriptor* const data = existing_prop.AsDataDescriptor();
       if (!data->IsWritable() || !data->IsEnumerable()) {
-        ctx->PendingError()->Report(Error::Type, "create mutable function binding failed");
+        ctx->PendingError()->Report(Error::Type,
+                                    "create mutable function binding failed");
         IV_LV5_BREAKER_RAISE();
       }
     }
@@ -320,7 +342,8 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx, JSEnv* env, Sy
 }
 
 template<bool CONFIGURABLE, bool STRICT>
-inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx,
+                                        JSEnv* env, Symbol name) {
   // opcode | (name | configurable)
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
