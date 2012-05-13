@@ -82,8 +82,14 @@ inline Rep BINARY_MULTIPLY(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
 
 inline Rep BINARY_DIVIDE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   const double left = lhs.ToNumber(ctx, ERR);
-  const double res = left /  rhs.ToNumber(ctx, ERR);
+  const double res = left / rhs.ToNumber(ctx, ERR);
   return Extract(res);
+}
+
+inline Rep BINARY_MODULO(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+  const double left = lhs.ToNumber(ctx, ERR);
+  const double right = rhs.ToNumber(ctx, ERR);
+  return Extract(core::math::Modulo(left, right));
 }
 
 inline Rep BINARY_LT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {

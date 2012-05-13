@@ -158,6 +158,9 @@ class Compiler {
         case r::OP::BINARY_DIVIDE:
           EmitBINARY_DIVIDE(instr);
           break;
+        case r::OP::BINARY_MODULO:
+          EmitBINARY_MODULO(instr);
+          break;
         case r::OP::LOAD_UNDEFINED:
           EmitLOAD_UNDEFINED(instr);
           break;
@@ -434,6 +437,44 @@ class Compiler {
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_DIVIDE);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    }
+  }
+
+  // opcode | (dst | lhs | rhs)
+  void EmitBINARY_MODULO(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t lhs = Reg(instr[1].i16[1]);
+    const int16_t rhs = Reg(instr[1].i16[2]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_MODULO_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_MODULO_SLOW_GENERIC");
+      // check rhs is more than 0 (n % 0 == NaN)
+      // lhs is >= 0 and rhs is > 0 because example like
+      //   -1 % -1
+      // should return -0.0, so this value is double
+      asm_->cmp(asm_->esi, 0);
+      asm_->jl(".BINARY_MODULO_SLOW_GENERIC");
+      asm_->cmp(asm_->edx, 0);
+      asm_->jle(".BINARY_MODULO_SLOW_GENERIC");
+
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->mov(asm_->ecx, asm_->edx);
+      asm_->mov(asm_->edx, 0);
+      asm_->idiv(asm_->ecx);
+
+      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rdx, asm_->rdi);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->jmp(".BINARY_MODULO_EXIT");
+
+      asm_->L(".BINARY_MODULO_SLOW_GENERIC");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->Call(&stub::BINARY_MODULO);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->L(".BINARY_MODULO_EXIT");
     }
   }
 
