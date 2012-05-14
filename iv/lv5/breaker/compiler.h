@@ -268,6 +268,18 @@ class Compiler {
         case r::OP::RAISE_IMMUTABLE:
           EmitRAISE_IMMUTABLE(instr);
           break;
+        case r::OP::TYPEOF:
+          EmitTYPEOF(instr);
+          break;
+        case r::OP::STORE_OBJECT_DATA:
+          EmitSTORE_OBJECT_DATA(instr);
+          break;
+        case r::OP::STORE_OBJECT_GET:
+          EmitSTORE_OBJECT_GET(instr);
+          break;
+        case r::OP::STORE_OBJECT_SET:
+          EmitSTORE_OBJECT_SET(instr);
+          break;
         case r::OP::CALL:
           EmitCALL(instr);
           break;
@@ -1118,6 +1130,67 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::RAISE_IMMUTABLE);
+  }
+
+  // opcode | (dst | src)
+  void EmitTYPEOF(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t src = Reg(instr[1].i16[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->Call(&stub::TYPEOF);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (obj | item) | (offset | merged)
+  void EmitSTORE_OBJECT_DATA(const Instruction* instr) {
+    const int16_t obj = Reg(instr[1].i16[0]);
+    const int16_t item = Reg(instr[1].i16[1]);
+    const uint32_t offset = Reg(instr[2].u32[0]);
+    const uint32_t merged = Reg(instr[2].u32[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->rcx, offset);
+    if (merged) {
+      asm_->Call(&stub::STORE_OBJECT_DATA<true>);
+    } else {
+      asm_->Call(&stub::STORE_OBJECT_DATA<false>);
+    }
+  }
+
+  // opcode | (obj | item) | (offset | merged)
+  void EmitSTORE_OBJECT_GET(const Instruction* instr) {
+    const int16_t obj = Reg(instr[1].i16[0]);
+    const int16_t item = Reg(instr[1].i16[1]);
+    const uint32_t offset = Reg(instr[2].u32[0]);
+    const uint32_t merged = Reg(instr[2].u32[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->rcx, offset);
+    if (merged) {
+      asm_->Call(&stub::STORE_OBJECT_GET<true>);
+    } else {
+      asm_->Call(&stub::STORE_OBJECT_GET<false>);
+    }
+  }
+
+  // opcode | (obj | item) | (offset | merged)
+  void EmitSTORE_OBJECT_SET(const Instruction* instr) {
+    const int16_t obj = Reg(instr[1].i16[0]);
+    const int16_t item = Reg(instr[1].i16[1]);
+    const uint32_t offset = Reg(instr[2].u32[0]);
+    const uint32_t merged = Reg(instr[2].u32[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->rcx, offset);
+    if (merged) {
+      asm_->Call(&stub::STORE_OBJECT_SET<true>);
+    } else {
+      asm_->Call(&stub::STORE_OBJECT_SET<false>);
+    }
   }
 
   // opcode

@@ -378,10 +378,63 @@ inline Rep RAISE_IMMUTABLE(railgun::Context* ctx, Symbol name) {
   return 0;
 }
 
+inline Rep TYPEOF(railgun::Context* ctx, JSVal src) {
+  return Extract(src.TypeOf(ctx));
+}
+
 inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
   const JSVal primitive = src.ToPrimitive(ctx, Hint::NONE, ERR);
   JSString* str = primitive.ToString(ctx, ERR);
   return Extract(str);
+}
+
+template<bool MERGED>
+inline void STORE_OBJECT_DATA(railgun::Context* ctx,
+                              JSVal target, JSVal item, uint32_t offset) {
+  JSObject* obj = target.object();
+  if (MERGED) {
+    obj->GetSlot(offset) =
+        PropertyDescriptor::Merge(
+            DataDescriptor(item, ATTR::W | ATTR::E | ATTR::C),
+        obj->GetSlot(offset));
+  } else {
+    obj->GetSlot(offset) =
+        DataDescriptor(item, ATTR::W | ATTR::E | ATTR::C);
+  }
+}
+
+template<bool MERGED>
+inline void STORE_OBJECT_GET(railgun::Context* ctx,
+                             JSVal target, JSVal item, uint32_t offset) {
+  JSObject* obj = target.object();
+  if (MERGED) {
+    obj->GetSlot(offset) =
+        PropertyDescriptor::Merge(
+            AccessorDescriptor(item.object(), NULL,
+                               ATTR::E | ATTR::C | ATTR::UNDEF_SETTER),
+        obj->GetSlot(offset));
+  } else {
+    obj->GetSlot(offset) =
+        AccessorDescriptor(item.object(), NULL,
+                           ATTR::E | ATTR::C | ATTR::UNDEF_SETTER);
+  }
+}
+
+template<bool MERGED>
+inline void STORE_OBJECT_SET(railgun::Context* ctx,
+                             JSVal target, JSVal item, uint32_t offset) {
+  JSObject* obj = target.object();
+  if (MERGED) {
+    obj->GetSlot(offset) =
+        PropertyDescriptor::Merge(
+            AccessorDescriptor(NULL, item.object(),
+                               ATTR::E | ATTR::C | ATTR::UNDEF_GETTER),
+        obj->GetSlot(offset));
+  } else {
+    obj->GetSlot(offset) =
+        AccessorDescriptor(NULL, item.object(),
+                           ATTR::E | ATTR::C | ATTR::UNDEF_GETTER);
+  }
 }
 
 template<bool CONFIGURABLE>
