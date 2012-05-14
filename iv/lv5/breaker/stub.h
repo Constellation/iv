@@ -523,6 +523,27 @@ inline bool TO_BOOLEAN(JSVal src) {
   return src.ToBoolean();
 }
 
+template<bool STRICT>
+inline Rep LOAD_ARGUMENTS(railgun::Context* ctx, railgun::Frame* frame) {
+  if (STRICT) {
+    JSObject* obj = JSStrictArguments::New(
+        ctx, frame->callee().object()->AsCallable(),
+        frame->arguments_crbegin(),
+        frame->arguments_crend(),
+        ERR);
+    return Extract(obj);
+  } else {
+    JSObject* obj = JSNormalArguments::New(
+        ctx, frame->callee().object()->AsCallable(),
+        frame->code()->params(),
+        frame->arguments_crbegin(),
+        frame->arguments_crend(),
+        static_cast<JSDeclEnv*>(frame->variable_env()),
+        ERR);
+    return Extract(obj);
+  }
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

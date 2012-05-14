@@ -312,6 +312,18 @@ class Compiler {
         case r::OP::STORE_GLOBAL:
           EmitSTORE_GLOBAL(instr);
           break;
+        case r::OP::INCREMENT:
+          EmitINCREMENT(instr);
+          break;
+        case r::OP::DECREMENT:
+          EmitDECREMENT(instr);
+          break;
+        case r::OP::POSTFIX_INCREMENT:
+          EmitPOSTFIX_INCREMENT(instr);
+          break;
+        case r::OP::POSTFIX_DECREMENT:
+          EmitPOSTFIX_DECREMENT(instr);
+          break;
         case r::OP::CALL:
           EmitCALL(instr);
           break;
@@ -330,23 +342,17 @@ class Compiler {
         case r::OP::LOAD_ARRAY:
           EmitLOAD_ARRAY(instr);
           break;
+        case r::OP::BUILD_ENV:
+          EmitBUILD_ENV(instr);
+          break;
         case r::OP::INSTANTIATE_DECLARATION_BINDING:
           EmitINSTANTIATE_DECLARATION_BINDING(instr);
           break;
         case r::OP::INSTANTIATE_VARIABLE_BINDING:
           EmitINSTANTIATE_VARIABLE_BINDING(instr);
           break;
-        case r::OP::INCREMENT:
-          EmitINCREMENT(instr);
-          break;
-        case r::OP::DECREMENT:
-          EmitDECREMENT(instr);
-          break;
-        case r::OP::POSTFIX_INCREMENT:
-          EmitPOSTFIX_INCREMENT(instr);
-          break;
-        case r::OP::POSTFIX_DECREMENT:
-          EmitPOSTFIX_DECREMENT(instr);
+        case r::OP::LOAD_ARGUMENTS:
+          EmitLOAD_ARGUMENTS(instr);
           break;
       }
       std::advance(instr, length);
@@ -1598,6 +1604,19 @@ class Compiler {
     const std::size_t num = jump_map_.find(to)->second;
     const std::string label = MakeLabel(num);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  // opcode | dst
+  void EmitLOAD_ARGUMENTS(const Instruction* instr) {
+    const int32_t dst = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->r13);
+    if (code_->strict()) {
+      asm_->Call(&stub::LOAD_ARGUMENTS<true>);
+    } else {
+      asm_->Call(&stub::LOAD_ARGUMENTS<false>);
+    }
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // leave flags
