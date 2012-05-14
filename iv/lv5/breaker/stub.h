@@ -360,6 +360,24 @@ inline Rep CONCAT(railgun::Context* ctx, JSVal* src, uint32_t count) {
   return Extract(JSString::New(ctx, src, count));
 }
 
+inline Rep RAISE_REFERENCE(railgun::Context* ctx, Symbol name) {
+  core::UStringBuilder builder;
+  builder.Append("Invalid left-hand side expression");
+  ctx->PendingError()->Report(Error::Reference, builder.BuildPiece());
+  IV_LV5_BREAKER_RAISE();
+  return 0;
+}
+
+inline Rep RAISE_IMMUTABLE(railgun::Context* ctx, Symbol name) {
+  core::UStringBuilder builder;
+  builder.Append("mutating immutable binding \"");
+  builder.Append(symbol::GetSymbolString(name));
+  builder.Append("\" not allowed in strict mode");
+  ctx->PendingError()->Report(Error::Type, builder.BuildPiece());
+  IV_LV5_BREAKER_RAISE();
+  return 0;
+}
+
 inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
   const JSVal primitive = src.ToPrimitive(ctx, Hint::NONE, ERR);
   JSString* str = primitive.ToString(ctx, ERR);

@@ -262,6 +262,12 @@ class Compiler {
         case r::OP::CONCAT:
           EmitCONCAT(instr);
           break;
+        case r::OP::RAISE_REFERENCE:
+          EmitRAISE_REFERENCE(instr);
+          break;
+        case r::OP::RAISE_IMMUTABLE:
+          EmitRAISE_IMMUTABLE(instr);
+          break;
         case r::OP::CALL:
           EmitCALL(instr);
           break;
@@ -1097,6 +1103,21 @@ class Compiler {
     asm_->mov(asm_->edx, count);
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode
+  void EmitRAISE_REFERENCE(const Instruction* instr) {
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->Call(&stub::RAISE_REFERENCE);
+  }
+
+  // opcode name
+  void EmitRAISE_IMMUTABLE(const Instruction* instr) {
+    const uint32_t index = Reg(instr[1].u32[0]);
+    const Symbol name = code_->names()[index];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+    asm_->Call(&stub::RAISE_IMMUTABLE);
   }
 
   // opcode
