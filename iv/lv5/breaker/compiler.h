@@ -1438,7 +1438,7 @@ class Compiler {
       asm_->Call(&stub::CONSTRUCT);
       asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
       asm_->cmp(asm_->rcx, asm_->r13);
-      asm_->je(".CALL_EXIT");
+      asm_->je(".CONSTRUCT_EXIT");
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
@@ -1459,8 +1459,6 @@ class Compiler {
       asm_->mov(asm_->rbx, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
       asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
       asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
-
-      asm_->L(".CALL_EXIT");
 
       // after call of JS Function
       // rax is result value
