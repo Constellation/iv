@@ -437,6 +437,18 @@ inline void STORE_OBJECT_SET(railgun::Context* ctx,
   }
 }
 
+inline void INIT_VECTOR_ARRAY_ELEMENT(
+    JSVal target, const JSVal* reg, uint32_t index, uint32_t size) {
+  JSArray* ary = static_cast<JSArray*>(target.object());
+  ary->SetToVector(index, reg, reg + size);
+}
+
+inline void INIT_SPARSE_ARRAY_ELEMENT(
+    JSVal target, const JSVal* reg, uint32_t index, uint32_t size) {
+  JSArray* ary = static_cast<JSArray*>(target.object());
+  ary->SetToMap(index, reg, reg + size);
+}
+
 template<bool CONFIGURABLE>
 inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx,
                                            JSEnv* env, Symbol name) {

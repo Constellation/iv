@@ -280,14 +280,31 @@ class Compiler {
         case r::OP::STORE_OBJECT_SET:
           EmitSTORE_OBJECT_SET(instr);
           break;
-        case r::OP::CALL:
-          EmitCALL(instr);
-          break;
-        case r::OP::RESULT:
-          EmitRESULT(instr);
-          break;
+        // case r::OP::LOAD_PROP:
+        // case r::OP::LOAD_PROP_GENERIC:
+        // case r::OP::LOAD_PROP_OWN:
+        // case r::OP::LOAD_PROP_OWN_MEGAMORPHIC:
+        // case r::OP::LOAD_PROP_PROTO:
+        // case r::OP::LOAD_PROP_CHAIN:
+        // case r::OP::STORE_PROP:
+        // case r::OP::STORE_PROP_GENERIC:
+        // case r::OP::DELETE_PROP:
+        // case r::OP::INCREMENT_PROP:
+        // case r::OP::DECREMENT_PROP:
+        // case r::OP::POSTFIX_INCREMENT_PROP:
+        // case r::OP::POSTFIX_DECREMENT_PROP:
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
+          break;
+        case r::OP::JUMP_BY:
+          EmitJUMP_BY(instr);
+          break;
+        // case r::OP::JUMP_SUBROUTINE:
+        case r::OP::IF_FALSE:
+          EmitIF_FALSE(instr);
+          break;
+        case r::OP::IF_TRUE:
+          EmitIF_TRUE(instr);
           break;
         case r::OP::LOAD_GLOBAL:
           EmitLOAD_GLOBAL(instr);
@@ -295,8 +312,23 @@ class Compiler {
         case r::OP::STORE_GLOBAL:
           EmitSTORE_GLOBAL(instr);
           break;
+        case r::OP::CALL:
+          EmitCALL(instr);
+          break;
+        case r::OP::RESULT:
+          EmitRESULT(instr);
+          break;
         case r::OP::LOAD_FUNCTION:
           EmitLOAD_FUNCTION(instr);
+          break;
+        case r::OP::INIT_VECTOR_ARRAY_ELEMENT:
+          EmitINIT_VECTOR_ARRAY_ELEMENT(instr);
+          break;
+        case r::OP::INIT_SPARSE_ARRAY_ELEMENT:
+          EmitINIT_SPARSE_ARRAY_ELEMENT(instr);
+          break;
+        case r::OP::LOAD_ARRAY:
+          EmitLOAD_ARRAY(instr);
           break;
         case r::OP::INSTANTIATE_DECLARATION_BINDING:
           EmitINSTANTIATE_DECLARATION_BINDING(instr);
@@ -315,15 +347,6 @@ class Compiler {
           break;
         case r::OP::POSTFIX_DECREMENT:
           EmitPOSTFIX_DECREMENT(instr);
-          break;
-        case r::OP::IF_TRUE:
-          EmitIF_TRUE(instr);
-          break;
-        case r::OP::IF_FALSE:
-          EmitIF_FALSE(instr);
-          break;
-        case r::OP::JUMP_BY:
-          EmitJUMP_BY(instr);
           break;
       }
       std::advance(instr, length);
@@ -1125,8 +1148,7 @@ class Compiler {
 
   // opcode name
   void EmitRAISE_IMMUTABLE(const Instruction* instr) {
-    const uint32_t index = Reg(instr[1].u32[0]);
-    const Symbol name = code_->names()[index];
+    const Symbol name = code_->names()[instr[1].u32[0]];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::RAISE_IMMUTABLE);
@@ -1198,6 +1220,32 @@ class Compiler {
     // TODO(Constellation) inline this function
     asm_->mov(asm_->rdi, asm_->r13);
     asm_->Call(&stub::POP_ENV);
+  }
+
+  // opcode | (ary | reg) | (index | size)
+  void EmitINIT_VECTOR_ARRAY_ELEMENT(const Instruction* instr) {
+    const int16_t ary = Reg(instr[1].i16[0]);
+    const int16_t reg = Reg(instr[1].i16[1]);
+    const uint32_t index = instr[2].u32[0];
+    const uint32_t size = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
+    asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
+    asm_->mov(asm_->rdx, index);
+    asm_->mov(asm_->rcx, size);
+    asm_->Call(&stub::INIT_VECTOR_ARRAY_ELEMENT);
+  }
+
+  // opcode | (ary | reg) | (index | size)
+  void EmitINIT_SPARSE_ARRAY_ELEMENT(const Instruction* instr) {
+    const int16_t ary = Reg(instr[1].i16[0]);
+    const int16_t reg = Reg(instr[1].i16[1]);
+    const uint32_t index = instr[2].u32[0];
+    const uint32_t size = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
+    asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
+    asm_->mov(asm_->rdx, index);
+    asm_->mov(asm_->rcx, size);
+    asm_->Call(&stub::INIT_SPARSE_ARRAY_ELEMENT);
   }
 
   // opcode | (dst | size)
