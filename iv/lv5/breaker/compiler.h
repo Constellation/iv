@@ -331,7 +331,9 @@ class Compiler {
         // case r::OP::DECREMENT_GLOBAL:
         // case r::OP::POSTFIX_INCREMENT_GLOBAL:
         // case r::OP::POSTFIX_DECREMENT_GLOBAL:
-        // case r::OP::TYPEOF_GLOBAL:
+        case r::OP::TYPEOF_GLOBAL:
+          EmitTYPEOF_GLOBAL(instr);
+          break;
         // case r::OP::LOAD_HEAP:
         // case r::OP::STORE_HEAP:
         // case r::OP::DELETE_HEAP:
@@ -1392,8 +1394,22 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::DELETE_GLOBAL);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | name) | nop | nop
+  void EmitTYPEOF_GLOBAL(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::TYPEOF_GLOBAL<true>);
+    } else {
+      asm_->Call(&stub::TYPEOF_GLOBAL<false>);
+    }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 

@@ -322,6 +322,18 @@ inline Rep DELETE_GLOBAL(railgun::Context* ctx, Symbol name) {
   }
 }
 
+template<bool STRICT>
+inline Rep TYPEOF_GLOBAL(railgun::Context* ctx, Symbol name) {
+  JSEnv* global = ctx->global_env();
+  if (global->HasBinding(ctx, name)) {
+    const JSVal res = global->GetBindingValue(ctx, name, STRICT, ERR);
+    return Extract(res.TypeOf(ctx));
+  } else {
+    // not found -> unresolvable reference
+    return Extract(ctx->global_data()->string_undefined());
+  }
+}
+
 inline Rep CALL(railgun::Context* ctx,
                 JSVal callee,
                 JSVal* offset,
