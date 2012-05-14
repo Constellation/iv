@@ -324,7 +324,9 @@ class Compiler {
         case r::OP::STORE_GLOBAL:
           EmitSTORE_GLOBAL(instr);
           break;
-        // case r::OP::DELETE_GLOBAL:
+        case r::OP::DELETE_GLOBAL:
+          EmitDELETE_GLOBAL(instr);
+          break;
         // case r::OP::INCREMENT_GLOBAL:
         // case r::OP::DECREMENT_GLOBAL:
         // case r::OP::POSTFIX_INCREMENT_GLOBAL:
@@ -1383,6 +1385,16 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_GLOBAL<false>);
     }
+  }
+
+  // opcode | (dst | name) | nop | nop
+  void EmitDELETE_GLOBAL(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->Call(&stub::DELETE_GLOBAL);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (callee | offset | argc_with_this)

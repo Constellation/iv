@@ -311,6 +311,17 @@ inline Rep STORE_GLOBAL(railgun::Context* ctx,
   return 0;
 }
 
+inline Rep DELETE_GLOBAL(railgun::Context* ctx, Symbol name) {
+  JSEnv* global = ctx->global_env();
+  if (global->HasBinding(ctx, name)) {
+    const bool res = global->DeleteBinding(ctx, name);
+    return Extract(JSVal::Bool(res));
+  } else {
+    // not found -> unresolvable reference
+    return Extract(JSTrue);
+  }
+}
+
 inline Rep CALL(railgun::Context* ctx,
                 JSVal callee,
                 JSVal* offset,
