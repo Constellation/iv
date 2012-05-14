@@ -306,12 +306,38 @@ class Compiler {
         case r::OP::IF_TRUE:
           EmitIF_TRUE(instr);
           break;
+        // case r::OP::FORIN_SETUP:
+        // case r::OP::FORIN_ENUMERATE:
+        // case r::OP::FORIN_LEAVE:
+        // case r::OP::TRY_CATCH_SETUP:
+        // case r::OP::LOAD_NAME:
+        // case r::OP::STORE_NAME:
+        // case r::OP::DELETE_NAME:
+        // case r::OP::INCREMENT_NAME:
+        // case r::OP::DECREMENT_NAME:
+        // case r::OP::POSTFIX_INCREMENT_NAME:
+        // case r::OP::POSTFIX_DECREMENT_NAME:
+        // case r::OP::TYPEOF_NAME:
         case r::OP::LOAD_GLOBAL:
           EmitLOAD_GLOBAL(instr);
           break;
         case r::OP::STORE_GLOBAL:
           EmitSTORE_GLOBAL(instr);
           break;
+        // case r::OP::DELETE_GLOBAL:
+        // case r::OP::INCREMENT_GLOBAL:
+        // case r::OP::DECREMENT_GLOBAL:
+        // case r::OP::POSTFIX_INCREMENT_GLOBAL:
+        // case r::OP::POSTFIX_DECREMENT_GLOBAL:
+        // case r::OP::TYPEOF_GLOBAL:
+        // case r::OP::LOAD_HEAP:
+        // case r::OP::STORE_HEAP:
+        // case r::OP::DELETE_HEAP:
+        // case r::OP::INCREMENT_HEAP:
+        // case r::OP::DECREMENT_HEAP:
+        // case r::OP::POSTFIX_INCREMENT_HEAP:
+        // case r::OP::POSTFIX_DECREMENT_HEAP:
+        // case r::OP::TYPEOF_HEAP:
         case r::OP::INCREMENT:
           EmitINCREMENT(instr);
           break;
@@ -324,9 +350,12 @@ class Compiler {
         case r::OP::POSTFIX_DECREMENT:
           EmitPOSTFIX_DECREMENT(instr);
           break;
+        // case r::OP::PREPARE_DYNAMIC_CALL:
         case r::OP::CALL:
           EmitCALL(instr);
           break;
+        // case r::OP::CONSTRUCT:
+        // case r::OP::EVAL:
         case r::OP::RESULT:
           EmitRESULT(instr);
           break;
