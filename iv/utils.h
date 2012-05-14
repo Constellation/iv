@@ -59,6 +59,9 @@ void IV_DUMMY();
 /* NOLINT */      &reinterpret_cast<char const volatile&>(\
 /* NOLINT */        ((type*)IV_DUMMY_ADDRESS)->member))) - IV_DUMMY_ADDRESS)
 
+#define IV_CAST_OFFSET(from, to)\
+/* NOLINT */    0xF0 - reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0xF0))))
+
 template<class T>
 T LowestOneBit(T value) {
   return value & (~value + 1u);
