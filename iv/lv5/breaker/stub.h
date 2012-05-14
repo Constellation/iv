@@ -334,6 +334,85 @@ inline Rep TYPEOF_GLOBAL(railgun::Context* ctx, Symbol name) {
   }
 }
 
+template<int Target, std::size_t Returned, bool STRICT>
+JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
+  if (JSEnv* current = GetEnv(ctx, env, s)) {
+    const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
+    if (w.IsInt32() &&
+        railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+      std::tuple<JSVal, JSVal> results;
+      const int32_t target = w.int32();
+      std::get<0>(results) = w;
+      std::get<1>(results) = JSVal::Int32(target + Target);
+      current->SetMutableBinding(ctx, s, std::get<1>(results), STRICT, e);
+      return std::get<Returned>(results);
+    } else {
+      std::tuple<double, double> results;
+      std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
+      std::get<1>(results) = std::get<0>(results) + Target;
+      current->SetMutableBinding(ctx, s, std::get<1>(results), STRICT, e);
+      return std::get<Returned>(results);
+    }
+  }
+  RaiseReferenceError(s, e);
+  return 0.0;
+}
+
+template<int Target, std::size_t Returned, bool STRICT>
+JSVal IncrementGlobalWithSlot(Context* ctx,
+                              JSGlobal* global,
+                              std::size_t slot, Error* e) {
+  const JSVal w = global->GetBySlotOffset(ctx, slot, e);
+  if (w.IsInt32() &&
+      railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+    std::tuple<JSVal, JSVal> results;
+    const int32_t target = w.int32();
+    std::get<0>(results) = w;
+    std::get<1>(results) = JSVal::Int32(target + Target);
+    global->PutToSlotOffset(ctx, slot, std::get<1>(results), STRICT, e);
+    return std::get<Returned>(results);
+  } else {
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
+    std::get<1>(results) = std::get<0>(results) + Target;
+    global->PutToSlotOffset(ctx, slot, std::get<1>(results), STRICT, e);
+    return std::get<Returned>(results);
+  }
+}
+
+template<int Target, std::size_t Returned, bool STRICT>
+JSVal IncrementGlobal(railgun::Context* ctx,
+                      railgun::Instruction* instr, Symbol s) {
+  // opcode | (dst | name) | nop | nop
+  JSGlobal* global = ctx->global_obj();
+  if (instr[2].map == global->map()) {
+    // map is cached, so use previous index code
+    const JSVal res =
+        IncrementGlobalWithSlot<Target,
+                                Returned,
+                                STRICT>(ctx, global, instr[3].u32[0], ERR);
+    return res;
+  } else {
+    Slot slot;
+    if (global->GetOwnPropertySlot(ctx, s, &slot)) {
+      instr[2].map = global->map();
+      instr[3].u32[0] = slot.offset();
+      const JSVal res =
+          IncrementGlobalWithSlot<Target,
+                                  Returned,
+                                  STRICT>(ctx, global, instr[3].u32[0], ERR);
+      return res;
+    } else {
+      instr[2].map = NULL;
+      const JSVal res =
+          IncrementName<Target,
+                        Returned,
+                        STRICT>(ctx, ctx->global_env(), s, ERR);
+      return res;
+    }
+  }
+}
+
 inline Rep CALL(railgun::Context* ctx,
                 JSVal callee,
                 JSVal* offset,
