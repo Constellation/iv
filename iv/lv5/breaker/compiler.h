@@ -350,7 +350,9 @@ class Compiler {
         case r::OP::POSTFIX_DECREMENT:
           EmitPOSTFIX_DECREMENT(instr);
           break;
-        // case r::OP::PREPARE_DYNAMIC_CALL:
+        case r::OP::PREPARE_DYNAMIC_CALL:
+          EmitPREPARE_DYNAMIC_CALL(instr);
+          break;
         case r::OP::CALL:
           EmitCALL(instr);
           break;
@@ -1695,6 +1697,19 @@ class Compiler {
 
       asm_->L(".DECREMENT_EXIT");
     }
+  }
+
+  // opcode | (dst | basedst | name)
+  void EmitPREPARE_DYNAMIC_CALL(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->lea(asm_->rcx, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (jmp | cond)
