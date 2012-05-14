@@ -351,6 +351,9 @@ class Compiler {
         case r::OP::INSTANTIATE_VARIABLE_BINDING:
           EmitINSTANTIATE_VARIABLE_BINDING(instr);
           break;
+        case r::OP::INITIALIZE_HEAP_IMMUTABLE:
+          EmitINITIALIZE_HEAP_IMMUTABLE(instr);
+          break;
         case r::OP::LOAD_ARGUMENTS:
           EmitLOAD_ARGUMENTS(instr);
           break;
@@ -1439,6 +1442,16 @@ class Compiler {
         asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<false, false>);
       }
     }
+  }
+
+  // opcode | (src | offset)
+  void EmitINITIALIZE_HEAP_IMMUTABLE(const Instruction* instr) {
+    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[1].ssw.u32;
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rdx, offset);
+    asm_->Call(&stub::INITIALIZE_HEAP_IMMUTABLE);
   }
 
   // opcode | src

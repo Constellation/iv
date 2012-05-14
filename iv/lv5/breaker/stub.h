@@ -494,6 +494,10 @@ inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx,
   return 0;
 }
 
+inline void INITIALIZE_HEAP_IMMUTABLE(JSEnv* env, JSVal src, uint32_t offset) {
+  static_cast<JSDeclEnv*>(env)->InitializeImmutable(offset, src);
+}
+
 inline Rep INCREMENT(railgun::Context* ctx, JSVal src) {
   const double res = src.ToNumber(ctx, ERR);
   return Extract(res + 1);
