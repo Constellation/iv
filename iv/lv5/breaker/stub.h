@@ -356,6 +356,55 @@ inline Rep CALL(railgun::Context* ctx,
   }
 }
 
+inline Rep CONSTRUCT(railgun::Context* ctx,
+                     JSVal callee,
+                     JSVal* offset,
+                     uint64_t argc_with_this,
+                     railgun::Frame** out_frame) {
+  if (!callee.IsCallable()) {
+    ctx->PendingError()->Report(Error::Type, "not callable object");
+    IV_LV5_BREAKER_RAISE();
+  }
+  JSFunction* func = callee.object()->AsCallable();
+  if (!func->IsNativeFunction()) {
+    // inline call
+    railgun::JSVMFunction* vm_func = static_cast<railgun::JSVMFunction*>(func);
+    railgun::Code* code = vm_func->code();
+    railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
+        ctx,
+        offset,
+        code,
+        vm_func->scope(),
+        func,
+        NULL,  // TODO(Constellation) set precise position
+        argc_with_this, false);
+    if (!new_frame) {
+      ctx->PendingError()->Report(Error::Range,
+                                  "maximum call stack size exceeded");
+      IV_LV5_BREAKER_RAISE();
+    }
+    JSObject* const obj = JSObject::New(ctx, code->ConstructMap(ctx));
+    new_frame->set_this_binding(obj);
+    const JSVal proto = func->Get(ctx, symbol::prototype(), ERR);
+    if (proto.IsObject()) {
+      obj->set_prototype(proto.object());
+    }
+    new_frame->InitThisBinding(ctx, ERR);
+    *out_frame = new_frame;
+    return reinterpret_cast<Rep>(code->executable());
+  }
+
+  // Native Function
+  {
+    railgun::detail::VMArguments args(ctx,
+                                      offset + (argc_with_this - 1),
+                                      argc_with_this - 1);
+    args.set_constructor_call(true);
+    const JSVal res = func->Construct(&args, ERR);
+    return Extract(res);
+  }
+}
+
 inline Rep CONCAT(railgun::Context* ctx, JSVal* src, uint32_t count) {
   return Extract(JSString::New(ctx, src, count));
 }
