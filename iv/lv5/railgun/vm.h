@@ -1644,7 +1644,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       DEFINE_OPCODE(INIT_SPARSE_ARRAY_ELEMENT) {
         // opcode | (ary | reg) | (index | size)
         JSArray* ary = static_cast<JSArray*>(REG(instr[1].i16[0]).object());
-        const JSVal* reg = &REG(instr[1].i16[0]);
+        const JSVal* reg = &REG(instr[1].i16[1]);
         ary->SetToMap(instr[2].u32[0], reg, reg + instr[2].u32[1]);
         DISPATCH(INIT_SPARSE_ARRAY_ELEMENT);
       }
