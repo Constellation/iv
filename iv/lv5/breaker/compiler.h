@@ -45,7 +45,7 @@ class Compiler {
   typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
   typedef std::unordered_map<uint32_t, JumpInfo> JumpMap;
   typedef std::unordered_map<std::size_t, Assembler::RepatchSite> UnresolvedAddressMap;
-  typedef std::vector<Assembler::RepatchSite> RepatchSites;
+  typedef std::vector<std::pair<Assembler::RepatchSite, std::size_t> > RepatchSites;
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
@@ -112,6 +112,13 @@ class Compiler {
           handler.set_program_counter_end(
               asm_->GainExecutableByOffset(handler_links_.find(end)->second));
         }
+      }
+    }
+    // link repatch sites
+    {
+      for (RepatchSites::const_iterator it = repatches_.begin(),
+           last = repatches_.end(); it != last; ++it) {
+        it->first.Repatch(asm_, core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->second)));
       }
     }
   }
@@ -379,8 +386,12 @@ class Compiler {
         // case r::OP::LOAD_PROP_OWN_MEGAMORPHIC:
         // case r::OP::LOAD_PROP_PROTO:
         // case r::OP::LOAD_PROP_CHAIN:
-        // case r::OP::STORE_PROP:
-        // case r::OP::STORE_PROP_GENERIC:
+        case r::OP::STORE_PROP:
+          EmitSTORE_PROP(instr);
+          break;
+        case r::OP::STORE_PROP_GENERIC:
+          UNREACHABLE();
+          break;
         // case r::OP::DELETE_PROP:
         // case r::OP::INCREMENT_PROP:
         // case r::OP::DECREMENT_PROP:
@@ -1429,6 +1440,33 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_OBJECT_SET<false>);
     }
+  }
+
+  // opcode | (base | src | index) | nop | nop
+  void EmitSTORE_PROP(const Instruction* instr) {
+    // TODO(Constellation) specialize length and indices
+    const int16_t base = Reg(instr[1].ssw.i16[0]);
+    const int16_t src = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
+
+    Assembler::RepatchSite move;
+    move.Mov(asm_, asm_->r9);
+
+    Assembler::RepatchSite site;
+    site.MovRepatchableAligned(asm_, asm_->rax);
+    if (code_->strict()) {
+      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<true>));
+    } else {
+      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
+    }
+    asm_->call(asm_->rax);
+
+    repatches_.push_back(std::make_pair(move, site.offset()));
   }
 
   // opcode
@@ -2546,6 +2584,7 @@ class Compiler {
   UnresolvedAddressMap unresolved_address_map_;
   HandlerLinks handler_links_;
   Codes codes_;
+  RepatchSites repatches_;
   std::size_t counter_;
 };
 

@@ -1086,6 +1086,50 @@ inline JSEnv* TRY_CATCH_SETUP(railgun::Context* ctx,
   return JSStaticEnv::New(ctx, outer, sym, value);
 }
 
+template<bool STRICT>
+inline Rep STORE_PROP_GENERIC(railgun::Context* ctx,
+                              JSVal base, Symbol name, JSVal src,
+                              railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  StorePropImpl<STRICT>(ctx, base, name, src, ERR);
+  return 0;
+}
+
+template<bool STRICT>
+inline Rep STORE_PROP(railgun::Context* ctx,
+                      JSVal base, Symbol name, JSVal src,
+                      railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  if (base.IsPrimitive()) {
+    StorePropPrimitive<STRICT>(ctx, base, name, src, ERR);
+  } else {
+    // cache patten
+    JSObject* obj = base.object();
+    if (instr[2].map == obj->map()) {
+      // map is cached, so use previous index code
+      obj->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+    } else {
+      Slot slot;
+      if (obj->GetOwnPropertySlot(ctx, name, &slot)) {
+        if (slot.IsCacheable()) {
+          instr[2].map = obj->map();
+          instr[3].u32[0] = slot.offset();
+          obj->PutToSlotOffset(ctx, slot.offset(), src, STRICT, ERR);
+        } else {
+          // dispatch generic path
+          obj->Put(ctx, name, src, STRICT, ERR);
+          instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::STORE_PROP_GENERIC);
+          *repatch = core::BitCast<void*>(&stub::STORE_PROP_GENERIC<STRICT>);
+        }
+      } else {
+        instr[2].map = NULL;
+        obj->Put(ctx, name, src, STRICT, ERR);
+      }
+    }
+  }
+  return 0;
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

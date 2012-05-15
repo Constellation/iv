@@ -35,9 +35,23 @@ class Assembler : public Xbyak::CodeGenerator {
       assembler->mov(reg, dummy);
     }
 
+    void MovRepatchableAligned(Assembler* assembler, const Xbyak::Reg64& reg) {
+      // not int32 point
+      const uint64_t dummy = UINT64_C(0x0FFF000000000000);
+      while (reinterpret_cast<uintptr_t>(assembler->getCurr()) % 8 != 6) {
+        assembler->nop();
+      }
+      offset_ = assembler->size() + kMovImmOffset;
+      assert(offset_ % 8 == 0);
+      assembler->mov(reg, dummy);
+    }
+
     void Repatch(Assembler* assembler, uint64_t data) const {
       assembler->rewrite(offset_, data, k64Size);
     }
+
+    std::size_t offset() const { return offset_; }
+
    private:
     std::size_t offset_;
   };
