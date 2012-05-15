@@ -366,6 +366,13 @@ inline Rep LOAD_HEAP(railgun::Context* ctx, JSEnv* env,
   return Extract(res);
 }
 
+template<bool STRICT>
+inline Rep STORE_HEAP(railgun::Context* ctx, JSEnv* env,
+                      Symbol name, uint32_t offset, uint32_t nest, JSVal src) {
+  GetHeapEnv(env, nest)->SetByOffset(offset, src, STRICT, ERR);
+  return 0;
+}
+
 template<int Target, std::size_t Returned, bool STRICT>
 JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {

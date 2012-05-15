@@ -353,7 +353,9 @@ class Compiler {
         case r::OP::LOAD_HEAP:
           EmitLOAD_HEAP(instr);
           break;
-        // case r::OP::STORE_HEAP:
+        case r::OP::STORE_HEAP:
+          EmitSTORE_HEAP(instr);
+          break;
         // case r::OP::DELETE_HEAP:
         // case r::OP::INCREMENT_HEAP:
         // case r::OP::DECREMENT_HEAP:
@@ -1505,6 +1507,26 @@ class Compiler {
       asm_->Call(&stub::LOAD_HEAP<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (src | name) | (offset | nest)
+  void EmitSTORE_HEAP(const Instruction* instr) {
+    // TODO(Constellation) inline this method
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->r8d, nest);
+    asm_->mov(asm_->r9, asm_->qword[asm_->r13 + src * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::STORE_HEAP<true>);
+    } else {
+      asm_->Call(&stub::STORE_HEAP<false>);
+    }
   }
 
   // opcode | (callee | offset | argc_with_this)
