@@ -403,7 +403,8 @@ inline Rep TYPEOF_HEAP(railgun::Context* ctx, JSEnv* env,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
+JSVal IncrementNameWithError(railgun::Context* ctx,
+                             JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
     const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
@@ -424,6 +425,13 @@ JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
   }
   RaiseReferenceError(s, e);
   return 0.0;
+}
+
+template<int Target, std::size_t Returned, bool STRICT>
+inline Rep IncrementName(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  const JSVal res =
+      IncrementNameWithError<Target, Returned, STRICT>(ctx, env, name, ERR);
+  return Extract(res);
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
@@ -473,9 +481,9 @@ JSVal IncrementGlobal(railgun::Context* ctx,
     } else {
       instr[2].map = NULL;
       const JSVal res =
-          IncrementName<Target,
-                        Returned,
-                        STRICT>(ctx, ctx->global_env(), s, ERR);
+          IncrementNameWithError<Target,
+                                 Returned,
+                                 STRICT>(ctx, ctx->global_env(), s, ERR);
       return res;
     }
   }
@@ -843,7 +851,8 @@ inline Rep LOAD_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
 }
 
 template<bool STRICT>
-inline Rep STORE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name, JSVal src) {
+inline Rep STORE_NAME(railgun::Context* ctx,
+                      JSEnv* env, Symbol name, JSVal src) {
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     current->SetMutableBinding(ctx, name, src, STRICT, ERR);
   } else {
