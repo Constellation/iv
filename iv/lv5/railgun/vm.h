@@ -744,7 +744,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       DEFINE_OPCODE(STORE_PROP) {
         // opcode | (base | src | index) | nop | nop
         const JSVal base = REG(instr[1].ssw.i16[0]);
-        const Symbol name= frame->GetName(instr[1].ssw.u32);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal src = REG(instr[1].ssw.i16[1]);
         StoreProp(base, instr, OP::STORE_PROP_GENERIC, name, src, strict, ERR);
         DISPATCH(STORE_PROP);
@@ -753,7 +753,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       DEFINE_OPCODE(STORE_PROP_GENERIC) {
         // opcode | (base | src | index) | nop | nop
         const JSVal base = REG(instr[1].ssw.i16[0]);
-        const Symbol name= frame->GetName(instr[1].ssw.u32);
+        const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal src = REG(instr[1].ssw.i16[1]);
         StoreProp(base, name, src, strict, ERR);
         DISPATCH(STORE_PROP_GENERIC);
