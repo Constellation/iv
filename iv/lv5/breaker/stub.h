@@ -217,17 +217,6 @@ inline void POP_ENV(railgun::Frame* frame) {
   frame->set_lexical_env(frame->lexical_env()->outer());
 }
 
-inline JSVal RETURN(railgun::Context* ctx, railgun::Frame* frame, JSVal val) {
-  if (frame->constructor_call_ && !val.IsObject()) {
-    val = frame->GetThis();
-  }
-  // because of Frame is code frame,
-  // first lexical_env is variable_env.
-  // (if Eval / Global, this is not valid)
-  assert(frame->lexical_env() == frame->variable_env());
-  return val;
-}
-
 inline void RaiseReferenceError(Symbol name, Error* e) {
   core::UStringBuilder builder;
   builder.Append('"');
@@ -732,6 +721,8 @@ inline bool TO_BOOLEAN(JSVal src) {
 
 template<bool STRICT>
 inline Rep LOAD_ARGUMENTS(railgun::Context* ctx, railgun::Frame* frame) {
+  std::cout << IV_LV5_BREAKER_RETURN_ADDRESS_POSITION << std::endl;
+  std::cout << frame->return_address_position_ << std::endl;
   if (STRICT) {
     JSObject* obj = JSStrictArguments::New(
         ctx, frame->callee().object()->AsCallable(),

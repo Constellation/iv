@@ -1501,6 +1501,9 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
+      // initialize return address of frame
+      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
+      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame
@@ -1542,6 +1545,9 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
+      // initialize return address of frame
+      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
+      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame
@@ -1600,6 +1606,9 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
+      // initialize return address of frame
+      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
+      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame

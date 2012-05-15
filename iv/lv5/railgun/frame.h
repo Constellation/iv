@@ -190,6 +190,7 @@ struct Frame {
     Instruction* prev_pc_;
     void* return_address_;
   };
+  void** return_address_position_;
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;

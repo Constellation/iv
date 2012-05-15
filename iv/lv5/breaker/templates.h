@@ -65,6 +65,11 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     mov(ptr[rsp + k64Size * 1], r12);
     mov(r12, rdi);
     mov(r13, rsi);
+
+    // initialize return address of frame
+    lea(rcx, ptr[rsp - k64Size * 3]);
+    mov(qword[r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], rcx);
+
     call(rdx);
     mov(r13, ptr[rsp + k64Size * 0]);
     mov(r12, ptr[rsp + k64Size * 1]);
