@@ -80,7 +80,13 @@ typedef uint64_t Rep;
 Rep Extract(JSVal val);
 void* search_exception_handler(void* pc, railgun::Context* ctx, void** target);
 JSVal breaker_prologue(railgun::Context* ctx, railgun::Frame* frame, void* ptr);
+JSVal RunEval(railgun::Context* ctx,
+              railgun::Code* code,
+              JSEnv* variable_env,
+              JSEnv* lexical_env,
+              JSVal this_binding);
 JSVal Run(railgun::Context* ctx, railgun::Code* code);
+void Compile(railgun::Code* code);
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_

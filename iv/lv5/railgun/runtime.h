@@ -9,6 +9,7 @@
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/frame.h>
 #include <iv/lv5/railgun/jsfunction.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -30,9 +31,11 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   const FunctionLiteral* const func =
       internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  return JSVMFunction::New(ctx,
-                           CompileFunction(ctx, *func, script),
-                           ctx->global_env());
+  Code* code = CompileFunction(ctx, *func, script);
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::breaker::Compile(code);
+#endif
+  return JSVMFunction::New(ctx, code, ctx->global_env());
 }
 
 inline JSVal GlobalEval(const Arguments& args, Error* e) {
@@ -70,12 +73,21 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   }
   JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
   Code* code = CompileIndirectEval(ctx, *eval, script);
-  VM* const vm = ctx->vm();
-  return vm->RunEval(
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::breaker::Compile(code);
+  return breaker::RunEval(
+      ctx,
+      code,
+      ctx->global_env(),
+      ctx->global_env(),
+      ctx->global_obj());
+#else
+  return ctx->vm()->RunEval(
       code,
       ctx->global_env(),
       ctx->global_env(),
       ctx->global_obj(), e);
+#endif
 }
 
 inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
@@ -122,12 +134,23 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     }
   }
 
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::breaker::Compile(code);
+  VM* const vm = ctx->vm();
+  return breaker::RunEval(
+      ctx,
+      code,
+      vm->stack()->current()->variable_env(),
+      vm->stack()->current()->lexical_env(),
+      vm->stack()->current()->GetThis());
+#else
   VM* const vm = ctx->vm();
   return vm->RunEval(
       code,
       vm->stack()->current()->variable_env(),
       vm->stack()->current()->lexical_env(),
       vm->stack()->current()->GetThis(), e);
+#endif
 }
 
 } } }  // namespace iv::lv5::railgun

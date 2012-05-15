@@ -11,6 +11,7 @@
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
 #include <iv/lv5/teleporter/interactive.h>
+#include <iv/lv5/breaker/breaker.h>
 #if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
 #include <signal.h>
 #endif
@@ -35,7 +36,6 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename, bool statistics) {
-  iv::lv5::Error e;
   iv::lv5::railgun::Context ctx;
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
@@ -49,7 +49,14 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::Error& e = *ctx.PendingError();
+  iv::lv5::breaker::Compile(code);
+  iv::lv5::breaker::Run(&ctx, code);
+#else
+  iv::lv5::Error e;
   ctx.vm()->Run(code, &e);
+#endif
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
     e.Clear();
