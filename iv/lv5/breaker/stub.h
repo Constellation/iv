@@ -1130,6 +1130,14 @@ inline Rep STORE_PROP(railgun::Context* ctx,
   return 0;
 }
 
+template<bool STRICT>
+inline Rep DELETE_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* const obj = base.ToObject(ctx, ERR);
+  const bool res = obj->Delete(ctx, name, STRICT, ERR);
+  return Extract(JSVal::Bool(res));
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

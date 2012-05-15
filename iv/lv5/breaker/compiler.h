@@ -392,7 +392,9 @@ class Compiler {
         case r::OP::STORE_PROP_GENERIC:
           UNREACHABLE();
           break;
-        // case r::OP::DELETE_PROP:
+        case r::OP::DELETE_PROP:
+          EmitDELETE_PROP(instr);
+          break;
         // case r::OP::INCREMENT_PROP:
         // case r::OP::DECREMENT_PROP:
         // case r::OP::POSTFIX_INCREMENT_PROP:
@@ -1467,6 +1469,22 @@ class Compiler {
     asm_->call(asm_->rax);
 
     repatches_.push_back(std::make_pair(move, site.offset()));
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitDELETE_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::DELETE_PROP<true>);
+    } else {
+      asm_->Call(&stub::DELETE_PROP<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode
