@@ -1326,13 +1326,16 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
+
       asm_->L(".UNARY_BIT_NOT_SLOW");
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::UNARY_BIT_NOT);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".UNARY_BIT_NOT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
