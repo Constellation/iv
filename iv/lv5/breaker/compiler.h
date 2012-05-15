@@ -300,6 +300,8 @@ class Compiler {
           EmitJUMP_BY(instr);
           break;
         // case r::OP::JUMP_SUBROUTINE:
+        //   EmitJUMP_SUBROUTINE(instr);
+        //   break;
         case r::OP::IF_FALSE:
           EmitIF_FALSE(instr);
           break;
@@ -348,7 +350,9 @@ class Compiler {
         case r::OP::TYPEOF_GLOBAL:
           EmitTYPEOF_GLOBAL(instr);
           break;
-        // case r::OP::LOAD_HEAP:
+        case r::OP::LOAD_HEAP:
+          EmitLOAD_HEAP(instr);
+          break;
         // case r::OP::STORE_HEAP:
         // case r::OP::DELETE_HEAP:
         // case r::OP::INCREMENT_HEAP:
@@ -451,8 +455,8 @@ class Compiler {
     const uint32_t mutable_start = instr[1].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->rdx, size);
-    asm_->mov(asm_->rcx, mutable_start);
+    asm_->mov(asm_->edx, size);
+    asm_->mov(asm_->ecx, mutable_start);
     asm_->Call(&stub::BUILD_ENV);
   }
 
@@ -1252,7 +1256,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->rcx, offset);
+    asm_->mov(asm_->ecx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_GET<true>);
     } else {
@@ -1269,7 +1273,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->rcx, offset);
+    asm_->mov(asm_->ecx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_SET<true>);
     } else {
@@ -1292,8 +1296,8 @@ class Compiler {
     const uint32_t size = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
     asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
-    asm_->mov(asm_->rdx, index);
-    asm_->mov(asm_->rcx, size);
+    asm_->mov(asm_->edx, index);
+    asm_->mov(asm_->ecx, size);
     asm_->Call(&stub::INIT_VECTOR_ARRAY_ELEMENT);
   }
 
@@ -1305,8 +1309,8 @@ class Compiler {
     const uint32_t size = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
     asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
-    asm_->mov(asm_->rdx, index);
-    asm_->mov(asm_->rcx, size);
+    asm_->mov(asm_->edx, index);
+    asm_->mov(asm_->ecx, size);
     asm_->Call(&stub::INIT_SPARSE_ARRAY_ELEMENT);
   }
 
@@ -1315,7 +1319,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t size = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, size);
+    asm_->mov(asm_->esi, size);
     asm_->Call(&JSArray::ReservedNew);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1323,8 +1327,7 @@ class Compiler {
   // opcode | (dst | code)
   void EmitLOAD_FUNCTION(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const uint32_t code = instr[1].ssw.u32;
-    railgun::Code* target = code_->codes()[code];
+    railgun::Code* target = code_->codes()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
     asm_->mov(asm_->rdx,
@@ -1336,9 +1339,8 @@ class Compiler {
   // opcode | (dst | offset)
   void EmitLOAD_REGEXP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const uint32_t offset = instr[1].ssw.u32;
     JSRegExp* regexp =
-        static_cast<JSRegExp*>(code_->constants()[offset].object());
+        static_cast<JSRegExp*>(code_->constants()[instr[1].ssw.u32].object());
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
     asm_->Call(static_cast<JSRegExp*(*)(Context*, JSRegExp*)>(&JSRegExp::New));
@@ -1373,9 +1375,8 @@ class Compiler {
 
   // opcode | (dst | index) | nop | nop
   void EmitLOAD_GLOBAL(const Instruction* instr) {
-    const uint32_t index = instr[1].ssw.u32;
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const Symbol name = code_->names()[index];
+    const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
@@ -1389,9 +1390,8 @@ class Compiler {
 
   // opcode | (src | name) | nop | nop
   void EmitSTORE_GLOBAL(const Instruction* instr) {
-    const uint32_t index = instr[1].ssw.u32;
     const int16_t src = Reg(instr[1].ssw.i16[0]);
-    const Symbol name = code_->names()[index];
+    const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -1487,6 +1487,26 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
+  // opcode | (dst | index) | (offset | nest)
+  void EmitLOAD_HEAP(const Instruction* instr) {
+    // TODO(Constellation) inline this method
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->r8d, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::LOAD_HEAP<true>);
+    } else {
+      asm_->Call(&stub::LOAD_HEAP<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
   // opcode | (callee | offset | argc_with_this)
   void EmitCALL(const Instruction* instr) {
     const int16_t callee = Reg(instr[1].ssw.i16[0]);
@@ -1497,7 +1517,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->rcx, argc_with_this);
+      asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
       asm_->Call(&stub::CALL);
@@ -1541,7 +1561,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->rcx, argc_with_this);
+      asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
       asm_->Call(&stub::CONSTRUCT);
@@ -1602,7 +1622,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r12);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->rcx, argc_with_this);
+      asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
       asm_->Call(&stub::EVAL);
@@ -1678,7 +1698,7 @@ class Compiler {
     const uint32_t offset = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-    asm_->mov(asm_->rdx, offset);
+    asm_->mov(asm_->edx, offset);
     asm_->Call(&stub::INITIALIZE_HEAP_IMMUTABLE);
   }
 
@@ -1835,6 +1855,22 @@ class Compiler {
     asm_->Call(&stub::TO_BOOLEAN);
     asm_->test(asm_->eax, asm_->eax);
     asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  // opcode | (jmp : addr | flag)
+  void EmitJUMP_SUBROUTINE(const Instruction* instr) {
+//    const int16_t addr = Reg(instr[1].jump.i16[0]);
+//    const int32_t flag = instr[1].jump.to;
+//    const uint32_t to = (instr - code_->begin()) + jump;
+//    const std::size_t num = jump_map_.find(to)->second;
+//    const std::string label = MakeLabel(num);
+//    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+//
+//    REG(instr[1].jump.i16[0]) =
+//        ((std::distance(frame->data(), instr) +
+//          OPLength<OP::JUMP_SUBROUTINE>::value));
+//    REG(instr[1].jump.i16[1]) = JSVal::Int32(kJumpFromSubroutine);
+//    JUMPBY(instr[1].jump.to);
   }
 
   // opcode | (jmp | cond)

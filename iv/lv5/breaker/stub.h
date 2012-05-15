@@ -351,6 +351,21 @@ inline Rep TYPEOF_GLOBAL(railgun::Context* ctx, Symbol name) {
   }
 }
 
+inline JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t nest) {
+  for (uint32_t i = 0; i < nest; ++i) {
+    env = env->outer();
+  }
+  assert(env->AsJSDeclEnv());
+  return static_cast<JSDeclEnv*>(env);
+}
+
+template<bool STRICT>
+inline Rep LOAD_HEAP(railgun::Context* ctx, JSEnv* env,
+                     Symbol name, uint32_t offset, uint32_t nest) {
+  const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
+  return Extract(res);
+}
+
 template<int Target, std::size_t Returned, bool STRICT>
 JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
