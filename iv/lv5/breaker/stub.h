@@ -361,21 +361,43 @@ inline JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t nest) {
 
 template<bool STRICT>
 inline Rep LOAD_HEAP(railgun::Context* ctx, JSEnv* env,
-                     Symbol name, uint32_t offset, uint32_t nest) {
+                     uint32_t offset, uint32_t nest) {
   const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
   return Extract(res);
 }
 
 template<bool STRICT>
 inline Rep STORE_HEAP(railgun::Context* ctx, JSEnv* env,
-                      Symbol name, uint32_t offset, uint32_t nest, JSVal src) {
+                      uint32_t offset, uint32_t nest, JSVal src) {
   GetHeapEnv(env, nest)->SetByOffset(offset, src, STRICT, ERR);
   return 0;
 }
 
+template<int Target, std::size_t Returned, bool STRICT>
+JSVal IncrementHeap(railgun::Context* ctx, JSEnv* env,
+                    uint32_t offset, uint32_t nest) {
+  JSDeclEnv* decl = GetHeapEnv(env, nest);
+  const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
+  if (w.IsInt32() &&
+      railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+    std::tuple<JSVal, JSVal> results;
+    const int32_t target = w.int32();
+    std::get<0>(results) = w;
+    std::get<1>(results) = JSVal::Int32(target + Target);
+    decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
+    return std::get<Returned>(results);
+  } else {
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx, ERR);
+    std::get<1>(results) = std::get<0>(results) + Target;
+    decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
+    return std::get<Returned>(results);
+  }
+}
+
 template<bool STRICT>
 inline Rep TYPEOF_HEAP(railgun::Context* ctx, JSEnv* env,
-                       Symbol name, uint32_t offset, uint32_t nest) {
+                       uint32_t offset, uint32_t nest) {
   const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
   return Extract(res.TypeOf(ctx));
 }

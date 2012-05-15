@@ -359,10 +359,18 @@ class Compiler {
         case r::OP::DELETE_HEAP:
           EmitDELETE_HEAP(instr);
           break;
-        // case r::OP::INCREMENT_HEAP:
-        // case r::OP::DECREMENT_HEAP:
-        // case r::OP::POSTFIX_INCREMENT_HEAP:
-        // case r::OP::POSTFIX_DECREMENT_HEAP:
+        case r::OP::INCREMENT_HEAP:
+          EmitINCREMENT_HEAP(instr);
+          break;
+        case r::OP::DECREMENT_HEAP:
+          EmitDECREMENT_HEAP(instr);
+          break;
+        case r::OP::POSTFIX_INCREMENT_HEAP:
+          EmitPOSTFIX_INCREMENT_HEAP(instr);
+          break;
+        case r::OP::POSTFIX_DECREMENT_HEAP:
+          EmitPOSTFIX_DECREMENT_HEAP(instr);
+          break;
         case r::OP::TYPEOF_HEAP:
           EmitTYPEOF_HEAP(instr);
           break;
@@ -1496,15 +1504,13 @@ class Compiler {
   // opcode | (dst | index) | (offset | nest)
   void EmitLOAD_HEAP(const Instruction* instr) {
     // TODO(Constellation) inline this method
-    const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->ecx, offset);
-    asm_->mov(asm_->r8d, nest);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::LOAD_HEAP<true>);
     } else {
@@ -1516,16 +1522,14 @@ class Compiler {
   // opcode | (src | name) | (offset | nest)
   void EmitSTORE_HEAP(const Instruction* instr) {
     // TODO(Constellation) inline this method
-    const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->ecx, offset);
-    asm_->mov(asm_->r8d, nest);
-    asm_->mov(asm_->r9, asm_->qword[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
+    asm_->mov(asm_->r8, asm_->qword[asm_->r13 + src * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_HEAP<true>);
     } else {
@@ -1540,18 +1544,80 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
-  // opcode | (dst | name) | (offset | nest)
-  void EmitTYPEOF_HEAP(const Instruction* instr) {
-    // TODO(Constellation) inline this method
-    const Symbol name = code_->names()[instr[1].ssw.u32];
+  void EmitINCREMENT_HEAP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->ecx, offset);
-    asm_->mov(asm_->r8d, nest);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementHeap<1, 1, true>);
+    } else {
+      asm_->Call(&stub::IncrementHeap<1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  void EmitDECREMENT_HEAP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementHeap<-1, 1, true>);
+    } else {
+      asm_->Call(&stub::IncrementHeap<-1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  void EmitPOSTFIX_INCREMENT_HEAP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementHeap<1, 0, true>);
+    } else {
+      asm_->Call(&stub::IncrementHeap<1, 0, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  void EmitPOSTFIX_DECREMENT_HEAP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementHeap<-1, 0, true>);
+    } else {
+      asm_->Call(&stub::IncrementHeap<-1, 0, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | name) | (offset | nest)
+  void EmitTYPEOF_HEAP(const Instruction* instr) {
+    // TODO(Constellation) inline this method
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->edx, offset);
+    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::TYPEOF_HEAP<true>);
     } else {
