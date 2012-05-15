@@ -18,6 +18,8 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
+static const std::size_t kEncodeRotateN = core::math::CTZ64(lv5::detail::jsval64::kDoubleOffset);
+
 class Compiler {
  public:
   // introducing railgun to this scope
@@ -56,7 +58,6 @@ class Compiler {
       jump_map_(),
       entry_points_(),
       unresolved_address_map_(),
-      return_subroutine_(),
       handler_links_(),
       codes_(),
       counter_(0) {
@@ -75,19 +76,15 @@ class Compiler {
     // Repatch phase
     // link jump subroutine
     {
-      uint32_t index = 0;
-      asm_->jump_subroutine_.resize(unresolved_address_map_.size());
       for (UnresolvedAddressMap::const_iterator it = unresolved_address_map_.begin(),
-           last = unresolved_address_map_.end(); it != last; ++it, ++index) {
-        asm_->jump_subroutine_[index] = asm_->GainExecutableByOffset(it->first);
-        it->second.Repatch(asm_, Extract(JSVal::Int32(static_cast<int32_t>(index))));
-      }
-    }
-    // link return subroutine
-    {
-      for (RepatchSites::const_iterator it = return_subroutine_.begin(),
-           last = return_subroutine_.end(); it != last; ++it) {
-        it->Repatch(asm_, core::BitCast<uint64_t>(asm_->jump_subroutine_.data()));
+           last = unresolved_address_map_.end(); it != last; ++it) {
+        uint64_t ptr = core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
+        assert(ptr % 2 == 0);
+        // encode ptr value to JSVal invalid number
+        // double offset value is 1000000000000000000000000000000000000000000000000
+        ptr += 0x1;
+        const uint64_t result = (ptr << kEncodeRotateN) | (ptr >> (64 - kEncodeRotateN));
+        it->second.Repatch(asm_, result);
       }
     }
     // link exception handlers
@@ -602,15 +599,12 @@ class Compiler {
       asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + flag * kJSValSize]);
       asm_->cmp(asm_->eax, railgun::VM::kJumpFromSubroutine);
       asm_->jne(".RETURN_TO_HANDLING");
-      asm_->mov(asm_->rax, asm_->qword[asm_->r13 + jump * kJSValSize]);
-      // clear upper 32bit
-      asm_->and(asm_->eax, asm_->eax);
 
-      Assembler::RepatchSite site;
-      site.Mov(asm_, asm_->rcx);
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->rcx + asm_->rax * k64Size]);
-      asm_->jmp(asm_->qword[asm_->rdx]);
-      return_subroutine_.push_back(site);
+      // encoded address value
+      asm_->mov(asm_->rax, asm_->qword[asm_->r13 + jump * kJSValSize]);
+      asm_->ror(asm_->rax, kEncodeRotateN);
+      asm_->sub(asm_->rax, 1);
+      asm_->jmp(asm_->rax);
 
       asm_->L(".RETURN_TO_HANDLING");
       asm_->mov(asm_->rdi, asm_->r12);
@@ -2240,13 +2234,16 @@ class Compiler {
     // register position and repatch afterward
     Assembler::RepatchSite site;
     site.Mov(asm_, asm_->rax);
-    // Value is JSVal::Int32
+    // Value is JSVal, but, this indicates pointer to address
     asm_->mov(asm_->qword[asm_->r13 + addr * kJSValSize], asm_->rax);
     asm_->mov(asm_->rax, layout);
     asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], asm_->rax);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
-    asm_->align(16);
+    asm_->align(2);
+    // Now, LSB of ptr to this place is 0
+    // So we rotate this bit, make dummy double value
+    // and store to virtual register
     unresolved_address_map_.insert(std::make_pair(asm_->size(), site));
   }
 
@@ -2541,7 +2538,6 @@ class Compiler {
   JumpMap jump_map_;
   EntryPointMap entry_points_;
   UnresolvedAddressMap unresolved_address_map_;
-  RepatchSites return_subroutine_;
   HandlerLinks handler_links_;
   Codes codes_;
   std::size_t counter_;

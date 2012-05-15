@@ -43,8 +43,7 @@ class Assembler : public Xbyak::CodeGenerator {
   };
 
   Assembler()
-    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
-      jump_subroutine_() {
+    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
   }
 
   // implementation of INT $3 and INT imm8
@@ -121,8 +120,6 @@ class Assembler : public Xbyak::CodeGenerator {
   }
 
   std::size_t size() const { return getSize(); }
-
-  std::vector<const void*> jump_subroutine_;
 };
 
 } } }  // namespace iv::lv5::breaker
