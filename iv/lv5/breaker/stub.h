@@ -74,7 +74,6 @@ inline void FORIN_LEAVE(railgun::Context* ctx, JSVal iterator) {
 }
 
 inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
-  assert(!lhs.IsNumber() || !rhs.IsNumber());
   if (lhs.IsString()) {
     if (rhs.IsString()) {
       return Extract(JSString::New(ctx, lhs.string(), rhs.string()));
@@ -1093,6 +1092,279 @@ inline Rep STORE_PROP_GENERIC(railgun::Context* ctx,
   base.CheckObjectCoercible(ERR);
   StorePropImpl<STRICT>(ctx, base, name, src, ERR);
   return 0;
+}
+
+template<bool STRICT>
+Rep LOAD_PROP(railgun::Context* ctx,
+              JSVal base, Symbol name,
+              railgun::Instruction* instr, void** repatch);
+
+template<bool STRICT>
+inline Rep LOAD_PROP_GENERIC(railgun::Context* ctx,
+                             JSVal base, Symbol name,
+                             railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+  return Extract(res);
+}
+
+template<bool STRICT>
+inline Rep LOAD_PROP_OWN_MEGAMORPHIC(railgun::Context* ctx,
+                                     JSVal base, Symbol name,
+                                     railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* obj = NULL;
+  if (base.IsPrimitive()) {
+    // primitive prototype cache
+    JSVal res;
+    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      return Extract(res);
+    } else {
+      obj = base.GetPrimitiveProto(ctx);
+    }
+  } else {
+    obj = base.object();
+  }
+  assert(obj);
+  const std::size_t hash =
+      (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
+      railgun::Context::kGlobalMapCacheSize;
+  const railgun::Context::MapCacheEntry& value =
+      (*ctx->global_map_cache())[hash];
+  if (value.first.first == obj->map() && value.first.second == name) {
+    // cache hit
+    const JSVal res = obj->GetSlot(value.second).Get(ctx, base, ERR);
+    return Extract(res);
+  } else {
+    Slot slot;
+    if (obj->GetPropertySlot(ctx, name, &slot)) {
+      // property found
+      if (!slot.IsCacheable()) {
+        // uncache
+        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        const JSVal res = slot.Get(ctx, base, ERR);
+        return Extract(res);
+      }
+      if (slot.base() == obj) {
+        // own property => register it to map cache
+        (*ctx->global_map_cache())[hash] =
+            railgun::Context::MapCacheEntry(
+                railgun::Context::MapCacheKey(obj->map(), name), slot.offset());
+        const JSVal res = slot.Get(ctx, base, ERR);
+        return Extract(res);
+      }
+      const JSVal res = slot.Get(ctx, base, ERR);
+      return Extract(res);
+    } else {
+      return Extract(JSUndefined);
+    }
+  }
+}
+
+template<bool STRICT>
+inline Rep LOAD_PROP_OWN(railgun::Context* ctx,
+                         JSVal base, Symbol name,
+                         railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* obj = NULL;
+  if (base.IsPrimitive()) {
+    // primitive prototype cache
+    JSVal res;
+    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      return Extract(res);
+    } else {
+      obj = base.GetPrimitiveProto(ctx);
+    }
+  } else {
+    obj = base.object();
+  }
+  assert(obj);
+  if (instr[2].map == obj->map()) {
+    // cache hit
+    const JSVal res = obj->GetSlot(instr[3].u32[0]).Get(ctx, base, ERR);
+    return Extract(res);
+  } else {
+    // cache miss
+    // search megamorphic cache table
+    const std::size_t hash =
+        (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
+        railgun::Context::kGlobalMapCacheSize;
+    const railgun::Context::MapCacheEntry& value = (*ctx->global_map_cache())[hash];
+    if (value.first.first == obj->map() && value.first.second == name) {
+      // cache hit
+      const JSVal res = obj->GetSlot(value.second).Get(ctx, base, ERR);
+      return Extract(res);
+    } else {
+      Slot slot;
+      if (obj->GetPropertySlot(ctx, name, &slot)) {
+        // property found
+        if (!slot.IsCacheable()) {
+          // uncacheable => uncache
+          instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+          *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+          const JSVal res = slot.Get(ctx, base, ERR);
+          return Extract(res);
+        }
+
+        if (slot.base() == obj) {
+          // own property => register it to map cache
+          instr[0] =
+              railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN_MEGAMORPHIC);
+          *repatch = core::BitCast<void*>(&stub::LOAD_PROP_OWN_MEGAMORPHIC<STRICT>);
+          (*ctx->global_map_cache())[hash] =
+              railgun::Context::MapCacheEntry(
+                  railgun::Context::MapCacheKey(obj->map(), name), slot.offset());
+          (*ctx->global_map_cache())[
+              (std::hash<Map*>()(instr[2].map) +
+               std::hash<Symbol>()(name)) % railgun::Context::kGlobalMapCacheSize
+              ] =
+              railgun::Context::MapCacheEntry(
+                  railgun::Context::MapCacheKey(instr[2].map, name),
+                  instr[3].u32[0]);
+          const JSVal res = slot.Get(ctx, base, ERR);
+          return Extract(res);
+        }
+
+        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        const JSVal res = slot.Get(ctx, base, ERR);
+        return Extract(res);
+      } else {
+        // not found => uncache
+        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        return Extract(JSUndefined);
+      }
+    }
+  }
+}
+
+template<bool STRICT>
+inline Rep LOAD_PROP_PROTO(railgun::Context* ctx,
+                           JSVal base, Symbol name,
+                           railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* obj = NULL;
+  if (base.IsPrimitive()) {
+    // primitive prototype cache
+    JSVal res;
+    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      return Extract(res);
+    } else {
+      obj = base.GetPrimitiveProto(ctx);
+    }
+  } else {
+    obj = base.object();
+  }
+  JSObject* proto = obj->prototype();
+  if (instr[2].map == obj->map() && proto && instr[3].map == proto->map()) {
+    // cache hit
+    const JSVal res = proto->GetSlot(instr[4].u32[0]).Get(ctx, base, ERR);
+    return Extract(res);
+  } else {
+    // uncache
+    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+    *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+    const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+    return Extract(res);
+  }
+}
+
+template<bool STRICT>
+inline Rep LOAD_PROP_CHAIN(railgun::Context* ctx,
+                           JSVal base, Symbol name,
+                           railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* obj = NULL;
+  if (base.IsPrimitive()) {
+    // primitive prototype cache
+    JSVal res;
+    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      return Extract(res);
+    } else {
+      obj = base.GetPrimitiveProto(ctx);
+    }
+  } else {
+    obj = base.object();
+  }
+  if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
+    // cache hit
+    const JSVal res = cached->GetSlot(instr[4].u32[0]).Get(ctx, base, ERR);
+    return Extract(res);
+  } else {
+    // uncache
+    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+    *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+    const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+    return Extract(res);
+  }
+}
+
+template<bool STRICT>
+inline Rep LOAD_PROP(railgun::Context* ctx,
+                     JSVal base, Symbol name,
+                     railgun::Instruction* instr, void** repatch) {
+  base.CheckObjectCoercible(ERR);
+  JSObject* obj = NULL;
+  if (base.IsPrimitive()) {
+    JSVal res;
+    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      return Extract(res);
+    } else {
+      // if base is primitive, property not found in "this" object
+      // so, lookup from proto
+      obj = base.GetPrimitiveProto(ctx);
+    }
+  } else {
+    obj = base.object();
+  }
+
+  Slot slot;
+  if (obj->GetPropertySlot(ctx, name, &slot)) {
+    // property found
+    if (!slot.IsCacheable()) {
+      // bailout to generic
+      instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
+      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_GENERIC<STRICT>);
+      const JSVal res = slot.Get(ctx, base, ERR);
+      return Extract(res);
+    }
+
+    // cache phase
+    // own property / proto property / chain lookup property
+    if (slot.base() == obj) {
+      // own property
+      instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN);
+      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_OWN<STRICT>);
+      instr[2].map = obj->map();
+      instr[3].u32[0] = slot.offset();
+      const JSVal res = slot.Get(ctx, base, ERR);
+      return Extract(res);
+    }
+
+    if (slot.base() == obj->prototype()) {
+      // proto property
+      obj->FlattenMap();
+      instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_PROTO);
+      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_PROTO<STRICT>);
+      instr[2].map = obj->map();
+      instr[3].map = slot.base()->map();
+      instr[4].u32[0] = slot.offset();
+      const JSVal res = slot.Get(ctx, base, ERR);
+      return Extract(res);
+    }
+
+    // chain property
+    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_CHAIN);
+    *repatch = core::BitCast<void*>(&stub::LOAD_PROP_CHAIN<STRICT>);
+    instr[2].chain = Chain::New(obj, slot.base());
+    instr[3].map = slot.base()->map();
+    instr[4].u32[0] = slot.offset();
+    const JSVal res = slot.Get(ctx, base, ERR);
+    return Extract(res);
+  }
+  return Extract(JSUndefined);
 }
 
 template<bool STRICT>

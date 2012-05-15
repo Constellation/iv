@@ -380,12 +380,16 @@ class Compiler {
         case r::OP::STORE_OBJECT_SET:
           EmitSTORE_OBJECT_SET(instr);
           break;
-        // case r::OP::LOAD_PROP:
-        // case r::OP::LOAD_PROP_GENERIC:
-        // case r::OP::LOAD_PROP_OWN:
-        // case r::OP::LOAD_PROP_OWN_MEGAMORPHIC:
-        // case r::OP::LOAD_PROP_PROTO:
-        // case r::OP::LOAD_PROP_CHAIN:
+        case r::OP::LOAD_PROP:
+          EmitLOAD_PROP(instr);
+          break;
+        case r::OP::LOAD_PROP_GENERIC:
+        case r::OP::LOAD_PROP_OWN:
+        case r::OP::LOAD_PROP_OWN_MEGAMORPHIC:
+        case r::OP::LOAD_PROP_PROTO:
+        case r::OP::LOAD_PROP_CHAIN:
+          UNREACHABLE();
+          break;
         case r::OP::STORE_PROP:
           EmitSTORE_PROP(instr);
           break;
@@ -1450,6 +1454,32 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_OBJECT_SET<false>);
     }
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitLOAD_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
+
+    Assembler::RepatchSite move;
+    move.Mov(asm_, asm_->r8);
+
+    Assembler::RepatchSite site;
+    site.MovRepatchableAligned(asm_, asm_->rax);
+    if (code_->strict()) {
+      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP<true>));
+    } else {
+      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP<false>));
+    }
+    asm_->call(asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
+    repatches_.push_back(std::make_pair(move, site.offset()));
   }
 
   // opcode | (base | src | index) | nop | nop
