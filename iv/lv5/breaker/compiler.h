@@ -318,8 +318,12 @@ class Compiler {
           EmitFORIN_LEAVE(instr);
           break;
         // case r::OP::TRY_CATCH_SETUP:
-        // case r::OP::LOAD_NAME:
-        // case r::OP::STORE_NAME:
+        case r::OP::LOAD_NAME:
+          EmitLOAD_NAME(instr);
+          break;
+        case r::OP::STORE_NAME:
+          EmitSTORE_NAME(instr);
+          break;
         // case r::OP::DELETE_NAME:
         // case r::OP::INCREMENT_NAME:
         // case r::OP::DECREMENT_NAME:
@@ -1544,6 +1548,7 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
+  // opcode | (dst | name) | (offset | nest)
   void EmitINCREMENT_HEAP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -1560,6 +1565,7 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
+  // opcode | (dst | name) | (offset | nest)
   void EmitDECREMENT_HEAP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -1576,6 +1582,7 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
+  // opcode | (dst | name) | (offset | nest)
   void EmitPOSTFIX_INCREMENT_HEAP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -1592,6 +1599,7 @@ class Compiler {
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
+  // opcode | (dst | name) | (offset | nest)
   void EmitPOSTFIX_DECREMENT_HEAP(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2043,6 +2051,36 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
     asm_->Call(&stub::FORIN_LEAVE);
+  }
+
+  // opcode | (dst | index)
+  void EmitLOAD_NAME(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::LOAD_NAME<true>);
+    } else {
+      asm_->Call(&stub::LOAD_NAME<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (src | name)
+  void EmitSTORE_NAME(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::STORE_NAME<true>);
+    } else {
+      asm_->Call(&stub::STORE_NAME<false>);
+    }
   }
 
   // opcode | jmp

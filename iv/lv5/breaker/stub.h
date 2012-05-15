@@ -827,10 +827,37 @@ inline Rep PREPARE_DYNAMIC_CALL(railgun::Context* ctx,
     const JSVal res = target_env->GetBindingValue(ctx, name, false, ERR);
     *base = res;
     return Extract(target_env->ImplicitThisValue());
-  } else {
-    RaiseReferenceError(name, ctx->PendingError());
-    IV_LV5_BREAKER_RAISE();
   }
+  RaiseReferenceError(name, ctx->PendingError());
+  IV_LV5_BREAKER_RAISE();
+}
+
+template<bool STRICT>
+inline Rep LOAD_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  if (JSEnv* current = GetEnv(ctx, env, name)) {
+    const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
+    return Extract(res);
+  }
+  RaiseReferenceError(name, ctx->PendingError());
+  IV_LV5_BREAKER_RAISE();
+}
+
+template<bool STRICT>
+inline Rep STORE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name, JSVal src) {
+  if (JSEnv* current = GetEnv(ctx, env, name)) {
+    current->SetMutableBinding(ctx, name, src, STRICT, ERR);
+  } else {
+    if (STRICT) {
+      ctx->PendingError()->Report(
+          Error::Reference,
+          "putting to unresolvable reference "
+          "not allowed in strict reference");
+      IV_LV5_BREAKER_RAISE();
+    } else {
+      ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
+    }
+  }
+  return 0;
 }
 
 #undef ERR
