@@ -22,6 +22,7 @@ class Compiler {
  public:
   typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
   typedef std::unordered_map<uint32_t, std::size_t> JumpMap;
+  typedef std::unordered_map<std::size_t, Assembler::RepatchSite> UnresolvedAddressMap;
 
   // introducing railgun to this scope
   typedef railgun::Instruction Instruction;
@@ -34,6 +35,7 @@ class Compiler {
       asm_(new(PointerFreeGC)Assembler),
       jump_map_(),
       entry_points_(),
+      unresolved_address_map_(),
       counter_(0) {
     top_->core_data()->set_asm(asm_);
   }
@@ -48,6 +50,10 @@ class Compiler {
     }
 
     // Repatch phase
+    for (UnresolvedAddressMap::const_iterator it = unresolved_address_map_.begin(),
+         last = unresolved_address_map_.end(); it != last; ++it) {
+      it->second.Repatch(asm_, core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first)));
+    }
   }
 
   void Initialize(railgun::Code* code) {
@@ -2005,7 +2011,8 @@ class Compiler {
 
       asm_->L(".INCREMENT_OVERFLOW");
       // overflow ==> INT32_MAX + 1
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->mov(asm_->rax, overflow);
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
@@ -2035,7 +2042,8 @@ class Compiler {
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->mov(asm_->rax, overflow);
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
@@ -2068,7 +2076,8 @@ class Compiler {
 
       // overflow ==> INT32_MAX + 1
       asm_->L(".INCREMENT_OVERFLOW");
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->mov(asm_->rax, overflow);
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
@@ -2102,7 +2111,8 @@ class Compiler {
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], overflow);
+      asm_->mov(asm_->rax, overflow);
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
@@ -2153,10 +2163,13 @@ class Compiler {
     const std::string label = MakeLabel(num);
 
     // register position and repatch afterward
-    // store current rip
-    asm_->mov(asm_->qword[asm_->r13 + addr * kJSValSize], UINT64_C(0xFFFFFFFFFFFFFFFF));
-    asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], layout);
+    Assembler::RepatchSite site;
+    site.Mov(asm_, asm_->rax);
+    asm_->mov(asm_->qword[asm_->r13 + addr * kJSValSize], asm_->rax);
+    asm_->mov(asm_->rax, layout);
+    asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], asm_->rax);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    unresolved_address_map_.insert(std::make_pair(asm_->size(), site));
   }
 
   // opcode | (jmp | cond)
@@ -2452,6 +2465,7 @@ class Compiler {
   Assembler* asm_;
   JumpMap jump_map_;
   EntryPointMap entry_points_;
+  UnresolvedAddressMap unresolved_address_map_;
   std::size_t counter_;
 };
 

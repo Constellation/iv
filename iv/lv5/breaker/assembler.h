@@ -21,6 +21,23 @@ class Assembler : public Xbyak::CodeGenerator {
     Assembler* assembler_;
   };
 
+  class RepatchSite {
+   public:
+    RepatchSite() : offset_(0) { }
+
+    void Mov(Assembler* assembler, const Xbyak::Reg64& reg) {
+      const uint64_t dummy = UINT64_C(0xFFFFFFFFFFFFFFFF);
+      offset_ = assembler->size() + 1;
+      assembler->mov(reg, dummy);
+    }
+
+    void Repatch(Assembler* assembler, uint64_t data) const {
+      assembler->rewrite(offset_, data, k64Size);
+    }
+   private:
+    std::size_t offset_;
+  };
+
   Assembler()
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
   }
