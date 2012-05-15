@@ -374,8 +374,8 @@ inline Rep STORE_HEAP(railgun::Context* ctx, JSEnv* env,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-JSVal IncrementHeap(railgun::Context* ctx, JSEnv* env,
-                    uint32_t offset, uint32_t nest) {
+inline Rep IncrementHeap(railgun::Context* ctx, JSEnv* env,
+                         uint32_t offset, uint32_t nest) {
   JSDeclEnv* decl = GetHeapEnv(env, nest);
   const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
   if (w.IsInt32() &&
@@ -385,13 +385,13 @@ JSVal IncrementHeap(railgun::Context* ctx, JSEnv* env,
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
     decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
-    return std::get<Returned>(results);
+    return Extract(std::get<Returned>(results));
   } else {
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
     decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
-    return std::get<Returned>(results);
+    return Extract(JSVal(std::get<Returned>(results)));
   }
 }
 
@@ -403,8 +403,8 @@ inline Rep TYPEOF_HEAP(railgun::Context* ctx, JSEnv* env,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-JSVal IncrementNameWithError(railgun::Context* ctx,
-                             JSEnv* env, Symbol s, Error* e) {
+inline JSVal IncrementNameWithError(railgun::Context* ctx,
+                                    JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
     const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
@@ -435,9 +435,9 @@ inline Rep IncrementName(railgun::Context* ctx, JSEnv* env, Symbol name) {
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-JSVal IncrementGlobalWithSlot(Context* ctx,
-                              JSGlobal* global,
-                              std::size_t slot, Error* e) {
+inline JSVal IncrementGlobalWithSlot(Context* ctx,
+                                     JSGlobal* global,
+                                     std::size_t slot, Error* e) {
   const JSVal w = global->GetBySlotOffset(ctx, slot, e);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
@@ -457,8 +457,8 @@ JSVal IncrementGlobalWithSlot(Context* ctx,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-JSVal IncrementGlobal(railgun::Context* ctx,
-                      railgun::Instruction* instr, Symbol s) {
+inline Rep IncrementGlobal(railgun::Context* ctx,
+                           railgun::Instruction* instr, Symbol s) {
   // opcode | (dst | name) | nop | nop
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
@@ -467,7 +467,7 @@ JSVal IncrementGlobal(railgun::Context* ctx,
         IncrementGlobalWithSlot<Target,
                                 Returned,
                                 STRICT>(ctx, global, instr[3].u32[0], ERR);
-    return res;
+    return Extract(res);
   } else {
     Slot slot;
     if (global->GetOwnPropertySlot(ctx, s, &slot)) {
@@ -477,14 +477,14 @@ JSVal IncrementGlobal(railgun::Context* ctx,
           IncrementGlobalWithSlot<Target,
                                   Returned,
                                   STRICT>(ctx, global, instr[3].u32[0], ERR);
-      return res;
+      return Extract(res);
     } else {
       instr[2].map = NULL;
       const JSVal res =
           IncrementNameWithError<Target,
                                  Returned,
                                  STRICT>(ctx, ctx->global_env(), s, ERR);
-      return res;
+      return Extract(res);
     }
   }
 }
@@ -951,6 +951,115 @@ inline Rep LOAD_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
   const Symbol name = element.ToSymbol(ctx, ERR);
   const JSVal res = LoadPropImpl(ctx, base, name, ERR);
   return Extract(res);
+}
+
+template<bool STRICT>
+void StorePropPrimitive(railgun::Context* ctx,
+                        JSVal base, Symbol name, JSVal stored, Error* e) {
+  assert(base.IsPrimitive());
+  JSObject* const o = base.ToObject(ctx, IV_LV5_ERROR_VOID(e));
+  if (!o->CanPut(ctx, name)) {
+    if (STRICT) {
+      e->Report(Error::Type, "cannot put value to object");
+    }
+    return;
+  }
+  const PropertyDescriptor own_desc = o->GetOwnProperty(ctx, name);
+  if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+    if (STRICT) {
+      e->Report(Error::Type,
+                "value to symbol defined and not data descriptor");
+    }
+    return;
+  }
+  const PropertyDescriptor desc = o->GetProperty(ctx, name);
+  if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+    ScopedArguments a(ctx, 1, IV_LV5_ERROR_VOID(e));
+    a[0] = stored;
+    const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+    assert(ac->set());
+    ac->set()->AsCallable()->Call(&a, base, e);
+    return;
+  } else {
+    if (STRICT) {
+      e->Report(Error::Type, "value to symbol in transient object");
+    }
+  }
+}
+
+template<bool STRICT>
+inline void StorePropImpl(railgun::Context* ctx,
+                          JSVal base, Symbol name, JSVal stored, Error* e) {
+  if (base.IsPrimitive()) {
+    StorePropPrimitive<STRICT>(ctx, base, name, stored, e);
+  } else {
+    base.object()->Put(ctx, name, stored, STRICT, e);
+  }
+}
+
+template<bool STRICT>
+inline Rep STORE_ELEMENT(railgun::Context* ctx,
+                         JSVal base, JSVal element, JSVal src) {
+  base.CheckObjectCoercible(ERR);
+  // array fast path
+  uint32_t index;
+  if (element.GetUInt32(&index)) {
+    if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+      JSArray* ary = static_cast<JSArray*>(base.object());
+      if (ary->CanSetIndexDirect(index)) {
+        ary->SetIndexDirect(index, src);
+      } else {
+        ary->JSArray::Put(
+            ctx,
+            symbol::MakeSymbolFromIndex(index),
+            src, STRICT, ERR);
+      }
+      return 0;
+    }
+  }
+  const Symbol name = element.ToSymbol(ctx, ERR);
+  StorePropImpl<STRICT>(ctx, base, name, src, ERR);
+  return 0;
+}
+
+template<bool STRICT>
+inline Rep DELETE_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
+  base.CheckObjectCoercible(ERR);
+  uint32_t index;
+  if (element.GetUInt32(&index)) {
+    JSObject* const obj = base.ToObject(ctx, ERR);
+    const bool result =
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), STRICT, ERR);
+    return Extract(JSVal::Bool(result));
+  } else {
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    JSObject* const obj = base.ToObject(ctx, ERR);
+    const bool result = obj->Delete(ctx, name, STRICT, ERR);
+    return Extract(JSVal::Bool(result));
+  }
+}
+
+template<int Target, std::size_t Returned, bool STRICT>
+inline Rep IncrementElement(railgun::Context* ctx,
+                            JSVal base, JSVal element) {
+  base.CheckObjectCoercible(ERR);
+  const Symbol s = element.ToSymbol(ctx, ERR);
+  const JSVal w = LoadPropImpl(ctx, base, s, ERR);
+  if (w.IsInt32() &&
+      railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+    std::tuple<JSVal, JSVal> results;
+    const int32_t target = w.int32();
+    std::get<0>(results) = w;
+    std::get<1>(results) = JSVal::Int32(target + Target);
+    StorePropImpl<STRICT>(ctx, base, s, std::get<1>(results), ERR);
+    return Extract(std::get<Returned>(results));
+  } else {
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx, ERR);
+    std::get<1>(results) = std::get<0>(results) + Target;
+    StorePropImpl<STRICT>(ctx, base, s, std::get<1>(results), ERR);
+    return Extract(JSVal(std::get<Returned>(results)));
+  }
 }
 
 #undef ERR

@@ -249,12 +249,24 @@ class Compiler {
         case r::OP::LOAD_ELEMENT:
           EmitLOAD_ELEMENT(instr);
           break;
-        // case r::OP::STORE_ELEMENT:
-        // case r::OP::DELETE_ELEMENT:
-        // case r::OP::INCREMENT_ELEMENT:
-        // case r::OP::DECREMENT_ELEMENT:
-        // case r::OP::POSTFIX_INCREMENT_ELEMENT:
-        // case r::OP::POSTFIX_DECREMENT_ELEMENT:
+        case r::OP::STORE_ELEMENT:
+          EmitSTORE_ELEMENT(instr);
+          break;
+        case r::OP::DELETE_ELEMENT:
+          EmitDELETE_ELEMENT(instr);
+          break;
+        case r::OP::INCREMENT_ELEMENT:
+          EmitINCREMENT_ELEMENT(instr);
+          break;
+        case r::OP::DECREMENT_ELEMENT:
+          EmitDECREMENT_ELEMENT(instr);
+          break;
+        case r::OP::POSTFIX_INCREMENT_ELEMENT:
+          EmitPOSTFIX_INCREMENT_ELEMENT(instr);
+          break;
+        case r::OP::POSTFIX_DECREMENT_ELEMENT:
+          EmitPOSTFIX_DECREMENT_ELEMENT(instr);
+          break;
         case r::OP::TO_NUMBER:
           EmitTO_NUMBER(instr);
           break;
@@ -1397,6 +1409,102 @@ class Compiler {
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     asm_->Call(&stub::LOAD_ELEMENT);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (base | element | src)
+  void EmitSTORE_ELEMENT(const Instruction* instr) {
+    const int16_t base = Reg(instr[1].i16[0]);
+    const int16_t element = Reg(instr[1].i16[1]);
+    const int16_t src = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    asm_->mov(asm_->rcx, asm_->qword[asm_->r13 + src * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::STORE_ELEMENT<true>);
+    } else {
+      asm_->Call(&stub::STORE_ELEMENT<false>);
+    }
+  }
+
+  // opcode | (dst | base | element)
+  void EmitDELETE_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::DELETE_ELEMENT<true>);
+    } else {
+      asm_->Call(&stub::DELETE_ELEMENT<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | element)
+  void EmitINCREMENT_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementElement<1, 1, true>);
+    } else {
+      asm_->Call(&stub::IncrementElement<1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | element)
+  void EmitDECREMENT_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementElement<-1, 1, true>);
+    } else {
+      asm_->Call(&stub::IncrementElement<-1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | element)
+  void EmitPOSTFIX_INCREMENT_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementElement<1, 0, true>);
+    } else {
+      asm_->Call(&stub::IncrementElement<1, 0, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | element)
+  void EmitPOSTFIX_DECREMENT_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    if (code_->strict()) {
+      asm_->Call(&stub::IncrementElement<-1, 0, true>);
+    } else {
+      asm_->Call(&stub::IncrementElement<-1, 0, false>);
+    }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
