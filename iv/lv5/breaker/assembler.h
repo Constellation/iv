@@ -8,6 +8,7 @@ namespace breaker {
 
 class Assembler : public Xbyak::CodeGenerator {
  public:
+  friend class Compiler;
   class LocalLabelScope : core::Noncopyable<> {
    public:
     explicit LocalLabelScope(Assembler* assembler)
@@ -23,11 +24,14 @@ class Assembler : public Xbyak::CodeGenerator {
 
   class RepatchSite {
    public:
+    static const std::size_t kMovImmOffset = 2;  // rex and code
+
     RepatchSite() : offset_(0) { }
 
     void Mov(Assembler* assembler, const Xbyak::Reg64& reg) {
-      const uint64_t dummy = UINT64_C(0xFFFFFFFFFFFFFFFF);
-      offset_ = assembler->size() + 1;
+      // not int32 point
+      const uint64_t dummy = UINT64_C(0x0FFF000000000000);
+      offset_ = assembler->size() + kMovImmOffset;
       assembler->mov(reg, dummy);
     }
 
@@ -39,7 +43,8 @@ class Assembler : public Xbyak::CodeGenerator {
   };
 
   Assembler()
-    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
+    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
+      jump_subroutine_() {
   }
 
   // implementation of INT $3 and INT imm8
@@ -116,6 +121,8 @@ class Assembler : public Xbyak::CodeGenerator {
   }
 
   std::size_t size() const { return getSize(); }
+
+  std::vector<const void*> jump_subroutine_;
 };
 
 } } }  // namespace iv::lv5::breaker
