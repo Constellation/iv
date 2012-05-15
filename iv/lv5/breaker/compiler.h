@@ -2245,6 +2245,8 @@ class Compiler {
     asm_->mov(asm_->rax, layout);
     asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], asm_->rax);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+    asm_->align(16);
     unresolved_address_map_.insert(std::make_pair(asm_->size(), site));
   }
 
@@ -2521,11 +2523,8 @@ class Compiler {
                                      const char* label,
                                      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(out, lhs);
-    asm_->or(out, rhs);
-    asm_->shr(out, 15);
-    asm_->jnz(label, type);
-    asm_->mov(out, lhs);
     asm_->imul(out, rhs);
+    asm_->jo(label, type);
   }
 
   static std::string MakeLabel(std::size_t num) {
