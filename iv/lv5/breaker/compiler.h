@@ -1230,12 +1230,12 @@ class Compiler {
   void EmitSTORE_OBJECT_DATA(const Instruction* instr) {
     const int16_t obj = Reg(instr[1].i16[0]);
     const int16_t item = Reg(instr[1].i16[1]);
-    const uint32_t offset = Reg(instr[2].u32[0]);
-    const uint32_t merged = Reg(instr[2].u32[1]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t merged = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->rcx, offset);
+    asm_->mov(asm_->ecx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_DATA<true>);
     } else {
@@ -1247,8 +1247,8 @@ class Compiler {
   void EmitSTORE_OBJECT_GET(const Instruction* instr) {
     const int16_t obj = Reg(instr[1].i16[0]);
     const int16_t item = Reg(instr[1].i16[1]);
-    const uint32_t offset = Reg(instr[2].u32[0]);
-    const uint32_t merged = Reg(instr[2].u32[1]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t merged = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
@@ -1264,8 +1264,8 @@ class Compiler {
   void EmitSTORE_OBJECT_SET(const Instruction* instr) {
     const int16_t obj = Reg(instr[1].i16[0]);
     const int16_t item = Reg(instr[1].i16[1]);
-    const uint32_t offset = Reg(instr[2].u32[0]);
-    const uint32_t merged = Reg(instr[2].u32[1]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t merged = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
