@@ -43,6 +43,34 @@ inline Rep WITH_SETUP(railgun::Context* ctx, railgun::Frame* frame, JSVal src) {
   return 0;
 }
 
+inline Rep FORIN_SETUP(railgun::Context* ctx, JSVal enumerable) {
+  railgun::NativeIterator* it;
+  if (enumerable.IsString()) {
+    it = ctx->GainNativeIterator(enumerable.string());
+  } else {
+    JSObject* const obj = enumerable.ToObject(ctx, ERR);
+    it = ctx->GainNativeIterator(obj);
+  }
+  return Extract(JSVal::Cell(it));
+}
+
+inline Rep FORIN_ENUMERATE(railgun::Context* ctx, JSVal iterator) {
+  railgun::NativeIterator* it =
+      static_cast<railgun::NativeIterator*>(iterator.cell());
+  if (it->Has()) {
+    const Symbol sym = it->Get();
+    it->Next();
+    return Extract(JSString::New(ctx, sym));
+  }
+  return 0;
+}
+
+inline void FORIN_LEAVE(railgun::Context* ctx, JSVal iterator) {
+  railgun::NativeIterator* it =
+      static_cast<railgun::NativeIterator*>(iterator.cell());
+  ctx->ReleaseNativeIterator(it);
+}
+
 inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   assert(!lhs.IsNumber() || !rhs.IsNumber());
   if (lhs.IsString()) {
@@ -721,8 +749,6 @@ inline bool TO_BOOLEAN(JSVal src) {
 
 template<bool STRICT>
 inline Rep LOAD_ARGUMENTS(railgun::Context* ctx, railgun::Frame* frame) {
-  std::cout << IV_LV5_BREAKER_RETURN_ADDRESS_POSITION << std::endl;
-  std::cout << frame->return_address_position_ << std::endl;
   if (STRICT) {
     JSObject* obj = JSStrictArguments::New(
         ctx, frame->callee().object()->AsCallable(),

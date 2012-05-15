@@ -306,9 +306,15 @@ class Compiler {
         case r::OP::IF_TRUE:
           EmitIF_TRUE(instr);
           break;
-        // case r::OP::FORIN_SETUP:
-        // case r::OP::FORIN_ENUMERATE:
-        // case r::OP::FORIN_LEAVE:
+        case r::OP::FORIN_SETUP:
+          EmitFORIN_SETUP(instr);
+          break;
+        case r::OP::FORIN_ENUMERATE:
+          EmitFORIN_ENUMERATE(instr);
+          break;
+        case r::OP::FORIN_LEAVE:
+          EmitFORIN_LEAVE(instr);
+          break;
         // case r::OP::TRY_CATCH_SETUP:
         // case r::OP::LOAD_NAME:
         // case r::OP::STORE_NAME:
@@ -1845,6 +1851,45 @@ class Compiler {
     asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
+  // opcode | (jmp : iterator | enumerable)
+  void EmitFORIN_SETUP(const Instruction* instr) {
+    const int16_t iterator = Reg(instr[1].jump.i16[0]);
+    const int16_t enumerable = Reg(instr[1].jump.i16[1]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + enumerable * kJSValSize]);
+    NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->Call(&stub::FORIN_SETUP);
+    asm_->mov(asm_->ptr[asm_->r13 + iterator * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (jmp : dst | iterator)
+  void EmitFORIN_ENUMERATE(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].jump.i16[0]);
+    const int16_t iterator = Reg(instr[1].jump.i16[1]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
+    asm_->Call(&stub::FORIN_ENUMERATE);
+    asm_->cmp(asm_->rax, 0);
+    asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | iterator
+  void EmitFORIN_LEAVE(const Instruction* instr) {
+    const int16_t iterator = Reg(instr[1].i32[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
+    asm_->Call(&stub::FORIN_LEAVE);
+  }
+
   // opcode | jmp
   void EmitJUMP_BY(const Instruction* instr) {
     const int32_t jump = instr[1].jump.to;
@@ -1886,37 +1931,56 @@ class Compiler {
 
   void Int32Guard(const Xbyak::Reg64& target,
                   const Xbyak::Reg64& tmp1,
-                  const Xbyak::Reg64& tmp2, const char* label) {
+                  const Xbyak::Reg64& tmp2,
+                  const char* label,
+                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(tmp1, detail::jsval64::kNumberMask);
     asm_->and(tmp1, target);
     asm_->mov(tmp2, detail::jsval64::kNumberMask);
     asm_->cmp(tmp1, tmp2);
-    asm_->jne(label);
+    asm_->jne(label, type);
+  }
+
+  void NullOrUndefinedGuard(const Xbyak::Reg64& target,
+                            const Xbyak::Reg64& tmp, const char* label,
+                            Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    // (1000)2 = 8
+    // Null is (0010)2 and Undefined is (1010)2
+    asm_->mov(tmp, ~UINT64_C(8));
+    asm_->and(tmp, target);
+    asm_->cmp(tmp, detail::jsval64::kNull);
+    asm_->je(label, type);
   }
 
   void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,
                                 const Xbyak::Reg32& rhs,
-                                const Xbyak::Reg32& out, const char* label) {
+                                const Xbyak::Reg32& out,
+                                const char* label,
+                                Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(out, lhs);
     asm_->add(out, rhs);
-    asm_->jo(label);
+    asm_->jo(label, type);
   }
 
   void SubtractingInt32OverflowGuard(const Xbyak::Reg32& lhs,
                                      const Xbyak::Reg32& rhs,
-                                     const Xbyak::Reg32& out, const char* label) {
+                                     const Xbyak::Reg32& out,
+                                     const char* label,
+                                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(out, lhs);
     asm_->sub(out, rhs);
-    asm_->jo(label);
+    asm_->jo(label, type);
   }
 
   void MultiplyingInt32OverflowGuard(const Xbyak::Reg32& lhs,
                                      const Xbyak::Reg32& rhs,
-                                     const Xbyak::Reg32& out, const char* label) {
+                                     const Xbyak::Reg32& out,
+                                     const char* label,
+                                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(out, lhs);
     asm_->or(out, rhs);
     asm_->shr(out, 15);
-    asm_->jnz(label);
+    asm_->jnz(label, type);
     asm_->mov(out, lhs);
     asm_->imul(out, rhs);
   }
