@@ -64,10 +64,16 @@ class Compiler {
     top_->core_data()->set_asm(asm_);
   }
 
+  static uint64_t RotateLeft64(uint64_t val, uint64_t amount) {
+    return (val << amount) | (val >> (64 - amount));
+  }
+
   ~Compiler() {
     // Compilation is finished.
     // Link jumps / calls and set each entry point to Code.
     asm_->ready();
+
+    // link entry points
     for (EntryPointMap::const_iterator it = entry_points_.begin(),
          last = entry_points_.end(); it != last; ++it) {
       it->first->set_executable(asm_->GainExecutableByOffset(it->second));
@@ -83,7 +89,7 @@ class Compiler {
         // encode ptr value to JSVal invalid number
         // double offset value is 1000000000000000000000000000000000000000000000000
         ptr += 0x1;
-        const uint64_t result = (ptr << kEncodeRotateN) | (ptr >> (64 - kEncodeRotateN));
+        const uint64_t result = RotateLeft64(ptr, kEncodeRotateN);
         it->second.Repatch(asm_, result);
       }
     }
