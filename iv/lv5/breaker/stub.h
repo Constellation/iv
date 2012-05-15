@@ -1064,6 +1064,28 @@ inline Rep IncrementElement(railgun::Context* ctx,
   }
 }
 
+inline Rep LOAD_REGEXP(railgun::Context* ctx, JSRegExp* reg) {
+  return Extract(JSRegExp::New(ctx, reg));
+}
+
+inline Rep LOAD_OBJECT(railgun::Context* ctx, Map* map) {
+  return Extract(JSObject::New(ctx, map));
+}
+
+inline Rep LOAD_FUNCTION(railgun::Context* ctx,
+                         railgun::Code* code, JSEnv* env) {
+  return Extract(railgun::JSVMFunction::New(ctx, code, env));
+}
+
+inline Rep LOAD_ARRAY(railgun::Context* ctx, uint32_t len) {
+  return Extract(JSArray::ReservedNew(ctx, len));
+}
+
+inline JSEnv* TRY_CATCH_SETUP(railgun::Context* ctx,
+                              JSEnv* outer, Symbol sym, JSVal value) {
+  return JSStaticEnv::New(ctx, outer, sym, value);
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

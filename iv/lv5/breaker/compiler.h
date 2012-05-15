@@ -30,6 +30,11 @@ class Compiler {
         offset(0),
         exception_handled(handled) {
     }
+    JumpInfo()
+      : counter(0),
+        offset(0),
+        exception_handled(false) {
+    }
     std::size_t counter;
     std::size_t offset;
     bool exception_handled;
@@ -158,9 +163,22 @@ class Compiler {
     const r::ExceptionTable& table = code_->exception_table();
     for (r::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
+      // should override (because handled option is true)
       const r::Handler& handler = *it;
-      jump_map_.insert(std::make_pair(handler.begin(), JumpInfo(counter_++, true)));
-      jump_map_.insert(std::make_pair(handler.end(), JumpInfo(counter_++, true)));
+      jump_map_[handler.begin()] = JumpInfo(counter_++, true);
+      jump_map_[handler.end()] = JumpInfo(counter_++, true);
+    }
+  }
+
+  void CheckBlock(const Instruction* instr) {
+    const int32_t index = instr - code_->begin();
+    const JumpMap::iterator it = jump_map_.find(index);
+    if (it != jump_map_.end()) {
+      asm_->L(MakeLabel(it->second.counter).c_str());
+      if (it->second.exception_handled) {
+        // store handler range
+        handler_links_.insert(std::make_pair(instr, asm_->size()));
+      }
     }
   }
 
@@ -176,21 +194,12 @@ class Compiler {
     // We can access this space by qword[rsp + k64Size * 0] a.k.a. qword[rsp]
     asm_->push(asm_->r12);
 
-    const Instruction* first_instr = code_->begin();
     for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
-      const int32_t index = instr - first_instr;
 
-      const JumpMap::iterator it = jump_map_.find(index);
-      if (it != jump_map_.end()) {
-        asm_->L(MakeLabel(it->second.counter).c_str());
-        if (it->second.exception_handled) {
-          // store handler range
-          handler_links_.insert(std::make_pair(instr, asm_->size()));
-        }
-      }
+      CheckBlock(instr);
 
       switch (opcode) {
         case r::OP::NOP:
@@ -530,6 +539,8 @@ class Compiler {
       }
       std::advance(instr, length);
     }
+    // because handler makes range label to end.
+    CheckBlock(code_->end());
   }
 
   // Emitters
@@ -1459,7 +1470,7 @@ class Compiler {
     const uint32_t size = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->esi, size);
-    asm_->Call(&JSArray::ReservedNew);
+    asm_->Call(&stub::LOAD_ARRAY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
@@ -1469,9 +1480,8 @@ class Compiler {
     railgun::Code* target = code_->codes()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
-    asm_->mov(asm_->rdx,
-              asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->Call(&railgun::JSVMFunction::New);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->Call(&stub::LOAD_FUNCTION);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
@@ -1482,7 +1492,7 @@ class Compiler {
         static_cast<JSRegExp*>(code_->constants()[instr[1].ssw.u32].object());
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
-    asm_->Call(static_cast<JSRegExp*(*)(Context*, JSRegExp*)>(&JSRegExp::New));
+    asm_->Call(&stub::LOAD_REGEXP);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
@@ -1491,7 +1501,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
-    asm_->Call(static_cast<JSObject*(*)(Context*, Map*)>(&JSObject::New));
+    asm_->Call(&stub::LOAD_OBJECT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
@@ -2299,8 +2309,8 @@ class Compiler {
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + error * kJSValSize]);
-    asm_->Call(&JSStaticEnv::New);
-    asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rax);
+    asm_->Call(&stub::TRY_CATCH_SETUP);
+    asm_->mov(asm_->qword[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rax);
   }
 
   // opcode | (dst | index)
