@@ -1,8 +1,8 @@
 // breaker::Compiler
 //
-// This compiler parses railgun::opcodes and emit native code.
-// Some primitive operation and branch operation is emitted as raw native code,
-// and basic complex opcode is emitted as call to stub function, that is,
+// This compiler parses railgun::opcodes and emits native code.
+// Some primitive operations and branch operations are emitted as raw native code,
+// and basic complex opcodes are emitted as call to stub function, that is,
 // Context Threading JIT.
 //
 // Stub function implementations are in stub.h
