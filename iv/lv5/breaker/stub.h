@@ -23,6 +23,8 @@ namespace stub {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
+static railgun::Instruction* const kDummyInstruction =
+    reinterpret_cast<railgun::Instruction*>(0xF0);
 
 inline void BUILD_ENV(railgun::Context* ctx, railgun::Frame* frame,
                       uint32_t size, uint32_t mutable_start) {
@@ -512,7 +514,7 @@ inline Rep CALL(railgun::Context* ctx,
         code,
         vm_func->scope(),
         func,
-        NULL,  // TODO(Constellation) set precise position
+        kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
       ctx->PendingError()->Report(Error::Range,
@@ -557,7 +559,7 @@ inline Rep EVAL(railgun::Context* ctx,
         code,
         vm_func->scope(),
         func,
-        NULL,  // TODO(Constellation) set precise position
+        kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
       ctx->PendingError()->Report(Error::Range,
@@ -606,7 +608,7 @@ inline Rep CONSTRUCT(railgun::Context* ctx,
         code,
         vm_func->scope(),
         func,
-        NULL,  // TODO(Constellation) set precise position
+        kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
       ctx->PendingError()->Report(Error::Range,

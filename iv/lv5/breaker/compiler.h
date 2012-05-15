@@ -96,7 +96,7 @@ class Compiler {
              last = table.end(); it != last; ++it) {
           railgun::Handler& handler = *it;
           const Instruction* begin = first_instr + handler.begin();
-          const Instruction* end = first_instr + handler.begin();
+          const Instruction* end = first_instr + handler.end();
           assert(handler_links_.find(begin) != handler_links_.end());
           assert(handler_links_.find(end) != handler_links_.end());
           handler.set_program_counter_begin(

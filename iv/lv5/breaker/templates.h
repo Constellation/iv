@@ -124,10 +124,9 @@ inline void* search_exception_handler(void* pc,
   using namespace iv::lv5;  // NOLINT
   railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
   uintptr_t* rsp_out = (reinterpret_cast<uintptr_t*>(target) + 1);
-  uintptr_t rsp = reinterpret_cast<uintptr_t>(target);
+  uintptr_t rsp = reinterpret_cast<uintptr_t>(target + 2);
   railgun::Frame* frame = *frame_out;
   Error* e = ctx->PendingError();
-  uint64_t offset = 0;
   while (true) {
     bool in_range = false;
     const railgun::ExceptionTable& table = frame->code()->exception_table();
@@ -168,7 +167,7 @@ inline void* search_exception_handler(void* pc,
               reg[handler.ret()] = error;
             }
             *frame_out = frame;
-            *rsp_out = rsp + (offset * kStackPayload);
+            *rsp_out = rsp;
             return handler.program_counter_end();
           }
         }
@@ -182,17 +181,17 @@ inline void* search_exception_handler(void* pc,
       break;
     } else {
       // unwind frame
-      pc = frame->return_address_;
+      rsp += kStackPayload * k64Size;
+      pc = *core::BitCast<void**>(rsp - k64Size);
       // because of Frame is code frame,
       // first lexical_env is variable_env.
       // (if Eval / Global, this is not valid)
       assert(frame->lexical_env() == frame->variable_env());
       frame = ctx->vm()->stack()->Unwind(frame);
-      offset += 1;
     }
   }
   *frame_out = frame;
-  *rsp_out = rsp + (offset * kStackPayload);
+  *rsp_out = rsp;
   return Templates<>::exception_handler_is_not_found();
 }
 
