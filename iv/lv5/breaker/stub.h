@@ -834,8 +834,8 @@ inline Rep PREPARE_DYNAMIC_CALL(railgun::Context* ctx,
                                 JSVal* base) {
   if (JSEnv* target_env = GetEnv(ctx, env, name)) {
     const JSVal res = target_env->GetBindingValue(ctx, name, false, ERR);
-    *base = res;
-    return Extract(target_env->ImplicitThisValue());
+    *base = target_env->ImplicitThisValue();
+    return Extract(res);
   }
   RaiseReferenceError(name, ctx->PendingError());
   IV_LV5_BREAKER_RAISE();

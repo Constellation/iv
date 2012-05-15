@@ -1603,7 +1603,7 @@ class Compiler {
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
-    asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
+    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
     asm_->Call(&stub::INIT_VECTOR_ARRAY_ELEMENT);
@@ -1616,7 +1616,7 @@ class Compiler {
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
-    asm_->lea(asm_->rsi, asm_->qword[asm_->r13 + reg * kJSValSize]);
+    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
     asm_->Call(&stub::INIT_SPARSE_ARRAY_ELEMENT);
@@ -2315,7 +2315,7 @@ class Compiler {
 
       asm_->L(".INCREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r12);
-      asm_->lea(asm_->rdx, asm_->qword[asm_->r13 + dst * kJSValSize]);
+      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_INCREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
@@ -2366,7 +2366,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->lea(asm_->rcx, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->lea(asm_->rcx, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
