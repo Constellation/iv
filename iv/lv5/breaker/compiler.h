@@ -363,7 +363,9 @@ class Compiler {
         // case r::OP::DECREMENT_HEAP:
         // case r::OP::POSTFIX_INCREMENT_HEAP:
         // case r::OP::POSTFIX_DECREMENT_HEAP:
-        // case r::OP::TYPEOF_HEAP:
+        case r::OP::TYPEOF_HEAP:
+          EmitTYPEOF_HEAP(instr);
+          break;
         case r::OP::INCREMENT:
           EmitINCREMENT(instr);
           break;
@@ -1536,6 +1538,26 @@ class Compiler {
     static const uint64_t layout = Extract(JSFalse);
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+  }
+
+  // opcode | (dst | name) | (offset | nest)
+  void EmitTYPEOF_HEAP(const Instruction* instr) {
+    // TODO(Constellation) inline this method
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[2].u32[0];
+    const uint32_t nest = instr[2].u32[1];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->r8d, nest);
+    if (code_->strict()) {
+      asm_->Call(&stub::TYPEOF_HEAP<true>);
+    } else {
+      asm_->Call(&stub::TYPEOF_HEAP<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (callee | offset | argc_with_this)

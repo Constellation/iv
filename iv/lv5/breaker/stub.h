@@ -373,6 +373,13 @@ inline Rep STORE_HEAP(railgun::Context* ctx, JSEnv* env,
   return 0;
 }
 
+template<bool STRICT>
+inline Rep TYPEOF_HEAP(railgun::Context* ctx, JSEnv* env,
+                       Symbol name, uint32_t offset, uint32_t nest) {
+  const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
+  return Extract(res.TypeOf(ctx));
+}
+
 template<int Target, std::size_t Returned, bool STRICT>
 JSVal IncrementName(railgun::Context* ctx, JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
