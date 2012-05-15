@@ -356,7 +356,9 @@ class Compiler {
         case r::OP::STORE_HEAP:
           EmitSTORE_HEAP(instr);
           break;
-        // case r::OP::DELETE_HEAP:
+        case r::OP::DELETE_HEAP:
+          EmitDELETE_HEAP(instr);
+          break;
         // case r::OP::INCREMENT_HEAP:
         // case r::OP::DECREMENT_HEAP:
         // case r::OP::POSTFIX_INCREMENT_HEAP:
@@ -1527,6 +1529,13 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_HEAP<false>);
     }
+  }
+
+  // opcode | (dst | name) | (offset | nest)
+  void EmitDELETE_HEAP(const Instruction* instr) {
+    static const uint64_t layout = Extract(JSFalse);
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
   }
 
   // opcode | (callee | offset | argc_with_this)
