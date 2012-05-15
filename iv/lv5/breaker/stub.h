@@ -886,6 +886,73 @@ inline Rep TYPEOF_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
   return Extract(ctx->global_data()->string_undefined());
 }
 
+inline bool GetPrimitiveOwnProperty(railgun::Context* ctx,
+                                    JSVal base, Symbol name, JSVal* res) {
+  // section 8.7.1 special [[Get]]
+  assert(base.IsPrimitive());
+  if (base.IsString()) {
+    // string short circuit
+    JSString* str = base.string();
+    if (name == symbol::length()) {
+      *res = JSVal::UInt32(static_cast<uint32_t>(str->size()));
+      return true;
+    }
+    if (symbol::IsArrayIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      if (index < str->size()) {
+        *res = JSString::NewSingle(ctx, str->At(index));
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+inline JSVal LoadPropPrimitive(railgun::Context* ctx,
+                               JSVal base, Symbol name, Error* e) {
+  JSVal res;
+  if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+    return res;
+  }
+  // if base is primitive, property not found in "this" object
+  // so, lookup from proto
+  Slot slot;
+  JSObject* const proto = base.GetPrimitiveProto(ctx);
+  if (proto->GetPropertySlot(ctx, name, &slot)) {
+    return slot.Get(ctx, base, e);
+  } else {
+    return JSUndefined;
+  }
+}
+
+inline JSVal LoadPropImpl(railgun::Context* ctx, JSVal base, Symbol name, Error* e) {
+  if (base.IsPrimitive()) {
+    return LoadPropPrimitive(ctx, base, name, e);
+  } else {
+    return base.object()->Get(ctx, name, e);
+  }
+}
+
+inline Rep LOAD_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
+  base.CheckObjectCoercible(ERR);
+  // array fast path
+  uint32_t index;
+  if (element.GetUInt32(&index)) {
+    if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+      JSArray* ary = static_cast<JSArray*>(base.object());
+      if (ary->CanGetIndexDirect(index)) {
+        return Extract(ary->GetIndexDirect(index));
+      } else {
+        const JSVal res = ary->JSArray::Get(ctx, symbol::MakeSymbolFromIndex(index), ERR);
+        return Extract(res);
+      }
+    }
+  }
+  const Symbol name = element.ToSymbol(ctx, ERR);
+  const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+  return Extract(res);
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

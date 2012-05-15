@@ -112,7 +112,7 @@ class Compiler {
     // emit prologue
 
     // general storage space
-    // We can access this space by qword[rsp + k64Size * 0]
+    // We can access this space by qword[rsp + k64Size * 0] a.k.a. qword[rsp]
     asm_->push(asm_->r12);
 
     const Instruction* first_instr = code_->begin();
@@ -246,7 +246,9 @@ class Compiler {
         case r::OP::LOAD_OBJECT:
           EmitLOAD_OBJECT(instr);
           break;
-        // case r::OP::LOAD_ELEMENT:
+        case r::OP::LOAD_ELEMENT:
+          EmitLOAD_ELEMENT(instr);
+          break;
         // case r::OP::STORE_ELEMENT:
         // case r::OP::DELETE_ELEMENT:
         // case r::OP::INCREMENT_ELEMENT:
@@ -1383,6 +1385,18 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
     asm_->Call(static_cast<JSObject*(*)(Context*, Map*)>(&JSObject::New));
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | element)
+  void EmitLOAD_ELEMENT(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].i16[0]);
+    const int16_t base = Reg(instr[1].i16[1]);
+    const int16_t element = Reg(instr[1].i16[2]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
