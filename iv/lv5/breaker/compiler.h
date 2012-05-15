@@ -331,7 +331,9 @@ class Compiler {
         case r::OP::FORIN_LEAVE:
           EmitFORIN_LEAVE(instr);
           break;
-        // case r::OP::TRY_CATCH_SETUP:
+        case r::OP::TRY_CATCH_SETUP:
+          EmitTRY_CATCH_SETUP(instr);
+          break;
         case r::OP::LOAD_NAME:
           EmitLOAD_NAME(instr);
           break;
@@ -2185,6 +2187,18 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
     asm_->Call(&stub::FORIN_LEAVE);
+  }
+
+  // opcode | (error | name)
+  void EmitTRY_CATCH_SETUP(const Instruction* instr) {
+    const int16_t error = Reg(instr[1].ssw.i16[0]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + error * kJSValSize]);
+    asm_->Call(&JSStaticEnv::New);
+    asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rax);
   }
 
   // opcode | (dst | index)
