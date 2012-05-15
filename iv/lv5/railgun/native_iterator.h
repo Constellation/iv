@@ -46,6 +46,7 @@ class NativeIterator
     JSObject* proto = context::GetClassSlot(ctx, Class::String).prototype;
     proto->GetPropertyNames(ctx, LevelUp(),
                             JSObject::EXCLUDE_NOT_ENUMERABLE);
+    iter_ = names().begin();
   }
  private:
   PropertyNamesCollector::Names::const_iterator iter_;
