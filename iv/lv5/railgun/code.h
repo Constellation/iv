@@ -97,6 +97,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return exception_table_;
   }
 
+  ExceptionTable& exception_table() {
+    return exception_table_;
+  }
+
   void RegisterHandler(const Handler& handler) {
     exception_table_.push_back(handler);
   }

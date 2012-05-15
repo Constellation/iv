@@ -39,6 +39,14 @@ class Handler {
 
   void* program_counter_end() const { return program_counter_end_; }
 
+  void set_program_counter_begin(void* ptr) {
+    program_counter_begin_ = ptr;
+  }
+
+  void set_program_counter_end(void* ptr) {
+    program_counter_end_ = ptr;
+  }
+
   int16_t jmp() const { return jmp_; }
 
   int16_t ret() const { return ret_; }
@@ -50,14 +58,10 @@ class Handler {
   int16_t jmp_;
   int16_t ret_;
   int16_t flag_;
-  union {
-    uint32_t begin_;
-    void* program_counter_begin_;
-  };
-  union {
-    uint32_t end_;
-    void* program_counter_end_;
-  };
+  uint32_t begin_;
+  uint32_t end_;
+  void* program_counter_begin_;
+  void* program_counter_end_;
 };
 
 typedef GCVector<Handler>::type ExceptionTable;

@@ -20,13 +20,27 @@ namespace breaker {
 
 class Compiler {
  public:
-  typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
-  typedef std::unordered_map<uint32_t, std::size_t> JumpMap;
-  typedef std::unordered_map<std::size_t, Assembler::RepatchSite> UnresolvedAddressMap;
-  typedef std::vector<Assembler::RepatchSite> RepatchSites;
-
   // introducing railgun to this scope
   typedef railgun::Instruction Instruction;
+
+  class JumpInfo {
+   public:
+    JumpInfo(std::size_t c, bool handled = false)
+      : counter(c),
+        offset(0),
+        exception_handled(handled) {
+    }
+    std::size_t counter;
+    std::size_t offset;
+    bool exception_handled;
+  };
+
+  typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
+  typedef std::unordered_map<uint32_t, JumpInfo> JumpMap;
+  typedef std::unordered_map<std::size_t, Assembler::RepatchSite> UnresolvedAddressMap;
+  typedef std::vector<Assembler::RepatchSite> RepatchSites;
+  typedef std::vector<railgun::Code*> Codes;
+  typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
   static const int kJSValSize = sizeof(JSVal);
 
@@ -38,6 +52,8 @@ class Compiler {
       entry_points_(),
       unresolved_address_map_(),
       return_subroutine_(),
+      handler_links_(),
+      codes_(),
       counter_(0) {
     top_->core_data()->set_asm(asm_);
   }
@@ -69,10 +85,32 @@ class Compiler {
         it->Repatch(asm_, core::BitCast<uint64_t>(asm_->jump_subroutine_.data()));
       }
     }
+    // link exception handlers
+    {
+      for (Codes::const_iterator it = codes_.begin(),
+           last = codes_.end(); it != last; ++it) {
+        railgun::Code* code = *it;
+        const Instruction* first_instr = code->begin();
+        railgun::ExceptionTable& table = code->exception_table();
+        for (railgun::ExceptionTable::iterator it = table.begin(),
+             last = table.end(); it != last; ++it) {
+          railgun::Handler& handler = *it;
+          const Instruction* begin = first_instr + handler.begin();
+          const Instruction* end = first_instr + handler.begin();
+          assert(handler_links_.find(begin) != handler_links_.end());
+          assert(handler_links_.find(end) != handler_links_.end());
+          handler.set_program_counter_begin(
+              asm_->GainExecutableByOffset(handler_links_.find(begin)->second));
+          handler.set_program_counter_end(
+              asm_->GainExecutableByOffset(handler_links_.find(end)->second));
+        }
+      }
+    }
   }
 
   void Initialize(railgun::Code* code) {
     code_ = code;
+    codes_.push_back(code);
     jump_map_.clear();
     entry_points_.insert(std::make_pair(code, asm_->size()));
   }
@@ -109,7 +147,7 @@ class Compiler {
         case r::OP::FORIN_ENUMERATE: {
           const int32_t jump = instr[1].jump.to;
           const uint32_t to = index + jump;
-          jump_map_.insert(std::make_pair(to, counter_++));
+          jump_map_.insert(std::make_pair(to, JumpInfo(counter_++)));
           break;
         }
       }
@@ -121,8 +159,8 @@ class Compiler {
     for (r::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const r::Handler& handler = *it;
-      jump_map_.insert(std::make_pair(handler.begin(), counter_++));
-      jump_map_.insert(std::make_pair(handler.end(), counter_++));
+      jump_map_.insert(std::make_pair(handler.begin(), JumpInfo(counter_++, true)));
+      jump_map_.insert(std::make_pair(handler.end(), JumpInfo(counter_++, true)));
     }
   }
 
@@ -147,7 +185,11 @@ class Compiler {
 
       const JumpMap::iterator it = jump_map_.find(index);
       if (it != jump_map_.end()) {
-        asm_->L(MakeLabel(it->second).c_str());
+        asm_->L(MakeLabel(it->second.counter).c_str());
+        if (it->second.exception_handled) {
+          // store handler range
+          handler_links_.insert(std::make_pair(instr, asm_->size()));
+        }
       }
 
       switch (opcode) {
@@ -2167,7 +2209,7 @@ class Compiler {
     const int16_t cond = Reg(instr[1].jump.i16[0]);
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
     asm_->Call(&stub::TO_BOOLEAN);
@@ -2182,7 +2224,7 @@ class Compiler {
     const int16_t flag = Reg(instr[1].jump.i16[1]);
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
 
     // register position and repatch afterward
@@ -2202,7 +2244,7 @@ class Compiler {
     const int16_t cond = Reg(instr[1].jump.i16[0]);
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
     asm_->Call(&stub::TO_BOOLEAN);
@@ -2216,7 +2258,7 @@ class Compiler {
     const int16_t enumerable = Reg(instr[1].jump.i16[1]);
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + enumerable * kJSValSize]);
     NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
@@ -2231,7 +2273,7 @@ class Compiler {
     const int16_t iterator = Reg(instr[1].jump.i16[1]);
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
@@ -2385,7 +2427,7 @@ class Compiler {
   void EmitJUMP_BY(const Instruction* instr) {
     const int32_t jump = instr[1].jump.to;
     const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second;
+    const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
@@ -2491,6 +2533,8 @@ class Compiler {
   EntryPointMap entry_points_;
   UnresolvedAddressMap unresolved_address_map_;
   RepatchSites return_subroutine_;
+  HandlerLinks handler_links_;
+  Codes codes_;
   std::size_t counter_;
 };
 
