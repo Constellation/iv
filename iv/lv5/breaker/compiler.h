@@ -221,7 +221,9 @@ class Compiler {
         case r::OP::WITH_SETUP:
           EmitWITH_SETUP(instr);
           break;
-        // case r::OP::RETURN_SUBROUTINE:
+        case r::OP::RETURN_SUBROUTINE:
+          EmitRETURN_SUBROUTINE(instr);
+          break;
         case r::OP::DEBUGGER:
           EmitDEBUGGER(instr);
           break;
@@ -513,6 +515,24 @@ class Compiler {
     asm_->mov(asm_->rsi, asm_->r13);
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::WITH_SETUP);
+  }
+
+  // opcode | (jmp | flag)
+  void EmitRETURN_SUBROUTINE(const Instruction* instr) {
+    const int16_t jump = Reg(instr[1].i16[0]);
+    const int16_t flag = Reg(instr[1].i16[1]);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + flag * kJSValSize]);
+      asm_->cmp(asm_->eax, railgun::VM::kJumpFromSubroutine);
+      asm_->jne(".RETURN_TO_HANDLING");
+      // TODO(Constellation) special pointer in register
+      asm_->jmp(asm_->qword[asm_->r13 + jump * kJSValSize]);
+      asm_->L(".RETURN_TO_HANDLING");
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + jump * kJSValSize]);
+      asm_->Call(&stub::THROW);
+    }
   }
 
   // opcode | (dst | offset)
