@@ -28,7 +28,7 @@ class Compiler {
 
   static const int kJSValSize = sizeof(JSVal);
 
-  Compiler(railgun::Code* top)
+  explicit Compiler(railgun::Code* top)
     : top_(top),
       code_(NULL),
       asm_(new(PointerFreeGC)Assembler),
@@ -46,6 +46,8 @@ class Compiler {
          last = entry_points_.end(); it != last; ++it) {
       it->first->set_executable(asm_->GainExecutableByOffset(it->second));
     }
+
+    // Repatch phase
   }
 
   void Initialize(railgun::Code* code) {
@@ -315,9 +317,9 @@ class Compiler {
         case r::OP::JUMP_BY:
           EmitJUMP_BY(instr);
           break;
-        // case r::OP::JUMP_SUBROUTINE:
-        //   EmitJUMP_SUBROUTINE(instr);
-        //   break;
+        case r::OP::JUMP_SUBROUTINE:
+          EmitJUMP_SUBROUTINE(instr);
+        break;
         case r::OP::IF_FALSE:
           EmitIF_FALSE(instr);
           break;
@@ -2142,18 +2144,19 @@ class Compiler {
 
   // opcode | (jmp : addr | flag)
   void EmitJUMP_SUBROUTINE(const Instruction* instr) {
-//    const int16_t addr = Reg(instr[1].jump.i16[0]);
-//    const int32_t flag = instr[1].jump.to;
-//    const uint32_t to = (instr - code_->begin()) + jump;
-//    const std::size_t num = jump_map_.find(to)->second;
-//    const std::string label = MakeLabel(num);
-//    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
-//
-//    REG(instr[1].jump.i16[0]) =
-//        ((std::distance(frame->data(), instr) +
-//          OPLength<OP::JUMP_SUBROUTINE>::value));
-//    REG(instr[1].jump.i16[1]) = JSVal::Int32(kJumpFromSubroutine);
-//    JUMPBY(instr[1].jump.to);
+    static const uint64_t layout = Extract(JSVal::Int32(railgun::VM::kJumpFromSubroutine));
+    const int16_t addr = Reg(instr[1].jump.i16[0]);
+    const int16_t flag = Reg(instr[1].jump.i16[1]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second;
+    const std::string label = MakeLabel(num);
+
+    // register position and repatch afterward
+    // store current rip
+    asm_->mov(asm_->qword[asm_->r13 + addr * kJSValSize], UINT64_C(0xFFFFFFFFFFFFFFFF));
+    asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], layout);
+    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
   // opcode | (jmp | cond)
