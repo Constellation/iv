@@ -324,12 +324,16 @@ class Compiler {
         case r::OP::STORE_NAME:
           EmitSTORE_NAME(instr);
           break;
-        // case r::OP::DELETE_NAME:
+        case r::OP::DELETE_NAME:
+          EmitDELETE_NAME(instr);
+          break;
         // case r::OP::INCREMENT_NAME:
         // case r::OP::DECREMENT_NAME:
         // case r::OP::POSTFIX_INCREMENT_NAME:
         // case r::OP::POSTFIX_DECREMENT_NAME:
-        // case r::OP::TYPEOF_NAME:
+        case r::OP::TYPEOF_NAME:
+          EmitTYPEOF_NAME(instr);
+          break;
         case r::OP::LOAD_GLOBAL:
           EmitLOAD_GLOBAL(instr);
           break;
@@ -2081,6 +2085,36 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_NAME<false>);
     }
+  }
+
+  // opcode | (dst | name)
+  void EmitDELETE_NAME(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::DELETE_NAME<true>);
+    } else {
+      asm_->Call(&stub::DELETE_NAME<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | name)
+  void EmitTYPEOF_NAME(const Instruction* instr) {
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::TYPEOF_NAME<true>);
+    } else {
+      asm_->Call(&stub::TYPEOF_NAME<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | jmp

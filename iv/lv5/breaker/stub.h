@@ -860,6 +860,23 @@ inline Rep STORE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name, JSVal src)
   return 0;
 }
 
+template<bool STRICT>
+inline Rep DELETE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  if (JSEnv* current = GetEnv(ctx, env, name)) {
+    return Extract(JSVal::Bool(current->DeleteBinding(ctx, name)));
+  }
+  return Extract(JSTrue);
+}
+
+template<bool STRICT>
+inline Rep TYPEOF_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+  if (JSEnv* current = GetEnv(ctx, env, name)) {
+    const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
+    return Extract(res.TypeOf(ctx));
+  }
+  return Extract(ctx->global_data()->string_undefined());
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_
