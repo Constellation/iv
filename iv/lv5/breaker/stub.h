@@ -1138,6 +1138,27 @@ inline Rep DELETE_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
   return Extract(JSVal::Bool(res));
 }
 
+template<int Target, std::size_t Returned, bool STRICT>
+inline Rep INCREMENT_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
+  base.CheckObjectCoercible(ERR);
+  const JSVal w = LoadPropImpl(ctx, base, name, ERR);
+  if (w.IsInt32() &&
+      railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
+    std::tuple<JSVal, JSVal> results;
+    const int32_t target = w.int32();
+    std::get<0>(results) = w;
+    std::get<1>(results) = JSVal::Int32(target + Target);
+    StorePropImpl<STRICT>(ctx, base, name, std::get<1>(results), ERR);
+    return Extract(std::get<Returned>(results));
+  } else {
+    std::tuple<double, double> results;
+    std::get<0>(results) = w.ToNumber(ctx, ERR);
+    std::get<1>(results) = std::get<0>(results) + Target;
+    StorePropImpl<STRICT>(ctx, base, name, std::get<1>(results), ERR);
+    return Extract(JSVal(std::get<Returned>(results)));
+  }
+}
+
 #undef ERR
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

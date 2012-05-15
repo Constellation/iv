@@ -395,10 +395,18 @@ class Compiler {
         case r::OP::DELETE_PROP:
           EmitDELETE_PROP(instr);
           break;
-        // case r::OP::INCREMENT_PROP:
-        // case r::OP::DECREMENT_PROP:
-        // case r::OP::POSTFIX_INCREMENT_PROP:
-        // case r::OP::POSTFIX_DECREMENT_PROP:
+        case r::OP::INCREMENT_PROP:
+          EmitINCREMENT_PROP(instr);
+          break;
+        case r::OP::DECREMENT_PROP:
+          EmitDECREMENT_PROP(instr);
+          break;
+        case r::OP::POSTFIX_INCREMENT_PROP:
+          EmitPOSTFIX_INCREMENT_PROP(instr);
+          break;
+        case r::OP::POSTFIX_DECREMENT_PROP:
+          EmitPOSTFIX_DECREMENT_PROP(instr);
+          break;
         case r::OP::LOAD_CONST:
           EmitLOAD_CONST(instr);
           break;
@@ -1483,6 +1491,70 @@ class Compiler {
       asm_->Call(&stub::DELETE_PROP<true>);
     } else {
       asm_->Call(&stub::DELETE_PROP<false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitINCREMENT_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::INCREMENT_PROP<1, 1, true>);
+    } else {
+      asm_->Call(&stub::INCREMENT_PROP<1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitDECREMENT_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::INCREMENT_PROP<-1, 1, true>);
+    } else {
+      asm_->Call(&stub::INCREMENT_PROP<-1, 1, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitPOSTFIX_INCREMENT_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::INCREMENT_PROP<1, 0, true>);
+    } else {
+      asm_->Call(&stub::INCREMENT_PROP<1, 0, false>);
+    }
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  }
+
+  // opcode | (dst | base | name) | nop | nop | nop
+  void EmitPOSTFIX_DECREMENT_PROP(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const Symbol name = code_->names()[instr[1].ssw.u32];
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    if (code_->strict()) {
+      asm_->Call(&stub::INCREMENT_PROP<-1, 0, true>);
+    } else {
+      asm_->Call(&stub::INCREMENT_PROP<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
