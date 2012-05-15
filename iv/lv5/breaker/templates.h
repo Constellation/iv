@@ -13,8 +13,8 @@ namespace lv5 {
 namespace breaker {
 
 static const std::size_t kDispatchExceptionHandler = 0;
-static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 48;
-static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 48;
+static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 96;
+static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 96;
 
 class TemplatesGenerator : public Xbyak::CodeGenerator {
  public:
@@ -34,6 +34,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     //   Frame to 2nd argument
     mov(rdi, rax);
     mov(rsi, r12);
+    push(rcx);
     push(rax);
     push(r13);
     mov(rdx, rsp);
@@ -41,6 +42,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     call(rax);
     pop(r13);  // unwinded frame
     pop(rsp);  // calculated rsp
+    pop(rcx);  // alignment
     jmp(rax);  // jump to exception handler
     Padding(size);
   }
@@ -69,7 +71,6 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     // initialize return address of frame
     lea(rcx, ptr[rsp - k64Size * 3]);
     mov(qword[r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], rcx);
-
     call(rdx);
     mov(r13, ptr[rsp + k64Size * 0]);
     mov(r12, ptr[rsp + k64Size * 1]);
@@ -181,7 +182,7 @@ inline void* search_exception_handler(void* pc,
       break;
     } else {
       // unwind frame
-      rsp += kStackPayload * k64Size;
+      rsp += (kStackPayload * k64Size);
       pc = *core::BitCast<void**>(rsp - k64Size);
       // because of Frame is code frame,
       // first lexical_env is variable_env.
@@ -190,6 +191,7 @@ inline void* search_exception_handler(void* pc,
       frame = ctx->vm()->stack()->Unwind(frame);
     }
   }
+  rsp += (kStackPayload * k64Size);
   *frame_out = frame;
   *rsp_out = rsp;
   return Templates<>::exception_handler_is_not_found();
