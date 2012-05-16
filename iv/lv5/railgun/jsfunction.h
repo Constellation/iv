@@ -12,6 +12,7 @@
 #include <iv/lv5/railgun/context_fwd.h>
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/frame.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -20,7 +21,11 @@ class JSVMFunction : public JSFunction {
  public:
   virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
+#if defined(IV_ENABLE_JIT)
+    return breaker::Execute(static_cast<Context*>(args->ctx()), args, this);
+#else
     return static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
+#endif
   }
 
   virtual JSVal Construct(Arguments* args, Error* e) {

@@ -49,5 +49,37 @@ inline JSVal Run(railgun::Context* ctx, railgun::Code* code) {
                  ctx->global_obj());
 }
 
+inline JSVal Execute(railgun::Context* ctx, Arguments* args, railgun::JSVMFunction* func) {
+  Error* e = ctx->PendingError();
+  railgun::Code* code = func->code();
+  railgun::Frame* frame = ctx->vm()->stack()->NewCodeFrame(
+      ctx,
+      args->ExtractBase(),
+      code,
+      func->scope(),
+      func,
+      NULL,
+      args->size() + 1, args->IsConstructorCalled());
+  if (!frame) {
+    e->Report(Error::Range, "maximum call stack size exceeded");
+    return JSEmpty;
+  }
+  frame->InitThisBinding(ctx, e);
+  if (*e) {
+    ctx->vm()->stack()->Unwind(frame);
+    return JSEmpty;
+  }
+  const JSVal res = breaker_prologue(ctx, frame, code->executable());
+#ifdef DEBUG
+  if (code->needs_declarative_environment()) {
+    assert(frame->lexical_env()->outer() == func->scope());
+  } else {
+    assert(frame->lexical_env() == func->scope());
+  }
+#endif
+  ctx->vm()->stack()->Unwind(frame);
+  return res;
+}
+
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_ENTRY_POINT_H_

@@ -34,7 +34,6 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     //   Frame to 2nd argument
     mov(rdi, rax);
     mov(rsi, r12);
-    push(rcx);
     push(rax);
     push(r13);
     mov(rdx, rsp);
@@ -42,7 +41,6 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     call(rax);
     pop(r13);  // unwinded frame
     pop(rsp);  // calculated rsp
-    pop(rcx);  // alignment
     jmp(rax);  // jump to exception handler
     Padding(size);
   }

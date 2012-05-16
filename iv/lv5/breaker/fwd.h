@@ -65,6 +65,7 @@ namespace railgun {
 class Context;
 struct Frame;
 class Code;
+class JSVMFunction;
 
 }  // namespace railgun
 namespace breaker {
@@ -86,6 +87,7 @@ JSVal RunEval(railgun::Context* ctx,
               JSEnv* lexical_env,
               JSVal this_binding);
 JSVal Run(railgun::Context* ctx, railgun::Code* code);
+JSVal Execute(railgun::Context* ctx, Arguments* args, railgun::JSVMFunction* func);
 void Compile(railgun::Code* code);
 
 } } }  // namespace iv::lv5::breaker
