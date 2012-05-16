@@ -24,6 +24,9 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     CompileDispatchExceptionHandler(kExceptionHandlerIsNotFound);
     CompileExceptionHandlerIsNotFound(kBreakerPrologue);
     CompileBreakerPrologue(0);
+
+    prologue_ =
+        core::BitCast<TemplatesGenerator::PrologueType>(ptr + kBreakerPrologue);
   }
 
   void CompileDispatchExceptionHandler(std::size_t size) {
@@ -86,6 +89,9 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
       }
     }
   }
+
+ public:  // opened
+  PrologueType prologue_;
 };
 
 template<typename D = void>
@@ -126,17 +132,21 @@ inline void* search_exception_handler(void* pc,
   uintptr_t rsp = reinterpret_cast<uintptr_t>(target + 2);
   railgun::Frame* frame = *frame_out;
   Error* e = ctx->PendingError();
+  std::cout << "current is " << pc << std::endl;
   while (true) {
     bool in_range = false;
     const railgun::ExceptionTable& table = frame->code()->exception_table();
     for (railgun::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const railgun::Handler& handler = *it;
+      std::cout << "handler! " << handler.program_counter_begin() << " to " << handler.program_counter_end() << std::endl;
       if (in_range && handler.program_counter_begin() > pc) {
         break;  // handler not found
       }
+      std::cout << "handler! check!" << std::endl;
       if (handler.program_counter_begin() <= pc &&
           pc < handler.program_counter_end()) {
+        std::cout << "handler! check! in range" << std::endl;
         in_range = true;
         switch (handler.type()) {
           case railgun::Handler::ITERATOR: {
@@ -171,6 +181,7 @@ inline void* search_exception_handler(void* pc,
           }
         }
       }
+      std::cout << "handler! next" << std::endl;
     }
     // handler not in this frame
     // so, unwind frame and search again
@@ -197,8 +208,7 @@ inline void* search_exception_handler(void* pc,
 
 inline JSVal breaker_prologue(railgun::Context* ctx,
                               railgun::Frame* frame, void* ptr) {
-  return TemplatesGenerator::PrologueType(
-      Templates<>::code + kBreakerPrologue)(ctx, frame, ptr);
+  return Templates<>::generator.prologue_(ctx, frame, ptr);
 }
 
 } } }  // namespace iv::lv5::breaker
