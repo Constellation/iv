@@ -186,14 +186,12 @@ struct Frame {
 
   JSLayout callee_;  // for POD
   Code* code_;
-  union {
-    Instruction* prev_pc_;
-    void* return_address_;
-  };
+  Instruction* prev_pc_;
   void** return_address_position_;
   JSEnv* variable_env_;
   JSEnv* lexical_env_;
   Frame* prev_;
+  Context* ctx_;
   uint32_t argc_;
   uint32_t constructor_call_;
 };

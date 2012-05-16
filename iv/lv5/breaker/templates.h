@@ -174,7 +174,7 @@ inline void* search_exception_handler(void* pc,
     }
     // handler not in this frame
     // so, unwind frame and search again
-    if (frame->return_address_ == NULL) {
+    if (frame->prev_pc_ == NULL) {
       // this code is invoked by native function
       // so, not unwind and return (continues to after for main loop)
       break;

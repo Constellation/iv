@@ -2063,16 +2063,16 @@ class Compiler {
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const int16_t frame_end_offset = Reg(code_->registers());
-      asm_->lea(asm_->rbx, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->rbx);
+      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->rbx);
+      asm_->mov(asm_->rcx, asm_->r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rbx, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -2108,16 +2108,16 @@ class Compiler {
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const int16_t frame_end_offset = Reg(code_->registers());
-      asm_->lea(asm_->rbx, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->rbx);
+      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->rbx);
+      asm_->mov(asm_->rcx, asm_->r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rbx, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 
       // after call of JS Function
       // rax is result value
@@ -2168,16 +2168,16 @@ class Compiler {
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const int16_t frame_end_offset = Reg(code_->registers());
-      asm_->lea(asm_->rbx, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->rbx);
+      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->rbx);
+      asm_->mov(asm_->rcx, asm_->r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rbx, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->rbx + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 
       asm_->L(".CALL_EXIT");
     }
