@@ -52,15 +52,10 @@ class AlignOfImpl {
 // This macro purges '&' operator override,
 // and return offset value of non-POD class.
 // IV_DUMMY provides dummy address, that is not used in other places.
-void IV_DUMMY();
-#define IV_DUMMY_ADDRESS ((char*)&::iv::core::IV_DUMMY)  /* NOLINT */
-#define IV_OFFSETOF(type, member)\
-/* NOLINT */    (((char*)(\
-/* NOLINT */      &reinterpret_cast<char const volatile&>(\
-/* NOLINT */        ((type*)IV_DUMMY_ADDRESS)->member))) - IV_DUMMY_ADDRESS)
+#define IV_OFFSETOF(type, member) (reinterpret_cast<ptrdiff_t>(&(reinterpret_cast<type*>(0x2000)->member)) - 0x2000) /* NOLINT */
 
 #define IV_CAST_OFFSET(from, to)\
-/* NOLINT */    0xF0 - reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0xF0))))
+/* NOLINT */    0x2000 - reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0x2000))))
 
 template<class T>
 T LowestOneBit(T value) {
