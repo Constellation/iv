@@ -8,7 +8,10 @@
     // See MSVC http://msdn.microsoft.com/ja-jp/library/bb892950.aspx
     #include <intrin.h>
     #define IV_INTRINSIC_AVAILABLE
-  #elif defined(IV_COMPILER_CLANG) || defined(IV_COMPILER_GCC)
+  #elif defined(IV_COMPILER_CLANG) || \
+        (defined(IV_COMPILER_GCC) && \
+         IV_COMPILER_GCC >= IV_MAKE_VERSION(4, 5, 0))
+    // See http://gcc.gnu.org/gcc-4.5/changes.html
     #include <x86intrin.h>
     #define IV_INTRINSIC_AVAILABLE
   #endif
