@@ -37,7 +37,13 @@ static void Execute(const core::StringPiece& data,
   }
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
+
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::breaker::Compile(code);
+  iv::lv5::breaker::Run(&ctx, code);
+#else
   ctx.vm()->Run(code, e);
+#endif
 }
 
 }  // namespace detail
