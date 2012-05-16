@@ -129,13 +129,15 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     }
     JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
     code = CompileEval(ctx, *eval, script);
+#if defined(IV_ENABLE_JIT)
+    iv::lv5::breaker::Compile(code);
+#endif
     if (!code->strict()) {
       ctx->direct_eval_map()->Insert(str, code);
     }
   }
 
 #if defined(IV_ENABLE_JIT)
-  iv::lv5::breaker::Compile(code);
   VM* const vm = ctx->vm();
   return breaker::RunEval(
       ctx,
