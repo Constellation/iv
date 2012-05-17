@@ -46,12 +46,12 @@ inline void BUILD_ENV(railgun::Context* ctx,
                      mutable_start);
 }
 
-inline Rep WITH_SETUP(Frame* stack, JSVal src) {
+inline Rep WITH_SETUP(Frame* stack, railgun::Frame* frame, JSVal src) {
   JSObject* const obj = src.ToObject(stack->ctx, ERR);
   JSObjectEnv* const with_env =
-      JSObjectEnv::New(stack->ctx, stack->frame->lexical_env(), obj);
+      JSObjectEnv::New(stack->ctx, frame->lexical_env(), obj);
   with_env->set_provide_this(true);
-  stack->frame->set_lexical_env(with_env);
+  frame->set_lexical_env(with_env);
   return 0;
 }
 

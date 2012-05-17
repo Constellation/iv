@@ -619,7 +619,8 @@ class Compiler {
   void EmitWITH_SETUP(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rsi, asm_->r13);
+    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::WITH_SETUP);
   }
 
@@ -699,6 +700,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_ADD);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_ADD_EXIT");
     }
   }
@@ -740,6 +742,7 @@ class Compiler {
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_SUBTRACT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_SUBTRACT_EXIT");
     }
   }
@@ -757,10 +760,8 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
-      asm_->mov(asm_->esi, asm_->eax);
       asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdi);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->rdi);
       asm_->jmp(".BINARY_MULTIPLY_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -768,16 +769,16 @@ class Compiler {
       asm_->cvtsi2sd(asm_->xmm0, asm_->esi);
       asm_->cvtsi2sd(asm_->xmm1, asm_->edx);
       asm_->mulsd(asm_->xmm0, asm_->xmm1);
-      asm_->movq(asm_->rsi, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->movq(asm_->rax, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
       asm_->jmp(".BINARY_MULTIPLY_EXIT");
 
       asm_->L(".BINARY_MULTIPLY_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_MULTIPLY);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_MULTIPLY_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -820,16 +821,16 @@ class Compiler {
       asm_->mov(asm_->edx, 0);
       asm_->idiv(asm_->ecx);
 
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rdx, asm_->rdi);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rdx);
       asm_->jmp(".BINARY_MODULO_EXIT");
 
       asm_->L(".BINARY_MODULO_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_MODULO);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_MODULO_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -845,17 +846,17 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_LSHIFT_EXIT");
 
       asm_->L(".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_LSHIFT);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_LSHIFT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -871,17 +872,17 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_RSHIFT_EXIT");
 
       asm_->L(".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_RSHIFT);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_RSHIFT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -899,24 +900,23 @@ class Compiler {
       asm_->shr(asm_->esi, asm_->cl);
       asm_->cmp(asm_->esi, 0);
       asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
-      asm_->mov(asm_->rdx, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
 
       asm_->L(".BINARY_RSHIFT_LOGICAL_DOUBLE");
       asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
-      asm_->movq(asm_->rsi, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->movq(asm_->rax, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
       asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
 
       asm_->L(".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
       asm_->L(".BINARY_RSHIFT_LOGICAL_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
   }
 
@@ -1297,8 +1297,10 @@ class Compiler {
       asm_->Call(&stub::TO_NUMBER);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->jmp(".UNARY_POSITIVE_EXIT");
+
       asm_->L(".UNARY_POSITIVE_FAST");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+
       asm_->L(".UNARY_POSITIVE_EXIT");
     }
   }
@@ -2248,22 +2250,20 @@ class Compiler {
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_OVERFLOW");
       // overflow ==> INT32_MAX + 1
       asm_->mov(asm_->rax, overflow);
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::INCREMENT);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".INCREMENT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
     }
   }
 
@@ -2279,22 +2279,20 @@ class Compiler {
       asm_->jo(".DECREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
       asm_->mov(asm_->rax, overflow);
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::DECREMENT);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".DECREMENT_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
     }
   }
 
@@ -2313,23 +2311,21 @@ class Compiler {
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".INCREMENT_EXIT");
 
       // overflow ==> INT32_MAX + 1
       asm_->L(".INCREMENT_OVERFLOW");
       asm_->mov(asm_->rax, overflow);
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_INCREMENT);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".INCREMENT_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
     }
   }
 
@@ -2348,23 +2344,21 @@ class Compiler {
       asm_->jo(".DECREMENT_OVERFLOW");
 
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rax);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
       asm_->mov(asm_->rax, overflow);
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_DECREMENT);
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
       asm_->L(".DECREMENT_EXIT");
+      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
     }
   }
 

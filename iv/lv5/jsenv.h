@@ -467,7 +467,7 @@ class JSStaticEnv : public JSEnv {
   }
 
   static JSStaticEnv* New(Context* ctx, JSEnv* outer,
-                          Symbol sym, const JSVal& value) {
+                          Symbol sym, JSVal value) {
     return new JSStaticEnv(outer, sym, value);
   }
 
